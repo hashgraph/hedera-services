@@ -118,6 +118,11 @@ class ScheduleEqualityVirtualKeyTest {
 	}
 
 	@Test
+	void toStringWorks() {
+		assertEquals(subject.toString(), "ScheduleEqualityVirtualKey{value=2}");
+	}
+
+	@Test
 	void deserializeUsingSerializableDataInputStreamWorks() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
 

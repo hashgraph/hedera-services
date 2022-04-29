@@ -118,6 +118,11 @@ class SecondSinceEpocVirtualKeyTest {
 	}
 
 	@Test
+	void toStringWorks() {
+		assertEquals(subject.toString(), "SecondSinceEpocVirtualKey{value=2}");
+	}
+
+	@Test
 	void deserializeUsingSerializableDataInputStreamWorks() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
 

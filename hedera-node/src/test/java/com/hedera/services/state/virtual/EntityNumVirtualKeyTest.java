@@ -118,6 +118,16 @@ class EntityNumVirtualKeyTest {
 	}
 
 	@Test
+	void asEntityNumWorks() {
+		assertEquals(subject.asEntityNum().longValue(), subject.getKeyAsLong());
+	}
+
+	@Test
+	void toStringWorks() {
+		assertEquals(subject.toString(), "EntityNumVirtualKey{value=2}");
+	}
+
+	@Test
 	void deserializeUsingSerializableDataInputStreamWorks() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
 

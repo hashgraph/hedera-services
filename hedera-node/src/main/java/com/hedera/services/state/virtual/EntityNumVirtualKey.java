@@ -171,7 +171,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 	 */
 	@Override
 	public String toString() {
-		return "EntityVirtualLongKey{" +
+		return "EntityNumVirtualKey{" +
 				"value=" + value +
 				'}';
 	}

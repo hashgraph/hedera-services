@@ -24,13 +24,12 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import javax.annotation.Nonnull;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
-
-import org.jetbrains.annotations.NotNull;
 
 public class RichInstant implements Comparable<RichInstant> {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
@@ -128,7 +127,7 @@ public class RichInstant implements Comparable<RichInstant> {
 	}
 
 	@Override
-	public int compareTo(@NotNull RichInstant o) {
+	public int compareTo(@Nonnull RichInstant o) {
 		if (o.seconds == seconds) {
 			return Integer.compare(nanos, o.nanos);
 		}

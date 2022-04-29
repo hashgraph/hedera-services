@@ -157,7 +157,7 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
 	 */
 	@Override
 	public String toString() {
-		return "EntityVirtualLongKey{" +
+		return "SecondSinceEpocVirtualKey{" +
 				"value=" + value +
 				'}';
 	}

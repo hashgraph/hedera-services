@@ -329,6 +329,12 @@ class ConsensusTimeTrackerTest {
 		assertThrows(IllegalArgumentException.class, () -> new ConsensusTimeTracker(1));
 	}
 
+	@Test
+	void errorOnSetActualFollowingRecordsCountLessThanZero() {
+		assertThrows(IllegalArgumentException.class,
+				() -> new ConsensusTimeTracker().setActualFollowingRecordsCount(-1));
+	}
+
 	private void checkBounds(ConsensusTimeTracker previous, boolean isStandalone) {
 		var minTime = consensusTime;
 		var maxTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_ROUND);

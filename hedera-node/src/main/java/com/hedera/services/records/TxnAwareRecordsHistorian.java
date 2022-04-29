@@ -163,7 +163,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final TransactionBody.Builder syntheticBody,
 			final ExpirableTxnRecord.Builder recordSoFar
 	) {
-		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() +	1)) {
+		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1)) {
 			log.error("Cannot create more following records! currentCount={} consensusTimeTracker={}",
 					followingChildRecords.size(), consensusTimeTracker);
 			throw new IllegalStateException("Cannot create more following records!");
