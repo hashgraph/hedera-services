@@ -178,7 +178,7 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = Mockito.spy(new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess));
 		contractCreateTransitionLogic = Mockito.spy(
 				new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator, worldState, entityCreator,
 						recordsHistorian, recordService, createEvmTxProcessor, globalDynamicProperties,
