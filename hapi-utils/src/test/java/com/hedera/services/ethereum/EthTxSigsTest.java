@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EthTxSigsTest {
@@ -165,6 +166,15 @@ class EthTxSigsTest {
 				BigInteger.ZERO, ZERO_BYTES, ZERO_BYTES, 1, new byte[0], new byte[32], new byte[32]);
 
 		assertThrows(IllegalArgumentException.class, () -> EthTxSigs.extractSignatures(tx));
+	}
+	
+	@Test 
+	void extractsAddress() {
+		// good recovery
+		assertArrayEquals(TRUFFLE0_ADDRESS, EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
+		
+		// failed recovery
+		assertNull(EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
 	}
 
 }

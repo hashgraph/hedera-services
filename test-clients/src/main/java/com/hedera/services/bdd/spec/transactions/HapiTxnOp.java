@@ -112,11 +112,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return submitTime;
 	}
 
-	protected ResponseCodeEnum getExpectedStatus() {
+	public ResponseCodeEnum getExpectedStatus() {
 		return expectedStatus.orElse(SUCCESS);
 	}
 
-	protected ResponseCodeEnum getExpectedPrecheck() {
+	public ResponseCodeEnum getExpectedPrecheck() {
 		return expectedPrecheck.orElse(OK);
 	}
 

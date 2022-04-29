@@ -21,9 +21,15 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 /**
@@ -50,6 +56,40 @@ public class ReleaseTwentyFiveMigration {
 				mutableAccount.setNumTreasuryTitles(curTitles + 1);
 			}
 		});
+	}
+
+	public static void updateLinks(
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels
+	) {
+		for (final var accountId : accounts.keySet()) {
+			var merkleAccount = accounts.getForModify(accountId);
+			int numAssociations = 0;
+			int numPositiveBalances = 0;
+			long headTokenNum = MISSING_ID.num();
+			MerkleTokenRelStatus prevAssociation = null;
+			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
+				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
+				var association = tokenRels.getForModify(newListRootKey);
+				association.setNext(headTokenNum);
+
+				if (prevAssociation != null) {
+					prevAssociation.setPrev(tokenId.getTokenNum());
+				}
+
+				if (association.getBalance() > 0) {
+					numPositiveBalances++;
+				}
+				numAssociations++;
+
+				prevAssociation = association;
+				headTokenNum = tokenId.getTokenNum();
+			}
+			merkleAccount.setNumAssociations(numAssociations);
+			merkleAccount.setNumPositiveBalances(numPositiveBalances);
+			merkleAccount.setHeadTokenId(headTokenNum);
+			merkleAccount.forgetAssociatedTokens();
+		}
 	}
 
 	private ReleaseTwentyFiveMigration() {
