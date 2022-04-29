@@ -94,7 +94,7 @@ public class UniqueTokensLinkManager {
 	}
 
 	private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
-		return accountNum!= null && accountNum != MISSING_NUM && !accountNum.equals(token.treasuryNum());
+		return accountNum!= null && !accountNum.equals(MISSING_NUM) && !accountNum.equals(token.treasuryNum());
 	}
 
 	@Nullable
