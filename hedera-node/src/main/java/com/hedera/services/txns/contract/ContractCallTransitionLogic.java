@@ -112,7 +112,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		Account receiver = entityAccess.isTokenAccount(targetId.asEvmAddress()) ?
 				new Account(targetId) :
-				accountStore.loadAccount(targetId);
+				accountStore.loadContract(targetId);
 
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.wrap(op.getFunctionParameters().toByteArray())

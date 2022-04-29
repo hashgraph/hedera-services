@@ -141,11 +141,23 @@ class AccountTest {
 	}
 
 	@Test
-	void canonicalAddressIsEVMAddressInvalidAlias() {
-		// default truffle address #0
+	void invalidCanonicalAddresses() {
+		Address untranslatedAddress = Address.wrap(Bytes.fromHexString("0000000000000000000000000000000000003039"));
+
+		// bogus alias
 		subject.setAlias(ByteString.copyFromUtf8("This alias is invalid"));
-		assertEquals(Address.wrap(Bytes.fromHexString("0000000000000000000000000000000000003039")),
-				subject.canonicalAddress());
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
+		// incorrect starting bytes for ECDSA
+		subject.setAlias(ByteString.copyFrom(
+				Hex.decode("ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
+		// incorrect ECDSA key
+		subject.setAlias(ByteString.copyFrom(
+				Hex.decode("3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
 	}
 
 	@Test

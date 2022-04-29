@@ -129,7 +129,7 @@ class ContractCallTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
@@ -199,7 +199,7 @@ class ContractCallTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(

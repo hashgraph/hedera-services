@@ -125,7 +125,6 @@ class EthereumTransactionTransitionLogicTest {
 	EthereumTransitionLogic subject;
 	private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	private byte[] targetAddressBytes = EntityIdUtils.asEvmAddress(target);
-	private Address targetAddress = Address.wrap(Bytes.wrap(targetAddressBytes));
 	private int gas = 1_234;
 	private long sent = 1_234L;
 	private byte[] chainId= CHAINID_TESTNET;
@@ -209,7 +208,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
@@ -436,7 +435,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
@@ -468,7 +467,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
-		given(accountStore.loadAccount(any())).willThrow(InvalidTransactionException.class);
+		given(accountStore.loadContract(any())).willThrow(InvalidTransactionException.class);
 		// and:
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
