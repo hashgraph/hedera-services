@@ -256,4 +256,8 @@ public record EthTxData(
 				.add("s", Hex.encodeHexString(s))
 				.toString();
 	}
+
+	public boolean hasCallData() {
+		return callData != null && callData.length > 0;
+	}
 }

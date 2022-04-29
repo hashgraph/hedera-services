@@ -62,6 +62,7 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
 	private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
 	private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
+	private static final String ETH_TX_EXPANSION_KEY = "ethTxExpansion";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -194,5 +195,13 @@ public class ExpandHandleSpanMapAccessor {
 
 	public TransactionBody getEthTxBodyMeta(TxnAccessor accessor) {
 		return (TransactionBody) accessor.getSpanMap().get(ETH_TX_BODY_META_KEY);
+	}
+
+	public void setEthTxExpansion(final TxnAccessor accessor, final EthTxExpansion expansion) {
+		accessor.getSpanMap().put(ETH_TX_EXPANSION_KEY, expansion);
+	}
+
+	public EthTxExpansion getEthTxExpansion(final TxnAccessor accessor) {
+		return (EthTxExpansion) accessor.getSpanMap().get(ETH_TX_EXPANSION_KEY);
 	}
 }

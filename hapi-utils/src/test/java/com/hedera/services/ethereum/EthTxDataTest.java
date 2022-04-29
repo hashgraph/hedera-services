@@ -33,10 +33,12 @@ import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class EthTxDataTest {
@@ -54,6 +56,16 @@ class EthTxDataTest {
 	static final String EIP_155_DEMO_PUBKEY = "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382";
 	static final String EIP155_DEMO =
 			"f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
+
+	@Test
+	void detectsMissingCallData() {
+		final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertTrue(subject.hasCallData());
+		final var subjectWithEmptyData = subject.replaceCallData(new byte[0]);
+		assertFalse(subjectWithEmptyData.hasCallData());
+		final var subjectWithNullData = subject.replaceCallData(null);
+		assertFalse(subjectWithNullData.hasCallData());
+	}
 
 	@Test
 	void extractFrontierSignature() {

@@ -118,22 +118,22 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				rollbackOnFailedMintAfterFungibleTransfer(),
 				rollbackOnFailedAssociateAfterNonFungibleMint(),
 				fungibleTokenMintFailure(),
 				gasCostNotMetSetsInsufficientGasStatusInChildRecord()
-		);
+		});
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				helloWorldFungibleMint(),
 				helloWorldNftMint(),
 				happyPathFungibleTokenMint(),
 				happyPathNonFungibleTokenMint(),
 				transferNftAfterNestedMint()
-		);
+		});
 	}
 
 	private HapiApiSpec helloWorldFungibleMint() {
@@ -404,8 +404,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														getNestedContractAddress(MINT_NFT_CONTRACT, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.gas(GAS_TO_OFFER),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-														NESTED_MINT_CONTRACT))),
+												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+																NESTED_MINT_CONTRACT))),
 												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
 												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(NESTED_MINT_CONTRACT,
@@ -431,7 +432,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 																resultWith()
 																		.gasUsed(expectedGasUsage)
 																		.contractCallResult(htsPrecompileResult()
-																				.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																				.forFunction(
+																						HTSPrecompileResult.FunctionType.MINT)
 																				.withStatus(SUCCESS)
 																				.withTotalSupply(1L)
 																				.withSerialNumbers(1L)
@@ -439,11 +441,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 																		.gas(3_838_738L)
 																		.amount(0L)
 																		.functionParameters(functionParameters()
-																				.forFunction(FunctionParameters.PrecompileFunction.MINT)
+																				.forFunction(
+																						FunctionParameters.PrecompileFunction.MINT)
 																				.withTokenAddress(asAddress(spec.registry()
 																						.getTokenID(nonFungibleToken)))
 																				.withAmount(0L)
-																				.withMetadata(List.of("Test metadata 1"))
+																				.withMetadata(List.of("Test metadata " +
+																						"1"))
 																				.build()
 																		)
 														),
@@ -452,13 +456,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														.contractCallResult(
 																resultWith()
 																		.contractCallResult(htsPrecompileResult()
-																				.forFunction(HTSPrecompileResult.FunctionType.SUCCESS)
+																				.forFunction(
+																						HTSPrecompileResult.FunctionType.SUCCESS)
 																				.withStatus(SUCCESS)
 																		)
 														)
 														.tokenTransfers(NonFungibleTransfers
 																.changingNFTBalances()
-																.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
+																.including(nonFungibleToken, TOKEN_TREASURY,
+																		theRecipient, 1)
 														)
 										)
 								)
@@ -494,7 +500,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(contract, asAddress(spec.registry().getTokenID(fungibleToken))),
+												contractCreate(contract,
+														asAddress(spec.registry().getTokenID(fungibleToken))),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														contract))),
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
@@ -556,11 +563,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
+												contractCreate(outerContract,
+														getNestedContractAddress(nestedContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.gas(GAS_TO_OFFER),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-														outerContract))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+																outerContract))),
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
 												contractCall(outerContract, "revertMintAfterFailedAssociate",
 														asAddress(spec.registry().getAccountID(theAccount)),
