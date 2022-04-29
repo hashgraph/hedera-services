@@ -26,6 +26,7 @@ import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
@@ -79,6 +80,7 @@ public class GlobalDynamicProperties {
 	private long autoRenewGracePeriod;
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
+	private Duration grpcMinAutoRenewDuration;
 	private int localCallEstRetBytes;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
@@ -168,6 +170,7 @@ public class GlobalDynamicProperties {
 		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
+		grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
@@ -357,6 +360,10 @@ public class GlobalDynamicProperties {
 
 	public long minAutoRenewDuration() {
 		return minAutoRenewDuration;
+	}
+
+	public Duration typedMinAutoRenewDuration() {
+		return grpcMinAutoRenewDuration;
 	}
 
 	public int localCallEstRetBytes() {

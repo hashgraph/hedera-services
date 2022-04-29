@@ -123,6 +123,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(22, subject.getChainId());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.minAutoRenewDuration());
+		assertEquals(26, subject.typedMinAutoRenewDuration().getSeconds());
 		assertEquals(27, subject.localCallEstRetBytes());
 		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
 		assertEquals(29, subject.messageMaxBytesAllowed());

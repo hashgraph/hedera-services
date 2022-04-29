@@ -33,6 +33,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
@@ -141,15 +142,17 @@ class SpanMapManagerTest {
 	private MutableStateChildren workingState;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 
 	private SpanMapManager subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new SpanMapManager(
-				sigsFunction, contractCallTransitionLogic,
-				new ExpandHandleSpanMapAccessor(), impliedTransfersMarshal, dynamicProperties,
-				stateViewFactory, customFeeSchedules, sigImpactHistorian, workingState, aliasManager);
+				sigsFunction, contractCallTransitionLogic, new ExpandHandleSpanMapAccessor(),
+				impliedTransfersMarshal, dynamicProperties, stateViewFactory,
+				syntheticTxnFactory, customFeeSchedules, sigImpactHistorian, workingState, aliasManager);
 	}
 
 	@Test

@@ -68,6 +68,16 @@ class EthTxDataTest {
 	}
 
 	@Test
+	void detectsMissingToAddress() {
+		final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertTrue(subject.hasToAddress());
+		final var subjectWithEmptyTo = subject.replaceTo(new byte[0]);
+		assertFalse(subjectWithEmptyTo.hasToAddress());
+		final var subjectWithNullTo = subject.replaceTo(null);
+		assertFalse(subjectWithNullTo.hasToAddress());
+	}
+
+	@Test
 	void extractFrontierSignature() {
 		var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
 		assertNotNull(frontierTx);

@@ -20,33 +20,61 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.addSecondsToTimestamp;
-import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.getCurrentInstantUTC;
-import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.getCurrentTimestampUTC;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 class ProtoCommonUtilsTest {
 	@Test
-	void shouldWindTheClock() {
-		final var now = getCurrentInstantUTC();
-
-		final var after100s = getCurrentTimestampUTC(100L).getSeconds();
-
-		assertTrue(after100s >= now.getEpochSecond() + 100L);
-		assertTrue(after100s <= now.getEpochSecond() + 101L);
+	void unsafeWrappingWorks() {
+		final var wrappedData = ProtoCommonUtils.wrapUnsafely(data);
+		assertArrayEquals(data, wrappedData.toByteArray());
 	}
 
 	@Test
-	void shouldAddSecondsToTimestamp() {
-		final var ts123 = Timestamp.newBuilder().setSeconds(123L).setNanos(456).build();
-
-		final var ts130 = addSecondsToTimestamp(ts123, 7L);
-
-		assertEquals(130L, ts130.getSeconds());
-		assertEquals(456, ts130.getNanos());
+	void unsafeUnwrappingWorks() {
+		final var wrapper = ProtoCommonUtils.wrapUnsafely(data);
+		final var unwrapped = ProtoCommonUtils.unwrapUnsafelyIfPossible(wrapper);
+		assertSame(data, unwrapped);
 	}
+
+	@Test
+	void supportsOnlyReasonable() {
+		final var wrapper = Mockito.mock(ByteString.class);
+		given(wrapper.size()).willReturn(ProtoCommonUtils.UnsafeByteOutput.SIZE - 1);
+		assertFalse(ProtoCommonUtils.UnsafeByteOutput.supports(wrapper));
+		given(wrapper.size()).willReturn(42);
+		assertFalse(ProtoCommonUtils.UnsafeByteOutput.supports(wrapper));
+		assertTrue(ProtoCommonUtils.UnsafeByteOutput.supports(ByteString.copyFrom(data)));
+	}
+
+	@Test
+	void unsafeOutputUnsupportedAsExpected() {
+		final var subject = new ProtoCommonUtils.UnsafeByteOutput();
+
+		assertThrows(UnsupportedOperationException.class, () -> subject.write((byte) 1));
+		assertThrows(UnsupportedOperationException.class, () -> subject.write(ByteBuffer.allocate(1)));
+		assertThrows(UnsupportedOperationException.class, () -> subject.writeLazy(ByteBuffer.allocate(1)));
+	}
+
+	@Test
+	void unsafeOutputSupportedAsExpected() throws IOException {
+		final var subject = new ProtoCommonUtils.UnsafeByteOutput();
+
+		subject.write(data, 0, data.length);
+
+		assertSame(data, subject.getBytes());
+	}
+
+	private static final byte[] data = "Between the idea and the reality".getBytes();
 }

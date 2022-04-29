@@ -35,6 +35,7 @@ import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -56,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -84,6 +86,7 @@ public class SpanMapManager {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final MutableStateChildren workingState;
 	private final CustomFeeSchedules customFeeSchedules;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SignedStateViewFactory stateViewFactory;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -99,6 +102,7 @@ public class SpanMapManager {
 			final ImpliedTransfersMarshal impliedTransfersMarshal,
 			final GlobalDynamicProperties dynamicProperties,
 			final SignedStateViewFactory stateViewFactory,
+			final SyntheticTxnFactory syntheticTxnFactory,
 			final CustomFeeSchedules customFeeSchedules,
 			final SigImpactHistorian sigImpactHistorian,
 			final MutableStateChildren workingState,
@@ -106,6 +110,7 @@ public class SpanMapManager {
 	) {
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
 		this.customFeeSchedules = customFeeSchedules;
@@ -157,7 +162,8 @@ public class SpanMapManager {
 	 * Called at the beginning of {@code handleTransaction} to check if any pre-computed work stored inside the
 	 * given {@link TxnAccessor} needs to be re-computed because some linked entity has changed.
 	 *
-	 * @param accessor the accessor representing the transaction about to be handled
+	 * @param accessor
+	 * 		the accessor representing the transaction about to be handled
 	 */
 	public void rationalizeSpan(final TxnAccessor accessor) {
 		final var function = accessor.getFunction();
@@ -184,28 +190,76 @@ public class SpanMapManager {
 			final StateChildren stateChildren,
 			@Nullable final LinkedRefs linkedRefs
 	) {
-		final var function = accessor.getFunction();
-		if (function != EthereumTransaction) {
-			throw new IllegalArgumentException("Cannot expand Ethereum span for a " + function + " accessor");
-		}
-
+		assertIsEthTxn(accessor);
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		final var op = accessor.getTxn().getEthereumTransaction();
 
+		// This reference summarizes the results of the three pre-computation steps; if a step
+		// fails, it sets  the reference to a non-null EthTxExpansion with appropriate error code,
+		// and any remaining steps will be skipped
 		EthTxExpansion expansion = null;
+
+		// First, try retrieve the call data (if it's in a file)
 		if (op.hasCallData() && !ethTxData.hasCallData()) {
-			final var callDataId = op.getCallData();
 			final var result = computeCallData(
-					ethTxData, callDataId, linkedRefs, accessor, stateChildren.storage());
+					ethTxData, op.getCallData(), linkedRefs, accessor, stateChildren.storage());
 			if (result.getKey() != OK) {
 				expansion = new EthTxExpansion(linkedRefs, result.getKey());
+			} else {
+				ethTxData = result.getValue();
+				spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 			}
-			ethTxData = result.getValue();
 		}
+		// Second, try to extract the signature
+		if (expansion == null) {
+			expansion = expandEthTxSigs(accessor, ethTxData, linkedRefs);
+		}
+		// Third, try to synthesize the specialized TransactionBody
+		if (expansion == null) {
+			expansion = expandSynthTxn(accessor, ethTxData, linkedRefs);
+		}
+
+		// If no steps failed, summarize as OK
 		if (expansion == null) {
 			expansion = new EthTxExpansion(linkedRefs, OK);
 		}
 		spanMapAccessor.setEthTxExpansion(accessor, expansion);
+	}
+
+	@Nullable
+	private EthTxExpansion expandSynthTxn(
+			final TxnAccessor accessor,
+			final EthTxData ethTxData,
+			@Nullable final LinkedRefs linkedRefs
+	) {
+		final var opBuilder = syntheticTxnFactory.synthContractOpFromEth(ethTxData);
+		if (opBuilder.isEmpty()) {
+			return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
+		}
+		spanMapAccessor.setEthTxBodyMeta(accessor, opBuilder.get().build());
+		return null;
+	}
+
+	@Nullable
+	private EthTxExpansion expandEthTxSigs(
+			final TxnAccessor accessor,
+			final EthTxData ethTxData,
+			@Nullable final LinkedRefs linkedRefs
+	) {
+		try {
+			final var ethTxSigs = sigsFunction.apply(ethTxData);
+			spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
+			return null;
+		} catch (IllegalArgumentException ignore) {
+			return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
+		}
+	}
+
+	private void assertIsEthTxn(final TxnAccessor accessor) {
+		final var function = accessor.getFunction();
+		if (function != EthereumTransaction) {
+			throw new IllegalArgumentException("Cannot expand Ethereum span for a " + function + " accessor");
+		}
 	}
 
 	private Pair<ResponseCodeEnum, EthTxData> computeCallData(

@@ -36,13 +36,16 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -75,6 +79,8 @@ import static org.mockito.Mockito.verify;
 class EthereumSpanMapManagerTest {
 	@Mock
 	private EthTxData ethTxData;
+	@Mock
+	private EthTxSigs ethTxSigs;
 	@Mock
 	private LinkedRefs linkedRefs;
 	@Mock
@@ -101,6 +107,8 @@ class EthereumSpanMapManagerTest {
 	private MutableStateChildren workingState;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 
 	private final Map<String, Object> spanMap = new HashMap<>();
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -110,9 +118,9 @@ class EthereumSpanMapManagerTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SpanMapManager(
-				sigsFunction, contractCallTransitionLogic,
-				new ExpandHandleSpanMapAccessor(), impliedTransfersMarshal, dynamicProperties,
-				stateViewFactory, customFeeSchedules, sigImpactHistorian, workingState, aliasManager);
+				sigsFunction, contractCallTransitionLogic, new ExpandHandleSpanMapAccessor(),
+				impliedTransfersMarshal, dynamicProperties, stateViewFactory,
+				syntheticTxnFactory, customFeeSchedules, sigImpactHistorian, workingState, aliasManager);
 	}
 
 	@Test
@@ -171,6 +179,7 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
 
 		subject.expandEthereumSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -180,11 +189,64 @@ class EthereumSpanMapManagerTest {
 	}
 
 	@Test
+	void expansionExtractsSignature() {
+		givenUsableAccessor(bodyWithoutCallData);
+		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
+		given(sigsFunction.apply(ethTxData)).willReturn(ethTxSigs);
+
+		subject.expandEthereumSpan(accessor);
+
+		final var sigsMeta = spanMapAccessor.getEthTxSigsMeta(accessor);
+		assertSame(ethTxSigs, sigsMeta);
+	}
+
+	@Test
+	void expansionFailsIfSignatureCantBeExtracted() {
+		givenUsableAccessor(bodyWithoutCallData);
+		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
+		given(sigsFunction.apply(ethTxData)).willThrow(IllegalArgumentException.class);
+
+		subject.expandEthereumSpan(accessor);
+
+		expansion = spanMapAccessor.getEthTxExpansion(accessor);
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, expansion.result());
+	}
+
+	@Test
+	void expansionFailsIfHapiTxnCannotBeSynthesized() {
+		givenUsableAccessor(bodyWithoutCallData);
+		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
+		given(sigsFunction.apply(ethTxData)).willReturn(ethTxSigs);
+
+		subject.expandEthereumSpan(accessor);
+
+		expansion = spanMapAccessor.getEthTxExpansion(accessor);
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, expansion.result());
+	}
+
+	@Test
+	void expansionSetsSynthesizedHapiTxnInContext() {
+		givenUsableAccessor(bodyWithoutCallData);
+		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
+		given(sigsFunction.apply(ethTxData)).willReturn(ethTxSigs);
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
+
+		subject.expandEthereumSpan(accessor);
+
+		final var expectedBody = synthBody.build();
+		assertEquals(expectedBody, spanMapAccessor.getEthTxBodyMeta(accessor));
+
+		expansion = spanMapAccessor.getEthTxExpansion(accessor);
+		assertEquals(OK, expansion.result());
+	}
+
+	@Test
 	void rationalizationUpdatesEthTxCallDataIsSetAndFileIsNonEmpty() {
 		givenRationalizableAccessor(bodyWithCallData);
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -202,6 +264,7 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -267,6 +330,8 @@ class EthereumSpanMapManagerTest {
 	private static final EthereumTransactionBody bodyWithCallData = EthereumTransactionBody.newBuilder()
 			.setCallData(callDataId)
 			.build();
+	private static final EthereumTransactionBody bodyWithoutCallData = EthereumTransactionBody.newBuilder()
+			.build();
 	private static final byte[] callData = "Between the idea and the reality".getBytes();
 	private static final VirtualBlobKey dataKey = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, 666);
 	private static final VirtualBlobKey metadataKey = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, 666);
@@ -274,4 +339,9 @@ class EthereumSpanMapManagerTest {
 	private static final JKey wacl = new JKeyList(List.of());
 	private static final HFileMeta deletedMeta = new HFileMeta(true, wacl, 9_999_999);
 	private static final HFileMeta undeletedMeta = new HFileMeta(false, wacl, 9_999_999);
+	private static final TransactionBody.Builder synthBody = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setAccountID(AccountID.newBuilder()
+							.setAccountNum(666)
+							.build()).build());
 }
