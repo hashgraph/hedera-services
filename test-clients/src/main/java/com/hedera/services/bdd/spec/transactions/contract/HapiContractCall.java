@@ -198,7 +198,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(HederaFunctionality.ContractCall,
-				scFees::getEthereumTransactionFeeMatrices, txn, numPayerKeys);
+				scFees::getContractCallTxFeeMatrices, txn, numPayerKeys);
 	}
 
 	@Override
