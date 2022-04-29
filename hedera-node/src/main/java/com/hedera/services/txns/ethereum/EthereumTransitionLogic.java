@@ -109,7 +109,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void doStateTransition() {
 		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		final EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
+		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
 		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
 		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 

@@ -199,7 +199,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	 */
 	public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {
-		if (txBody == null || (!txBody.hasContractCall() && !txBody.hasEthereumTransaction())) {
+		if (txBody == null || !txBody.hasContractCall()) {
 			throw new InvalidTxBodyException(
 					"ContractCreateInstance Tx Body not available for Fee Calculation");
 		}
