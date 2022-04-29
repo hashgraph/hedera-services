@@ -81,6 +81,7 @@ class MerkleAccountStateTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final EntityId autoRenewAccountId = new EntityId(4L, 5L, 6L);
 	private static final int otherNumber = 456;
 	private static final int kvPairs = 123;
 	private static final int otherKvPairs = 456;
@@ -143,21 +144,24 @@ class MerkleAccountStateTest {
 				numPositiveBalances,
 				headTokenNum,
 				numTreasuryTitles,
-				ethereumNonce);
+				ethereumNonce,
+				autoRenewAccountId);
 	}
 
 	@Test
 	void toStringWorks() {
 		final var desired = "MerkleAccountState{number=123 <-> 0.0.123, key=ed25519: " +
 				"\"abcdefghijklmnopqrstuvwxyz012345\"\n" +
-				", expiry=1234567, balance=555555, autoRenewSecs=234567, memo=A memo, deleted=true, smartContract=true," +
+				", expiry=1234567, balance=555555, autoRenewSecs=234567, memo=A memo, deleted=true, " +
+				"smartContract=true," +
 				" numContractKvPairs=123, receiverSigRequired=true, proxy=EntityId{shard=1, realm=2, num=3}, " +
 				"nftsOwned=150, alreadyUsedAutoAssociations=1233, maxAutoAssociations=1234, " +
 				"alias=bbbbbbbbbbbbbbbbbbbbb, cryptoAllowances={EntityNum{value=1000}=10}, " +
 				"fungibleTokenAllowances={FcTokenAllowanceId{tokenNum=2000, spenderNum=1000}=1}, " +
 				"approveForAllNfts=[FcTokenAllowanceId{tokenNum=2000, spenderNum=3000}], " +
 				"firstContractStorageKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060, " +
-				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23, ethereumNonce=0}";
+				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23, ethereumNonce=0, " +
+				"autoRenewAccount=EntityId{shard=4, realm=5, num=6}}";
 		assertEquals(desired, subject.toString());
 	}
 
@@ -434,6 +438,14 @@ class MerkleAccountStateTest {
 		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
 		assertEquals(fungibleTokenAllowances, subject.getFungibleTokenAllowances());
 		assertEquals(approveForAllNfts, subject.getApproveForAllNfts());
+	}
+
+	@Test
+	void gettersAndSettersForAutoRenewAccountWorks() {
+		var subject = new MerkleAccountState();
+		final var account = EntityId.fromIdentityCode(10);
+		subject.setAutoRenewAccount(account);
+		assertEquals(account, subject.getAutoRenewAccount());
 	}
 
 }

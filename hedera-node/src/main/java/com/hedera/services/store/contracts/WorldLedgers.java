@@ -71,6 +71,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class WorldLedgers {
+	public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] { 0x3a, 0x21 });
+
 	private final ContractAliases aliases;
 	private final StaticEntityAccess staticEntityAccess;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -198,7 +200,7 @@ public class WorldLedgers {
 		if (!alias.isEmpty()) {
 			if (alias.size() == 20) {
 				return Address.wrap(Bytes.wrap(alias.toByteArray()));
-			} else if (alias.size() == 35 && alias.startsWith(ByteString.copyFrom(new byte[] { 0x3a, 0x21 }))) {
+			} else if (alias.size() == 35 && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
 				byte[] value = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
 				if (value != null) {
 					return Address.wrap(Bytes.wrap(value));

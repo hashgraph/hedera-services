@@ -148,7 +148,7 @@ class AutoRenewCalcsTest {
 
 		// when:
 		var maxRenewalAndFee = subject.assessCryptoRenewal(
-				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates);
+				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
 		var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
 		// then:
@@ -164,13 +164,13 @@ class AutoRenewCalcsTest {
 		setupSuperStandardContractWith(Long.MAX_VALUE);
 
 		var preCutoffAssessment = subject.assessCryptoRenewal(
-				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates);
+				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
 		var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
 		assertEquals(100.0, prePercent, 5.0);
 		assertEquals(threeMonthsInSeconds, preCutoffAssessment.renewalPeriod());
 
 		var postCutoffAssessment = subject.assessCryptoRenewal(
-				expiredEntity, threeMonthsInSeconds, postCutoff, activeRates);
+				expiredEntity, threeMonthsInSeconds, postCutoff, activeRates, expiredEntity);
 		var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
 		assertEquals(100.0, postPercent, 5.0);
 		assertEquals(threeMonthsInSeconds, postCutoffAssessment.renewalPeriod());
@@ -186,7 +186,7 @@ class AutoRenewCalcsTest {
 
 		// when:
 		var maxRenewalAndFee = subject.assessCryptoRenewal(
-				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates);
+				expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
 		var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
 		// then:
@@ -203,7 +203,7 @@ class AutoRenewCalcsTest {
 
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, () ->
-				subject.assessCryptoRenewal(expiredEntity, 0L, preCutoff, activeRates));
+				subject.assessCryptoRenewal(expiredEntity, 0L, preCutoff, activeRates, expiredEntity));
 	}
 
 	@Test
@@ -218,7 +218,7 @@ class AutoRenewCalcsTest {
 
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, () ->
-				subject.assessCryptoRenewal(expiredEntity, 0L, preCutoff, activeRates));
+				subject.assessCryptoRenewal(expiredEntity, 0L, preCutoff, activeRates, expiredEntity));
 	}
 
 	@Test
@@ -227,7 +227,7 @@ class AutoRenewCalcsTest {
 
 		// when:
 		var maxRenewalAndFee = subject.assessCryptoRenewal(
-				expiredEntity, 7776000L, preCutoff, activeRates);
+				expiredEntity, 7776000L, preCutoff, activeRates, expiredEntity);
 
 		// then:
 		assertEquals(0, maxRenewalAndFee.renewalPeriod());

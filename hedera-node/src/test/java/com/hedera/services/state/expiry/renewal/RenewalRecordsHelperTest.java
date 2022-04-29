@@ -84,7 +84,7 @@ class RenewalRecordsHelperTest {
 
 	@Test
 	void mustBeInCycleToStream() {
-		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false));
+		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false, expiredNum));
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class RenewalRecordsHelperTest {
 		given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
 
 		subject.beginRenewalCycle(instantNow);
-		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
 		// then:
 		verify(recordStreaming).streamSystemRecord(rso);
@@ -141,10 +141,10 @@ class RenewalRecordsHelperTest {
 		final var rso = expectedRso(
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, true),
 				0);
-		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry, expiredNum.toGrpcAccountId())).willReturn(mockBody);
 
 		subject.beginRenewalCycle(instantNow);
-		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
 		// then:
 		verify(recordStreaming).streamSystemRecord(rso);

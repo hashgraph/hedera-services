@@ -33,16 +33,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class UtilStateChange {
 
 	public static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
-	private static final Map<String, Boolean> specToInitializedEthereumContract = new HashMap<>();
+	private static final Map<String, Boolean> specToInitializedEthereumAccount = new HashMap<>();
 	private static final Map<String, Boolean> specToBeenExecuted = new HashMap<>();
+	private static final Map<String, Long> specToNonce = new HashMap<>();
 
 	public static List<ContractStateChange> stateChangesToGrpc(List<StateChange> stateChanges, HapiApiSpec spec) {
 		final List<ContractStateChange> additions = new ArrayList<>();
@@ -72,27 +74,27 @@ public class UtilStateChange {
 
 	public static void initializeEthereumAccountForSpec(final HapiApiSpec spec) {
 		final var newSpecKey = new NewSpecKey(SECP_256K1_SOURCE_KEY).shape(secp256k1Shape);
-		final var cryptoTransfer = new HapiCryptoTransfer(HapiCryptoTransfer.tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS));
+		final var cryptoTransfer = new HapiCryptoTransfer(HapiCryptoTransfer.tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 20 * ONE_MILLION_HBARS));
 
 		newSpecKey.execFor(spec);
 		cryptoTransfer.execFor(spec);
 
-		specToInitializedEthereumContract.putIfAbsent(spec.getName(), true);
+		specToInitializedEthereumAccount.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
 	}
 
-	public static boolean isEthereumAccountCreatedForSpec(final String spec) {
-		return specToInitializedEthereumContract.containsKey(spec);
+	public static boolean isEthereumAccountCreatedForSpec(final HapiApiSpec spec) {
+		return specToInitializedEthereumAccount.containsKey(spec.getSuitePrefix() + spec.getName());
 	}
 
-	public static void markSpecAsBeenExecuted(final String spec) {
-		specToBeenExecuted.putIfAbsent(spec, true);
+	public static void markSpecAsBeenExecuted(final HapiApiSpec spec) {
+		specToBeenExecuted.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
 	}
 
-	public static boolean hasSpecBeenExecuted(final String spec) {
-		if(specToBeenExecuted.containsKey(spec)) {
-			return specToBeenExecuted.get(spec);
-		} else {
-			return false;
-		}
+	public static void setNonceForSpec(final HapiApiSpec spec, final long nonce) {
+		specToNonce.put(spec.getSuitePrefix() + spec.getName(), nonce);
+	}
+
+	public static Optional<Long> getNonceForSpec(final HapiApiSpec spec) {
+		return Optional.ofNullable(specToNonce.get(spec.getSuitePrefix() + spec.getName()));
 	}
 }

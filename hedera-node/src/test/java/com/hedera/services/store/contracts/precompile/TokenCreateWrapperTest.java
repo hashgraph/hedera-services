@@ -25,6 +25,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -32,7 +33,6 @@ import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
@@ -401,5 +401,14 @@ class TokenCreateWrapperTest {
 				5, null, true, true, null), null);
 
 		assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
+	}
+
+	@Test
+	void autoRenewAccountIsCheckedAsExpected() {
+		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(Collections.emptyList());
+		assertTrue(wrapper.hasAutoRenewAccount());
+		assertEquals(EntityId.fromIdentityCode(12345).toGrpcAccountId(), wrapper.getExpiry().autoRenewAccount());
+		wrapper.inheritAutoRenewAccount(EntityId.fromIdentityCode(10));
+		assertEquals(EntityId.fromIdentityCode(10).toGrpcAccountId(), wrapper.getExpiry().autoRenewAccount());
 	}
 }

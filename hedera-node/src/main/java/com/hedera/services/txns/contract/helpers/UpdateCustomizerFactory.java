@@ -76,6 +76,9 @@ public class UpdateCustomizerFactory {
 		if (affectsMemo(updateOp)) {
 			processMemo(updateOp, customizer);
 		}
+		if (updateOp.hasAutoRenewAccountId()) {
+			customizer.autoRenewAccount(fromGrpcAccountId(updateOp.getAutoRenewAccountId()));
+		}
 
 		return Pair.of(Optional.of(customizer), OK);
 	}

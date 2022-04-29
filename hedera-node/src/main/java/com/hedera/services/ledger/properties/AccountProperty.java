@@ -304,4 +304,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNumTreasuryTitles;
 		}
 	},
+	AUTO_RENEW_ACCOUNT_ID {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, p) -> a.setAutoRenewAccount((EntityId) p);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getAutoRenewAccount;
+		}
+	},
 }

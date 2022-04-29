@@ -31,6 +31,7 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 
@@ -146,7 +147,7 @@ public record EthTxData(
 					v,
 					r,
 					s);
-		} catch (IllegalArgumentException iae) {
+		} catch (IllegalArgumentException | NoSuchElementException e) {
 			return null;
 		}
 	}

@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -98,6 +99,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -113,6 +115,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -144,6 +147,21 @@ class ContractCustomizerTest {
 				cryptoAdminKey, consensusNow, op);
 
 		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
+	}
+
+	@Test
+	void worksWithAutoRenewAccount() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId())
+				.setMemo(memo)
+				.build();
+
+		final var subject = ContractCustomizer.fromHapiCreation(
+				cryptoAdminKey, consensusNow, op);
+
+		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
+		verify(ledger).set(newContractId, AUTO_RENEW_ACCOUNT_ID, autoRenewAccount);
 	}
 
 	@Test
@@ -208,4 +226,5 @@ class ContractCustomizerTest {
 	private static final Instant consensusNow = Instant.ofEpochSecond(expiry - autoRenewPeriod);
 	private static final String memo = "the grey rock";
 	private static final EntityId proxy = new EntityId(0, 0, 3);
+	private static final EntityId autoRenewAccount = new EntityId(0, 0, 4);
 }

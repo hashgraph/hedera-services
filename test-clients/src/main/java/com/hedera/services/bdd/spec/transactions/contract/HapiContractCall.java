@@ -47,6 +47,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
+	private Optional<Long> valueSent = Optional.of(0L);
 
 	private Consumer<Object[]> resultObserver = null;
 
@@ -151,6 +152,42 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
 	public Optional<String> getMemo() {
 		return memo;
+	}
+
+	public Optional<Long> getValueSent() {
+		return valueSent;
+	}
+
+	public Optional<Function<Transaction, Transaction>> getFiddler() {
+		return fiddler;
+	}
+
+	public Optional<Long> getFee() {
+		return fee;
+	}
+
+	public Optional<Long> getSubmitDelay() {
+		return submitDelay;
+	}
+
+	public Optional<Long> getValidDurationSeconds() {
+		return validDurationSecs;
+	}
+
+	public Optional<String> getCustomTxnId() {
+		return customTxnId;
+	}
+
+	public Optional<AccountID> getNode() {
+		return node;
+	}
+
+	public OptionalDouble getUsdFee() {
+		return usdFee;
+	}
+
+	public Optional<Integer> getRetryLimits() {
+		return retryLimits;
 	}
 
 	@Override
