@@ -737,7 +737,7 @@ class EthereumTransactionTransitionLogicTest {
 		givenEmptyTxnCtx();
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test
