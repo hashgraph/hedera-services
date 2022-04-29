@@ -66,7 +66,7 @@ public class UniqueTokensLinkManager {
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
 		// Update `from` Account
-		if (!from.equals(token.treasuryNum())) {
+		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 
@@ -80,7 +80,7 @@ public class UniqueTokensLinkManager {
 
 
 		// update `to` Account
-		if (to != null && !to.equals(token.treasuryNum())) {
+		if (isValidAndNotTreasury(to, token)) {
 			final var toAccount = curAccounts.getForModify(to);
 			final var nftNumPair = nftId.asNftNumPair();
 			final var rootKey = rootKeyOf(toAccount);
@@ -90,6 +90,10 @@ public class UniqueTokensLinkManager {
 			toAccount.setHeadNftId(nftNumPair.tokenNum());
 			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 		}
+	}
+
+	private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
+		return accountNum!= null && !accountNum.equals(token.treasuryNum());
 	}
 
 	@Nullable
