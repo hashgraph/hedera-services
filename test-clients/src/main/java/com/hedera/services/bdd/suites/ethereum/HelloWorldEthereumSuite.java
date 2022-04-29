@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;

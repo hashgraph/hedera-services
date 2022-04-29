@@ -109,7 +109,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void doStateTransition() {
 		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		final EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
+		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
 		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
 		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 
@@ -154,6 +154,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		if (ethTxData == null) {
+			return ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+		}
+
 		var txBody = getOrCreateTransactionBody(accessor);
 
 		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {

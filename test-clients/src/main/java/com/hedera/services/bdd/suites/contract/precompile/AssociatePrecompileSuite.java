@@ -115,7 +115,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
 						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
 						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-						invalidSingleAbiCallConsumesAllProvidedGas(),
+						invalidSingleAbiCallConsumesAllProvidedGas()
 				}
 		);
 	}
@@ -124,8 +124,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return List.of(
 				nestedAssociateWorksAsExpected(),
 				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				associatePrecompileTokensPerAccountLimitExceeded(),
-				invalidSingleAbiCallConsumesAllProvidedGas()
+				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
 

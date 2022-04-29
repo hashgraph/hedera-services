@@ -21,7 +21,6 @@ package com.hedera.services.fees.calculation.contract.txns;
  */
 
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,6 @@ class ContractCallResourceUsageTest {
 
 	private TransactionBody nonContractCallTxn;
 	private TransactionBody contractCallTxn;
-	private TransactionBody ethereumTxn;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -49,9 +47,6 @@ class ContractCallResourceUsageTest {
 
 		nonContractCallTxn = mock(TransactionBody.class);
 		given(nonContractCallTxn.hasContractCall()).willReturn(false);
-
-		ethereumTxn = mock(TransactionBody.class);
-		given(ethereumTxn.hasEthereumTransaction()).willReturn(false);
 
 		sigUsage = mock(SigValueObj.class);
 		usageEstimator = mock(SmartContractFeeBuilder.class);
@@ -76,22 +71,21 @@ class ContractCallResourceUsageTest {
 	}
 
 	@Test
-	void delegatesToCorrectEstimateForEthereumCall() throws Exception {
-		// when:
-		given(ethereumTxn.hasContractCall()).willReturn(false);
-		given(ethereumTxn.hasEthereumTransaction()).willReturn(true);
-		subject.usageGiven(ethereumTxn, sigUsage, null);
-
-		// then:
-		verify(usageEstimator).getContractCallTxFeeMatrices(ethereumTxn, sigUsage);
-	}
-
-	@Test
 	void throwsExceptionWhenTxnBodyIsNull() throws Exception {
 		// when:
 		subject.usageGiven(null, sigUsage, null);
 
 		// then:
 		verify(usageEstimator).getContractCallTxFeeMatrices(null, sigUsage);
+	}
+
+	@Test
+	void delegatesToCorrectEstimateForInvalidCall() throws Exception {
+		// when:
+		given(nonContractCallTxn.hasContractCall()).willReturn(false);
+		subject.usageGiven(nonContractCallTxn, sigUsage, null);
+
+		// then:
+		verify(usageEstimator).getContractCallTxFeeMatrices(nonContractCallTxn, sigUsage);
 	}
 }

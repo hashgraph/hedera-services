@@ -57,6 +57,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -95,6 +96,7 @@ import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVAT
 import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -174,9 +176,9 @@ class EthereumTransactionTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		contractCallTransitionLogic = new ContractCallTransitionLogic(
+		contractCallTransitionLogic = Mockito.spy(new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess));
 		contractCreateTransitionLogic = Mockito.spy(
 				new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator, worldState, entityCreator,
 						recordsHistorian, recordService, createEvmTxProcessor, globalDynamicProperties,
@@ -224,6 +226,19 @@ class EthereumTransactionTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		final var expectedSyntheticCallBody = ContractCallTransactionBody.newBuilder()
+				.setAmount(1234)
+				.setContractID(ContractID.newBuilder().setContractNum(9999).buildPartial())
+				.setGas(ethTxData.gasLimit())
+				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCall(expectedSyntheticCallBody).build();
+		verify(contractCallTransitionLogic).doStateTransitionOperation(
+				expectedTxnBody,
+				senderAccount.getId(),
+				true
+		);
+
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
@@ -626,6 +641,15 @@ class EthereumTransactionTransitionLogicTest {
 
 		// expect:
 		assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void missingEthDataPrecheck() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
+
+		// expect:
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test

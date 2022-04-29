@@ -67,6 +67,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private long gasPrice = 20L;
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
+    private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
@@ -132,6 +133,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate bytecode(String fileName) {
         bytecodeFile = Optional.of(fileName);
+        return this;
+    }
+
+    public HapiEthereumContractCreate invalidateEthereumData() {
+        invalidateEthData = true;
         return this;
     }
 
@@ -265,7 +271,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 .txns()
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
-                            builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
+                            if (invalidateEthData) {
+                                builder.setEthereumData(ByteString.EMPTY);
+                            } else {
+                                builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
+                            }
                             ethFileID.ifPresent(builder::setCallData);
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         }
