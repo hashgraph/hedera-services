@@ -266,6 +266,10 @@ public record EthTxData(
 		return to != null && to.length > 0;
 	}
 
+	public boolean matchesChainId(final byte[] hederaChainId) {
+		return Arrays.compare(chainId, hederaChainId) == 0;
+	}
+
 	@VisibleForTesting
 	EthTxData replaceTo(byte[] to) {
 		return new EthTxData(

@@ -199,7 +199,7 @@ public class SpanMapManager {
 		// and any remaining steps will be skipped
 		EthTxExpansion expansion = null;
 
-		// First, try retrieve the call data (if it's in a file)
+		// (1) Try retrieve the call data (if it's in a file)
 		if (op.hasCallData() && !ethTxData.hasCallData()) {
 			final var result = computeCallData(
 					ethTxData, op.getCallData(), linkedRefs, accessor, stateChildren.storage());
@@ -210,11 +210,11 @@ public class SpanMapManager {
 				spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 			}
 		}
-		// Second, try to extract the signature
+		// (2) Try to extract the signature
 		if (expansion == null) {
 			expansion = expandEthTxSigs(accessor, ethTxData, linkedRefs);
 		}
-		// Third, try to synthesize the specialized TransactionBody
+		// (3) Try to synthesize the specialized TransactionBody
 		if (expansion == null) {
 			expansion = expandSynthTxn(accessor, ethTxData, linkedRefs);
 		}
@@ -236,7 +236,11 @@ public class SpanMapManager {
 		if (opBuilder.isEmpty()) {
 			return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
 		}
-		spanMapAccessor.setEthTxBodyMeta(accessor, opBuilder.get().build());
+		final var txn = opBuilder.get().build();
+		if (txn.hasContractCall()) {
+			contractCallTransitionLogic.preFetchOperation(txn.getContractCall());
+		}
+		spanMapAccessor.setEthTxBodyMeta(accessor, txn);
 		return null;
 	}
 

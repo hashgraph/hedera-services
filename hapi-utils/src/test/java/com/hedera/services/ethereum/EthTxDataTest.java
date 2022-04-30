@@ -22,6 +22,7 @@ package com.hedera.services.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.google.protobuf.ByteString;
+import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -84,6 +85,8 @@ class EthTxDataTest {
 		assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.rawTx()));
 		assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, frontierTx.type());
 		assertEquals("012a", Hex.toHexString(frontierTx.chainId()));
+		assertTrue(frontierTx.matchesChainId(CommonUtils.unhex("012a")));
+		assertFalse(frontierTx.matchesChainId(CommonUtils.unhex("a210")));
 		assertEquals(1, frontierTx.nonce());
 		assertEquals("2f", Hex.toHexString(frontierTx.gasPrice()));
 		assertNull(frontierTx.maxPriorityGas());

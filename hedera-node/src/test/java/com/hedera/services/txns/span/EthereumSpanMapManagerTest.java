@@ -41,6 +41,8 @@ import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -179,13 +181,14 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
-		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 
 		subject.expandEthereumSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
 
 		assertExpansionHasExpectedLinkRefsAnd(OK);
 		verify(ethTxData).replaceCallData(callData);
+		verify(contractCallTransitionLogic).preFetchOperation(ContractCallTransactionBody.getDefaultInstance());
 	}
 
 	@Test
@@ -229,11 +232,11 @@ class EthereumSpanMapManagerTest {
 		givenUsableAccessor(bodyWithoutCallData);
 		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
 		given(sigsFunction.apply(ethTxData)).willReturn(ethTxSigs);
-		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCreateBody));
 
 		subject.expandEthereumSpan(accessor);
 
-		final var expectedBody = synthBody.build();
+		final var expectedBody = synthCreateBody.build();
 		assertEquals(expectedBody, spanMapAccessor.getEthTxBodyMeta(accessor));
 
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -246,7 +249,7 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
-		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -264,7 +267,7 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
-		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthBody));
+		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -339,9 +342,14 @@ class EthereumSpanMapManagerTest {
 	private static final JKey wacl = new JKeyList(List.of());
 	private static final HFileMeta deletedMeta = new HFileMeta(true, wacl, 9_999_999);
 	private static final HFileMeta undeletedMeta = new HFileMeta(false, wacl, 9_999_999);
-	private static final TransactionBody.Builder synthBody = TransactionBody.newBuilder()
+	private static final TransactionBody.Builder synthCallBody = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder()
 					.setAccountID(AccountID.newBuilder()
-							.setAccountNum(666)
-							.build()).build());
+							.setAccountNum(666)))
+			.setContractCall(ContractCallTransactionBody.getDefaultInstance());
+	private static final TransactionBody.Builder synthCreateBody = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setAccountID(AccountID.newBuilder()
+							.setAccountNum(666)))
+			.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance());
 }

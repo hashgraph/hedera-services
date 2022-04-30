@@ -124,7 +124,7 @@ abstract class EvmTxProcessor {
 		this.networkCtx = merkleNetworkContextSupplier;
 
 		var operationRegistry = new OperationRegistry();
-		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
+		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
 		hederaOperations.forEach(operationRegistry::put);
 
 		var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);

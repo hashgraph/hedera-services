@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
@@ -70,6 +71,7 @@ public class GlobalDynamicProperties {
 	private int minValidityBuffer;
 	private int maxGas;
 	private int chainId;
+	private byte[] chainIdBytes;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean atLeastOneAutoRenewTargetType;
@@ -162,6 +164,7 @@ public class GlobalDynamicProperties {
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		chainId = properties.getIntProperty("contracts.chainId");
+		chainIdBytes = Integers.toBytes(chainId);
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
@@ -326,8 +329,12 @@ public class GlobalDynamicProperties {
 		return maxGas;
 	}
 
-	public int getChainId() {
+	public int chainId() {
 		return chainId;
+	}
+
+	public byte[] chainIdBytes() {
+		return chainIdBytes;
 	}
 
 	public long defaultContractLifetime() {
