@@ -30,8 +30,10 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -45,7 +47,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
@@ -111,19 +112,22 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* The ContractCallTransitionLogic would have rejected a missing or deleted
-		 * contract, so at this point we should have non-null bytecode available. */
-		validateTrue(code != null, FAIL_INVALID);
+		 * contract, so at this point we should have non-null bytecode available. 
+		 * If there is no bytecode, it means we have a non-token and non-contract account,
+		 * hence the code should be null and there must be a value transfer.
+		 */
+		validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
 
 		return baseInitialFrame
 				.type(MessageFrame.Type.MESSAGE_CALL)
 				.address(to)
 				.contract(to)
 				.inputData(payload)
-				.code(code)
+				.code(code == null ? Code.EMPTY : code)
 				.build();
 	}
 }

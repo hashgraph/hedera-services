@@ -234,7 +234,7 @@ abstract class EvmTxProcessor {
 								"HederaFunctionality", getFunctionType(),
 								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
 
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
@@ -318,7 +318,8 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload,
+			final long value);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
