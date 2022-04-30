@@ -44,7 +44,6 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,10 +52,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.annotation.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -88,12 +91,6 @@ class TxnAwareEvmSigsVerifierTest {
 	private JKey expectedKey;
 
 	@Mock
-	private MerkleAccount contract;
-	@Mock
-	private MerkleAccount sigReqAccount;
-	@Mock
-	private MerkleAccount noSigReqAccount;
-	@Mock
 	private BiPredicate<JKey, TransactionSignature> cryptoValidity;
 	@Mock
 	private ActivationTest activationTest;
@@ -111,10 +108,6 @@ class TxnAwareEvmSigsVerifierTest {
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	@Mock
 	private WorldLedgers ledgers;
-	@Mock
-	private JKey failingKey;
-	@Mock
-	private TransactionBody txnBody;
 
 	private TxnAwareEvmSigsVerifier subject;
 
@@ -168,103 +161,6 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
-	void testsSupplyKeyIfPresentFromPayerForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.exists(token)).willReturn(true);
-		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(failingKey);
-
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
-
-		final var verdict = subject.hasActiveSupplyKey(true,
-				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertTrue(verdict);
-	}
-
-	@Test
-	void testsSupplyKeyIfPresentFromPayerForNonEthTxn() {
-		given(txnCtx.accessor()).willReturn(null);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.exists(token)).willReturn(true);
-		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(failingKey);
-
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-
-		final var verdict = subject.hasActiveSupplyKey(true,
-				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsSupplyKeyIfPresentFromPayerWithNoKeyForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.exists(token)).willReturn(true);
-		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(failingKey);
-
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(null);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-
-		final var verdict = subject.hasActiveSupplyKey(true,
-				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsSupplyKeyIfPresentFromPayerWithWrongKeyForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.exists(token)).willReturn(true);
-		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(failingKey);
-
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-
-		final var verdict = subject.hasActiveSupplyKey(true,
-				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsSupplyKeyIfPresentFromPayerWithWrongKeyForNonEthTxn() {
-		given(txnCtx.accessor()).willReturn(null);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.exists(token)).willReturn(true);
-		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(failingKey);
-
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-
-		final var verdict = subject.hasActiveSupplyKey(true,
-				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
 	void supplyKeyFailsWhenTokensLedgerIsNull() {
 		given(ledgers.tokens()).willReturn(null);
 
@@ -300,98 +196,6 @@ class TxnAwareEvmSigsVerifierTest {
 				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
-	}
-
-	@Test
-	void testsAccountKeyIfPresentFromPayerForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.exists(account)).willReturn(true);
-		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(failingKey);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
-
-		final var verdict = subject.hasActiveKey(true,
-				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertTrue(verdict);
-	}
-
-	@Test
-	void testsAccountKeyIfPresentFromPayerForNonEthTxn() {
-		given(txnCtx.accessor()).willReturn(null);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.exists(account)).willReturn(true);
-		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(failingKey);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-
-		final var verdict = subject.hasActiveKey(true,
-				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsAccountKeyIfPresentFromPayerWithNoKeyForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.exists(account)).willReturn(true);
-		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(failingKey);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(null);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-
-		final var verdict = subject.hasActiveKey(true,
-				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsAccountKeyIfPresentFromPayerWithWrongKeyForEthTxn() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.exists(account)).willReturn(true);
-		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(failingKey);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-
-		final var verdict = subject.hasActiveKey(true,
-				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
-	}
-
-	@Test
-	void testsAccountKeyIfPresentFromPayerWithWrongKeyForNonEthTxn() {
-		given(txnCtx.accessor()).willReturn(null);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.exists(account)).willReturn(true);
-		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(failingKey);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-
-		final var verdict = subject.hasActiveKey(true,
-				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(verdict);
 	}
 
 	@Test
@@ -453,9 +257,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
-		given(contract.isSmartContract()).willReturn(true);
+		givenSigReqCheckable(smartContract, true, false, null);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(smartContract), PRETEND_SENDER_ADDR, ledgers);
@@ -464,11 +266,39 @@ class TxnAwareEvmSigsVerifierTest {
 		verify(activationTest, never()).test(any(), any(), any());
 	}
 
+	private void givenSigReqCheckable(
+			final AccountID id,
+			final boolean smartContract,
+			final boolean receiverSigRequired,
+			@Nullable final JKey key
+	) {
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.contains(id)).willReturn(true);
+		given(accountsLedger.get(id, IS_SMART_CONTRACT)).willReturn(smartContract);
+		if (!smartContract) {
+			given(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).willReturn(receiverSigRequired);
+			if (receiverSigRequired) {
+				given(accountsLedger.get(id, KEY)).willReturn(key);
+			}
+		}
+	}
+
 	@Test
 	void filtersNoSigRequired() {
 		given(txnCtx.activePayer()).willReturn(payer);
+		givenSigReqCheckable(noSigRequired, false, false, null);
+
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
+
+		assertTrue(noSigRequiredFlag);
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
+	@Test
+	void filtersMissing() {
+		given(txnCtx.activePayer()).willReturn(payer);
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(noSigRequired)).willReturn(noSigReqAccount);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
@@ -492,10 +322,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsWhenReceiverSigIsRequired() {
 		givenAccessorInCtx();
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
+		givenSigReqCheckable(sigRequired, false, true, expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
@@ -504,99 +331,6 @@ class TxnAwareEvmSigsVerifierTest {
 				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(sigRequiredFlag);
-	}
-
-	@Test
-	void testsWhenReceiverSigIsRequiredFromPayerForEthTx() {
-		givenAccessorInCtx();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-		given(accessor.getTxn()).willReturn(txnBody);
-		given(txnBody.hasEthereumTransaction()).willReturn(true);
-		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
-
-		assertTrue(sigRequiredFlag);
-	}
-
-	@Test
-	void testsWhenReceiverSigIsRequiredFromPayerForNonEthTx() {
-		givenAccessorInCtx();
-		given(txnCtx.accessor()).willReturn(null);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(expectedKey);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(sigRequiredFlag);
-	}
-
-	@Test
-	void testsWhenReceiverSigIsRequiredFromPayerWithNoKeyForEthTx() {
-		givenAccessorInCtx();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(null);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(sigRequiredFlag);
-	}
-
-	@Test
-	void testsWhenReceiverSigIsRequiredFromPayerWithWrongKeyForEthTx() {
-		givenAccessorInCtx();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(sigRequiredFlag);
-	}
-
-	@Test
-	void testsWhenReceiverSigIsRequiredFromPayerWithWrongKeyForNonEthTx() {
-		givenAccessorInCtx();
-		given(txnCtx.accessor()).willReturn(null);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
-		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
-		given(activationTest.test(eq(failingKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
-		given(txnCtx.activePayerKey()).willReturn(failingKey);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
-
-		assertFalse(sigRequiredFlag);
 	}
 
 	@Test
