@@ -231,7 +231,9 @@ class EthereumTransactionTransitionLogicTest {
 		// then:
 		final var expectedSyntheticCallBody = ContractCallTransactionBody.newBuilder()
 				.setAmount(1234)
-				.setContractID(ContractID.newBuilder().setContractNum(9999).buildPartial())
+				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(targetAddressBytes))
+						.buildPartial())
 				.setGas(ethTxData.gasLimit())
 				.build();
 		final var expectedTxnBody =
