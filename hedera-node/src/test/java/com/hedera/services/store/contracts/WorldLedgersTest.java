@@ -92,6 +92,10 @@ class WorldLedgersTest {
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final ByteString pkAlias = ByteString.copyFrom(
 			Bytes.fromHexString("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d").toArrayUnsafe());
+	private static final ByteString pkAliasBadProtobuf = ByteString.copyFrom(
+			Bytes.fromHexString("ffff033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d").toArrayUnsafe());
+	private static final ByteString pkAliasBadFormat = ByteString.copyFrom(
+			Bytes.fromHexString("3a21ff3a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d").toArrayUnsafe());
 	private static final Address pkAddress = Address.fromHexString("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
 	private static final ByteString unsupportedAlias = ByteString.copyFromUtf8("This is not a supported alias");
 	private static final Address sponsor = Address.fromHexString("0xcba");
@@ -242,7 +246,9 @@ class WorldLedgersTest {
 	void mirrorWithAliasSkipsUnsupportedAliasAsCanonicalSource() {
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
-		given(accountsLedger.get(id, ALIAS)).willReturn(unsupportedAlias);
+		given(accountsLedger.get(id, ALIAS)).willReturn(unsupportedAlias, pkAliasBadProtobuf, pkAliasBadFormat);
+		assertEquals(sponsor, subject.canonicalAddress(sponsor));
+		assertEquals(sponsor, subject.canonicalAddress(sponsor));
 		assertEquals(sponsor, subject.canonicalAddress(sponsor));
 	}
 

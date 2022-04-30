@@ -39,11 +39,11 @@ import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -241,7 +241,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))
 					.setGas(ethTxData.gasLimit())
 					.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();
+					.setContractID(ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(ethTxData.to()))).build();
 			return TransactionBody.newBuilder().setContractCall(synthOp).build();
 		} else {
 			final var autoRenewPeriod =
