@@ -22,58 +22,74 @@ package com.hedera.services.legacy.proto.utils;
 
 import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 
-class ProtoCommonUtilsTest {
+class ByteStringUtilsTest {
 	@Test
 	void unsafeWrappingWorks() {
-		final var wrappedData = ProtoCommonUtils.wrapUnsafely(data);
+		final var wrappedData = ByteStringUtils.wrapUnsafely(data);
 		assertArrayEquals(data, wrappedData.toByteArray());
 	}
 
 	@Test
 	void unsafeUnwrappingWorks() {
-		final var wrapper = ProtoCommonUtils.wrapUnsafely(data);
-		final var unwrapped = ProtoCommonUtils.unwrapUnsafelyIfPossible(wrapper);
+		final var wrapper = ByteStringUtils.wrapUnsafely(data);
+		final var unwrapped = ByteStringUtils.unwrapUnsafelyIfPossible(wrapper);
 		assertSame(data, unwrapped);
 	}
 
 	@Test
 	void supportsOnlyReasonable() {
-		final var wrapper = Mockito.mock(ByteString.class);
-		given(wrapper.size()).willReturn(ProtoCommonUtils.UnsafeByteOutput.SIZE - 1);
-		assertFalse(ProtoCommonUtils.UnsafeByteOutput.supports(wrapper));
+		final var wrapper = mock(ByteString.class);
+		given(wrapper.size()).willReturn(ByteStringUtils.UnsafeByteOutput.SIZE - 1);
+		assertFalse(ByteStringUtils.UnsafeByteOutput.supports(wrapper));
 		given(wrapper.size()).willReturn(42);
-		assertFalse(ProtoCommonUtils.UnsafeByteOutput.supports(wrapper));
-		assertTrue(ProtoCommonUtils.UnsafeByteOutput.supports(ByteString.copyFrom(data)));
+		assertFalse(ByteStringUtils.UnsafeByteOutput.supports(wrapper));
+		assertTrue(ByteStringUtils.UnsafeByteOutput.supports(ByteString.copyFrom(data)));
 	}
 
 	@Test
 	void unsafeOutputUnsupportedAsExpected() {
-		final var subject = new ProtoCommonUtils.UnsafeByteOutput();
+		final var buffer = ByteBuffer.allocate(1);
+		final var subject = new ByteStringUtils.UnsafeByteOutput();
 
 		assertThrows(UnsupportedOperationException.class, () -> subject.write((byte) 1));
-		assertThrows(UnsupportedOperationException.class, () -> subject.write(ByteBuffer.allocate(1)));
-		assertThrows(UnsupportedOperationException.class, () -> subject.writeLazy(ByteBuffer.allocate(1)));
+		assertThrows(UnsupportedOperationException.class, () -> subject.write(buffer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.writeLazy(buffer));
 	}
 
 	@Test
 	void unsafeOutputSupportedAsExpected() throws IOException {
-		final var subject = new ProtoCommonUtils.UnsafeByteOutput();
+		final var subject = new ByteStringUtils.UnsafeByteOutput();
 
 		subject.write(data, 0, data.length);
 
 		assertSame(data, subject.getBytes());
+	}
+
+	@Test
+	void propagatesCnfeAsIse() {
+		assertThrows(IllegalStateException.class, () -> ByteStringUtils.UnsafeByteOutput.CLASS_BY_NAME.apply("Nope"));
+	}
+
+	@Test
+	void worksAroundIoeWhenUnwrapping() throws IOException {
+		final var wrapper = mock(ByteString.class);
+		willThrow(IOException.class).given(wrapper).writeTo(any());
+		assertDoesNotThrow(()-> ByteStringUtils.internalUnwrap(wrapper, new ByteStringUtils.UnsafeByteOutput()));
 	}
 
 	private static final byte[] data = "Between the idea and the reality".getBytes();

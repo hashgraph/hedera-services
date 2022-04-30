@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -407,20 +407,20 @@ public class SyntheticTxnFactory {
 				.setGas(ethTxData.gasLimit())
 				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 				.setAutoRenewPeriod(dynamicProperties.typedMinAutoRenewDuration())
-				.setInitcode(ProtoCommonUtils.wrapUnsafely(ethTxData.callData()));
+				.setInitcode(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
 		return TransactionBody.newBuilder().setContractCreateInstance(op);
 	}
 
 	private TransactionBody.Builder synthCallOpFromEth(final EthTxData ethTxData) {
 		final var targetId = ContractID.newBuilder()
-				.setEvmAddress(ProtoCommonUtils.wrapUnsafely(ethTxData.to()))
+				.setEvmAddress(ByteStringUtils.wrapUnsafely(ethTxData.to()))
 				.build();
 		final var op = ContractCallTransactionBody.newBuilder()
 				.setGas(ethTxData.gasLimit())
 				.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 				.setContractID(targetId);
 		if (ethTxData.hasCallData()) {
-			op.setFunctionParameters(ProtoCommonUtils.wrapUnsafely(ethTxData.callData()));
+			op.setFunctionParameters(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
 		}
 		return TransactionBody.newBuilder().setContractCall(op);
 	}

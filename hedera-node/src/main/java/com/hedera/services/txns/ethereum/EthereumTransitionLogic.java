@@ -49,7 +49,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.wrapUnsafely;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -102,7 +102,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void doStateTransition() {
 		final var accessor = txnCtx.accessor();
-		final var callerNum = getValidatedCallerOf(accessor);
+		final var callerNum = validatedCallerOf(accessor);
 		final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
 		if (synthTxn.hasContractCall()) {
 			delegateToCallTransition(callerNum.toId(), synthTxn);
@@ -165,7 +165,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		contractCreateTransitionLogic.doStateTransitionOperation(customizedCreate, callerId, true, true);
 	}
 
-	private EntityNum getValidatedCallerOf(final TxnAccessor accessor) {
+	private EntityNum validatedCallerOf(final TxnAccessor accessor) {
 		// We take advantage of the validation work done by SpanMapManager, which guaranteed that a
 		// EthTxExpansion exists in the span map; and that if its result is OK, the EthTxData, EthTxSigs,
 		// and synthetic TransactionBody _also_ exist in the span map

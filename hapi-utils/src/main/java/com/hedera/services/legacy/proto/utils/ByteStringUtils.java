@@ -30,12 +30,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 /**
  * Protobuf related utilities shared by client and server.
  */
-public final class ProtoCommonUtils {
-	private static final Logger log = LogManager.getLogger(ProtoCommonUtils.class);
+public final class ByteStringUtils {
+	private static final Logger log = LogManager.getLogger(ByteStringUtils.class);
 
 	public static ByteString wrapUnsafely(@NotNull final byte[] bytes) {
 		return UnsafeByteOperations.unsafeWrap(bytes);
@@ -54,30 +55,34 @@ public final class ProtoCommonUtils {
 	 * @return bytes extracted from the ByteString
 	 */
 	public static byte[] unwrapUnsafelyIfPossible(@NotNull final ByteString byteString) {
-		try {
-			if (UnsafeByteOutput.supports(byteString)) {
-				final var byteOutput = new UnsafeByteOutput();
-				UnsafeByteOperations.unsafeWriteTo(byteString, byteOutput);
-				return byteOutput.bytes;
-			}
-		} catch (IOException e) {
-			log.warn("Unsafe retrieval of bytes failed", e);
+		if (UnsafeByteOutput.supports(byteString)) {
+			return internalUnwrap(byteString, new UnsafeByteOutput());
 		}
 		return byteString.toByteArray();
+	}
+
+	static byte[] internalUnwrap(final ByteString byteString, final UnsafeByteOutput byteOutput) {
+		try {
+			UnsafeByteOperations.unsafeWriteTo(byteString, byteOutput);
+			return byteOutput.bytes;
+		} catch (IOException e) {
+			log.warn("Unsafe retrieval of bytes failed", e);
+			return byteString.toByteArray();
+		}
 	}
 
 	static class UnsafeByteOutput extends ByteOutput {
 		// Size of the object header plus a compressed object reference to bytes field
 		static final short SIZE = 12 + 4;
-		static final Class<?> SUPPORTED_CLASS;
-
-		static {
+		static final Function<String, Class<?>> CLASS_BY_NAME = name -> {
 			try {
-				SUPPORTED_CLASS = Class.forName(ByteString.class.getName() + "$LiteralByteString");
+				return Class.forName(name);
 			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
+				throw new IllegalStateException(e);
 			}
-		}
+		};
+		private static final String SUPPORTED_NAME = ByteString.class.getName() + "$LiteralByteString";
+		private static final Class<?> SUPPORTED_CLASS = CLASS_BY_NAME.apply(SUPPORTED_NAME);
 
 		private byte[] bytes;
 
@@ -118,7 +123,7 @@ public final class ProtoCommonUtils {
 		}
 	}
 
-	private ProtoCommonUtils() {
+	private ByteStringUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 }
