@@ -246,6 +246,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
@@ -861,6 +862,7 @@ class HTSPrecompiledContractTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(false);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when
 		subject.prepareFields(messageFrame);

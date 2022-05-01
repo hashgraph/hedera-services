@@ -80,10 +80,19 @@ public class SyntheticTxnFactory {
 		this.dynamicProperties = dynamicProperties;
 	}
 
+	/**
+	 * Given an instance of {@link EthTxData} populated from a raw Ethereum transaction, tries to
+	 * synthesize a builder for an appropriate HAPI TransactionBody---ContractCall if the given
+	 * {@code ethTxData} has a "to" address, and ContractCreate otherwise.
+	 *
+	 * @param ethTxData the populated Ethereum transaction data
+	 * @return an optional of the HAPI transaction builder if it could be synthesized
+	 */
 	public Optional<TransactionBody.Builder> synthContractOpFromEth(final EthTxData ethTxData) {
 		if (ethTxData.hasToAddress()) {
 			return Optional.of(synthCallOpFromEth(ethTxData));
 		} else {
+			// We can only synthesize a ContractCreate given initcode populated into the EthTxData callData field
 			if (!ethTxData.hasCallData()) {
 				return Optional.empty();
 			}
