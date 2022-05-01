@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
@@ -49,6 +50,12 @@ class ByteStringUtilsTest {
 		final var wrapper = ByteStringUtils.wrapUnsafely(data);
 		final var unwrapped = ByteStringUtils.unwrapUnsafelyIfPossible(wrapper);
 		assertSame(data, unwrapped);
+	}
+
+	@Test
+	void unsafeUnwrappingOkIfNotSupported() {
+		final var wrapper = mock(ByteString.class);
+		assertDoesNotThrow(() -> ByteStringUtils.unwrapUnsafelyIfPossible(wrapper));
 	}
 
 	@Test
@@ -87,9 +94,10 @@ class ByteStringUtilsTest {
 
 	@Test
 	void worksAroundIoeWhenUnwrapping() throws IOException {
-		final var wrapper = mock(ByteString.class);
-		willThrow(IOException.class).given(wrapper).writeTo(any());
-		assertDoesNotThrow(()-> ByteStringUtils.internalUnwrap(wrapper, new ByteStringUtils.UnsafeByteOutput()));
+		final var wrapper = ByteString.copyFrom(data);
+		final var byteOutput = mock(ByteStringUtils.UnsafeByteOutput.class);
+		willThrow(IOException.class).given(byteOutput).writeLazy(any(), anyInt(), anyInt());
+		assertDoesNotThrow(()-> ByteStringUtils.internalUnwrap(wrapper, byteOutput));
 	}
 
 	private static final byte[] data = "Between the idea and the reality".getBytes();

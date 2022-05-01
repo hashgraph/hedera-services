@@ -125,8 +125,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId,
-			boolean incrementCounter, boolean createSyntheticRecord) {
+	public void doStateTransitionOperation(
+			final TransactionBody contractCreateTxn,
+			final Id senderId,
+			final boolean incrementCounter,
+			final boolean createSyntheticRecord
+	) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()

@@ -504,6 +504,60 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void followsHappyPathWithCounterAndRecord() {
+		// setup:
+		givenValidTxnCtxWithAutoRenew();
+		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
+				INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				autoRenewModel);
+		given(autoRenewModel.isSmartContract()).willReturn(false);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		final var newEvmAddress = contractAccount.getId().asEvmAddress();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(new String(bytecode)),
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+
+		// when:
+		subject.doStateTransitionOperation(contractCreateTxn, senderAccount.getId(), true, true);
+
+		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).setHapiSenderCustomizer(any());
+		verify(worldState).getCreatedContractIds();
+		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
+		verify(worldState, never()).reclaimContractId();
+		verify(worldState).resetHapiSenderCustomizer();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(accountStore).loadAccount(senderAccount.getId());
+		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+	}
+
+	@Test
 	void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
 		// and:
