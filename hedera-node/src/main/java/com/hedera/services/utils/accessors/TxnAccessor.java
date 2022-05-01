@@ -26,7 +26,15 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.Map;
 
@@ -111,7 +119,15 @@ public interface TxnAccessor {
 	// Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled transaction
 	SignatureMap getSigMap();
 
-	// ---- These both will be removed by using the fields in custom accessors in future PR ---
+	// ---- These will be removed by using the fields in custom accessors in future PR ---
+
+	/**
+	 * Used in {@code handleTransaction} to reset this accessor's span map to new, <b>unmodifiable</b> map
+	 * with the authoritative results of expanding from the working state. This protects the authoritative
+	 * values from contamination by a pre-fetch thread.
+	 */
+	void setRationalizedSpanMap(Map<String, Object> newSpanMap);
+
 	Map<String, Object> getSpanMap();
 
 	ExpandHandleSpanMapAccessor getSpanMapAccessor();

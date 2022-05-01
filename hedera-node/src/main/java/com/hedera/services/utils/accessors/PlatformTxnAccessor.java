@@ -228,6 +228,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		delegate.setRationalizedSpanMap(newSpanMap);
+	}
+
+	@Override
 	public Map<String, Object> getSpanMap() {
 		return delegate.getSpanMap();
 	}

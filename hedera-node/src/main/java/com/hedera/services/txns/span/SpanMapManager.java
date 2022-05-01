@@ -47,7 +47,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -130,20 +132,20 @@ public class SpanMapManager {
 
 	/**
 	 * Given an accessor for an {@link com.hederahashgraph.api.proto.java.EthereumTransaction}, uses the latest
-	 * signed state to do the following pre-computation:
+	 * signed state to attempt the following pre-computation:
 	 * <ol>
-	 *     <li>Fetch its call data (if any) from the signed state's file {@code VirtualMap}; and,</li>
-	 *     <li>Recover its signing key as a {@link com.hedera.services.ethereum.EthTxSigs}; and,</li>
+	 *     <li>Fetch the call data, if needed, from the signed state's blobs {@code VirtualMap}; and,</li>
+	 *     <li>Recover the signing key as a {@link com.hedera.services.ethereum.EthTxSigs}; and,</li>
 	 *     <li>Create the synthetic transaction implied by the above two results; and,</li>
 	 *     <li>If this is a synthetic contract call, run {@link ContractCallTransitionLogic#preFetch(TxnAccessor)}.</li>
 	 * </ol>
-	 * Each successfully computed result is added to the given accessor's span map for later re-use.
+	 * For the first three, adds each computed result to the accessor's span map for re-use in {@code handleTransaction}.
 	 *
-	 * <p>As an additional side effect, this method adds an instance of {@link EthTxExpansion} to the given accessor's
+	 * <p>As an additional side effect, this method adds an instance of {@link EthTxExpansion} to the accessor's
 	 * span map. The {@link com.hedera.services.sigs.order.LinkedRefs} instance in the expansion can be used in
 	 * {@code handleTransaction} to validate that no input to the pre-computed results has changed. Furthermore,
 	 * if any of the pre-computation steps failed (e.g., the call data file did not exist), the expansion will
-	 * include the resulting failure status.
+	 * include that failure status, and {@code handleTransaction} can fail immediately if nothing has changed.
 	 *
 	 * @param accessor
 	 * 		an EthereumTransaction accessor
@@ -155,7 +157,13 @@ public class SpanMapManager {
 			return;
 		}
 		final var signedStateChildren = stateChildren.get();
-		expandEthContext(accessor, signedStateChildren, new LinkedRefs(signedStateChildren.signedAt()));
+		final var linkedRefs = new LinkedRefs(signedStateChildren.signedAt());
+		try {
+			expandEthContext(accessor, signedStateChildren, accessor.getSpanMap(), linkedRefs);
+		} catch (UnsupportedOperationException ignore) {
+			// Thrown if the span map is immutable; means pre-fetch is somehow backlogged and the
+			// handleTransaction thread already rationalized and set the authoritative span map
+		}
 	}
 
 	/**
@@ -177,7 +185,10 @@ public class SpanMapManager {
 	private void rationalizeEthereumSpan(final TxnAccessor accessor) {
 		final var expansion = spanMapAccessor.getEthTxExpansion(accessor);
 		if (expansion == null || areChanged(Objects.requireNonNull(expansion.linkedRefs()))) {
-			expandEthContext(accessor, workingState, null);
+			final Map<String, Object> spanMap = new HashMap<>();
+			spanMapAccessor.setEthTxDataMeta(spanMap, spanMapAccessor.getEthTxDataMeta(accessor));
+			expandEthContext(accessor, workingState, spanMap, null);
+			accessor.setRationalizedSpanMap(spanMap);
 		}
 	}
 
@@ -188,10 +199,11 @@ public class SpanMapManager {
 	private void expandEthContext(
 			final TxnAccessor accessor,
 			final StateChildren stateChildren,
+			final Map<String, Object> spanMap,
 			@Nullable final LinkedRefs linkedRefs
 	) {
 		assertIsEthTxn(accessor);
-		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		var ethTxData = spanMapAccessor.getEthTxDataMeta(spanMap);
 		final var op = accessor.getTxn().getEthereumTransaction();
 
 		// This reference summarizes the results of the three pre-computation steps; if a step
@@ -199,36 +211,35 @@ public class SpanMapManager {
 		// and any remaining steps will be skipped
 		EthTxExpansion expansion = null;
 
-		// (1) Try retrieve the call data (if it's in a file)
+		// (1) Try retrieve the call data (if it's in a file) and set in spanMap
 		if (op.hasCallData() && !ethTxData.hasCallData()) {
 			final var result = computeCallData(
-					ethTxData, op.getCallData(), linkedRefs, accessor, stateChildren.storage());
+					ethTxData, op.getCallData(), linkedRefs, spanMap, stateChildren.storage());
 			if (result.getKey() != OK) {
 				expansion = new EthTxExpansion(linkedRefs, result.getKey());
 			} else {
 				ethTxData = result.getValue();
-				spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 			}
 		}
-		// (2) Try to extract the signature
+		// (2) Try to extract the signature and set in spanMap
 		if (expansion == null) {
-			expansion = expandEthTxSigs(accessor, ethTxData, linkedRefs);
+			expansion = expandEthTxSigs(spanMap, ethTxData, linkedRefs);
 		}
-		// (3) Try to synthesize the specialized TransactionBody
+		// (3) Try to synthesize the specialized TransactionBody and set in spanMap
 		if (expansion == null) {
-			expansion = expandSynthTxn(accessor, ethTxData, linkedRefs);
+			expansion = expandSynthTxn(spanMap, ethTxData, linkedRefs);
 		}
 
 		// If no steps failed, summarize as OK
 		if (expansion == null) {
 			expansion = new EthTxExpansion(linkedRefs, OK);
 		}
-		spanMapAccessor.setEthTxExpansion(accessor, expansion);
+		spanMapAccessor.setEthTxExpansion(spanMap, expansion);
 	}
 
 	@Nullable
 	private EthTxExpansion expandSynthTxn(
-			final TxnAccessor accessor,
+			final Map<String, Object> spanMap,
 			final EthTxData ethTxData,
 			@Nullable final LinkedRefs linkedRefs
 	) {
@@ -240,19 +251,19 @@ public class SpanMapManager {
 		if (txn.hasContractCall()) {
 			contractCallTransitionLogic.preFetchOperation(txn.getContractCall());
 		}
-		spanMapAccessor.setEthTxBodyMeta(accessor, txn);
+		spanMapAccessor.setEthTxBodyMeta(spanMap, txn);
 		return null;
 	}
 
 	@Nullable
 	private EthTxExpansion expandEthTxSigs(
-			final TxnAccessor accessor,
+			final Map<String, Object> spanMap,
 			final EthTxData ethTxData,
 			@Nullable final LinkedRefs linkedRefs
 	) {
 		try {
 			final var ethTxSigs = sigsFunction.apply(ethTxData);
-			spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
+			spanMapAccessor.setEthTxSigsMeta(spanMap, ethTxSigs);
 			return null;
 		} catch (IllegalArgumentException ignore) {
 			return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
@@ -270,7 +281,7 @@ public class SpanMapManager {
 			EthTxData ethTxData,
 			final FileID callDataId,
 			@Nullable final LinkedRefs linkedRefs,
-			final TxnAccessor accessor,
+			final Map<String, Object> spanMap,
 			final VirtualMap<VirtualBlobKey, VirtualBlobValue> curBlobs
 	) {
 		if (linkedRefs != null) {
@@ -289,7 +300,7 @@ public class SpanMapManager {
 					return Pair.of(CONTRACT_FILE_EMPTY, ethTxData);
 				} else {
 					ethTxData = ethTxData.replaceCallData(callData);
-					spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
+					spanMapAccessor.setEthTxDataMeta(spanMap, ethTxData);
 				}
 			}
 		}

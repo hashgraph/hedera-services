@@ -70,11 +70,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHERE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -140,6 +143,18 @@ class EthereumSpanMapManagerTest {
 		subject.expandEthereumSpan(accessor);
 
 		assertNull(spanMapAccessor.getEthTxExpansion(accessor));
+	}
+
+	@Test
+	void expansionIsNoopIfSpanMapIsImmutable() {
+		given(accessor.getFunction()).willReturn(EthereumTransaction);
+		given(accessor.getSpanMap()).willReturn(Map.of("ethTxDataMeta", ethTxData));
+		txn = TransactionBody.newBuilder().setEthereumTransaction(bodyWithoutCallData).build();
+		given(accessor.getTxn()).willReturn(txn);
+		given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
+		given(stateChildren.signedAt()).willReturn(lastHandled);
+
+		assertDoesNotThrow(() -> subject.expandEthereumSpan(accessor));
 	}
 
 	@Test
@@ -250,6 +265,11 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
 		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
+		willAnswer(invocationOnMock -> {
+				final Map<String, Object> rationalizedMap = invocationOnMock.getArgument(0);
+				given(accessor.getSpanMap()).willReturn(rationalizedMap);
+				return null;
+		}).given(accessor).setRationalizedSpanMap(any());
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
@@ -268,6 +288,11 @@ class EthereumSpanMapManagerTest {
 		given(blobs.get(dataKey)).willReturn(dataValue);
 		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
 		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
+		willAnswer(invocationOnMock -> {
+			final Map<String, Object> rationalizedMap = invocationOnMock.getArgument(0);
+			given(accessor.getSpanMap()).willReturn(rationalizedMap);
+			return null;
+		}).given(accessor).setRationalizedSpanMap(any());
 
 		subject.rationalizeSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
