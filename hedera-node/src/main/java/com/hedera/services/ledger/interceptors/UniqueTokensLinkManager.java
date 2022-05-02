@@ -62,7 +62,7 @@ public class UniqueTokensLinkManager {
 		final var curTokens = tokens.get();
 		final var curUniqueTokens = uniqueTokens.get();
 
-		final var nft = curUniqueTokens.get(nftId);
+		final var nft = curUniqueTokens.getForModify(nftId);
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
