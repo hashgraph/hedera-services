@@ -96,6 +96,8 @@ class CreateEvmTxProcessorTest {
 	private StorageExpiry.Oracle oracle;
 	@Mock
 	private BlockManager blockManager;
+	@Mock
+	private HederaBlockValues hederaBlockValues;
 
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -302,7 +304,7 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-
+		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenExtantSender() {

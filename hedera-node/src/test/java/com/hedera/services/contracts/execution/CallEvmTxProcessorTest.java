@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHERE
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -109,6 +110,8 @@ class CallEvmTxProcessorTest {
 	private BlockManager blockManager;
 	@Mock
 	private BlockValues blockValues;
+	@Mock
+	private HederaBlockValues hederaBlockValues;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -137,7 +140,6 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-		given(blockManager.getProvisionalBlockNumber()).willReturn(1234L);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
@@ -371,6 +373,8 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+
+		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenSenderWithBalance(final long amount) {
