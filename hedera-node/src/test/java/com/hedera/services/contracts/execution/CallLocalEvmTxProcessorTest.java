@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -96,6 +97,8 @@ class CallLocalEvmTxProcessorTest {
 	private StorageExpiry.Oracle oracle;
 	@Mock
 	private BlockManager blockManager;
+	@Mock
+	private HederaBlockValues hederaBlockValues;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -224,5 +227,7 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+
+		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 }
