@@ -51,6 +51,7 @@ public class VirtualMapFactory {
 	private static final String ITERABLE_STORAGE_VM_NAME = "smartContractIterableKvStore";
 	private static final String SCHEDULE_LIST_STORAGE_VM_NAME = "scheduleListStore";
 	private static final String SCHEDULE_TEMPORAL_STORAGE_VM_NAME = "scheduleTemporalStore";
+	private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";
 
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory {
@@ -185,6 +186,6 @@ public class VirtualMapFactory {
 				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
-		return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
+		return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
 	}
 }
