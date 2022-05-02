@@ -62,7 +62,6 @@ public class UniqueTokensLinkManager {
 		final var curTokens = tokens.get();
 		final var curUniqueTokens = uniqueTokens.get();
 
-		final var nft = curUniqueTokens.getForModify(nftId);
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
@@ -82,14 +81,17 @@ public class UniqueTokensLinkManager {
 
 		// update `to` Account
 		if (isValidAndNotTreasury(to, token)) {
-			final var toAccount = curAccounts.getForModify(to);
-			final var nftNumPair = nftId.asNftNumPair();
-			final var rootKey = rootKeyOf(toAccount);
+			final var nft = listMutation.getForModify(nftId);
+			if (nft != null) {
+				final var toAccount = curAccounts.getForModify(to);
+				final var nftNumPair = nftId.asNftNumPair();
+				final var rootKey = rootKeyOf(toAccount);
 
-			inPlaceInsertAtMapValueListHead(
-					nftId, nft, rootKey, null, listMutation, false);
-			toAccount.setHeadNftId(nftNumPair.tokenNum());
-			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
+				inPlaceInsertAtMapValueListHead(
+						nftId, nft, rootKey, null, listMutation, false);
+				toAccount.setHeadNftId(nftNumPair.tokenNum());
+				toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
+			}
 		}
 	}
 
