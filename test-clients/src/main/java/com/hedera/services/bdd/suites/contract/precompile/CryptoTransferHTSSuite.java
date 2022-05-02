@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -29,18 +30,21 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -97,15 +101,15 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						nonNestedCryptoTransferForFungibleToken(),
-						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-						nonNestedCryptoTransferForNonFungibleToken(),
-						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-						repeatedTokenIdsAreAutomaticallyConsolidated(),
-						activeContractInFrameIsVerifiedWithoutNeedForSignature()
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+//						nonNestedCryptoTransferForNonFungibleToken(),
+//						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+//						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+//						repeatedTokenIdsAreAutomaticallyConsolidated(),
+//						activeContractInFrameIsVerifiedWithoutNeedForSignature()
 				}
 		);
 	}
@@ -146,7 +150,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											cryptoUpdate(SENDER).key(DELEGATE_KEY),
 											cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
 											contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-													new Tuple[]{
+													new Tuple[] {
 															tokenTransferList()
 																	.forToken(token)
 																	.isSingleList(false)
@@ -203,6 +207,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
+//								.maxAutomaticTokenAssociations(1),
+//						getContractInfo(CONTRACT)
+//								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+//								.logged()
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -229,7 +237,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									);
 								}
 						),
-						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged()
+						getTxnRecord(cryptoTransferTxn)
+								.andAllChildRecords()
+								.hasPriority(recordWith()
+										.autoAssociated(accountTokenPairs(List.of(
+												Pair.of(RECEIVER, FUNGIBLE_TOKEN)))))
+								.logged()
 				).then(
 						getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
 						getAccountBalance(RECEIVER)
@@ -527,7 +540,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 																	tokenTransferList().isSingleList(false).forToken(
 																					fungibleToken).
 																			withAccountAmounts(
-																					accountAmount(fungibleTokenSender, -45L),
+																					accountAmount(fungibleTokenSender,
+																							-45L),
 																					accountAmount(fungibleTokenReceiver,
 																							45L)).build(),
 																	tokenTransferList().isSingleList(false).forToken(
@@ -639,8 +653,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 																	tokenTransferList().isSingleList(false).forToken(
 																					nonFungibleToken).
 																			withNftTransfers(
-																					nftTransfer(firstSender, firstReceiver, 1L),
-																					nftTransfer(secondSender, secondReceiver,
+																					nftTransfer(firstSender,
+																							firstReceiver, 1L),
+																					nftTransfer(secondSender,
+																							secondReceiver,
 																							2L)).
 																			build())
 															.build()
@@ -744,7 +760,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 							allRunFor(
 									spec,
 									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[]{
+											new Tuple[] {
 													tokenTransferList()
 															.forToken(token)
 															.isSingleList(false)
@@ -766,7 +782,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[]{
+											new Tuple[] {
 													tokenTransferList()
 															.forToken(token)
 															.isSingleList(false)
@@ -789,7 +805,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(SUCCESS),
 									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[]{
+											new Tuple[] {
 													tokenTransferList()
 															.forToken(nftToken)
 															.isSingleList(false)
@@ -807,7 +823,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[]{
+											new Tuple[] {
 													tokenTransferList()
 															.forToken(nftToken)
 															.isSingleList(false)

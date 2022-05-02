@@ -22,12 +22,14 @@ package com.hedera.services.bdd.spec.transactions.contract;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -68,6 +70,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean useDeprecatedMemoField = false;
 	private Optional<String> bytecode = Optional.empty();
 	private Optional<String> newAutoRenewAccount = Optional.empty();
+	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -80,6 +83,11 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 
 	public HapiContractUpdate newKey(String name) {
 		newKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiContractUpdate maxAutomaticAssociations(int max) {
+		newMaxAutomaticAssociations = Optional.of(max);
 		return this;
 	}
 
@@ -181,6 +189,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 									Duration.newBuilder().setSeconds(autoRenew).build()));
 							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
 							newAutoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+							newMaxAutomaticAssociations.ifPresent(p ->
+									b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

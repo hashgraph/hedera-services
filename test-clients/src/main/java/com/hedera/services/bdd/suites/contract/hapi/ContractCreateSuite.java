@@ -718,8 +718,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
 						uploadInitCode(contract),
-						contractCreate(contract).adminKey(THRESHOLD),
-						getContractInfo(contract).logged().saveToRegistry("parentInfo"),
+						contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
+						getContractInfo(contract)
+								.has(contractWith().maxAutoAssociations(10))
+								.logged()
+								.saveToRegistry("parentInfo"),
 						upMaxGasTo(1_000_000L)
 				).when(
 						contractCall(contract, "create")
@@ -739,7 +742,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
 												.resultThruAbi(getABIFor(FUNCTION, "getIndirect", contract),
-														isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
+														isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
 						getTxnRecord("getChildAddressTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
@@ -775,8 +778,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.logged(),
 						getContractInfo(contract)
 								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
-								. logged()
-						).when(
+								.logged()
+				).when(
 				).then(
 				);
 	}

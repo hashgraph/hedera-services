@@ -95,9 +95,15 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	private Optional<String> proxy = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
+		return this;
+	}
+
+	public HapiContractCreate maxAutomaticTokenAssociations(int max) {
+		maxAutomaticTokenAssociations = Optional.of(max);
 		return this;
 	}
 
@@ -316,6 +322,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							proxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
 							autoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);

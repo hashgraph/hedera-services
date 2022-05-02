@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -681,7 +682,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						contractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR).maxAutomaticTokenAssociations(2),
+						getContractInfo(FEE_DISTRIBUTOR)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+								.logged(),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -691,7 +695,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						),
 						tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
-						cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT))
+						cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT)).logged()
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
