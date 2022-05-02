@@ -199,7 +199,13 @@ abstract class EvmTxProcessor {
 
 		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx.getBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock());
+		var blockNo = curNetworkCtx.getBlockNo();
+		if (blockNo == 0) {
+			// Before the 0.26 upgrade, we used the consensus timestamp as the block number; and if we
+			// get a zero block number, it means the post-0.26 block sync hasn't happened yet
+			blockNo = consensusTime.getEpochSecond();
+		}
+		final var blockValues = new HederaBlockValues(gasLimit, blockNo, curNetworkCtx.firstConsTimeOfCurrentBlock());
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -228,7 +234,7 @@ abstract class EvmTxProcessor {
 								"HederaFunctionality", getFunctionType(),
 								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
 
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
@@ -312,7 +318,8 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload,
+			final long value);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

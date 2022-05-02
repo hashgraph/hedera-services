@@ -26,6 +26,7 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -44,6 +45,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -66,10 +68,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
+	public static final int NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING = 5;
 	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
 	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
+	public static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
+			ethHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
@@ -79,11 +84,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	private static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
-			ethHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
-
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
+
+	private static int blocksToLog = 0;
 
 	private int stateVersion = UNRECORDED_STATE_VERSION;
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
@@ -105,7 +109,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
-	private long blockNo = 0;
+	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private SortedMap<Long, org.hyperledger.besu.datatypes.Hash> blockHashes = new TreeMap<>();
 
@@ -163,6 +167,35 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 
 		reset(activeThrottles, throttling.gasLimitThrottle());
+	}
+
+	/**
+	 * Given the block number that should go with a given hash, renumbers the context's block hashes to match
+	 * (assuming the given hash is found in the trailing 256), and updates the current block number.
+	 *
+	 * @param knownBlockValues
+	 * 		the known block values to use for the renumbering
+	 */
+	public void renumberBlocksToMatch(final KnownBlockValues knownBlockValues) {
+		if (knownBlockValues.isMissing()) {
+			return;
+		}
+		final var matchIndex = matchIndexOf(knownBlockValues.hash());
+		if (matchIndex == -1) {
+			log.info("None of {} trailing block hashes matched '{}'",
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()));
+		} else {
+			final SortedMap<Long, org.hyperledger.besu.datatypes.Hash> renumberedBlockHashes = new TreeMap<>();
+			long nextKey = knownBlockValues.number() - matchIndex;
+			for (final var entry : blockHashes.entrySet()) {
+				renumberedBlockHashes.put(nextKey++, entry.getValue());
+			}
+			blockNo = nextKey;
+			blockHashes = renumberedBlockHashes;
+			log.info("Renumbered {} trailing block hashes given '0x{}@{}'",
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()), knownBlockValues::number);
+			blocksToLog = NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
+		}
 	}
 
 	/* --- Mutators that change this network context --- */
@@ -231,10 +264,20 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public long finishBlock(final Hash swirldsHash, final Instant firstConsTimeOfNewBlock) {
+		final var ethHash = ethHashFrom(swirldsHash);
+		if (blocksToLog > 0) {
+			log.info("""
+					--- BLOCK UPDATE ---
+					  Finished: #{} @ {} with hash {}
+					  Starting: #{} @ {}""",
+					blockNo, firstConsTimeOfCurrentBlock, ethHash, blockNo + 1, firstConsTimeOfNewBlock);
+			blocksToLog--;
+		}
+
 		if (blockHashes.size() == NUM_BLOCK_HASHES_TO_KEEP) {
 			blockHashes.remove(blockHashes.firstKey());
 		}
-		blockHashes.put(blockNo++, ethHashFrom(swirldsHash));
+		blockHashes.put(blockNo++, ethHash);
 		firstConsTimeOfCurrentBlock = firstConsTimeOfNewBlock;
 		return blockNo;
 	}
@@ -409,15 +452,22 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public long getBlockNo() {
+		return (blockNo < 0) ? blockNo - Long.MIN_VALUE : blockNo;
+	}
+
+	public long getManagedBlockNo() {
 		return blockNo;
 	}
 
 	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long blockNumber) {
+		if (blockNumber < 0) {
+			return UNAVAILABLE_BLOCK_HASH;
+		}
 		return blockHashes.getOrDefault(blockNumber, UNAVAILABLE_BLOCK_HASH);
 	}
 
 	public Instant firstConsTimeOfCurrentBlock() {
-		return firstConsTimeOfCurrentBlock;
+		return (firstConsTimeOfCurrentBlock == null) ? Instant.EPOCH : firstConsTimeOfCurrentBlock;
 	}
 
 	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
@@ -586,6 +636,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
 	}
 
+	private int matchIndexOf(final byte[] blockHash) {
+		var matchIndex = -1;
+		var offsetFromOldest = 0;
+		for (final var hash : blockHashes.values()) {
+			if (Arrays.equals(blockHash, hash.toArrayUnsafe())) {
+				matchIndex = offsetFromOldest;
+				break;
+			}
+			offsetFromOldest++;
+		}
+		return matchIndex;
+	}
+
 	public long getPreparedUpdateFileNum() {
 		return preparedUpdateFileNum;
 	}
@@ -673,5 +736,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	@VisibleForTesting
 	public Map<Long, org.hyperledger.besu.datatypes.Hash> getBlockHashCache() {
 		return blockHashes;
+	}
+
+	@VisibleForTesting
+	int getBlocksToLog() {
+		return blocksToLog;
 	}
 }

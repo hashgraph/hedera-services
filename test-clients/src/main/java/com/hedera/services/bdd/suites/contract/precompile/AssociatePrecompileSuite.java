@@ -115,17 +115,16 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
 						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
 						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-						invalidSingleAbiCallConsumesAllProvidedGas(),
+						invalidSingleAbiCallConsumesAllProvidedGas()
 				}
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				nestedAssociateWorksAsExpected()
-//				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-//				associatePrecompileTokensPerAccountLimitExceeded(),
-//				invalidSingleAbiCallConsumesAllProvidedGas()
+				nestedAssociateWorksAsExpected(),
+				multipleAssociatePrecompileWithSignatureWorksForFungible(),
+				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
 

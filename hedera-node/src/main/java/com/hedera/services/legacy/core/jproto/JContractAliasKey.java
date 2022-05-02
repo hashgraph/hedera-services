@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+
 public class JContractAliasKey extends JKey {
 	private final long shardNum;
 	private final long realmNum;
@@ -83,6 +85,6 @@ public class JContractAliasKey extends JKey {
 
 	@Override
 	public boolean isValid() {
-		return !isEmpty() && evmAddress.length == 20;
+		return !isEmpty() && evmAddress.length == EVM_ADDRESS_SIZE;
 	}
 }

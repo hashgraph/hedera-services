@@ -36,13 +36,16 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
@@ -54,6 +57,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -92,6 +96,7 @@ import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVAT
 import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -102,6 +107,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -120,6 +126,7 @@ class EthereumTransactionTransitionLogicTest {
 	ContractCreateTransitionLogic contractCreateTransitionLogic;
 	EthereumTransitionLogic subject;
 	private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	private byte[] targetAddressBytes = EntityIdUtils.asEvmAddress(target);
 	private int gas = 1_234;
 	private long sent = 1_234L;
 	private byte[] chainId= CHAINID_TESTNET;
@@ -136,6 +143,10 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private EntityCreator entityCreator;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionRecordService recordService;
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
@@ -147,6 +158,8 @@ class EthereumTransactionTransitionLogicTest {
 	private CodeCache codeCache;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
@@ -165,12 +178,13 @@ class EthereumTransactionTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		contractCallTransitionLogic = new ContractCallTransitionLogic(
+		contractCallTransitionLogic = Mockito.spy(new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
-		contractCreateTransitionLogic = Mockito.spy(new ContractCreateTransitionLogic(hfs, txnCtx, accountStore,
-				optionValidator,
-				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian));
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess));
+		contractCreateTransitionLogic = Mockito.spy(
+				new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator, worldState, entityCreator,
+						recordsHistorian, recordService, createEvmTxProcessor, globalDynamicProperties,
+						sigImpactHistorian, syntheticTxnFactory));
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
 				contractCreateTransitionLogic, recordService,
@@ -208,12 +222,28 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
 		subject.doStateTransition();
 
 		// then:
+		final var expectedSyntheticCallBody = ContractCallTransactionBody.newBuilder()
+				.setAmount(1234)
+				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(targetAddressBytes))
+						.buildPartial())
+				.setGas(ethTxData.gasLimit())
+				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCall(expectedSyntheticCallBody).build();
+		verify(contractCallTransitionLogic).doStateTransitionOperation(
+				expectedTxnBody,
+				senderAccount.getId(),
+				true
+		);
+
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
@@ -275,6 +305,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -336,6 +367,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -397,6 +429,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -431,6 +464,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
@@ -450,11 +484,10 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
-		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(entityAccess.isTokenAccount(any())).willReturn(false);
 		given(accountStore.loadContract(any())).willThrow(InvalidTransactionException.class);
 		// and:
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 
@@ -489,6 +522,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
@@ -504,6 +538,7 @@ class EthereumTransactionTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 
 		subject.preFetch(accessor);
 
@@ -517,9 +552,9 @@ class EthereumTransactionTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 
 		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
-
 
 		// when:
 		assertDoesNotThrow(() -> subject.preFetch(accessor));
@@ -585,6 +620,20 @@ class EthereumTransactionTransitionLogicTest {
 		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
+
+	@Test
+	void failNonEmptyDataAndCallData() {
+		callDataFile = IdUtils.asFile("0.0.1234");
+		callData = Hex.decode("fffefdfc");
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
 	@Test
 	void rejectWrongTransactionBody() {
 		givenValidTxnCtx();
@@ -613,6 +662,15 @@ class EthereumTransactionTransitionLogicTest {
 
 		// expect:
 		assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void missingEthDataPrecheck() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
+
+		// expect:
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -667,6 +725,29 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void signaturesInvalid() {
+		callDataFile = IdUtils.asFile("0.0.1234");
+		givenValidTxnCtx();
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+		given(hfs.exists(callDataFile)).willReturn(true);
+		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void failEmptyEthereumDataAndCallData() {
+		givenEmptyTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void invalidSenderJKeyOnContractCreateThrows() {
 		// setup:
 		target = null;
@@ -708,6 +789,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic, never()).doStateTransitionOperation(
 				any(),
 				any(),
+				anyBoolean(),
 				anyBoolean()
 		);
 		verify(recordService, never()).updateForEvmCall(any(), any());
@@ -740,6 +822,15 @@ class EthereumTransactionTransitionLogicTest {
 		if (callDataFile != null) {
 			ethTxBodyBuilder.setCallData(callDataFile);
 		}
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setEthereumTransaction(ethTxBodyBuilder.build());
+		ethTxTxn = op.build();
+	}
+
+	private void givenEmptyTxnCtx() {
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder();
+
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setEthereumTransaction(ethTxBodyBuilder.build());
