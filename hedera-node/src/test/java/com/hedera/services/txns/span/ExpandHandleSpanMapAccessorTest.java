@@ -22,6 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -41,12 +42,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanMapAccessorTest {
-	private Map<String, Object> span = new HashMap<>();
+	private final Map<String, Object> span = new HashMap<>();
 
 	@Mock
 	private TxnAccessor accessor;
@@ -58,6 +61,15 @@ class ExpandHandleSpanMapAccessorTest {
 		subject = new ExpandHandleSpanMapAccessor();
 
 		given(accessor.getSpanMap()).willReturn(span);
+	}
+
+	@Test
+	void managesExpansionAsExpected() {
+		final var expansion = new EthTxExpansion(new LinkedRefs(), INSUFFICIENT_ACCOUNT_BALANCE);
+
+		subject.setEthTxExpansion(accessor, expansion);
+
+		assertSame(expansion, subject.getEthTxExpansion(accessor));
 	}
 
 	@Test

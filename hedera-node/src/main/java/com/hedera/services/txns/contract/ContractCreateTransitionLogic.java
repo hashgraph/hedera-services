@@ -30,6 +30,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
@@ -125,8 +126,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId,
-			boolean incrementCounter, boolean createSyntheticRecord) {
+	public void doStateTransitionOperation(
+			final TransactionBody contractCreateTxn,
+			final Id senderId,
+			final boolean incrementCounter,
+			final boolean createSyntheticRecord
+	) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()
@@ -236,7 +241,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
 		if (op.getInitcodeSourceCase() == INITCODE) {
-			return Bytes.wrap(op.getInitcode().toByteArray());
+			return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
 		} else {
 			var bytecodeSrc = op.getFileID();
 			validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);

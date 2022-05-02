@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,9 +122,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(20, subject.minValidityBuffer());
-		assertEquals(22, subject.getChainId());
+		assertEquals(22, subject.chainId());
+		assertArrayEquals(Integers.toBytes(22), subject.chainIdBytes());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.minAutoRenewDuration());
+		assertEquals(26, subject.typedMinAutoRenewDuration().getSeconds());
 		assertEquals(27, subject.localCallEstRetBytes());
 		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
 		assertEquals(29, subject.messageMaxBytesAllowed());
