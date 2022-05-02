@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -46,16 +47,22 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
 
-	private final TreeMap<RichInstant, ImmutableLongList> ids = new TreeMap<>();
+	private final NavigableMap<RichInstant, ImmutableLongList> ids;
 
 	private boolean immutable;
 
 
 	public ScheduleSecondVirtualValue() {
+		this(TreeMap::new);
 	}
 
 	public ScheduleSecondVirtualValue(Map<RichInstant, ? extends LongList> ids) {
+		this();
 		ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
+	}
+
+	private ScheduleSecondVirtualValue(Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids) {
+		this.ids = ids.get();
 	}
 
 
@@ -153,7 +160,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
 	@Override
 	public ScheduleSecondVirtualValue copy() {
-		var fc = copyImpl();
+		var fc = new ScheduleSecondVirtualValue(ids);
 
 		this.setImmutable(true);
 
@@ -226,18 +233,17 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public VirtualValue asReadOnly() {
-		var c = copyImpl();
+	public ScheduleSecondVirtualValue asReadOnly() {
+		var c = new ScheduleSecondVirtualValue(this::getIds);
 		c.setImmutable(true);
 		return c;
 	}
 
-	private ScheduleSecondVirtualValue copyImpl() {
-
-		var fc = new ScheduleSecondVirtualValue();
-
-		fc.ids.putAll(ids);
-
-		return fc;
+	/**
+	 * Needed until getForModify works on VirtualMap
+	 * @return a copy of this without marking this as immutable
+	 */
+	public ScheduleSecondVirtualValue asWritable() {
+		return new ScheduleSecondVirtualValue(this.ids);
 	}
 }

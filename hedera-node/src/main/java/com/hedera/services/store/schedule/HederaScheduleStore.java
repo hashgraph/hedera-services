@@ -118,11 +118,14 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		}
 
 		var key = fromScheduleId(id);
-		var schedule = schedules.get().byId().getForModify(new EntityNumVirtualKey(key));
+		var virtualKey = new EntityNumVirtualKey(key);
+		var schedule = schedules.get().byId().get(virtualKey).asWritable();
 		try {
 			change.accept(schedule);
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
+		} finally {
+			schedules.get().byId().put(virtualKey, schedule);
 		}
 	}
 
@@ -200,26 +203,32 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		var secondKey = new SecondSinceEpocVirtualKey(pendingCreation.calculatedExpirationTime().getSeconds());
 
 
-		var bySecond = schedules.get().byExpirationSecond().getForModify(secondKey);
+		var bySecond = schedules.get().byExpirationSecond().get(secondKey);
 
 		if (bySecond == null) {
 			bySecond = new ScheduleSecondVirtualValue();
-			schedules.get().byExpirationSecond().put(secondKey, bySecond);
+		} else {
+			bySecond = bySecond.asWritable();
 		}
 
 		bySecond.add(pendingCreation.calculatedExpirationTime(), new LongArrayList(id.getKeyAsLong()));
 
+		schedules.get().byExpirationSecond().put(secondKey, bySecond);
+
 
 		var equalityKey = new ScheduleEqualityVirtualKey(pendingCreation.equalityCheckKey());
 
-		var byEquality = schedules.get().byEquality().getForModify(equalityKey);
+		var byEquality = schedules.get().byEquality().get(equalityKey);
 
 		if (byEquality == null) {
 			byEquality = new ScheduleEqualityVirtualValue();
-			schedules.get().byEquality().put(equalityKey, byEquality);
+		} else {
+			byEquality = byEquality.asWritable();
 		}
 
 		byEquality.add(pendingCreation.equalityCheckValue(), id.getKeyAsLong());
+
+		schedules.get().byEquality().put(equalityKey, byEquality);
 
 
 		if (schedules.get().getCurrentMinSecond() > pendingCreation.calculatedExpirationTime().getSeconds()) {
@@ -304,26 +313,32 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 			var secondKey = new SecondSinceEpocVirtualKey(existingSchedule.calculatedExpirationTime().getSeconds());
 
-			var bySecond = schedules.get().byExpirationSecond().getForModify(secondKey);
+			var bySecond = schedules.get().byExpirationSecond().get(secondKey);
 
 			if (bySecond != null) {
+				bySecond = bySecond.asWritable();
 				bySecond.removeId(existingSchedule.calculatedExpirationTime(), idToDelete.getKeyAsLong());
 
-				if (bySecond.getIds().size() <= 0) {
+				if (bySecond.getIds().isEmpty()) {
 					schedules.get().byExpirationSecond().remove(secondKey);
+				} else {
+					schedules.get().byExpirationSecond().put(secondKey, bySecond);
 				}
 			}
 
 
 			var equalityKey = new ScheduleEqualityVirtualKey(existingSchedule.equalityCheckKey());
 
-			var byEquality = schedules.get().byEquality().getForModify(equalityKey);
+			var byEquality = schedules.get().byEquality().get(equalityKey);
 
 			if (byEquality != null) {
+				byEquality = byEquality.asWritable();
 				byEquality.remove(existingSchedule.equalityCheckValue(), idToDelete.getKeyAsLong());
 
-				if (byEquality.getIds().size() <= 0) {
+				if (byEquality.getIds().isEmpty()) {
 					schedules.get().byEquality().remove(equalityKey);
+				} else {
+					schedules.get().byEquality().put(equalityKey, byEquality);
 				}
 			}
 		}
@@ -336,7 +351,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
-		while (consensusTime.isAfter(Instant.ofEpochSecond(curSecond + 1))
+		while ((curSecond < Long.MAX_VALUE) && ((curSecond + 1) < Instant.MAX.getEpochSecond()) &&
+			   consensusTime.isAfter(Instant.ofEpochSecond(curSecond + 1))
 				&& (!schedules.get().byExpirationSecond().containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
 
 			++curSecond;
@@ -357,7 +373,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
-		if (!consensusTime.isAfter(Instant.ofEpochSecond(curSecond))) {
+		if (!shouldProcessSecond(consensusTime, curSecond)) {
 			return list;
 		}
 
@@ -398,8 +414,9 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 			}
 
 			if ((!toRemove.isEmpty()) || (bySecond.getIds().size() <= 0)) {
-				bySecond = schedules.get().byExpirationSecond().getForModify(bySecondKey);
+				bySecond = schedules.get().byExpirationSecond().get(bySecondKey);
 				if (bySecond != null) {
+					bySecond = bySecond.asWritable();
 					for (var p : toRemove) {
 						bySecond.removeId(p.getKey(), p.getValue());
 					}
@@ -407,6 +424,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 					if (bySecond.getIds().size() <= 0) {
 						log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
 						schedules.get().byExpirationSecond().remove(bySecondKey);
+					} else {
+						schedules.get().byExpirationSecond().put(bySecondKey, bySecond);
 					}
 				}
 			}
@@ -421,7 +440,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
-		if (!consensusTime.isAfter(Instant.ofEpochSecond(curSecond))) {
+		if (!shouldProcessSecond(consensusTime, curSecond)) {
 			return null;
 		}
 
@@ -462,6 +481,11 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	@Override
 	public ScheduleSecondVirtualValue getBySecond(long second) {
 		return schedules.get().byExpirationSecond().get(new SecondSinceEpocVirtualKey(second));
+	}
+
+	private boolean shouldProcessSecond(final Instant consensusTime, final long curSecond) {
+		return (curSecond < Long.MAX_VALUE) && (curSecond < Instant.MAX.getEpochSecond())
+			   && consensusTime.isAfter(Instant.ofEpochSecond(curSecond));
 	}
 
 	private void resetPendingCreation() {

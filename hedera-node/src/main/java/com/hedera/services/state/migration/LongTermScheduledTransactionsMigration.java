@@ -97,27 +97,33 @@ public class LongTermScheduledTransactionsMigration {
 
 			var secondKey = new SecondSinceEpocVirtualKey(newSchedule.calculatedExpirationTime().getSeconds());
 
-			var bySecond = newScheduledTxns.byExpirationSecond().getForModify(secondKey);
+			var bySecond = newScheduledTxns.byExpirationSecond().get(secondKey);
 
 			if (bySecond == null) {
 				bySecond = new ScheduleSecondVirtualValue();
-				newScheduledTxns.byExpirationSecond().put(secondKey, bySecond);
 				counts.computeIfAbsent('s', ignore -> new AtomicInteger()).getAndIncrement();
+			} else {
+				bySecond = bySecond.asWritable();
 			}
 
 			bySecond.add(newSchedule.calculatedExpirationTime(), new LongArrayList(newScheduleKey.getKeyAsLong()));
 
+			newScheduledTxns.byExpirationSecond().put(secondKey, bySecond);
+
 			var equalityKey = new ScheduleEqualityVirtualKey(getEqualityCheckKey.apply(key, newSchedule));
 
-			var byEquality = newScheduledTxns.byEquality().getForModify(equalityKey);
+			var byEquality = newScheduledTxns.byEquality().get(equalityKey);
 
 			if (byEquality == null) {
 				byEquality = new ScheduleEqualityVirtualValue();
-				newScheduledTxns.byEquality().put(equalityKey, byEquality);
 				counts.computeIfAbsent('e', ignore -> new AtomicInteger()).getAndIncrement();
+			} else {
+				byEquality = byEquality.asWritable();
 			}
 
 			byEquality.add(newSchedule.equalityCheckValue(), newScheduleKey.getKeyAsLong());
+
+			newScheduledTxns.byEquality().put(equalityKey, byEquality);
 
 			if (newScheduledTxns.getCurrentMinSecond() > secondKey.getKeyAsLong()) {
 				newScheduledTxns.setCurrentMinSecond(secondKey.getKeyAsLong());

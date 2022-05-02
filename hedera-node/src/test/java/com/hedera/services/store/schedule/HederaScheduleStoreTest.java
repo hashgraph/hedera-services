@@ -153,6 +153,7 @@ class HederaScheduleStoreTest {
 		given(schedule.calculatedExpirationTime()).willReturn(new RichInstant(expectedExpiry, 0));
 		given(schedule.equalityCheckKey()).willReturn(equalityKey);
 		given(schedule.equalityCheckValue()).willReturn(equalityValue);
+		given(schedule.asWritable()).willReturn(schedule);
 
 		given(anotherSchedule.payer()).willReturn(fromGrpcAccountId(anotherPayerId));
 
@@ -231,14 +232,18 @@ class HederaScheduleStoreTest {
 
 		var secValue = mock(ScheduleSecondVirtualValue.class);
 		var eqValue = mock(ScheduleEqualityVirtualValue.class);
+		given(secValue.asWritable()).willReturn(secValue);
+		given(eqValue.asWritable()).willReturn(eqValue);
 
-		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry))).willReturn(secValue);
-		given(byEquality.getForModify(new ScheduleEqualityVirtualKey(equalityKey))).willReturn(eqValue);
+		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry))).willReturn(secValue);
+		given(byEquality.get(new ScheduleEqualityVirtualKey(equalityKey))).willReturn(eqValue);
 		given(schedules.getCurrentMinSecond()).willReturn(Long.MIN_VALUE);
 
 		subject.commitCreation();
 
 		verify(byId).put(new EntityNumVirtualKey(fromScheduleId(created)), schedule);
+		verify(byExpirationSecond).put(new SecondSinceEpocVirtualKey(expectedExpiry), secValue);
+		verify(byEquality).put(new ScheduleEqualityVirtualKey(equalityKey), eqValue);
 
 		verify(schedules, never()).setCurrentMinSecond(anyLong());
 
@@ -313,23 +318,31 @@ class HederaScheduleStoreTest {
 	@Test
 	void applicationWorks() {
 		final var change = mock(Consumer.class);
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
-		final var inOrder = Mockito.inOrder(change, byId);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		final var inOrder = Mockito.inOrder(change, byId, schedule);
 
 		subject.apply(created, change);
 
-		inOrder.verify(byId).getForModify(new EntityNumVirtualKey(fromScheduleId(created)));
+		inOrder.verify(byId).get(new EntityNumVirtualKey(fromScheduleId(created)));
+		inOrder.verify(schedule).asWritable();
 		inOrder.verify(change).accept(schedule);
+		inOrder.verify(byId).put(new EntityNumVirtualKey(fromScheduleId(created)), schedule);
 	}
 
 	@Test
 	void applicationAlwaysReplacesModifiableSchedule() {
 		final var change = mock(Consumer.class);
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		final var inOrder = Mockito.inOrder(change, byId, schedule);
 
 		willThrow(IllegalStateException.class).given(change).accept(any());
 
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(created, change));
+
+		inOrder.verify(byId).get(new EntityNumVirtualKey(fromScheduleId(created)));
+		inOrder.verify(schedule).asWritable();
+		inOrder.verify(change).accept(schedule);
+		inOrder.verify(byId).put(new EntityNumVirtualKey(fromScheduleId(created)), schedule);
 	}
 
 	@Test
@@ -573,7 +586,7 @@ class HederaScheduleStoreTest {
 	@Test
 	void deletesAsExpected() {
 		final var now = schedulingTXValidStart.toJava();
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
 
@@ -609,7 +622,7 @@ class HederaScheduleStoreTest {
 	void allowsDeletionExpirationPassedLongTermTxnDisabled() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
 
@@ -622,7 +635,7 @@ class HederaScheduleStoreTest {
 	void allowsDeletionExpirationPassedLongTermTxnEnabled() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 		final var now = Instant.ofEpochSecond(expectedExpiry + 1);
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
 
@@ -688,7 +701,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void marksExecutedAsExpected() {
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		subject.markAsExecuted(created, consensusNow);
 
@@ -731,7 +744,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void preMarkExecutedAsExpected() {
-		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		subject.preMarkAsExecuted(created);
 
@@ -744,12 +757,14 @@ class HederaScheduleStoreTest {
 		var entityKey = new EntityNumVirtualKey(fromScheduleId(created));
 		given(byId.remove(entityKey)).willReturn(schedule);
 		var bySecondValue = mock(ScheduleSecondVirtualValue.class);
-		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry)))
+		given(bySecondValue.asWritable()).willReturn(bySecondValue);
+		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry)))
 				.willReturn(bySecondValue);
 		given(bySecondValue.getIds()).willReturn(Collections.emptyNavigableMap());
 
 		var byEqualityValue = mock(ScheduleEqualityVirtualValue.class);
-		given(byEquality.getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
+		given(byEqualityValue.asWritable()).willReturn(byEqualityValue);
+		given(byEquality.get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
 				.willReturn(byEqualityValue);
 		given(byEqualityValue.getIds()).willReturn(Collections.emptyMap());
 
@@ -757,11 +772,13 @@ class HederaScheduleStoreTest {
 
 		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
 
-		verify(byExpirationSecond).getForModify(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond).get(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(bySecondValue).asWritable();
 		verify(byExpirationSecond).remove(new SecondSinceEpocVirtualKey(expectedExpiry));
 		verify(bySecondValue).removeId(schedule.calculatedExpirationTime(), entityKey.getKeyAsLong());
 
-		verify(byEquality).getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEquality).get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEqualityValue).asWritable();
 		verify(byEquality).remove(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
 		verify(byEqualityValue).remove(schedule.equalityCheckValue(), entityKey.getKeyAsLong());
 	}
@@ -771,13 +788,15 @@ class HederaScheduleStoreTest {
 		var entityKey = new EntityNumVirtualKey(fromScheduleId(created));
 		given(byId.remove(entityKey)).willReturn(schedule);
 		var bySecondValue = mock(ScheduleSecondVirtualValue.class);
-		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry)))
+		given(bySecondValue.asWritable()).willReturn(bySecondValue);
+		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry)))
 				.willReturn(bySecondValue);
 		given(bySecondValue.getIds()).willReturn(new TreeMap<>(
 				Collections.singletonMap(consensusTime, LongLists.immutable.empty())));
 
 		var byEqualityValue = mock(ScheduleEqualityVirtualValue.class);
-		given(byEquality.getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
+		given(byEqualityValue.asWritable()).willReturn(byEqualityValue);
+		given(byEquality.get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
 				.willReturn(byEqualityValue);
 		given(byEqualityValue.getIds()).willReturn(Collections.singletonMap("foo", 1L));
 
@@ -785,11 +804,15 @@ class HederaScheduleStoreTest {
 
 		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
 
-		verify(byExpirationSecond).getForModify(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond).get(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(bySecondValue).asWritable();
+		verify(byExpirationSecond).put(new SecondSinceEpocVirtualKey(expectedExpiry), bySecondValue);
 		verify(byExpirationSecond, never()).remove(any());
 		verify(bySecondValue).removeId(schedule.calculatedExpirationTime(), entityKey.getKeyAsLong());
 
-		verify(byEquality).getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEquality).get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEqualityValue).asWritable();
+		verify(byEquality).put(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()), byEqualityValue);
 		verify(byEquality, never()).remove(any());
 		verify(byEqualityValue).remove(schedule.equalityCheckValue(), entityKey.getKeyAsLong());
 	}
@@ -803,10 +826,10 @@ class HederaScheduleStoreTest {
 
 		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
 
-		verify(byExpirationSecond, never()).getForModify(any());
+		verify(byExpirationSecond, never()).get(any());
 		verify(byExpirationSecond, never()).remove(any());
 
-		verify(byEquality, never()).getForModify(any());
+		verify(byEquality, never()).get(any());
 		verify(byEquality, never()).remove(any());
 	}
 
@@ -819,10 +842,12 @@ class HederaScheduleStoreTest {
 
 		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
 
-		verify(byExpirationSecond).getForModify(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond).get(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond, never()).put(any(), any());
 		verify(byExpirationSecond, never()).remove(any());
 
-		verify(byEquality).getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEquality).get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEquality, never()).put(any(), any());
 		verify(byEquality, never()).remove(any());
 	}
 
@@ -936,9 +961,8 @@ class HederaScheduleStoreTest {
 		given(schedule.isExecuted()).willReturn(true);
 
 		var bySecondValue = mock(ScheduleSecondVirtualValue.class);
+		given(bySecondValue.asWritable()).willReturn(bySecondValue);
 		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry)))
-				.willReturn(bySecondValue);
-		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry)))
 				.willReturn(bySecondValue);
 
 		given(bySecondValue.getIds()).willReturn(new TreeMap<>());
@@ -947,6 +971,7 @@ class HederaScheduleStoreTest {
 
 		assertEquals(toExpire, ImmutableList.of());
 
+		verify(bySecondValue).asWritable();
 		verify(byExpirationSecond).remove(new SecondSinceEpocVirtualKey(expectedExpiry));
 	}
 
@@ -989,9 +1014,8 @@ class HederaScheduleStoreTest {
 		given(schedule.isExecuted()).willReturn(true);
 
 		var bySecondValue = mock(ScheduleSecondVirtualValue.class);
+		given(bySecondValue.asWritable()).willReturn(bySecondValue);
 		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry)))
-				.willReturn(bySecondValue);
-		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry)))
 				.willReturn(bySecondValue);
 
 		given(bySecondValue.getIds()).willReturn(new TreeMap<>(
@@ -1007,6 +1031,7 @@ class HederaScheduleStoreTest {
 
 		assertEquals(toExpire, ImmutableList.of(created, badExpirationId));
 
+		verify(bySecondValue).asWritable();
 		verify(bySecondValue).removeId(
 				new RichInstant(expectedExpiry, 1), fromScheduleId(notExistingId).longValue());
 		verify(bySecondValue).removeId(

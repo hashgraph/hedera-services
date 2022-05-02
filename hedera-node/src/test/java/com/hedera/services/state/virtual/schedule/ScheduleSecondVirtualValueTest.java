@@ -65,17 +65,23 @@ class ScheduleSecondVirtualValueTest {
 		final var two = new ScheduleSecondVirtualValue(otherIds);
 		final var three = new ScheduleSecondVirtualValue(ids);
 		final var four = one.copy();
+		final var five = one.asWritable();
+		final var six = one.asReadOnly();
 		final var twoRef = two;
 
 		assertNotEquals(two, one);
 		assertEquals(two, twoRef);
 		assertEquals(one, three);
 		assertEquals(three, four);
+		assertEquals(three, five);
+		assertEquals(three, six);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), twoRef.hashCode());
 		assertEquals(one.hashCode(), three.hashCode());
 		assertEquals(one.hashCode(), four.hashCode());
+		assertEquals(one.hashCode(), five.hashCode());
+		assertEquals(one.hashCode(), six.hashCode());
 		assertDoesNotThrow(subject::release);
 		Object nil = null;
 		assertNotEquals(one, nil);

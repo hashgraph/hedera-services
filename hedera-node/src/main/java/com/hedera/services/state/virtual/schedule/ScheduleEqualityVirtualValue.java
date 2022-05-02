@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ScheduleEqualityVirtualValue implements VirtualValue {
 
@@ -40,17 +41,21 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
-	private final HashMap<String, Long> ids;
+	private final Map<String, Long> ids;
 
 	private boolean immutable;
 
 
 	public ScheduleEqualityVirtualValue() {
-		ids = new HashMap<>();
+		this(HashMap::new);
 	}
 
 	public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
-		this.ids = new HashMap<>(ids);
+		this(() -> new HashMap<>(ids));
+	}
+
+	private ScheduleEqualityVirtualValue(Supplier<Map<String, Long>> ids) {
+		this.ids = ids.get();
 	}
 
 
@@ -135,7 +140,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	@Override
 	public ScheduleEqualityVirtualValue copy() {
-		var fc = copyImpl();
+		var fc = new ScheduleEqualityVirtualValue(ids);
 
 		this.setImmutable(true);
 
@@ -195,18 +200,17 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public VirtualValue asReadOnly() {
-		var c = copyImpl();
+	public ScheduleEqualityVirtualValue asReadOnly() {
+		var c = new ScheduleEqualityVirtualValue(this::getIds);
 		c.setImmutable(true);
 		return c;
 	}
 
-	private ScheduleEqualityVirtualValue copyImpl() {
-
-		var fc = new ScheduleEqualityVirtualValue();
-
-		fc.ids.putAll(ids);
-
-		return fc;
+	/**
+	 * Needed until getForModify works on VirtualMap
+	 * @return a copy of this without marking this as immutable
+	 */
+	public ScheduleEqualityVirtualValue asWritable() {
+		return new ScheduleEqualityVirtualValue(this.ids);
 	}
 }

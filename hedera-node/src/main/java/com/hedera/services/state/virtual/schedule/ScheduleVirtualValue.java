@@ -587,7 +587,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public VirtualValue asReadOnly() {
+	public ScheduleVirtualValue asReadOnly() {
 		var c = new ScheduleVirtualValue(this);
 		c.setImmutable(true);
 		return c;
@@ -600,6 +600,14 @@ public class ScheduleVirtualValue implements VirtualValue {
 		this.setImmutable(true);
 
 		return fc;
+	}
+
+	/**
+	 * Needed until getForModify works on VirtualMap
+	 * @return a copy of this without marking this as immutable
+	 */
+	public ScheduleVirtualValue asWritable() {
+		return new ScheduleVirtualValue(this);
 	}
 
 	private static HashCode buildEqualityHash(byte[]... a) {

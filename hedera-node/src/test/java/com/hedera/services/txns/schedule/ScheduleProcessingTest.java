@@ -507,7 +507,7 @@ class ScheduleProcessingTest {
 
 		var result = subject.checkFutureThrottlesForCreate(schedule4);
 
-		assertEquals(result, SCHEDULE_FUTURE_THROTTLE_EXCEEDED);
+		assertEquals(SCHEDULE_FUTURE_THROTTLE_EXCEEDED, result);
 
 		inOrder.verify(scheduleThrottling).shouldThrottleTxn(any(TxnAccessor.class),
 				eq(new RichInstant(consensusTime.getEpochSecond(), 0).toJava()));
@@ -522,7 +522,7 @@ class ScheduleProcessingTest {
 
 		result = subject.checkFutureThrottlesForCreate(schedule4);
 
-		assertEquals(result, OK);
+		assertEquals(OK, result);
 
 
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -530,7 +530,7 @@ class ScheduleProcessingTest {
 
 		result = subject.checkFutureThrottlesForCreate(schedule4);
 
-		assertEquals(result, SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+		assertEquals(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED, result);
 
 
 
@@ -540,7 +540,7 @@ class ScheduleProcessingTest {
 
 		result = subject.checkFutureThrottlesForCreate(schedule4);
 
-		assertEquals(result, OK);
+		assertEquals(OK, result);
 
 	}
 

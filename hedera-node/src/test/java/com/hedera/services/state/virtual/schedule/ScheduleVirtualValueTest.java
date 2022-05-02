@@ -460,6 +460,67 @@ public class ScheduleVirtualValueTest {
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 		assertTrue(subject.isImmutable());
+		assertFalse(copySubject.isImmutable());
+		assertTrue(subject.hasAdminKey());
+	}
+
+	@Test
+	void asWritableWorks() {
+		subject.markDeleted(resolutionTime);
+		subject.witnessValidSignature(tpk);
+		final var copySubject = subject.asWritable();
+
+		assertTrue(copySubject.isDeleted());
+		assertFalse(copySubject.isExecuted());
+		assertTrue(copySubject.hasValidSignatureFor(tpk));
+
+		assertEquals(subject.toString(), copySubject.toString());
+		assertNotSame(subject.signatories(), copySubject.signatories());
+
+		assertEquals(grpcResolutionTime, copySubject.deletionTime());
+		assertEquals(payer, copySubject.payer());
+		assertEquals(expiry, copySubject.calculatedExpirationTime());
+		assertEquals(waitForExpiry, copySubject.isWaitForExpiry());
+		assertEquals(schedulingAccount, copySubject.schedulingAccount());
+		assertEquals(entityMemo, copySubject.memo().get());
+		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
+		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
+		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
+		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
+		assertFalse(subject.isImmutable());
+		assertFalse(copySubject.isImmutable());
+		assertTrue(subject.hasAdminKey());
+	}
+
+	@Test
+	void asReadOnlyWorks() {
+		subject.markDeleted(resolutionTime);
+		subject.witnessValidSignature(tpk);
+		final var copySubject = subject.asReadOnly();
+
+		assertTrue(copySubject.isDeleted());
+		assertFalse(copySubject.isExecuted());
+		assertTrue(copySubject.hasValidSignatureFor(tpk));
+
+		assertEquals(subject.toString(), copySubject.toString());
+		assertNotSame(subject.signatories(), copySubject.signatories());
+
+		assertEquals(grpcResolutionTime, copySubject.deletionTime());
+		assertEquals(payer, copySubject.payer());
+		assertEquals(expiry, copySubject.calculatedExpirationTime());
+		assertEquals(waitForExpiry, copySubject.isWaitForExpiry());
+		assertEquals(schedulingAccount, copySubject.schedulingAccount());
+		assertEquals(entityMemo, copySubject.memo().get());
+		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
+		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
+		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
+		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
+		assertFalse(subject.isImmutable());
+		assertTrue(copySubject.isImmutable());
 		assertTrue(subject.hasAdminKey());
 	}
 
