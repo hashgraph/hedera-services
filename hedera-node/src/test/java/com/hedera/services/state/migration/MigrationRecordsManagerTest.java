@@ -22,6 +22,7 @@ package com.hedera.services.state.migration;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
@@ -78,6 +79,8 @@ class MigrationRecordsManagerTest {
 	private static final EntityId contract2Id = EntityId.fromIdentityCode(2);
 
 	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -95,7 +98,7 @@ class MigrationRecordsManagerTest {
 	private MerkleAccount merkleAccount;
 
 	private final AtomicLong nextTracker = new AtomicLong();
-	private final SyntheticTxnFactory factory = new SyntheticTxnFactory();
+	private final SyntheticTxnFactory factory = new SyntheticTxnFactory(dynamicProperties);
 
 	private MigrationRecordsManager subject;
 

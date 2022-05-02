@@ -52,10 +52,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.annotation.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -86,12 +90,6 @@ class TxnAwareEvmSigsVerifierTest {
 
 	private JKey expectedKey;
 
-	@Mock
-	private MerkleAccount contract;
-	@Mock
-	private MerkleAccount sigReqAccount;
-	@Mock
-	private MerkleAccount noSigReqAccount;
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> cryptoValidity;
 	@Mock
@@ -259,9 +257,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
-		given(contract.isSmartContract()).willReturn(true);
+		givenSigReqCheckable(smartContract, true, false, null);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(smartContract), PRETEND_SENDER_ADDR, ledgers);
@@ -270,11 +266,39 @@ class TxnAwareEvmSigsVerifierTest {
 		verify(activationTest, never()).test(any(), any(), any());
 	}
 
+	private void givenSigReqCheckable(
+			final AccountID id,
+			final boolean smartContract,
+			final boolean receiverSigRequired,
+			@Nullable final JKey key
+	) {
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.contains(id)).willReturn(true);
+		given(accountsLedger.get(id, IS_SMART_CONTRACT)).willReturn(smartContract);
+		if (!smartContract) {
+			given(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).willReturn(receiverSigRequired);
+			if (receiverSigRequired) {
+				given(accountsLedger.get(id, KEY)).willReturn(key);
+			}
+		}
+	}
+
 	@Test
 	void filtersNoSigRequired() {
 		given(txnCtx.activePayer()).willReturn(payer);
+		givenSigReqCheckable(noSigRequired, false, false, null);
+
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
+
+		assertTrue(noSigRequiredFlag);
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
+	@Test
+	void filtersMissing() {
+		given(txnCtx.activePayer()).willReturn(payer);
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(noSigRequired)).willReturn(noSigReqAccount);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
@@ -298,10 +322,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsWhenReceiverSigIsRequired() {
 		givenAccessorInCtx();
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
-		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
+		givenSigReqCheckable(sigRequired, false, true, expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);

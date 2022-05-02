@@ -28,16 +28,45 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
+
 public class CustomSpecAssert extends UtilOp {
 	static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
 
-	public static void allRunFor(HapiApiSpec spec, List<HapiSpecOperation> ops) {
-		for (HapiSpecOperation op : ops) {
-			Optional<Throwable>	error = op.execFor(spec);
-			if (error.isPresent()) {
-				log.error("Operation '" + op.toString() + "' :: " + error.get().getMessage());
-				throw new IllegalStateException(error.get());
+	public static void allRunFor(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		if(spec.getSuitePrefix().endsWith(ETH_SUFFIX)) {
+			if(!isEthereumAccountCreatedForSpec(spec)) {
+				initializeEthereumAccountForSpec(spec);
 			}
+
+			executeEthereumOps(spec, ops);
+		} else {
+			executeHederaOps(spec, ops);
+		}
+	}
+
+	private static void executeHederaOps(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		for (final HapiSpecOperation op : ops) {
+			handleExec(spec, op);
+		}
+	}
+
+	private static void executeEthereumOps(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		final var convertedOps = convertHapiCallsToEthereumCalls(spec, ops);
+
+		for (final HapiSpecOperation op : convertedOps) {
+			handleExec(spec, op);
+		}
+	}
+
+	private static void handleExec(final HapiApiSpec spec, final HapiSpecOperation op) {
+		Optional<Throwable>	error = op.execFor(spec);
+		if (error.isPresent()) {
+			log.error("Operation '" + op + "' :: " + error.get().getMessage());
+			throw new IllegalStateException(error.get());
 		}
 	}
 

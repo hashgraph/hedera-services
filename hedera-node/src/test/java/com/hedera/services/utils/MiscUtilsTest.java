@@ -858,6 +858,11 @@ class MiscUtilsTest {
 		assertTrue(isGasThrottled(ContractCreate));
 	}
 
+	@Test
+	void ethereumTxnIsConsensusThrottled() {
+		assertTrue(isGasThrottled(EthereumTransaction));
+	}
+
 	@SuppressWarnings("unchecked")
 	public static class BodySetter<T, B> {
 		private final Class<T> type;

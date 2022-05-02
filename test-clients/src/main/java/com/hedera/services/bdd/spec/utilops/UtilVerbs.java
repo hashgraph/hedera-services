@@ -30,6 +30,8 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
@@ -75,6 +77,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import jdk.jshell.execution.Util;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
@@ -88,6 +92,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -148,6 +153,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.lang.System.arraycopy;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
@@ -1081,6 +1087,44 @@ public class UtilVerbs {
 
 		return Tuple.of(account32, receiver32,
 				serialNumber);
+	}
+
+	public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		var nonce = UtilStateChange.getNonceForSpec(spec).orElse(0L);
+
+		final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
+		for(final var op: ops) {
+			if(op instanceof HapiContractCall) {
+				final var convertedOp = new HapiEthereumCall(((HapiContractCall) op));
+				convertedOp.setNonce(nonce);
+				convertedOps.add(convertedOp);
+				nonce++;
+			} else {
+				convertedOps.add(op);
+			}
+		}
+
+		UtilStateChange.setNonceForSpec(spec, nonce);
+		return convertedOps;
+	}
+
+	public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
+		var key = spec.registry().getKey(privateKeyRef);
+		final var privateKey = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
+
+		byte[] privateKeyByteArray;
+		byte[] dByteArray = ((BCECPrivateKey)privateKey).getD().toByteArray();
+		if (dByteArray.length < 32) {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
+		} else if (dByteArray.length == 32) {
+			privateKeyByteArray = dByteArray;
+		} else {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
+		}
+
+		return privateKeyByteArray;
 	}
 
 	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {

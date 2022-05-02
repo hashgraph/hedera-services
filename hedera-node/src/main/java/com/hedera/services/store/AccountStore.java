@@ -111,9 +111,7 @@ public class AccountStore {
 	 * 		if the requested contract is missing, deleted or is not smart contract
 	 */
 	public Account loadContract(Id id) {
-		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
-		validateTrue(account.isSmartContract(), INVALID_CONTRACT_ID);
-		return account;
+		return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
 	}
 
 	/**

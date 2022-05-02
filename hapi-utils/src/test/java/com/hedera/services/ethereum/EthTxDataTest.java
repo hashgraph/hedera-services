@@ -22,6 +22,7 @@ package com.hedera.services.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.google.protobuf.ByteString;
+import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -33,10 +34,12 @@ import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class EthTxDataTest {
@@ -56,12 +59,34 @@ class EthTxDataTest {
 			"f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
 
 	@Test
+	void detectsMissingCallData() {
+		final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertTrue(subject.hasCallData());
+		final var subjectWithEmptyData = subject.replaceCallData(new byte[0]);
+		assertFalse(subjectWithEmptyData.hasCallData());
+		final var subjectWithNullData = subject.replaceCallData(null);
+		assertFalse(subjectWithNullData.hasCallData());
+	}
+
+	@Test
+	void detectsMissingToAddress() {
+		final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertTrue(subject.hasToAddress());
+		final var subjectWithEmptyTo = subject.replaceTo(new byte[0]);
+		assertFalse(subjectWithEmptyTo.hasToAddress());
+		final var subjectWithNullTo = subject.replaceTo(null);
+		assertFalse(subjectWithNullTo.hasToAddress());
+	}
+
+	@Test
 	void extractFrontierSignature() {
 		var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
 		assertNotNull(frontierTx);
 		assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.rawTx()));
 		assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, frontierTx.type());
 		assertEquals("012a", Hex.toHexString(frontierTx.chainId()));
+		assertTrue(frontierTx.matchesChainId(CommonUtils.unhex("012a")));
+		assertFalse(frontierTx.matchesChainId(CommonUtils.unhex("a210")));
 		assertEquals(1, frontierTx.nonce());
 		assertEquals("2f", Hex.toHexString(frontierTx.gasPrice()));
 		assertNull(frontierTx.maxPriorityGas());

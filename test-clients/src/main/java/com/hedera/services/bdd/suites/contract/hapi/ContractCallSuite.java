@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -1017,8 +1018,12 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
 		return defaultHapiSpec("InvalidContract")
-				.given().when().then(
-						contractCallWithFunctionAbi(invalidContract, function)
+				.given(
+						withOpContext((spec, ctxLog) -> {
+							spec.registry().saveContractId("invalid", asContract("1.1.1"));
+						})
+				).when().then(
+						contractCallWithFunctionAbi("invalid", function)
 								.hasKnownStatus(INVALID_CONTRACT_ID));
 	}
 

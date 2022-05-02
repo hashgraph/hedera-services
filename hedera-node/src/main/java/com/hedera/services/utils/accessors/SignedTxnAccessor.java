@@ -53,6 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,7 +61,6 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -91,7 +91,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
-	private final Map<String, Object> spanMap = new HashMap<>();
+	private Map<String, Object> spanMap = new HashMap<>();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -358,6 +358,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return spanMap;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		spanMap = Collections.unmodifiableMap(newSpanMap);
+	}
+
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
@@ -365,8 +373,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public long getGasLimitForContractTx() {
-		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() :
-				getTxn().getContractCall().getGas();
+		return switch (getFunction()) {
+			case ContractCreate -> getTxn().getContractCreateInstance().getGas();
+			case ContractCall -> getTxn().getContractCall().getGas();
+			case EthereumTransaction -> getSpanMapAccessor().getEthTxDataMeta(this).gasLimit();
+			default -> 0L;
+		};
 	}
 
 	private void setBaseUsageMeta() {
