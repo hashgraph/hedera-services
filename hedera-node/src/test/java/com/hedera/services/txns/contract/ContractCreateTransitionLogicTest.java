@@ -74,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -95,6 +96,7 @@ class ContractCreateTransitionLogicTest {
 	private final byte[] bytecode =
 			("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07" +
 					"ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032").getBytes();
+	private final int maxAutoAssociations = 1234;
 
 	@Mock
 	private HederaFs hfs;
@@ -210,6 +212,39 @@ class ContractCreateTransitionLogicTest {
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCreateTxn));
 	}
+
+	@Test
+	void acceptsValidTxn() {
+		givenValidTxnCtx();
+		given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
+		given(properties.areTokenAssociationsLimited()).willReturn(true);
+
+		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void rejectsInvalidMaxAutomaticAssociations() {
+		givenInvalidMaxAutoAssociations();
+		given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
+		given(properties.areTokenAssociationsLimited()).willReturn(true);
+
+		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
+				subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	private void givenInvalidMaxAutoAssociations() {
+		contractCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(
+						ContractCreateTransactionBody.newBuilder()
+								.setMemo("memo")
+								.setInitialBalance(balance)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
+								.setMaxAutomaticTokenAssociations(maxAutoAssociations + 1)
+				).build();
+	}
+
+
 
 	@Test
 	void rejectsNegativeBalance() {
@@ -649,7 +684,8 @@ class ContractCreateTransitionLogicTest {
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
-				.setProxyAccountID(proxy);
+				.setProxyAccountID(proxy)
+				.setMaxAutomaticTokenAssociations(1234);
 		if (rememberAutoRenew) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
 		}

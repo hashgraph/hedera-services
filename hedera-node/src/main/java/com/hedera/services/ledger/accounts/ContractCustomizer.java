@@ -121,7 +121,7 @@ public class ContractCustomizer {
 				.proxy((EntityId) ledger.get(sponsor, PROXY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
 				.autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
-				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) // can this be taken from sender ?
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}
