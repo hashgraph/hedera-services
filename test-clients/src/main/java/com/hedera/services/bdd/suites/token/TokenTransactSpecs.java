@@ -485,7 +485,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).via(transferTxn)
 				).then(
 						getTxnRecord(transferTxn)
-								.logged()
 								.hasPriority(recordWith()
 								.autoAssociated(accountTokenPairs(List.of(
 										Pair.of(beneficiary, fungibleToken),
