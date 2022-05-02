@@ -155,7 +155,7 @@ public class RenewalRecordsHelper {
 	}
 
 	private void assertInCycle() {
-		if (inCycle == false) {
+		if (!inCycle) {
 			throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
 		}
 	}

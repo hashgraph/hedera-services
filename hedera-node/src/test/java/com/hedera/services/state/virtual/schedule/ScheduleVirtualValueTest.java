@@ -135,7 +135,7 @@ public class ScheduleVirtualValueTest {
 		assertNull(subject.getResolutionTime());
 		assertFalse(subject.isExecuted());
 		assertFalse(subject.isDeleted());
-		assertEquals(subject.signatories().size(), 0);
+		assertEquals(0, subject.signatories().size());
 
 		check.call();
 
@@ -421,7 +421,7 @@ public class ScheduleVirtualValueTest {
 		assertNotEquals(null, subject);
 		assertNotEquals(new Object(), subject);
 		assertNotEquals(subject, new Object());
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 
 	@Test

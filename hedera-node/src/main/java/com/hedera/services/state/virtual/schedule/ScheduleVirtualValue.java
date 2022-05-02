@@ -70,7 +70,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
 
-	private transient boolean immutable;
+	private boolean immutable;
 
 	@Nullable
 	private Key grpcAdminKey = null;
@@ -580,6 +580,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 	 */
 	@Override
 	public void release() {
+		// nothing to release
 	}
 
 	/**

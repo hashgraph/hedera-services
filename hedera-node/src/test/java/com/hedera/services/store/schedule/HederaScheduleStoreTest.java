@@ -213,10 +213,10 @@ class HederaScheduleStoreTest {
 
 		verify(schedules).setCurrentMinSecond(expectedExpiry);
 
-		assertEquals(eqValue.get().getIds().size(), 1);
+		assertEquals(1, eqValue.get().getIds().size());
 		assertEquals(eqValue.get().getIds().get(equalityValue), fromScheduleId(created).longValue());
 
-		assertEquals(secValue.get().getIds().size(), 1);
+		assertEquals(1, secValue.get().getIds().size());
 		assertEquals(secValue.get().getIds().get(new RichInstant(expectedExpiry, 0)),
 				LongLists.immutable.of(fromScheduleId(created).longValue()));
 
@@ -956,7 +956,7 @@ class HederaScheduleStoreTest {
 
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry));
 
-		assertEquals(toExpire, Collections.emptyList());
+		assertEquals(Collections.emptyList(), toExpire);
 
 		verify(byExpirationSecond, never()).get(any());
 	}
@@ -968,7 +968,7 @@ class HederaScheduleStoreTest {
 
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry + 1));
 
-		assertEquals(toExpire, Collections.emptyList());
+		assertEquals(Collections.emptyList(), toExpire);
 
 		verify(byExpirationSecond).get(new SecondSinceEpocVirtualKey(expectedExpiry));
 	}
@@ -1058,7 +1058,7 @@ class HederaScheduleStoreTest {
 
 		var toEvaluate = subject.nextScheduleToEvaluate(Instant.ofEpochSecond(expectedExpiry + 1));
 
-		assertEquals(toEvaluate, created);
+		assertEquals(created, toEvaluate);
 
 		given(bySecondValue.getIds()).willReturn(new TreeMap<>(
 				ImmutableMap.of(

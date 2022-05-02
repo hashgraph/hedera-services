@@ -77,7 +77,8 @@ class SecondSinceEpocVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
-		assertNotEquals(one, null);
+		Object nil = null;
+		assertNotEquals(one, nil);
 		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(longKey);
@@ -119,7 +120,7 @@ class SecondSinceEpocVirtualKeyTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals(subject.toString(), "SecondSinceEpocVirtualKey{value=2}");
+		assertEquals("SecondSinceEpocVirtualKey{value=2}", subject.toString());
 	}
 
 	@Test

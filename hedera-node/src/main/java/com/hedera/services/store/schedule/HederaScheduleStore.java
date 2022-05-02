@@ -46,7 +46,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -382,26 +381,23 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 						log.error("bySecond contained a schedule that does not exist! Removing it! second={}, id={}",
 								curSecond, scheduleId);
 						toRemove.add(Pair.of(instant, id));
-						continue;
-					}
 
-					if (schedule.calculatedExpirationTime().getSeconds() != curSecond) {
+					} else if (schedule.calculatedExpirationTime().getSeconds() != curSecond) {
 						log.error("bySecond contained a schedule in the wrong spot! Removing and Expiring it! spot={}, id={}, schedule={}",
 								curSecond, scheduleId, schedule);
 						toRemove.add(Pair.of(instant, id));
 						list.add(scheduleId);
-						continue;
-					}
 
-					if (schedule.isDeleted() || schedule.isExecuted()) {
+					} else if (schedule.isDeleted() || schedule.isExecuted()) {
 						list.add(scheduleId);
+
 					} else {
 						break outer;
 					}
 				}
 			}
 
-			if ((toRemove.size() > 0) || (bySecond.getIds().size() <= 0)) {
+			if ((!toRemove.isEmpty()) || (bySecond.getIds().size() <= 0)) {
 				bySecond = schedules.get().byExpirationSecond().getForModify(bySecondKey);
 				if (bySecond != null) {
 					for (var p : toRemove) {

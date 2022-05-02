@@ -65,7 +65,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 /**
  * @deprecated Scheduled transactions are now stored in {@link MerkleScheduledTransactions}
  */
-@Deprecated
+@Deprecated(since = "0.26")
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int RELEASE_0180_VERSION = 2;
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;

@@ -77,7 +77,8 @@ class ScheduleEqualityVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
-		assertNotEquals(one, null);
+		Object nil = null;
+		assertNotEquals(one, nil);
 		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(longKey);
@@ -119,7 +120,7 @@ class ScheduleEqualityVirtualKeyTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals(subject.toString(), "ScheduleEqualityVirtualKey{value=2}");
+		assertEquals("ScheduleEqualityVirtualKey{value=2}", subject.toString());
 	}
 
 	@Test

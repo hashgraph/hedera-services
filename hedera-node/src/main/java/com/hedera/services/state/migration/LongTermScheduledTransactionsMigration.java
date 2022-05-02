@@ -81,7 +81,7 @@ public class LongTermScheduledTransactionsMigration {
 		TreeMap<Long, List<Pair<EntityNum, MerkleSchedule>>> legacyOrdered = new TreeMap<>();
 		forEach(legacySchedules, (key, schedule) -> {
 			var list = legacyOrdered.computeIfAbsent(
-					schedule.expiry(), (k) -> new ArrayList<>());
+					schedule.expiry(), k -> new ArrayList<>());
 			list.add(Pair.of(key, schedule));
 		});
 
@@ -129,11 +129,7 @@ public class LongTermScheduledTransactionsMigration {
 		initializingState.setChild(StateChildIndices.SCHEDULE_TXS, newScheduledTxns);
 
 		final var defaultZero = new AtomicInteger();
-		final var summaryTpl = """
-				Migration complete for:
-					\u21AA {} transactions
-					\u21AA {} second buckets
-					\u21AA {} equality buckets""";
+		final var summaryTpl = "Migration complete for: {} transactions {} second buckets{} equality buckets";
 		log.info(summaryTpl,
 				counts.getOrDefault('t', defaultZero).get(),
 				counts.getOrDefault('s', defaultZero).get(),

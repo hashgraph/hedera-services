@@ -279,9 +279,8 @@ class ConsensusTimeTrackerTest {
 		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS);
 		subject.nextStandaloneRecordTime();
 
-		assertEquals(logCaptor.warnLogs().stream().filter(
-				s -> s.contains("Used more record slots than allowed per transaction")).count(),
-				0);
+		assertEquals(0, logCaptor.warnLogs().stream().filter(
+				s -> s.contains("Used more record slots than allowed per transaction")).count());
 
 		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS + 1);
 		assertTrue(subject.hasMoreTransactionTime(false));
@@ -293,9 +292,8 @@ class ConsensusTimeTrackerTest {
 		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS + 1);
 		subject.nextStandaloneRecordTime();
 
-		assertEquals(logCaptor.warnLogs().stream().filter(
-				s -> s.contains("Used more record slots than allowed per transaction")).count(),
-				6);
+		assertEquals(6, logCaptor.warnLogs().stream().filter(
+				s -> s.contains("Used more record slots than allowed per transaction")).count());
 	}
 
 	@Test
@@ -332,7 +330,7 @@ class ConsensusTimeTrackerTest {
 	@Test
 	void errorOnSetActualFollowingRecordsCountLessThanZero() {
 		assertThrows(IllegalArgumentException.class,
-				() -> new ConsensusTimeTracker().setActualFollowingRecordsCount(-1));
+				() -> subject.setActualFollowingRecordsCount(-1));
 	}
 
 	private void checkBounds(ConsensusTimeTracker previous, boolean isStandalone) {

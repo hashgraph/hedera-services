@@ -22,10 +22,8 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -86,8 +84,6 @@ class StandardProcessLogicTest {
 	@Mock
 	private ExecutionTimeTracker executionTimeTracker;
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private ConsensusTimeTracker consensusTimeTracker;
@@ -107,7 +103,7 @@ class StandardProcessLogicTest {
 				expiries, invariantChecks,
 				expandHandleSpan, consensusTimeTracker, autoRenewal, txnManager,
 				sigImpactHistorian, txnCtx, scheduleProcessing,
-				executionTimeTracker, dynamicProperties, recordStreaming);
+				executionTimeTracker, recordStreaming);
 	}
 
 	@Test

@@ -77,7 +77,8 @@ class EntityNumVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
-		assertNotEquals(one, null);
+		Object nil = null;
+		assertNotEquals(one, nil);
 		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(longKey);
@@ -124,7 +125,7 @@ class EntityNumVirtualKeyTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals(subject.toString(), "EntityNumVirtualKey{value=2}");
+		assertEquals("EntityNumVirtualKey{value=2}", subject.toString());
 	}
 
 	@Test

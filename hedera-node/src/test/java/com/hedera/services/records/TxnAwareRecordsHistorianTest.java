@@ -483,10 +483,13 @@ class TxnAwareRecordsHistorianTest {
 		assertFalse(subject.hasPrecedingChildRecords());
 		assertFalse(subject.hasFollowingChildRecords());
 
+		final var txn = TransactionBody.newBuilder();
+		final var rec = ExpirableTxnRecord.newBuilder();
+
 		assertThrows(IllegalStateException.class, () ->
-				subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder()));
+				subject.trackFollowingChildRecord(1, txn, rec));
 		assertThrows(IllegalStateException.class, () ->
-				subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder()));
+				subject.trackPrecedingChildRecord(1, txn, rec));
 
 		verify(consensusTimeTracker).isAllowableFollowingOffset(1);
 		verify(consensusTimeTracker).isAllowablePrecedingOffset(1);

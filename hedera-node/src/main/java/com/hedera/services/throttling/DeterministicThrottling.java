@@ -55,7 +55,6 @@ import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -167,15 +166,10 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	@Override
 	public void rebuildFor(ThrottleDefinitions defs) {
 
-		switch (mode) {
-			case SCHEDULE:
-				calculateScheduleThrottles(defs);
-
-				break;
-			default:
-				calculateThrottles(defs, capacitySplitSource.getAsInt());
-
-				break;
+		if (mode == DeterministicThrottlingMode.SCHEDULE) {
+			calculateScheduleThrottles(defs);
+		} else {
+			calculateThrottles(defs, capacitySplitSource.getAsInt());
 		}
 
 		logResolvedDefinitions();
@@ -186,7 +180,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		long capacity;
 
 		switch (mode) {
-			case CONSENSUS -> {
+			case CONSENSUS:
 				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
 					log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 					return;
@@ -194,8 +188,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 					capacity = dynamicProperties.consensusThrottleGasLimit();
 				}
 				break;
-			}
-			case HAPI -> {
+			case HAPI:
 				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
 					log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 					return;
@@ -203,8 +196,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 					capacity = dynamicProperties.frontendThrottleGasLimit();
 				}
 				break;
-			}
-			case SCHEDULE -> {
+			case SCHEDULE:
 				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.scheduleThrottleMaxGasLimit() == 0) {
 					log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Schedule");
 					return;
@@ -212,8 +204,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 					capacity = dynamicProperties.scheduleThrottleMaxGasLimit();
 				}
 				break;
-			}
-			default -> throw new IllegalStateException("unknown mode " + mode);
+			default: throw new IllegalStateException("unknown mode " + mode);
 		}
 
 		gasThrottle = new GasLimitDeterministicThrottle(capacity);
@@ -254,7 +245,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 							.append(manager.asReadableRequirements())
 							.append("\n");
 				});
-		log.info(sb.toString().trim());
+		log.info("{}", () -> sb.toString().trim());
 	}
 
 	private boolean shouldThrottleTxn(boolean isChild, final TxnAccessor accessor, final TransactionBody txn,
@@ -517,7 +508,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			bucket .setName("Schedule - " + bucket.getName());
 		}
 
-		defsCopy.setBuckets(defsCopy.getBuckets().stream().filter(b -> b.getThrottleGroups().size() > 0).toList());
+		defsCopy.setBuckets(defsCopy.getBuckets().stream().filter(b -> !b.getThrottleGroups().isEmpty()).toList());
 
 		long maxTps = dynamicProperties.schedulingMaxTxnPerSecond();
 
@@ -532,12 +523,13 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		long maxMtps = maxTps * 1_000;
 
-		long left = 1,
-				right = Long.MAX_VALUE - 1,
-				scheduleCapacitySplit;
+		long left = 1;
+		long right = Long.MAX_VALUE - 1;
+		long scheduleCapacitySplit;
 		while (true) {
 
-			long m = (left + right) / 2L, sum = 0L;
+			long m = (left + right) / 2L;
+			long sum = 0L;
 
 			for (var grp : groups.keySet()) {
 				long toAdd = (grp.impliedMilliOpsPerSec() + m - 1L) / m;

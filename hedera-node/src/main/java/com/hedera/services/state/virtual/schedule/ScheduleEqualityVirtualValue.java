@@ -42,7 +42,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	private final HashMap<String, Long> ids;
 
-	private transient boolean immutable;
+	private boolean immutable;
 
 
 	public ScheduleEqualityVirtualValue() {
@@ -188,6 +188,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	 */
 	@Override
 	public void release() {
+		// nothing to release
 	}
 
 	/**

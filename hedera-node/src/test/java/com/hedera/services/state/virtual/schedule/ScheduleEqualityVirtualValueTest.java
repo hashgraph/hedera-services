@@ -77,7 +77,8 @@ class ScheduleEqualityVirtualValueTest {
 		assertEquals(one.hashCode(), three.hashCode());
 		assertEquals(one.hashCode(), four.hashCode());
 		assertDoesNotThrow(subject::release);
-		assertNotEquals(one, null);
+		Object nil = null;
+		assertNotEquals(one, nil);
 		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(ids);
@@ -169,7 +170,8 @@ class ScheduleEqualityVirtualValueTest {
 	void getIdsWork() {
 		assertEquals(subject.getIds(), ids);
 
-		assertThrows(UnsupportedOperationException.class, () -> subject.getIds().put("foo", 2L));
+		final var ids = subject.getIds();
+		assertThrows(UnsupportedOperationException.class, () -> ids.put("foo", 2L));
 	}
 
 	@Test
@@ -183,12 +185,12 @@ class ScheduleEqualityVirtualValueTest {
 		assertThrows(IllegalStateException.class, () -> subject.add("rain", 6L));
 
 
-		assertEquals(subject.getIds().size(), 4);
+		assertEquals(4, subject.getIds().size());
 
-		assertEquals(subject.getIds().get("foo"), 1L);
-		assertEquals(subject.getIds().get("truck"), 2L);
-		assertEquals(subject.getIds().get("rain"), 5L);
-		assertEquals(subject.getIds().get("cloud"), 7L);
+		assertEquals(1L, subject.getIds().get("foo"));
+		assertEquals(2L, subject.getIds().get("truck"));
+		assertEquals(5L, subject.getIds().get("rain"));
+		assertEquals(7L, subject.getIds().get("cloud"));
 
 		subject.copy();
 		assertThrows(MutabilityException.class, () -> subject.add("ice", 22L));
@@ -210,10 +212,10 @@ class ScheduleEqualityVirtualValueTest {
 		subject.remove("foo", 1L);
 
 
-		assertEquals(subject.getIds().size(), 2);
+		assertEquals(2, subject.getIds().size());
 
-		assertEquals(subject.getIds().get("truck"), 2L);
-		assertEquals(subject.getIds().get("cloud"), 7L);
+		assertEquals(2L, subject.getIds().get("truck"));
+		assertEquals(7L, subject.getIds().get("cloud"));
 
 		subject.copy();
 		assertThrows(MutabilityException.class, () -> subject.remove("cloud", 7L));

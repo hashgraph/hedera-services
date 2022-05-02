@@ -22,7 +22,6 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -53,7 +52,6 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final ScheduleProcessing scheduleProcessing;
 	private final RecordStreaming recordStreaming;
 
@@ -69,7 +67,6 @@ public class StandardProcessLogic implements ProcessLogic {
 			final TransactionContext txnCtx,
 			final ScheduleProcessing scheduleProcessing,
 			final ExecutionTimeTracker executionTimeTracker,
-			final GlobalDynamicProperties dynamicProperties,
 			final RecordStreaming recordStreaming
 	) {
 		this.expiries = expiries;
@@ -80,7 +77,6 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
-		this.dynamicProperties = dynamicProperties;
 		this.scheduleProcessing = scheduleProcessing;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordStreaming = recordStreaming;

@@ -1290,7 +1290,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-throttles.json");
 		subject.rebuildFor(defs);
 
-		final EnumMap<HederaFunctionality, ArrayList<Long>> groups = new EnumMap<>(HederaFunctionality.class);
+		final EnumMap<HederaFunctionality, List<Long>> groups = new EnumMap<>(HederaFunctionality.class);
 
 		long sum = 0;
 		long grpCount = 0;
@@ -1309,8 +1309,8 @@ class DeterministicThrottlingTest {
 		}
 
 		assertTrue(sum < 100000L);
-		assertEquals(groups.size(), 5);
-		assertEquals(grpCount, 3);
+		assertEquals(5, groups.size());
+		assertEquals(3, grpCount);
 
 		assertEquals(ImmutableList.of(97088L), groups.get(CryptoTransfer));
 		assertEquals(ImmutableList.of(97088L), groups.get(ConsensusSubmitMessage));

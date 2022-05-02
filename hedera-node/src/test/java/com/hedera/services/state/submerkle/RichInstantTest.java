@@ -151,7 +151,7 @@ class RichInstantTest {
 
 	@Test
 	void compareToWorks() {
-		assertEquals(new RichInstant(2, 2).compareTo(new RichInstant(2, 2)), 0);
+		assertEquals(0, new RichInstant(2, 2).compareTo(new RichInstant(2, 2)));
 
 		assertTrue(new RichInstant(2, 3).compareTo(new RichInstant(2, 2)) > 0);
 		assertTrue(new RichInstant(2, 3).compareTo(new RichInstant(2, 4)) < 0);

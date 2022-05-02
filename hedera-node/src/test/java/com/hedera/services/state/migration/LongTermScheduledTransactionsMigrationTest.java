@@ -132,11 +132,11 @@ class LongTermScheduledTransactionsMigrationTest {
 			assertNotNull(newSchedule4ByExpiration);
 			assertNotNull(newSchedule5ByExpiration);
 
-			assertEquals(newSchedule1ByExpiration.getIds().size(), 1);
-			assertEquals(newSchedule2ByExpiration.getIds().size(), 1);
-			assertEquals(newSchedule3ByExpiration.getIds().size(), 1);
-			assertEquals(newSchedule4ByExpiration.getIds().size(), 1);
-			assertEquals(newSchedule5ByExpiration.getIds().size(), 1);
+			assertEquals(1, newSchedule1ByExpiration.getIds().size());
+			assertEquals(1, newSchedule2ByExpiration.getIds().size());
+			assertEquals(1, newSchedule3ByExpiration.getIds().size());
+			assertEquals(1, newSchedule4ByExpiration.getIds().size());
+			assertEquals(1, newSchedule5ByExpiration.getIds().size());
 
 			assertEquals(newSchedule3ByExpiration.getIds(), newSchedule2ByExpiration.getIds());
 
@@ -155,13 +155,13 @@ class LongTermScheduledTransactionsMigrationTest {
 			assertEquals(newSchedule1ByExpiration.getIds().values().stream().findFirst().get(),
 					LongLists.immutable.with(schedule1.getKey().longValue()));
 
-			assertEquals(newSchedule2ByExpiration.getIds().values().stream().findFirst().get().size(),
-					2);
+			assertEquals(2,
+					newSchedule2ByExpiration.getIds().values().stream().findFirst().get().size());
 			assertTrue(newSchedule2ByExpiration.getIds().values().stream().findFirst().get()
 							.containsAll(schedule2.getKey().longValue(), schedule3.getKey().longValue()));
 
-			assertEquals(newSchedule3ByExpiration.getIds().values().stream().findFirst().get().size(),
-					2);
+			assertEquals(2,
+					newSchedule3ByExpiration.getIds().values().stream().findFirst().get().size());
 			assertTrue(newSchedule3ByExpiration.getIds().values().stream().findFirst().get()
 							.containsAll(schedule2.getKey().longValue(), schedule3.getKey().longValue()));
 
@@ -188,10 +188,10 @@ class LongTermScheduledTransactionsMigrationTest {
 			assertNotNull(newSchedule4ByEquality);
 			assertNull(newSchedule5ByEquality);
 
-			assertEquals(newSchedule1ByEquality.getIds().size(), 1);
-			assertEquals(newSchedule2ByEquality.getIds().size(), 1);
-			assertEquals(newSchedule3ByEquality.getIds().size(), 1);
-			assertEquals(newSchedule4ByEquality.getIds().size(), 2);
+			assertEquals(1, newSchedule1ByEquality.getIds().size());
+			assertEquals(1, newSchedule2ByEquality.getIds().size());
+			assertEquals(1, newSchedule3ByEquality.getIds().size());
+			assertEquals(2, newSchedule4ByEquality.getIds().size());
 
 			assertEquals(newSchedule1ByEquality.getIds().keySet().stream().findFirst().get(),
 					newSchedule1.equalityCheckValue());
@@ -241,7 +241,7 @@ class LongTermScheduledTransactionsMigrationTest {
 					new ScheduleEqualityVirtualKey(newSchedule1.equalityCheckKey()));
 
 			assertNotNull(newSchedule1ByEquality);
-			assertEquals(newSchedule1ByEquality.getIds().size(), 1);
+			assertEquals(1, newSchedule1ByEquality.getIds().size());
 			assertEquals(newSchedule1ByEquality.getIds().keySet().stream().findFirst().get(),
 					newSchedule1.equalityCheckValue());
 			assertEquals(newSchedule1ByEquality.getIds().values().stream().findFirst().get(),

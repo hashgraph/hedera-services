@@ -76,8 +76,7 @@ public class MerkleScheduledTransactionsState extends AbstractMerkleLeaf {
 	/* --- Copyable --- */
 	public MerkleScheduledTransactionsState copy() {
 		setImmutable(true);
-		var copied = new MerkleScheduledTransactionsState(this);
-		return copied;
+		return new MerkleScheduledTransactionsState(this);
 	}
 
 	@Override

@@ -112,6 +112,6 @@ class LivePricesSourceTest {
 	private void givenCollabsWithMultiplier(final long multiplier) {
 		given(exchange.rate(timeNow)).willReturn(activeRate);
 		given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
-		given(feeMultiplierSource.currentMultiplier(eq(accessor))).willReturn(multiplier);
+		given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
 	}
 }

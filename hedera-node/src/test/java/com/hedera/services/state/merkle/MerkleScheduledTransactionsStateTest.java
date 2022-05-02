@@ -57,9 +57,9 @@ class MerkleScheduledTransactionsStateTest {
 
 	@Test
 	void reportsCurrentMinSecond() {
-		assertEquals(subject.currentMinSecond(), currentMinSecond);
+		assertEquals(currentMinSecond, subject.currentMinSecond());
 		subject.setCurrentMinSecond(2L);
-		assertEquals(subject.currentMinSecond(), 2L);
+		assertEquals(2L, subject.currentMinSecond());
 	}
 
 
@@ -74,7 +74,8 @@ class MerkleScheduledTransactionsStateTest {
 	void equalsWorksWithRadicalDifferences() {
 		final var identical = subject;
 		assertEquals(subject, identical);
-		assertNotEquals(subject, null);
+		Object nul = null;
+		assertNotEquals(subject, nul);
 		assertNotEquals(subject, new Object());
 	}
 

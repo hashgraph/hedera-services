@@ -77,7 +77,8 @@ class ScheduleSecondVirtualValueTest {
 		assertEquals(one.hashCode(), three.hashCode());
 		assertEquals(one.hashCode(), four.hashCode());
 		assertDoesNotThrow(subject::release);
-		assertNotEquals(one, null);
+		Object nil = null;
+		assertNotEquals(one, nil);
 		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(ids);
@@ -162,8 +163,11 @@ class ScheduleSecondVirtualValueTest {
 	void getIdsWork() {
 		assertEquals(subject.getIds(), ids);
 
+		final var ids = subject.getIds();
+		final var instant = new RichInstant(10000, 100);
+		final var longs = LongLists.immutable.of(2000L);
 		assertThrows(UnsupportedOperationException.class, () ->
-				subject.getIds().put(new RichInstant(10000, 100), LongLists.immutable.of(2000L)));
+				ids.put(instant, longs));
 	}
 
 	@Test
@@ -178,7 +182,7 @@ class ScheduleSecondVirtualValueTest {
 
 
 
-		assertEquals(subject.getIds().size(), 5);
+		assertEquals(5, subject.getIds().size());
 
 		assertEquals("ScheduleSecondVirtualValue{ids={" +
 				"RichInstant{seconds=0, nanos=20}=[9030], " +
@@ -188,8 +192,10 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=200, nanos=20}=[9030]}}", subject.toString());
 
 		subject.copy();
+		final var instant = new RichInstant(210L, 20);
+		final var longs = LongLists.immutable.of(9180L);
 		assertThrows(MutabilityException.class, () ->
-				subject.add(new RichInstant(210L, 20), LongLists.immutable.of(9180L)));
+				subject.add(instant, longs));
 
 	}
 
@@ -204,7 +210,7 @@ class ScheduleSecondVirtualValueTest {
 		subject.add(new RichInstant(200L, 20), LongLists.immutable.of(9030L));
 
 
-		assertEquals(subject.getIds().size(), 5);
+		assertEquals(5, subject.getIds().size());
 
 		subject.removeId(new RichInstant(10L, 15), 9020L);
 		subject.removeId(new RichInstant(10L, 21), 9020L);
@@ -219,8 +225,10 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=200, nanos=20}=[9030]}}", subject.toString());
 
 		subject.copy();
+
+		final var instant = new RichInstant(10L, 20);
 		assertThrows(MutabilityException.class, () ->
-				subject.removeId(new RichInstant(10L, 20), 6000L));
+				subject.removeId(instant, 6000L));
 	}
 
 	@Test

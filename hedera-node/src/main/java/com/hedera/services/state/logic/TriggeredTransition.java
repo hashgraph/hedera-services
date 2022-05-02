@@ -91,7 +91,7 @@ public class TriggeredTransition implements Runnable {
 
 		networkUtilization.trackUserTxn(accessor, now);
 
-		//todo payer calculation valid? is activePayerKey correct? it doesnt seem like payerSigIsKnownActive would ever be called
+		// payer calculation valid? is activePayerKey correct? it doesnt seem like payerSigIsKnownActive would ever be called
 		final var fee = fees.computeFee(accessor, txnCtx.activePayerKey(), currentView, now);
 		final var chargingOutcome = chargingPolicy.applyForTriggered(fee);
 		if (chargingOutcome != OK) {

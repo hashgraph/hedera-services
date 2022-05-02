@@ -48,7 +48,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
 	private final TreeMap<RichInstant, ImmutableLongList> ids = new TreeMap<>();
 
-	private transient boolean immutable;
+	private boolean immutable;
 
 
 	public ScheduleSecondVirtualValue() {
@@ -219,6 +219,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 	 */
 	@Override
 	public void release() {
+		// nothing to release
 	}
 
 	/**

@@ -98,7 +98,7 @@ public class ScheduleProcessing {
 			store.advanceCurrentMinSecond(consensusTime);
 
 			List<ScheduleID> txnIdsToExpire = store.nextSchedulesToExpire(consensusTime);
-			if (txnIdsToExpire.size() <= 0) {
+			if (txnIdsToExpire.isEmpty()) {
 				break;
 			}
 

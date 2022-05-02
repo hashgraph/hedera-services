@@ -59,9 +59,8 @@ public final class ThrottlingModule {
 			final GlobalDynamicProperties dynamicProperties,
 			final ScheduleStore scheduleStore
 	) {
-		final var delegate = new DeterministicThrottling(
+		return new DeterministicThrottling(
 				() -> 1, aliasManager, dynamicProperties, DeterministicThrottlingMode.SCHEDULE, scheduleStore);
-		return delegate;
 	}
 
 	@Provides

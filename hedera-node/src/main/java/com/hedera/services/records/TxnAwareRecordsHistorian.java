@@ -163,7 +163,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final TransactionBody.Builder syntheticBody,
 			final ExpirableTxnRecord.Builder recordSoFar
 	) {
-		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1)) {
+		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L)) {
 			log.error("Cannot create more following records! currentCount={} consensusTimeTracker={}",
 					followingChildRecords.size(), consensusTimeTracker);
 			throw new IllegalStateException("Cannot create more following records!");
@@ -179,7 +179,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final TransactionBody.Builder syntheticTxn,
 			final ExpirableTxnRecord.Builder recordSoFar
 	) {
-		if (!consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1)) {
+		if (!consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L)) {
 			log.error("Cannot create more preceding records! currentCount={} consensusTimeTracker={}",
 					precedingChildRecords.size(), consensusTimeTracker);
 			throw new IllegalStateException("Cannot create more preceding records!");

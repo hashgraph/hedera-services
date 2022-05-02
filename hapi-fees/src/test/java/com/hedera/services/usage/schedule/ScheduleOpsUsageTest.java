@@ -99,7 +99,7 @@ class ScheduleOpsUsageTest {
 	void setUp() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
-		given(base.get(eq(SCHEDULE_CREATE_CONTRACT_CALL))).willReturn(A_USAGES_MATRIX);
+		given(base.get(SCHEDULE_CREATE_CONTRACT_CALL)).willReturn(A_USAGES_MATRIX);
 		queryBase = mock(QueryUsage.class);
 		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
 
