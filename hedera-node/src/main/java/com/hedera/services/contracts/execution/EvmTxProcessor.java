@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -55,8 +55,11 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -83,8 +86,8 @@ abstract class EvmTxProcessor {
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
-	private final Supplier<MerkleNetworkContext> networkCtx;
 	protected final GlobalDynamicProperties dynamicProperties;
+	private final BlockManager blockManager;
 
 	protected EvmTxProcessor(
 			final LivePricesSource livePricesSource,
@@ -92,7 +95,7 @@ abstract class EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
+			final BlockManager blockManager
 	) {
 		this(
 				null,
@@ -101,7 +104,7 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				merkleNetworkContextSupplier);
+				blockManager);
 	}
 
 	protected void setWorldState(HederaMutableWorldState worldState) {
@@ -115,13 +118,12 @@ abstract class EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
+			final BlockManager blockManager
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
-		this.networkCtx = merkleNetworkContextSupplier;
 
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
@@ -136,6 +138,7 @@ abstract class EvmTxProcessor {
 				evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator, evm, true, VALIDATION_RULES, 1);
+		this.blockManager = blockManager;
 	}
 
 	/**
@@ -197,15 +200,10 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		var blockNo = curNetworkCtx.getBlockNo();
-		if (blockNo == 0) {
-			// Before the 0.26 upgrade, we used the consensus timestamp as the block number; and if we
-			// get a zero block number, it means the post-0.26 block sync hasn't happened yet
-			blockNo = consensusTime.getEpochSecond();
-		}
-		final var blockValues = new HederaBlockValues(gasLimit, blockNo, curNetworkCtx.firstConsTimeOfCurrentBlock());
+
+		final var blockValues = blockManager.createProvisionalBlockValues(consensusTime, gasLimit);
+
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -228,7 +226,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(curNetworkCtx::getBlockHashByNumber)
+						.blockHashLookup(blockManager::getProvisionalBlockHash)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),

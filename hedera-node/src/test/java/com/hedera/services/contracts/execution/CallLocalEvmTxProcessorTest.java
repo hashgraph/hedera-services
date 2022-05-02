@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -56,7 +56,6 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -96,9 +95,7 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 	@Mock
-	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
-	@Mock
-	private MerkleNetworkContext merkleNetworkContext;
+	private BlockManager blockManager;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -113,7 +110,7 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, merkleNetworkContextSupplier);
+				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, blockManager);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
@@ -133,7 +130,6 @@ class CallLocalEvmTxProcessorTest {
 
 	@Test
 	void throwsWhenCodeCacheFailsLoading() {
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
@@ -201,7 +197,6 @@ class CallLocalEvmTxProcessorTest {
 	}
 
 	private void givenValidMock() {
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());

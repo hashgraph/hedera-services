@@ -157,20 +157,6 @@ public interface RecordsHistorian {
 	void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
 
 	/**
-	 * Convenience method to get the consensus time of the first record saved in this transaction.
-	 *
-	 * @return the earliest consensus time of any record saved by this transaction
-	 */
-	default Instant firstUsedTimestamp() {
-		if (hasPrecedingChildRecords()) {
-			final var choices = getPrecedingChildRecords();
-			return choices.get(0).getTimestamp();
-		} else {
-			return getTopLevelRecord().getTimestamp();
-		}
-	}
-
-	/**
 	 * Convenience method to get the {@link RunningHash} of the last record saved in this transaction.
 	 *
 	 * @return the running hash of the last record saved by this transaction

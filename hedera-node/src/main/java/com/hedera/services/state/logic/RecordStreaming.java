@@ -82,7 +82,7 @@ public class RecordStreaming {
 	 * <b>IMPORTANT:</b> this may have the side effect of increasing the block number.
 	 */
 	public void streamUserTxnRecords() {
-		blockNo = blockManager.getManagedBlockNumberAt(recordsHistorian.firstUsedTimestamp());
+		blockNo = blockManager.getManagedBlockNumberAt(recordsHistorian.getTopLevelRecord().getTimestamp());
 		if (recordsHistorian.hasPrecedingChildRecords()) {
 			for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
 				stream(childRso.withBlockNumber(blockNo));

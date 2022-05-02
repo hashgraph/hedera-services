@@ -130,7 +130,8 @@ class RecordStreamingTest {
     }
 
     private void givenCollabSetup() {
-        given(recordsHistorian.firstUsedTimestamp()).willReturn(aTime);
+        given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
+        given(topLevelRso.getTimestamp()).willReturn(aTime);
         given(blockManager.getManagedBlockNumberAt(aTime)).willReturn(someBlockNo);
         given(recordsHistorian.lastRunningHash()).willReturn(mockUserHash);
     }
