@@ -23,7 +23,6 @@ package com.hedera.services.contracts.operation;
  */
 
 
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -45,7 +44,6 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
 	private static final Gas baseGas = Gas.of(100);
-	private static final Gas extraGas = Gas.of(101);
 
 	@Mock
 	private MessageFrame frame;
@@ -61,15 +59,13 @@ class HederaCreateOperationTest {
 	private EntityCreator creator;
 	@Mock
 	private RecordsHistorian recordsHistorian;
-	@Mock
-	private StorageGasCalculator storageGasCalculator;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
 		subject = new HederaCreateOperation(
-				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator);
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
 	}
 
 	@Test
@@ -80,11 +76,10 @@ class HederaCreateOperationTest {
 	@Test
 	void computesExpectedCost() {
 		given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-		given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
 		var actualGas = subject.cost(frame);
 
-		assertEquals(baseGas.plus(extraGas), actualGas);
+		assertEquals(baseGas, actualGas);
 	}
 
 	@Test

@@ -31,7 +31,6 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -66,14 +65,16 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CallEvmTxProcessorTest {
@@ -100,10 +101,6 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private Map<String, PrecompiledContract> precompiledContractMap;
 	@Mock
-	private StorageExpiry storageExpiry;
-	@Mock
-	private StorageExpiry.Oracle oracle;
-	@Mock
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
 	@Mock
 	private MerkleNetworkContext merkleNetworkContext;
@@ -128,7 +125,7 @@ class CallEvmTxProcessorTest {
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource,
 				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, merkleNetworkContextSupplier);
+				operations, precompiledContractMap, aliasManager, merkleNetworkContextSupplier);
 	}
 
 	@Test
@@ -137,7 +134,6 @@ class CallEvmTxProcessorTest {
 		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(merkleNetworkContext.getBlockNo()).willReturn(1234L);
 
 		givenSenderWithBalance(350_000L);
@@ -182,7 +178,6 @@ class CallEvmTxProcessorTest {
 		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		givenSenderWithBalance(350_000L);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -199,7 +194,6 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
 		givenSenderWithBalance(350_000L);
 		final var receiverAddress = receiver.getId().asEvmAddress();
@@ -225,7 +219,6 @@ class CallEvmTxProcessorTest {
 		given(updater.getFinalStateChanges())
 				.willReturn(Map.of(Address.fromHexString(contractAddress), Map.of(UInt256.valueOf(slot),
 								Pair.of(UInt256.valueOf(oldSlotValue), UInt256.valueOf(newSlotValue)))));
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
 		final var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
@@ -251,7 +244,6 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
 		final var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);

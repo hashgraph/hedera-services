@@ -171,8 +171,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 					op.getGas(),
 					op.getInitialBalance(),
 					codeWithConstructorArgs,
-					consensusTime,
-					expiry);
+					consensusTime);
 		} finally {
 			worldState.resetHapiSenderCustomizer();
 		}

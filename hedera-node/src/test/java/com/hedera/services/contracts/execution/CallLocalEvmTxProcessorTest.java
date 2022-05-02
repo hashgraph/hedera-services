@@ -29,7 +29,6 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -92,10 +91,6 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
-	private StorageExpiry storageExpiry;
-	@Mock
-	private StorageExpiry.Oracle oracle;
-	@Mock
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
 	@Mock
 	private MerkleNetworkContext merkleNetworkContext;
@@ -113,7 +108,7 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, merkleNetworkContextSupplier);
+				gasCalculator, operations, precompiledContractMap, aliasManager, merkleNetworkContextSupplier);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
@@ -121,7 +116,6 @@ class CallLocalEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutе() {
 		givenValidMock();
-		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		var result = callLocalEvmTxProcessor.execute(
@@ -130,13 +124,11 @@ class CallLocalEvmTxProcessorTest {
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
 
-
 	@Test
 	void throwsWhenCodeCacheFailsLoading() {
 		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

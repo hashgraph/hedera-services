@@ -29,7 +29,6 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -55,7 +54,11 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -66,7 +69,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation. Provides a base
- * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address)}
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Address)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
@@ -74,9 +77,6 @@ abstract class EvmTxProcessor {
 	private static final int MAX_CODE_SIZE = 0x6000;
 	private static final List<ContractValidationRule> VALIDATION_RULES =
 			List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of());
-
-	public static final String SBH_CONTEXT_KEY = "sbh";
-	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
 	private HederaMutableWorldState worldState;
 	private final GasCalculator gasCalculator;
@@ -176,7 +176,6 @@ abstract class EvmTxProcessor {
 			final boolean contractCreation,
 			final Instant consensusTime,
 			final boolean isStatic,
-			final StorageExpiry.Oracle expiryOracle,
 			final Address mirrorReceiver
 	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
@@ -229,10 +228,7 @@ abstract class EvmTxProcessor {
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
 						.blockHashLookup(curNetworkCtx::getBlockHashByNumber)
-						.contextVariables(Map.of(
-								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
-								"HederaFunctionality", getFunctionType(),
-								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
+						.contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);

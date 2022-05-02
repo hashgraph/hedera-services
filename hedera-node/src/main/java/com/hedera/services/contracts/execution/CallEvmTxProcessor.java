@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
@@ -52,7 +51,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
-	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CallEvmTxProcessor(
@@ -64,7 +62,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
 			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
 	) {
 		super(
@@ -77,7 +74,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				merkleNetworkContextSupplier);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
-		this.storageExpiry = storageExpiry;
 	}
 
 	public TransactionProcessingResult execute(
@@ -99,7 +95,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				false,
-				storageExpiry.hapiCallOracle(),
 				aliasManager.resolveForEvm(receiver));
 	}
 

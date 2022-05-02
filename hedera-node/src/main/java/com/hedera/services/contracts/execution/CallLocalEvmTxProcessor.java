@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -55,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
-	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CallLocalEvmTxProcessor(
@@ -66,13 +64,11 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
+			final Supplier<MerkleNetworkContext> networkCtx
 	) {
-		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap, merkleNetworkContextSupplier);
+		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap, networkCtx);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
-		this.storageExpiry = storageExpiry;
 	}
 
 	@Override
@@ -105,7 +101,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				true,
-				storageExpiry.hapiStaticCallOracle(),
 				aliasManager.resolveForEvm(receiver));
 	}
 
