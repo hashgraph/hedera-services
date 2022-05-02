@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -119,51 +120,51 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						balancesChangeOnTokenTransfer(),
-//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//						senderSigsAreValid(),
-//						balancesAreChecked(),
-//						duplicateAccountsInTokenTransferRejected(),
-//						tokenOnlyTxnsAreAtomic(),
-//						tokenPlusHbarTxnsAreAtomic(),
-//						nonZeroTransfersRejected(),
-//						missingEntitiesRejected(),
-//						allRequiredSigsAreChecked(),
-//						uniqueTokenTxnAccountBalance(),
-//						uniqueTokenTxnAccountBalancesForTreasury(),
-//						uniqueTokenTxnWithNoAssociation(),
-//						uniqueTokenTxnWithFrozenAccount(),
-//						uniqueTokenTxnWithSenderNotSigned(),
-//						uniqueTokenTxnWithReceiverNotSigned(),
-//						uniqueTokenTxnsAreAtomic(),
-//						uniqueTokenDeletedTxn(),
-//						cannotSendFungibleToDissociatedContractsOrAccounts(),
-//						cannotGiveNftsToDissociatedContractsOrAccounts(),
-//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-//						transferListsEnforceTokenTypeRestrictions(),
-//						/* HIP-18 charging case studies */
-//						fixedHbarCaseStudy(),
-//						fractionalCaseStudy(),
-//						simpleHtsFeeCaseStudy(),
-//						nestedHbarCaseStudy(),
-//						nestedFractionalCaseStudy(),
-//						nestedHtsCaseStudy(),
-//						treasuriesAreExemptFromAllCustomFees(),
-//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-//						multipleRoyaltyFallbackCaseStudy(),
-//						normalRoyaltyCaseStudy(),
-//						canTransactInTokenWithSelfDenominatedFixedFee(),
-//						nftOwnersChangeAtomically(),
-//						fractionalNetOfTransfersCaseStudy(),
-//						royaltyAndFractionalTogetherCaseStudy(),
-//						respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-//						/* HIP-23 */
-//						happyPathAutoAssociationsWorkForBothTokenTypes(),
-//						failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
-//						newSlotsCanBeOpenedViaUpdate(),
-//						newSlotsCanBeOpenedViaDissociate(),
-//						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-//						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
+						balancesChangeOnTokenTransfer(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						duplicateAccountsInTokenTransferRejected(),
+						tokenOnlyTxnsAreAtomic(),
+						tokenPlusHbarTxnsAreAtomic(),
+						nonZeroTransfersRejected(),
+						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnAccountBalancesForTreasury(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
+						/* HIP-18 charging case studies */
+						fixedHbarCaseStudy(),
+						fractionalCaseStudy(),
+						simpleHtsFeeCaseStudy(),
+						nestedHbarCaseStudy(),
+						nestedFractionalCaseStudy(),
+						nestedHtsCaseStudy(),
+						treasuriesAreExemptFromAllCustomFees(),
+						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						multipleRoyaltyFallbackCaseStudy(),
+						normalRoyaltyCaseStudy(),
+						canTransactInTokenWithSelfDenominatedFixedFee(),
+						nftOwnersChangeAtomically(),
+						fractionalNetOfTransfersCaseStudy(),
+						royaltyAndFractionalTogetherCaseStudy(),
+						respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
+						/* HIP-23 */
+						happyPathAutoAssociationsWorkForBothTokenTypes(),
+						failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
+						newSlotsCanBeOpenedViaUpdate(),
+						newSlotsCanBeOpenedViaDissociate(),
+						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
+						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
 						autoAssociationWorksForContracts()
 				}
 		);
@@ -491,9 +492,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getTxnRecord(transferTxn)
 								.hasPriority(recordWith()
-								.autoAssociated(accountTokenPairs(List.of(
-										Pair.of(beneficiary, fungibleToken),
-										Pair.of(beneficiary, uniqueToken))))),
+										.autoAssociated(accountTokenPairs(List.of(
+												Pair.of(beneficiary, fungibleToken),
+												Pair.of(beneficiary, uniqueToken))))),
 						getAccountInfo(beneficiary)
 								.hasAlreadyUsedAutomaticAssociations(2)
 								.has(accountWith().newAssociationsFromSnapshot(
@@ -648,73 +649,73 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec autoAssociationWorksForContracts() {
-//		final var theContract = "CreateDonor";
-//		final var multiPurpose = "multiPurpose";
-//		final var treasury = "treasury";
-//		final var uniqueToken = "unique";
-//		final var firstFungibleToken = "firstFungibleToken";
-//		final var secondFungibleToken = "secondFungibleToken";
-//		final var thirdFungibleToken = "thirdFungibleToken";
-
+		final var theContract = "CreateDonor";
 		final String tokenA = "tokenA";
-		final String firstUser = "firstUser";
+		final String tokenB = "tokenB";
+		final String uniqueToken = "unique";
 		final String treasury = "treasury";
 		final String tokenAcreateTxn = "tokenACreate";
+		final String tokenBcreateTxn = "tokenBCreate";
 		final String transferToFU = "transferToFU";
 
 		return defaultHapiSpec("autoAssociationWorksForContracts")
 				.given(
+						newKeyNamed("supplyKey"),
+						uploadInitCode(theContract),
+						contractCreate(theContract)
+								.maxAutomaticTokenAssociations(2),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(firstUser)
-								.balance(ONE_HBAR)
-								.maxAutomaticTokenAssociations(1)
-				).when(
 						tokenCreate(tokenA)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasury)
 								.via(tokenAcreateTxn),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBcreateTxn),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyKey("supplyKey")
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
 						getTxnRecord(tokenAcreateTxn)
 								.hasNewTokenAssociation(tokenA, treasury)
 								.logged(),
-						cryptoTransfer(moving(1, tokenA).between(treasury, firstUser))
-								.via(transferToFU),
+						getTxnRecord(tokenBcreateTxn)
+								.hasNewTokenAssociation(tokenB, treasury)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(treasury, theContract))
+								.via(transferToFU).logged(),
 						getTxnRecord(transferToFU)
-								.hasNewTokenAssociation(tokenA, firstUser)
-								.logged()
+								.hasNewTokenAssociation(tokenA, theContract)
+								.logged(),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(1)
+										.maxAutoAssociations(2))
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, theContract)),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
 				).then(
-						cryptoTransfer(moving(1, tokenA).between(treasury, firstUser))
+						cryptoTransfer(moving(1, tokenB).between(treasury, theContract))
 								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
 								.via("failedTransfer"),
-						getAccountInfo(firstUser)
-								.hasAlreadyUsedAutomaticAssociations(1)
-								.hasMaxAutomaticAssociations(1)
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
+
 								.logged()
 				);
-//		return defaultHapiSpec("autoAssociationWorksForContracts")
-//				.given(
-//						newKeyNamed(multiPurpose),
-//						uploadInitCode(theContract),
-//						contractCreate(theContract)
-//								.maxAutomaticTokenAssociations(2),
-//						cryptoCreate(treasury),
-//						tokenCreate(firstFungibleToken)
-//								.tokenType(TokenType.FUNGIBLE_COMMON)
-//								.initialSupply(1_000L)
-//								.treasury(treasury),
-//						getContractInfo(theContract)
-//								.has(ContractInfoAsserts.contractWith()
-//										.maxAutoAssociations(2))
-//				).when(
-//						cryptoTransfer(
-//								moving(1, firstFungibleToken).between(TOKEN_TREASURY, theContract)
-//						).via("firstXfer")
-//				).then(
-//						getTxnRecord("firstXfer").hasPriority(recordWith()
-//										.autoAssociated(accountTokenPairs(List.of(
-//												Pair.of(theContract, firstFungibleToken)))))
-//				);
 	}
 
 	public HapiApiSpec missingEntitiesRejected() {
