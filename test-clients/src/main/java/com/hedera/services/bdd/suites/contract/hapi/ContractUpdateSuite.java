@@ -109,78 +109,10 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						eip1014AddressAlwaysHasPriority(),
 						immutableContractKeyFormIsStandard(),
 						updateAutoRenewAccountWorks(),
-						updateMaxAutoAssociationsWorks(),
-						usdFeeAsExpected()
+						updateMaxAutoAssociationsWorks()
 				}
 		);
 	}
-
-	private HapiApiSpec usdFeeAsExpected() {
-		final String CONTRACT = "Multipurpose";
-		final String associationsLimitProperty = "entities.limitTokenAssociations";
-		final String defaultAssociationsLimit =
-				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
-		final var baseUpdatePrice = 0.0418;
-		final var autoAssocSlotPrice = 0.0018;
-		final var oneUpdatesPrice = baseUpdatePrice + (autoAssocSlotPrice);
-		final var twoUpdatesPrice = baseUpdatePrice + (2 * autoAssocSlotPrice);
-		final var tenUpdatesPrice = baseUpdatePrice + (10 * autoAssocSlotPrice);
-		final var hundredUpdatesPrice = baseUpdatePrice + (100 * autoAssocSlotPrice);
-		final var thousandUpdatesprice = baseUpdatePrice + (1000 * autoAssocSlotPrice);
-
-
-		return defaultHapiSpec("usdFeeAsExpected")
-				.given(
-						cryptoCreate("civilian").balance(100 * ONE_HUNDRED_HBARS),
-						getAccountBalance("civilian").hasTinyBars(100 * ONE_HUNDRED_HBARS)
-				).when().then(
-						newKeyNamed(ADMIN_KEY),
-						uploadInitCode(CONTRACT),
-						overriding(associationsLimitProperty, defaultAssociationsLimit),
-						contractCreate(CONTRACT)
-								.blankMemo()
-								.balance(100 * ONE_HBAR)
-								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-								.adminKey(ADMIN_KEY)
-								.payingWith("civilian"),
-						contractUpdate(CONTRACT)
-								.blankMemo()
-								.payingWith("civilian")
-								.newMaxAutomaticAssociations(1)
-								.via("oneAutoAssoc"),
-						contractUpdate(CONTRACT)
-								.blankMemo()
-								.payingWith("civilian")
-								.newMaxAutomaticAssociations(3)
-								.via("twoAutoAssoc"),
-						contractUpdate(CONTRACT)
-								.blankMemo()
-								.payingWith("civilian")
-								.newMaxAutomaticAssociations(13)
-								.via("tenAutoAssoc"),
-						contractUpdate(CONTRACT)
-								.blankMemo()
-								.payingWith("civilian")
-								.newMaxAutomaticAssociations(113)
-								.via("hundredAutoAssoc"),
-						contractUpdate(CONTRACT)
-								.blankMemo()
-								.payingWith("civilian")
-								.newMaxAutomaticAssociations(1113)
-								.via("thousandAutoAssoc"),
-						getContractInfo(CONTRACT)
-								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1113))
-								.logged(),
-
-						validateChargedUsd("oneAutoAssoc", oneUpdatesPrice), // 0.0436
-						validateChargedUsd("twoAutoAssoc", twoUpdatesPrice), // 0.0454
-						validateChargedUsd("tenAutoAssoc", tenUpdatesPrice), // 0.05980
-						validateChargedUsd("hundredAutoAssoc", hundredUpdatesPrice),//0.2218
-						validateChargedUsd("thousandAutoAssoc", thousandUpdatesprice) //1.8418
-
-				);
-	}
-
 
 	// https://github.com/hashgraph/hedera-services/issues/2877
 	private HapiApiSpec eip1014AddressAlwaysHasPriority() {

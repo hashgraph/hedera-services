@@ -22,15 +22,12 @@ package com.hedera.services.fees.calculation.contract.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,21 +58,10 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 		try {
 			final var id = fromContractId(txn.getContractUpdateInstance().getContractID());
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
-			int oldMaxAutoAssociationSlots = lookUpAccountAutoAssociationSlots(id, view.accounts());
-			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage, oldMaxAutoAssociationSlots);
+			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {
 			log.debug("Unable to deduce ContractUpdate usage for {}, using defaults", txn.getTransactionID(), e);
 			return FeeData.getDefaultInstance();
-		}
-	}
-
-	private int lookUpAccountAutoAssociationSlots(final EntityNum key,
-			final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		try {
-			final var account = accounts.get(key);
-			return account.getMaxAutomaticAssociations();
-		} catch (Exception ignore) {
-			return 0;
 		}
 	}
 }

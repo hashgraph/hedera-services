@@ -114,7 +114,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithOverlyLongLifetime(),
 						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 				}
 		);
 	}
@@ -136,44 +136,44 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoCreate("payer")
 								.key("key")
 								.balance(1_000 * ONE_HBAR),
-						cryptoCreate("canonicalAccount")
-								.key("key")
-								.balance(100 * ONE_HBAR)
-								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-								.blankMemo()
-								.payingWith("payer"),
+//						cryptoCreate("canonicalAccount")
+//								.key("key")
+//								.balance(100 * ONE_HBAR)
+//								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+//								.blankMemo()
+//								.payingWith("payer"),
 						cryptoCreate("autoAssocTarget")
 								.key("key")
 								.balance(100 * ONE_HBAR)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.blankMemo()
-								.payingWith("payer"),
-						getAccountInfo("canonicalAccount")
-								.exposingExpiry(expiration::set)
+								.payingWith("payer")
+//						getAccountInfo("canonicalAccount")
+//								.exposingExpiry(expiration::set)
 				)
 				.when(
-						sourcing(() ->
-								cryptoUpdate("canonicalAccount")
-										.payingWith("canonicalAccount")
-										.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
-										.blankMemo()
-										.via(baseTxn)
-						),
+//						sourcing(() ->
+//								cryptoUpdate("canonicalAccount")
+//										.payingWith("canonicalAccount")
+//										.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+//										.blankMemo()
+//										.via(baseTxn)
+//						),
 						cryptoUpdate("autoAssocTarget")
 								.payingWith("autoAssocTarget")
 								.blankMemo()
 								.maxAutomaticAssociations(1)
-								.via(plusOneTxn),
-						cryptoUpdate("autoAssocTarget")
-								.payingWith("autoAssocTarget")
-								.blankMemo()
-								.maxAutomaticAssociations(11)
-								.via(plusTenTxn)
+								.via(plusOneTxn)
+//						cryptoUpdate("autoAssocTarget")
+//								.payingWith("autoAssocTarget")
+//								.blankMemo()
+//								.maxAutomaticAssociations(11)
+//								.via(plusTenTxn)
 				)
 				.then(
-						validateChargedUsd(baseTxn, baseFee),
-						validateChargedUsd(plusOneTxn, plusOneSlotFee),
-						validateChargedUsd(plusTenTxn, plusTenSlotsFee)
+//						validateChargedUsd(baseTxn, baseFee),
+						validateChargedUsd(plusOneTxn, plusOneSlotFee)
+//						validateChargedUsd(plusTenTxn, plusTenSlotsFee)
 				);
 	}
 

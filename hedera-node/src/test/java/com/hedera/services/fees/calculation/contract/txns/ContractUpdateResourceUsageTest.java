@@ -94,7 +94,7 @@ class ContractUpdateResourceUsageTest {
 		subject.usageGiven(contractUpdateTxn, sigUsage, view);
 
 		// then:
-		verify(usageEstimator).getContractUpdateTxFeeMatrices(contractUpdateTxn, expiry, sigUsage, 0);
+		verify(usageEstimator).getContractUpdateTxFeeMatrices(contractUpdateTxn, expiry, sigUsage);
 	}
 
 	@Test

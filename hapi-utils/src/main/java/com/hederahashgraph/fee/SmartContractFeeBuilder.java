@@ -84,20 +84,13 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		vpt = sigValObj.getTotalSigCount();
 
 		bpr = INT_SIZE;
-		rbs = (getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC)
-				+ getMaxAutoAssociationsForContractCreate(txBody);
+		rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
 		long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
 		FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
 				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-	}
-
-	private long getMaxAutoAssociationsForContractCreate(final TransactionBody txBody) {
-		final int CREATE_SLOT_MULTIPLIER = 770;
-		final var contractCreateInstance = txBody.getContractCreateInstance();
-		return contractCreateInstance.getMaxAutomaticTokenAssociations() * CREATE_SLOT_MULTIPLIER * contractCreateInstance.getAutoRenewPeriod().getSeconds();
 	}
 
 	/**
@@ -137,13 +130,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		if (contractCreate.getMemo() != null) {
 			memoSize = contractCreate.getMemoBytes().size();
 		}
-
-		int maxAutoAssociations = 0;
-		if (contractCreate.getMaxAutomaticTokenAssociations() > 0) {
-			maxAutoAssociations = INT_SIZE;
-		}
-
-		return BASIC_CONTRACT_CREATE_SIZE + adminKeySize + proxyAcctID + constructParamSize + newRealmAdminKeySize + memoSize + maxAutoAssociations;
+		return BASIC_CONTRACT_CREATE_SIZE + adminKeySize + proxyAcctID + constructParamSize + newRealmAdminKeySize + memoSize;
 	}
 
 	/**
@@ -159,11 +146,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	 * @throws InvalidTxBodyException
 	 * 		when transaction body is invalid
 	 */
-	public FeeData getContractUpdateTxFeeMatrices(
-			final TransactionBody txBody,
-			final Timestamp contractExpiryTime,
-			final SigValueObj sigValObj,
-			final int oldMaxAutoAssociationSlots) throws InvalidTxBodyException {
+	public FeeData getContractUpdateTxFeeMatrices(TransactionBody txBody,
+			Timestamp contractExpiryTime, SigValueObj sigValObj) throws InvalidTxBodyException {
 		if (txBody == null || !txBody.hasContractUpdateInstance()) {
 			throw new InvalidTxBodyException(
 					"ContractUpdateInstance Tx Body not available for Fee Calculation");
@@ -188,40 +172,18 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
 		bpr = INT_SIZE;
 
-		if (contractExpiryTime.getSeconds() > 0) {
+		if (contractExpiryTime != null && contractExpiryTime.getSeconds() > 0) {
 			sbs = getContractUpdateStorageBytesSec(txBody, contractExpiryTime);
 		}
 
 		long rbsNetwork = getDefaultRBHNetworkSize();
-		long autoAssociationUsage = getAutoAssociationsUsage(txBody, oldMaxAutoAssociationSlots, contractExpiryTime);
-		rbs = (getBaseTransactionRecordSize(txBody)
-				* (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC)) + autoAssociationUsage;
+
+		rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
 
 		FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
 				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-	}
-
-	private long getAutoAssociationsUsage(final TransactionBody txBody,
-			final int oldMaxAutoAssociationSlots, final Timestamp contractExpiryTime) {
-		final int UPDATE_SLOT_MULTIPLIER = 200;
-		final var updateInstance = txBody.getContractUpdateInstance();
-
-		final var oldSlotsUsage = oldMaxAutoAssociationSlots * UPDATE_SLOT_MULTIPLIER;
-		final var newSlotsUsage = updateInstance.hasMaxAutomaticTokenAssociations() ?
-				updateInstance.getMaxAutomaticTokenAssociations().getValue() * UPDATE_SLOT_MULTIPLIER
-				: oldSlotsUsage;
-		final var validStart = txBody.getTransactionID().getTransactionValidStart().getSeconds();
-
-		final var oldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, contractExpiryTime.getSeconds() - validStart);
-		var newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME,
-				updateInstance.getExpirationTime().getSeconds() - validStart);
-
-		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
-		long oldBs = oldSlotsUsage * oldLifetimeSecs;
-		long newBs = newSlotsUsage * newLifetimeSecs;
-		return Math.max(0, newBs - oldBs);
 	}
 
 	/**
@@ -367,10 +329,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
 		if (contractUpdateTxBody.getMemo() != null) {
 			contractUpdateBodySize += contractUpdateTxBody.getMemoBytes().size();
-		}
-
-		if (contractUpdateTxBody.getMaxAutomaticTokenAssociations().getValue() > 0) {
-			contractUpdateBodySize += INT_SIZE;
 		}
 
 		return contractUpdateBodySize;
