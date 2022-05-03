@@ -148,7 +148,8 @@ public class ScheduleProcessing {
 			try {
 
 				if (!this.dynamicProperties.schedulingLongTermEnabled()) {
-					// if long term is disabled, we always expire transactions that are not ready to execute
+					// if long term is disabled, we always expire transactions that would otherwise
+					// execute autonomously
 					store.expire(next);
 					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
 					continue;
