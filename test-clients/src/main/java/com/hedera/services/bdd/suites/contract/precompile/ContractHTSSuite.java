@@ -684,7 +684,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						contractCreate(FEE_DISTRIBUTOR).maxAutomaticTokenAssociations(2),
 						getContractInfo(FEE_DISTRIBUTOR)
-								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(2))
 								.logged(),
 						withOpContext(
 								(spec, opLog) ->

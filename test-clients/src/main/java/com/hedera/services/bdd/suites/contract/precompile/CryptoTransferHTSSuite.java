@@ -101,15 +101,15 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 						nonNestedCryptoTransferForFungibleToken(),
-//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-//						nonNestedCryptoTransferForNonFungibleToken(),
-//						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-//						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-//						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-//						repeatedTokenIdsAreAutomaticallyConsolidated(),
-//						activeContractInFrameIsVerifiedWithoutNeedForSignature()
+						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+						nonNestedCryptoTransferForNonFungibleToken(),
+						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+						repeatedTokenIdsAreAutomaticallyConsolidated(),
+						activeContractInFrameIsVerifiedWithoutNeedForSignature()
 				}
 		);
 	}
@@ -207,10 +207,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
-//								.maxAutomaticTokenAssociations(1),
-//						getContractInfo(CONTRACT)
-//								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-//								.logged()
+								.maxAutomaticTokenAssociations(1),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+								.logged()
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
