@@ -53,6 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -90,7 +91,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
-	private final Map<String, Object> spanMap = new HashMap<>();
+	private Map<String, Object> spanMap = new HashMap<>();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -355,6 +356,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public Map<String, Object> getSpanMap() {
 		return spanMap;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		spanMap = Collections.unmodifiableMap(newSpanMap);
 	}
 
 	@Override
