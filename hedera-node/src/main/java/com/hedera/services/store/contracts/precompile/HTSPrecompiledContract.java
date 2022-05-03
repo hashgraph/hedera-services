@@ -376,13 +376,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
-		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
-
-		if (frame.isStatic() && !isRedirectProxy) {
-			frame.setRevertReason(STATIC_CALL_REVERT_REASON);
-			return null;
-		}
-
 		prepareFields(frame);
 		prepareComputation(input, updater::unaliased);
 
