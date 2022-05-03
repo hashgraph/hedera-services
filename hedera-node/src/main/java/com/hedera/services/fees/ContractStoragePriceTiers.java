@@ -41,6 +41,7 @@ import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
  * this will not be a limitation under any realistic scenario.
  */
 public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
+	private static final int SLOT_SIZE = 64;
 	public static final long TIER_MULTIPLIER = 1_000_000L;
 	public static final long THOUSANDTHS_TO_TINY = 100_000_000L / 1_000L;
 
@@ -80,7 +81,8 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 			final Bytes code,
 			final long requestedLifetime
 	) {
-		throw new AssertionError("Not implemented");
+		final var equivNumSlots = (code.size() + SLOT_SIZE - 1) / SLOT_SIZE;
+		return slotPrice(rate, slotLifetime, numKvPairsUsed, equivNumSlots, requestedLifetime);
 	}
 
 	/**
@@ -105,6 +107,11 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 			final int requestedKvPairs,
 			final long requestedLifetime
 	) {
+		if (requestedKvPairs == 0) {
+			throw new IllegalArgumentException("Cannot request zero slots");
+		}
+
+		// Traverse tiers until we find the active one
 		int i = 0;
 		for (; numKvPairsUsed > usageTiers[i]; i++) {
 			if (i == usageTiers.length - 1) {
@@ -168,7 +175,10 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 	}
 
 	private static long parseUsageTier(final String s) {
-		return parseScaled(s, TIER_MULTIPLIER);
+		final var isMillions = s.endsWith("M");
+		return parseScaled(
+				isMillions ? s.substring(0, s.length() - 1) : s,
+				isMillions ? TIER_MULTIPLIER : 1);
 	}
 
 	private static long parsePrice(final String s) {

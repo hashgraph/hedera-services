@@ -56,7 +56,7 @@ class GlobalDynamicPropertiesTest {
 			"c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
 	private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 	private static final ContractStoragePriceTiers canonicalTiers = ContractStoragePriceTiers.from(
-			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
+			"10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M");
 
 	private PropertySource properties;
 

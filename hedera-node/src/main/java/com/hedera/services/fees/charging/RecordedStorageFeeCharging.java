@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ package com.hedera.services.fees.charging;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -30,7 +29,6 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
@@ -68,9 +66,10 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 		this.dynamicProperties = dynamicProperties;
 	}
 
+	@Override
 	public void chargeStorageFees(
 			final long numKvPairs,
-			final Map<Long, Bytes> newBytecodes,
+			final Map<AccountID, Bytes> newBytecodes,
 			final Map<AccountID, Integer> newUsageDeltas,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
@@ -79,7 +78,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 
 	void chargeStorageFeesInternal(
 			final long numKvPairs,
-			final Map<Long, Bytes> newBytecodes,
+			final Map<AccountID, Bytes> newBytecodes,
 			final Map<AccountID, Integer> newUsageDeltas,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
@@ -88,37 +87,40 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 		final var thisSecond = now.getEpochSecond();
 		final var slotLifetime = dynamicProperties.storageSlotLifetime();
 		final var storagePriceTiers = dynamicProperties.storagePriceTiers();
+
 		if (!newBytecodes.isEmpty()) {
-			throw new AssertionError("Not implemented");
+			newBytecodes.forEach((id, code) -> {
+				final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+				final var fee = storagePriceTiers.codePrice(rate, slotLifetime, numKvPairs, code, lifetime);
+				pay(id, fee, accounts);
+			});
 		}
+
 		if (!newUsageDeltas.isEmpty()) {
-			chargeForSlots(thisSecond, numKvPairs, slotLifetime, rate, storagePriceTiers, newUsageDeltas, accounts);
+			newUsageDeltas.forEach((id, delta) -> {
+				if (delta > 0) {
+					final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+					final var fee = storagePriceTiers.slotPrice(rate, slotLifetime, numKvPairs, delta, lifetime);
+					pay(id, fee, accounts);
+				}
+			});
 		}
 	}
 
-	private void chargeForSlots(
-			final long now,
-			final long numKvPairs,
-			final long slotLifetime,
-			final ExchangeRate rate,
-			final ContractStoragePriceTiers storagePriceTiers,
-			final Map<AccountID, Integer> newUsageDeltas,
+	private void pay(
+			final AccountID id,
+			final long fee,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
-		newUsageDeltas.forEach((id, delta) -> {
-			if (delta > 0) {
-				final var lifetime = (long) accounts.get(id, EXPIRY) - now;
-				var leftToPay = storagePriceTiers.slotPrice(rate, slotLifetime, numKvPairs, delta, lifetime);
-				final var autoRenew = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-				if (!MISSING_ENTITY_ID.equals(autoRenew)) {
-					final var debited = charge(autoRenew.toGrpcAccountId(), leftToPay, false, accounts);
-					leftToPay -= debited;
-				}
-				if (leftToPay > 0) {
-					charge(id, leftToPay, true, accounts);
-				}
-			}
-		});
+		var leftToPay = fee;
+		final var autoRenew = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+		if (!MISSING_ENTITY_ID.equals(autoRenew)) {
+			final var debited = charge(autoRenew.toGrpcAccountId(), leftToPay, false, accounts);
+			leftToPay -= debited;
+		}
+		if (leftToPay > 0) {
+			charge(id, leftToPay, true, accounts);
+		}
 	}
 
 	private long charge(
@@ -127,8 +129,6 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 			final boolean isLastResort,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
-		System.out.println("Trying to charge " + amount
-				+ " (lastResort? " + isLastResort + ") to 0.0." + id.getAccountNum());
 		var paid = 0L;
 		final var balance = (long) accounts.get(id, BALANCE);
 		if (amount > balance) {

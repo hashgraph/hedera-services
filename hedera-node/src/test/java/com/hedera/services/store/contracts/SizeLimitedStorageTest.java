@@ -101,8 +101,8 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void accumulatesAndResetsPendingCodeAsExpected() {
-		subject.storeCode(firstAccount.getAccountNum(), oneByteCode);
-		subject.storeCode(nextAccount.getAccountNum(), eightByteCode);
+		subject.storeCode(firstAccount, oneByteCode);
+		subject.storeCode(nextAccount, eightByteCode);
 
 		assertEquals(2, subject.getNewBytecodes().size());
 
@@ -117,8 +117,8 @@ class SizeLimitedStorageTest {
 		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
 
 		subject.beginSession();
-		subject.storeCode(firstAccount.getAccountNum(), oneByteCode);
-		subject.storeCode(nextAccount.getAccountNum(), eightByteCode);
+		subject.storeCode(firstAccount, oneByteCode);
+		subject.storeCode(nextAccount, eightByteCode);
 		subject.validateAndCommit(accountsLedger);
 
 		verify(storageFeeCharging).chargeStorageFees(

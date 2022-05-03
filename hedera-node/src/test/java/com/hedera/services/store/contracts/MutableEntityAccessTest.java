@@ -305,7 +305,7 @@ class MutableEntityAccessTest {
 		subject.storeCode(id, bytecode);
 
 		// then:
-		verify(storage).storeCode(id.getAccountNum(), bytecode);
+		verify(storage).storeCode(id, bytecode);
 	}
 
 	@Test

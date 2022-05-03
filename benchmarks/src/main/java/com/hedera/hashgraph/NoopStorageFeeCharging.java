@@ -33,7 +33,7 @@ public class NoopStorageFeeCharging implements StorageFeeCharging {
 	@Override
 	public void chargeStorageFees(
 			final long numKvPairs,
-			final Map<Long, Bytes> newBytecodes,
+			final Map<AccountID, Bytes> newBytecodes,
 			final Map<AccountID, Integer> newUsageDeltas,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {

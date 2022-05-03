@@ -59,7 +59,7 @@ class BootstrapPropertiesTest {
 	private BootstrapProperties subject = new BootstrapProperties();
 
 	private static final ContractStoragePriceTiers CANONICAL_TIERS = ContractStoragePriceTiers.from(
-			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
+			"10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M");
 
 	private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
 	private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";

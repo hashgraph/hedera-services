@@ -60,7 +60,7 @@ import static org.mockito.Mockito.verify;
 class RecordedStorageFeeChargingTest {
 	private static final long canonicalLifetime = 2592000L;
 	private static final ContractStoragePriceTiers canonicalTiers = ContractStoragePriceTiers.from(
-			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
+			"10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M");
 
 	@Mock
 	private HbarCentExchange exchange;
@@ -83,6 +83,20 @@ class RecordedStorageFeeChargingTest {
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(exchange.activeRate(now)).willReturn(someRate);
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
+	}
+
+	@Test
+	void chargesBytecode() {
+		final var expectedACharge = canonicalTiers.codePrice(
+				someRate, canonicalLifetime, numKvPairsUsed, oneKbCode, aExpiry);
+		givenChargeableContract(aContract, expectedACharge * 2, aExpiry, null);
+		given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
+
+		final var newCodes = Map.of(aContract, oneKbCode);
+		subject.chargeStorageFeesInternal(numKvPairsUsed, newCodes, Collections.emptyMap(), accountsLedger);
+
+		verify(accountsLedger).set(aContract, BALANCE, expectedACharge);
+		verify(accountsLedger).set(funding, BALANCE, expectedACharge);
 	}
 
 	@Test

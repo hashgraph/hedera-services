@@ -21,6 +21,7 @@ package com.hedera.services.fees;
  */
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
@@ -37,13 +38,49 @@ class ContractStoragePriceTiersTest {
 	private static final long P = ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
 	private static final long DEFAULT_PERIOD = 2592000L;
 	private static final ContractStoragePriceTiers CANONICAL_TIERS = ContractStoragePriceTiers.from(
-			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
+			"10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M");
+
+	@Test
+	void chargesBytecodeAsAtLeastOneKvPair() {
+		final var codeLen = 63;
+		final var code = Bytes.wrap(new byte[codeLen]);
+		final var numKvPairs = 77_777_777L;
+		final var reqLifetime = DEFAULT_PERIOD / 4 * 5;
+
+		final var codePrice = CANONICAL_TIERS.codePrice(
+				someRate, DEFAULT_PERIOD, numKvPairs, code, reqLifetime);
+		final var expectedPrice = CANONICAL_TIERS.slotPrice(
+				someRate, DEFAULT_PERIOD, numKvPairs, 1, reqLifetime);
+
+		assertEquals(expectedPrice, codePrice);
+	}
+
+	@Test
+	void chargesBytecodeAsMultipleOfKvPairs() {
+		final var codeLen = 1024;
+		final var code = Bytes.wrap(new byte[codeLen]);
+		final var numKvPairs = 77_777_777L;
+		final var reqLifetime = DEFAULT_PERIOD / 4 * 5;
+
+		final var codePrice = CANONICAL_TIERS.codePrice(
+				someRate, DEFAULT_PERIOD, numKvPairs, code, reqLifetime);
+		final var expectedPrice = CANONICAL_TIERS.slotPrice(
+				someRate, DEFAULT_PERIOD, numKvPairs, codeLen / 64, reqLifetime);
+
+		assertEquals(expectedPrice, codePrice);
+	}
 
 	@Test
 	void doesntChargeZero() {
 		final var degenerate = CANONICAL_TIERS.slotPrice(
 				someOtherRate, DEFAULT_PERIOD, 1_000_000, 1, DEFAULT_PERIOD);
 		assertEquals(1, degenerate);
+	}
+
+	@Test
+	void failsOnZeroSlotsRequested() {
+		assertThrows(IllegalArgumentException.class, () -> CANONICAL_TIERS.slotPrice(
+				someRate, DEFAULT_PERIOD, 666, 0, DEFAULT_PERIOD));
 	}
 
 	@Test
@@ -93,7 +130,7 @@ class ContractStoragePriceTiersTest {
 
 	@Test
 	void parsesValidAsExpected() {
-		final var input = "10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500";
+		final var input = "10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M";
 		final var expectedUsageTiers = new long[] {
 				50 * M, 100 * M, 150 * M, 200 * M, 250 * M, 300 * M, 350 * M, 400 * M, 450 * M, 500 * M
 		};
@@ -132,7 +169,7 @@ class ContractStoragePriceTiersTest {
 		final var c = ContractStoragePriceTiers.from("1@10,5@50,1000@200");
 		final var d = a;
 		final var e = ContractStoragePriceTiers.from("1@10,5@50,1000@100");
-		final var desired = "ContractStoragePriceTiers{usageTiers=[10000000, 50000000, 100000000], " +
+		final var desired = "ContractStoragePriceTiers{usageTiers=[10, 50, 100], " +
 				"prices=[100000, 500000, 100000000]}";
 
 		assertEquals(a, d);

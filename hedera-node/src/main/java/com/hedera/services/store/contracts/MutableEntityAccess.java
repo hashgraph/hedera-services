@@ -169,7 +169,7 @@ public class MutableEntityAccess implements EntityAccess {
 
 	@Override
 	public void storeCode(final AccountID id, final Bytes code) {
-		sizeLimitedStorage.storeCode(id.getAccountNum(), code);
+		sizeLimitedStorage.storeCode(id, code);
 	}
 
 	@Override

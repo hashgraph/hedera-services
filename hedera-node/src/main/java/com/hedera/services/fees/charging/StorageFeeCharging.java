@@ -31,7 +31,7 @@ import java.util.Map;
 public interface StorageFeeCharging {
 	void chargeStorageFees(
 			long numKvPairs,
-			Map<Long, Bytes> newBytecodes,
+			Map<AccountID, Bytes> newBytecodes,
 			Map<AccountID, Integer> newUsageDeltas,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
 }

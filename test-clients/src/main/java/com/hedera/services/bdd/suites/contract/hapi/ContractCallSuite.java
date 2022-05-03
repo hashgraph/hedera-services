@@ -143,7 +143,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -186,7 +186,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				contractCreationStoragePriceMatchesFinalExpiry(),
 				whitelistingAliasedContract(),
 				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
-		);
+		});
 	}
 
 	private HapiApiSpec whitelistingAliasedContract() {

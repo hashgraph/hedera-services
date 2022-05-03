@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.StorageFeeCharging;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -50,6 +49,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -86,10 +86,10 @@ public class SizeLimitedStorage {
 	// Used to both read and write key/value pairs throughout the lifecycle of a change set
 	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
-	private final Map<Long, Bytes> newBytecodes = new TreeMap<>();
 	private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
-	private final Map<AccountID, Integer> newUsageDeltas = new TreeMap<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
+	private final Map<AccountID, Bytes> newBytecodes = new TreeMap<>(ACCOUNT_ID_COMPARATOR);
+	private final Map<AccountID, Integer> newUsageDeltas = new TreeMap<>(ACCOUNT_ID_COMPARATOR);
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
 	private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
@@ -133,11 +133,11 @@ public class SizeLimitedStorage {
 	/**
 	 * Records the size of the bytecode used by a newly created contract.
 	 *
-	 * @param contractNum the number of the new contract
+	 * @param contractId the id of the new contract
 	 * @param code its bytecode
 	 */
-	public void storeCode(final long contractNum, final Bytes code) {
-		newBytecodes.put(contractNum, code);
+	public void storeCode(final AccountID contractId, final Bytes code) {
+		newBytecodes.put(contractId, code);
 	}
 
 	/**
@@ -379,7 +379,7 @@ public class SizeLimitedStorage {
 		}
 		final var curBlobs = blobs.get();
 		newBytecodes.forEach((id, code) -> {
-			curBlobs.put(bytecodeKeyFor(id), new VirtualBlobValue(code.toArrayUnsafe()));
+			curBlobs.put(bytecodeKeyFor(id.getAccountNum()), new VirtualBlobValue(code.toArrayUnsafe()));
 		});
 	}
 
@@ -459,7 +459,7 @@ public class SizeLimitedStorage {
 	}
 
 	@VisibleForTesting
-	Map<Long, Bytes> getNewBytecodes() {
+	Map<AccountID, Bytes> getNewBytecodes() {
 		return newBytecodes;
 	}
 
