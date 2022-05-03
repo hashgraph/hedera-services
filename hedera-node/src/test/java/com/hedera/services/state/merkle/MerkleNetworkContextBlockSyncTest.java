@@ -123,7 +123,9 @@ class MerkleNetworkContextBlockSyncTest {
 	void unknownBlockValuesHaveExpectedDefaults() {
 		assertSame(Instant.EPOCH, subject.firstConsTimeOfCurrentBlock());
 		assertEquals(0, subject.getBlockNo());
-		assertEquals(Long.MIN_VALUE, subject.getManagedBlockNo());
+		subject.setBlockNo(Long.MIN_VALUE + 1);
+		assertEquals(0, subject.getBlockNo());
+		assertEquals(Long.MIN_VALUE + 1, subject.getManagedBlockNo());
 	}
 
 	private void finishNBlocks(final int n) {

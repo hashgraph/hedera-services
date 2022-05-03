@@ -47,6 +47,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<Long> valueSent = Optional.of(0L);
+	private boolean convertableToEthCall = true;
 
 	private Consumer<Object[]> resultObserver = null;
 
@@ -96,6 +97,11 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return this;
 	}
 
+	public HapiContractCall refusingEthConversion() {
+		convertableToEthCall = false;
+		return this;
+	}
+
 	public HapiContractCall gas(long amount) {
 		gas = Optional.of(amount);
 		return this;
@@ -119,6 +125,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.ContractCall;
+	}
+
+	public boolean isConvertableToEthCall() {
+		return convertableToEthCall;
 	}
 
 	public String getContract() {

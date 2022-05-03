@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -303,13 +303,13 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part1.eth.failing")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompileEthFailing() {
-		return List.of(
-				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-		);
+		return List.of(new DynamicContainer[] {
+//				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+//				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+//				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+//				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+//				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+		});
 	}
 
 	@Tag("contract")
@@ -823,7 +823,8 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, while " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
+											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
 						}

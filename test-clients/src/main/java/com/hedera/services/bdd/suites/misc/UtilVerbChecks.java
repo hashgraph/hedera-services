@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+
 public class UtilVerbChecks extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UtilVerbChecks.class);
 

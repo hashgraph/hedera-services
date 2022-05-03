@@ -64,6 +64,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSp
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public static final String ETH_HASH_KEY = "EthHash";
@@ -78,6 +79,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
+    private boolean useSpecNonce = true;
     private long gasPrice = 1L;
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
@@ -188,6 +190,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall nonce(long nonce) {
         this.nonce = nonce;
+        useSpecNonce = false;
         return this;
     }
 
@@ -204,14 +207,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public HapiEthereumCall gasLimit(long gasLimit) {
         this.gas = Optional.of(gasLimit);
         return this;
-    }
-
-    public long getNonce() {
-        return nonce;
-    }
-
-    public void setNonce(long nonce) {
-        this.nonce = nonce;
     }
 
     @Override
@@ -272,6 +267,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
         final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.get())).array()).toArray();
 
+        if (useSpecNonce) {
+            nonce = spec.getNonce();
+        }
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, gasBytes, gas.orElse(100_000L),
                 Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
@@ -292,7 +290,10 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(final HapiApiSpec spec) throws Throwable {
+        if (actualPrecheck == OK) {
+            spec.incrementNonce();
+        }
         if (gasObserver.isPresent()) {
             doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
         }
