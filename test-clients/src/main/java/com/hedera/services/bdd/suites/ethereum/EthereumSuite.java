@@ -1,39 +1,30 @@
 package com.hedera.services.bdd.suites.ethereum;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.ethereum.EthTxData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
@@ -41,8 +32,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -60,11 +55,132 @@ public class EthereumSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				invalidTxData(),
-				ETX_014_contractCreateInheritsSignerProperties(),
-				invalidNonceEthereumTxFails()
+//				invalidTxData(),
+//				ETX_014_contractCreateInheritsSignerProperties(),
+//				invalidNonceEthereumTxFails(),
+				ethSenderIsChargedWholeGasFeeSucceeds(),
+				relayerPaysAllGasSucceeds(),
+				lowGasPriceAndNoGasAllowanceFails()
 		);
 	}
+
+	HapiApiSpec lowGasPriceAndNoGasAllowanceFails() {
+		return defaultHapiSpec("relayerPaysAllGasSucceeds")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+				).when(
+						uploadDefaultFeeSchedules(GENESIS)
+				).then(
+						ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(RELAYER)
+								.via("payTxn")
+								.nonce(0)
+								.maxGasAllowance(0)
+								.maxFeePerGas(4L)
+								.gasLimit(1_000_000L)
+								.sending(depositAmount)
+								.hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_TX_FEE)
+				);
+	}
+
+
+	HapiApiSpec ethSenderIsChargedWholeGasFeeSucceeds() {
+		return defaultHapiSpec("relayerPaysAllGasSucceeds")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+				).when(
+						uploadDefaultFeeSchedules(GENESIS)
+				).then(
+						withOpContext((spec, ignore) -> {
+							final String senderBalance = "balance";
+							final String payerBalance = "payerBalance";
+							final var subop1 =
+									balanceSnapshot(senderBalance, SECP_256K1_SOURCE_KEY)
+											.accountIsAlias();
+							final var subop2 = balanceSnapshot(payerBalance, RELAYER);
+							final var subop3 = ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+									.type(EthTxData.EthTransactionType.EIP1559)
+									.signingWith(SECP_256K1_SOURCE_KEY)
+									.payingWith(RELAYER)
+									.via("payTxn")
+									.nonce(0)
+									.maxGasAllowance(ONE_HUNDRED_HBARS)
+									.maxFeePerGas(50L)
+									.gasLimit(1_000_000L)
+									.sending(depositAmount)
+									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
+
+							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
+							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
+							var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+									changeFromSnapshot(senderBalance, -depositAmount-fees));
+							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
+									changeFromSnapshot(payerBalance, 0));
+							allRunFor(spec, subop4, subop5);
+						})
+				);
+	}
+
+
+	HapiApiSpec relayerPaysAllGasSucceeds() {
+		return defaultHapiSpec("relayerPaysAllGasSucceeds")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+				).when(
+						uploadDefaultFeeSchedules(GENESIS)
+				).then(
+						withOpContext((spec, ignore) -> {
+							final String senderBalance = "balance";
+							final String payerBalance = "payerBalance";
+							final var subop1 =
+									balanceSnapshot(senderBalance, SECP_256K1_SOURCE_KEY)
+											.accountIsAlias();
+							final var subop2 = balanceSnapshot(payerBalance, RELAYER);
+							final var subop3 = ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+									.type(EthTxData.EthTransactionType.EIP1559)
+									.signingWith(SECP_256K1_SOURCE_KEY)
+									.payingWith(RELAYER)
+									.via("payTxn")
+									.nonce(0)
+									.maxGasAllowance(ONE_HUNDRED_HBARS)
+									.maxFeePerGas(0L)
+									.gasLimit(1_000_000L)
+									.sending(depositAmount)
+									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
+
+							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
+							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
+							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+									changeFromSnapshot(senderBalance, -depositAmount));
+							var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
+									changeFromSnapshot(payerBalance, -fees));
+							allRunFor(spec, subop4, subop5);
+						})
+				);
+	}
+
 
 	HapiApiSpec invalidTxData() {
 		return defaultHapiSpec("InvalidTxData")

@@ -49,7 +49,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
-                ethereumCalls(),
+//                ethereumCalls(),
                 ethereumCreates()
         );
     }
@@ -62,9 +62,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     List<HapiApiSpec> ethereumCreates() {
         return List.of(
-                smallContractCreate(),
-                bigContractCreate(),
-                contractCreateWithConstructorArgs()
+//                smallContractCreate(),
+                bigContractCreate()
+//                contractCreateWithConstructorArgs()
         );
     }
 
@@ -85,7 +85,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(RELAYER)
                                 .via("payTxn")
                                 .nonce(0)
-                                .gasPrice(10L)
+                                .maxFeePerGas(40L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
@@ -97,7 +97,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(RELAYER)
                                 .via("payTxn")
                                 .nonce(1)
-                                .gasPrice(10L)
+                                .gasPrice(50L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
@@ -134,9 +134,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gasPrice(10L)
-                                .maxGasAllowance(5L)
-                                .maxPriorityGas(2L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L).hasKnownStatus(SUCCESS)
                                 .via("payTxn")
                 ).then(
@@ -172,9 +170,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gasPrice(10L)
-                                .maxGasAllowance(5L)
-                                .maxPriorityGas(2L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .via("payTxn")
                                 .hasKnownStatus(SUCCESS)
@@ -210,8 +206,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(RELAYER)
                                 .nonce(0)
                                 .gasPrice(10L)
-                                .maxGasAllowance(5L)
-                                .maxPriorityGas(2L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS)
                 ).then();

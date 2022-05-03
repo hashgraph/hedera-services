@@ -121,11 +121,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
+		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,0);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId,
-			boolean incrementCounter, boolean createSyntheticRecord) {
+	public void doStateTransitionOperation(final TransactionBody contractCreateTxn,
+										   final Id senderId,
+										   boolean createSyntheticRecord,
+										   final Id relayerId,
+										   final long maxGasAllowance,
+										   final long userOfferedGasPrice) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()
@@ -151,7 +155,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 
 		// --- Do the business logic ---
-		if (incrementCounter) {
+		if (relayerId != null) {
 			sender.incrementEthereumNonce();
 			accountStore.commitAccount(sender);
 		}
@@ -160,14 +164,28 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {
-			result = evmTxProcessor.execute(
-					sender,
-					newContractAddress,
-					op.getGas(),
-					op.getInitialBalance(),
-					codeWithConstructorArgs,
-					consensusTime,
-					expiry);
+			if (relayerId == null) {
+				result = evmTxProcessor.execute(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry);
+			} else {
+				result = evmTxProcessor.executeEth(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry,
+						accountStore.loadAccount(relayerId),
+						userOfferedGasPrice,
+						maxGasAllowance);
+			}
 		} finally {
 			worldState.resetHapiSenderCustomizer();
 		}

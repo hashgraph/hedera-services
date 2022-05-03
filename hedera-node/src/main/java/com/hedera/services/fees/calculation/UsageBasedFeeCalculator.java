@@ -200,6 +200,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 				var contractCallOp = accessor.getTxn().getContractCall();
 				return -contractCallOp.getAmount()
 						- contractCallOp.getGas() * estimatedGasPriceInTinybars(ContractCall, at);
+			case EthereumTransaction:
+				return -accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
 			default:
 				return 0L;
 		}

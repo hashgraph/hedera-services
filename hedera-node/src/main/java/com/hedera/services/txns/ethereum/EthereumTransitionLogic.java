@@ -35,6 +35,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
@@ -67,6 +68,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 public class EthereumTransitionLogic implements PreFetchableTransition {
 
@@ -108,22 +110,26 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
-		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
-		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
-		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
-
-		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
+		final var txnAccessor = txnCtx.accessor();
+		var syntheticTxBody = getOrCreateTransactionBody(txnAccessor);
+		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnAccessor);
+		maybeUpdateCallData(txnAccessor, ethTxData, txnAccessor.getTxn().getEthereumTransaction());
+		final var ethTxSigs = getOrCreateEthSigs(txnAccessor, ethTxData);
+		final var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
+		final var relayerId = Id.fromGrpcAccount(txnAccessor.getPayer());
+		final var maxGasAllowance = txnAccessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
+		final var userOfferedGasPrice = getOfferedGasPrice(ethTxData);
 
 		if (syntheticTxBody.hasContractCall()) {
-			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
+			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), relayerId,
+					maxGasAllowance, userOfferedGasPrice);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
 			final var synthOp = addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(),
 					callingAccount.toGrpcAccountId());
 			syntheticTxBody = TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
-			spanMapAccessor.setEthTxBodyMeta(txnCtx.accessor(), syntheticTxBody);
+			spanMapAccessor.setEthTxBodyMeta(txnAccessor, syntheticTxBody);
 			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true,
-					true);
+					relayerId, maxGasAllowance, userOfferedGasPrice);
 		}
 		recordService.updateForEvmCall(ethTxData, callingAccount.toEntityId());
 	}
@@ -280,6 +286,14 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		} catch (DecoderException e) {
 			throw new InvalidTransactionException(ResponseCodeEnum.SERIALIZATION_FAILED);
 		}
+	}
+
+	private long getOfferedGasPrice(final EthTxData ethTxData) {
+		return switch (ethTxData.type()) {
+			case LEGACY_ETHEREUM -> new BigInteger(ethTxData.gasPrice()).divide(WEIBARS_TO_TINYBARS).longValueExact();
+			case EIP1559 -> new BigInteger(ethTxData.maxGas()).divide(WEIBARS_TO_TINYBARS).longValueExact();
+			case EIP2930 -> throw new InvalidTransactionException(NOT_SUPPORTED);
+		};
 	}
 }
 

@@ -55,12 +55,17 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
@@ -177,7 +182,10 @@ abstract class EvmTxProcessor {
 			final Instant consensusTime,
 			final boolean isStatic,
 			final StorageExpiry.Oracle expiryOracle,
-			final Address mirrorReceiver
+			final Address mirrorReceiver,
+			final long userOfferedGasPrice,
+			final long maxGasAllowanceInTinybars,
+			final Account relayer
 	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
@@ -188,13 +196,45 @@ abstract class EvmTxProcessor {
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
 		final MutableAccount mutableSender = senderAccount.getMutable();
 
+		var allowanceCharged = Wei.ZERO;
+		MutableAccount mutableRelayer = null;
+		if (relayer != null) {
+			final var relayerEvmAddress = relayer.getId().asEvmAddress();
+			final var relayerAccount = updater.getOrCreateSenderAccount(relayerEvmAddress);
+			mutableRelayer= relayerAccount.getMutable();
+		}
 		if (!isStatic) {
 			if (intrinsicGas.toLong() > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
-			final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
-			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-			mutableSender.decrementBalance(gasCost);
+			if (relayer == null) {
+				final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+				validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+				mutableSender.decrementBalance(gasCost);
+			} else {
+				// If user set gas price to 0, relayer pays all the fees
+				final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
+				if (userOfferedGasPrice == 0) {
+					validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
+					final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
+					validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+					mutableRelayer.decrementBalance(gasCost);
+					allowanceCharged = gasCost;
+				} else {
+					final Wei senderBalance = mutableSender.getBalance();
+					var senderCanAffordGas = senderBalance.compareTo(gasCost) >= 0;
+					if (!senderCanAffordGas) {
+						senderCanAffordGas = senderBalance.compareTo(gasCost.subtract(gasAllowance)) >= 0;
+						validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+						mutableRelayer.decrementBalance(gasCost.subtract(senderBalance));
+						allowanceCharged = gasCost.subtract(senderBalance);
+					}
+					mutableSender.decrementBalance(gasCost);
+				}
+				// In any case, the sender must have sufficient balance to pay for any value sent
+				final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
+				validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
+			}
 		}
 
 		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
@@ -252,7 +292,16 @@ abstract class EvmTxProcessor {
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
-			mutableSender.incrementBalance(refundedWei);
+			if (allowanceCharged.greaterThan(Wei.ZERO)) {
+				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
+					mutableRelayer.incrementBalance(allowanceCharged);
+					mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
+				} else {
+					mutableRelayer.incrementBalance(refundedWei);
+				}
+			} else {
+				mutableSender.incrementBalance(refundedWei);
+			}
 
 			// Send fees to coinbase
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
@@ -308,8 +357,9 @@ abstract class EvmTxProcessor {
 		return gasUsedByTransaction;
 	}
 
-	protected long gasPriceTinyBarsGiven(final Instant consensusTime) {
-		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
+	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
+		return livePricesSource.currentGasPrice(consensusTime,
+				isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
 	}
 
 	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {

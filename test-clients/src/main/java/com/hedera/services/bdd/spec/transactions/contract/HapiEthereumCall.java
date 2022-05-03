@@ -80,7 +80,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
-    private long gasPrice = 1L;
+    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(40L));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
@@ -191,7 +192,12 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall gasPrice(long gasPrice) {
-        this.gasPrice = gasPrice;
+        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        return this;
+    }
+
+    public HapiEthereumCall maxFeePerGas(long maxFeePerGas) {
+        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -267,12 +273,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
 
         final var longTuple = TupleType.parse("(int64)");
-        final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice)).array()).toArray();
+        final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice.longValueExact())).array()).toArray();
+        final var maxFeePerGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxFeePerGas.longValueExact())).array()).toArray();
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
         final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.get())).array()).toArray();
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-                maxPriorityGasBytes, gasBytes, gas.orElse(100_000L),
+                maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
                 Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);

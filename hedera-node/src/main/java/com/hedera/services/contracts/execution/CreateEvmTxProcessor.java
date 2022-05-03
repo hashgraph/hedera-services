@@ -45,6 +45,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing
  * {@link com.hederahashgraph.api.proto.java.ContractCreateTransactionBody} transactions
@@ -80,7 +83,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Instant consensusTime,
 			final long hapiExpiry
 	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
 		return super.execute(
 				sender,
@@ -93,7 +96,42 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				storageExpiry.hapiCreationOracle(hapiExpiry),
-				receiver);
+				receiver,
+				0,
+				0,
+				null);
+	}
+
+	public TransactionProcessingResult executeEth(
+			final Account sender,
+			final Address receiver,
+			final long providedGasLimit,
+			final long value,
+			final Bytes code,
+			final Instant consensusTime,
+			final long hapiExpiry,
+			final Account relayer,
+			final long providedMaxGasPrice,
+			final long maxGasAllowance
+	) {
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+		validateTrue(providedMaxGasPrice >= gasPrice || maxGasAllowance > 0, INSUFFICIENT_TX_FEE);
+
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				storageExpiry.hapiCreationOracle(hapiExpiry),
+				receiver,
+				providedMaxGasPrice,
+				maxGasAllowance,
+				relayer);
 	}
 
 	@Override
