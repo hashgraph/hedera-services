@@ -1889,7 +1889,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(owner.toGrpcAccountId(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
 			var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
 			if (!allowances.isEmpty()) {
-				return encoder.encodeGetApproved(allowances.stream().findFirst().get().getSpenderNum().toEvmAddress());
+				return encoder.encodeGetApproved(Optional.of(allowances.stream().findFirst().orElse(null)).get().getSpenderNum().toEvmAddress());
 			} else if (spender != null && !spender.toEvmAddress().equals(Address.fromHexString("0"))) {
 				return encoder.encodeGetApproved(spender.toEvmAddress());
 			}
@@ -1918,7 +1918,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
 			var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(isApproveForAllWrapper.owner(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
 			boolean isApprovedForAll = !allowances.isEmpty()
-					&& allowances.stream().findFirst().get().getSpenderNum().longValue() == isApproveForAllWrapper.operator().getAccountNum();
+					&& Optional.of(allowances.stream().findFirst().orElse(null)).get().getSpenderNum().longValue() == isApproveForAllWrapper.operator().getAccountNum();
 
 			return encoder.encodeIsApprovedForAll(isApprovedForAll);
 		}

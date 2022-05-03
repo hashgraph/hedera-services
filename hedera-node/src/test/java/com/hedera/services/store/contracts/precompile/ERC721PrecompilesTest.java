@@ -53,6 +53,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -65,6 +66,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -83,7 +85,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -101,7 +102,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_APPROVE;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
@@ -123,6 +123,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -136,6 +137,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -230,6 +232,8 @@ class ERC721PrecompilesTest {
     @Mock
     private CryptoTransferTransactionBody cryptoTransferTransactionBody;
     @Mock
+    private CryptoDeleteAllowanceTransactionBody cryptoDeleteAllowanceTransactionBody;
+    @Mock
     private HederaTokenStore hederaTokenStore;
     @Mock
     private TransferLogic transferLogic;
@@ -265,6 +269,7 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(0, 0, 3)).thenReturn(RIPEMD160.toArray());
         given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
@@ -478,7 +483,6 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    @Disabled
     void getApproved() {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId = FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()), EntityNum.fromLong(receiver.getAccountNum()));
@@ -486,9 +490,9 @@ class ERC721PrecompilesTest {
 
         givenMinimalFrameContext();
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_GET_APPROVED);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO)).willReturn(mockRecordBuilder);
 
@@ -498,12 +502,11 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(encoder.encodeGetApproved(Address.fromHexString("0"))).willReturn(successResult);
+        given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
         given(decoder.decodeGetApproved(nestedPretendArguments)).willReturn(
                 GET_APPROVED_WRAPPER);
         given(accounts.get(any(), any())).willReturn(allowances);
         given(nfts.get(any(), any())).willReturn(EntityId.fromGrpcAccountId(sender));
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.prepareFields(frame);
@@ -611,7 +614,6 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    @Disabled
     void transferFrom() {
         givenMinimalFrameContext();
         givenLedgers();
@@ -619,10 +621,18 @@ class ERC721PrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
                 .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createDeleteAllowance(any(), any()))
+                .willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
+        given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
+        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcAccount(sender)));
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
@@ -659,7 +669,6 @@ class ERC721PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.prepareFields(frame);
@@ -677,7 +686,6 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    @Disabled
     void transferFromFails() {
         givenMinimalFrameContext();
         givenLedgers();
@@ -692,6 +700,7 @@ class ERC721PrecompilesTest {
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -714,7 +723,6 @@ class ERC721PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -722,7 +730,7 @@ class ERC721PrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertNull(result);
+        assertEquals(invalidSigResult, result);
     }
 
     @Test
