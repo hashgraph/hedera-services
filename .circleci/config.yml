@@ -437,9 +437,10 @@ commands:
             else
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
-
-            gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/<< parameters.result_path >>/"
-
+            cd assets
+            remove_prefix=${"<< parameters.result_path >>"#"assets"}
+            gsutil -m rsync -r ${remove_prefix} "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/${remove_prefix}/"
+            cd
             tar -czvf /results.tar.gz  /swirlds-platform/regression/<< parameters.result_path >>
           when: always
 
@@ -810,13 +811,6 @@ workflows:
   # This workflow will be running normally in master branch on a daily basis
 
   GCP-Daily-Services-Crypto-Migration-7N-1C:
-    triggers:
-      - schedule:
-          cron: "45 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1602,6 +1596,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression; git checkout -b 02342-fix-result-upload-folder origin/02342-fix-result-upload-folder; cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
@@ -1679,10 +1674,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
