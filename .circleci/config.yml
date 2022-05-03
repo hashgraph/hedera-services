@@ -418,7 +418,7 @@ commands:
           name: Saving JRS Regression Results
           command: |
             set -x
-            cd /swirlds-platform/regression;
+            cd /swirlds-platform/regression/assets;
 
             if [[ ! -d "<< parameters.result_path >>" ]]; then exit 13; fi
 
@@ -1353,7 +1353,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression/assets
-          result_path: assets/results/6N_1C/NIReconnectCorrectness
+          result_path: results/6N_1C/NIReconnectCorrectness
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C"
           requires:
