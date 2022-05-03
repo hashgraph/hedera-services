@@ -1599,7 +1599,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout -b 02342-fix-result-upload-folder origin/02342-fix-result-upload-folder; cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
