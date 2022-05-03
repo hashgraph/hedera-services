@@ -63,6 +63,7 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -419,6 +420,57 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER);
+        given(accounts.get(any(), any())).willReturn(allowances);
+        given(encoder.encodeApprove(true)).willReturn(successResult);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void approveSpender0() {
+        TreeMap<FcTokenAllowanceId, Long> allowances = new TreeMap<>();
+        givenMinimalFrameContext();
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+
+        given(nfts.get(any(), any())).willReturn(EntityId.fromGrpcAccountId(sender));
+        given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
+
+        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
+        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+
+        given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
+
+        given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+                APPROVE_WRAPPER_0);
         given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
@@ -911,4 +963,5 @@ class ERC721PrecompilesTest {
 
     public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
 
+    public static final ApproveWrapper APPROVE_WRAPPER_0 = new ApproveWrapper(token, IdUtils.asAccount("0.0.0"), BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
 }
