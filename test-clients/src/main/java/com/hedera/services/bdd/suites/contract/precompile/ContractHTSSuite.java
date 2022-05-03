@@ -242,27 +242,18 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(theContract, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, DEFAULT_CONTRACT_SENDER))
 				).when(
-						withOpContext((spec, opLog) -> {
-							if (spec.isUsingEthCalls()) {
-								allRunFor(spec,
-										// This shows that the TransferPrecompile detects the DEFAULT_CONTRACT_SENDER
-										// signature extracted from the Ethereum transaction (since only DEFAULT_PAYER
-										// signed the HAPI transaction)
-										contractCall(theContract, "depositTokens", 50)
-												.gas(GAS_TO_OFFER)
-												.via("zeno"));
-							} else {
-								allRunFor(spec,
-										contractCall(theContract, "depositTokens", 50)
-												.gas(GAS_TO_OFFER)
-												.via("zeno"));
-							}
-						}),
+						// If we are using Ethereum transactions, the DEFAULT_CONTRACT_SENDER signature will have to
+						// be validated via EthTxSigs, because in any case only DEFAULT_PAYER signs this call
+						contractCall(theContract, "depositTokens", 50)
+								.gas(GAS_TO_OFFER)
+								.via("zeno"),
 						contractCall(theContract, "withdrawTokens")
 								.payingWith(RECEIVER)
 								.alsoSigningWithFullPrefix(theContract)
 								.gas(GAS_TO_OFFER)
 								.via("receiverTx")
+								// The depositTokens will associate the Ethereum DEFAULT_CONTRACT_SENDER; and this
+								// contract fails if the msg.sender is already associated
 								.refusingEthConversion()
 				).then(
 						childRecordsCheck("zeno",
