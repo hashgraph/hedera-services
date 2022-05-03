@@ -85,34 +85,34 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				notIdenticalScheduleIfScheduledTxnChanges(),
-				notIdenticalScheduleIfAdminKeyChanges(),
-				notIdenticalScheduleIfMemoChanges(),
-				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-				rejectsSentinelKeyListAsAdminKey(),
-				rejectsMalformedScheduledTxnMemo(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
-				suiteCleanup(),
-				validateSignersInInfo()
-		});
+		return List.of(
+			notIdenticalScheduleIfScheduledTxnChanges(),
+			notIdenticalScheduleIfAdminKeyChanges(),
+			notIdenticalScheduleIfMemoChanges(),
+			recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+			rejectsSentinelKeyListAsAdminKey(),
+			rejectsMalformedScheduledTxnMemo(),
+			bodyOnlyCreation(),
+			onlyBodyAndAdminCreation(),
+			onlyBodyAndMemoCreation(),
+			bodyAndSignatoriesCreation(),
+			bodyAndPayerCreation(),
+			rejectsUnresolvableReqSigners(),
+			triggersImmediatelyWithBothReqSimpleSigs(),
+			onlySchedulesWithMissingReqSimpleSigs(),
+			failsWithNonExistingPayerAccountId(),
+			failsWithTooLongMemo(),
+			detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+			doesntTriggerUntilPayerSigns(),
+			requiresExtantPayer(),
+			rejectsFunctionlessTxn(),
+			whitelistWorks(),
+			preservesRevocationServiceSemanticsForFileDelete(),
+			worksAsExpectedWithDefaultScheduleId(),
+			infoIncludesTxnIdFromCreationReceipt(),
+			suiteCleanup(),
+			validateSignersInInfo()
+		);
 	}
 
 	private HapiApiSpec suiteCleanup() {

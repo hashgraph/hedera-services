@@ -83,15 +83,15 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				/* Stateful specs from ScheduleExecutionSpecs */
-				scheduledUniqueMintFailsWithNftsDisabled(),
-				scheduledUniqueBurnFailsWithNftsDisabled(),
-				scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
-				executionWithTransferListWrongSizedFails(),
-				executionWithTokenTransferListSizeExceedFails(),
-				suiteCleanup()
-		});
+		return List.of(
+			/* Stateful specs from ScheduleExecutionSpecs */
+			scheduledUniqueMintFailsWithNftsDisabled(),
+			scheduledUniqueBurnFailsWithNftsDisabled(),
+			scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
+			executionWithTransferListWrongSizedFails(),
+			executionWithTokenTransferListSizeExceedFails(),
+			suiteCleanup()
+		);
 	}
 
 	private HapiApiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {

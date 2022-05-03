@@ -83,30 +83,29 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
-						signFailsDueToDeletedExpiration(),
-						triggersUponAdditionalNeededSig(),
-						sharedKeyWorksAsExpected(),
-						overlappingKeysTreatedAsExpected(),
-						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(),
-						addingSignaturesToNonExistingTxFails(),
-						signalsIrrelevantSig(),
-						signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
-						triggersUponFinishingPayerSig(),
-						addingSignaturesToExecutedTxFails(),
-						okIfAdminKeyOverlapsWithActiveScheduleKey(),
-						scheduleAlreadyExecutedDoesntRepeatTransaction(),
-						receiverSigRequiredUpdateIsRecognized(),
-						scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction(),
-						receiverSigRequiredNotConfusedByMultiSigSender(),
-						receiverSigRequiredNotConfusedByOrder(),
-						nestedSigningReqsWorkAsExpected(),
-						changeInNestedSigningReqsRespected(),
-						signingDeletedSchedulesHasNoEffect(),
-						suiteCleanup(),
-				}
+		return List.of(
+			suiteSetup(),
+			signFailsDueToDeletedExpiration(),
+			triggersUponAdditionalNeededSig(),
+			sharedKeyWorksAsExpected(),
+			overlappingKeysTreatedAsExpected(),
+			retestsActivationOnSignWithEmptySigMap(),
+			basicSignatureCollectionWorks(),
+			addingSignaturesToNonExistingTxFails(),
+			signalsIrrelevantSig(),
+			signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
+			triggersUponFinishingPayerSig(),
+			addingSignaturesToExecutedTxFails(),
+			okIfAdminKeyOverlapsWithActiveScheduleKey(),
+			scheduleAlreadyExecutedDoesntRepeatTransaction(),
+			receiverSigRequiredUpdateIsRecognized(),
+			scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction(),
+			receiverSigRequiredNotConfusedByMultiSigSender(),
+			receiverSigRequiredNotConfusedByOrder(),
+			nestedSigningReqsWorkAsExpected(),
+			changeInNestedSigningReqsRespected(),
+			signingDeletedSchedulesHasNoEffect(),
+			suiteCleanup()
 		);
 	}
 

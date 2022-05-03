@@ -61,13 +61,12 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						deleteWithNoAdminKeyFails(),
-						unauthorizedDeletionFails(),
-						deletingAlreadyDeletedIsObvious(),
-						deletingNonExistingFails(),
-						deletingExecutedIsPointless(),
-				}
+		return List.of(
+			deleteWithNoAdminKeyFails(),
+			unauthorizedDeletionFails(),
+			deletingAlreadyDeletedIsObvious(),
+			deletingNonExistingFails(),
+			deletingExecutedIsPointless()
 		);
 	}
 

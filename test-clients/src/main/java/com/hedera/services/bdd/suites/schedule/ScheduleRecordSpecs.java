@@ -70,16 +70,15 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						executionTimeIsAvailable(),
-						deletionTimeIsAvailable(),
-						allRecordsAreQueryable(),
-						schedulingTxnIdFieldsNotAllowed(),
-						canonicalScheduleOpsHaveExpectedUsdFees(),
-						canScheduleChunkedMessages(),
-						noFeesChargedIfTriggeredPayerIsInsolvent(),
-						noFeesChargedIfTriggeredPayerIsUnwilling(),
-				}
+		return List.of(
+			executionTimeIsAvailable(),
+			deletionTimeIsAvailable(),
+			allRecordsAreQueryable(),
+			schedulingTxnIdFieldsNotAllowed(),
+			canonicalScheduleOpsHaveExpectedUsdFees(),
+			canScheduleChunkedMessages(),
+			noFeesChargedIfTriggeredPayerIsInsolvent(),
+			noFeesChargedIfTriggeredPayerIsUnwilling()
 		);
 	}
 
