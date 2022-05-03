@@ -184,8 +184,7 @@ abstract class EvmTxProcessor {
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final var senderEvmAddress = sender.getId().asEvmAddress();
-		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
+		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
 		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
@@ -209,8 +208,9 @@ abstract class EvmTxProcessor {
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
+		final var valueAsWei = Wei.of(value);
 		final var stackedUpdater = updater.updater();
-		Wei valueAsWei = Wei.of(value);
+		final var senderEvmAddress = sender.canonicalAddress();
 		final MessageFrame.Builder commonInitialFrame =
 				MessageFrame.builder()
 						.messageFrameStack(messageFrameStack)

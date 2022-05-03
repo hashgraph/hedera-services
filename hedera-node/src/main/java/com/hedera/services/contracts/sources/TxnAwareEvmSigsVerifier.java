@@ -42,7 +42,6 @@ import java.util.function.BiPredicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -185,8 +184,6 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			final AccountID id,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
-		return !accounts.contains(id)
-				|| (boolean) accounts.get(id, IS_SMART_CONTRACT)
-				|| !(boolean) accounts.get(id, IS_RECEIVER_SIG_REQUIRED);
+		return !accounts.contains(id) || !(boolean) accounts.get(id, IS_RECEIVER_SIG_REQUIRED);
 	}
 }

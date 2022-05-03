@@ -90,7 +90,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
-		return super.execute(sender,
+		return super.execute(
+				sender,
 				receiver,
 				gasPrice,
 				providedGasLimit,
