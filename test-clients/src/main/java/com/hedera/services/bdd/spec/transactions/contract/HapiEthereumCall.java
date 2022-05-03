@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
@@ -67,7 +66,6 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
-
     public static final String ETH_HASH_KEY = "EthHash";
 
     private List<String> otherSigs = Collections.emptyList();
@@ -130,6 +128,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.retryLimits = contractCall.getRetryLimits();
         if (contractCall.getValueSent().isPresent()) {
             this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
+        }
+        if (!contractCall.otherSigs.isEmpty()) {
+            this.alsoSigningWithFullPrefix(contractCall.otherSigs.toArray(new String[0]));
         }
         shouldRegisterTxn = true;
     }

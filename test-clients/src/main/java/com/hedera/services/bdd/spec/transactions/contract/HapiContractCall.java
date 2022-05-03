@@ -40,8 +40,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
-
-	private List<String> otherSigs = Collections.emptyList();
+	protected List<String> otherSigs = Collections.emptyList();
 	private Optional<Long> gas = Optional.empty();
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
