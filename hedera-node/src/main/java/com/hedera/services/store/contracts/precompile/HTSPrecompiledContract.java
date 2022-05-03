@@ -254,16 +254,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//transferFrom(address from, address to, uint256 tokenId)
 	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
 	//allowance(address token, address owner, address spender)
-	protected static final int ABI_ID_ALLOWANCE = -0x229d12c2;
+	protected static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
 	//approve(address token, address spender, uint256 amount)
 	//approve(address token, address to, uint256 tokenId)
 	protected static final int ABI_ID_APPROVE = 0x95ea7b3;
 	//setApprovalForAll(address token, address operator, bool approved)
-	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = -0x5dd34b9b;
+	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
 	//getApproved(address token, uint256 tokenId)
 	protected static final int ABI_ID_GET_APPROVED = 0x081812fc;
 	//isApprovedForAll(address token, address owner, address operator)
-	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = -0x167a163b;
+	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
 	//ownerOf(uint256 tokenId)
 	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
@@ -376,13 +376,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
-		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
-
-		if (frame.isStatic() && !isRedirectProxy) {
-			frame.setRevertReason(STATIC_CALL_REVERT_REASON);
-			return null;
-		}
-
 		prepareFields(frame);
 		prepareComputation(input, updater::unaliased);
 
@@ -1460,7 +1453,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenId, callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenId, callerAccountID, aliasResolver);
 				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenId,
 						isFungible, aliasResolver);
 				default -> null;
@@ -1673,7 +1666,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var allowance = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
 			long value = 0;
 			for (Map.Entry<FcTokenAllowanceId, Long> e : allowance.entrySet()) {
-				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
+				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue() &&
+						tokenId.getTokenNum() == e.getKey().getTokenNum().longValue()) {
 					value = e.getValue();
 				}
 			}
@@ -1758,9 +1752,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							payerAccount,
 							currentView);
 
-					if (!OK.equals(checkResponseCode)) {
-						throw new InvalidTransactionException(checkResponseCode);
-					}
+					validateTrue(OK.equals(checkResponseCode), checkResponseCode);
 
 					final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
 							accountStore, tokenStore, dynamicProperties);

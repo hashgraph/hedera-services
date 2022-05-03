@@ -238,7 +238,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferInput() {
-		final var decodedInput = subject.decodeErcTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
+		final var decodedInput = subject.decodeERCTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);

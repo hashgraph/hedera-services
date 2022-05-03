@@ -25,6 +25,12 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -41,12 +47,6 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenExpiryWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 
 @Singleton
 public class DecodingFacade {
@@ -282,7 +282,7 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeErcTransfer(final Bytes input, final TokenID token,
+	public List<TokenTransferWrapper> decodeERCTransfer(final Bytes input, final TokenID token,
 														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
