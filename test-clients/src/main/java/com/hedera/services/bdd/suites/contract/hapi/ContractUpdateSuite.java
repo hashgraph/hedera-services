@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -57,6 +58,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -95,22 +97,67 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						updateWithBothMemoSettersWorks(),
-						updatingExpiryWorks(),
-						rejectsExpiryTooFarInTheFuture(),
-						updateAutoRenewWorks(),
-						updateAdminKeyWorks(),
-						canMakeContractImmutableWithEmptyKeyList(),
-						givenAdminKeyMustBeValid(),
-						fridayThe13thSpec(),
-						updateDoesNotChangeBytecode(),
-						eip1014AddressAlwaysHasPriority(),
-						immutableContractKeyFormIsStandard(),
-						updateAutoRenewAccountWorks(),
-						updateMaxAutoAssociationsWorks()
+//						updateWithBothMemoSettersWorks(),
+//						updatingExpiryWorks(),
+//						rejectsExpiryTooFarInTheFuture(),
+//						updateAutoRenewWorks(),
+//						updateAdminKeyWorks(),
+//						canMakeContractImmutableWithEmptyKeyList(),
+//						givenAdminKeyMustBeValid(),
+//						fridayThe13thSpec(),
+//						updateDoesNotChangeBytecode(),
+//						eip1014AddressAlwaysHasPriority(),
+//						immutableContractKeyFormIsStandard(),
+//						updateAutoRenewAccountWorks(),
+//						updateMaxAutoAssociationsWorks(),
+						usdFeeAsExpected()
 				}
 		);
 	}
+
+	private HapiApiSpec usdFeeAsExpected() {
+		final String CONTRACT = "Multipurpose";
+		final String associationsLimitProperty = "entities.limitTokenAssociations";
+		final String defaultAssociationsLimit =
+				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+
+		return defaultHapiSpec("usdFeeAsExpected")
+				.given(
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS)
+				).when().then(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						contractCreate(CONTRACT)
+								.blankMemo()
+								.balance(10 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.payingWith("civilian"),
+						contractUpdate(CONTRACT)
+								.blankMemo()
+								.payingWith("civilian")
+								.via("noAutoAssoc"),
+						contractUpdate(CONTRACT)
+								.blankMemo()
+								.payingWith("civilian")
+								.newMaxAutomaticAssociations(1)
+								.via("oneAutoAssoc"),
+						contractUpdate(CONTRACT)
+								.blankMemo()
+								.payingWith("civilian")
+								.newMaxAutomaticAssociations(10)
+								.via("tenAutoAssoc"),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(10))
+								.logged(),
+						validateChargedUsd("noAutoAssoc", 0.0418),
+						validateChargedUsd("oneAutoAssoc", 0.0418),
+						validateChargedUsd("tenAutoAssoc", 0.041833)
+
+				);
+	}
+
 
 	// https://github.com/hashgraph/hedera-services/issues/2877
 	private HapiApiSpec eip1014AddressAlwaysHasPriority() {
@@ -253,7 +300,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("updateMaxAutoAssociationsWorks")
 				.given(
 						overridingTwo(
-								"accounts.limitTokenAssociations", "true",
+								"entities.limitTokenAssociations", "true",
 								"tokens.maxPerAccount", "" + 10),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
@@ -305,7 +352,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 
-						overriding("accounts.limitTokenAssociations", "false"),
+						overriding("entities.limitTokenAssociations", "false"),
 						contractUpdate(CONTRACT)
 								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
 						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)

@@ -221,8 +221,9 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		Timestamp newExpiry = TxnFactory.expiryGiven(newExpirySecs.orElse(spec.setup().defaultExpirationSecs()));
 		Timestamp oldExpiry = TxnUtils.currContractExpiry(contract, spec);
 		final Timestamp expiry = TxnUtils.inConsensusOrder(oldExpiry, newExpiry) ? newExpiry : oldExpiry;
+		final int currentAutoAssociationSlots = TxnUtils.currentMaxAutoAssociationSlots(contract, spec);
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
-				scFees.getContractUpdateTxFeeMatrices(txBody, expiry, sigUsage);
+				scFees.getContractUpdateTxFeeMatrices(txBody, expiry, sigUsage, currentAutoAssociationSlots);
 		return spec.fees().forActivityBasedOp(HederaFunctionality.ContractUpdate, metricsCalc, txn, numPayerKeys);
 	}
 

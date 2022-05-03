@@ -90,6 +90,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -148,23 +150,68 @@ public class ContractCreateSuite extends HapiApiSuite {
 //						propagatesNestedCreations(),
 //						blockTimestampIsConsensusTime(),
 //						contractWithAutoRenewNeedSignatures(),
-						autoAssociationSlotsWorks()
+//						autoAssociationSlotsWorks(),
+						usdFeeAsExpected()
 				}
 		);
+	}
+
+	private HapiApiSpec usdFeeAsExpected() {
+		final String CONTRACT = "Multipurpose";
+		final String associationsLimitProperty = "entities.limitTokenAssociations";
+		final String defaultAssociationsLimit =
+				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+
+		return defaultHapiSpec("usdFeeAsExpected")
+				.given(
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS)
+				).when().then(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						contractCreate(CONTRACT)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.payingWith("civilian")
+								.via("noAutoAssoc"),
+						contractCreate(CONTRACT)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.payingWith("civilian")
+								.maxAutomaticTokenAssociations(1)
+								.via("oneAutoAssoc"),
+						contractCreate(CONTRACT)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.maxAutomaticTokenAssociations(11)
+								.payingWith("civilian")
+								.via("tenAutoAssoc"),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(11))
+								.logged(),
+						validateChargedUsd("noAutoAssoc", 0.9422),
+						validateChargedUsd("oneAutoAssoc", 0.9450),
+						validateChargedUsd("tenAutoAssoc", 0.9664)
+
+				);
 	}
 
 	private HapiApiSpec autoAssociationSlotsWorks() {
 		final int maxAutoAssociations = 100;
 		final int ADVENTUROUS_NETWORK = 1_000;
 		final String CONTRACT = "Multipurpose";
-		final String associationsLimitProperty = "accounts.limitTokenAssociations";
+		final String associationsLimitProperty = "entities.limitTokenAssociations";
 		final String defaultAssociationsLimit =
 				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
 		return defaultHapiSpec("autoAssociationSlotsWorks")
 				.given(
 						overridingTwo(
-								"accounts.limitTokenAssociations", "true",
+								"entities.limitTokenAssociations", "true",
 								"tokens.maxPerAccount", "" + 1)
 				).when().then(
 						newKeyNamed(ADMIN_KEY),
