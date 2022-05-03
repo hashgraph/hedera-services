@@ -1424,7 +1424,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 03300-decouple-storage-and-gas-fees
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
