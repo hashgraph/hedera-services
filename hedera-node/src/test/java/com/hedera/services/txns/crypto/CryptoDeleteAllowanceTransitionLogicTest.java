@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+import static com.hedera.services.store.models.Id.fromGrpcAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -53,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoDeleteAllowanceTransitionLogicTest {
@@ -66,6 +69,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	private StateView view;
 	@Mock
 	private DeleteAllowanceLogic deleteAllowanceLogic;
+	@Mock
+	private PlatformTxnAccessor accessor;
 
 	private TransactionBody cryptoDeleteAllowanceTxn;
 	private CryptoDeleteAllowanceTransactionBody op;
@@ -76,6 +81,18 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoDeleteAllowanceTransitionLogic(txnCtx, accountStore, deleteAllowanceChecks, view, deleteAllowanceLogic);
+	}
+
+	@Test
+	void callsDeleteAllowanceLogic() {
+		givenValidTxnCtx();
+
+		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(deleteAllowanceLogic).deleteAllowance(op.getNftAllowancesList(), fromGrpcAccount(payerId).asGrpcAccount());
 	}
 
 	@Test

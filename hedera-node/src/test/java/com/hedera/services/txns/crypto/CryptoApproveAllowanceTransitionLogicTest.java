@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -51,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 
+import static com.hedera.services.store.models.Id.fromGrpcAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -58,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoApproveAllowanceTransitionLogicTest {
@@ -71,6 +74,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private StateView view;
 	@Mock
 	private ApproveAllowanceLogic approveAllowanceLogic;
+	@Mock
+	private PlatformTxnAccessor accessor;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -81,8 +86,21 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, allowanceChecks,
 				approveAllowanceLogic, view);
-		nft1.setOwner(Id.fromGrpcAccount(ownerId));
-		nft2.setOwner(Id.fromGrpcAccount(ownerId));
+		nft1.setOwner(fromGrpcAccount(ownerId));
+		nft2.setOwner(fromGrpcAccount(ownerId));
+	}
+
+	@Test
+	void callsApproveAllowanceLogic() {
+		givenValidTxnCtx();
+
+		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(approveAllowanceLogic).approveAllowance(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
+				op.getNftAllowancesList(), fromGrpcAccount(payerId).asGrpcAccount());
 	}
 
 	@Test
@@ -171,8 +189,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();
-	private final Account payerAcccount = new Account(Id.fromGrpcAccount(payerId));
-	private final Account ownerAccount = new Account(Id.fromGrpcAccount(ownerId));
+	private final Account payerAcccount = new Account(fromGrpcAccount(payerId));
+	private final Account ownerAccount = new Account(fromGrpcAccount(ownerId));
 	private final UniqueToken nft1 = new UniqueToken(tokenId1, serial1);
 	private final UniqueToken nft2 = new UniqueToken(tokenId2, serial2);
 }

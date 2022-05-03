@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -53,6 +54,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fracti
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -245,6 +247,18 @@ class SyntheticTxnFactoryTest {
 		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
 		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
 		assertEquals(BoolValue.of(true), txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
+	}
+
+	@Test
+	void createsDeleteAllowance() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+
+		final var result = subject.createDeleteAllowance(allowances, EntityId.fromGrpcAccountId(sender));
+		final var txnBody = result.build();
+
+		assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
+		assertEquals(sender, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
 	}
 
 	@Test
