@@ -160,8 +160,6 @@ abstract class EvmTxProcessor {
 	 * 		Current consensus time
 	 * @param isStatic
 	 * 		Whether or not the execution is static
-	 * @param expiryOracle
-	 * 		the oracle to use when determining the expiry of newly allocated storage
 	 * @param mirrorReceiver
 	 * 		the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
