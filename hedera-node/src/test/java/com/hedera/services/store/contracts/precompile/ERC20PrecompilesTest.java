@@ -108,9 +108,12 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SET_APPROVAL_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOKEN_URI_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
@@ -284,8 +287,42 @@ class ERC20PrecompilesTest {
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
 
-        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
+
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ALLOWANCE);
+
+
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_SET_APPROVAL_FOR_ALL);
+
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_GET_APPROVED);
+
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_IS_APPROVED_FOR_ALL);
+
 
         // when:
         subject.prepareFields(frame);
