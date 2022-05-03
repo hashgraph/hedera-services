@@ -58,7 +58,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -257,7 +256,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
-		givenSigReqCheckable(smartContract, true, false, null);
+		givenSigReqCheckable(smartContract, false, null);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(smartContract), PRETEND_SENDER_ADDR, ledgers);
@@ -268,25 +267,21 @@ class TxnAwareEvmSigsVerifierTest {
 
 	private void givenSigReqCheckable(
 			final AccountID id,
-			final boolean smartContract,
 			final boolean receiverSigRequired,
 			@Nullable final JKey key
 	) {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.contains(id)).willReturn(true);
-		given(accountsLedger.get(id, IS_SMART_CONTRACT)).willReturn(smartContract);
-		if (!smartContract) {
-			given(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).willReturn(receiverSigRequired);
-			if (receiverSigRequired) {
-				given(accountsLedger.get(id, KEY)).willReturn(key);
-			}
+		given(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).willReturn(receiverSigRequired);
+		if (receiverSigRequired) {
+			given(accountsLedger.get(id, KEY)).willReturn(key);
 		}
 	}
 
 	@Test
 	void filtersNoSigRequired() {
 		given(txnCtx.activePayer()).willReturn(payer);
-		givenSigReqCheckable(noSigRequired, false, false, null);
+		givenSigReqCheckable(noSigRequired, false, null);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
@@ -322,7 +317,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsWhenReceiverSigIsRequired() {
 		givenAccessorInCtx();
-		givenSigReqCheckable(sigRequired, false, true, expectedKey);
+		givenSigReqCheckable(sigRequired, true, expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
