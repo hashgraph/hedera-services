@@ -39,7 +39,8 @@ public class InfrastructureManager {
 	}
 
 	private static final String BASE_STORAGE_DIR = "databases";
-	private static final String VM_META_FILE_NAME = "smartContractKvStore.meta";
+	private static final String VM_BLOBS_FILE_NAME = "blobsStore.meta";
+	private static final String VM_STORAGE_FILE_NAME = "smartContractKvStore.meta";
 	private static final String MM_FILE_NAME = "accounts.mmap";
 
 	public static StorageInfrastructure newInfrastructureAt(final String storageLoc) {
@@ -51,9 +52,10 @@ public class InfrastructureManager {
 			}
 		};
 		final var vmFactory = new VirtualMapFactory(jdbBuilderFactory);
+		final var blobs = vmFactory.newVirtualizedBlobs();
 		final var storage = vmFactory.newVirtualizedIterableStorage();
 		final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-		return StorageInfrastructure.from(accounts, storage);
+		return StorageInfrastructure.from(accounts, blobs, storage);
 	}
 
 	public static StorageInfrastructure loadInfrastructureWith(
@@ -78,8 +80,12 @@ public class InfrastructureManager {
 		return storageLocFor(initNumContracts, initNumKvPairs) + File.separator + "smartContractKvStore.vmap";
 	}
 
-	static String vMapMetaIn(final String loc) {
-		return loc + File.separator + VM_META_FILE_NAME;
+	static String vMapBlobsMetaIn(final String loc) {
+		return loc + File.separator + VM_BLOBS_FILE_NAME;
+	}
+
+	static String vMapStorageMetaIn(final String loc) {
+		return loc + File.separator + VM_STORAGE_FILE_NAME;
 	}
 
 	static String mMapIn(final String storageDir) {

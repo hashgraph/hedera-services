@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -54,6 +55,8 @@ class GlobalDynamicPropertiesTest {
 	private static final String literalBlockValues =
 			"c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
 	private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
+	private static final ContractStoragePriceTiers canonicalTiers = ContractStoragePriceTiers.from(
+			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
 
 	private PropertySource properties;
 
@@ -294,6 +297,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(65L, subject.storageSlotLifetime());
 	}
 
 	@Test
@@ -311,6 +315,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
+		assertEquals(canonicalTiers, subject.storagePriceTiers());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -397,6 +402,9 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 61) % 2 == 0);
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
+		given(properties.getLongProperty("contract.storageSlotLifetime")).willReturn(i + 63L);
+		given(properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers"))
+				.willReturn(canonicalTiers);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

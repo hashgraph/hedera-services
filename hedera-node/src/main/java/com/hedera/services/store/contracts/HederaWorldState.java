@@ -293,14 +293,14 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final var accountId = accountIdFromEvmAddress(address);
 				validateTrue(impactHistorian != null, FAIL_INVALID);
 				impactHistorian.markEntityChanged(accountId.getAccountNum());
-				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
+				trackIfNewlyCreated(accountId, entityAccess, wrapped.provisionalContractCreations);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
 					continue;
 				}
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
+				trackIfNewlyCreated(accountId, entityAccess, wrapped.provisionalContractCreations);
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
@@ -313,7 +313,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			trackingLedgers().commit(impactHistorian);
 		}
 
-		private void ensureExistence(
+		private void trackIfNewlyCreated(
 				final AccountID accountId,
 				final EntityAccess entityAccess,
 				final List<ContractID> provisionalContractCreations

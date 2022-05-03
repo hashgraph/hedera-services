@@ -27,10 +27,13 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import javax.inject.Inject;
@@ -47,6 +50,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
@@ -73,9 +77,12 @@ public class SizeLimitedStorage {
 	private final GlobalDynamicProperties dynamicProperties;
 	// Used to look up the initial key/value counts for the contracts involved in a change set
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	// Used to persist the bytecode in a validated change set
+	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobs;
 	// Used to both read and write key/value pairs throughout the lifecycle of a change set
 	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
+	private final Map<Long, Bytes> newBytecode = new TreeMap<>();
 	private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
@@ -90,6 +97,7 @@ public class SizeLimitedStorage {
 			final IterableStorageRemover storageRemover,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobs,
 			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage
 	) {
 		this.dynamicProperties = dynamicProperties;
@@ -97,6 +105,7 @@ public class SizeLimitedStorage {
 		this.storageUpserter = storageUpserter;
 		this.accounts = accounts;
 		this.storage = storage;
+		this.blobs = blobs;
 	}
 
 	/**
@@ -108,8 +117,19 @@ public class SizeLimitedStorage {
 		removedKeys.clear();
 		newMappings.clear();
 		newFirstKeys.clear();
+		newBytecode.clear();
 		/* We will update this count as changes are buffered throughout the session. */
 		totalKvPairs = storage.get().size();
+	}
+
+	/**
+	 * Records the size of the bytecode used by a newly created contract.
+	 *
+	 * @param contractNum the number of the new contract
+	 * @param code its bytecode
+	 */
+	public void storeCode(final long contractNum, final Bytes code) {
+		newBytecode.put(contractNum, code);
 	}
 
 	/**
@@ -124,6 +144,7 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
+		commitBytecode();
 	}
 
 	/**
@@ -340,6 +361,16 @@ public class SizeLimitedStorage {
 						MAX_CONTRACT_STORAGE_EXCEEDED));
 	}
 
+	private void commitBytecode() {
+		if (newBytecode.isEmpty()) {
+			return;
+		}
+		final var curBlobs = blobs.get();
+		newBytecode.forEach((id, code) -> {
+			curBlobs.put(bytecodeKeyFor(id), new VirtualBlobValue(code.toArrayUnsafe()));
+		});
+	}
+
 	private void commitPendingUpdates() {
 		if (newMappings.isEmpty()) {
 			return;
@@ -380,6 +411,10 @@ public class SizeLimitedStorage {
 		return evmWord.isZero() ? ZERO_VALUE : IterableContractValue.from(evmWord);
 	}
 
+	private static VirtualBlobKey bytecodeKeyFor(final long num) {
+		return new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(num));
+	}
+
 	// --- Only used by unit tests ---
 	@VisibleForTesting
 	int usageSoFar(final AccountID id) {
@@ -409,5 +444,10 @@ public class SizeLimitedStorage {
 	@VisibleForTesting
 	Map<ContractKey, IterableContractValue> getNewMappings() {
 		return newMappings;
+	}
+
+	@VisibleForTesting
+	Map<Long, Bytes> getNewBytecode() {
+		return newBytecode;
 	}
 }

@@ -101,7 +101,7 @@ public final class OverflowCheckingCalc {
 				unscaledServiceFee * multiplier);
 	}
 
-	long tinycentsToTinybars(final long amount, final ExchangeRate rate) {
+	public static long tinycentsToTinybars(final long amount, final ExchangeRate rate) {
 		final var product = amount * rate.getHbarEquiv();
 		if (product < 0) {
 			return FeeBuilder.getTinybarsFromTinyCents(rate, amount);

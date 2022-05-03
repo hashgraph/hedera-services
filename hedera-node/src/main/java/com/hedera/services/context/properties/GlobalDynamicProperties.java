@@ -23,6 +23,7 @@ package com.hedera.services.context.properties;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -119,6 +120,8 @@ public class GlobalDynamicProperties {
 	private boolean enableHTSPrecompileCreate;
 	private int maxPurgedKvPairsPerTouch;
 	private KnownBlockValues knownBlockValues;
+	private long storageSlotLifetime;
+	private ContractStoragePriceTiers storagePriceTiers;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -215,6 +218,8 @@ public class GlobalDynamicProperties {
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+		storageSlotLifetime = properties.getLongProperty("contract.storageSlotLifetime");
+		storagePriceTiers = properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers");
 	}
 
 	public int maxTokensPerAccount() {
@@ -523,5 +528,13 @@ public class GlobalDynamicProperties {
 
 	public KnownBlockValues knownBlockValues() {
 		return knownBlockValues;
+	}
+
+	public ContractStoragePriceTiers storagePriceTiers() {
+		return storagePriceTiers;
+	}
+
+	public long storageSlotLifetime() {
+		return storageSlotLifetime;
 	}
 }

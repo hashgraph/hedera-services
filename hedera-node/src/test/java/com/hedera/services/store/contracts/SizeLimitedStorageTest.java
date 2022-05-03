@@ -26,11 +26,14 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,6 +76,8 @@ class SizeLimitedStorageTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
+	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -85,8 +90,33 @@ class SizeLimitedStorageTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new SizeLimitedStorage(storageUpserter, storageRemover, dynamicProperties, () -> accounts,
-				() -> storage);
+		subject = new SizeLimitedStorage(
+				storageUpserter, storageRemover, dynamicProperties, () -> accounts, () -> blobs, () -> storage);
+	}
+
+	@Test
+	void accumulatesAndResetsPendingCodeAsExpected() {
+		subject.storeCode(firstAccount.getAccountNum(), oneKbCode);
+		subject.storeCode(nextAccount.getAccountNum(), eightKbCode);
+
+		assertEquals(2, subject.getNewBytecode().size());
+
+		subject.beginSession();
+
+		assertEquals(0, subject.getNewBytecode().size());
+	}
+
+	@Test
+	void commitsBytecodeIfPresent() {
+		subject.storeCode(firstAccount.getAccountNum(), oneKbCode);
+		subject.storeCode(nextAccount.getAccountNum(), eightKbCode);
+
+		subject.validateAndCommit();
+
+		verify(blobs).put(
+				bytecodeKeyFor(firstAccount.getAccountNum()), new VirtualBlobValue(oneKbCode.toArrayUnsafe()));
+		verify(blobs).put(
+				bytecodeKeyFor(nextAccount.getAccountNum()), new VirtualBlobValue(eightKbCode.toArrayUnsafe()));
 	}
 
 	@Test
@@ -466,6 +496,12 @@ class SizeLimitedStorageTest {
 		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
 	}
 
+	private static VirtualBlobKey bytecodeKeyFor(final long num) {
+		return new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) num);
+	}
+
+	private static final Bytes oneKbCode = Bytes.wrap(new byte[1024]);
+	private static final Bytes eightKbCode = Bytes.wrap(new byte[8 * 1024]);
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
 	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");

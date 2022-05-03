@@ -88,6 +88,7 @@ public class SizeLimitedStorageBench {
 				IterableStorageUtils::removeMapping,
                 mockPropertiesWith(maxContractKvPairs, maxAggregateKvPairs),
                 infrastructure.accounts()::get,
+				infrastructure.blobs()::get,
                 infrastructure.storage()::get);
     }
 

@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
@@ -56,6 +57,9 @@ class BootstrapPropertiesTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private BootstrapProperties subject = new BootstrapProperties();
+
+	private static final ContractStoragePriceTiers CANONICAL_TIERS = ContractStoragePriceTiers.from(
+			"10@50,50@100,100@150,200@200,500@250,700@300,1000@350,2000@400,5000@450,10000@500");
 
 	private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
 	private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
@@ -111,6 +115,8 @@ class BootstrapPropertiesTest {
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("contracts.precompile.exportRecordResults", true),
 			entry("contracts.precompile.htsEnableTokenCreate", true),
+			entry("contract.storageSlotLifetime", 2592000L),
+			entry("contract.storageSlotPriceTiers", CANONICAL_TIERS),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),

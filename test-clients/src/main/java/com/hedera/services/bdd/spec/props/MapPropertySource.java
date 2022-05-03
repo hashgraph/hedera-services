@@ -44,7 +44,6 @@ public class MapPropertySource implements HapiPropertySource {
 				.collect(toMap(l -> l.get(0), l -> l.get(1))));
 	}
 
-
 	private final Map props;
 
 	public MapPropertySource(Map props) {

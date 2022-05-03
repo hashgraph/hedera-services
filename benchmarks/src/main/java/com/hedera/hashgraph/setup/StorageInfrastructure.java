@@ -27,6 +27,8 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
@@ -45,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public record StorageInfrastructure(
 		AtomicReference<MerkleMap<EntityNum, MerkleAccount>> accounts,
+		AtomicReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobs,
 		AtomicReference<VirtualMap<ContractKey, IterableContractValue>> storage,
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
 
@@ -52,16 +55,19 @@ public record StorageInfrastructure(
 
 	public static StorageInfrastructure from(
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs,
 			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		final AtomicReference<VirtualMap<ContractKey, IterableContractValue>> storageRef = new AtomicReference<>(storage);
+		final AtomicReference<VirtualMap<ContractKey, IterableContractValue>> storageRef = new AtomicReference<>(
+				storage);
+		final AtomicReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobsRef = new AtomicReference<>(blobs);
 		final AtomicReference<MerkleMap<EntityNum, MerkleAccount>> accountsRef = new AtomicReference<>(accounts);
 		final var backingAccounts = new BackingAccounts(accountsRef::get);
 		backingAccounts.rebuildFromSources();
 		final var ledger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 
-		return new StorageInfrastructure(accountsRef, storageRef, ledger);
+		return new StorageInfrastructure(accountsRef, blobsRef, storageRef, ledger);
 	}
 
 	public static StorageInfrastructure from(final String storageLoc) throws IOException {
@@ -73,15 +79,23 @@ public record StorageInfrastructure(
 			accounts = mMapIn.readMerkleTree(Integer.MAX_VALUE);
 		}
 
+		VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs = new VirtualMap<>();
+		final var vMapBlobsLoc = InfrastructureManager.vMapBlobsMetaIn(storageLoc);
+		final var blobsPath = Paths.get(vMapBlobsLoc);
+		final var blobsDir = new File(storageLoc);
+		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(blobsPath), blobsDir)) {
+			blobs.deserializeExternal(vMapIn, blobsDir, null, 1);
+		}
+
 		VirtualMap<ContractKey, IterableContractValue> storage = new VirtualMap<>();
-		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
-		final var path = Paths.get(vMapMetaLoc);
+		final var vMapMetaLoc = InfrastructureManager.vMapStorageMetaIn(storageLoc);
+		final var storagePath = Paths.get(vMapMetaLoc);
 		final var storageDir = new File(storageLoc);
-		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(path), storageDir)) {
+		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(storagePath), storageDir)) {
 			storage.deserializeExternal(vMapIn, storageDir, null, 1);
 		}
 		System.out.println("done.");
-		return from(accounts, storage);
+		return from(accounts, blobs, storage);
 	}
 
 	public void serializeTo(final String storageLoc) throws IOException {
@@ -93,7 +107,7 @@ public record StorageInfrastructure(
 			mMapOut.writeMerkleTree(accounts.get());
 		}
 
-		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
+		final var vMapMetaLoc = InfrastructureManager.vMapStorageMetaIn(storageLoc);
 		final var curStorage = storage.get();
 		final var newStorage = curStorage.copy();
 		crypto.digestTreeSync(curStorage);

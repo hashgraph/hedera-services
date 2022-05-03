@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -31,7 +32,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Function;
@@ -60,7 +60,7 @@ public interface PropertySource {
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
 	Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
-	Function<String, Object> AS_INSTANT = Instant::parse;
+	Function<String, Object> AS_CONTRACT_STORAGE_PRICE_TIERS = ContractStoragePriceTiers::from;
 
 	boolean containsProperty(String name);
 
@@ -96,6 +96,10 @@ public interface PropertySource {
 
 	default ThrottleReqOpsScaleFactor getThrottleScaleFactor(String name) {
 		return getTypedProperty(ThrottleReqOpsScaleFactor.class, name);
+	}
+
+	default ContractStoragePriceTiers getContractStoragePriceTiers(String name) {
+		return getTypedProperty(ContractStoragePriceTiers.class, name);
 	}
 
 	@SuppressWarnings("unchecked")
