@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,26 +42,33 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
@@ -99,6 +107,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						eip1014AddressAlwaysHasPriority(),
 						immutableContractKeyFormIsStandard(),
 						updateAutoRenewAccountWorks(),
+						updateMaxAutoAssociationsWorks()
 				}
 		);
 	}
@@ -226,6 +235,83 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec updateMaxAutoAssociationsWorks() {
+		final int tokenAssociations_restrictedNetwork = 10;
+		final int tokenAssociations_adventurousNetwork = 1_000;
+		final int originalMax = 2;
+		final int newBadMax = originalMax - 1;
+		final int newGoodMax = originalMax + 1;
+		final String tokenA = "tokenA";
+		final String tokenB = "tokenB";
+
+		final String treasury = "treasury";
+		final String tokenACreate = "tokenACreate";
+		final String tokenBCreate = "tokenBCreate";
+		final String transferAToC = "transferAToC";
+		final String transferBToC = "transferBToC";
+
+		return defaultHapiSpec("updateMaxAutoAssociationsWorks")
+				.given(
+						overridingTwo(
+								"accounts.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + 10),
+						cryptoCreate(treasury)
+								.balance(ONE_HUNDRED_HBARS),
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(originalMax),
+						tokenCreate(tokenA)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenACreate),
+						getTxnRecord(tokenACreate)
+								.hasNewTokenAssociation(tokenA, treasury),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBCreate),
+						getTxnRecord(tokenBCreate)
+								.hasNewTokenAssociation(tokenB, treasury),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax))
+								.logged()
+				)
+				.when(
+						cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
+								.via(transferAToC),
+						getTxnRecord(transferAToC)
+								.hasNewTokenAssociation(tokenA, CONTRACT),
+						cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT))
+								.via(transferBToC),
+						getTxnRecord(transferBToC)
+								.hasNewTokenAssociation(tokenB, CONTRACT)
+				)
+				.then(
+						getContractInfo(CONTRACT)
+								.payingWith(GENESIS)
+								.has(contractWith()
+										.hasAlreadyUsedAutomaticAssociations(originalMax)
+										.maxAutoAssociations(originalMax)),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(newBadMax)
+								.hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(newGoodMax),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
+								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+
+						overriding("accounts.limitTokenAssociations", "false"),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
+						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)
+				);
+	}
+
 	private HapiApiSpec updateAutoRenewAccountWorks() {
 		final var autoRenewAccount = "autoRenewAccount";
 		final var newAutoRenewAccount = "newAutoRenewAccount";
@@ -240,7 +326,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.autoRenewAccountId(autoRenewAccount),
 						getContractInfo(CONTRACT)
 								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
-								. logged()
+								.logged()
 				)
 				.when(
 						contractUpdate(CONTRACT)
@@ -254,7 +340,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.then(
 						getContractInfo(CONTRACT)
 								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
-								. logged()
+								.logged()
 				);
 	}
 

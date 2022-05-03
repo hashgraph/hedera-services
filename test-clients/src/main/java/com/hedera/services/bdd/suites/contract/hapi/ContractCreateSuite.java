@@ -87,6 +87,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -102,6 +104,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -121,32 +124,67 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
-						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsedByContractCreate(),
-						gasLimitOverMaxGasLimitFailsPrecheck(),
-						vanillaSuccess(),
-						propagatesNestedCreations(),
-						blockTimestampIsConsensusTime(),
-						contractWithAutoRenewNeedSignatures()
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						revertedTryExtCallHasNoSideEffects(),
+//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+//						cannotSendToNonExistentAccount(),
+//						canCallPendingContractSafely(),
+//						delegateContractIdRequiredForTransferInDelegateCall(),
+//						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//						minChargeIsTXGasUsedByContractCreate(),
+//						gasLimitOverMaxGasLimitFailsPrecheck(),
+//						vanillaSuccess(),
+//						propagatesNestedCreations(),
+//						blockTimestampIsConsensusTime(),
+//						contractWithAutoRenewNeedSignatures(),
+						autoAssociationSlotsWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec autoAssociationSlotsWorks() {
+		final int maxAutoAssociations = 100;
+		final int ADVENTUROUS_NETWORK = 1_000;
+		final String CONTRACT = "Multipurpose";
+		final String associationsLimitProperty = "accounts.limitTokenAssociations";
+		final String defaultAssociationsLimit =
+				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+
+		return defaultHapiSpec("autoAssociationSlotsWorks")
+				.given(
+						overridingTwo(
+								"accounts.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + 1)
+				).when().then(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(maxAutoAssociations)
+								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+
+						// Default is NOT to limit associations for entities
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(maxAutoAssociations),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(maxAutoAssociations))
+								.logged(),
+						// Restore default
+						overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK)
+				);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {

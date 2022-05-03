@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -86,7 +85,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		return this;
 	}
 
-	public HapiContractUpdate maxAutomaticAssociations(int max) {
+	public HapiContractUpdate newMaxAutomaticAssociations(int max) {
 		newMaxAutomaticAssociations = Optional.of(max);
 		return this;
 	}

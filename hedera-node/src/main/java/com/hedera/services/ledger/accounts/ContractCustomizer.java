@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.annotation.Nullable;
 import java.time.Instant;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
