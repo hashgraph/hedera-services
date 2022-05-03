@@ -48,7 +48,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<Long> valueSent = Optional.of(0L);
 	private boolean convertableToEthCall = true;
-
 	private Consumer<Object[]> resultObserver = null;
 
 	public HapiContractCall withExplicitParams(final Supplier<String> supplier) {
@@ -129,6 +128,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
 	public boolean isConvertableToEthCall() {
 		return convertableToEthCall;
+	}
+
+	public Consumer<Object[]> getResultObserver() {
+		return resultObserver;
 	}
 
 	public String getContract() {

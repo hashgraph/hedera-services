@@ -116,10 +116,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				HSCS_PREC_017_rollback_after_insufficient_balance(),
 				nonZeroTransfersFail()
-		);
+		});
 	}
 
 	List<HapiApiSpec> positiveSpecs() {

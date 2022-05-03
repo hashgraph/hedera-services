@@ -85,7 +85,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
-
     private Consumer<Object[]> resultObserver = null;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
@@ -128,6 +127,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.node = contractCall.getNode();
         this.usdFee = contractCall.getUsdFee();
         this.retryLimits = contractCall.getRetryLimits();
+        this.resultObserver = contractCall.getResultObserver();
         if (contractCall.getValueSent().isPresent()) {
             this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
         }

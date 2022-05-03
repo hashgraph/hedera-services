@@ -304,11 +304,11 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompileEthFailing() {
 		return List.of(new DynamicContainer[] {
-//				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-//				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-//				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-//				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-//				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
 		});
 	}
 
