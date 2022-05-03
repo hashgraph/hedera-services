@@ -420,7 +420,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(decoder.decodeErcTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
+        given(decoder.decodeERCTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -818,7 +818,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(decoder.decodeErcTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
+        given(decoder.decodeERCTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -937,7 +937,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(decoder.decodeErcTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
+        given(decoder.decodeERCTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
