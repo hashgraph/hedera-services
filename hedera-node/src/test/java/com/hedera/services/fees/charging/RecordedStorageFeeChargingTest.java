@@ -91,9 +91,9 @@ class RecordedStorageFeeChargingTest {
 		deltas.put(aContract, +2);
 		deltas.put(bContract, -1);
 		deltas.put(cContract, +4);
-		final var expectedACharge = canonicalTiers.kvPriceGiven(
+		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 2, aExpiry);
-		final var expectedCCharge = canonicalTiers.kvPriceGiven(
+		final var expectedCCharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 4, cExpiry);
 		given(accountsLedger.get(funding, BALANCE))
 				.willReturn(0L)
@@ -115,7 +115,7 @@ class RecordedStorageFeeChargingTest {
 	@Test
 	void fallsBackToContractIfAutoRenewCannotCover() {
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
-		final var expectedACharge = canonicalTiers.kvPriceGiven(
+		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
 		final var autoRenewBalance = expectedACharge / 2;
 		final var contractBalance = expectedACharge / 2 + 1;
@@ -137,7 +137,7 @@ class RecordedStorageFeeChargingTest {
 	@Test
 	void failsIfFeesCannotBePaid() {
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
-		final var expectedACharge = canonicalTiers.kvPriceGiven(
+		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
 		final var autoRenewBalance = expectedACharge / 2;
 		final var contractBalance = expectedACharge / 2 - 1;

@@ -22,6 +22,7 @@ package com.hedera.services.fees;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +59,31 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 	}
 
 	/**
+	 * Returns the price in tinybars to keep the given bytecode in storage for a given period. The answer is
+	 * calculated by 
+	 *
+	 * @param numKvPairsUsed
+	 * 		the number of total key/value pairs in network storage
+	 * @param rate
+	 * 		the active exchange rate
+	 * @param slotLifetime
+	 * 		the current value of contract.storageSlotLifetime
+	 * @param code the bytecode
+	 * @param requestedLifetime
+	 * 		the desired period of an incremental key/value pair
+	 * @return the price in tinybars
+	 */
+	public long codePrice(
+			final ExchangeRate rate,
+			final long slotLifetime,
+			final long numKvPairsUsed,
+			final Bytes code,
+			final long requestedLifetime
+	) {
+		throw new AssertionError("Not implemented");
+	}
+
+	/**
 	 * Returns the price in tinybars to keep one key/value pair in contract storage for a given period.
 	 *
 	 * @param numKvPairsUsed
@@ -72,7 +98,7 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 	 * 		the desired period of an incremental key/value pair
 	 * @return the price in tinybars
 	 */
-	public long kvPriceGiven(
+	public long slotPrice(
 			final ExchangeRate rate,
 			final long slotLifetime,
 			final long numKvPairsUsed,

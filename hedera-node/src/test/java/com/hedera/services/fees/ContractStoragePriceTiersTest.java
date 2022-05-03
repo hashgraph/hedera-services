@@ -41,7 +41,7 @@ class ContractStoragePriceTiersTest {
 
 	@Test
 	void doesntChargeZero() {
-		final var degenerate = CANONICAL_TIERS.kvPriceGiven(
+		final var degenerate = CANONICAL_TIERS.slotPrice(
 				someOtherRate, DEFAULT_PERIOD, 1_000_000, 1, DEFAULT_PERIOD);
 		assertEquals(1, degenerate);
 	}
@@ -51,7 +51,7 @@ class ContractStoragePriceTiersTest {
 		final var correctPrice = 100 * THOUSANDTHS_TO_TINY;
 		final var expected = tinycentsToTinybars(correctPrice, someRate);
 
-		final var actual = CANONICAL_TIERS.kvPriceGiven(
+		final var actual = CANONICAL_TIERS.slotPrice(
 				someRate, DEFAULT_PERIOD, 150_000_000, 1, DEFAULT_PERIOD);
 
 		assertEquals(expected, actual);
@@ -62,7 +62,7 @@ class ContractStoragePriceTiersTest {
 		final var correctPrice = 100 * THOUSANDTHS_TO_TINY;
 		final var expected = tinycentsToTinybars(correctPrice, someRate);
 
-		final var actual = CANONICAL_TIERS.kvPriceGiven(
+		final var actual = CANONICAL_TIERS.slotPrice(
 				someRate, DEFAULT_PERIOD, 150_000_000, 2, DEFAULT_PERIOD / 2);
 
 		assertEquals(expected / 2 * 2, actual);
@@ -73,7 +73,7 @@ class ContractStoragePriceTiersTest {
 		final var correctPrice = 10 * THOUSANDTHS_TO_TINY;
 		final var expected = tinycentsToTinybars(correctPrice + 1, someRate);
 
-		final var actual = CANONICAL_TIERS.kvPriceGiven(
+		final var actual = CANONICAL_TIERS.slotPrice(
 				someRate, DEFAULT_PERIOD, 1_000_000, 1, DEFAULT_PERIOD + 1);
 
 		assertEquals(expected, actual);
@@ -85,7 +85,7 @@ class ContractStoragePriceTiersTest {
 		final var partialPrice = correctPrice / 2;
 		final var expected = tinycentsToTinybars(correctPrice + partialPrice, someRate);
 
-		final var actual = CANONICAL_TIERS.kvPriceGiven(
+		final var actual = CANONICAL_TIERS.slotPrice(
 				someRate, DEFAULT_PERIOD, 500_000_000, 1, 3 * DEFAULT_PERIOD / 2);
 
 		assertEquals(expected, actual);

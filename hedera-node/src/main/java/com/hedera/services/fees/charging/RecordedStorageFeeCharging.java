@@ -108,7 +108,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 		newUsageDeltas.forEach((id, delta) -> {
 			if (delta > 0) {
 				final var lifetime = (long) accounts.get(id, EXPIRY) - now;
-				var leftToPay = storagePriceTiers.kvPriceGiven(rate, slotLifetime, numKvPairs, delta, lifetime);
+				var leftToPay = storagePriceTiers.slotPrice(rate, slotLifetime, numKvPairs, delta, lifetime);
 				final var autoRenew = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
 				if (!MISSING_ENTITY_ID.equals(autoRenew)) {
 					final var debited = charge(autoRenew.toGrpcAccountId(), leftToPay, false, accounts);
