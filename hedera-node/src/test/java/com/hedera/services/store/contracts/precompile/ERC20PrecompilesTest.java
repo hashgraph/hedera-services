@@ -46,6 +46,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -95,6 +96,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -234,7 +236,7 @@ class ERC20PrecompilesTest {
     @Mock
     private AccountStore accountStore;
     @Mock
-    CryptoApproveAllowanceTransactionBody cryptoAdjustAllowanceTransactionBody;
+    CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -265,6 +267,28 @@ class ERC20PrecompilesTest {
     @AfterEach
     void closeMocks() {
         entityIdUtils.close();
+    }
+
+
+    @Test
+    void allowanceDisabled() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
+        given(pretendArguments.slice(4, 20)).willReturn(fungibleTokenAddr);
+        given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
+
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+
+        // when:
+        subject.prepareFields(frame);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, а -> а));
     }
 
     @Test
@@ -610,10 +634,10 @@ class ERC20PrecompilesTest {
 
     @Test
     void approve() {
-        TreeMap<FcTokenAllowanceId, Long> allowances = new TreeMap<>();
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
+        Map<FcTokenAllowanceId, Long> allowances = Map.of(fungibleAllowanceId, 0L);
         givenMinimalFrameContext();
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
@@ -634,7 +658,7 @@ class ERC20PrecompilesTest {
 
         given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
+        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
@@ -904,6 +928,9 @@ class ERC20PrecompilesTest {
             List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, token, null, receiver),
                     new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, token, sender, null))
     );
+
+    private static final FcTokenAllowanceId fungibleAllowanceId =
+            FcTokenAllowanceId.from(EntityNum.fromTokenId(token), EntityId.fromGrpcAccountId(receiver).asNum());
 
     public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, BigInteger.ONE, true);
 }
