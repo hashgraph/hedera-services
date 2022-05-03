@@ -84,9 +84,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		vpt = sigValObj.getTotalSigCount();
 
 		bpr = INT_SIZE;
-		rbs = (getBaseTransactionRecordSize(txBody)
-				+ getMaxAutoAssociationsForContractCreate(txBody))
-				* (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+		rbs = (getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC)
+				+ getMaxAutoAssociationsForContractCreate(txBody);
 		long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
 		FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -95,9 +94,10 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
 	}
 
-	private int getMaxAutoAssociationsForContractCreate(final TransactionBody txBody) {
-		final int CREATE_SLOT_MULTIPLIER = 1228;
-		return txBody.getContractCreateInstance().getMaxAutomaticTokenAssociations() * CREATE_SLOT_MULTIPLIER;
+	private long getMaxAutoAssociationsForContractCreate(final TransactionBody txBody) {
+		final int CREATE_SLOT_MULTIPLIER = 770;
+		final var contractCreateInstance = txBody.getContractCreateInstance();
+		return contractCreateInstance.getMaxAutomaticTokenAssociations() * CREATE_SLOT_MULTIPLIER * contractCreateInstance.getAutoRenewPeriod().getSeconds();
 	}
 
 	/**
@@ -188,15 +188,14 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
 		bpr = INT_SIZE;
 
-		if (contractExpiryTime != null && contractExpiryTime.getSeconds() > 0) {
+		if (contractExpiryTime.getSeconds() > 0) {
 			sbs = getContractUpdateStorageBytesSec(txBody, contractExpiryTime);
 		}
 
 		long rbsNetwork = getDefaultRBHNetworkSize();
-
-		rbs = (getBaseTransactionRecordSize(txBody) +
-				getAutoAssociationsUsage(txBody, oldMaxAutoAssociationSlots, contractExpiryTime))
-				* (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+		long autoAssociationUsage = getAutoAssociationsUsage(txBody, oldMaxAutoAssociationSlots, contractExpiryTime);
+		rbs = (getBaseTransactionRecordSize(txBody)
+				* (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC)) + autoAssociationUsage;
 
 		FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
 				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -206,7 +205,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
 	private long getAutoAssociationsUsage(final TransactionBody txBody,
 			final int oldMaxAutoAssociationSlots, final Timestamp contractExpiryTime) {
-		final int UPDATE_SLOT_MULTIPLIER = 24000;
+		final int UPDATE_SLOT_MULTIPLIER = 200;
 		final var updateInstance = txBody.getContractUpdateInstance();
 
 		final var oldSlotsUsage = oldMaxAutoAssociationSlots * UPDATE_SLOT_MULTIPLIER;
@@ -216,7 +215,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		final var validStart = txBody.getTransactionID().getTransactionValidStart().getSeconds();
 
 		final var oldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, contractExpiryTime.getSeconds() - validStart);
-		var newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, updateInstance.getExpirationTime().getSeconds() - validStart);
+		var newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME,
+				updateInstance.getExpirationTime().getSeconds() - validStart);
 
 		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
 		long oldBs = oldSlotsUsage * oldLifetimeSecs;

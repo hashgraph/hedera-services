@@ -162,21 +162,31 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final String defaultAssociationsLimit =
 				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
+		final var baseCreatePrice = 0.096877;
+		final var autoAssocSlotPrice = 0.0018;
+		final var oneCreatePrice = baseCreatePrice + (autoAssocSlotPrice);
+		final var twoCreatePrice = baseCreatePrice + (2 * autoAssocSlotPrice);
+		final var tenCreatePrice = baseCreatePrice + (10 * autoAssocSlotPrice);
+		final var hundredCreatePrice = baseCreatePrice + (100 * autoAssocSlotPrice);
+		final var thousandCreateprice = baseCreatePrice + (1000 * autoAssocSlotPrice);
+
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
-						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
-						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS)
+						cryptoCreate("civilian").balance(100 * ONE_HUNDRED_HBARS),
+						getAccountBalance("civilian").hasTinyBars(100 * ONE_HUNDRED_HBARS)
 				).when().then(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
 						overriding(associationsLimitProperty, defaultAssociationsLimit),
 						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 								.blankMemo()
 								.balance(0L)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.payingWith("civilian")
 								.via("noAutoAssoc"),
 						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 								.blankMemo()
 								.balance(0L)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
@@ -184,18 +194,46 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.maxAutomaticTokenAssociations(1)
 								.via("oneAutoAssoc"),
 						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 								.blankMemo()
 								.balance(0L)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-								.maxAutomaticTokenAssociations(11)
+								.payingWith("civilian")
+								.maxAutomaticTokenAssociations(2)
+								.via("twoAutoAssoc"),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.maxAutomaticTokenAssociations(10)
 								.payingWith("civilian")
 								.via("tenAutoAssoc"),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.maxAutomaticTokenAssociations(100)
+								.payingWith("civilian")
+								.via("hundredAutoAssoc"),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.blankMemo()
+								.balance(0L)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.maxAutomaticTokenAssociations(1000)
+								.payingWith("civilian")
+								.via("thousandAutoAssoc"),
 						getContractInfo(CONTRACT)
-								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(11))
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1000))
 								.logged(),
-						validateChargedUsd("noAutoAssoc", 0.9422),
-						validateChargedUsd("oneAutoAssoc", 0.9450),
-						validateChargedUsd("tenAutoAssoc", 0.9664)
+						validateChargedUsd("noAutoAssoc", 0.94219),
+						validateChargedUsd("oneAutoAssoc", 1.0707),
+						validateChargedUsd("twoAutoAssoc", 1.19)
+//						validateChargedUsd("tenAutoAssoc", 0.1122),
+//						validateChargedUsd("hundredAutoAssoc", 1.12218),
+//						validateChargedUsd("thousandAutoAssoc", 2.74218)
 
 				);
 	}
