@@ -114,6 +114,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.via("cheapCallBeforeCongestionPricing"),
 						getTxnRecord("cheapCallBeforeCongestionPricing")
 								.providingFeeTo(normalPrice::set),
+						sleepFor(30000),
 						getAccountBalance(GENESIS)
 								.setNode(reconnectingNode)
 								.unavailableNode()
