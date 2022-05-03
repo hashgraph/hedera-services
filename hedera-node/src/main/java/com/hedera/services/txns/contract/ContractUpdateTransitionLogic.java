@@ -38,7 +38,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -95,7 +94,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			var result = customizerFactory.customizerFor(target, validator, op);
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
-				final var validity = sanityCheck(id, customizer.get());
+				final var validity = sanityCheckAutoAssociations(id, customizer.get());
 				if (validity != OK) {
 					txnCtx.setStatus(validity);
 					return;
@@ -117,7 +116,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum sanityCheck(final EntityNum target, final HederaAccountCustomizer customizer) {
+	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target, final HederaAccountCustomizer customizer) {
 		final var changes = customizer.getChanges();
 		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
 			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);

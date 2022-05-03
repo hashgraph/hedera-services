@@ -96,7 +96,7 @@ class ContractCreateTransitionLogicTest {
 	private final byte[] bytecode =
 			("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07" +
 					"ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032").getBytes();
-	private final int maxAutoAssociations = 1234;
+	private final int maxAutoAssociations = 10;
 
 	@Mock
 	private HederaFs hfs;
@@ -174,7 +174,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false, false);
+		givenValidTxnCtx(false, false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -215,9 +215,12 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void acceptsValidTxn() {
-		givenValidTxnCtx();
+		givenValidTxnCtxWithMaxAssociations();
 		given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		given(validator.memoCheck(any())).willReturn(OK);
 
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
 	}
@@ -227,6 +230,7 @@ class ContractCreateTransitionLogicTest {
 		givenInvalidMaxAutoAssociations();
 		given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
 				subject.semanticCheck().apply(contractCreateTxn));
@@ -243,7 +247,6 @@ class ContractCreateTransitionLogicTest {
 								.setMaxAutomaticTokenAssociations(maxAutoAssociations + 1)
 				).build();
 	}
-
 
 
 	@Test
@@ -671,31 +674,38 @@ class ContractCreateTransitionLogicTest {
 		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}
 
+
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false);
+		givenValidTxnCtx(true, false, false);
 	}
 
 	private void givenValidTxnCtxWithAutoRenew() {
-		givenValidTxnCtx(true, true);
+		givenValidTxnCtx(true, true, false);
 	}
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount) {
+	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount, boolean useMaxAutoAssociations) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
-				.setProxyAccountID(proxy)
-				.setMaxAutomaticTokenAssociations(1234);
+				.setProxyAccountID(proxy);
 		if (rememberAutoRenew) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
 		}
 		if (useAutoRenewAccount) {
 			op.setAutoRenewAccountId(autoRenewAccount);
 		}
+		if (useMaxAutoAssociations) {
+			op.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+		}
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
+	}
+
+	private void givenValidTxnCtxWithMaxAssociations() {
+		givenValidTxnCtx(true, true, true);
 	}
 
 	private TransactionID ourTxnId() {
