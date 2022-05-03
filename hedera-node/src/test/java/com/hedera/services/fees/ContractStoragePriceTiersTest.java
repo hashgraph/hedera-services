@@ -1,5 +1,25 @@
 package com.hedera.services.fees;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +42,7 @@ class ContractStoragePriceTiersTest {
 	@Test
 	void doesntChargeZero() {
 		final var degenerate = CANONICAL_TIERS.kvPriceGiven(
-				someOtherRate, DEFAULT_PERIOD, 1_000_000, DEFAULT_PERIOD);
+				someOtherRate, DEFAULT_PERIOD, 1_000_000, 1, DEFAULT_PERIOD);
 		assertEquals(1, degenerate);
 	}
 
@@ -32,9 +52,20 @@ class ContractStoragePriceTiersTest {
 		final var expected = tinycentsToTinybars(correctPrice, someRate);
 
 		final var actual = CANONICAL_TIERS.kvPriceGiven(
-				someRate, DEFAULT_PERIOD, 150_000_000, DEFAULT_PERIOD);
+				someRate, DEFAULT_PERIOD, 150_000_000, 1, DEFAULT_PERIOD);
 
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void getsExpectedForTwoAtHalfCanonicalPeriod() {
+		final var correctPrice = 100 * THOUSANDTHS_TO_TINY;
+		final var expected = tinycentsToTinybars(correctPrice, someRate);
+
+		final var actual = CANONICAL_TIERS.kvPriceGiven(
+				someRate, DEFAULT_PERIOD, 150_000_000, 2, DEFAULT_PERIOD / 2);
+
+		assertEquals(expected / 2 * 2, actual);
 	}
 
 	@Test
@@ -43,7 +74,7 @@ class ContractStoragePriceTiersTest {
 		final var expected = tinycentsToTinybars(correctPrice + 1, someRate);
 
 		final var actual = CANONICAL_TIERS.kvPriceGiven(
-				someRate, DEFAULT_PERIOD, 1_000_000, DEFAULT_PERIOD + 1);
+				someRate, DEFAULT_PERIOD, 1_000_000, 1, DEFAULT_PERIOD + 1);
 
 		assertEquals(expected, actual);
 	}
@@ -55,7 +86,7 @@ class ContractStoragePriceTiersTest {
 		final var expected = tinycentsToTinybars(correctPrice + partialPrice, someRate);
 
 		final var actual = CANONICAL_TIERS.kvPriceGiven(
-				someRate, DEFAULT_PERIOD, 500_000_000, 3 * DEFAULT_PERIOD / 2);
+				someRate, DEFAULT_PERIOD, 500_000_000, 1, 3 * DEFAULT_PERIOD / 2);
 
 		assertEquals(expected, actual);
 	}

@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.RecordedStorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -43,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -68,6 +70,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
 	@Mock
+	private RecordedStorageFeeCharging storageFeeCharging;
+	@Mock
 	private SizeLimitedStorage.IterableStorageUpserter storageUpserter;
 	@Mock
 	private SizeLimitedStorage.IterableStorageRemover storageRemover;
@@ -91,32 +95,41 @@ class SizeLimitedStorageTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SizeLimitedStorage(
-				storageUpserter, storageRemover, dynamicProperties, () -> accounts, () -> blobs, () -> storage);
+				storageFeeCharging, storageUpserter, storageRemover,
+				dynamicProperties, () -> accounts, () -> blobs, () -> storage);
 	}
 
 	@Test
 	void accumulatesAndResetsPendingCodeAsExpected() {
-		subject.storeCode(firstAccount.getAccountNum(), oneKbCode);
-		subject.storeCode(nextAccount.getAccountNum(), eightKbCode);
+		subject.storeCode(firstAccount.getAccountNum(), oneByteCode);
+		subject.storeCode(nextAccount.getAccountNum(), eightByteCode);
 
-		assertEquals(2, subject.getNewBytecode().size());
+		assertEquals(2, subject.getNewBytecodes().size());
 
 		subject.beginSession();
 
-		assertEquals(0, subject.getNewBytecode().size());
+		assertEquals(0, subject.getNewBytecodes().size());
 	}
 
 	@Test
 	void commitsBytecodeIfPresent() {
-		subject.storeCode(firstAccount.getAccountNum(), oneKbCode);
-		subject.storeCode(nextAccount.getAccountNum(), eightKbCode);
+		given(storage.size()).willReturn(numNetworkKvPairs);
+		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
 
-		subject.validateAndCommit();
+		subject.beginSession();
+		subject.storeCode(firstAccount.getAccountNum(), oneByteCode);
+		subject.storeCode(nextAccount.getAccountNum(), eightByteCode);
+		subject.validateAndCommit(accountsLedger);
 
+		verify(storageFeeCharging).chargeStorageFees(
+				numNetworkKvPairs,
+				subject.getNewBytecodes(),
+				Collections.emptyMap(),
+				accountsLedger);
 		verify(blobs).put(
-				bytecodeKeyFor(firstAccount.getAccountNum()), new VirtualBlobValue(oneKbCode.toArrayUnsafe()));
+				bytecodeKeyFor(firstAccount.getAccountNum()), new VirtualBlobValue(oneByteCode.toArrayUnsafe()));
 		verify(blobs).put(
-				bytecodeKeyFor(nextAccount.getAccountNum()), new VirtualBlobValue(eightKbCode.toArrayUnsafe()));
+				bytecodeKeyFor(nextAccount.getAccountNum()), new VirtualBlobValue(eightByteCode.toArrayUnsafe()));
 	}
 
 	@Test
@@ -138,7 +151,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
 		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-		subject.validateAndCommit();
+		subject.validateAndCommit(accountsLedger);
 		subject.recordNewKvUsageTo(accountsLedger);
 
 		inOrder.verify(storageRemover).removeMapping(firstAKey, firstRootKey, storage);
@@ -153,7 +166,7 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void okToCommitNoChanges() {
-		assertDoesNotThrow(subject::validateAndCommit);
+		assertDoesNotThrow(() -> subject.validateAndCommit(accountsLedger));
 	}
 
 	@Test
@@ -177,7 +190,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
 		subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-		subject.validateAndCommit();
+		subject.validateAndCommit(accountsLedger);
 
 		inOrder.verify(storageUpserter).upsertMapping(
 				firstAKey, aValue, firstRootKey, null, storage);
@@ -199,7 +212,7 @@ class SizeLimitedStorageTest {
 
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 
-		subject.validateAndCommit();
+		subject.validateAndCommit(accountsLedger);
 		subject.recordNewKvUsageTo(accountsLedger);
 
 		inOrder.verify(storageUpserter).upsertMapping(
@@ -215,7 +228,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
 		subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
 
-		assertFailsWith(subject::validateAndCommit, MAX_CONTRACT_STORAGE_EXCEEDED);
+		assertFailsWith(() -> subject.validateAndCommit(accountsLedger), MAX_CONTRACT_STORAGE_EXCEEDED);
 	}
 
 	@Test
@@ -234,7 +247,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
 		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-		assertFailsWith(subject::validateAndCommit, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
+		assertFailsWith(() -> subject.validateAndCommit(accountsLedger), MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
 	}
 
 	@Test
@@ -244,6 +257,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 
 		assertEquals(firstKvPairs + 1, subject.usageSoFar(firstAccount));
+		assertEquals(1, subject.usageDeltaSoFar(firstAccount));
 		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
 	}
 
@@ -278,6 +292,7 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 
 		assertEquals(1, subject.usageSoFar(firstAccount));
+		assertEquals(1, subject.usageDeltaSoFar(firstAccount));
 	}
 
 	@Test
@@ -290,10 +305,12 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
 		assertEquals(bLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
 		assertEquals(firstKvPairs, subject.usageSoFar(firstAccount));
+		assertEquals(0, subject.usageDeltaSoFar(firstAccount));
 
 		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
 		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, aLiteralKey));
 		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
+		assertEquals(-1, subject.usageDeltaSoFar(firstAccount));
 	}
 
 	@Test
@@ -308,7 +325,7 @@ class SizeLimitedStorageTest {
 		given(storageUpserter.upsertMapping(firstBKey, bValue, null, null, storage))
 				.willReturn(firstBKey);
 
-		subject.validateAndCommit();
+		subject.validateAndCommit(accountsLedger);
 
 		verify(storageUpserter).upsertMapping(firstBKey, bValue, null, null, storage);
 	}
@@ -500,8 +517,8 @@ class SizeLimitedStorageTest {
 		return new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) num);
 	}
 
-	private static final Bytes oneKbCode = Bytes.wrap(new byte[1024]);
-	private static final Bytes eightKbCode = Bytes.wrap(new byte[8 * 1024]);
+	private static final Bytes oneByteCode = Bytes.wrap(new byte[1]);
+	private static final Bytes eightByteCode = Bytes.wrap(new byte[8]);
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
 	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");
@@ -522,4 +539,5 @@ class SizeLimitedStorageTest {
 	private static final IterableContractValue dValue = IterableContractValue.from(dLiteralValue);
 	private static final int firstKvPairs = 5;
 	private static final int nextKvPairs = 6;
+	private static final long numNetworkKvPairs = 15_000_000L;
 }

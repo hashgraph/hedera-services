@@ -22,6 +22,8 @@ package com.hedera.services.store.contracts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.StorageFeeCharging;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -69,6 +71,8 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 public class SizeLimitedStorage {
 	public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
+	// Used to charge storage fees before committing changes
+	private final StorageFeeCharging storageFeeCharging;
 	// Used to upsert to a contract's doubly-linked list of storage mappings
 	private final IterableStorageUpserter storageUpserter;
 	// Used to remove from a contract's doubly-linked list of storage mappings
@@ -82,9 +86,10 @@ public class SizeLimitedStorage {
 	// Used to both read and write key/value pairs throughout the lifecycle of a change set
 	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
-	private final Map<Long, Bytes> newBytecode = new TreeMap<>();
+	private final Map<Long, Bytes> newBytecodes = new TreeMap<>();
 	private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
+	private final Map<AccountID, Integer> newUsageDeltas = new TreeMap<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
 	private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
@@ -93,6 +98,7 @@ public class SizeLimitedStorage {
 
 	@Inject
 	public SizeLimitedStorage(
+			final StorageFeeCharging storageFeeCharging,
 			final IterableStorageUpserter storageUpserter,
 			final IterableStorageRemover storageRemover,
 			final GlobalDynamicProperties dynamicProperties,
@@ -100,6 +106,7 @@ public class SizeLimitedStorage {
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobs,
 			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage
 	) {
+		this.storageFeeCharging = storageFeeCharging;
 		this.dynamicProperties = dynamicProperties;
 		this.storageRemover = storageRemover;
 		this.storageUpserter = storageUpserter;
@@ -117,7 +124,8 @@ public class SizeLimitedStorage {
 		removedKeys.clear();
 		newMappings.clear();
 		newFirstKeys.clear();
-		newBytecode.clear();
+		newBytecodes.clear();
+		newUsageDeltas.clear();
 		/* We will update this count as changes are buffered throughout the session. */
 		totalKvPairs = storage.get().size();
 	}
@@ -129,7 +137,7 @@ public class SizeLimitedStorage {
 	 * @param code its bytecode
 	 */
 	public void storeCode(final long contractNum, final Bytes code) {
-		newBytecode.put(contractNum, code);
+		newBytecodes.put(contractNum, code);
 	}
 
 	/**
@@ -139,8 +147,10 @@ public class SizeLimitedStorage {
 	 * @throws com.hedera.services.exceptions.InvalidTransactionException
 	 * 		if a storage limit is exceeded
 	 */
-	public void validateAndCommit() {
+	public void validateAndCommit(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		validatePendingSizeChanges();
+		// If fees cannot be paid, will throw an ITE, preventing any of this transaction's changes from being committed
+		storageFeeCharging.chargeStorageFees(totalKvPairs, newBytecodes, newUsageDeltas, accountsLedger);
 
 		commitPendingRemovals();
 		commitPendingUpdates();
@@ -207,7 +217,9 @@ public class SizeLimitedStorage {
 		final var kvCountImpact = incorporateKvImpact(
 				contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
 		if (kvCountImpact != 0) {
-			newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).getAndAdd(kvCountImpact);
+			final var accountNum = id.getAccountNum();
+			newUsages.computeIfAbsent(accountNum, this::kvPairsLookup).getAndAdd(kvCountImpact);
+			newUsageDeltas.merge(id, kvCountImpact, Integer::sum);
 			totalKvPairs += kvCountImpact;
 		}
 	}
@@ -362,11 +374,11 @@ public class SizeLimitedStorage {
 	}
 
 	private void commitBytecode() {
-		if (newBytecode.isEmpty()) {
+		if (newBytecodes.isEmpty()) {
 			return;
 		}
 		final var curBlobs = blobs.get();
-		newBytecode.forEach((id, code) -> {
+		newBytecodes.forEach((id, code) -> {
 			curBlobs.put(bytecodeKeyFor(id), new VirtualBlobValue(code.toArrayUnsafe()));
 		});
 	}
@@ -447,7 +459,12 @@ public class SizeLimitedStorage {
 	}
 
 	@VisibleForTesting
-	Map<Long, Bytes> getNewBytecode() {
-		return newBytecode;
+	Map<Long, Bytes> getNewBytecodes() {
+		return newBytecodes;
+	}
+
+	@VisibleForTesting
+	int usageDeltaSoFar(final AccountID id) {
+		return newUsageDeltas.getOrDefault(id, 0);
 	}
 }

@@ -20,6 +20,9 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.fees.ContractStoragePriceTiers;
+import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,9 +33,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StandardizedPropertySourcesTest {
@@ -99,5 +106,36 @@ class StandardizedPropertySourcesTest {
 		final var properties = subject.asResolvingSource();
 
 		assertSame(updateRange, properties.getEntityNumRange("files.softwareUpdateRange"));
+	}
+
+	@Test
+	void defaultMethodsParseTypes() {
+		final var otherSubject = mock(PropertySource.class);
+		final var valuesLiteral = "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+		final var tiersLiteral = "10@50";
+		final var multiplierLiteral = "90,10x,95,25x,99,100x";
+
+		doCallRealMethod().when(otherSubject).getTypedProperty(any(), any());
+		otherSubject.getTypedProperty(KnownBlockValues.class, "contracts.knownBlockHash");
+		doCallRealMethod().when(otherSubject).getBlockValuesProperty("contracts.knownBlockHash");
+		doCallRealMethod().when(otherSubject).getContractStoragePriceTiers("contract.storageSlotPriceTiers");
+		doCallRealMethod().when(otherSubject).getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
+
+		given(otherSubject.getProperty("contracts.knownBlockHash"))
+				.willReturn(KnownBlockValues.from(valuesLiteral));
+		given(otherSubject.getProperty("contract.storageSlotPriceTiers"))
+				.willReturn(ContractStoragePriceTiers.from(tiersLiteral));
+		given(otherSubject.getProperty("fees.percentCongestionMultipliers"))
+				.willReturn(CongestionMultipliers.from(multiplierLiteral));
+
+		assertInstanceOf(
+				KnownBlockValues.class,
+				otherSubject.getBlockValuesProperty("contracts.knownBlockHash"));
+		assertInstanceOf(
+				ContractStoragePriceTiers.class,
+				otherSubject.getContractStoragePriceTiers("contract.storageSlotPriceTiers"));
+		assertInstanceOf(
+				CongestionMultipliers.class,
+				otherSubject.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"));
 	}
 }

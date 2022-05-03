@@ -282,35 +282,47 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public void commit() {
-			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
+			final var wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 			final var impactHistorian = wrapped.sigImpactHistorian;
+			final var updatedAccounts = getUpdatedAccounts();
 
-			commitSizeLimitedStorageTo(entityAccess);
-
-			final var deletedAddresses = getDeletedAccountAddresses();
-			deletedAddresses.forEach(address -> {
-				final var accountId = accountIdFromEvmAddress(address);
-				validateTrue(impactHistorian != null, FAIL_INVALID);
-				impactHistorian.markEntityChanged(accountId.getAccountNum());
-				trackIfNewlyCreated(accountId, entityAccess, wrapped.provisionalContractCreations);
-			});
-			for (final var updatedAccount : getUpdatedAccounts()) {
-				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
-					continue;
-				}
-				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-				trackIfNewlyCreated(accountId, entityAccess, wrapped.provisionalContractCreations);
-				if (updatedAccount.codeWasUpdated()) {
-					entityAccess.storeCode(accountId, updatedAccount.getCode());
-				}
-			}
-
+			// Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
+			commitSizeLimitedStorage(entityAccess, updatedAccounts);
+			trackNewlyCreatedAccounts(
+					entityAccess,
+					wrapped.provisionalContractCreations,
+					impactHistorian,
+					getDeletedAccountAddresses(),
+					updatedAccounts);
 			entityAccess.recordNewKvUsageTo(trackingAccounts());
+
 			// Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			// this commit() persists all of that information without any additional use of the deletedAccounts
 			// or updatedAccounts collections.
 			trackingLedgers().commit(impactHistorian);
+		}
+
+		private void trackNewlyCreatedAccounts(
+				final EntityAccess entityAccess,
+				final List<ContractID> provisionalCreations,
+				final SigImpactHistorian impactHistorian,
+				final Collection<Address> deletedAddresses,
+				final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts
+		) {
+			deletedAddresses.forEach(address -> {
+				final var accountId = accountIdFromEvmAddress(address);
+				validateTrue(impactHistorian != null, FAIL_INVALID);
+				impactHistorian.markEntityChanged(accountId.getAccountNum());
+				trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+			});
+			for (final var updatedAccount : updatedAccounts) {
+				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
+					continue;
+				}
+				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+				trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+			}
 		}
 
 		private void trackIfNewlyCreated(
@@ -323,18 +335,23 @@ public class HederaWorldState implements HederaMutableWorldState {
 			}
 		}
 
-		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
-			for (final var updatedAccount : getUpdatedAccounts()) {
+		private void commitSizeLimitedStorage(
+				final EntityAccess entityAccess,
+				final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts
+		) {
+			for (final var updatedAccount : updatedAccounts) {
+				// We don't check updatedAccount.getStorageWasCleared(), because we only purge storage
+				// slots when a contract has expired and is being permanently removed from state
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-				// Note that we don't have the equivalent of an account-scoped storage trie, so we can't
-				// do anything in particular when updated.getStorageWasCleared() is true. (We will address
-				// this in our global state expiration implementation.)
 				final var kvUpdates = updatedAccount.getUpdatedStorage();
 				if (!kvUpdates.isEmpty()) {
 					kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
 				}
+				if (updatedAccount.codeWasUpdated()) {
+					entityAccess.storeCode(accountId, updatedAccount.getCode());
+				}
 			}
-			entityAccess.flushStorage();
+			entityAccess.flushStorage(trackingAccounts());
 		}
 
 		@Override
