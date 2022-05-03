@@ -133,6 +133,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.blankMemo()
 								.balance(10 * ONE_HBAR)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(1)
 								.payingWith("civilian"),
 						contractUpdate(CONTRACT)
 								.blankMemo()
@@ -141,15 +143,15 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						contractUpdate(CONTRACT)
 								.blankMemo()
 								.payingWith("civilian")
-								.newMaxAutomaticAssociations(1)
+								.newMaxAutomaticAssociations(2)
 								.via("oneAutoAssoc"),
 						contractUpdate(CONTRACT)
 								.blankMemo()
 								.payingWith("civilian")
-								.newMaxAutomaticAssociations(10)
+								.newMaxAutomaticAssociations(12)
 								.via("tenAutoAssoc"),
 						getContractInfo(CONTRACT)
-								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(10))
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(12))
 								.logged(),
 						validateChargedUsd("noAutoAssoc", 0.0418),
 						validateChargedUsd("oneAutoAssoc", 0.0418),

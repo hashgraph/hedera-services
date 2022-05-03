@@ -207,12 +207,21 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	private long getAutoAssociationsUsage(final TransactionBody txBody,
 			final int oldMaxAutoAssociationSlots, final Timestamp contractExpiryTime) {
 		final int UPDATE_SLOT_MULTIPLIER = 24000;
-		int netUsage = oldMaxAutoAssociationSlots;
-		if (txBody.getContractUpdateInstance().hasMaxAutomaticTokenAssociations()) {
-			netUsage =
-					txBody.getContractUpdateInstance().getMaxAutomaticTokenAssociations().getValue();
-		}
-		return netUsage * (Instant.now().getEpochSecond() - contractExpiryTime.getSeconds()) * UPDATE_SLOT_MULTIPLIER;
+		final var updateInstance = txBody.getContractUpdateInstance();
+
+		final var oldSlotsUsage = oldMaxAutoAssociationSlots * UPDATE_SLOT_MULTIPLIER;
+		final var newSlotsUsage = updateInstance.hasMaxAutomaticTokenAssociations() ?
+				updateInstance.getMaxAutomaticTokenAssociations().getValue() * UPDATE_SLOT_MULTIPLIER
+				: oldSlotsUsage;
+		final var validStart = txBody.getTransactionID().getTransactionValidStart().getSeconds();
+
+		final var oldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, contractExpiryTime.getSeconds() - validStart);
+		var newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, updateInstance.getExpirationTime().getSeconds() - validStart);
+
+		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
+		long oldBs = oldSlotsUsage * oldLifetimeSecs;
+		long newBs = newSlotsUsage * newLifetimeSecs;
+		return Math.max(0, newBs - oldBs);
 	}
 
 	/**
