@@ -113,14 +113,20 @@ public class StandardProcessLogic implements ProcessLogic {
 	}
 
 	private void processScheduledTransactions(Instant consensusTime, long submittingMember) {
-		scheduleProcessing.expire(consensusTime);
-
 		TxnAccessor triggeredAccessor = null;
-		while (consensusTimeTracker.hasMoreTransactionTime(false)) {
-			triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusTime, triggeredAccessor);
+		while (true) {
+			boolean hasMore = consensusTimeTracker.hasMoreTransactionTime(false);
+
+			triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
+					consensusTime, triggeredAccessor, !hasMore);
+
 			if (triggeredAccessor != null) {
 				doProcess(submittingMember, consensusTimeTracker.nextTransactionTime(false), triggeredAccessor);
 			} else {
+				hasMore = false;
+			}
+
+			if (!hasMore) {
 				break;
 			}
 		}

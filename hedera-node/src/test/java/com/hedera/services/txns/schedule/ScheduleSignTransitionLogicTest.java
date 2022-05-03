@@ -232,8 +232,7 @@ class ScheduleSignTransitionLogicTest {
 		givenValidTxnCtx();
 		given(store.getNoError(scheduleId)).willReturn(schedule);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
-		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
-		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.plusNanos(1)));
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
 
 		// when:
 		subject.doStateTransition();
@@ -246,14 +245,29 @@ class ScheduleSignTransitionLogicTest {
 	}
 
 	@Test
+	void abortsImmediatelyIfAfterExpirationLongTermDisabled() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(properties.schedulingLongTermEnabled()).willReturn(false);
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verifyNoInteractions(classifier);
+		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
+	}
+
+	@Test
 	void followsHappyPathIfLongTermEnabled() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(store.get(scheduleId)).willReturn(schedule);
 		given(store.getNoError(scheduleId)).willReturn(schedule);
 		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
-		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
-		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH));
 
 		// when:
 		subject.doStateTransition();
@@ -272,8 +286,6 @@ class ScheduleSignTransitionLogicTest {
 		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(schedule.isWaitForExpiry()).willReturn(true);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
-		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
-		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH));
 
 		// when:
 		subject.doStateTransition();
@@ -365,6 +377,9 @@ class ScheduleSignTransitionLogicTest {
 		builder.setScheduleSign(scheduleSign);
 
 		scheduleSignTxn = builder.build();
+
+		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH));
 
 		given(accessor.getTxn()).willReturn(scheduleSignTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

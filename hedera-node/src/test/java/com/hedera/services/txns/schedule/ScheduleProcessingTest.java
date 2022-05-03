@@ -162,15 +162,15 @@ class ScheduleProcessingTest {
 		given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId1, store, false)).willReturn(Pair.of(OK, accessor));
 
 		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
 
 		// then:
 
 		assertEquals(result, accessor);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -180,43 +180,86 @@ class ScheduleProcessingTest {
 	}
 
 	@Test
-	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromExternal() {
+	void triggerNextTransactionExpiringAsNeededOnlyExpireWorksAsExpected() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
 				characteristics, scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
-		given(accessor.getScheduleRef()).willReturn(scheduleId1);
+
+		given(store.get(scheduleId1)).willReturn(schedule1);
+		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
+
+		subject.isReady = (k, b) -> {
+			assertEquals(k, schedule1);
+			assertNotNull(b);
+			return true;
+		};
 
 		// when:
-		assertThrows(IllegalStateException.class, () ->
-				subject.triggerNextTransactionExpiringAsNeeded(consensusTime, accessor));
-
-		// then:
-
-		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
-		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
-
-		inOrder.verifyNoMoreInteractions();
-	}
-	@Test
-	void triggerNextTransactionExpiringAsNeededSkipsOnLongTermDisabled() {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
-		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
-		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
-
-		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, true);
 
 		// then:
 
 		assertNull(result);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
+		inOrder.verify(store).get(scheduleId1);
+		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
+				argThat(Optional::isEmpty));
+
+		inOrder.verifyNoMoreInteractions();
+	}
+
+	@Test
+	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromExternal() {
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
+				characteristics, scheduleExecutor);
+		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
+
+		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
+		given(accessor.getScheduleRef()).willReturn(scheduleId1);
+
+		// when:
+		assertThrows(IllegalStateException.class, () ->
+				subject.triggerNextTransactionExpiringAsNeeded(consensusTime, accessor, false));
+
+		// then:
+
+		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties, never()).schedulingLongTermEnabled();
+
+		inOrder.verifyNoMoreInteractions();
+	}
+
+	@Test
+	void triggerNextTransactionExpiringAsNeededWithLongTermDisabledWorksAsExpected() {
+
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
+				characteristics, scheduleExecutor);
+		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
+
+		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, null);
+
+
+		// when:
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
+
+		// then:
+
+		assertNull(result);
+
+		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
+		inOrder.verify(store).expire(scheduleId1);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 
 		inOrder.verifyNoMoreInteractions();
 	}
@@ -248,15 +291,15 @@ class ScheduleProcessingTest {
 		given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId2, store, false)).willReturn(Pair.of(OK, accessor));
 
 		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
 
 		// then:
 
 		assertEquals(result, accessor);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -264,8 +307,8 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -301,15 +344,15 @@ class ScheduleProcessingTest {
 		given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId2, store, false)).willReturn(Pair.of(OK, accessor));
 
 		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
 
 		// then:
 
 		assertEquals(result, accessor);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -318,8 +361,8 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -354,15 +397,15 @@ class ScheduleProcessingTest {
 		given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId2, store, false)).willReturn(Pair.of(OK, accessor));
 
 		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
 
 		// then:
 
 		assertEquals(result, accessor);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -370,8 +413,8 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -400,13 +443,13 @@ class ScheduleProcessingTest {
 
 		// when:
 		assertThrows(IllegalStateException.class, () ->
-				subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null));
+				subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false));
 
 		// then:
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -414,7 +457,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 
 		inOrder.verifyNoMoreInteractions();
@@ -439,15 +481,15 @@ class ScheduleProcessingTest {
 		};
 
 		// when:
-		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null);
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
 
 		// then:
 
 		assertNull(result);
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
 		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
 				argThat(Optional::isEmpty));
@@ -455,8 +497,8 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
-		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties, never()).schedulingLongTermEnabled();
 
 		inOrder.verifyNoMoreInteractions();
 	}

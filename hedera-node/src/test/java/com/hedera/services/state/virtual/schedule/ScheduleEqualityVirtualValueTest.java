@@ -28,10 +28,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,11 +103,11 @@ class ScheduleEqualityVirtualValueTest {
 		inOrder.verify(out).writeInt(2);
 
 		inOrder.verify(out).writeInt(3);
-		inOrder.verify(out).writeByteArray("foo".getBytes(StandardCharsets.UTF_8));
+		inOrder.verify(out).write("foo".getBytes(StandardCharsets.UTF_8));
 		inOrder.verify(out).writeLong(1L);
 
 		inOrder.verify(out).writeInt(5);
-		inOrder.verify(out).writeByteArray("truck".getBytes(StandardCharsets.UTF_8));
+		inOrder.verify(out).write("truck".getBytes(StandardCharsets.UTF_8));
 		inOrder.verify(out).writeLong(2L);
 	}
 
@@ -115,9 +118,17 @@ class ScheduleEqualityVirtualValueTest {
 
 		given(in.readInt()).willReturn(2, 3, 5);
 
-		given(in.readNBytes(3)).willReturn("foo".getBytes(StandardCharsets.UTF_8));
+		doAnswer(invocationOnMock -> null)
+				.when(in).readFully(ArgumentMatchers.argThat(b -> {
+					if (b.length == 3) {
+						System.arraycopy("foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
+					} else {
+						System.arraycopy("truck".getBytes(StandardCharsets.UTF_8), 0, b, 0, 5);
+					}
+					return true;
+				}));
+
 		given(in.readLong()).willReturn(1L, 2L);
-		given(in.readNBytes(5)).willReturn("truck".getBytes(StandardCharsets.UTF_8));
 
 		defaultSubject.deserialize(in, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
@@ -164,6 +175,81 @@ class ScheduleEqualityVirtualValueTest {
 		defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
 		assertEquals(subject, defaultSubject);
+	}
+
+	@Test
+	void serializeActuallyWorks() throws Exception {
+		checkSerialize(() -> {
+			final var byteArr = new ByteArrayOutputStream();
+			final var out = new SerializableDataOutputStream(byteArr);
+			subject.serialize(out);
+
+			var copy = new ScheduleEqualityVirtualValue();
+			copy.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+					ScheduleEqualityVirtualValue.CURRENT_VERSION);
+
+			assertEquals(subject, copy);
+
+			return copy;
+		});
+
+	}
+
+	@Test
+	void serializeActuallyWithByteBufferWorks() throws Exception {
+		checkSerialize(() -> {
+			final var buffer = ByteBuffer.allocate(100000);
+			subject.serialize(buffer);
+			buffer.rewind();
+			var copy = new ScheduleEqualityVirtualValue();
+			copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+
+			assertEquals(subject, copy);
+
+			return copy;
+		});
+	}
+
+	@Test
+	void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
+		checkSerialize(() -> {
+			final var buffer = ByteBuffer.allocate(100000);
+			subject.serialize(buffer);
+
+			var copy = new ScheduleEqualityVirtualValue();
+			copy.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+					ScheduleEqualityVirtualValue.CURRENT_VERSION);
+
+			assertEquals(subject, copy);
+
+
+			return copy;
+		});
+	}
+
+	@Test
+	void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
+		checkSerialize(() -> {
+			final var byteArr = new ByteArrayOutputStream();
+			final var out = new SerializableDataOutputStream(byteArr);
+			subject.serialize(out);
+
+			final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+			var copy = new ScheduleEqualityVirtualValue();
+			copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+
+			assertEquals(subject, copy);
+
+			return copy;
+		});
+	}
+
+	private void checkSerialize(Callable<ScheduleEqualityVirtualValue> check) throws Exception {
+		check.call();
+		subject = new ScheduleEqualityVirtualValue();
+		check.call();
+		subject = new ScheduleEqualityVirtualValue(otherIds);
+		check.call();
 	}
 
 	@Test

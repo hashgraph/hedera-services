@@ -129,6 +129,40 @@ public class ScheduleVirtualValueTest {
 		});
 	}
 
+	@Test
+	void serializeWithMixedWorksBytesFirst() throws Exception {
+		checkSerialize(() -> {
+			final var buffer = ByteBuffer.allocate(100000);
+			subject.serialize(buffer);
+
+			var copy = new ScheduleVirtualValue();
+			copy.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+					ScheduleVirtualValue.CURRENT_VERSION);
+
+			assertEqualSchedules(subject, copy);
+
+
+			return copy;
+		});
+	}
+
+	@Test
+	void serializeWithMixedWorksBytesSecond() throws Exception {
+		checkSerialize(() -> {
+			final var byteArr = new ByteArrayOutputStream();
+			final var out = new SerializableDataOutputStream(byteArr);
+			subject.serialize(out);
+
+			final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+			var copy = new ScheduleVirtualValue();
+			copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
+
+			assertEqualSchedules(subject, copy);
+
+			return copy;
+		});
+	}
+
 	private void checkSerialize(Callable<ScheduleVirtualValue> check) throws Exception {
 		subject.setCalculatedExpirationTime(null);
 		assertNull(subject.calculatedExpirationTime());

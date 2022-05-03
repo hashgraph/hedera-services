@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -48,9 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
-
-	private static final long defaultWindBackNanos =
-			HapiSpecSetup.getDefaultNodeProps().getLong("scheduling.triggerTxn.windBackNanos");
 
 	String schedule;
 
@@ -183,14 +179,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 					0,
 					actualInfo.getDeletionTime(),
 					"Wrong consensus deletion time!",
-					spec);
-		}
-		if (executionTxn.isPresent()) {
-			assertTimestampMatches(
-					executionTxn.get(),
-					(int) defaultWindBackNanos,
-					actualInfo.getExecutionTime(),
-					"Wrong consensus execution time!",
 					spec);
 		}
 

@@ -585,7 +585,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void deletesAsExpected() {
-		final var now = schedulingTXValidStart.toJava();
+		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
 		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
@@ -597,7 +597,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rejectsDeletionMissingAdminKey() {
-		final var now = schedulingTXValidStart.toJava();
+		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
 		given(schedule.adminKey()).willReturn(Optional.empty());
 
 		final var outcome = subject.deleteAt(created, now);
@@ -619,22 +619,22 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
-	void allowsDeletionExpirationPassedLongTermTxnDisabled() {
+	void rejectsDeletionExpirationPassedLongTermTxnDisabled() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(false);
-		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
+		final var now = Instant.ofEpochSecond(expectedExpiry + 1);
 		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
 
 		verify(byId, never()).remove(any());
-		verify(schedule).markDeleted(now);
-		assertEquals(OK, outcome);
+		verify(schedule, never()).markDeleted(any());
+		assertEquals(INVALID_SCHEDULE_ID, outcome);
 	}
 
 	@Test
-	void allowsDeletionExpirationPassedLongTermTxnEnabled() {
+	void allowsDeletionExpirationFutureLongTermTxnEnabled() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
-		final var now = Instant.ofEpochSecond(expectedExpiry + 1);
+		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
 		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
@@ -647,7 +647,7 @@ class HederaScheduleStoreTest {
 	@Test
 	void rejectsDeletionExpirationPassed() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
-		final var outcome = subject.deleteAt(created, Instant.ofEpochSecond(expectedExpiry - 1));
+		final var outcome = subject.deleteAt(created, Instant.ofEpochSecond(expectedExpiry + 1));
 
 		verify(schedule, never()).markDeleted(any());
 		verify(byId, never()).remove(any());

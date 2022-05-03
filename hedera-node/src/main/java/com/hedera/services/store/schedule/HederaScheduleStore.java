@@ -352,7 +352,9 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		long curSecond = schedules.get().getCurrentMinSecond();
 
 		while ((curSecond < Long.MAX_VALUE) && ((curSecond + 1) < Instant.MAX.getEpochSecond()) &&
-			   consensusTime.isAfter(Instant.ofEpochSecond(curSecond + 1))
+				// for processing, we only use the second component for comparison, we only process stuff from the
+				// _previous_ second
+				(consensusTime.getEpochSecond() > (curSecond + 1))
 				&& (!schedules.get().byExpirationSecond().containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
 
 			++curSecond;
@@ -485,7 +487,9 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 	private boolean shouldProcessSecond(final Instant consensusTime, final long curSecond) {
 		return (curSecond < Long.MAX_VALUE) && (curSecond < Instant.MAX.getEpochSecond())
-			   && consensusTime.isAfter(Instant.ofEpochSecond(curSecond));
+				// for processing, we only use the second component for comparison, we only process stuff from the
+				// _previous_ second
+			   && consensusTime.getEpochSecond() > curSecond;
 	}
 
 	private void resetPendingCreation() {
@@ -517,8 +521,10 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 			return SCHEDULE_ALREADY_EXECUTED;
 		}
 
-		if ((consensusTime != null) && properties.schedulingLongTermEnabled()
-				&& schedule.calculatedExpirationTime().toJava().isAfter(consensusTime)) {
+		if ((consensusTime != null) && consensusTime.isAfter(schedule.calculatedExpirationTime().toJava())) {
+			if (!properties.schedulingLongTermEnabled()) {
+				return INVALID_SCHEDULE_ID;
+			}
 			return SCHEDULE_PENDING_EXPIRATION;
 		}
 

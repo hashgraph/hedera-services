@@ -49,6 +49,7 @@ import java.time.Instant;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -129,9 +130,8 @@ class StandardProcessLogicTest {
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();
-		inOrder.verify(scheduleProcessing).expire(consensusNow);
 		inOrder.verify(autoRenewal).execute(consensusNow);
-		inOrder.verify(scheduleProcessing, never()).triggerNextTransactionExpiringAsNeeded(any(), any());
+		inOrder.verify(scheduleProcessing, never()).triggerNextTransactionExpiringAsNeeded(any(), any(), anyBoolean());
 	}
 
 	@Test
@@ -159,12 +159,11 @@ class StandardProcessLogicTest {
 		verify(txnManager).process(accessor, consensusNow, member);
 		verify(txnManager).process(triggeredAccessor, triggeredConsensusNow, member);
 		verify(autoRenewal).execute(consensusNow);
-		verify(scheduleProcessing).expire(consensusNow);
 		verify(consensusTimeTracker).isFirstUsed();
 		verify(consensusTimeTracker).firstTransactionTime();
 		verify(consensusTimeTracker).nextTransactionTime(false);
 		verify(consensusTimeTracker).reset(consensusNow);
-		verify(scheduleProcessing, never()).triggerNextTransactionExpiringAsNeeded(any(), any());
+		verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow, null, true);
 	}
 
 	@Test
@@ -208,13 +207,13 @@ class StandardProcessLogicTest {
 				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
-		given(consensusTimeTracker.hasMoreTransactionTime(false)).willReturn(true);
+		given(consensusTimeTracker.hasMoreTransactionTime(false)).willReturn(true, false);
 		given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
-		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, null))
+		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, null, false))
 				.willReturn(triggeredAccessor);
-		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, triggeredAccessor))
+		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, triggeredAccessor, true))
 				.willReturn(null);
 		given(txnCtx.triggeredTxn()).willReturn(null);
 
@@ -225,13 +224,13 @@ class StandardProcessLogicTest {
 		inOrder.verify(consensusTimeTracker).isFirstUsed();
 		inOrder.verify(consensusTimeTracker).firstTransactionTime();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
-		inOrder.verify(scheduleProcessing).expire(consensusNow);
 		inOrder.verify(consensusTimeTracker).hasMoreTransactionTime(false);
-		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow, null);
+		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow, null, false);
 		inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
 		inOrder.verify(txnManager).process(triggeredAccessor, triggeredConsensusNow, member);
 		inOrder.verify(consensusTimeTracker).hasMoreTransactionTime(false);
-		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow, triggeredAccessor);
+		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow,
+				triggeredAccessor, true);
 		inOrder.verify(autoRenewal).execute(consensusNow);
 	}
 }

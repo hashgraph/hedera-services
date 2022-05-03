@@ -90,7 +90,8 @@ public class ScheduleProcessing {
 	}
 
 	/**
-	 * Expires all scheduled transactions, that are in a final state, having an expiry before consensusTime.
+	 * Expires all scheduled transactions, that are in a final state, having an expiry before consensusTime,
+	 * and having an expiry before any transaction that is ready to execute.
 	 */
 	public void expire(Instant consensusTime) {
 
@@ -115,20 +116,18 @@ public class ScheduleProcessing {
 	 * as needed during this call.
 	 * @param consensusTime the current consensus time
 	 * @param previous the previous accessor returned from this method, if available.
+	 * @param onlyExpire true if we are only expiring and not trying to execute anything.
 	 * @return the TxnAccessor of the next scheduled transaction to execute, or null if there are none.
 	 */
 	@Nullable
-	public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime, @Nullable TxnAccessor previous) {
+	public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime,
+			@Nullable TxnAccessor previous, boolean onlyExpire) {
 
 		var previousId = previous == null ? null : previous.getScheduleRef();
 
 		while (true) {
 
 			expire(consensusTime);
-
-			if (!this.dynamicProperties.schedulingLongTermEnabled()) {
-				return null;
-			}
 
 			var next = store.nextScheduleToEvaluate(consensusTime);
 
@@ -147,6 +146,14 @@ public class ScheduleProcessing {
 			// rapidly after downtime, it would be done here.
 
 			try {
+
+				if (!this.dynamicProperties.schedulingLongTermEnabled()) {
+					// if long term is disabled, we always expire transactions that are not ready to execute
+					store.expire(next);
+					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+					continue;
+				}
+
 				var schedule = store.get(next);
 
 				var parentSignedTxn = schedule.parentAsSignedTxn();
@@ -164,6 +171,11 @@ public class ScheduleProcessing {
 					// expire transactions that are not ready to execute
 					store.expire(next);
 					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+
+				} else if (onlyExpire) {
+
+					// if we are only expiring, we have to stop processing here and return null
+					return null;
 
 				} else {
 

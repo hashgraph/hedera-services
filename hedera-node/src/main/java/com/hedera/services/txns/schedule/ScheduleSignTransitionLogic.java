@@ -108,7 +108,11 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
 			return;
 		}
-		if (properties.schedulingLongTermEnabled() && origSchedule.calculatedExpirationTime().toJava().isAfter(txnCtx.consensusTime())) {
+		if (txnCtx.consensusTime().isAfter(origSchedule.calculatedExpirationTime().toJava())) {
+			if (!properties.schedulingLongTermEnabled()) {
+				txnCtx.setStatus(INVALID_SCHEDULE_ID);
+				return;
+			}
 			txnCtx.setStatus(SCHEDULE_PENDING_EXPIRATION);
 			return;
 		}

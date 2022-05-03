@@ -285,7 +285,9 @@ public class ScheduleVirtualValue implements VirtualValue {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
+		int n = in.readInt();
+		bodyBytes = new byte[n];
+		in.readFully(bodyBytes);
 		if (in.readByte() == 1) {
 			calculatedExpirationTime = new RichInstant(in.readLong(), in.readInt());
 		} else {
@@ -298,10 +300,11 @@ public class ScheduleVirtualValue implements VirtualValue {
 		} else {
 			resolutionTime = null;
 		}
-		int numSignatories = in.readInt();
-		while (numSignatories-- > 0) {
-			int n = in.readInt();
-			byte[] bytes = in.readByteArray(n);
+		int k = in.readInt();
+		for (int x = 0; x < k; ++x) {
+			n = in.readInt();
+			byte[] bytes = new byte[n];
+			in.readFully(bytes);
 			witnessValidSignature(bytes);
 		}
 
@@ -310,7 +313,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeByteArray(bodyBytes);
+		out.writeInt(bodyBytes.length);
+		out.write(bodyBytes);
 		if (calculatedExpirationTime == null) {
 			out.writeByte((byte) 0);
 		} else {
@@ -330,7 +334,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeInt(key.length);
-			out.writeByteArray(key);
+			out.write(key);
 		}
 	}
 
@@ -351,8 +355,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 		} else {
 			resolutionTime = null;
 		}
-		int numSignatories = in.getInt();
-		while (numSignatories-- > 0) {
+		int k = in.getInt();
+		for (int x = 0; x < k; ++x) {
 			n = in.getInt();
 			byte[] bytes = new byte[n];
 			in.get(bytes);

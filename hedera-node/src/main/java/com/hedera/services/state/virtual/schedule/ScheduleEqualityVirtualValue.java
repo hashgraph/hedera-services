@@ -89,7 +89,9 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 		int s = in.readInt();
 		ids.clear();
 		for (int x = 0; x <	s; ++x) {
-			var key = new String(in.readNBytes(in.readInt()), StandardCharsets.UTF_8);
+			byte[] keyBytes = new byte[in.readInt()];
+			in.readFully(keyBytes);
+			var key = new String(keyBytes, StandardCharsets.UTF_8);
 			ids.put(key, in.readLong());
 		}
 	}
@@ -112,7 +114,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 		for (var e : ids.entrySet()) {
 			var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
 			out.writeInt(keyBytes.length);
-			out.writeByteArray(keyBytes);
+			out.write(keyBytes);
 			out.writeLong(e.getValue());
 		}
 	}
