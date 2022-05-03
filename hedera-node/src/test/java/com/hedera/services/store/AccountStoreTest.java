@@ -73,7 +73,7 @@ class AccountStoreTest {
 		setupAccounts();
 
 		subject = new AccountStore(validator, dynamicProperties, accounts);
-	}
+	} 
 
 	@Test
 	void objectContractWorks() {
@@ -102,7 +102,6 @@ class AccountStoreTest {
 	@Test
 	void failsLoadingContractWithInvalidId() {
 		miscMerkleAccount.setSmartContract(false);
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		TxnUtils.assertFailsWith(() -> subject.loadContract(miscId), INVALID_CONTRACT_ID);
 	}
 
@@ -167,7 +166,6 @@ class AccountStoreTest {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
 		miscMerkleAccount.setKey(miscMerkleId);
-		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
 		miscMerkleAccount.setNumAssociations(associatedTokensCount);
 		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		// and:
@@ -183,8 +181,7 @@ class AccountStoreTest {
 				.get();
 		expectedReplacement.setKey(miscMerkleId);
 		expectedReplacement.setNumPositiveBalances(numPositiveBalances);
-		expectedReplacement.setNumAssociations(associatedTokensCount+1);
-		expectedReplacement.setHeadTokenId(aThirdToken.getId().num());
+		expectedReplacement.setNumAssociations(associatedTokensCount + 1);
 
 		// given:
 		final var model = subject.loadAccount(miscId);
@@ -194,10 +191,7 @@ class AccountStoreTest {
 		// and:
 		subject.commitAccount(model);
 
-		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
-		// and:
-		assertEquals(thirdRelKey , miscMerkleAccount.getLatestAssociation());
 	}
 
 	@Test
@@ -215,7 +209,8 @@ class AccountStoreTest {
 		miscMerkleAccount.setBalance(0L);
 
 		var ex2 = assertThrows(
-				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+				InvalidTransactionException.class,
+				() -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
 	}
 
@@ -249,7 +244,7 @@ class AccountStoreTest {
 		for (int i = 0; i < 11; i++) {
 			model.decrementUsedAutomaticAssociations();
 		}
-		model.incrementUsedAutomaticAssocitions();
+		model.incrementUsedAutomaticAssociations();
 
 		// and:
 		subject.commitAccount(model);
@@ -292,7 +287,6 @@ class AccountStoreTest {
 		secondRel.setKey(secondRelKey);
 		secondRel.setPrev(firstAssocTokenNum);
 		firstRel.setNext(secondAssocTokenNum);
-		miscAccount.setHeadTokenNum(firstAssocTokenNum);
 
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);

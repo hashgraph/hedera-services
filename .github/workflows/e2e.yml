@@ -2,7 +2,7 @@ name: E2E
 
 on:
   pull_request:
-    branches: [ master, release/** ]
+    branches: [ master, release/**, eth-tx-interop ]
   push:
     branches: [ master, release/** ]
     tags: [ v* ]
@@ -16,7 +16,11 @@ jobs:
       matrix:
         packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
                    'contract.precompile.part1,contract.records',
-                   'contract.precompile.part2,contract.hapi']
+                   'contract.precompile.part2,contract.hapi',
+                   'contract.opcodes.eth,contract.openzeppelin.eth,contract.traceability.eth',
+                   'contract.precompile.part1.eth,contract.records.eth',
+                   'contract.precompile.part2.eth,contract.hapi.eth']
+
     steps:
       - uses: actions/checkout@v2 # checkout current branch
       - name: Set up JDK 17

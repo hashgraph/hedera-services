@@ -25,11 +25,12 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
@@ -81,11 +82,13 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -648,6 +651,52 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(123456789L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void getGasLimitWorksForEthTxn() {
+		final var gasLimit = 1234L;
+		final var unsignedTx = new EthTxData(
+				null,
+				EthTxData.EthTransactionType.EIP1559,
+				new byte[0],
+				1,
+				null,
+				new byte[0],
+				new byte[0],
+				gasLimit,
+				new byte[0],
+				BigInteger.ZERO,
+				new byte[0],
+				null,
+				0,
+				null,
+				null,
+				null
+		);
+		final var ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+		final var op = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()))
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setEthereumTransaction(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(gasLimit, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void getGasLimitReturnsZeroByDefault() {
+		final var op = TokenCreateTransactionBody.getDefaultInstance();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenCreation(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(0L, subject.getGasLimitForContractTx());
 	}
 
 	@Test

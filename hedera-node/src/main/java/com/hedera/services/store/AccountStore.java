@@ -111,9 +111,7 @@ public class AccountStore {
 	 * 		if the requested contract is missing, deleted or is not smart contract
 	 */
 	public Account loadContract(Id id) {
-		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
-		validateTrue(account.isSmartContract(), INVALID_CONTRACT_ID);
-		return account;
+		return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
 	}
 
 	/**
@@ -164,7 +162,6 @@ public class AccountStore {
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
-		account.setHeadTokenNum(merkleAccount.getHeadTokenId());
 		account.setNumAssociations(merkleAccount.getNumAssociations());
 		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
@@ -204,7 +201,6 @@ public class AccountStore {
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
-		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());
 		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());

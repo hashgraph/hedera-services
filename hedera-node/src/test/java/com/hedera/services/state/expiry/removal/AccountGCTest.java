@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNum;
@@ -63,7 +63,7 @@ class AccountGCTest {
 	@Mock
 	private AccountGC.RemovalFacilitation removalFacilitation;
 	@Mock
-	private TokenRelsListRemoval listRemoval;
+	private TokenRelsListMutation listRemoval;
 
 	private AccountGC subject;
 
@@ -96,11 +96,11 @@ class AccountGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(TokenRelsListRemoval.class))).willReturn(nextKey);
+				any(TokenRelsListMutation.class))).willReturn(nextKey);
 		given(removalFacilitation.removeNext(
 				eq(nextKey),
 				eq(nextKey),
-				any(TokenRelsListRemoval.class))).willReturn(unusedKey);
+				any(TokenRelsListMutation.class))).willReturn(unusedKey);
 		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
 		given(tokenRels.get(nextKey)).willReturn(new MerkleTokenRelStatus(0, true, true, true));
 

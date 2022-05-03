@@ -20,8 +20,8 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
-import com.hedera.services.txns.ethereum.EthTxData;
-import com.hedera.services.txns.ethereum.EthTxSigs;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;

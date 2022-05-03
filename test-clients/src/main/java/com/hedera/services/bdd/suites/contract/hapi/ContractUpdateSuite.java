@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -85,7 +86,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						updateWithBothMemoSettersWorks(),
 						updatingExpiryWorks(),
 						rejectsExpiryTooFarInTheFuture(),
@@ -96,7 +97,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						fridayThe13thSpec(),
 						updateDoesNotChangeBytecode(),
 						eip1014AddressAlwaysHasPriority(),
-						immutableContractKeyFormIsStandard()
+						immutableContractKeyFormIsStandard(),
+						updateAutoRenewAccountWorks(),
 				}
 		);
 	}
@@ -126,22 +128,23 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeNormalCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeStaticCall").via(staticcallTxn),
 						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeStaticCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
-						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
-								resultWith().resultThruAbi(
-										getABIFor(FUNCTION, "makeDelegateCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						sourcing(
+								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+										resultWith().resultThruAbi(
+												getABIFor(FUNCTION, "makeDelegateCall", contract),
+												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeCallCode").via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeCallCode", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())})))))
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
 				);
 	}
 
@@ -223,6 +226,38 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec updateAutoRenewAccountWorks() {
+		final var autoRenewAccount = "autoRenewAccount";
+		final var newAutoRenewAccount = "newAutoRenewAccount";
+		return defaultHapiSpec("UpdateAutoRenewAccountWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						cryptoCreate(autoRenewAccount),
+						cryptoCreate(newAutoRenewAccount),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.autoRenewAccountId(autoRenewAccount),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+								. logged()
+				)
+				.when(
+						contractUpdate(CONTRACT)
+								.newAutoRenewAccount(newAutoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate(CONTRACT)
+								.newAutoRenewAccount(newAutoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount)
+				)
+				.then(
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
+								. logged()
+				);
+	}
+
 	private HapiApiSpec updateAdminKeyWorks() {
 		return defaultHapiSpec("UpdateAdminKeyWorks")
 				.given(
@@ -250,7 +285,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT).immutable()
-				).when( ).then(
+				).when().then(
 						getContractInfo(CONTRACT)
 								.has(contractWith().immutableContractKey(CONTRACT))
 				);

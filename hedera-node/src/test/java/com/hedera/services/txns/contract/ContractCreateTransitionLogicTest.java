@@ -29,9 +29,12 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -66,6 +69,7 @@ import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -86,6 +90,7 @@ class ContractCreateTransitionLogicTest {
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
 	private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
+	private final AccountID autoRenewAccount = AccountID.newBuilder().setAccountNum(12_345L).build();
 	private final FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
 	private final byte[] bytecode =
 			("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07" +
@@ -104,6 +109,10 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private EntityCreator entityCreator;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionRecordService recordServices;
 	@Mock
 	private CreateEvmTxProcessor evmTxProcessor;
@@ -113,6 +122,10 @@ class ContractCreateTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private Account autoRenewModel;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -123,11 +136,8 @@ class ContractCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCreateTransitionLogic(
-				hfs,
-				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor,
-				properties, sigImpactHistorian);
+		subject = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, validator, worldState, entityCreator,
+				recordsHistorian, recordServices, evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory);
 	}
 
 	@Test
@@ -162,7 +172,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false);
+		givenValidTxnCtx(false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -440,7 +450,7 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithOverrides() {
 		// setup:
-		givenValidTxnCtx();
+		givenValidTxnCtxWithAutoRenew();
 		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -449,6 +459,10 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
+				INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				autoRenewModel);
+		given(autoRenewModel.isSmartContract()).willReturn(false);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -485,6 +499,8 @@ class ContractCreateTransitionLogicTest {
 		verify(worldState, never()).reclaimContractId();
 		verify(worldState).resetHapiSenderCustomizer();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(accountStore).loadAccount(senderAccount.getId());
+		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
 	}
 
 	@Test
@@ -567,10 +583,14 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
+		givenValidTxnCtx(true, false);
 	}
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew) {
+	private void givenValidTxnCtxWithAutoRenew() {
+		givenValidTxnCtx(true, true);
+	}
+
+	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
@@ -578,6 +598,9 @@ class ContractCreateTransitionLogicTest {
 				.setProxyAccountID(proxy);
 		if (rememberAutoRenew) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+		}
+		if (useAutoRenewAccount) {
+			op.setAutoRenewAccountId(autoRenewAccount);
 		}
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())

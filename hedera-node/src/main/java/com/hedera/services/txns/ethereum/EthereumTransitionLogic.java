@@ -24,6 +24,8 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -37,11 +39,11 @@ import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -62,6 +64,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 
@@ -115,13 +118,14 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (syntheticTxBody.hasContractCall()) {
 			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
-			final var synthOp =
-					addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(), callingAccount.toGrpcAccountId());
+			final var synthOp = addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(),
+					callingAccount.toGrpcAccountId());
 			syntheticTxBody = TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
 			spanMapAccessor.setEthTxBodyMeta(txnCtx.accessor(), syntheticTxBody);
-			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
+			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true,
+					true);
 		}
-		recordService.updateFromEvmCallContext(ethTxData);
+		recordService.updateForEvmCall(ethTxData, callingAccount.toEntityId());
 	}
 
 	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
@@ -150,6 +154,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		if (ethTxData == null) {
+			return ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+		}
+
 		var txBody = getOrCreateTransactionBody(accessor);
 
 		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
@@ -157,11 +165,17 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		}
 
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
+			var op = accessor.getTxn().getEthereumTransaction();
+
+			if (ethTxData.callData() != null && ethTxData.callData().length > 0 && op.hasCallData()) {
+				return ResponseCodeEnum.FAIL_INVALID;
+			}
+
 			// this is not precheck, so do more involved checks
-			maybeUpdateCallData(accessor, ethTxData, accessor.getTxn().getEthereumTransaction());
+			maybeUpdateCallData(accessor, ethTxData, op);
 			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
-			if (callingAccount == null) {
+			if (callingAccount == MISSING_NUM) {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; 
 			}
 
@@ -227,7 +241,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))
 					.setGas(ethTxData.gasLimit())
 					.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();
+					.setContractID(ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(ethTxData.to()))).build();
 			return TransactionBody.newBuilder().setContractCall(synthOp).build();
 		} else {
 			final var autoRenewPeriod =

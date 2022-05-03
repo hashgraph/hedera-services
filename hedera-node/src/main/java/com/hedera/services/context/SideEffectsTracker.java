@@ -275,17 +275,6 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Tracks an account/token association automatically created (either by a {@code TokenCreate}
-	 * or a {@code CryptoTransfer}).
-	 *
-	 * @param association
-	 * 		the auto-association
-	 */
-	public void trackExplicitAutoAssociation(final FcTokenAssociation association) {
-		autoAssociations.add(association);
-	}
-
-	/**
 	 * Returns the list of automatically created account/token associations, in the order they were
 	 * created during the transaction.
 	 *
