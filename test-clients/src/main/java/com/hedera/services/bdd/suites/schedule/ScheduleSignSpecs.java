@@ -724,7 +724,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
 								.hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
 						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
-								.hasPrecheck(INVALID_SCHEDULE_ID),
+								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+								.hasKnownStatusFrom(INVALID_SCHEDULE_ID),
 						getScheduleInfo("twoSigXfer")
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + defaultTxExpiry)
