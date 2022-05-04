@@ -50,6 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Map;
@@ -142,7 +143,7 @@ class CreateEvmTxProcessorTest {
 
 
 		var result = createEvmTxProcessor.executeEth(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
-				consensusTime, expiry,  relayer, 10_000L, 55_555L);
+				consensusTime, expiry,  relayer, BigInteger.valueOf(10_000L) , 55_555L);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(codeCache).invalidate(receiver.getId().asEvmAddress());

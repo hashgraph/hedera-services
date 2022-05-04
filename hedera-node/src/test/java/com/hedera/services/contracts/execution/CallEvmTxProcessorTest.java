@@ -57,6 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -164,7 +165,7 @@ class CallEvmTxProcessorTest {
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.executeEth(
-				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, 10_000L, relayer, 55_555L);
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, BigInteger.valueOf(10_000L), relayer, 55_555L);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
