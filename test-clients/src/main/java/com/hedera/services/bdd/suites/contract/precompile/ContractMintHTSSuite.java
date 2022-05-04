@@ -423,7 +423,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn),
+						withOpContext((spec, opLog) -> {
+							if (!spec.isUsingEthCalls()) {
+								allRunFor(
+										spec,
+										assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn));
+							}
+						}),
 						withOpContext((spec, opLog) -> allRunFor(spec,
 										childRecordsCheck(nestedTransferTxn, SUCCESS,
 												recordWith()
@@ -713,8 +719,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
 			final var contractCallResult =
 					record.getContractCallResult();
-			assertEquals(0L, contractCallResult.getGas());
-			assertEquals(0L, contractCallResult.getAmount());
+			assertEquals(0L, contractCallResult.getGas(),
+					"Result not expected to externalize gas");
+			assertEquals(0L, contractCallResult.getAmount(),
+					"Result not expected to externalize amount");
 			assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
 		});
 	}

@@ -43,6 +43,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
@@ -281,6 +283,17 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                         }
                 );
         return b -> b.setEthereumTransaction(opBody);
+    }
+
+    @Override
+    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+        if (omitAdminKey || useDeprecatedAdminKey) {
+            return super.defaultSigners();
+        }
+        List<Function<HapiApiSpec, Key>> signers =
+                new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
+        Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
+        return signers;
     }
 
     @Override
