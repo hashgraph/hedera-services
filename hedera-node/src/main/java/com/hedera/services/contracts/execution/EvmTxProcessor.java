@@ -234,7 +234,7 @@ abstract class EvmTxProcessor {
 					allowanceCharged = remainingFee;
 				} else {
 					// If user gas price >= current gas price, sender pays all fees
-					final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+					final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
 					validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 					mutableSender.decrementBalance(gasCost);
 				}
