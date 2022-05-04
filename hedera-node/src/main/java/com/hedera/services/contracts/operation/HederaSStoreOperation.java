@@ -70,12 +70,12 @@ public class HederaSStoreOperation extends AbstractOperation {
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		final var key = UInt256.fromBytes(frame.popStackItem());
 		final var value = UInt256.fromBytes(frame.popStackItem());
-		final var account = frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
+		final var address = frame.getRecipientAddress();
+		final var account = frame.getWorldUpdater().getAccount(address).getMutable();
 		if (account == null) {
 			return ILLEGAL_STATE_CHANGE_RESULT;
 		}
 
-		final var address = account.getAddress();
 		final var slotIsWarm = frame.warmUpStorage(address, key);
 		final var calculator = gasCalculator();
 		final var gasCost = calculator

@@ -402,9 +402,11 @@ public class UtilVerbs {
 		});
 	}
 
-	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
-			ResponseCodeEnum parentalStatus,
-			TransactionRecordAsserts... childRecordAsserts) {
+	public static HapiSpecOperation childRecordsCheck(
+			final String parentTxnId,
+			final ResponseCodeEnum parentalStatus,
+			final TransactionRecordAsserts... childRecordAsserts
+	) {
 		return withOpContext(
 				(spec, opLog) -> {
 					var distributeTx = getTxnRecord(parentTxnId);
@@ -417,9 +419,12 @@ public class UtilVerbs {
 						childRecordAssert.txnId(sequentialID.nextChild());
 					}
 
-					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
-							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
-							.hasChildRecordsBeforeFees(childRecordAsserts).logged());
+					allRunFor(
+							spec,
+							getTxnRecord(parentTxnId)
+									.andAllChildRecords()
+									.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
+									.hasChildRecordsBeforeFees(childRecordAsserts).logged());
 				});
 	}
 

@@ -57,6 +57,7 @@ import org.junit.jupiter.api.Assertions;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
@@ -85,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
 
+	private static final String STORAGE_FEES_MEMO = "Contract storage fees";
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 
 	private String txn;
@@ -267,10 +270,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	public HapiGetTxnRecord hasChildRecordsBeforeFees(TransactionRecordAsserts... providers) {
-		final var providersList = new ArrayList<>(List.of(providers));
-		// It would be awkward to force every childRecordsCheck to assert something about the fees
-		providersList.add(TransactionRecordAsserts.recordWith());
-		childRecordsExpectations = Optional.of(providersList);
+		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
 
@@ -349,11 +349,20 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords) throws Throwable {
 		if (childRecordsExpectations.isPresent()) {
-			final var expectedChildRecords = childRecordsExpectations.get();
+			var expectedChildRecords = childRecordsExpectations.get();
+			final var numActual = actualRecords.size();
+			var numExpectations = expectedChildRecords.size();
+			// Allow child record checks to not assert anything about storage fees
+			if (numExpectations == numActual - 1) {
+				final var lastRecord = actualRecords.get(numActual - 1);
+				if (STORAGE_FEES_MEMO.equals(lastRecord.getMemo())) {
+					expectedChildRecords = new ArrayList<>(expectedChildRecords);
+					expectedChildRecords.add(recordWith());
+				}
+			}
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(),
-					String.format("Expected %d child records, got %d", expectedChildRecords.size(),
-							actualRecords.size()));
+			assertEquals(numExpectations, numActual,
+					"Expected " + numExpectations + " child records, got " + numActual);
 			for (int i = 0; i < actualRecords.size(); i++) {
 				final var expectedChildRecord = expectedChildRecords.get(i);
 				final var actualChildRecord = actualRecords.get(i);

@@ -80,6 +80,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
@@ -444,10 +445,7 @@ public class TxnVerbs {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			for (String contractName : contractsNames) {
 				final var path = getResourcePath(contractName, ".bin");
-				final var file = new HapiFileCreate(contractName);
-				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
-				ops.add(file);
-				ops.add(updatedFile);
+				ops.add(createLargeFile(GENESIS, contractName, extractByteCode(path)));
 			}
 			allRunFor(spec, ops);
 		});

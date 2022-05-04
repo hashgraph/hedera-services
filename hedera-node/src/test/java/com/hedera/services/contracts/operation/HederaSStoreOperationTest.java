@@ -166,7 +166,6 @@ class HederaSStoreOperationTest {
 	private void givenStackItemsAndMutableRecipientAccount() {
 		givenStackItemsAndRecipientAccount();
 		given(evmAccount.getMutable()).willReturn(mutableAccount);
-		given(mutableAccount.getAddress()).willReturn(recipient);
 		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(storageCost);
 	}
 

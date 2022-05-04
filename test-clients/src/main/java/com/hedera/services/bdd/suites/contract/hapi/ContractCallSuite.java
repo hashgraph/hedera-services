@@ -96,6 +96,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -118,10 +119,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final String defaultMaxAutoRenewPeriod =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.maxDuration");
+	private static final String defaultSlotLifetime =
+			HapiSpecSetup.getDefaultNodeProps().get("contract.storageSlotLifetime");
+	private static final String defaultSlotPriceTiers =
+			HapiSpecSetup.getDefaultNodeProps().get("contract.storageSlotPriceTiers");
 
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final long depositAmount = 1000;
@@ -165,7 +171,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				insufficientFee(),
 //				nonPayable(),
 //				invalidContract(),
-//				smartContractFailFirst(),
+				smartContractFailFirst(),
 //				contractTransferToSigReqAccountWithoutKeyFails(),
 //				callingDestructedContractReturnsStatusDeleted(),
 //				gasLimitOverMaxGasLimitFailsPrecheck(),
@@ -185,7 +191,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				bitcarbonTestStillPasses(),
 //				contractCreationStoragePriceMatchesFinalExpiry(),
 //				whitelistingAliasedContract(),
-				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
+//				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
 		});
 	}
 
@@ -326,7 +332,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(toyMaker, "make")
 								.payingWith(longLivedPayer)
 								.exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
-						assertionsHold((spec, opLog) -> Assertions.assertEquals(
+						assertionsHold((spec, opLog) -> assertEquals(
 								normalPayerGasUsed.get(),
 								longLivedPayerGasUsed.get(),
 								"Payer expiry should not affect create storage cost")),
@@ -605,7 +611,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							ctxLog.info("symbol: [{}]", symbol);
 
-							Assertions.assertEquals(
+							assertEquals(
 									"", symbol,
 									"TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
 
@@ -617,7 +623,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var decimals = val.longValue();
 
 							ctxLog.info("decimals {}", decimals);
-							Assertions.assertEquals(
+							assertEquals(
 									3, decimals,
 									"TokenIssuer's decimals should be fixed value");
 
@@ -630,7 +636,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									function)).longValue();
 
 							ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
-							Assertions.assertEquals(
+							assertEquals(
 									1_000_000, issuerBalance / tokenMultiplier,
 									"TokenIssuer's initial token balance should be 1_000_000");
 
@@ -675,7 +681,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
 							ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
 
-							Assertions.assertEquals(
+							assertEquals(
 									1000, aliceBalance / tokenMultiplier,
 									"Alice's token balance should be 1_000");
 
@@ -729,20 +735,20 @@ public class ContractCallSuite extends HapiApiSuite {
 							ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
 							ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
 
-							Assertions.assertEquals(
+							assertEquals(
 									997000, issuerBalance / tokenMultiplier,
 									"TokenIssuer's final balance should be 997000");
 
-							Assertions.assertEquals(
+							assertEquals(
 									900, aliceBalance / tokenMultiplier,
 									"Alice's final balance should be 900");
-							Assertions.assertEquals(
+							assertEquals(
 									1600, bobBalance / tokenMultiplier,
 									"Bob's final balance should be 1600");
-							Assertions.assertEquals(
+							assertEquals(
 									500, carolBalance / tokenMultiplier,
 									"Carol's final balance should be 500");
-							Assertions.assertEquals(
+							assertEquals(
 									0, daveBalance / tokenMultiplier,
 									"Dave's final balance should be 0");
 						})
@@ -838,7 +844,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							}
 
 							ctxLog.info("Fake contract code size {}", codeSize);
-							Assertions.assertEquals(
+							assertEquals(
 									0, codeSize,
 									"Fake contract code size should be 0");
 						})
@@ -1079,6 +1085,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec smartContractFailFirst() {
+		final var hog = "InstantStorageHog";
+		final var creation = "hogCreation";
 		return defaultHapiSpec("smartContractFailFirst")
 				.given(
 						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
@@ -1093,7 +1101,6 @@ public class ContractCallSuite extends HapiApiSuite {
 											.gas(1)
 											.hasKnownStatus(INSUFFICIENT_GAS)
 											.via("failInsufficientGas");
-
 							final var subop3 = getTxnRecord("failInsufficientGas");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
@@ -1166,9 +1173,30 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec, subop4);
 						})
 				).then(
-						getTxnRecord("failInsufficientGas"),
-						getTxnRecord("successWithZeroInitialBalance"),
-						getTxnRecord("failInvalidInitialBalance")
+						// Make storage cost 1¢/slot-per-month
+						overridingTwo(
+								"contract.storageSlotLifetime", "7776000",
+								"contract.storageSlotPriceTiers", "1000@1"),
+						uploadInitCode(hog),
+						contractCreate(hog, 48).gas(4_000_000).via(creation),
+						withOpContext((spec, opLog) -> {
+							final var info = getContractInfo(hog).logged();
+							allRunFor(spec, info);
+							final var hogInfo = info.getResponse().getContractGetInfo().getContractInfo();
+							final var hogStorageBytes = hogInfo.getStorage();
+							final var approxExpectedTinybars =
+									(hogStorageBytes / 64) * ONE_HBAR
+											* spec.ratesProvider().rates().getHbarEquiv()
+											/ spec.ratesProvider().rates().getCentEquiv();
+							final var lookup = getTxnRecord(creation).andAllChildRecords().logged();
+							allRunFor(spec, lookup);
+							final var storageFeeTransfers = lookup.getChildRecord(0).getTransferList();
+							final var paidTo98 = storageFeeTransfers.getAccountAmounts(0).getAmount();
+							assertEquals(approxExpectedTinybars, paidTo98);
+						}),
+						overridingTwo(
+								"contract.storageSlotLifetime", defaultSlotLifetime,
+								"contract.storageSlotPriceTiers", defaultSlotPriceTiers)
 				);
 	}
 
@@ -1321,7 +1349,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
 									.getContractCallResult().getGasUsed();
-							Assertions.assertEquals(285000, gasUsed);
+							assertEquals(285000, gasUsed);
 						}),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
@@ -1759,7 +1787,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var accountBalanceAfterCall =
 									spec.registry().getAccountInfo("accountInfoAfterCall").getBalance();
 
-							Assertions.assertEquals(accountBalanceAfterCall,
+							assertEquals(accountBalanceAfterCall,
 									accountBalanceBeforeCall - fee + 200L);
 
 						}),
@@ -1890,7 +1918,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var accountBalanceAfterCall =
 									spec.registry().getAccountInfo("accountInfoAfterCall").getBalance();
 
-							Assertions.assertEquals(accountBalanceAfterCall,
+							assertEquals(accountBalanceAfterCall,
 									accountBalanceBeforeCall - fee + 10L);
 
 						}),
@@ -1937,9 +1965,9 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var contractBalanceAfterCall =
 									spec.registry().getContractInfo("contract_from").getBalance();
 
-							Assertions.assertEquals(accountBalanceAfterCall,
+							assertEquals(accountBalanceAfterCall,
 									accountBalanceBeforeCall - fee);
-							Assertions.assertEquals(contractBalanceAfterCall,
+							assertEquals(contractBalanceAfterCall,
 									10_000L);
 						})
 				);
@@ -1976,7 +2004,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var contractBalanceAfterCall =
 									spec.registry().getContractInfo("contract_from").getBalance();
 
-							Assertions.assertEquals(contractBalanceAfterCall,
+							assertEquals(contractBalanceAfterCall,
 									10_000L);
 						}),
 						getAccountBalance("receiver").hasTinyBars(10_000L)

@@ -81,7 +81,7 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 			final Bytes code,
 			final long requestedLifetime
 	) {
-		final var equivNumSlots = (code.size() + SLOT_SIZE - 1) / SLOT_SIZE;
+		final var equivNumSlots = Math.max(1, code.size() / SLOT_SIZE);
 		return slotPrice(rate, slotLifetime, numKvPairsUsed, equivNumSlots, requestedLifetime);
 	}
 
@@ -107,9 +107,7 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 			final int requestedKvPairs,
 			final long requestedLifetime
 	) {
-		if (requestedKvPairs == 0) {
-			throw new IllegalArgumentException("Cannot request zero slots");
-		}
+		assertValidArgs(requestedKvPairs, requestedLifetime);
 
 		// Traverse tiers until we find the active one
 		int i = 0;
@@ -127,6 +125,15 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 			fee = cappedAddition(fee, nonDegenerateDiv(cappedMultiplication(leftoverLifetime, price), slotLifetime));
 		}
 		return Math.max(1, cappedMultiplication(tinycentsToTinybars(fee, rate), requestedKvPairs));
+	}
+
+	private void assertValidArgs(final long requestedKvPairs, final long requestedLifetime) {
+		if (requestedKvPairs <= 0) {
+			throw new IllegalArgumentException("Must request a positive number of slots");
+		}
+		if (requestedLifetime < 0) {
+			throw new IllegalArgumentException("Must request a non-negative lifetime");
+		}
 	}
 
 	@Override

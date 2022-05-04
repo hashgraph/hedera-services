@@ -92,6 +92,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.context.primitives.StateView.BYTES_PER_EVM_KEY_VALUE_PAIR;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -542,9 +543,11 @@ class StateViewTest {
 
 	@Test
 	void getsContractInfo() throws Exception {
-		final var target = EntityNum.fromContractId(cid);
-		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-		final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+		final var contractNum = EntityNum.fromContractId(cid);
+		final var rawEvmAddress = contractNum.toRawEvmAddress();
+		given(contracts.get(contractNum)).willReturn(contract);
+		given(bytecode.get(rawEvmAddress)).willReturn(expectedBytecode);
+		final var expectedTotalStorage = BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs + expectedBytecode.length;
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		List<TokenRelationship> rels = List.of(
@@ -580,7 +583,7 @@ class StateViewTest {
 		final var target = EntityNum.fromContractId(cid);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		contract.setAlias(ByteString.EMPTY);
-		final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+		final var expectedTotalStorage = BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		List<TokenRelationship> rels = List.of(

@@ -84,6 +84,12 @@ class ContractStoragePriceTiersTest {
 	}
 
 	@Test
+	void failsOnNegativeLifetime() {
+		assertThrows(IllegalArgumentException.class, () -> CANONICAL_TIERS.slotPrice(
+				someRate, DEFAULT_PERIOD, 666, 1, -DEFAULT_PERIOD));
+	}
+
+	@Test
 	void getsExpectedForCanonicalPeriod() {
 		final var correctPrice = 100 * THOUSANDTHS_TO_TINY;
 		final var expected = tinycentsToTinybars(correctPrice, someRate);

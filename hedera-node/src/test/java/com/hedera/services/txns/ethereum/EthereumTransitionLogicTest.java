@@ -64,11 +64,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHERE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,6 +114,20 @@ class EthereumTransitionLogicTest {
 				txnCtx, syntheticTxnFactory, creationCustomizer,
 				spanMapAccessor, contractCallTransitionLogic, contractCreateTransitionLogic,
 				recordService, dynamicProperties, aliasManager, accountsLedger, spanMapManager);
+	}
+
+	@Test
+	void delegatesPrefetch() {
+		subject.preFetch(accessor);
+
+		verify(spanMapManager).expandEthereumSpan(accessor);
+	}
+
+	@Test
+	void recoversFromUnhandledException() {
+		willThrow(IllegalStateException.class).given(spanMapManager).expandEthereumSpan(accessor);
+
+		assertDoesNotThrow(() -> subject.preFetch(accessor));
 	}
 
 	@Test
