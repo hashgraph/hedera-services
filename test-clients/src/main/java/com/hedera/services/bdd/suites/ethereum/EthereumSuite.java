@@ -60,9 +60,9 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 //				Stream.empty()
 				Stream.of(
-//						invalidTxData(),
-//						ETX_014_contractCreateInheritsSignerProperties(),
-//						invalidNonceEthereumTxFails()
+						invalidTxData(),
+						ETX_014_contractCreateInheritsSignerProperties(),
+						invalidNonceEthereumTxFails()
 				)).toList();
 	}
 
