@@ -401,7 +401,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 						toRemove.add(Pair.of(instant, id));
 
 					} else if (schedule.calculatedExpirationTime().getSeconds() != curSecond) {
-						log.error("bySecond contained a schedule in the wrong spot! Removing and Expiring it! spot={}, id={}, schedule={}",
+						log.error("bySecond contained a schedule in the wrong spot! Removing and expiring it! spot={}, id={}, schedule={}",
 								curSecond, scheduleId, schedule);
 						toRemove.add(Pair.of(instant, id));
 						list.add(scheduleId);
