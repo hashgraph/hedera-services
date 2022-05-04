@@ -441,7 +441,7 @@ class CallEvmTxProcessorTest {
 				relayer, 10 * ONE_HBAR);
 
 		assertTrue(result.isSuccessful());
-		assertEquals(result.getGasUsed(), 0);
+		assertEquals(0, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(mutableRelayerAccount).incrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
 		verify(mutableSenderAccount).incrementBalance(Wei.of(offeredGasPrice * gasLimit));
@@ -469,11 +469,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 10 * ONE_HBAR));
+				userOfferedGasPrice, relayer, 10 * ONE_HBAR));
 	}
 
 
@@ -499,11 +499,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 100));
+				userOfferedGasPrice, relayer, 100));
 	}
 
 
@@ -530,11 +530,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 10 * ONE_HBAR));
+				userOfferedGasPrice, relayer, 10 * ONE_HBAR));
 	}
 
 	@Test
@@ -596,11 +596,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 0L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 100));
+				userOfferedGasPrice, relayer, 100));
 	}
 
 	@Test
@@ -625,11 +625,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 0L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 10 * ONE_HBAR));
+				userOfferedGasPrice, relayer, 10 * ONE_HBAR));
 	}
 
 	@Test
@@ -692,11 +692,11 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 50L;
 		final int gasLimit = 1000;
+		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
-				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
-				relayer, 10 * ONE_HBAR));
+				userOfferedGasPrice, relayer, 10 * ONE_HBAR));
 	}
 
 	@Test
@@ -717,7 +717,7 @@ class CallEvmTxProcessorTest {
 				sender, receiverAddress, GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime);
 
 		assertTrue(result.isSuccessful());
-		assertEquals(result.getGasUsed(), 0);
+		assertEquals(0, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
 

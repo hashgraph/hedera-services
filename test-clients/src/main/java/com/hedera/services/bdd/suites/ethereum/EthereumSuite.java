@@ -58,7 +58,6 @@ public class EthereumSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.concat(
 				feePaymentMatrix().stream(),
-//				Stream.empty()
 				Stream.of(
 						invalidTxData(),
 						ETX_014_contractCreateInheritsSignerProperties(),
@@ -68,11 +67,8 @@ public class EthereumSuite extends HapiApiSuite {
 
 	HapiApiSpec bothPayFeesSucceeds() {
 		final long gasPrice = 47;
-
-		final long noPayment = 0L;
 		final long partialFee = gasPrice / 3;
 		final long senderCharged = partialFee*gasLimit;
-		final long partialPayment = partialFee * gasLimit;
 		final long fullAllowance = gasPrice * gasLimit * 5/4;
 
 		return defaultHapiSpec("bothPayFeesSucceeds")
@@ -85,6 +81,8 @@ public class EthereumSuite extends HapiApiSuite {
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
 						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				).when(
+						// Network and Node fees in the schedule for Ethereum transactions are 0,
+						// so everything charged will be from the gas consumed in the EVM execution
 						uploadDefaultFeeSchedules(GENESIS)
 				).then(
 						withOpContext((spec, ignore) -> {
@@ -109,7 +107,6 @@ public class EthereumSuite extends HapiApiSuite {
 							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
-
 							var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
 							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
 									changeFromSnapshot(senderBalance, -depositAmount-senderCharged));
@@ -128,7 +125,6 @@ public class EthereumSuite extends HapiApiSuite {
 		final long partialFee = gasPrice / 3;
 		final long partialPayment = partialFee * gasLimit;
 		final long fullAllowance = gasPrice * gasLimit * 5/4;
-		final long fullPayment = gasPrice * gasLimit;
 
 		return Stream.concat(Stream.of(bothPayFeesSucceeds()), Stream.of(
 				new Object[] { false, noPayment, noPayment, false, false},
@@ -136,7 +132,7 @@ public class EthereumSuite extends HapiApiSuite {
 				new Object[] { true, noPayment, fullAllowance, false, true },
 				new Object[] { false, partialFee, noPayment, false, false },
 				new Object[] { false, partialFee, partialPayment, false, false },
-//		/* ***/ new Object[] { true, partialFee, fullAllowance, false, false }, // done in bothPayFeesSucceeds()
+//				new Object[] { true, partialFee, fullAllowance, false, false }, // done in bothPayFeesSucceeds()
 				new Object[] { true, gasPrice, noPayment, true, false },
 				new Object[] { true, gasPrice, partialPayment, true, false },
 				new Object[] { true, gasPrice, fullAllowance, true, false}
@@ -144,8 +140,8 @@ public class EthereumSuite extends HapiApiSuite {
 				// [0] - success
 				// [1] - sender gas price
 				// [2] - relayer offered
-				// [1] - sender charged amount
-				// [2] - relayer charged amount
+				// [3] - is sender charged
+				// [4] - is relayer charged
 				matrixedPayerRelayerTest((boolean) params[0],
 						(long) params[1],
 						(long) params[2],
