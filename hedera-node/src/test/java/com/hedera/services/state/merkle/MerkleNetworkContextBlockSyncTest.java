@@ -36,6 +36,7 @@ import java.util.SplittableRandom;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -108,7 +109,7 @@ class MerkleNetworkContextBlockSyncTest {
 		// and:
 		assertEquals(NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING, subject.getBlocksToLog());
 		for (int j = 0; j < NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING + 1; j++) {
-			subject.finishBlock(new Hash(swirldHashes[j % swirldHashes.length]), then.plusSeconds(2 * j));
+			subject.finishBlock(ethHashFrom(new Hash(swirldHashes[j % swirldHashes.length])), then.plusSeconds(2 * j));
 		}
 		assertThat(logCaptor.infoLogs(), contains(
 				Matchers.startsWith("Renumbered 64 trailing block hashes"),
@@ -128,7 +129,7 @@ class MerkleNetworkContextBlockSyncTest {
 
 	private void finishNBlocks(final int n) {
 		for (int i = 0; i < n; i++) {
-			subject.finishBlock(new Hash(swirldHashes[i]), then.plusNanos(i));
+			subject.finishBlock(ethHashFrom(new Hash(swirldHashes[i])), then.plusNanos(i));
 		}
 	}
 }

@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -80,7 +81,7 @@ class BlockManagerTest {
 
 	@Test
 	void finishesBlockIfUnknownFirstConsTime() throws InterruptedException {
-		given(networkContext.finishBlock(aFullBlockHash, anotherTime)).willReturn(someBlockNo);
+		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
 		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
 
 		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);
@@ -91,7 +92,7 @@ class BlockManagerTest {
 	@Test
 	void finishesBlockIfNotInSamePeriod() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(networkContext.finishBlock(aFullBlockHash, anotherTime)).willReturn(someBlockNo);
+		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
 		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
 
 		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);

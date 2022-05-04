@@ -134,7 +134,7 @@ class MerkleNetworkContextTest {
 		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
 		subject.setBlockNo(aBlockNo);
 
-		final var newBlockNo = subject.finishBlock(aFullBlockHash, newFirstConsTime);
+		final var newBlockNo = subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
 		assertEquals(Map.of(aBlockNo, aEthHash), subject.getBlockHashCache());
 		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
@@ -150,7 +150,7 @@ class MerkleNetworkContextTest {
 			subject.getBlockHashCache().put((long) i, aEthHash);
 		}
 
-		subject.finishBlock(aFullBlockHash, newFirstConsTime);
+		subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
 		assertFalse(subject.getBlockHashCache().containsKey(0L));
 		assertEquals(aEthHash, subject.getBlockHashCache().get(aBlockNo));

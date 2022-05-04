@@ -24,13 +24,13 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.Units;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
@@ -44,7 +44,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
  * Manages the block-related fields in the {@link MerkleNetworkContext}, based on 2-second "periods" in
  * consensus time. Whenever a user transaction's consensus timestamp is the first in a new period,
  * starts a new block by recording the running hash of the last transaction in the current period and
- * incrementing the block number via a call to {@link MerkleNetworkContext#finishBlock(Hash, Instant)}.
+ * incrementing the block number via a call to {@link MerkleNetworkContext#finishBlock(org.hyperledger.besu.datatypes.Hash, Instant)}.
  */
 @Singleton
 public class BlockManager {
@@ -53,8 +53,17 @@ public class BlockManager {
 	private final long blockPeriodMs;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
-	private long provisionalBlockNumber = Long.MIN_VALUE;
 	private org.hyperledger.besu.datatypes.Hash provisionalBlockHash = UNAVAILABLE_BLOCK_HASH;
+
+	// Whether the current transaction is expected to start a new block
+	private boolean provisionalBlockIsNew = false;
+	// The expected block number for the current transaction, -1 if unknown
+	private long provisionalBlockNumber = -1;
+	// The expected block timestamp for the current transaction
+	private Instant provisionalBlockTimestamp = Instant.EPOCH;
+	// If provisionalBlockIsNew == true, the expected hash of the just-finished block
+	@Nullable
+	private org.hyperledger.besu.datatypes.Hash provisionalFinishedBlockHash;
 
 	@Inject
 	public BlockManager(
@@ -67,6 +76,13 @@ public class BlockManager {
 
 		blockPeriodMs = bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod")
 				* Units.SECONDS_TO_MILLISECONDS;
+	}
+
+	public void reset() {
+		provisionalBlockIsNew = false;
+		provisionalBlockNumber = -1;
+		provisionalBlockTimestamp = Instant.EPOCH;
+		provisionalFinishedBlockHash = null;
 	}
 
 	/**
@@ -88,38 +104,66 @@ public class BlockManager {
 		return networkCtx.get().getManagedBlockNo();
 	}
 
-	public long getProvisionalBlockNumber() {
-		return provisionalBlockNumber;
-	}
-
+	/**
+	 * @param blockNumber
+	 * @return
+	 */
 	public org.hyperledger.besu.datatypes.Hash getProvisionalBlockHash(long blockNumber) {
+
 		if (blockNumber == provisionalBlockNumber) {
-			return provisionalBlockHash;
+			return UNAVAILABLE_BLOCK_HASH;
+		}
+		if (provisionalBlockIsNew && blockNumber == provisionalBlockNumber - 1) {
+			return provisionalFinishedBlockHash;
 		}
 		return networkCtx.get().getBlockHashByNumber(blockNumber);
 	}
 
 	/**
-	 *
 	 * @param timestamp
 	 * @param gasLimit
 	 * @return
 	 */
 	public HederaBlockValues createProvisionalBlockValues(@NotNull final Instant timestamp, long gasLimit) {
+		ensureProvisionalBlockValuesAreKnown(timestamp);
+		return new HederaBlockValues(gasLimit, provisionalBlockNumber, provisionalBlockTimestamp);
+	}
+
+	private void ensureProvisionalBlockValuesAreKnown(Instant now) {
+		if (provisionalBlockNumber == -1) {
+			computeProvisionalBlockMetadata(now);
+		}
+	}
+
+	/**
+	 * Given the consensus timestamp of a user transaction, manages the block-related fields in the
+	 * {@link MerkleNetworkContext}, finishing the current block if appropriate.
+	 *
+	 * @param now the latest consensus timestamp of a user transaction
+	 * @return the new block number, taking this timestamp into account
+	 */
+	public long getManagedBlockNumberAt(@NotNull final Instant now) {
+		ensureProvisionalBlockValuesAreKnown(now);
+		var curNetworkCtx = networkCtx.get();
+		return willCreateNewBlock(now) ? updatedBlockNumberAt(now, curNetworkCtx) :
+				curNetworkCtx.getManagedBlockNo();
+	}
+
+	private void computeProvisionalBlockMetadata(Instant now) {
 		var curNetworkCtx = networkCtx.get();
 
 		var blockNo = curNetworkCtx.getBlockNo();
 
 		// Before the 0.26 upgrade, we used the consensus timestamp as the block number; and if we
 		// get a zero block number, it means the post-0.26 block sync hasn't happened yet
-		Instant provisionalBlockTimestamp;
 		if (blockNo == 0) {
-			provisionalBlockNumber = timestamp.getEpochSecond();
+			provisionalBlockNumber = now.getEpochSecond();
 			provisionalBlockTimestamp = Instant.EPOCH;
 			provisionalBlockHash = UNAVAILABLE_BLOCK_HASH;
-		} else if (willCreateNewBlock(timestamp)) {
+		} else if (willCreateNewBlock(now)) {
+			provisionalBlockIsNew = true;
 			provisionalBlockNumber = curNetworkCtx.getBlockNo() + 1;
-			provisionalBlockTimestamp = timestamp;
+			provisionalBlockTimestamp = now;
 			try {
 				provisionalBlockHash = ethHashFrom(runningHashLeaf.get().getLatestBlockHash());
 			} catch (InterruptedException e) {
@@ -132,31 +176,12 @@ public class BlockManager {
 			provisionalBlockNumber = curNetworkCtx.getBlockNo();
 			provisionalBlockTimestamp = curNetworkCtx.firstConsTimeOfCurrentBlock();
 		}
-
-		return new HederaBlockValues(gasLimit, provisionalBlockNumber, provisionalBlockTimestamp);
 	}
 
-	public boolean willCreateNewBlock(@NotNull final Instant timestamp) {
+	private boolean willCreateNewBlock(@NotNull final Instant timestamp) {
 		final var curNetworkCtx = networkCtx.get();
 		final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
 		return firstBlockTime == null || !inSamePeriod(firstBlockTime, timestamp);
-	}
-
-	/**
-	 * Given the consensus timestamp of a user transaction, manages the block-related fields in the
-	 * {@link MerkleNetworkContext}, finishing the current block if appropriate.
-	 *
-	 * @param now the latest consensus timestamp of a user transaction
-	 * @return the new block number, taking this timestamp into account
-	 */
-	public long getManagedBlockNumberAt(@NotNull final Instant now) {
-		final var curNetworkCtx = networkCtx.get();
-		final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
-		if (firstBlockTime != null && inSamePeriod(firstBlockTime, now)) {
-			return curNetworkCtx.getManagedBlockNo();
-		} else {
-			return updatedBlockNumberAt(now, curNetworkCtx);
-		}
 	}
 
 	private boolean inSamePeriod(@NotNull final Instant then, @NotNull final Instant now) {
@@ -164,18 +189,8 @@ public class BlockManager {
 	}
 
 	private long updatedBlockNumberAt(final Instant now, final MerkleNetworkContext curNetworkCtx) {
-		Hash computedHash;
-		try {
-			computedHash = runningHashLeaf.get().getLatestBlockHash();
-		} catch (final InterruptedException e) {
-			final var curBlockNo = curNetworkCtx.getManagedBlockNo();
-			// This is almost certainly fatal, hence the ERROR log level
-			log.error("Interrupted when computing hash for block #{}", curBlockNo);
-			Thread.currentThread().interrupt();
-			return curBlockNo;
-		}
 		log.debug("Finishing block {} (started @ {}), starting new block @ {}",
 				curNetworkCtx.getManagedBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock(), now);
-		return curNetworkCtx.finishBlock(computedHash, now);
+		return curNetworkCtx.finishBlock(provisionalBlockHash, now);
 	}
 }

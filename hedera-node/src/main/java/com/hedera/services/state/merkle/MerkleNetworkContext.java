@@ -263,8 +263,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
-	public long finishBlock(final Hash swirldsHash, final Instant firstConsTimeOfNewBlock) {
-		final var ethHash = ethHashFrom(swirldsHash);
+	public long finishBlock(final org.hyperledger.besu.datatypes.Hash ethHash, final Instant firstConsTimeOfNewBlock) {
 		if (blocksToLog > 0) {
 			log.info("""
 					--- BLOCK UPDATE ---
