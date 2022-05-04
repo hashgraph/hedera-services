@@ -112,6 +112,7 @@ class CallEvmTxProcessorTest {
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
+	private final Account relayer = new Account(new Id(0, 0, 1007));
 	private final Address receiverAddress = receiver.getId().asEvmAddress();
 	private final Instant consensusTime = Instant.now();
 	private final int MAX_GAS_LIMIT = 10_000_000;
@@ -143,6 +144,27 @@ class CallEvmTxProcessorTest {
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+		assertTrue(result.isSuccessful());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+	}
+
+	@Test
+	void assertSuccessExecutionEth() {
+		givenValidMockEth();
+
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(merkleNetworkContext.getBlockNo()).willReturn(1234L);
+		var evmAccount = mock(EvmAccount.class);
+		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+		var senderMutableAccount = mock(MutableAccount.class);
+		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+		givenSenderWithBalance(350_000L);
+		var result = callEvmTxProcessor.executeEth(
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, 10_000L, relayer, 55_555L);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
@@ -358,6 +380,34 @@ class CallEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
+		given(worldState.updater()).willReturn(updater);
+		given(codeCache.getIfPresent(any())).willReturn(new Code());
+
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+		var senderMutableAccount = mock(MutableAccount.class);
+		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+		given(updater.getSenderAccount(any())).willReturn(evmAccount);
+		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getOrCreate(any())).willReturn(evmAccount);
+		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+	}
+
+	private void givenValidMockEth() {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
+		given(worldState.updater()).willReturn(updater);
+		given(worldState.updater().updater()).willReturn(updater);
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+
+		var evmAccount = mock(EvmAccount.class);
+
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+
 		given(worldState.updater()).willReturn(updater);
 		given(codeCache.getIfPresent(any())).willReturn(new Code());
 

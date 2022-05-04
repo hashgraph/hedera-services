@@ -98,6 +98,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
@@ -595,6 +596,15 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void negativeAllowanceAmountError() {
+		givenValidTxnCtxWithNegativeMaxGasAllowance();
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+
+		// expect:
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void acceptsOkSyntaxEthCreate() {
 		target = null;
 		givenValidTxnCtx();
@@ -829,7 +839,6 @@ class EthereumTransactionTransitionLogicTest {
 		verify(recordService, never()).updateForEvmCall(any(), any());
 	}
 
-
 	private void givenValidTxnCtx() {
 		var unsignedTx = new EthTxData(
 				null,
@@ -856,6 +865,39 @@ class EthereumTransactionTransitionLogicTest {
 		if (callDataFile != null) {
 			ethTxBodyBuilder.setCallData(callDataFile);
 		}
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setEthereumTransaction(ethTxBodyBuilder.build());
+		ethTxTxn = op.build();
+	}
+
+	private void givenValidTxnCtxWithNegativeMaxGasAllowance() {
+		var unsignedTx = new EthTxData(
+				null,
+				EthTxData.EthTransactionType.EIP1559,
+				chainId,
+				1,
+				null,
+				TINYBARS_2_IN_WEIBARS,
+				TINYBARS_57_IN_WEIBARS,
+				gas,
+				target == null ? new byte[0] : EntityIdUtils.asEvmAddress(target),
+				BigInteger.valueOf(sent).multiply(WEIBARS_IN_TINYBAR),
+				callData,
+				null,
+				0,
+				null,
+				null,
+				null
+		);
+		ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()));
+		if (callDataFile != null) {
+			ethTxBodyBuilder.setCallData(callDataFile);
+		}
+		ethTxBodyBuilder.setMaxGasAllowance(-1L);
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setEthereumTransaction(ethTxBodyBuilder.build());

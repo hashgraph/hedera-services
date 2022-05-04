@@ -99,6 +99,7 @@ class CreateEvmTxProcessorTest {
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
+	private final Account relayer = new Account(new Id(0, 0, 1007));
 	private final Instant consensusTime = Instant.now();
 	private final long expiry = 123456L;
 	private final int MAX_GAS_LIMIT = 10_000_000;
@@ -123,6 +124,25 @@ class CreateEvmTxProcessorTest {
 		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
 				consensusTime, expiry);
+		assertTrue(result.isSuccessful());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+	}
+
+	@Test
+	void assertSuccessfulExecutionEth() {
+		givenValidMockEth(true);
+
+		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+		var evmAccount = mock(EvmAccount.class);
+		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+		var senderMutableAccount = mock(MutableAccount.class);
+		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+		given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+
+
+		var result = createEvmTxProcessor.executeEth(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
+				consensusTime, expiry,  relayer, 10_000L, 55_555L);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
@@ -277,6 +297,42 @@ class CreateEvmTxProcessorTest {
 		var evmAccount = mock(EvmAccount.class);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
+		given(worldState.updater()).willReturn(updater);
+
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.ZERO);
+
+		var senderMutableAccount = mock(MutableAccount.class);
+		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+		given(senderMutableAccount.getNonce()).willReturn(0L);
+		given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+
+		if (expectedSuccess) {
+			given(gasCalculator.codeDepositGasCost(0)).willReturn(Gas.ZERO);
+		}
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+		given(updater.getSenderAccount(any())).willReturn(evmAccount);
+		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getOrCreate(any())).willReturn(evmAccount);
+		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+
+		given(updater.getSenderAccount(any())).willReturn(evmAccount);
+		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+
+	}
+
+	private void givenValidMockEth(boolean expectedSuccess) {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
+		given(worldState.updater()).willReturn(updater);
+		given(worldState.updater().updater()).willReturn(updater);
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+
+		var evmAccount = mock(EvmAccount.class);
+
 		given(worldState.updater()).willReturn(updater);
 
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.ZERO);
