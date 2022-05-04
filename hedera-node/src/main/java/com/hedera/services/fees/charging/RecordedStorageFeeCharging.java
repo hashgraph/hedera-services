@@ -91,6 +91,9 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 			final Map<AccountID, Integer> newUsageDeltas,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
 	) {
+		if (newBytecodes.isEmpty() && newUsageDeltas.isEmpty()) {
+			return;
+		}
 		if (!dynamicProperties.shouldItemizeStorageFees()) {
 			chargeStorageFeesInternal(numKvPairs, newBytecodes, newUsageDeltas, accounts);
 		} else {

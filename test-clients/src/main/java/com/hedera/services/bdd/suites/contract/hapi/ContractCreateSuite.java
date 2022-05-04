@@ -169,7 +169,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec canCallPendingContractSafely() {
 		final var numSlots = 64;
-		final var createBurstSize = 500;
+		final var createBurstSize = 5;
 		final int[] targets = { 19, 24 };
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
@@ -672,8 +672,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 						contractCall(contract, "logNow")
-								.via(firstBlock).delayBy(3_000),
-						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
+								.via(firstBlock),
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)).delayBy(3_000),
 						contractCall(contract, "logNow")
 								.via(timeLoggingTxn)
 				).then(
@@ -708,8 +708,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
 							final var secondBlockNumber = Longs.fromByteArray(
 									Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
-							assertEquals(firstBlockNumber + 1, secondBlockNumber,
-									"Wrong previous block number");
+							assertNotEquals(firstBlockNumber, secondBlockNumber,
+									"Block numbers should change");
 							final var secondBlockHash = Bytes32.wrap(
 									Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
 

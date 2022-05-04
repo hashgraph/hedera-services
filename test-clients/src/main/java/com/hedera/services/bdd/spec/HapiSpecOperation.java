@@ -231,6 +231,7 @@ public abstract class HapiSpecOperation {
 	private void pauseIfRequested() {
 		submitDelay.ifPresent(l -> {
 			try {
+				log.info("Sleeping for {} ms", l);
 				Thread.sleep(l);
 			} catch (InterruptedException ignore) {
 			}

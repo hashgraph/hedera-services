@@ -150,48 +150,48 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				resultSizeAffectsFees(),
-//				payableSuccess(),
-//				depositSuccess(),
-//				depositDeleteSuccess(),
-//				multipleDepositSuccess(),
-//				payTestSelfDestructCall(),
-//				multipleSelfDestructsAreSafe(),
-//				smartContractInlineAssemblyCheck(),
-//				ocToken(),
-//				contractTransferToSigReqAccountWithKeySucceeds(),
-//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//				minChargeIsTXGasUsedByContractCall(),
-//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-//				HSCS_EVM_006_ContractHBarTransferToAccount(),
-//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-//				HSCS_EVM_010_MultiSignatureAccounts(),
-//				HSCS_EVM_010_ReceiverMustSignContractTx(),
-//				insufficientGas(),
-//				insufficientFee(),
-//				nonPayable(),
-//				invalidContract(),
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
+				smartContractInlineAssemblyCheck(),
+				ocToken(),
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCall(),
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
+				invalidContract(),
 				smartContractFailFirst(),
-//				contractTransferToSigReqAccountWithoutKeyFails(),
-//				callingDestructedContractReturnsStatusDeleted(),
-//				gasLimitOverMaxGasLimitFailsPrecheck(),
-//				imapUserExercise(),
-//				workingHoursDemo(),
-//				deletedContractsCannotBeUpdated(),
-//				sendHbarsToAddressesMultipleTimes(),
-//				sendHbarsToDifferentAddresses(),
-//				sendHbarsFromDifferentAddressessToAddress(),
-//				sendHbarsFromAndToDifferentAddressess(),
-//				transferNegativeAmountOfHbars(),
-//				transferToCaller(),
-//				transferZeroHbarsToCaller(),
-//				transferZeroHbars(),
-//				sendHbarsToOuterContractFromDifferentAddresses(),
-//				sendHbarsToCallerFromDifferentAddresses(),
-//				bitcarbonTestStillPasses(),
-//				contractCreationStoragePriceMatchesFinalExpiry(),
-//				whitelistingAliasedContract(),
-//				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				imapUserExercise(),
+				workingHoursDemo(),
+				deletedContractsCannotBeUpdated(),
+				sendHbarsToAddressesMultipleTimes(),
+				sendHbarsToDifferentAddresses(),
+				sendHbarsFromDifferentAddressessToAddress(),
+				sendHbarsFromAndToDifferentAddressess(),
+				transferNegativeAmountOfHbars(),
+				transferToCaller(),
+				transferZeroHbarsToCaller(),
+				transferZeroHbars(),
+				sendHbarsToOuterContractFromDifferentAddresses(),
+				sendHbarsToCallerFromDifferentAddresses(),
+				bitcarbonTestStillPasses(),
+				contractCreationStoragePriceMatchesFinalExpiry(),
+				whitelistingAliasedContract(),
+				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
 		});
 	}
 
@@ -1191,8 +1191,14 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var lookup = getTxnRecord(creation).andAllChildRecords().logged();
 							allRunFor(spec, lookup);
 							final var storageFeeTransfers = lookup.getChildRecord(0).getTransferList();
-							final var paidTo98 = storageFeeTransfers.getAccountAmounts(0).getAmount();
-							assertEquals(approxExpectedTinybars, paidTo98);
+							final var paidTo98 = Math.abs(storageFeeTransfers.getAccountAmounts(0).getAmount());
+							final var actualDelta = approxExpectedTinybars - paidTo98;
+							final var acceptableDeviation = 100L;
+							if (Math.abs(actualDelta) > acceptableDeviation) {
+								Assertions.fail(String.format(
+										"Expected storage fee %d to be within <%d +/- %d>",
+										paidTo98, approxExpectedTinybars, acceptableDeviation));
+							}
 						}),
 						overridingTwo(
 								"contract.storageSlotLifetime", defaultSlotLifetime,

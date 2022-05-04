@@ -358,6 +358,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				if (STORAGE_FEES_MEMO.equals(lastRecord.getMemo())) {
 					expectedChildRecords = new ArrayList<>(expectedChildRecords);
 					expectedChildRecords.add(recordWith());
+					numExpectations++;
 				}
 			}
 

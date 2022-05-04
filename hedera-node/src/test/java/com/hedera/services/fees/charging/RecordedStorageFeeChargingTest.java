@@ -72,6 +72,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class RecordedStorageFeeChargingTest {
@@ -99,15 +100,17 @@ class RecordedStorageFeeChargingTest {
 		final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
 		subject = new RecordedStorageFeeCharging(
 				creator, exchange, recordsHistorian, txnCtx, syntheticTxnFactory, dynamicProperties);
-		given(dynamicProperties.storageSlotLifetime()).willReturn(canonicalLifetime);
-		given(dynamicProperties.storagePriceTiers()).willReturn(canonicalTiers);
-		given(txnCtx.consensusTime()).willReturn(now);
-		given(exchange.activeRate(now)).willReturn(someRate);
-		given(dynamicProperties.fundingAccount()).willReturn(funding);
+	}
+
+	@Test
+	void createsNoRecordWithNothingToDo() {
+		subject.chargeStorageFees(numKvPairsUsed, Collections.emptyMap(), Collections.emptyMap(), accountsLedger);
+		verifyNoInteractions(accountsLedger);
 	}
 
 	@Test
 	void chargesBytecode() {
+		givenStandardSetup();
 		final var expectedACharge = canonicalTiers.codePrice(
 				someRate, canonicalLifetime, numKvPairsUsed, oneKbCode, aExpiry);
 		givenChargeableContract(aContract, expectedACharge * 2, aExpiry, null);
@@ -122,6 +125,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void chargesOnlyPositiveDeltasWithAutoRenewAccountPriority() {
+		givenStandardSetup();
 		final Map<AccountID, Integer> deltas = new LinkedHashMap<>();
 		deltas.put(aContract, +2);
 		deltas.put(bContract, -1);
@@ -149,6 +153,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void fallsBackToContractIfAutoRenewCannotCover() {
+		givenStandardSetup();
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
 		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
@@ -171,6 +176,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void fallsBackToContractIfAutoRenewMissing() {
+		givenStandardSetup();
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
 		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
@@ -188,6 +194,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void fallsBackToContractIfAutoRenewDeleted() {
+		givenStandardSetup();
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
 		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
@@ -206,6 +213,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void failsIfFeesCannotBePaid() {
+		givenStandardSetup();
 		final Map<AccountID, Integer> deltas = Map.of(aContract, +181);
 		final var expectedACharge = canonicalTiers.slotPrice(
 				someRate, canonicalLifetime, numKvPairsUsed, 181, aExpiry);
@@ -226,6 +234,7 @@ class RecordedStorageFeeChargingTest {
 
 	@Test
 	void managesRecordAsExpected() {
+		givenStandardSetup();
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		// setup:
 		final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
@@ -263,6 +272,14 @@ class RecordedStorageFeeChargingTest {
 		final var op = body.getCryptoTransfer();
 		final var transfers = op.getTransfers().getAccountAmountsList();
 		assertEquals(List.of(aaWith(funding, expectedACharge), aaWith(aContract, -expectedACharge)), transfers);
+	}
+
+	private void givenStandardSetup() {
+		given(dynamicProperties.storageSlotLifetime()).willReturn(canonicalLifetime);
+		given(dynamicProperties.storagePriceTiers()).willReturn(canonicalTiers);
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(exchange.activeRate(now)).willReturn(someRate);
+		given(dynamicProperties.fundingAccount()).willReturn(funding);
 	}
 
 	private void givenAutoRenew(final AccountID id, final long amount) {
