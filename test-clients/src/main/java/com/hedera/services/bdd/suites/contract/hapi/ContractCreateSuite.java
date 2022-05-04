@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -77,6 +78,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -105,6 +107,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContractCreateSuite extends HapiApiSuite {
@@ -669,7 +672,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 						contractCall(contract, "logNow")
-								.via(firstBlock).delayBy(5000),
+								.via(firstBlock).delayBy(3_000),
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
 						contractCall(contract, "logNow")
 								.via(timeLoggingTxn)
 				).then(
@@ -698,7 +702,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var secondBlockTimeLogData = secondBlockLogs.get(0).getData().toByteArray();
 							final var secondBlockTimestamp = Longs.fromByteArray(
 									Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
-							assertTrue(firstBlockTimestamp != secondBlockTimestamp, "Wrong block time");
+							assertNotEquals(firstBlockTimestamp, secondBlockTimestamp,
+									"Block timestamps should change");
 
 							final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
 							final var secondBlockNumber = Longs.fromByteArray(

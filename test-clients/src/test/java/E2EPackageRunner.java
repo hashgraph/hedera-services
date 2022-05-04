@@ -426,7 +426,7 @@ class E2EPackageRunner {
 	@Tag("contract.hapi")
 	@TestFactory
 	Collection<DynamicContainer> contractHapi() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuite(ContractCallLocalSuite::new),
 				extractSpecsFromSuite(ContractCallSuite::new),
 				extractSpecsFromSuite(ContractCreateSuite::new),
@@ -435,7 +435,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractGetInfoSuite::new),
 				extractSpecsFromSuite(ContractMusicalChairsSuite::new),
 				extractSpecsFromSuite(ContractUpdateSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -806,7 +806,8 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
+											" " +
 											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
