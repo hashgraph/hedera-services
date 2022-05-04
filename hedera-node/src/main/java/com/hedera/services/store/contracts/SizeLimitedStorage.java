@@ -378,9 +378,8 @@ public class SizeLimitedStorage {
 			return;
 		}
 		final var curBlobs = blobs.get();
-		newBytecodes.forEach((id, code) -> {
-			curBlobs.put(bytecodeKeyFor(id.getAccountNum()), new VirtualBlobValue(code.toArrayUnsafe()));
-		});
+		newBytecodes.forEach((id, code) ->
+				curBlobs.put(bytecodeKeyFor(id.getAccountNum()), new VirtualBlobValue(code.toArrayUnsafe())));
 	}
 
 	private void commitPendingUpdates() {

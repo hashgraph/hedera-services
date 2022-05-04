@@ -144,47 +144,47 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				workingHoursDemo(),
-				deletedContractsCannotBeUpdated(),
-				sendHbarsToAddressesMultipleTimes(),
-				sendHbarsToDifferentAddresses(),
-				sendHbarsFromDifferentAddressessToAddress(),
-				sendHbarsFromAndToDifferentAddressess(),
-				transferNegativeAmountOfHbars(),
-				transferToCaller(),
-				transferZeroHbarsToCaller(),
-				transferZeroHbars(),
-				sendHbarsToOuterContractFromDifferentAddresses(),
-				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses(),
-				contractCreationStoragePriceMatchesFinalExpiry(),
-				whitelistingAliasedContract(),
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst(),
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				workingHoursDemo(),
+//				deletedContractsCannotBeUpdated(),
+//				sendHbarsToAddressesMultipleTimes(),
+//				sendHbarsToDifferentAddresses(),
+//				sendHbarsFromDifferentAddressessToAddress(),
+//				sendHbarsFromAndToDifferentAddressess(),
+//				transferNegativeAmountOfHbars(),
+//				transferToCaller(),
+//				transferZeroHbarsToCaller(),
+//				transferZeroHbars(),
+//				sendHbarsToOuterContractFromDifferentAddresses(),
+//				sendHbarsToCallerFromDifferentAddresses(),
+//				bitcarbonTestStillPasses(),
+//				contractCreationStoragePriceMatchesFinalExpiry(),
+//				whitelistingAliasedContract(),
 				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
 		});
 	}
@@ -219,7 +219,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						))
 				).when(
 						captureChildCreate2MetaFor(
-								1, 0,
+								2, 0,
 								"setup", creationTxn, childMirror, childEip1014),
 						withOpContext((spec, op) -> allRunFor(spec,
 								contractCall(WHITELISTER, "addToWhitelist", childEip1014.get())
@@ -267,7 +267,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						withOpContext((spec, op) -> {
 							allRunFor(spec,
 									captureChildCreate2MetaFor(
-											1, 0,
+											2, 0,
 											"setup", creationTxn, childMirror, childEip1014),
 									tokenCreate("TokenA")
 											.initialSupply(100)
@@ -1086,7 +1086,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				).when(
 						withOpContext((spec, ignore) -> {
 							final var subop1 = balanceSnapshot("balanceBefore0", "payer");
-
 							final var subop2 =
 									contractCreate(SIMPLE_STORAGE_CONTRACT)
 											.balance(0)
@@ -1102,20 +1101,15 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore0", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
 							final var subop1 = balanceSnapshot("balanceBefore1", "payer");
-
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(100_000_000_000L)
 									.payingWith("payer")
 									.gas(250_000L)
 									.via("failInvalidInitialBalance")
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
 							final var subop3 = getTxnRecord("failInvalidInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
@@ -1123,68 +1117,53 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore1", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
 							final var subop1 = balanceSnapshot("balanceBefore2", "payer");
-
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(0L)
 									.payingWith("payer")
 									.gas(250_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("successWithZeroInitialBalance");
-
-							final var subop3 = getTxnRecord("successWithZeroInitialBalance");
+							final var subop3 = getTxnRecord("successWithZeroInitialBalance")
+									.andAllChildRecords()
+									.logged();
 							allRunFor(spec, subop1, subop2, subop3);
-							final var delta = subop3.getResponseRecord().getTransactionFee();
-
+							final var storageFee =
+									subop3.getChildRecord(0).getTransferList().getAccountAmounts(0).getAmount();
+							final var delta = subop3.getResponseRecord().getTransactionFee() + storageFee;
 							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore2", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
 							final var subop1 = balanceSnapshot("balanceBefore3", "payer");
-
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("setValue");
-
 							final var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
 							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore3", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
 							final var subop1 = balanceSnapshot("balanceBefore4", "payer");
-
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("getValue");
-
 							final var subop3 = getTxnRecord("getValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
 							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore4", -delta));
 							allRunFor(spec, subop4);
-
 						})
 				).then(
 						getTxnRecord("failInsufficientGas"),

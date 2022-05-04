@@ -151,9 +151,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var sender = accountStore.loadAccount(senderId);
 		final var consensusTime = txnCtx.consensusTime();
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
-		final var expiry = consensusTime.getEpochSecond() + op.getAutoRenewPeriod().getSeconds();
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
-
 
 		// --- Do the business logic ---
 		if (incrementCounter) {

@@ -122,6 +122,7 @@ public class GlobalDynamicProperties {
 	private KnownBlockValues knownBlockValues;
 	private long storageSlotLifetime;
 	private ContractStoragePriceTiers storagePriceTiers;
+	private boolean itemizeStorageFees;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -220,6 +221,7 @@ public class GlobalDynamicProperties {
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 		storageSlotLifetime = properties.getLongProperty("contract.storageSlotLifetime");
 		storagePriceTiers = properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers");
+		itemizeStorageFees = properties.getBooleanProperty("contracts.itemizeStorageFees");
 	}
 
 	public int maxTokensPerAccount() {
@@ -536,5 +538,9 @@ public class GlobalDynamicProperties {
 
 	public long storageSlotLifetime() {
 		return storageSlotLifetime;
+	}
+
+	public boolean shouldItemizeStorageFees() {
+		return itemizeStorageFees;
 	}
 }

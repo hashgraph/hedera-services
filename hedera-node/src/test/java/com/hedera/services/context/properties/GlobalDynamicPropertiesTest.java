@@ -93,6 +93,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportPrecompileResults());
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
+		assertFalse(subject.shouldItemizeStorageFees());
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
@@ -405,6 +406,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contract.storageSlotLifetime")).willReturn(i + 63L);
 		given(properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers"))
 				.willReturn(canonicalTiers);
+		given(properties.getBooleanProperty("contracts.itemizeStorageFees"))
+				.willReturn((i + 64) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

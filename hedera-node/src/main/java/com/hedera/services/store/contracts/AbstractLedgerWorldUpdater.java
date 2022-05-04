@@ -112,7 +112,8 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	 * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and either
 	 * committed or reverted atomically with all other mutations in the change-set.
 	 *
-	 * @param address the address of interest
+	 * @param address
+	 * 		the address of interest
 	 * @return a tracked mutable account for the given address
 	 */
 	protected abstract A getForMutation(Address address);
@@ -240,7 +241,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	) {
 		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
 			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
-			this.recordsHistorian =  recordsHistorian;
+			this.recordsHistorian = recordsHistorian;
 		}
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}

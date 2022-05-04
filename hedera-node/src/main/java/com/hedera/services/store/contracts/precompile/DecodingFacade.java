@@ -417,18 +417,18 @@ public class DecodingFacade {
 	public Dissociation decodeMultipleDissociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
-		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
 		return Dissociation.multiDissociation(accountID, tokenIDs);
 	}
 
 	public TokenCreateWrapper decodeFungibleCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_SELECTOR,
-				TOKEN_CREATE_FUNGIBLE_DECODER);
+		final Tuple decodedArguments = decodeFunctionCall(
+				input, TOKEN_CREATE_FUNGIBLE_SELECTOR, TOKEN_CREATE_FUNGIBLE_DECODER);
 
-		return decodeTokenCreateWithoutFees(decodedArguments.get(0), true, decodedArguments.get(1),
-				decodedArguments.get(2), aliasResolver);
+		return decodeTokenCreateWithoutFees(
+				decodedArguments.get(0), true, decodedArguments.get(1), decodedArguments.get(2), aliasResolver);
 	}
 
 	public TokenCreateWrapper decodeFungibleCreateWithFees(
@@ -483,8 +483,7 @@ public class DecodingFacade {
 	) {
 		final var tokenName = (String) tokenCreateStruct.get(0);
 		final var tokenSymbol = (String) tokenCreateStruct.get(1);
-		final var tokenTreasury = convertLeftPaddedAddressToAccountId((byte[]) tokenCreateStruct.get(2),
-				aliasResolver);
+		final var tokenTreasury = convertLeftPaddedAddressToAccountId(tokenCreateStruct.get(2), aliasResolver);
 		final var memo = (String) tokenCreateStruct.get(3);
 		final var isSupplyTypeFinite = (Boolean) tokenCreateStruct.get(4);
 		final var maxSupply = (long) tokenCreateStruct.get(5);

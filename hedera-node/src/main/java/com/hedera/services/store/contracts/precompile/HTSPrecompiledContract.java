@@ -884,12 +884,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			tokenCreateOp = switch (functionId) {
-				case ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(input, aliasResolver);
-				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decoder.decodeFungibleCreateWithFees(input,
-						aliasResolver);
-				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleCreate(input, aliasResolver);
-				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder.decodeNonFungibleCreateWithFees(input,
-						aliasResolver);
+				case ABI_ID_CREATE_FUNGIBLE_TOKEN ->
+						decoder.decodeFungibleCreate(input, aliasResolver);
+				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES ->
+						decoder.decodeFungibleCreateWithFees(input, aliasResolver);
+				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN ->
+						decoder.decodeNonFungibleCreate(input, aliasResolver);
+				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
+						decoder.decodeNonFungibleCreateWithFees(input, aliasResolver);
 				default -> null;
 			};
 
@@ -910,7 +912,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
 			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
-			final var result = tokenCreateChecks.validatorForConsTime(creationTime).apply(transactionBody.build());
+			final var result = tokenCreateChecks.validatorForConsTime(creationTime)
+					.apply(transactionBody.build());
 			validateTrue(result == OK, result);
 
 			/* --- Check required signatures --- */

@@ -419,7 +419,7 @@ public class UtilVerbs {
 
 					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
 							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
-							.hasChildRecords(childRecordAsserts).logged());
+							.hasChildRecordsBeforeFees(childRecordAsserts).logged());
 				});
 	}
 

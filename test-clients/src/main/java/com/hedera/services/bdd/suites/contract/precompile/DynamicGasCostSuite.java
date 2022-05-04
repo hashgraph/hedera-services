@@ -1847,7 +1847,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 			final AtomicReference<String> mirrorAddr,
 			final AtomicReference<String> create2Addr
 	) {
-		return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
+		return captureChildCreate2MetaFor(2, 0, desc, creation2, mirrorAddr, create2Addr);
 	}
 
 	public static HapiSpecOperation captureChildCreate2MetaFor(
@@ -1862,7 +1862,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 			final var lookup = getTxnRecord(creation2).andAllChildRecords();
 			allRunFor(spec, lookup);
 			final var response = lookup.getResponse().getTransactionGetRecord();
-			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
+			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount(), "Wrong # of children");
 			final var create2Record = response.getChildTransactionRecords(childOfInterest);
 			final var create2Address =
 					create2Record.getContractCreateResult().getEvmAddress().getValue();

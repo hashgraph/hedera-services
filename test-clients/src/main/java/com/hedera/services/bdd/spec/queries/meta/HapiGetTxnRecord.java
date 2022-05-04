@@ -57,7 +57,6 @@ import org.junit.jupiter.api.Assertions;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -267,8 +266,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
-		childRecordsExpectations = Optional.of(Arrays.asList(providers));
+	public HapiGetTxnRecord hasChildRecordsBeforeFees(TransactionRecordAsserts... providers) {
+		final var providersList = new ArrayList<>(List.of(providers));
+		// It would be awkward to force every childRecordsCheck to assert something about the fees
+		providersList.add(TransactionRecordAsserts.recordWith());
+		childRecordsExpectations = Optional.of(providersList);
 		return this;
 	}
 
