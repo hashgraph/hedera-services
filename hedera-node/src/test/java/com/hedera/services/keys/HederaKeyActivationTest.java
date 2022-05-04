@@ -267,4 +267,9 @@ class HederaKeyActivationTest {
 		assertFalse(HederaKeyActivation.keysMatch(otherParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(sameParityCompressed, other));
 	}
+
+	@Test
+	void validSigIsValid() {
+		assertEquals(VerificationStatus.VALID, HederaKeyActivationTest.VALID_SIG.getSignatureStatus());
+	}
 }

@@ -40,15 +40,14 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
-
-	private List<String> otherSigs = Collections.emptyList();
+	protected List<String> otherSigs = Collections.emptyList();
 	private Optional<Long> gas = Optional.empty();
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<Long> valueSent = Optional.of(0L);
-
+	private boolean convertableToEthCall = true;
 	private Consumer<Object[]> resultObserver = null;
 
 	public HapiContractCall withExplicitParams(final Supplier<String> supplier) {
@@ -97,6 +96,11 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return this;
 	}
 
+	public HapiContractCall refusingEthConversion() {
+		convertableToEthCall = false;
+		return this;
+	}
+
 	public HapiContractCall gas(long amount) {
 		gas = Optional.of(amount);
 		return this;
@@ -120,6 +124,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.ContractCall;
+	}
+
+	public boolean isConvertableToEthCall() {
+		return convertableToEthCall;
+	}
+
+	public Consumer<Object[]> getResultObserver() {
+		return resultObserver;
 	}
 
 	public String getContract() {
