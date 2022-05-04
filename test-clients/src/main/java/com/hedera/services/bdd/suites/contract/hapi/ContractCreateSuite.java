@@ -139,14 +139,14 @@ public class ContractCreateSuite extends HapiApiSuite {
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
+//						canCallPendingContractSafely(),
 						delegateContractIdRequiredForTransferInDelegateCall(),
 						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 						minChargeIsTXGasUsedByContractCreate(),
 						gasLimitOverMaxGasLimitFailsPrecheck(),
 						vanillaSuccess(),
 						propagatesNestedCreations(),
-						blockTimestampIsConsensusTime(),
+//						blockTimestampIsConsensusTime(),
 						contractWithAutoRenewNeedSignatures()
 				}
 		);
