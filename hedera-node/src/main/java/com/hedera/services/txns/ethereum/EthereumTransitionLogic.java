@@ -51,7 +51,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -60,6 +59,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
 @Singleton
 public class EthereumTransitionLogic implements PreFetchableTransition {
+	private static final TransactionBody INVALID_SYNTH_BODY = TransactionBody.getDefaultInstance();
+
 	private final AliasManager aliasManager;
 	private final SpanMapManager spanMapManager;
 	private final TransactionContext txnCtx;
@@ -121,22 +122,21 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (!ethTxData.matchesChainId(dynamicProperties.chainIdBytes())) {
 			return WRONG_CHAIN_ID;
 		}
+		// This is always set inside handleTransaction
+		final var ethTxExpansion = spanMapAccessor.getEthTxExpansion(accessor);
+		final var isPrecheck = ethTxExpansion == null;
+
 		var txn = spanMapAccessor.getEthTxBodyMeta(accessor);
-		// Only possible during precheck
 		if (txn == null) {
-			final var opBuilder = syntheticTxnFactory.synthContractOpFromEth(ethTxData);
-			if (opBuilder.isEmpty()) {
-				return INVALID_ETHEREUM_TRANSACTION;
-			} else {
-				txn = opBuilder.get().build();
-			}
+			txn = isPrecheck ? syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData) : INVALID_SYNTH_BODY;
 		}
 		if (txn.hasContractCall()) {
 			return contractCallTransitionLogic.semanticCheck().apply(txn);
 		} else if (txn.hasContractCreateInstance()) {
 			return contractCreateTransitionLogic.semanticCheck().apply(txn);
 		} else {
-			return FAIL_INVALID;
+			// Could only happen in handleTransaction, so short-circuit to the pre-computed failure in the expansion
+			return Objects.requireNonNull(ethTxExpansion).result();
 		}
 	}
 

@@ -56,6 +56,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedF
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
+import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -82,6 +83,28 @@ class SyntheticTxnFactoryTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SyntheticTxnFactory(dynamicProperties);
+	}
+
+	@Test
+	void synthesizesPrecheckCallFromEthDataWithFnParams() {
+		given(ethTxData.hasToAddress()).willReturn(true);
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(ethTxData.to()).willReturn(addressTo);
+		final var expectedId = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+				.build();
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCall());
+		final var op = synthBody.getContractCall();
+		assertArrayEquals(callData, op.getFunctionParameters().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getAmount());
+		assertEquals(expectedId, op.getContractID());
 	}
 
 	@Test
@@ -153,6 +176,42 @@ class SyntheticTxnFactoryTest {
 		assertTrue(synthBody.hasContractCreateInstance());
 		final var op = synthBody.getContractCreateInstance();
 		assertArrayEquals(callData, op.getInitcode().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getInitialBalance());
+		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());
+	}
+
+	@Test
+	void synthesizesPrecheckCreateFromEthDataWithInitcode() {
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCreateInstance());
+		final var op = synthBody.getContractCreateInstance();
+		assertArrayEquals(callData, op.getInitcode().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getInitialBalance());
+		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());
+	}
+
+	@Test
+	void synthesizesPrecheckCreateFromEthDataWithoutInitcode() {
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
+		given(ethTxData.replaceCallData(MOCK_INITCODE)).willReturn(ethTxData);
+		given(ethTxData.callData()).willReturn(MOCK_INITCODE);
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCreateInstance());
+		final var op = synthBody.getContractCreateInstance();
+		assertArrayEquals(SyntheticTxnFactory.MOCK_INITCODE, op.getInitcode().toByteArray());
 		assertEquals(gasLimit, op.getGas());
 		assertEquals(valueInTinyBars, op.getInitialBalance());
 		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());

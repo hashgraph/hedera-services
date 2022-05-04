@@ -31,13 +31,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -164,19 +162,20 @@ class EthereumTransitionLogicTest {
 	}
 
 	@Test
-	void invalidIfSynthTxnCantBeConstructed() {
+	void inPrecheckUsesGuaranteedSynthTxnCantBeConstructed() {
 		givenReasonableSemantics();
-
-		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+		given(semanticCheck.apply(createTxn)).willReturn(OK);
+		given(contractCreateTransitionLogic.semanticCheck()).willReturn(semanticCheck);
+		given(syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData)).willReturn(createTxn);
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void invalidIfSynthTxnSomehowUnrecognizable() {
+	void invalidIfSynthTxnUnavailableInHandle() {
 		givenReasonableSemantics();
-		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData))
-				.willReturn(Optional.of(TransactionBody.newBuilder()));
+		given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(notOkExpansion);
 
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test
