@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -295,7 +296,8 @@ public class SpanMapManager {
 			if (callDataAttr.isDeleted()) {
 				return Pair.of(FILE_DELETED, ethTxData);
 			} else {
-				final var callData = Objects.requireNonNull(curBlobs.get(dataKeyFor(callDataId))).getData();
+				final var hexedCallData = Objects.requireNonNull(curBlobs.get(dataKeyFor(callDataId))).getData();
+				final var callData = Hex.decode(hexedCallData);
 				if (callData.length == 0) {
 					return Pair.of(CONTRACT_FILE_EMPTY, ethTxData);
 				} else {

@@ -83,8 +83,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     List<HapiApiSpec> ethereumCreates() {
         return List.of(
                 smallContractCreate(),
-                bigContractCreate(),
-                contractCreateWithConstructorArgs()
+                contractCreateWithConstructorArgs(),
+                bigContractCreate()
         );
     }
 
@@ -142,10 +142,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))    .via("autoAccount"),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
-
-
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT)
                 ).when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -180,7 +179,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))   .via("autoAccount"),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
 

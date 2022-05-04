@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class SyntheticTxnFactory {
+	protected static final byte[] MOCK_INITCODE = new byte[32];
 	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
 	private final GlobalDynamicProperties dynamicProperties;
@@ -78,6 +79,26 @@ public class SyntheticTxnFactory {
 	@Inject
 	public SyntheticTxnFactory(final GlobalDynamicProperties dynamicProperties) {
 		this.dynamicProperties = dynamicProperties;
+	}
+
+	/**
+	 * Given an instance of {@link EthTxData} populated from a raw Ethereum transaction, synthesizes a
+	 * {@link TransactionBody} for use during precheck. In the case of a {@code ContractCreate}, if the
+	 * call data is missing, replaces it with dummy initcode (it is not the job of precheck to look up
+	 * initcode from a file).
+	 *
+	 * @param ethTxData the Ethereum transaction data available in precheck
+	 * @return the pre-checkable HAPI transaction
+	 */
+	public TransactionBody synthPrecheckContractOpFromEth(EthTxData ethTxData) {
+		if (ethTxData.hasToAddress()) {
+			return synthCallOpFromEth(ethTxData).build();
+		} else {
+			if (!ethTxData.hasCallData()) {
+				ethTxData = ethTxData.replaceCallData(MOCK_INITCODE);
+			}
+			return synthCreateOpFromEth(ethTxData).build();
+		}
 	}
 
 	/**
