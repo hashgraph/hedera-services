@@ -71,7 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class SyntheticTxnFactory {
-	public static final byte[] MOCK_INITCODE = new byte[32];
+	protected static final byte[] MOCK_INITCODE = new byte[32];
 	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
 	private final GlobalDynamicProperties dynamicProperties;
