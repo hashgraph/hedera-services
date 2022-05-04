@@ -124,30 +124,30 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(new HapiApiSpec[] {
-//				fungibleTokenCreateHappyPath(),
-//				fungibleTokenCreateWithFeesHappyPath(),
-//				nonFungibleTokenCreateHappyPath(),
-//				nonFungibleTokenCreateWithFeesHappyPath(),
-//				fungibleTokenCreateThenQueryAndTransfer(),
-//				nonFungibleTokenCreateThenQuery(),
-//				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-//				inheritsSenderAutoRenewAccountForTokenCreate()
+				fungibleTokenCreateHappyPath(),
+				fungibleTokenCreateWithFeesHappyPath(),
+				nonFungibleTokenCreateHappyPath(),
+				nonFungibleTokenCreateWithFeesHappyPath(),
+				fungibleTokenCreateThenQueryAndTransfer(),
+				nonFungibleTokenCreateThenQuery(),
+				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+				inheritsSenderAutoRenewAccountForTokenCreate()
 		});
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(new HapiApiSpec[] {
-//				tokenCreateWithEmptyKeysReverts(),
-//				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-//				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-//				createTokenWithEmptyTokenStruct(),
+				tokenCreateWithEmptyKeysReverts(),
+				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+				createTokenWithEmptyTokenStruct(),
 				createTokenWithInvalidExpiry(),
-//				createTokenWithInvalidRoyaltyFee(),
-//				createTokenWithInvalidTreasury(),
-//				createTokenWithInvalidFixedFeeWithERC721Denomination(),
-//				createTokenWithInvalidFeeCollector(),
-//				createTokenWithInsufficientValueSent(),
-//				delegateCallTokenCreateFails()
+				createTokenWithInvalidRoyaltyFee(),
+				createTokenWithInvalidTreasury(),
+				createTokenWithInvalidFixedFeeWithERC721Denomination(),
+				createTokenWithInvalidFeeCollector(),
+				createTokenWithInsufficientValueSent(),
+				delegateCallTokenCreateFails()
 		});
 	}
 
