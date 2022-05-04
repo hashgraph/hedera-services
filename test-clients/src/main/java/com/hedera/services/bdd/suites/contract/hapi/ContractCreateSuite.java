@@ -89,6 +89,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -104,6 +106,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -147,9 +150,44 @@ public class ContractCreateSuite extends HapiApiSuite {
 						vanillaSuccess(),
 						propagatesNestedCreations(),
 //						blockTimestampIsConsensusTime(),
-						contractWithAutoRenewNeedSignatures()
+						contractWithAutoRenewNeedSignatures(),
+						autoAssociationSlotsAppearsInInfo()
 				}
 		);
+	}
+
+	private HapiApiSpec autoAssociationSlotsAppearsInInfo() {
+		final int maxAutoAssociations = 100;
+		final int ADVENTUROUS_NETWORK = 1_000;
+		final String CONTRACT = "Multipurpose";
+		final String associationsLimitProperty = "entities.limitTokenAssociations";
+		final String defaultAssociationsLimit =
+				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+
+		return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
+				.given(
+						overridingTwo(
+								"entities.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + 1)
+				).when().then(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(maxAutoAssociations)
+								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+
+						// Default is NOT to limit associations for entities
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(maxAutoAssociations),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(maxAutoAssociations))
+								.logged(),
+						// Restore default
+						overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK)
+				);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
@@ -723,8 +761,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
 						uploadInitCode(contract),
-						contractCreate(contract).adminKey(THRESHOLD),
-						getContractInfo(contract).logged().saveToRegistry("parentInfo"),
+						contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
+						getContractInfo(contract)
+								.has(contractWith().maxAutoAssociations(10))
+								.logged()
+								.saveToRegistry("parentInfo"),
 						upMaxGasTo(1_000_000L)
 				).when(
 						contractCall(contract, "create")
@@ -744,7 +785,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
 												.resultThruAbi(getABIFor(FUNCTION, "getIndirect", contract),
-														isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
+														isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
 						getTxnRecord("getChildAddressTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
@@ -780,8 +821,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.logged(),
 						getContractInfo(contract)
 								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
-								. logged()
-						).when(
+								.logged()
+				).when(
 				).then(
 				);
 	}

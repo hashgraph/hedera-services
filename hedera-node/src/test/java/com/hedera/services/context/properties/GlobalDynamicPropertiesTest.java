@@ -392,7 +392,7 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
 		given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
-		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("entities.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
