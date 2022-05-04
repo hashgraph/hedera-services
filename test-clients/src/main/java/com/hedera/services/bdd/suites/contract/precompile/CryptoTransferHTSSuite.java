@@ -206,8 +206,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						uploadInitCode(CONTRACT),
-						contractCreate(CONTRACT)
-								.maxAutomaticTokenAssociations(1),
+						contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
 						getContractInfo(CONTRACT)
 								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
 								.logged()
@@ -237,12 +236,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									);
 								}
 						),
-						getTxnRecord(cryptoTransferTxn)
-								.andAllChildRecords()
-								.hasPriority(recordWith()
-										.autoAssociated(accountTokenPairs(List.of(
-												Pair.of(RECEIVER, FUNGIBLE_TOKEN)))))
-								.logged()
+						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged()
 				).then(
 						getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
 						getAccountBalance(RECEIVER)

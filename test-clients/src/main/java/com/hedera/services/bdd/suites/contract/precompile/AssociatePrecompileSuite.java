@@ -103,8 +103,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs()
-//				negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
@@ -361,7 +361,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(INNER_CONTRACT, OUTER_CONTRACT),
-						contractCreate(INNER_CONTRACT).maxAutomaticTokenAssociations(1)
+						contractCreate(INNER_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->

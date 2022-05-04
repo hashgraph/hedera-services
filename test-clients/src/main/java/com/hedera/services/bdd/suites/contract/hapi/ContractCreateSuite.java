@@ -90,8 +90,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -150,12 +148,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 						propagatesNestedCreations(),
 						blockTimestampIsConsensusTime(),
 						contractWithAutoRenewNeedSignatures(),
-						autoAssociationSlotsWorks()
+						autoAssociationSlotsAppearsInInfo()
 				}
 		);
 	}
 
-	private HapiApiSpec autoAssociationSlotsWorks() {
+	private HapiApiSpec autoAssociationSlotsAppearsInInfo() {
 		final int maxAutoAssociations = 100;
 		final int ADVENTUROUS_NETWORK = 1_000;
 		final String CONTRACT = "Multipurpose";
@@ -163,7 +161,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final String defaultAssociationsLimit =
 				HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
-		return defaultHapiSpec("autoAssociationSlotsWorks")
+		return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
 				.given(
 						overridingTwo(
 								"entities.limitTokenAssociations", "true",
