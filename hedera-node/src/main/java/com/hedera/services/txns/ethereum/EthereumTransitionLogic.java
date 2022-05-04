@@ -292,10 +292,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		}
 	}
 
-	private long getOfferedGasPrice(final EthTxData ethTxData) {
+	private BigInteger getOfferedGasPrice(final EthTxData ethTxData) {
 		return switch (ethTxData.type()) {
-			case LEGACY_ETHEREUM -> new BigInteger(ethTxData.gasPrice()).divide(WEIBARS_TO_TINYBARS).longValueExact();
-			case EIP1559 -> new BigInteger(ethTxData.maxGas()).divide(WEIBARS_TO_TINYBARS).longValueExact();
+			case LEGACY_ETHEREUM -> new BigInteger(ethTxData.gasPrice());
+			case EIP1559 -> new BigInteger(ethTxData.maxGas());
 			case EIP2930 -> throw new InvalidTransactionException(NOT_SUPPORTED);
 		};
 	}

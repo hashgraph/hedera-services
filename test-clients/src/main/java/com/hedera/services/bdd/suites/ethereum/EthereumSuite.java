@@ -60,9 +60,9 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 //				Stream.empty()
 				Stream.of(
-						invalidTxData(),
-						ETX_014_contractCreateInheritsSignerProperties(),
-						invalidNonceEthereumTxFails()
+//						invalidTxData(),
+//						ETX_014_contractCreateInheritsSignerProperties(),
+//						invalidNonceEthereumTxFails()
 				)).toList();
 	}
 
@@ -88,7 +88,7 @@ public class EthereumSuite extends HapiApiSuite {
 						uploadDefaultFeeSchedules(GENESIS)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final String senderBalance = "balance";
+							final String senderBalance = "senderBalance";
 							final String payerBalance = "payerBalance";
 							final var subop1 =
 									balanceSnapshot(senderBalance, SECP_256K1_SOURCE_KEY)
@@ -136,7 +136,7 @@ public class EthereumSuite extends HapiApiSuite {
 				new Object[] { true, noPayment, fullAllowance, false, true },
 				new Object[] { false, partialFee, noPayment, false, false },
 				new Object[] { false, partialFee, partialPayment, false, false },
-//		/* ***/ new Object[] { true, partialFee, fullAllowance, false, false },
+//		/* ***/ new Object[] { true, partialFee, fullAllowance, false, false }, // done in bothPayFeesSucceeds()
 				new Object[] { true, gasPrice, noPayment, true, false },
 				new Object[] { true, gasPrice, partialPayment, true, false },
 				new Object[] { true, gasPrice, fullAllowance, true, false}
@@ -145,7 +145,7 @@ public class EthereumSuite extends HapiApiSuite {
 				// [1] - sender gas price
 				// [2] - relayer offered
 				// [1] - sender charged amount
-				// [2] - relayer charged amount 
+				// [2] - relayer charged amount
 				matrixedPayerRelayerTest((boolean) params[0],
 						(long) params[1],
 						(long) params[2],

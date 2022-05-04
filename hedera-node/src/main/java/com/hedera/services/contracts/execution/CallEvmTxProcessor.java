@@ -41,11 +41,13 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
@@ -102,7 +104,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				storageExpiry.hapiCallOracle(),
 				aliasManager.resolveForEvm(receiver),
-				0,
+				null,
 				0,
 				null);
 	}
@@ -114,12 +116,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes callData,
 			final Instant consensusTime,
-			final long userOfferedGasPrice,
+			final BigInteger userOfferedGasPrice,
 			final Account relayer,
 			final long maxGasAllowanceInTinybars
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-		validateTrue(userOfferedGasPrice >= gasPrice || maxGasAllowanceInTinybars > 0, INSUFFICIENT_TX_FEE);
+//		validateTrue(userOfferedGasPrice >= gasPrice || maxGasAllowanceInTinybars > 0, INSUFFICIENT_TX_FEE);
 
 		return super.execute(sender,
 				receiver,

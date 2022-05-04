@@ -217,7 +217,7 @@ class EthereumTransactionTransitionLogicTest {
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(evmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime(), 57, relayerAccount, 0)) //TODO: fix
+				txnCtx.consensusTime(), new BigInteger(TINYBARS_57_IN_WEIBARS), relayerAccount, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
@@ -246,7 +246,7 @@ class EthereumTransactionTransitionLogicTest {
 				senderAccount.getId(),
 				relayerAccount.getId(),
 				0,
-				57 //TODO fix
+				new BigInteger(TINYBARS_57_IN_WEIBARS)
 		);
 
 		verify(recordService).externaliseEvmCallTransaction(any());
@@ -275,8 +275,8 @@ class EthereumTransactionTransitionLogicTest {
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
-				, 0)) //TODO: fix gas prices/allowance
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, new BigInteger(TINYBARS_57_IN_WEIBARS)
+				, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -315,7 +315,7 @@ class EthereumTransactionTransitionLogicTest {
 				senderAccount.getId(),
 				true,
 				relayerAccount.getId(),
-				0,57 //TODO: fix
+				0,new BigInteger(TINYBARS_57_IN_WEIBARS)
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
@@ -344,8 +344,8 @@ class EthereumTransactionTransitionLogicTest {
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
-				, 0)) //TODO: fix gas prices/allowance
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, new BigInteger(TINYBARS_57_IN_WEIBARS)
+				, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -380,7 +380,9 @@ class EthereumTransactionTransitionLogicTest {
 				expectedTxnBody,
 				senderAccount.getId(),
 				true,
-				relayerAccount.getId(), 0,57 //TODO: fix
+				relayerAccount.getId(),
+				0,
+				new BigInteger(TINYBARS_57_IN_WEIBARS)
  		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
@@ -409,8 +411,8 @@ class EthereumTransactionTransitionLogicTest {
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
-				, 0)) //TODO: fix gas prices/allowance
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, new BigInteger(TINYBARS_57_IN_WEIBARS)
+				, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -445,7 +447,7 @@ class EthereumTransactionTransitionLogicTest {
 				expectedTxnBody,
 				senderAccount.getId(),
 				true,
-				relayerAccount.getId(), 0,57 //TODO: fix
+				relayerAccount.getId(), 0,new BigInteger(TINYBARS_57_IN_WEIBARS)
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
@@ -474,7 +476,7 @@ class EthereumTransactionTransitionLogicTest {
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(evmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
-				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), 57, relayerAccount, 0))
+				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), new BigInteger(TINYBARS_57_IN_WEIBARS), relayerAccount, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
 
@@ -490,7 +492,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(evmTxProcessor).executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
-				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), 57, relayerAccount, 0);
+				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), new BigInteger(TINYBARS_57_IN_WEIBARS), relayerAccount, 0);
 		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
@@ -537,7 +539,7 @@ class EthereumTransactionTransitionLogicTest {
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
 		given(evmTxProcessor.executeEth(senderAccount, new Account(tokenId).canonicalAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime(), 57, relayerAccount, 0)) //TODO: fix
+				txnCtx.consensusTime(), new BigInteger(TINYBARS_57_IN_WEIBARS), relayerAccount, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
@@ -824,7 +826,7 @@ class EthereumTransactionTransitionLogicTest {
 				anyBoolean(),
 				any(),
 				anyLong(),
-				anyLong()
+				any()
 		);
 		verify(recordService, never()).updateForEvmCall(any(), any());
 	}
