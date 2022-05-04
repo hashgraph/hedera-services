@@ -76,7 +76,6 @@ public class StaticEntityAccess implements EntityAccess {
 	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private final VirtualMap<ContractKey, IterableContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
-//	private final FCQueue<SystemTask> systemTasks;
 
 	public StaticEntityAccess(
 			final StateView view,
@@ -94,7 +93,6 @@ public class StaticEntityAccess implements EntityAccess {
 		this.tokens = view.tokens();
 		this.nfts = view.uniqueTokens();
 		this.tokenAssociations = view.tokenAssociations();
-//		this.systemTasks = view.systemTasks();
 	}
 
 	@Override

@@ -360,8 +360,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
 		}
 
-//		updateUniqueTokenLinkedList(from, to, nftId, isTreasuryReturn, isFromTreasury);
-
 		final var updatedFromPositiveBalances = fromThisNftsOwned - 1 == 0 ?
 				fromNumPositiveBalances - 1 : fromNumPositiveBalances;
 		final var updatedToNumPositiveBalances = toThisNftsOwned == 0 ?
@@ -377,50 +375,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 	}
-
-//	private void updateUniqueTokenLinkedList(
-//			final AccountID from,
-//			final AccountID to,
-//			final NftId nftId,
-//			final boolean isTreasuryReturn,
-//			final boolean isFromTreasury) {
-//
-//		// Update `from` Account
-//		if (!isFromTreasury) {
-//			final var currHeadNftNumFrom = (long) accountsLedger.get(from, HEAD_NFT_ID);
-//			final var currHeadNftSerialNumFrom = (long) accountsLedger.get(from, HEAD_NFT_SERIAL_NUM);
-//
-//			if (nftId.num() == currHeadNftNumFrom && nftId.serialNo() == currHeadNftSerialNumFrom) {
-//				final var nextNftId = (NftNumPair) nftsLedger.get(nftId, NEXT);
-//				if (!nextNftId.equals(MISSING_NFT_NUM_PAIR)) {
-//					nftsLedger.set(nextNftId.nftId(), PREV, MISSING_NFT_NUM_PAIR);
-//				}
-//				accountsLedger.set(from, HEAD_NFT_ID, nextNftId.tokenNum());
-//				accountsLedger.set(from, HEAD_NFT_SERIAL_NUM, nextNftId.serialNum());
-//			} else {
-//				final var nextNftId = (NftNumPair) nftsLedger.get(nftId, NEXT);
-//				final var prevNftId = (NftNumPair) nftsLedger.get(nftId, PREV);
-//				nftsLedger.set(prevNftId.nftId(), NEXT, nextNftId);
-//				if (!nextNftId.equals(MISSING_NFT_NUM_PAIR)) {
-//					nftsLedger.set(nextNftId.nftId(), PREV, prevNftId);
-//				}
-//			}
-//		}
-//
-//		// update `to` Account
-//		if (!isTreasuryReturn) {
-//			final var currHeadNftNumTo = (long) accountsLedger.get(to, HEAD_NFT_ID);
-//			final var currHeadNftSerialNumTo = (long) accountsLedger.get(to, HEAD_NFT_SERIAL_NUM);
-//			final var currHeadNftIdTo = NftNumPair.fromNums(currHeadNftNumTo, currHeadNftSerialNumTo);
-//
-//			nftsLedger.set(nftId, NEXT, NftNumPair.fromNums(currHeadNftNumTo, currHeadNftSerialNumTo));
-//			if (!currHeadNftIdTo.equals(MISSING_NFT_NUM_PAIR)) {
-//				nftsLedger.set(currHeadNftIdTo.nftId(), PREV, NftNumPair.fromNums(nftId.num(), nftId.serialNo()));
-//			}
-//			accountsLedger.set(to, HEAD_NFT_ID, nftId.num());
-//			accountsLedger.set(to, HEAD_NFT_SERIAL_NUM, nftId.serialNo());
-//		}
-//	}
 
 	@Override
 	public ResponseCodeEnum changeOwnerWildCard(final NftId nftId, final AccountID from, final AccountID to) {

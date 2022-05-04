@@ -112,13 +112,16 @@ public class AccountGC {
 
 		if (!done) {
 			final var nftsOwned = account.getNftsOwned();
-			done = returnNfts(
+			returnNftsToTreasury(
 					nftsOwned,
 					account.getHeadNftId(),
 					account.getHeadNftSerialNum(),
 					uniqueTokens.get());
-			final var remainingNfts = done ? 0 : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
+
+			final var remainingNfts = nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch() ?
+					0 : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
 			account.setNftsOwned(remainingNfts);
+			done = remainingNfts == 0;
 		}
 
 		if (done) {
@@ -133,7 +136,7 @@ public class AccountGC {
 		return new TreasuryReturns(tokenTypes, returnTransfers, done);
 	}
 
-	private boolean returnNfts(
+	private void returnNftsToTreasury(
 			final long nftsOwned,
 			final long headNftNum,
 			final long headSerialNum,
@@ -145,7 +148,6 @@ public class AccountGC {
 		while (nftKey != null && i-- > 0) {
 			nftKey = treasuryReturnHelper.updateNftReturns(nftKey, uniqueTokensRemoval);
 		}
-		return nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch();
 	}
 
 	private void doTreasuryReturnsWith(
