@@ -159,6 +159,12 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var op = accessor.getTxn().getEthereumTransaction();
+
+		if (op.getMaxGasAllowance() < 0) {
+			return ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+		}
+
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		if (ethTxData == null) {
 			return ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -171,8 +177,6 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		}
 
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
-			var op = accessor.getTxn().getEthereumTransaction();
-
 			if (ethTxData.callData() != null && ethTxData.callData().length > 0 && op.hasCallData()) {
 				return ResponseCodeEnum.FAIL_INVALID;
 			}

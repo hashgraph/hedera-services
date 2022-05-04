@@ -216,8 +216,8 @@ class EthereumTransactionTransitionLogicTest {
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime()))
+		given(evmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime(), 57, relayerAccount, 0)) //TODO: fix
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
@@ -225,6 +225,9 @@ class EthereumTransactionTransitionLogicTest {
 		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+
 		// when:
 		subject.doStateTransition();
 
@@ -241,9 +244,9 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCallTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
-				null,
-				0L,
-				0L
+				relayerAccount.getId(),
+				0,
+				57 //TODO fix
 		);
 
 		verify(recordService).externaliseEvmCallTransaction(any());
@@ -270,9 +273,10 @@ class EthereumTransactionTransitionLogicTest {
 		final var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(createEvmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD))
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
+				, 0)) //TODO: fix gas prices/allowance
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -288,6 +292,8 @@ class EthereumTransactionTransitionLogicTest {
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), MEMO)).willReturn(senderMemo);
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), PROXY)).willReturn(EntityId.fromGrpcAccountId(senderAccount.getId().asGrpcAccount()));
 		given(optionValidator.attemptToDecodeOrThrow(any(), any())).willReturn(senderKey);
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
 
 		// when:
 		subject.doStateTransition();
@@ -308,8 +314,8 @@ class EthereumTransactionTransitionLogicTest {
 				expectedTxnBody,
 				senderAccount.getId(),
 				true,
-				null,
-				0,0
+				relayerAccount.getId(),
+				0,57 //TODO: fix
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
@@ -336,9 +342,10 @@ class EthereumTransactionTransitionLogicTest {
 		final var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(createEvmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD))
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
+				, 0)) //TODO: fix gas prices/allowance
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -353,6 +360,8 @@ class EthereumTransactionTransitionLogicTest {
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), MEMO)).willReturn(null);
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), PROXY)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(optionValidator.attemptToDecodeOrThrow(any(), any())).willReturn(senderKey);
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
 
 		// when:
 		subject.doStateTransition();
@@ -371,8 +380,8 @@ class EthereumTransactionTransitionLogicTest {
 				expectedTxnBody,
 				senderAccount.getId(),
 				true,
-				null, 0,0
-		);
+				relayerAccount.getId(), 0,57 //TODO: fix
+ 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
 		verify(recordService).updateForEvmCall(any(), any());
@@ -398,9 +407,10 @@ class EthereumTransactionTransitionLogicTest {
 		final var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(createEvmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+		given(createEvmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.EMPTY,
-				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD))
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD, relayerAccount, 57
+				, 0)) //TODO: fix gas prices/allowance
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
 
@@ -415,6 +425,8 @@ class EthereumTransactionTransitionLogicTest {
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), MEMO)).willReturn(null);
 		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), PROXY)).willReturn(null);
 		given(optionValidator.attemptToDecodeOrThrow(any(), any())).willReturn(senderKey);
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
 
 		// when:
 		subject.doStateTransition();
@@ -433,7 +445,7 @@ class EthereumTransactionTransitionLogicTest {
 				expectedTxnBody,
 				senderAccount.getId(),
 				true,
-				null, 0,0
+				relayerAccount.getId(), 0,57 //TODO: fix
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
@@ -461,8 +473,8 @@ class EthereumTransactionTransitionLogicTest {
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
-				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime()))
+		given(evmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), 57, relayerAccount, 0))
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
 
@@ -470,12 +482,15 @@ class EthereumTransactionTransitionLogicTest {
 		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
-				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime());
+		verify(evmTxProcessor).executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(callData)), txnCtx.consensusTime(), 57, relayerAccount, 0);
 		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
@@ -493,6 +508,8 @@ class EthereumTransactionTransitionLogicTest {
 		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+
 
 		// when:
 		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition() );
@@ -519,8 +536,8 @@ class EthereumTransactionTransitionLogicTest {
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(), Map.of());
-		given(evmTxProcessor.execute(senderAccount, new Account(tokenId).canonicalAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime()))
+		given(evmTxProcessor.executeEth(senderAccount, new Account(tokenId).canonicalAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime(), 57, relayerAccount, 0)) //TODO: fix
 				.willReturn(results);
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
@@ -528,6 +545,9 @@ class EthereumTransactionTransitionLogicTest {
 		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+
 		// when:
 		subject.doStateTransition();
 
@@ -567,6 +587,7 @@ class EthereumTransactionTransitionLogicTest {
 	void acceptsOkSyntaxEthCall() {
 		givenValidTxnCtx();
 		given(globalDynamicProperties.maxGas()).willReturn(gas + 1);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -581,6 +602,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(optionValidator.memoCheck(any())).willReturn(OK);
 		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -640,6 +662,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Test
 	void rejectWrongTransactionBody() {
 		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(
 				TransactionBody.newBuilder().setContractUpdateInstance(
@@ -661,6 +684,7 @@ class EthereumTransactionTransitionLogicTest {
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
 		given(globalDynamicProperties.maxGas()).willReturn(gas - 1);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -670,6 +694,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Test
 	void missingEthDataPrecheck() {
 		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
 
 		// expect:
@@ -680,6 +705,7 @@ class EthereumTransactionTransitionLogicTest {
 	void wrongChainId() {
 		chainId = new byte[] { 1, 42 };
 		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -745,6 +771,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Test
 	void failEmptyEthereumDataAndCallData() {
 		givenEmptyTxnCtx();
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
@@ -784,6 +811,8 @@ class EthereumTransactionTransitionLogicTest {
 				return false;
 			}
 		});
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+
 
 		// when:
 		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());

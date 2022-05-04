@@ -6,7 +6,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +41,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.stream.Collectors.toList;
 
 public class EthereumSuite extends HapiApiSuite {
 
@@ -50,6 +48,7 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final long depositAmount = 20_000L;
 
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
+	private static final long gasLimit = 800_000;
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -59,46 +58,24 @@ public class EthereumSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.concat(
 				feePaymentMatrix().stream(),
+//				Stream.empty()
 				Stream.of(
-//						invalidTxData(),
-//						ETX_014_contractCreateInheritsSignerProperties(),
-//						invalidNonceEthereumTxFails(),
-						ethSenderIsChargedWholeGasFeeSucceeds(),
-						relayerPaysAllGasSucceeds(),
-						lowGasPriceAndNoGasAllowanceFails()
+						invalidTxData(),
+						ETX_014_contractCreateInheritsSignerProperties(),
+						invalidNonceEthereumTxFails()
 				)).toList();
 	}
 
-	HapiApiSpec lowGasPriceAndNoGasAllowanceFails() {
-		return defaultHapiSpec("relayerPaysAllGasSucceeds")
-				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-								.via("autoAccount"),
-						getTxnRecord("autoAccount").andAllChildRecords(),
-						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
-				).when(
-						uploadDefaultFeeSchedules(GENESIS)
-				).then(
-						ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
-								.type(EthTxData.EthTransactionType.EIP1559)
-								.signingWith(SECP_256K1_SOURCE_KEY)
-								.payingWith(RELAYER)
-								.via("payTxn")
-								.nonce(0)
-								.maxGasAllowance(0)
-								.maxFeePerGas(4L)
-								.gasLimit(1_000_000L)
-								.sending(depositAmount)
-								.hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_TX_FEE)
-				);
-	}
+	HapiApiSpec bothPayFeesSucceeds() {
+		final long gasPrice = 47;
 
+		final long noPayment = 0L;
+		final long partialFee = gasPrice / 3;
+		final long senderCharged = partialFee*gasLimit;
+		final long partialPayment = partialFee * gasLimit;
+		final long fullAllowance = gasPrice * gasLimit * 5/4;
 
-	HapiApiSpec ethSenderIsChargedWholeGasFeeSucceeds() {
-		return defaultHapiSpec("relayerPaysAllGasSucceeds")
+		return defaultHapiSpec("bothPayFeesSucceeds")
 				.given(
 						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
 						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -123,65 +100,21 @@ public class EthereumSuite extends HapiApiSuite {
 									.payingWith(RELAYER)
 									.via("payTxn")
 									.nonce(0)
-									.maxGasAllowance(ONE_HUNDRED_HBARS)
-									.maxFeePerGas(50L)
-									.gasLimit(1_000_000L)
+									.maxGasAllowance(fullAllowance)
+									.maxFeePerGas(partialFee)
+									.gasLimit(gasLimit)
 									.sending(depositAmount)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 
 							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
-							TransactionRecord responseRecord = hapiGetTxnRecord.getResponseRecord();
-							var fees = responseRecord.getTransactionFee();
-							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-									changeFromSnapshot(senderBalance, -depositAmount - fees));
-							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-									changeFromSnapshot(payerBalance, 0));
-							allRunFor(spec, subop4, subop5);
-						})
-				);
-	}
 
 
-	HapiApiSpec relayerPaysAllGasSucceeds() {
-		return defaultHapiSpec("relayerPaysAllGasSucceeds")
-				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-								.via("autoAccount"),
-						getTxnRecord("autoAccount").andAllChildRecords(),
-						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
-				).when(
-						uploadDefaultFeeSchedules(GENESIS)
-				).then(
-						withOpContext((spec, ignore) -> {
-							final String senderBalance = "balance";
-							final String payerBalance = "payerBalance";
-							final var subop1 =
-									balanceSnapshot(senderBalance, SECP_256K1_SOURCE_KEY)
-											.accountIsAlias();
-							final var subop2 = balanceSnapshot(payerBalance, RELAYER);
-							final var subop3 = ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
-									.type(EthTxData.EthTransactionType.EIP1559)
-									.signingWith(SECP_256K1_SOURCE_KEY)
-									.payingWith(RELAYER)
-									.via("payTxn")
-									.nonce(0)
-									.maxGasAllowance(ONE_HUNDRED_HBARS)
-									.maxFeePerGas(0L)
-									.gasLimit(1_000_000L)
-									.sending(depositAmount)
-									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
-
-							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
-							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
-							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-									changeFromSnapshot(senderBalance, -depositAmount));
 							var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+									changeFromSnapshot(senderBalance, -depositAmount-senderCharged));
 							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-									changeFromSnapshot(payerBalance, -fees));
+									changeFromSnapshot(payerBalance, -(fees-senderCharged)));
 							allRunFor(spec, subop4, subop5);
 						})
 				);
@@ -190,7 +123,6 @@ public class EthereumSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> feePaymentMatrix() {
 		final long gasPrice = 47;
-		final long gasLimit = 800_000;
 
 		final long noPayment = 0L;
 		final long partialFee = gasPrice / 3;
@@ -198,16 +130,16 @@ public class EthereumSuite extends HapiApiSuite {
 		final long fullAllowance = gasPrice * gasLimit * 5/4;
 		final long fullPayment = gasPrice * gasLimit;
 
-		return Stream.of(
-				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
-				new Object[] { false, noPayment, partialPayment, noPayment, noPayment },
-				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
-				new Object[] { false, partialFee, noPayment, noPayment, noPayment },
-				new Object[] { false, partialFee, partialPayment, noPayment, noPayment },
-				new Object[] { true, partialFee, fullAllowance, partialPayment, fullPayment - partialPayment },
-				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, partialPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
+		return Stream.concat(Stream.of(bothPayFeesSucceeds()), Stream.of(
+				new Object[] { false, noPayment, noPayment, false, false},
+				new Object[] { false, noPayment, partialPayment, false, false },
+				new Object[] { true, noPayment, fullAllowance, false, true },
+				new Object[] { false, partialFee, noPayment, false, false },
+				new Object[] { false, partialFee, partialPayment, false, false },
+//		/* ***/ new Object[] { true, partialFee, fullAllowance, false, false },
+				new Object[] { true, gasPrice, noPayment, true, false },
+				new Object[] { true, gasPrice, partialPayment, true, false },
+				new Object[] { true, gasPrice, fullAllowance, true, false}
 		).map(params ->
 				// [0] - success
 				// [1] - sender gas price
@@ -217,17 +149,17 @@ public class EthereumSuite extends HapiApiSuite {
 				matrixedPayerRelayerTest((boolean) params[0],
 						(long) params[1],
 						(long) params[2],
-						(long) params[3],
-						(long) params[4])
-		).toList();
+						(boolean) params[3],
+						(boolean) params[4])
+		)).toList();
 	}
 
 	HapiApiSpec matrixedPayerRelayerTest(
-			boolean success,
-			long senderGasPrice,
-			long relayerOffered,
-			long senderCharged,
-			long relayerCharged
+			final boolean success,
+			final long senderGasPrice,
+			final long relayerOffered,
+			final boolean senderCharged,
+			final boolean relayerCharged
 	) {
 		return defaultHapiSpec(
 				"feePaymentMatrix " + (success ? "Success/" : "Failure/") + senderGasPrice + "/" + relayerOffered)
@@ -241,6 +173,8 @@ public class EthereumSuite extends HapiApiSuite {
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
 						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				).when(
+						// Network and Node fees in the schedule for Ethereum transactions are 0,
+						// so everything charged will be from the gas consumed in the EVM execution
 						uploadDefaultFeeSchedules(GENESIS)
 				).then(
 						withOpContext((spec, ignore) -> {
@@ -258,7 +192,7 @@ public class EthereumSuite extends HapiApiSuite {
 									.nonce(0)
 									.maxGasAllowance(relayerOffered)
 									.maxFeePerGas(senderGasPrice)
-									.gasLimit(1_000_000L)
+									.gasLimit(gasLimit)
 									.sending(depositAmount)
 									.hasKnownStatus(
 											success ? ResponseCodeEnum.SUCCESS : ResponseCodeEnum.INSUFFICIENT_TX_FEE);
@@ -267,16 +201,30 @@ public class EthereumSuite extends HapiApiSuite {
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
 							if (success) {
-								var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+								if (senderCharged) {
+									var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+									final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+											changeFromSnapshot(senderBalance, -fees-depositAmount));
+									final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
+											changeFromSnapshot(payerBalance, 0));
+									allRunFor(spec, subop4, subop5);
+								} else if (relayerCharged) {
+									var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
+									final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+											changeFromSnapshot(senderBalance, -depositAmount));
+									final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
+											changeFromSnapshot(payerBalance, -fees));
+									allRunFor(spec, subop4, subop5);
+								}
+							} else {
 								final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-										changeFromSnapshot(senderBalance, -depositAmount - senderCharged));
+										changeFromSnapshot(senderBalance, 0));
 								final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-										changeFromSnapshot(payerBalance, -relayerCharged));
+										changeFromSnapshot(payerBalance, 0));
 								allRunFor(spec, subop4, subop5);
 							}
 						})
 				);
-
 	}
 
 	HapiApiSpec invalidTxData() {
@@ -336,8 +284,7 @@ public class EthereumSuite extends HapiApiSuite {
 								.nonce(0)
 								.balance(INITIAL_BALANCE)
 								.gasPrice(10L)
-								.maxGasAllowance(5L)
-								.maxPriorityGas(2L)
+								.maxGasAllowance(ONE_HUNDRED_HBARS)
 								.exposingNumTo(num -> contractID.set(
 										asHexedSolidityAddress(0, 0, num)))
 								.gasLimit(1_000_000L)

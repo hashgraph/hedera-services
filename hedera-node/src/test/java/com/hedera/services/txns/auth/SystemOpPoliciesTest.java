@@ -602,7 +602,7 @@ class SystemOpPoliciesTest {
 				.setEthereumTransaction(EthereumTransactionBody.getDefaultInstance());
 
 		// expect:
-		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {

@@ -212,23 +212,29 @@ abstract class EvmTxProcessor {
 				validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 				mutableSender.decrementBalance(gasCost);
 			} else {
-				// If user set gas price to 0, relayer pays all the fees
 				final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
 				if (userOfferedGasPrice == 0) {
+					// If sender set gas price to 0, relayer pays all the fees
 					validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
 					final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
 					validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 					mutableRelayer.decrementBalance(gasCost);
 					allowanceCharged = gasCost;
+				} else if (userOfferedGasPrice < gasPrice) {
+					// If sender gas price < current gas price, try to pay the difference from gas allowance
+					validateTrue(gasAllowance.greaterThan(Wei.ZERO), INSUFFICIENT_TX_FEE);
+					final var senderBalance = mutableSender.getBalance();
+					var senderFee = Wei.of(Math.multiplyExact(gasLimit, userOfferedGasPrice));
+					validateTrue(senderBalance.compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
+					final var remainingFee = gasCost.subtract(senderFee);
+					validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
+					mutableSender.decrementBalance(senderFee);
+					mutableRelayer.decrementBalance(remainingFee);
+					allowanceCharged = remainingFee;
 				} else {
-					final Wei senderBalance = mutableSender.getBalance();
-					var senderCanAffordGas = senderBalance.compareTo(gasCost) >= 0;
-					if (!senderCanAffordGas) {
-						senderCanAffordGas = senderBalance.compareTo(gasCost.subtract(gasAllowance)) >= 0;
-						validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-						mutableRelayer.decrementBalance(gasCost.subtract(senderBalance));
-						allowanceCharged = gasCost.subtract(senderBalance);
-					}
+					// If user gas price >= current gas price, sender pays all fees
+					final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+					validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 					mutableSender.decrementBalance(gasCost);
 				}
 				// In any case, the sender must have sufficient balance to pay for any value sent
@@ -293,6 +299,7 @@ abstract class EvmTxProcessor {
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
 			if (allowanceCharged.greaterThan(Wei.ZERO)) {
+				// If allowance has been charged, we always try to refund relayer first
 				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
 					mutableRelayer.incrementBalance(allowanceCharged);
 					mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
