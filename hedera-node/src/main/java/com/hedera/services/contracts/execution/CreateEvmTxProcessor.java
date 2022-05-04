@@ -46,8 +46,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing

@@ -301,7 +301,7 @@ abstract class EvmTxProcessor {
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
-			if (allowanceCharged.greaterThan(Wei.ZERO)) {
+			if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
 				// If allowance has been charged, we always try to refund relayer first
 				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
 					mutableRelayer.incrementBalance(allowanceCharged);

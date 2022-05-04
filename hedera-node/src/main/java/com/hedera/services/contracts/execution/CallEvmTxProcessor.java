@@ -47,9 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
