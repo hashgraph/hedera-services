@@ -448,6 +448,45 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
+	void assertSuccessEthereumTransactionExecutionChargesBothSenderAndRelayerAndRefundsOnlyRelayer() {
+		givenValidMockEth();
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
+		final var MAX_REFUND_PERCENTAGE = 1;
+		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		final var wrappedSenderAccount = mock(EvmAccount.class);
+		final var mutableSenderAccount = mock(MutableAccount.class);
+		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+		given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100* ONE_HBAR));
+		final var wrappedRelayerAccount = mock(EvmAccount.class);
+		final var mutableRelayerAccount = mock(MutableAccount.class);
+		given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+		given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress())).willReturn(wrappedRelayerAccount);
+		given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100* ONE_HBAR));
+		final long gasPrice = 40L;
+		given(livePricesSource.currentGasPrice(consensusTime, HederaFunctionality.EthereumTransaction))
+				.willReturn(gasPrice);
+		final var receiverAddress = receiver.getId().asEvmAddress();
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		final long offeredGasPrice = 10L;
+		final int gasLimit = 1000;
+
+		var result = callEvmTxProcessor.executeEth(
+				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
+				BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+				relayer, 10 * ONE_HBAR);
+
+		assertTrue(result.isSuccessful());
+		assertEquals(gasLimit - gasLimit * MAX_REFUND_PERCENTAGE / 100, result.getGasUsed());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		verify(mutableRelayerAccount).incrementBalance(any());
+		verify(mutableSenderAccount, never()).incrementBalance(any());
+	}
+
+
+	@Test
 	void assertThrowsEthereumTransactionWhenSenderBalanceNotEnoughToCoverFeeWhenBothPay() {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
