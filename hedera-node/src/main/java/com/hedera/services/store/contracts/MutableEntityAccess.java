@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
@@ -184,8 +185,7 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	private boolean isActiveContractOp() {
-		final var accessor = txnCtx.accessor();
-		final var activeFunction = accessor.getFunction();
-		return activeFunction == ContractCreate || activeFunction == ContractCall;
+		final var function = txnCtx.accessor().getFunction();
+		return function == ContractCreate || function == ContractCall || function == EthereumTransaction;
 	}
 }

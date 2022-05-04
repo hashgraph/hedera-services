@@ -101,12 +101,7 @@
 			</snapshots>
 			<id>sdk-staging</id>
 			<name>0.26.x SDK</name>
-			<url>https://oss.sonatype.org/content/repositories/comswirlds-1283</url>
-		</repository>
-		<repository>
-			<id>eth-tx-interop-protobuf</id>
-			<name>Interop Protobufs</name>
-			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1439</url>
+			<url>https://oss.sonatype.org/content/repositories/comswirlds-1295</url>
 		</repository>
 	</repositories>
 	<distributionManagement>
@@ -165,7 +160,7 @@
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.26.0-test.2</swirlds.version>
+		<swirlds.version>0.26.0-alpha.2</swirlds.version>
 		<tuweni.version>2.1.0</tuweni.version>
 
 		<!-- Test dependency properties in alphabetical order -->

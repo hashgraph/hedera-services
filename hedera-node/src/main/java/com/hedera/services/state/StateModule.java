@@ -26,6 +26,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -90,6 +92,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -166,6 +169,12 @@ public interface StateModule {
 	@Singleton
 	static Supplier<NotificationEngine> provideNotificationEngine() {
 		return NotificationFactory::getEngine;
+	}
+
+	@Provides
+	@Singleton
+	static Function<EthTxData, EthTxSigs> provideSigsFunction() {
+		return EthTxSigs::extractSignatures;
 	}
 
 	@Provides

@@ -118,7 +118,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 	}
 
 	@Test
@@ -126,13 +126,13 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(false);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 
 		given(state.getStateVersion()).willReturn(StateVersions.MINIMUM_SUPPORTED_VERSION);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 	}
 
 	@Test
@@ -144,7 +144,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 		assertDoesNotThrow(() -> factory.tryToUpdateToLatestSignedChildren(childrenToUpdate));
 		assertChildrenAreExpectedMocks(childrenToUpdate);
 	}
@@ -154,7 +154,7 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 		assertThrows(NoValidSignedStateException.class,
 				() -> factory.tryToUpdateToLatestSignedChildren(new MutableStateChildren()));
 	}
@@ -164,8 +164,8 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
-		final var children = factory.tryToGetLatestSignedChildren();
+		assertFalse(factory.isUsable(state));
+		final var children = factory.childrenOfLatestSignedState();
 		assertEquals(Optional.empty(), children);
 	}
 
@@ -177,7 +177,7 @@ class SignedStateViewFactoryTest {
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		final var children = factory.tryToGetLatestSignedChildren();
+		final var children = factory.childrenOfLatestSignedState();
 		assertChildrenAreExpectedMocks(children.get());
 	}
 
@@ -195,8 +195,8 @@ class SignedStateViewFactoryTest {
 		given(secondState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(secondState.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		var firstChildren = factory.tryToGetLatestSignedChildren();
-		var secondChildren = factory.tryToGetLatestSignedChildren();
+		var firstChildren = factory.childrenOfLatestSignedState();
+		var secondChildren = factory.childrenOfLatestSignedState();
 		assertNotSame(firstChildren, secondChildren);
 		assertChildrenAreExpectedMocks(firstChildren.get());
 		assertEquals(firstHandleTime, firstChildren.get().signedAt());
@@ -232,20 +232,20 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
-		final var stateView = factory.getLatestSignedStateView();
+		final var stateView = factory.latestSignedStateView();
 		assertFalse(stateView.isEmpty());
 	}
 
 	@Test
 	void failsToConstructStateViewIfChildrenEmpty() {
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
-		final var stateView = factory.getLatestSignedStateView();
+		final var stateView = factory.latestSignedStateView();
 		assertTrue(stateView.isEmpty());
 	}
 

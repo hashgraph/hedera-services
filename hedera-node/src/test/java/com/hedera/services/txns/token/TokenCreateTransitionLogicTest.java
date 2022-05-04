@@ -121,7 +121,8 @@ class TokenCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		createLogic = new CreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
+		createLogic = new CreateLogic(
+				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
 		createChecks = new CreateChecks(dynamicProperties, validator);
 		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}

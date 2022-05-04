@@ -451,7 +451,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public long getBlockNo() {
-		return (blockNo < 0) ? blockNo - Long.MIN_VALUE : blockNo;
+		return (blockNo < 0) ? 0 : blockNo;
 	}
 
 	public long getManagedBlockNo() {

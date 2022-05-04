@@ -20,12 +20,14 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
@@ -69,6 +71,7 @@ public class GlobalDynamicProperties {
 	private int minValidityBuffer;
 	private int maxGas;
 	private int chainId;
+	private byte[] chainIdBytes;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean atLeastOneAutoRenewTargetType;
@@ -79,6 +82,7 @@ public class GlobalDynamicProperties {
 	private long autoRenewGracePeriod;
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
+	private Duration grpcMinAutoRenewDuration;
 	private int localCallEstRetBytes;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
@@ -160,6 +164,7 @@ public class GlobalDynamicProperties {
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		chainId = properties.getIntProperty("contracts.chainId");
+		chainIdBytes = Integers.toBytes(chainId);
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
@@ -168,6 +173,7 @@ public class GlobalDynamicProperties {
 		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
+		grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
@@ -323,8 +329,12 @@ public class GlobalDynamicProperties {
 		return maxGas;
 	}
 
-	public int getChainId() {
+	public int chainId() {
 		return chainId;
+	}
+
+	public byte[] chainIdBytes() {
+		return chainIdBytes;
 	}
 
 	public long defaultContractLifetime() {
@@ -357,6 +367,10 @@ public class GlobalDynamicProperties {
 
 	public long minAutoRenewDuration() {
 		return minAutoRenewDuration;
+	}
+
+	public Duration typedMinAutoRenewDuration() {
+		return grpcMinAutoRenewDuration;
 	}
 
 	public int localCallEstRetBytes() {
