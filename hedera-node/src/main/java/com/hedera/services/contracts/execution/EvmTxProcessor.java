@@ -222,15 +222,13 @@ abstract class EvmTxProcessor {
 					mutableRelayer.decrementBalance(gasCost);
 					allowanceCharged = gasCost;
 				} else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
-					// If sender gas price < current gas price, try to pay the difference from gas allowance
-					validateTrue(gasAllowance.greaterThan(Wei.ZERO), INSUFFICIENT_TX_FEE);
-					final var senderBalance = mutableSender.getBalance();
-//					final BigInteger senderFeeInWeibars = userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit));
+					// If sender gas price < current gas price, pay the difference from gas allowance
 					var senderFee =
 							Wei.of(userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit)).divide(WEIBARS_TO_TINYBARS));
-					validateTrue(senderBalance.compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
+					validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
 					final var remainingFee = gasCost.subtract(senderFee);
 					validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
+					validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
 					mutableSender.decrementBalance(senderFee);
 					mutableRelayer.decrementBalance(remainingFee);
 					allowanceCharged = remainingFee;
@@ -301,16 +299,18 @@ abstract class EvmTxProcessor {
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
-			if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
-				// If allowance has been charged, we always try to refund relayer first
-				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
-					mutableRelayer.incrementBalance(allowanceCharged);
-					mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
+			if (refundedWei.greaterThan(Wei.ZERO)) {
+				if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
+					// If allowance has been charged, we always try to refund relayer first
+					if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
+						mutableRelayer.incrementBalance(allowanceCharged);
+						mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
+					} else {
+						mutableRelayer.incrementBalance(refundedWei);
+					}
 				} else {
-					mutableRelayer.incrementBalance(refundedWei);
+					mutableSender.incrementBalance(refundedWei);
 				}
-			} else {
-				mutableSender.incrementBalance(refundedWei);
 			}
 
 			// Send fees to coinbase
