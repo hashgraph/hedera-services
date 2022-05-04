@@ -107,7 +107,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				true,
 				storageExpiry.hapiStaticCallOracle(),
 				aliasManager.resolveForEvm(receiver),
-				0,
+				null,
 				0,
 				null);
 	}

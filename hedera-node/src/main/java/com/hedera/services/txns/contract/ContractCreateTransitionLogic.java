@@ -50,6 +50,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -121,7 +122,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,0);
+		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
 	}
 
 	public void doStateTransitionOperation(final TransactionBody contractCreateTxn,
@@ -129,7 +130,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 										   boolean createSyntheticRecord,
 										   final Id relayerId,
 										   final long maxGasAllowance,
-										   final long userOfferedGasPrice) {
+										   final BigInteger userOfferedGasPrice) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()

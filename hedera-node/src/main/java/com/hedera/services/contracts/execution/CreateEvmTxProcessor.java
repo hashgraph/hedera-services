@@ -40,6 +40,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -97,7 +98,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				false,
 				storageExpiry.hapiCreationOracle(hapiExpiry),
 				receiver,
-				0,
+				null,
 				0,
 				null);
 	}
@@ -111,11 +112,11 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Instant consensusTime,
 			final long hapiExpiry,
 			final Account relayer,
-			final long providedMaxGasPrice,
+			final BigInteger providedMaxGasPrice,
 			final long maxGasAllowance
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-		validateTrue(providedMaxGasPrice >= gasPrice || maxGasAllowance > 0, INSUFFICIENT_TX_FEE);
+//		validateTrue(providedMaxGasPrice >= gasPrice || maxGasAllowance > 0, INSUFFICIENT_TX_FEE);
 
 		return super.execute(
 				sender,

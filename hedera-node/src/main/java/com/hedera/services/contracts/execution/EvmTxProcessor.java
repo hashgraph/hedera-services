@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -183,7 +184,7 @@ abstract class EvmTxProcessor {
 			final boolean isStatic,
 			final StorageExpiry.Oracle expiryOracle,
 			final Address mirrorReceiver,
-			final long userOfferedGasPrice,
+			final BigInteger userOfferedGasPrice,
 			final long maxGasAllowanceInTinybars,
 			final Account relayer
 	) {
@@ -213,18 +214,20 @@ abstract class EvmTxProcessor {
 				mutableSender.decrementBalance(gasCost);
 			} else {
 				final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
-				if (userOfferedGasPrice == 0) {
+				if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
 					// If sender set gas price to 0, relayer pays all the fees
 					validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
 					final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
 					validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 					mutableRelayer.decrementBalance(gasCost);
 					allowanceCharged = gasCost;
-				} else if (userOfferedGasPrice < gasPrice) {
+				} else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
 					// If sender gas price < current gas price, try to pay the difference from gas allowance
 					validateTrue(gasAllowance.greaterThan(Wei.ZERO), INSUFFICIENT_TX_FEE);
 					final var senderBalance = mutableSender.getBalance();
-					var senderFee = Wei.of(Math.multiplyExact(gasLimit, userOfferedGasPrice));
+//					final BigInteger senderFeeInWeibars = userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit));
+					var senderFee =
+							Wei.of(userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit)).divide(WEIBARS_TO_TINYBARS));
 					validateTrue(senderBalance.compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
 					final var remainingFee = gasCost.subtract(senderFee);
 					validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
