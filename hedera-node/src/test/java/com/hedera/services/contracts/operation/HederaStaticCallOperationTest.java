@@ -83,19 +83,6 @@ class HederaStaticCallOperationTest {
 	}
 
 	@Test
-	void usesCanonicalAddressFromSuperNominal() {
-		final var nominal = Address.ALTBN128_ADD;
-		final var canonical = Address.BLS12_G1MUL;
-		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
-		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.priorityAddress(nominal)).willReturn(canonical);
-
-		final var actual = subject.address(evmMsgFrame);
-
-		assertEquals(actual, canonical);
-	}
-
-	@Test
 	void haltWithInvalidAddr() {
 		commonSetup(evmMsgFrame, worldUpdater, acc);
 		given(worldUpdater.get(any())).willReturn(null);

@@ -24,7 +24,6 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -66,11 +65,6 @@ public class HederaCallOperation extends CallOperation {
 	}
 
 	@Override
-	protected Address address(final MessageFrame frame) {
-		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
-	}
-
-	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
@@ -80,17 +74,5 @@ public class HederaCallOperation extends CallOperation {
 				() -> super.execute(frame, evm),
 				addressValidator,
 				precompiledContractMap);
-	}
-
-	static Address resolveCanonical(
-			final Address nominal,
-			final MessageFrame frame,
-			final Map<String, PrecompiledContract> precompiledContractMap
-	) {
-		if (precompiledContractMap.containsKey(nominal.toShortHexString())) {
-			return nominal;
-		}
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		return updater.priorityAddress(nominal);
 	}
 }

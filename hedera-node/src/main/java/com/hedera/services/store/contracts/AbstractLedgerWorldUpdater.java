@@ -147,12 +147,24 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public Account get(final Address address) {
+	public Account get(final Address addressOrAlias) {
+		if (!addressOrAlias.equals(trackingLedgers.canonicalAddress(addressOrAlias))) {
+			return null;
+		}
+
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
 		} else {
-			return this.deletedAccounts.contains(address) ? null : this.world.get(address);
+			if (this.deletedAccounts.contains(address)) {
+				return null;
+			}
+			if (this.world.getClass() == HederaWorldState.class) {
+				return this.world.get(address);
+			}
+			return this.world.get(addressOrAlias);
 		}
 	}
 
@@ -234,7 +246,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
-		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
+		return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));
+	}
+
+	private WorldLedgers withChangeObserver(final WorldLedgers wrappedLedgers) {
 		final var wrappedAccounts = wrappedLedgers.accounts();
 		if (wrappedAccounts != null) {
 			wrappedAccounts.setPropertyChangeObserver(this::onAccountPropertyChange);
