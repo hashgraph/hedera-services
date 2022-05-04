@@ -158,7 +158,7 @@ public class BlockManager {
 		// get a zero block number, it means the post-0.26 block sync hasn't happened yet
 		if (blockNo == 0) {
 			provisionalBlockNumber = now.getEpochSecond();
-			provisionalBlockTimestamp = Instant.EPOCH;
+			provisionalBlockTimestamp = Instant.ofEpochSecond(now.getEpochSecond());
 			provisionalBlockHash = UNAVAILABLE_BLOCK_HASH;
 		} else if (willCreateNewBlock(now)) {
 			provisionalBlockIsNew = true;
