@@ -44,7 +44,6 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -70,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATI
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -187,13 +185,10 @@ public class BaseHederaLedgerTestHelper {
 		when(accountsLedger.exists(id)).thenReturn(true);
 		// and:
 		final int numPositiveBalances = 6;
-		var tokenAssociationKey = EntityNumPair.MISSING_NUM_PAIR;
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
 			var relationship = BackingTokenRels.asTokenRel(id, tId);
 			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
-			when(tokenRelsLedger.get(relationship, NEXT_KEY)).thenReturn(tokenAssociationKey);
-			tokenAssociationKey = EntityNumPair.fromLongs(id.getAccountNum(), tId.getTokenNum());
 		}
 		when(accountsLedger.get(id, NUM_POSITIVE_BALANCES)).thenReturn(numPositiveBalances);
 	}

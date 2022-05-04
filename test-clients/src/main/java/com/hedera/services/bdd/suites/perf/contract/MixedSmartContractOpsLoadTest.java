@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -73,13 +72,13 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		final String UPDATABLE_CONTRACT = "updatableContract";
 		final String CONTRACT_NAME_PREFIX = "testContract";
 		final String PAYABLE_FILE = "payableByteCode";
-		final String PAYABLE_CONTRACT = "payableContract";
+		final String PAYABLE_CONTRACT = "PayReceivable";
 		final String LOOKUP_FILE = "lookUpByteCode";
-		final String LOOKUP_CONTRACT = "lookUpContract";
+		final String LOOKUP_CONTRACT = "BalanceLookup";
 		final String CIVILIAN_ACCOUNT = "civilian";
 		final int depositAmount = 1;
 
-		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[]{
+		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
 				/* create a contract */
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
 						.bytecode(SOME_BYTE_CODE)
@@ -94,11 +93,11 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 
 				/* call balance lookup contract and contract to deposit funds*/
 				contractCallLocal(LOOKUP_CONTRACT,
-						BALANCE_LOOKUP_ABI,
-						spec -> new Object[]{spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum()}
+						"lookup",
+						spec -> new Object[] { spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum() }
 				).payingWith(GENESIS),
 
-				contractCall(PAYABLE_CONTRACT, ContractResources.DEPOSIT_ABI, depositAmount)
+				contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
 						.sending(depositAmount)
 						.suppressStats(true)
 						.deferStatusResolution()

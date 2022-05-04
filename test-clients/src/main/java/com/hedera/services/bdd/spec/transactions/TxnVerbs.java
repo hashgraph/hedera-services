@@ -354,6 +354,10 @@ public class TxnVerbs {
 		}
 	}
 
+	public static HapiContractCreate createDefaultContract(final String name) {
+		return new HapiContractCreate(name);
+	}
+
 	/** Previously - when creating contracts we were passing a name, chosen by the developer, which can differentiate
 	 * from the name of the contract.
 	 * The new implementation of the contract creation depends on the exact name of the contract, which means, that we

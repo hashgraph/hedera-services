@@ -359,7 +359,6 @@ class DeleteAllowanceChecksTest {
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
 		given(ownerMerkleAccount.getNumAssociations()).willReturn(1);
 		given(ownerMerkleAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerMerkleAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
 		given(tokens.getImmutableRef(nftToken)).willReturn(merkleToken);

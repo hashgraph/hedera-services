@@ -70,7 +70,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -191,7 +190,6 @@ class ApproveAllowanceChecksTest {
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
 		given(ownerAccount.getNumAssociations()).willReturn(1);
 		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
@@ -428,7 +426,6 @@ class ApproveAllowanceChecksTest {
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 		given(ownerAccount.getNumAssociations()).willReturn(1);
 		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),

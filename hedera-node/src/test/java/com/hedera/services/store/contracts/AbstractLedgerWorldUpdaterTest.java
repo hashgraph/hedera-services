@@ -22,9 +22,9 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -115,13 +115,15 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
 	@Mock
-	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
 	private ContractCustomizer customizer;
 	@Mock
 	private EntityAccess entityAccess;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private WorldLedgers mockLedgers;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -175,8 +177,32 @@ class AbstractLedgerWorldUpdaterTest {
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
 		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var actual = subject.get(aAddress);
+		assertSame(wrappedAccount, actual);
+	}
+
+	@Test
+	void getReturnsNullWithMirrorUsageInsteadOfCreate2() {
+		subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(bAddress);
+
+		final var result = subject.get(aAddress);
+		assertNull(result);
+	}
+
+	@Test
+	void getPropagatesToParentUpdaterProperly() {
+		final var worldStateUpdater = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		final var stackedWorldStateUpdater = new MockStackedLedgerUpdater(worldStateUpdater, mockLedgers, customizer);
+		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
+		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(mockLedgers.aliases()).willReturn(aliases);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(aAddress);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		final var actual = stackedWorldStateUpdater.get(aAddress);
 		assertSame(wrappedAccount, actual);
 	}
 
@@ -261,6 +287,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 		given(worldState.get(aAddress)).willReturn(
 				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);
@@ -524,7 +551,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownTokenRels() {
 		final var trackingRels = ledgers.tokenRels();
-		trackingRels.setCommitInterceptor(tokenRelsCommitInterceptor);
+		trackingRels.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
 		trackingRels.create(aaRel);
 		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
 		trackingRels.create(abRel);

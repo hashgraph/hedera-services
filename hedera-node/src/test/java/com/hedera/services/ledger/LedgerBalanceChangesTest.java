@@ -30,6 +30,9 @@ import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -114,7 +117,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
-	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 	@Mock
@@ -135,7 +138,7 @@ class LedgerBalanceChangesTest {
 		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
 
 		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));

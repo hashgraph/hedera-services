@@ -42,7 +42,6 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -303,11 +302,6 @@ public class ReadOnlyTokenStore {
 		return token;
 	}
 
-	public TokenRelationship getLatestTokenRelationship(final Account account) {
-		var latestTokenId = STATIC_PROPERTIES.scopedIdWith(account.getHeadTokenNum());
-		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
-	}
-
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
 		validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 	}
@@ -373,9 +367,6 @@ public class ReadOnlyTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
-		tokenRelationship.setKey(merkleTokenRel.getKey());
-		tokenRelationship.setNextKey(merkleTokenRel.nextKey());
-		tokenRelationship.setPrevKey(merkleTokenRel.prevKey());
 		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;

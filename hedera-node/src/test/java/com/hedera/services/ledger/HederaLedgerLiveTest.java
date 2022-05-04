@@ -28,6 +28,9 @@ import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -58,7 +61,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
-	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 	@Mock
@@ -89,7 +92,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
