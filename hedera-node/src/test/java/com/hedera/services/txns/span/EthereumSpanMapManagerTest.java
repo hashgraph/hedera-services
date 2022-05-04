@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.virtualmap.VirtualMap;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -195,14 +196,14 @@ class EthereumSpanMapManagerTest {
 		givenExpandableAccessor(bodyWithCallData);
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
-		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(ethTxData.replaceCallData(unhexedCallData)).willReturn(ethTxData);
 		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 
 		subject.expandEthereumSpan(accessor);
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
 
 		assertExpansionHasExpectedLinkRefsAnd(OK);
-		verify(ethTxData).replaceCallData(callData);
+		verify(ethTxData).replaceCallData(unhexedCallData);
 		verify(contractCallTransitionLogic).preFetchOperation(ContractCallTransactionBody.getDefaultInstance());
 	}
 
@@ -263,7 +264,7 @@ class EthereumSpanMapManagerTest {
 		givenRationalizableAccessor(bodyWithCallData);
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
-		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(ethTxData.replaceCallData(unhexedCallData)).willReturn(ethTxData);
 		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 		willAnswer(invocationOnMock -> {
 				final Map<String, Object> rationalizedMap = invocationOnMock.getArgument(0);
@@ -275,7 +276,7 @@ class EthereumSpanMapManagerTest {
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
 
 		assertExpansionHasNullLinkRefsAnd(OK);
-		verify(ethTxData).replaceCallData(callData);
+		verify(ethTxData).replaceCallData(unhexedCallData);
 	}
 
 	@Test
@@ -286,7 +287,7 @@ class EthereumSpanMapManagerTest {
 
 		given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
 		given(blobs.get(dataKey)).willReturn(dataValue);
-		given(ethTxData.replaceCallData(callData)).willReturn(ethTxData);
+		given(ethTxData.replaceCallData(unhexedCallData)).willReturn(ethTxData);
 		given(syntheticTxnFactory.synthContractOpFromEth(ethTxData)).willReturn(Optional.of(synthCallBody));
 		willAnswer(invocationOnMock -> {
 			final Map<String, Object> rationalizedMap = invocationOnMock.getArgument(0);
@@ -298,7 +299,7 @@ class EthereumSpanMapManagerTest {
 		expansion = spanMapAccessor.getEthTxExpansion(accessor);
 
 		assertExpansionHasNullLinkRefsAnd(OK);
-		verify(ethTxData).replaceCallData(callData);
+		verify(ethTxData).replaceCallData(unhexedCallData);
 	}
 
 	@Test
@@ -360,7 +361,8 @@ class EthereumSpanMapManagerTest {
 			.build();
 	private static final EthereumTransactionBody bodyWithoutCallData = EthereumTransactionBody.newBuilder()
 			.build();
-	private static final byte[] callData = "Between the idea and the reality".getBytes();
+	private static final byte[] callData = "abcdefabcdefabcdef".getBytes();
+	private static final byte[] unhexedCallData = Hex.decode(callData);
 	private static final VirtualBlobKey dataKey = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, 666);
 	private static final VirtualBlobKey metadataKey = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, 666);
 	private static final VirtualBlobValue dataValue = new VirtualBlobValue(callData);

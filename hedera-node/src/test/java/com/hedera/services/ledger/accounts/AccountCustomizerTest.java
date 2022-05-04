@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class AccountCustomizerTest {
 	private TestAccountCustomizer subject;
@@ -76,7 +77,6 @@ class AccountCustomizerTest {
 		assertNotNull(subject.getChanges());
 		assertNotEquals(0, subject.getChanges().size());
 	}
-
 
 	@Test
 	void directlyCustomizesAnAccount() {
@@ -146,6 +146,16 @@ class AccountCustomizerTest {
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(PROXY)::equals),
 				argThat(proxy::equals));
+	}
+
+	@Test
+	void nullProxyAndAutoRenewAreNoops() {
+		setupWithMockChangeManager();
+
+		subject.proxy(null);
+		subject.autoRenewAccount(null);
+
+		verifyNoInteractions(changeManager);
 	}
 
 	@Test
