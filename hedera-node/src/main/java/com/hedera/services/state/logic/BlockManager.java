@@ -36,7 +36,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
@@ -48,20 +47,18 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
  */
 @Singleton
 public class BlockManager {
+	private static final int UNKNOWN_BLOCK_NO = 0;
 	private static final Logger log = LogManager.getLogger(BlockManager.class);
 
 	private final long blockPeriodMs;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
-	private org.hyperledger.besu.datatypes.Hash provisionalBlockHash = UNAVAILABLE_BLOCK_HASH;
 
-	// Whether the current transaction is expected to start a new block
+	// The block number for the current transaction; UNKNOWN_BLOCK_NO if not yet computed
+	private long provisionalBlockNo = UNKNOWN_BLOCK_NO;
+	// Whether the current transaction starts a new block; always false if not yet computed
 	private boolean provisionalBlockIsNew = false;
-	// The expected block number for the current transaction, -1 if unknown
-	private long provisionalBlockNumber = -1;
-	// The expected block timestamp for the current transaction
-	private Instant provisionalBlockTimestamp = Instant.EPOCH;
-	// If provisionalBlockIsNew == true, the expected hash of the just-finished block
+	// The hash of the just-finished block if provisionalBlockIsNew == true; null otherwise
 	@Nullable
 	private org.hyperledger.besu.datatypes.Hash provisionalFinishedBlockHash;
 
@@ -78,61 +75,24 @@ public class BlockManager {
 				* Units.SECONDS_TO_MILLISECONDS;
 	}
 
+	/**
+	 * Clears all provisional block metadata for the current transaction.
+	 */
 	public void reset() {
 		provisionalBlockIsNew = false;
-		provisionalBlockNumber = -1;
-		provisionalBlockTimestamp = Instant.EPOCH;
+		provisionalBlockNo = UNKNOWN_BLOCK_NO;
 		provisionalFinishedBlockHash = null;
 	}
 
 	/**
-	 * Accepts the {@link RunningHash} that, <b>if</b> the corresponding user transaction is the last in this
-	 * 2-second period, will be the "block hash" for the current block.
-	 *
-	 * @param runningHash the latest candidate for the current block hash
-	 */
-	public void updateCurrentBlockHash(final RunningHash runningHash) {
-		runningHashLeaf.get().setRunningHash(runningHash);
-	}
-
-	/**
-	 * Provides the current block number.
+	 * Provides the current block number in a form suitable for use in stream alignment. Only different from
+	 * {@code networkCtx.getBlockNo()} immediately after the 0.26 upgrade, before the first block re-numbering
+	 * transaction has been handled.
 	 *
 	 * @return the current block number
 	 */
-	public long getCurrentBlockNumber() {
-		return networkCtx.get().getManagedBlockNo();
-	}
-
-	/**
-	 * @param blockNumber
-	 * @return
-	 */
-	public org.hyperledger.besu.datatypes.Hash getProvisionalBlockHash(long blockNumber) {
-
-		if (blockNumber == provisionalBlockNumber) {
-			return UNAVAILABLE_BLOCK_HASH;
-		}
-		if (provisionalBlockIsNew && blockNumber == provisionalBlockNumber - 1) {
-			return provisionalFinishedBlockHash;
-		}
-		return networkCtx.get().getBlockHashByNumber(blockNumber);
-	}
-
-	/**
-	 * @param timestamp
-	 * @param gasLimit
-	 * @return
-	 */
-	public HederaBlockValues createProvisionalBlockValues(@NotNull final Instant timestamp, long gasLimit) {
-		ensureProvisionalBlockValuesAreKnown(timestamp);
-		return new HederaBlockValues(gasLimit, provisionalBlockNumber, provisionalBlockTimestamp);
-	}
-
-	private void ensureProvisionalBlockValuesAreKnown(Instant now) {
-		if (provisionalBlockNumber == -1) {
-			computeProvisionalBlockMetadata(now);
-		}
+	public long getAlignmentBlockNumber() {
+		return networkCtx.get().getAlignmentBlockNo();
 	}
 
 	/**
@@ -142,40 +102,87 @@ public class BlockManager {
 	 * @param now the latest consensus timestamp of a user transaction
 	 * @return the new block number, taking this timestamp into account
 	 */
-	public long getManagedBlockNumberAt(@NotNull final Instant now) {
-		ensureProvisionalBlockValuesAreKnown(now);
-		var curNetworkCtx = networkCtx.get();
-		return willCreateNewBlock(now) ? updatedBlockNumberAt(now, curNetworkCtx) :
-				curNetworkCtx.getManagedBlockNo();
+	public long updateAndGetAlignmentBlockNumber(@NotNull final Instant now) {
+		ensureProvisionalBlockMeta(now);
+		return provisionalBlockIsNew
+				? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
+				: provisionalBlockNo;
 	}
 
-	private void computeProvisionalBlockMetadata(Instant now) {
-		var curNetworkCtx = networkCtx.get();
+	/**
+	 * Accepts the {@link RunningHash} that, <i>if</i> the corresponding user transaction is the last in this
+	 * 2-second period, will be the "block hash" for the current block.
+	 *
+	 * <p>Note the {@code runningHashLeaf} value is not synchronously fetched except at the start of a new block;
+	 * at that point, it contains the hash of the <i>just-finished</i> block.
+	 *
+	 * @param runningHash the latest candidate for the current block hash
+	 */
+	public void updateCurrentBlockHash(final RunningHash runningHash) {
+		runningHashLeaf.get().setRunningHash(runningHash);
+	}
 
-		var blockNo = curNetworkCtx.getBlockNo();
+	/**
+	 * Returns the block metadata (hash, number, and timestamp) given the consensus time of the active transaction
+	 * and an applicable gas limit.
+	 *
+	 * @param now the consensus time of the active contract operation
+	 * @param gasLimit the gas limit of the operation
+	 * @return the block metadata for the operation
+	 */
+	public HederaBlockValues computeProvisionalBlockValues(@NotNull final Instant now, final long gasLimit) {
+		ensureProvisionalBlockMeta(now);
+		if (provisionalBlockNo < 0) {
+			// Must be after 0.26 upgrade, but before the first block re-numbering
+			final var thisSecond = now.getEpochSecond();
+			return new HederaBlockValues(gasLimit, thisSecond, Instant.ofEpochSecond(thisSecond));
+		} else if (provisionalBlockIsNew) {
+			return new HederaBlockValues(gasLimit, provisionalBlockNo, Instant.ofEpochSecond(now.getEpochSecond()));
+		} else {
+			return new HederaBlockValues(gasLimit, provisionalBlockNo, networkCtx.get().firstConsTimeOfCurrentBlock());
+		}
+	}
 
-		// Before the 0.26 upgrade, we used the consensus timestamp as the block number; and if we
-		// get a zero block number, it means the post-0.26 block sync hasn't happened yet
-		if (blockNo == 0) {
-			provisionalBlockNumber = now.getEpochSecond();
-			provisionalBlockTimestamp = Instant.ofEpochSecond(now.getEpochSecond());
-			provisionalBlockHash = UNAVAILABLE_BLOCK_HASH;
-		} else if (willCreateNewBlock(now)) {
-			provisionalBlockIsNew = true;
-			provisionalBlockNumber = curNetworkCtx.getBlockNo() + 1;
-			provisionalBlockTimestamp = now;
+	/**
+	 * Returns the expected hash for the given block number. (If the hash for requested block number was just
+	 * computed in {@code computeProvisionalBlockMetadata()}---i.e., it is not yet in state---we treat it as
+	 * provisional, out of an abundance of caution.)
+	 *
+	 * @param blockNo a block number
+	 * @return the expected hash of that block
+	 */
+	public org.hyperledger.besu.datatypes.Hash getProvisionalBlockHash(final long blockNo) {
+		assertProvisionalValuesAreComputed();
+		// We don't update the network context state with the hash of a just-finished block until right
+		// before we stream the record that will cause mirror nodes to _also_ finish that block; so we
+		// need to handle this case ourselves---any other number we can delegate to the network context
+		if (provisionalBlockIsNew && blockNo == provisionalBlockNo - 1) {
+			return provisionalFinishedBlockHash;
+		}
+		return networkCtx.get().getBlockHashByNumber(blockNo);
+	}
+
+	// --- Internal helpers ---
+	void ensureProvisionalBlockMeta(final Instant now) {
+		if (provisionalBlockNo == UNKNOWN_BLOCK_NO) {
+			computeProvisionalBlockMeta(now);
+		}
+	}
+
+	private void computeProvisionalBlockMeta(final Instant now) {
+		final var curNetworkCtx = networkCtx.get();
+		provisionalBlockIsNew = willCreateNewBlock(now);
+		if (provisionalBlockIsNew) {
 			try {
-				provisionalBlockHash = ethHashFrom(runningHashLeaf.get().getLatestBlockHash());
+				provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().getLatestBlockHash());
 			} catch (InterruptedException e) {
-				final var curBlockNo = curNetworkCtx.getManagedBlockNo();
+				provisionalBlockIsNew = false;
 				// This is almost certainly fatal, hence the ERROR log level
-				log.error("Interrupted when computing hash for block #{}", curBlockNo);
+				log.error("Interrupted when computing hash for block #{}", curNetworkCtx::getAlignmentBlockNo);
 				Thread.currentThread().interrupt();
 			}
-		} else {
-			provisionalBlockNumber = curNetworkCtx.getBlockNo();
-			provisionalBlockTimestamp = curNetworkCtx.firstConsTimeOfCurrentBlock();
 		}
+		provisionalBlockNo = curNetworkCtx.getAlignmentBlockNo() + (provisionalBlockIsNew ? 1 : 0);
 	}
 
 	private boolean willCreateNewBlock(@NotNull final Instant timestamp) {
@@ -188,9 +195,9 @@ public class BlockManager {
 		return getPeriod(now, blockPeriodMs) == getPeriod(then, blockPeriodMs);
 	}
 
-	private long updatedBlockNumberAt(final Instant now, final MerkleNetworkContext curNetworkCtx) {
-		log.debug("Finishing block {} (started @ {}), starting new block @ {}",
-				curNetworkCtx.getManagedBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock(), now);
-		return curNetworkCtx.finishBlock(provisionalBlockHash, now);
+	private void assertProvisionalValuesAreComputed() {
+		if (provisionalBlockNo == UNKNOWN_BLOCK_NO) {
+			throw new IllegalStateException("No block information is available until provisional values computed");
+		}
 	}
 }

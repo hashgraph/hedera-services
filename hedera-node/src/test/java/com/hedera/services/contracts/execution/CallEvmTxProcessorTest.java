@@ -65,7 +65,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -374,7 +373,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
 
-		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenSenderWithBalance(final long amount) {

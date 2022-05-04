@@ -118,7 +118,7 @@ class RecordStreamingTest {
 
     @Test
     void usesCurrentBlockNumberIfNoUserRecordsCouldBeStreamed() {
-        given(blockManager.getCurrentBlockNumber()).willReturn(someBlockNo);
+        given(blockManager.getAlignmentBlockNumber()).willReturn(someBlockNo);
         givenAlignable(systemRso);
         given(systemRso.getRunningHash()).willReturn(mockSystemHash);
         given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
@@ -132,7 +132,7 @@ class RecordStreamingTest {
     private void givenCollabSetup() {
         given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
         given(topLevelRso.getTimestamp()).willReturn(aTime);
-        given(blockManager.getManagedBlockNumberAt(aTime)).willReturn(someBlockNo);
+        given(blockManager.updateAndGetAlignmentBlockNumber(aTime)).willReturn(someBlockNo);
         given(recordsHistorian.lastRunningHash()).willReturn(mockUserHash);
     }
 

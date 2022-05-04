@@ -304,7 +304,7 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenExtantSender() {

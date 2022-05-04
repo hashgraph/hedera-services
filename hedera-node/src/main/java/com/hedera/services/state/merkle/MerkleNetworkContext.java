@@ -446,23 +446,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				congestionStartsDesc();
 	}
 
-	public void setBlockNo(final long blockNo) {
-		this.blockNo = blockNo;
-	}
-
-	public long getBlockNo() {
-		return (blockNo < 0) ? 0 : blockNo;
-	}
-
-	public long getManagedBlockNo() {
+	public long getAlignmentBlockNo() {
 		return blockNo;
 	}
 
-	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long blockNumber) {
-		if (blockNumber < 0) {
+	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long reqBlockNo) {
+		if (reqBlockNo < 0) {
 			return UNAVAILABLE_BLOCK_HASH;
 		}
-		return blockHashes.getOrDefault(blockNumber, UNAVAILABLE_BLOCK_HASH);
+		return blockHashes.getOrDefault(reqBlockNo, UNAVAILABLE_BLOCK_HASH);
 	}
 
 	public Instant firstConsTimeOfCurrentBlock() {
@@ -740,5 +732,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	@VisibleForTesting
 	int getBlocksToLog() {
 		return blocksToLog;
+	}
+
+	@VisibleForTesting
+	void setBlockNo(final long blockNo) {
+		this.blockNo = blockNo;
 	}
 }

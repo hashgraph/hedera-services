@@ -201,7 +201,7 @@ abstract class EvmTxProcessor {
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 
-		final var blockValues = blockManager.createProvisionalBlockValues(consensusTime, gasLimit);
+		final var blockValues = blockManager.computeProvisionalBlockValues(consensusTime, gasLimit);
 
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();

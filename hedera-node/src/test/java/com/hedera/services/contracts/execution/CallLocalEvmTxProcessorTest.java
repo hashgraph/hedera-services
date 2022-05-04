@@ -228,6 +228,6 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
 
-		given(blockManager.createProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 }

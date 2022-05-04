@@ -82,7 +82,7 @@ public class RecordStreaming {
 	 * <b>IMPORTANT:</b> this may have the side effect of increasing the block number.
 	 */
 	public void streamUserTxnRecords() {
-		blockNo = blockManager.getManagedBlockNumberAt(recordsHistorian.getTopLevelRecord().getTimestamp());
+		blockNo = blockManager.updateAndGetAlignmentBlockNumber(recordsHistorian.getTopLevelRecord().getTimestamp());
 		if (recordsHistorian.hasPrecedingChildRecords()) {
 			for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
 				stream(childRso.withBlockNumber(blockNo));
@@ -102,7 +102,7 @@ public class RecordStreaming {
 	 * user transaction records were streamed in this call to {@code handleTransaction},
 	 * uses the same {@link com.swirlds.common.stream.StreamAligned} block number as
 	 * the last such record. Otherwise, uses the current block number according to the
-	 * {@link BlockManager#getCurrentBlockNumber()}.
+	 * {@link BlockManager#getAlignmentBlockNumber()}.
 	 *
 	 * @param rso the system record to stream
 	 */
@@ -110,7 +110,7 @@ public class RecordStreaming {
 		if (blockNo != PENDING_USER_TXN_BLOCK_NO) {
 			stream(rso.withBlockNumber(blockNo));
 		} else {
-			stream(rso.withBlockNumber(blockManager.getCurrentBlockNumber()));
+			stream(rso.withBlockNumber(blockManager.getAlignmentBlockNumber()));
 		}
 		blockManager.updateCurrentBlockHash(rso.getRunningHash());
 	}

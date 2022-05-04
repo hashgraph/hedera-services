@@ -104,8 +104,7 @@ class MerkleNetworkContextBlockSyncTest {
 		}
 		final var newCurNo = knownBlockNo + m - blockOffset;
 		assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(newCurNo));
-		assertEquals(newCurNo, subject.getBlockNo());
-		assertEquals(newCurNo, subject.getManagedBlockNo());
+		assertEquals(newCurNo, subject.getAlignmentBlockNo());
 		// and:
 		assertEquals(NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING, subject.getBlocksToLog());
 		for (int j = 0; j < NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING + 1; j++) {
@@ -123,10 +122,8 @@ class MerkleNetworkContextBlockSyncTest {
 	@Test
 	void unknownBlockValuesHaveExpectedDefaults() {
 		assertSame(Instant.EPOCH, subject.firstConsTimeOfCurrentBlock());
-		assertEquals(0, subject.getBlockNo());
 		subject.setBlockNo(Long.MIN_VALUE + 1);
-		assertEquals(0, subject.getBlockNo());
-		assertEquals(Long.MIN_VALUE + 1, subject.getManagedBlockNo());
+		assertEquals(Long.MIN_VALUE + 1, subject.getAlignmentBlockNo());
 	}
 
 	private void finishNBlocks(final int n) {
