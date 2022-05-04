@@ -62,8 +62,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
@@ -522,6 +524,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleSign("0.0.123321")
 								.fee(ONE_HBAR)
 								.alsoSigningWith("somebody", "sender")
+								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
@@ -714,13 +717,17 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
 						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
-								.hasKnownStatus(INVALID_SCHEDULE_ID),
+								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+								.hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
 						sleepFor(2000),
 						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
-								.hasKnownStatus(INVALID_SCHEDULE_ID),
+								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+								.hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
+						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
+								.hasPrecheck(INVALID_SCHEDULE_ID),
 						getScheduleInfo("twoSigXfer")
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+						overriding("ledger.schedule.txExpiryTimeSecs", "" + defaultTxExpiry)
 				);
 	}
 

@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
@@ -887,7 +888,7 @@ class DeterministicThrottlingTest {
 	void logsAsExpected() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		final var desired = "Resolved throttles (after splitting capacity 2 ways) - \n  ContractCall: min{6.00 tps (A)" +
+		final var desired = "Resolved throttles for CONSENSUS (after splitting capacity 2 ways) - \n  ContractCall: min{6.00 tps (A)" +
 				", 5.00 tps (B)}\n  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n  CryptoGetAccountBalance: " +
 				"min{5.00 tps (D)}\n  CryptoTransfer: min{5000.00 tps (A)}\n  GetVersionInfo: min{0.50 tps (D)}\n  " +
 				"TokenAssociateToAccount: min{50.00 tps (C)}\n  TokenCreate: min{50.00 tps (C)}\n  TokenMint: " +
@@ -1308,15 +1309,15 @@ class DeterministicThrottlingTest {
 			}
 		}
 
-		assertTrue(sum < 100000L);
+		assertTrue(sum <= 100000L);
 		assertEquals(5, groups.size());
 		assertEquals(3, grpCount);
 
-		assertEquals(ImmutableList.of(97088L), groups.get(CryptoTransfer));
-		assertEquals(ImmutableList.of(97088L), groups.get(ConsensusSubmitMessage));
+		assertEquals(ImmutableList.of(98000L), groups.get(CryptoTransfer));
+		assertEquals(ImmutableList.of(98000L), groups.get(ConsensusSubmitMessage));
 		assertEquals(ImmutableList.of(1000L), groups.get(CryptoCreate));
-		assertEquals(ImmutableList.of(97088L, 1000L), groups.get(ScheduleCreate));
-		assertEquals(ImmutableList.of(1000L), groups.get(ScheduleSign));
+		assertEquals(ImmutableList.of(98000L, 1000L), groups.get(CryptoUpdate));
+		assertEquals(ImmutableList.of(1000L), groups.get(CryptoDelete));
 
 	}
 

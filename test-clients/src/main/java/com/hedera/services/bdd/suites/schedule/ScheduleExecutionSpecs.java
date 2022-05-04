@@ -74,6 +74,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -118,6 +119,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	 * different.
 	 */
 	private static final long normalTriggeredTxnTimestampOffset = 4;
+
+	private static final String defaultMaxBatchSizeMint =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.maxBatchSizeMint");
 
 	String failingTxn = "failingTxn", successTxn = "successTxn", signTxn = "signTxn";
 
@@ -492,6 +496,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
 				.given(
+						overriding("tokens.nfts.maxBatchSizeMint", "5"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -508,12 +513,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 												ByteString.copyFromUtf8("m3"),
 												ByteString.copyFromUtf8("m4"),
 												ByteString.copyFromUtf8("m5"),
-												ByteString.copyFromUtf8("m6"),
-												ByteString.copyFromUtf8("m7"),
-												ByteString.copyFromUtf8("m8"),
-												ByteString.copyFromUtf8("m9"),
-												ByteString.copyFromUtf8("m10"),
-												ByteString.copyFromUtf8("m11")
+												ByteString.copyFromUtf8("m6")
 										)
 								)
 						)
@@ -529,7 +529,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						getTxnRecord(failingTxn).scheduled()
 								.hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
 						getTokenInfo(A_TOKEN)
-								.hasTotalSupply(0)
+								.hasTotalSupply(0),
+						overriding("tokens.nfts.maxBatchSizeMint", defaultMaxBatchSizeMint)
 				);
 	}
 

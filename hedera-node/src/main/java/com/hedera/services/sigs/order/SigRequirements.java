@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -78,8 +77,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static java.util.Collections.EMPTY_LIST;
 
 /**
@@ -91,9 +88,6 @@ import static java.util.Collections.EMPTY_LIST;
  * equivalent decision for a crypto account.
  */
 public class SigRequirements {
-	/* The current architecture does not support a triggered transaction itself triggering a transaction. So
-	 * no matter what is in the scheduling.whitelist property, we have to abort any attempt to schedule these. */
-	private static final Set<HederaFunctionality> IMPOSSIBLE_TO_SCHEDULE = EnumSet.of(ScheduleCreate, ScheduleSign);
 	private static final Set<KeyOrderingFailure> INVALID_ACCOUNT_CODES = EnumSet.of(MISSING_ACCOUNT, IMMUTABLE_ACCOUNT);
 
 	private final SignatureWaivers signatureWaivers;
@@ -1114,7 +1108,7 @@ public class SigRequirements {
 	) {
 		try {
 			final var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
-			if (IMPOSSIBLE_TO_SCHEDULE.contains(scheduledFunction)) {
+			if (!MiscUtils.isSchedulable(scheduledFunction)) {
 				return Optional.of(factory.forUnschedulableTxn());
 			}
 			var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory, linkedRefs);

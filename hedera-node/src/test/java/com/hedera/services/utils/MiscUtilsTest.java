@@ -152,6 +152,8 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
+import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
@@ -181,6 +183,7 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.MiscUtils.isSchedulable;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
@@ -557,6 +560,18 @@ class MiscUtilsTest {
 			final var ordinary = asOrdinary(txn.build());
 			assertTrue(txnBodyHas(ordinary, bodyType), ordinary + " doesn't have " + bodyType + " as expected!");
 		});
+	}
+
+	@Test
+	void isSchedulableWorksAsExpected() {
+		for (var fun : HederaFunctionality.values()) {
+			if (QUERY_FUNCTIONS.contains(fun) || fun == ScheduleCreate || fun == ScheduleSign) {
+				assertFalse(isSchedulable(fun));
+			} else {
+				assertTrue(isSchedulable(fun));
+			}
+		}
+		assertFalse(isSchedulable(null));
 	}
 
 	private boolean txnBodyHas(final TransactionBody txn, final String bodyType) {

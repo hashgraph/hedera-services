@@ -244,15 +244,17 @@ public class ScheduleProcessing {
 			var list = transactions.computeIfAbsent(schedule.calculatedExpirationTime(), k -> new ArrayList<>());
 			list.add(SignedTxnAccessor.uncheckedFrom(schedule.asSignedTxn()));
 
+			Instant timestamp = Instant.ofEpochSecond(curSecond);
 			for (var entry : transactions.entrySet()) {
 				for (var t : entry.getValue()) {
-					if (scheduleThrottling.shouldThrottleTxn(t, entry.getKey().toJava())) {
+					if (scheduleThrottling.shouldThrottleTxn(t, timestamp)) {
 						if (scheduleThrottling.wasLastTxnGasThrottled()) {
 							return SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 						} else {
 							return SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 						}
 					}
+					timestamp = timestamp.plusNanos(1);
 				}
 			}
 

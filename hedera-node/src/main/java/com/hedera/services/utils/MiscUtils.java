@@ -802,6 +802,24 @@ public final class MiscUtils {
 		return ordinary.build();
 	}
 
+
+	/**
+	 * @param functionality any {@link HederaFunctionality}
+	 * @return true if the functionality could possibly be allowed to be scheduled.
+	 * Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
+	 * The scheduling.whitelist configuration property is separate from this and provides the final list
+	 * of functionality that can be scheduled.
+	 */
+	public static boolean isSchedulable(final HederaFunctionality functionality) {
+		if (functionality == null) {
+			return false;
+		}
+		return switch (functionality) {
+			case ScheduleCreate, ScheduleSign -> false;
+			default -> !QUERY_FUNCTIONS.contains(functionality);
+		};
+	}
+
 	/**
 	 * A permutation (invertible function) on 64 bits. The constants were found
 	 * by automated search, to optimize avalanche. Avalanche means that for a

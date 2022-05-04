@@ -6,7 +6,7 @@
             "throttleGroups": [
                 {
                     "operations": [
-                        "ScheduleCreate",
+                        "CryptoUpdate",
                         "CryptoTransfer",
                         "ConsensusSubmitMessage"
                     ],
@@ -45,8 +45,8 @@
                 },
                 {
                     "operations": [
-                        "ScheduleCreate",
-                        "ScheduleSign"
+                        "CryptoUpdate",
+                        "CryptoDelete"
                     ],
                     "opsPerSec": 100
                 }

@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -235,7 +236,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	private void logResolvedDefinitions() {
 		int n = capacitySplitSource.getAsInt();
-		var sb = new StringBuilder("Resolved throttles (after splitting capacity " + n + " ways) - \n");
+		var sb = new StringBuilder("Resolved throttles for " + mode + " (after splitting capacity " + n + " ways) - \n");
 		functionReqs.entrySet().stream()
 				.sorted(Comparator.comparing(entry -> entry.getKey().toString()))
 				.forEach(entry -> {
@@ -483,29 +484,38 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		// get the throttle groups with the minimum tps value for each transaction type,
 		// these are the effective max tps for each type of transaction
 		final EnumMap<HederaFunctionality, ThrottleGroup> minMtps = new EnumMap<>(HederaFunctionality.class);
+
 		for (var bucket : defsCopy.getBuckets()) {
 			for (var group : bucket.getThrottleGroups()) {
 				for (var op : group.getOperations()) {
-					ThrottleGroup min = minMtps.get(op);
-					if (min == null || min.impliedMilliOpsPerSec() > group.impliedMilliOpsPerSec()) {
-						minMtps.put(op, group);
+					// remove functions that can't be scheduled
+					if (MiscUtils.isSchedulable(op)) {
+						ThrottleGroup min = minMtps.get(op);
+						if (min == null || min.impliedMilliOpsPerSec() > group.impliedMilliOpsPerSec()) {
+							minMtps.put(op, group);
+						}
 					}
 				}
 			}
 		}
 
 		// dedup the min tps groups
-		final IdentityHashMap<ThrottleGroup, Object> groups = new IdentityHashMap<>();
+		final IdentityHashMap<ThrottleGroup, ThrottleBucket> groups = new IdentityHashMap<>();
 		for (var grp : minMtps.values()) {
-			groups.put(grp, 1);
+			groups.put(grp, null);
 		}
 
 		// filter out throttle groups we no longer need, set burst periods to 1, and rename
 		for (var bucket : defsCopy.getBuckets()) {
-			bucket.setThrottleGroups(bucket.getThrottleGroups().stream().filter(groups::containsKey).toList());
+			bucket.setThrottleGroups(bucket.getThrottleGroups().stream().filter(g -> {
+				if (groups.containsKey(g)) {
+					groups.put(g, bucket);
+					return true;
+				}
+				return false;
+			}).toList());
 			bucket.setBurstPeriod(1);
 			bucket.setBurstPeriodMs(1000);
-			bucket .setName("Schedule - " + bucket.getName());
 		}
 
 		defsCopy.setBuckets(defsCopy.getBuckets().stream().filter(b -> !b.getThrottleGroups().isEmpty()).toList());
@@ -533,6 +543,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 			for (var grp : groups.keySet()) {
 				long toAdd = (grp.impliedMilliOpsPerSec() + m - 1L) / m;
+				// we round to the second to try to avoid the lcm stuff in ThrottleBucket causing overflows
+				toAdd = (toAdd / 1000) * 1000;
 				if (toAdd < 1000) {
 					toAdd = 1000;
 				}
@@ -555,6 +567,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		var sum = 0L;
 		for (var grp : groups.keySet()) {
 			long toSet = (grp.impliedMilliOpsPerSec() + scheduleCapacitySplit - 1L) / scheduleCapacitySplit;
+			toSet = (toSet / 1000) * 1000;
 			if (toSet <	1000) {
 				toSet = 1000;
 			}
@@ -562,6 +575,18 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			grp.setMilliOpsPerSec(toSet);
 			sum += grp.impliedMilliOpsPerSec();
 		}
+
+		var sb = new StringBuilder("Schedule Throttles: ");
+		for (var e : minMtps.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).toList()) {
+			sb.append("\n")
+					.append(groups.get(e.getValue()) != null ? groups.get(e.getValue()).getName() : null)
+					.append(" : ")
+					.append(e.getKey())
+					.append(" - ")
+					.append(e.getValue().impliedMilliOpsPerSec() / 1000)
+					.append(" tps");
+		}
+		log.info(sb);
 
 
 		if (sum > maxMtps) {

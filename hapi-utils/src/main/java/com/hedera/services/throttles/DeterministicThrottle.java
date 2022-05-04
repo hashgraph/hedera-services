@@ -167,6 +167,7 @@ public class DeterministicThrottle {
 		resetLastAllowedUse();
 		final var bucket = delegate.bucket();
 		bucket.resetUsed(0L);
+		lastDecisionTime = NEVER;
 	}
 
 	/* NOTE: The Object methods below are only overridden to improve

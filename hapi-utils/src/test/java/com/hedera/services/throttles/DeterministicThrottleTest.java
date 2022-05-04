@@ -257,6 +257,7 @@ class DeterministicThrottleTest {
 		subject.reclaimLastAllowedUse();
 
 		assertEquals(0, subject.delegate().bucket().capacityUsed());
+		assertNull(subject.lastDecisionTime());
 	}
 
 	@Test
