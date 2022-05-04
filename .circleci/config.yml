@@ -437,11 +437,13 @@ commands:
             else
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
+
             cd assets
             original_path="<< parameters.result_path >>"
             prefix_removed=${original_path//assets\//}
             gsutil -m rsync -r ${prefix_removed} "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/${prefix_removed}/"
             cd -
+
             tar -czvf /results.tar.gz  /swirlds-platform/regression/<< parameters.result_path >>
           when: always
 
