@@ -257,6 +257,62 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void verifyExternaliseContractResultCallLegacyEthTxn() {
+		// setup:
+		givenValidTxnCtxWithLegacyTxn();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		// and:
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(evmTxProcessor.executeEth(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime(), new BigInteger(TINYBARS_57_IN_WEIBARS), relayerAccount, 0))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of());
+
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+		given(accessor.getPayer()).willReturn((relayerAccount.getId().asGrpcAccount()));
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		final var expectedSyntheticCallBody = ContractCallTransactionBody.newBuilder()
+				.setAmount(1234)
+				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(targetAddressBytes))
+						.buildPartial())
+				.setGas(ethTxData.gasLimit())
+				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCall(expectedSyntheticCallBody).build();
+		verify(contractCallTransitionLogic).doStateTransitionOperation(
+				expectedTxnBody,
+				senderAccount.getId(),
+				relayerAccount.getId(),
+				0,
+				new BigInteger(TINYBARS_57_IN_WEIBARS)
+		);
+
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(recordService).updateForEvmCall(any(), any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
+
+
+	@Test
 	void verifyExternaliseContractResultCreate() throws DecoderException {
 		// setup:
 		target = null;
@@ -850,6 +906,38 @@ class EthereumTransactionTransitionLogicTest {
 				null,
 				TINYBARS_2_IN_WEIBARS,
 				TINYBARS_57_IN_WEIBARS,
+				gas,
+				target == null ? new byte[0] : EntityIdUtils.asEvmAddress(target),
+				BigInteger.valueOf(sent).multiply(WEIBARS_IN_TINYBAR),
+				callData,
+				null,
+				0,
+				null,
+				null,
+				null
+		);
+		ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()));
+		if (callDataFile != null) {
+			ethTxBodyBuilder.setCallData(callDataFile);
+		}
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setEthereumTransaction(ethTxBodyBuilder.build());
+		ethTxTxn = op.build();
+	}
+
+	private void givenValidTxnCtxWithLegacyTxn() {
+		var unsignedTx = new EthTxData(
+				null,
+				EthTxData.EthTransactionType.LEGACY_ETHEREUM,
+				chainId,
+				1,
+				TINYBARS_57_IN_WEIBARS,
+				null,
+				null,
 				gas,
 				target == null ? new byte[0] : EntityIdUtils.asEvmAddress(target),
 				BigInteger.valueOf(sent).multiply(WEIBARS_IN_TINYBAR),
