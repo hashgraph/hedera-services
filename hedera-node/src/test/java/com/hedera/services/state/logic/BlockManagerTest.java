@@ -89,6 +89,17 @@ class BlockManagerTest {
 	}
 
 	@Test
+	void resetClearsBlockNo() {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+
+		subject.updateAndGetAlignmentBlockNumber(someTime);
+		subject.reset();
+
+		assertThrows(IllegalStateException.class, () -> subject.getProvisionalBlockHash(1));
+	}
+
+	@Test
 	void finishesBlockIfUnknownFirstConsTime() throws InterruptedException {
 		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
 		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
