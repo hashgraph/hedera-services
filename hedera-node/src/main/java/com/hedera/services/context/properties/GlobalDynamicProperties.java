@@ -212,7 +212,7 @@ public class GlobalDynamicProperties {
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
 		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
 		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
-		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
+		limitTokenAssociations = properties.getBooleanProperty("entities.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");

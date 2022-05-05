@@ -21,6 +21,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_A
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -47,6 +48,7 @@ class SynthCreationCustomizerTest {
 		given(accountsLedger.get(callerId, PROXY)).willReturn(proxy);
 		given(accountsLedger.get(callerId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 		given(accountsLedger.get(callerId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+		given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 
 		final var origCreation = TransactionBody.newBuilder()
 				.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
@@ -69,4 +71,5 @@ class SynthCreationCustomizerTest {
 	private static final String memo = "the grey rock";
 	private static final EntityId proxy = new EntityId(0, 0, 3);
 	private static final EntityId autoRenewAccount = new EntityId(0, 0, 4);
+	private static final int maxAutoAssociations = 25;
 }

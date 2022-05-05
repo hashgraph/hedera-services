@@ -70,7 +70,8 @@ class HederaAccountCustomizerTest {
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
 				.isSmartContract(true)
-				.autoRenewAccount(autoRenewAccount);
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(10);
 
 		final var op = ContractCreateTransactionBody.newBuilder();
 		customizer.customizeSynthetic(op);
@@ -79,6 +80,7 @@ class HederaAccountCustomizerTest {
 		assertEquals(proxy.toGrpcAccountId(), op.getProxyAccountID());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
 		assertEquals(autoRenewAccount.toGrpcAccountId(), op.getAutoRenewAccountId());
+		assertEquals(10, op.getMaxAutomaticTokenAssociations());
 	}
 
 	@Test
