@@ -1352,13 +1352,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
-    triggers:
-      - schedule:
-          cron: "25 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1683,10 +1676,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
