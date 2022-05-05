@@ -621,7 +621,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMintFailure")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount).balance(5 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(mintContractByteCode).payingWith(theAccount),
 						tokenCreate(fungibleToken)
@@ -661,7 +661,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("gasCostNotMetSetsInsufficientGasStatusInChildRecord")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount).balance(5 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
