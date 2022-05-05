@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -70,7 +72,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return withAndWithoutLongTermEnabled(() -> List.of(
 			executionTimeIsAvailable(),
 			deletionTimeIsAvailable(),
 			allRecordsAreQueryable(),
@@ -79,7 +81,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 			canScheduleChunkedMessages(),
 			noFeesChargedIfTriggeredPayerIsInsolvent(),
 			noFeesChargedIfTriggeredPayerIsUnwilling()
-		);
+		));
 	}
 
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
@@ -131,6 +133,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						)
 								.alsoSigningWith(GENESIS, "unwillingPayer")
 								.via("simpleXferSchedule")
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 								.designatingPayer("unwillingPayer")
 								.savingExpectedScheduledTxnId()
 				).then(
@@ -153,6 +157,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						)
 								.alsoSigningWith(GENESIS, "insolventPayer")
 								.via("simpleXferSchedule")
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 								.designatingPayer("insolventPayer")
 								.savingExpectedScheduledTxnId()
 				).then(

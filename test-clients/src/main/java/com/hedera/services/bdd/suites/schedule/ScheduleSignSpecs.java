@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -85,7 +86,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return withAndWithoutLongTermEnabled(() -> List.of(
 			suiteSetup(),
 			signFailsDueToDeletedExpiration(),
 			triggersUponAdditionalNeededSig(),
@@ -108,7 +109,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 			changeInNestedSigningReqsRespected(),
 			signingDeletedSchedulesHasNoEffect(),
 			suiteCleanup()
-		);
+		));
 	}
 
 	private HapiApiSpec suiteCleanup() {

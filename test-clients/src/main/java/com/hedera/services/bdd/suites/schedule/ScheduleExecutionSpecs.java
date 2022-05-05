@@ -79,6 +79,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermSpecs.withAndWithoutLongTermEnabled;
 import static com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs.scheduledVersionOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -141,7 +142,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return withAndWithoutLongTermEnabled(() -> List.of(
 			executionWithDefaultPayerWorks(),
 			executionWithCustomPayerWorks(),
 			executionWithDefaultPayerButNoFundsFails(),
@@ -181,7 +182,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 			scheduledBurnForUniqueFailsWithInvalidAmount(),
 			scheduledBurnForUniqueFailsWithExistingAmount(),
 			scheduledBurnFailsWithInvalidTxBody()
-		);
+		));
 	}
 
 	private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {
@@ -1437,7 +1438,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				).when(
 						scheduleSign(schedule)
 								.alsoSigningWith(adminKey)
-								/* In the rare, but possible, case that the the adminKey and submitKey keys overlap
+								/* In the rare, but possible, case that the adminKey and submitKey keys overlap
 								 * in their first byte (and that byte is not shared by the DEFAULT_PAYER),
 								 * we will get SOME_SIGNATURES_WERE_INVALID instead of NO_NEW_VALID_SIGNATURES.
 								 *
@@ -1836,7 +1837,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	private boolean transferListCheck(HapiGetTxnRecord triggered, AccountID givingAccountID,
+	public static boolean transferListCheck(HapiGetTxnRecord triggered, AccountID givingAccountID,
 			AccountID receivingAccountID, AccountID payingAccountID, Long amount) {
 		AccountAmount givingAmount = AccountAmount.newBuilder()
 				.setAccountID(givingAccountID)

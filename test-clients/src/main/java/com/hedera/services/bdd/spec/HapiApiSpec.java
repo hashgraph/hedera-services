@@ -186,6 +186,14 @@ public class HapiApiSpec implements Runnable {
 		return name;
 	}
 
+	public void appendToName(String postfix) {
+		this.name = this.name + postfix;
+	}
+
+	public String getSuitePrefix() {
+		return suitePrefix;
+	}
+
 	public String logPrefix() {
 		return "'" + name + "' - ";
 	}

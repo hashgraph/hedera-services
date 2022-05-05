@@ -175,6 +175,7 @@ import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleLongTermSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
@@ -385,6 +386,7 @@ public class SuiteRunner {
 		/* Functional tests - SCHEDULE */
 		put("ScheduleCreateSpecs", aof(ScheduleCreateSpecs::new));
 		put("ScheduleSignSpecs", aof(ScheduleSignSpecs::new));
+		put("ScheduleLongTermSpecs", aof(ScheduleLongTermSpecs::new));
 		put("ScheduleRecordSpecs", aof(ScheduleRecordSpecs::new));
 		put("ScheduleDeleteSpecs", aof(ScheduleDeleteSpecs::new));
 		put("ScheduleExecutionSpecs", aof(ScheduleExecutionSpecs::new));
