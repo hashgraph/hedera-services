@@ -69,7 +69,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
-//                ethereumCalls(),
+                ethereumCalls(),
                 ethereumCreates()
         );
     }
@@ -105,7 +105,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(RELAYER)
                                 .via("payTxn")
                                 .nonce(0)
-                                .maxFeePerGas(40L)
+                                .maxFeePerGas(50L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
