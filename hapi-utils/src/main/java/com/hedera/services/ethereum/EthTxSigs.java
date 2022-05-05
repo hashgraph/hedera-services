@@ -43,7 +43,7 @@ import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ec
 public record EthTxSigs(byte[] publicKey, byte[] address) {
 
 	public static EthTxSigs extractSignatures(EthTxData ethTx) {
-		byte[] message = calculateSingableMessage(ethTx);
+		byte[] message = calculateSignableMessage(ethTx);
 		var pubKey = extractSig(ethTx.recId(), ethTx.r(), ethTx.s(), message);
 		byte[] address = recoverAddressFromPubKey(pubKey);
 		byte[] compressedKey = recoverCompressedPubKey(pubKey);
@@ -53,7 +53,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 
 
 	public static EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
-		byte[] signableMessage = calculateSingableMessage(ethTx);
+		byte[] signableMessage = calculateSignableMessage(ethTx);
 		final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
 				new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
 		LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
@@ -103,7 +103,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 				s);
 	}
 
-	static byte[] calculateSingableMessage(EthTxData ethTx) {
+	static byte[] calculateSignableMessage(EthTxData ethTx) {
 		return switch (ethTx.type()) {
 			case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
 					? RLPEncoder.encodeAsList(

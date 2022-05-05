@@ -256,6 +256,7 @@ class StateViewTest {
 				.deleted(true)
 				.expirationTime(9_999_999L)
 				.autoRenewAccount(asAccount("0.0.4"))
+				.maxAutomaticAssociations(10)
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 
@@ -572,6 +573,7 @@ class StateViewTest {
 		assertEquals(ledgerId, info.getLedgerId());
 		assertTrue(info.getDeleted());
 		assertEquals(expectedTotalStorage, info.getStorage());
+		assertEquals(contract.getMaxAutomaticAssociations(), info.getMaxAutomaticTokenAssociations());
 		mockedStatic.close();
 	}
 

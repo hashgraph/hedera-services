@@ -53,6 +53,7 @@ public class ServicesTxnManager {
 	private final RecordsHistorian recordsHistorian;
 	private final MigrationRecordsManager migrationRecordsManager;
 	private final RecordStreaming recordStreaming;
+	private final BlockManager blockManager;
 
 	@Inject
 	public ServicesTxnManager(
@@ -64,7 +65,8 @@ public class ServicesTxnManager {
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
 			final MigrationRecordsManager migrationRecordsManager,
-			final RecordStreaming recordStreaming
+			final RecordStreaming recordStreaming,
+			final BlockManager blockManager
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -75,6 +77,7 @@ public class ServicesTxnManager {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.migrationRecordsManager = migrationRecordsManager;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
+		this.blockManager = blockManager;
 	}
 
 	private boolean needToPublishMigrationRecords = true;
@@ -88,6 +91,7 @@ public class ServicesTxnManager {
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
 			sigImpactHistorian.setChangeTime(consensusTime);
 			recordsHistorian.clearHistory();
+			blockManager.reset();
 			ledger.begin();
 
 			if (needToPublishMigrationRecords) {

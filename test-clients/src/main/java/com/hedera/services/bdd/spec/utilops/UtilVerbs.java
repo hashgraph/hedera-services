@@ -77,7 +77,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import jdk.jshell.execution.Util;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
@@ -92,7 +91,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -153,7 +151,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.lang.System.arraycopy;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
@@ -1089,31 +1086,25 @@ public class UtilVerbs {
 				serialNumber);
 	}
 
-	public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
-		var nonce = UtilStateChange.getNonceForSpec(spec).orElse(0L);
-
+	public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
 		final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
-		for(final var op: ops) {
-			if(op instanceof HapiContractCall) {
-				final var convertedOp = new HapiEthereumCall(((HapiContractCall) op));
-				convertedOp.setNonce(nonce);
-				convertedOps.add(convertedOp);
-				nonce++;
+		for (final var op : ops) {
+			if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+				convertedOps.add(new HapiEthereumCall(callOp));
 			} else {
 				convertedOps.add(op);
 			}
 		}
-
-		UtilStateChange.setNonceForSpec(spec, nonce);
 		return convertedOps;
 	}
 
 	public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
 		var key = spec.registry().getKey(privateKeyRef);
-		final var privateKey = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
+		final var privateKey = spec.keys().getPrivateKey(
+				com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
 
 		byte[] privateKeyByteArray;
-		byte[] dByteArray = ((BCECPrivateKey)privateKey).getD().toByteArray();
+		byte[] dByteArray = ((BCECPrivateKey) privateKey).getD().toByteArray();
 		if (dByteArray.length < 32) {
 			privateKeyByteArray = new byte[32];
 			System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);

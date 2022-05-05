@@ -102,6 +102,7 @@ public class HapiApiSpec implements Runnable {
 
 	public enum UTF8Mode {FALSE, TRUE}
 
+	private long nonce = 0;
 	List<Payment> costs = new ArrayList<>();
 	List<Payment> costSnapshot = Collections.EMPTY_LIST;
 	String name;
@@ -192,7 +193,9 @@ public class HapiApiSpec implements Runnable {
 		return name;
 	}
 
-	public String getSuitePrefix() { return suitePrefix; }
+	public String getSuitePrefix() {
+		return suitePrefix;
+	}
 
 	public String logPrefix() {
 		return "'" + name + "' - ";
@@ -226,7 +229,7 @@ public class HapiApiSpec implements Runnable {
 
 		List<HapiSpecOperation> ops;
 
-		if(!suitePrefix.endsWith(ETH_SUFFIX)) {
+		if (!suitePrefix.endsWith(ETH_SUFFIX)) {
 			ops = Stream.of(given, when, then)
 					.flatMap(Arrays::stream)
 					.collect(toList());
@@ -235,8 +238,10 @@ public class HapiApiSpec implements Runnable {
 				initializeEthereumAccountForSpec(this);
 			}
 
-			ops = UtilVerbs.convertHapiCallsToEthereumCalls(this, Stream.of(given, when, then)
-					.flatMap(Arrays::stream).collect(Collectors.toList()));
+			ops = UtilVerbs.convertHapiCallsToEthereumCalls(
+					Stream.of(given, when, then)
+							.flatMap(Arrays::stream)
+							.collect(Collectors.toList()));
 		}
 
 		exec(ops);
@@ -249,6 +254,18 @@ public class HapiApiSpec implements Runnable {
 
 		markSpecAsBeenExecuted(this);
 		nullOutInfrastructure();
+	}
+
+	public long getNonce() {
+		return nonce;
+	}
+
+	public void incrementNonce() {
+		nonce++;
+	}
+
+	public boolean isUsingEthCalls() {
+		return suitePrefix.endsWith(ETH_SUFFIX);
 	}
 
 	public boolean tryReinitializingFees() {
@@ -527,9 +544,9 @@ public class HapiApiSpec implements Runnable {
 	private static Def.Sourced customizedHapiSpec(String name, Stream<Object> prioritySource) {
 		return (Object... sources) -> {
 			Object[] allSources = Stream.of(
-					prioritySource,
-					Stream.of(sources),
-					Stream.of(HapiSpecSetup.getDefaultPropertySource()))
+							prioritySource,
+							Stream.of(sources),
+							Stream.of(HapiSpecSetup.getDefaultPropertySource()))
 					.flatMap(Function.identity()).toArray();
 			return hapiSpec(name).withSetup(setupFrom(allSources));
 		};
