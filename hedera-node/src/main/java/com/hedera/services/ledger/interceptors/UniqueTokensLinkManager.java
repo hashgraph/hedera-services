@@ -77,7 +77,7 @@ public class UniqueTokensLinkManager {
 			if (rootKey != null) {
 				rootKey = unlinkFromMapValueLink(nftId, rootKey, listMutation);
 			} else {
-				log.error("Should not be possible. Root of owned nfts list is null. But account : " + from + " owns nft : " + nftId);
+				log.error("Should not be possible : Root of owned nfts list is null, but account : {} owns nft : {}", from, nftId);
 			}
 
 			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
