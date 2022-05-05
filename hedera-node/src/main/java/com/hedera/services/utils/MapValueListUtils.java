@@ -116,7 +116,7 @@ public class MapValueListUtils {
 	 * Unlinks the value of the given key from its containing linked list in the map represented by the
 	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
 	 * "adjacent" value(s) as needed and resets the next and prev pointers of this value.
-	 * Does <i>not</i> use {@link MapValueListMutation#getForModify(Object)}.
+	 * uses {@link MapValueListMutation#getForModify(Object)}.
 	 *
 	 * @param key
 	 * 		the key of the mapping to unlink

@@ -27,6 +27,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -38,6 +40,8 @@ import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValu
 import static com.hedera.services.utils.MapValueListUtils.unlinkFromMapValueLink;
 
 public class UniqueTokensLinkManager {
+	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
+
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
@@ -72,6 +76,8 @@ public class UniqueTokensLinkManager {
 
 			if (rootKey != null) {
 				rootKey = unlinkFromMapValueLink(nftId, rootKey, listMutation);
+			} else {
+				log.error("Should not be possible. Root of owned nfts list is null. But account : " + from + " owns nft : " + nftId);
 			}
 
 			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
