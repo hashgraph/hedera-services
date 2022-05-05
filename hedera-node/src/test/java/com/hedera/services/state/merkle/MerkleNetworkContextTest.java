@@ -134,11 +134,10 @@ class MerkleNetworkContextTest {
 		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
 		subject.setBlockNo(aBlockNo);
 
-		final var newBlockNo = subject.finishBlock(aFullBlockHash, newFirstConsTime);
+		final var newBlockNo = subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
 		assertEquals(Map.of(aBlockNo, aEthHash), subject.getBlockHashCache());
 		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
-		assertEquals(aBlockNo + 1, subject.getBlockNo());
 		assertEquals(aBlockNo + 1, newBlockNo);
 	}
 
@@ -150,12 +149,11 @@ class MerkleNetworkContextTest {
 			subject.getBlockHashCache().put((long) i, aEthHash);
 		}
 
-		subject.finishBlock(aFullBlockHash, newFirstConsTime);
+		subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
 		assertFalse(subject.getBlockHashCache().containsKey(0L));
 		assertEquals(aEthHash, subject.getBlockHashCache().get(aBlockNo));
 		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
-		assertEquals(aBlockNo + 1, subject.getBlockNo());
 	}
 
 	@Test
@@ -201,7 +199,6 @@ class MerkleNetworkContextTest {
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
 		assertEquals(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
 		assertNotSame(subject.getBlockHashCache(), subjectCopy.getBlockHashCache());
-		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
 		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:

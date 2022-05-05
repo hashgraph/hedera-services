@@ -23,7 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -43,7 +43,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing
@@ -64,9 +63,16 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final StorageExpiry storageExpiry,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
-	) {
-		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap, merkleNetworkContextSupplier);
+			final BlockManager blockManager
+			) {
+		super(
+				worldState,
+				livePricesSource,
+				globalDynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap,
+				blockManager);
 		this.codeCache = codeCache;
 		this.storageExpiry = storageExpiry;
 	}
