@@ -83,6 +83,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
@@ -137,7 +138,6 @@ class SignedTxnAccessorTest {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("s"))
 					.setEd25519(ByteString.copyFromUtf8("econd")))
 			.build();
-
 
 	@Test
 	@SuppressWarnings("uncheckeed")
@@ -257,6 +257,18 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+	}
+
+	@Test
+	void usesUnmodifiableFormOfRationalizedSpanMap() {
+		final var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		final var newMap = new HashMap<String, Object>();
+		newMap.put("1", new Object());
+		subject.setRationalizedSpanMap(newMap);
+
+		final var rationalizedMap = subject.getSpanMap();
+		assertThrows(UnsupportedOperationException.class, () -> rationalizedMap.put("2", 3));
 	}
 
 	@Test
@@ -621,7 +633,7 @@ class SignedTxnAccessorTest {
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
 		final var expandedMeta = spanMapAccessor.getEthTxDataMeta(accessor);
-		
+
 		assertEquals(98304L, expandedMeta.gasLimit());
 	}
 
@@ -725,9 +737,12 @@ class SignedTxnAccessorTest {
 		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
 
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
-				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, " +
-				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, " +
-				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2," +
+				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +
+				" " +
+				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104," +
+				" " +
+				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, " +
+				"2," +
 				" 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n" +
 				"  sigPair {\n" +
 				"    pubKeyPrefix: \"a\"\n" +
@@ -736,8 +751,10 @@ class SignedTxnAccessorTest {
 				"}\n" +
 				"bodyBytes: \"\\n\\004\\022\\002\\030\\002\\030\\n2\\003Hi!\\332\\001\\004\\n\\002\\030\\n\"\n" +
 				", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, " +
-				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, " +
-				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, " +
+				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56," +
+				" " +
+				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33," +
+				" " +
 				"-38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n" +
 				"  pubKeyPrefix: \"a\"\n" +
 				"  ed25519: \"0123456789012345678901234567890123456789012345678901234567890123\"\n" +
@@ -760,7 +777,8 @@ class SignedTxnAccessorTest {
 				", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null, " +
 				"txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0], " +
 				"function=ConsensusSubmitMessage, pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap" +
-				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, " +
+				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53," +
+				" " +
 				"54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, " +
 				"49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, " +
 				"used=[false]}, payer=accountNum: 2\n" +

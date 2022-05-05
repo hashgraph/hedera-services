@@ -104,11 +104,13 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCallTxn,
-										   final Id senderId,
-										   final Id relayerId,
-										   final long maxGasAllowanceInTinybars,
-										   final BigInteger offeredGasPrice) {
+	public void doStateTransitionOperation(
+			final TransactionBody contractCallTxn,
+			final Id senderId,
+			final Id relayerId,
+			final long maxGasAllowanceInTinybars,
+			final BigInteger offeredGasPrice
+	) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
 		final var targetId = target.toId();
