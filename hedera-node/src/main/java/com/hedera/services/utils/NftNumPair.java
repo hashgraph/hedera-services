@@ -21,7 +21,6 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.Objects;
 
@@ -29,14 +28,6 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 
 public record NftNumPair(long tokenNum, long serialNum) {
 	public static final NftNumPair MISSING_NFT_NUM_PAIR = new NftNumPair(0, 0);
-
-	public TokenID tokenId() {
-		return TokenID.newBuilder()
-				.setShardNum(STATIC_PROPERTIES.getShard())
-				.setRealmNum(STATIC_PROPERTIES.getRealm())
-				.setTokenNum(tokenNum)
-				.build();
-	}
 
 	public NftId nftId() {
 		return NftId.withDefaultShardRealm(tokenNum, serialNum);
