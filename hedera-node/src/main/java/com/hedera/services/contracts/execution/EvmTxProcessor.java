@@ -200,9 +200,8 @@ abstract class EvmTxProcessor {
 		var allowanceCharged = Wei.ZERO;
 		MutableAccount mutableRelayer = null;
 		if (relayer != null) {
-			final var relayerEvmAddress = relayer.getId().asEvmAddress();
-			final var relayerAccount = updater.getOrCreateSenderAccount(relayerEvmAddress);
-			mutableRelayer= relayerAccount.getMutable();
+			final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
+			mutableRelayer = relayerAccount.getMutable();
 		}
 		if (!isStatic) {
 			if (intrinsicGas.toLong() > gasLimit) {

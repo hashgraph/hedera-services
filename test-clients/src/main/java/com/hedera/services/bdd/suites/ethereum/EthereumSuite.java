@@ -46,7 +46,6 @@ public class EthereumSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(EthereumSuite.class);
 	private static final long depositAmount = 20_000L;
-
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
 	private static final long gasLimit = 1_000_000;
 
@@ -64,59 +63,6 @@ public class EthereumSuite extends HapiApiSuite {
 						invalidNonceEthereumTxFails()
 				)).toList();
 	}
-
-	HapiApiSpec bothPayFeesSucceeds() {
-		final long gasPrice = 47;
-		final long partialFee = gasPrice / 3;
-		final long senderCharged = partialFee*gasLimit;
-		final long fullAllowance = gasPrice * gasLimit * 5/4;
-
-		return defaultHapiSpec("bothPayFeesSucceeds")
-				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-								.via("autoAccount"),
-						getTxnRecord("autoAccount").andAllChildRecords(),
-						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
-				).when(
-						// Network and Node fees in the schedule for Ethereum transactions are 0,
-						// so everything charged will be from the gas consumed in the EVM execution
-						uploadDefaultFeeSchedules(GENESIS)
-				).then(
-						withOpContext((spec, ignore) -> {
-							final String senderBalance = "senderBalance";
-							final String payerBalance = "payerBalance";
-							final var subop1 =
-									balanceSnapshot(senderBalance, SECP_256K1_SOURCE_KEY)
-											.accountIsAlias();
-							final var subop2 = balanceSnapshot(payerBalance, RELAYER);
-							final var subop3 = ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
-									.type(EthTxData.EthTransactionType.EIP1559)
-									.signingWith(SECP_256K1_SOURCE_KEY)
-									.payingWith(RELAYER)
-									.via("payTxn")
-									.nonce(0)
-									.maxGasAllowance(fullAllowance)
-									.maxFeePerGas(partialFee)
-									.gasLimit(gasLimit)
-									.sending(depositAmount)
-									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
-
-							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
-							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
-
-							var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
-							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-									changeFromSnapshot(senderBalance, -depositAmount-senderCharged));
-							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-									changeFromSnapshot(payerBalance, -(fees-senderCharged)));
-							allRunFor(spec, subop4, subop5);
-						})
-				);
-	}
-
 
 	List<HapiApiSpec> feePaymentMatrix() {
 		final long gasPrice = 47;

@@ -71,6 +71,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public static final String ETH_HASH_KEY = "EthHash";
 
+    private static final TupleType longTuple = TupleType.parse("(int64)");
+
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
@@ -273,11 +275,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             contractID = TxnUtils.asContractId(contract, spec);
         }
 
-        final var longTuple = TupleType.parse("(int64)");
-        final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice.longValueExact())).array()).toArray();
+        final var gasPriceBytes = gasLongToBytes(gasPrice);;
         final var maxFeePerGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxFeePerGas.longValueExact())).array()).toArray();
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
-        final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.get())).array()).toArray();
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
@@ -360,5 +360,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 .add("contract", contract)
                 .add("abi", abi)
                 .add("params", Arrays.toString(params));
+    }
+
+    private byte[] gasLongToBytes(BigInteger gas) {
+        return Bytes.wrap(longTuple.encode(Tuple.of(gas.longValueExact())).array()).toArray();
     }
 }
