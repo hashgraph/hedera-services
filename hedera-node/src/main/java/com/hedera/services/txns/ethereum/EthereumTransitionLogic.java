@@ -56,6 +56,7 @@ import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafel
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
@@ -124,6 +125,9 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(final TxnAccessor accessor) {
+		if (accessor.getTxn().getEthereumTransaction().getMaxGasAllowance() < 0) {
+			return NEGATIVE_ALLOWANCE_AMOUNT;
+		}
 		final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		if (ethTxData == null) {
 			return INVALID_ETHEREUM_TRANSACTION;

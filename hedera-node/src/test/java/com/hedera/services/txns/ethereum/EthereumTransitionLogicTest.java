@@ -41,6 +41,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
@@ -129,6 +130,15 @@ class EthereumTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), WRONG_NONCE);
 	}
 
+
+	@Test
+	void transitionFailsGivenEip2930Txn() {
+		givenValidlyCalled(callTxn);
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
+
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_ETHEREUM_TRANSACTION);;
+	}
+
 	@Test
 	void transitionDelegatesToContractCallForSynthCall() {
 		givenValidlyCalled(callTxn);
@@ -166,12 +176,25 @@ class EthereumTransitionLogicTest {
 	}
 
 	@Test
+	void invalidIfAllowanceIsNegative() {
+		given(accessor.getTxn()).willReturn(TransactionBody.newBuilder()
+				.setEthereumTransaction(EthereumTransactionBody.newBuilder().setMaxGasAllowance(-1L))
+				.build()
+		);
+
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void invalidIfNoEthTxData() {
+		given(accessor.getTxn()).willReturn(ethTxn);
+
 		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void invalidIfChainIdDoesntMatch() {
+		given(accessor.getTxn()).willReturn(ethTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(dynamicProperties.chainIdBytes()).willReturn(chainIdBytes);
 
@@ -219,6 +242,7 @@ class EthereumTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(dynamicProperties.chainIdBytes()).willReturn(chainIdBytes);
 		given(ethTxData.matchesChainId(chainIdBytes)).willReturn(true);
+		given(accessor.getTxn()).willReturn(ethTxn);
 	}
 
 	private void givenValidlyCalled(final TransactionBody txn) {
