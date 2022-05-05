@@ -94,7 +94,7 @@ public class EthereumSuite extends HapiApiSuite {
 				invalidTxData(),
 				ETX_014_contractCreateInheritsSignerProperties(),
 				invalidNonceEthereumTxFails(),
-				ETX_09_callsToTokenAddresses()
+				ETX_009_callsToTokenAddresses()
 		);
 	}
 
@@ -221,7 +221,7 @@ public class EthereumSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec ETX_09_callsToTokenAddresses() {
+	HapiApiSpec ETX_009_callsToTokenAddresses() {
 		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
 		final var totalSupply = 50;
 
