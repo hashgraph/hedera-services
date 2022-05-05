@@ -271,7 +271,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMint")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
