@@ -378,6 +378,10 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, fn);
 	}
 
+	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
+		return new HapiContractCall(abi, contract, params);
+	}
+
 	public static HapiEthereumContractCreate ethereumContractCreate(final String contractName) {
 		return new HapiEthereumContractCreate(contractName).bytecode(contractName);
 	}
