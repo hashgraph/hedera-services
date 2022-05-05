@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -47,7 +48,7 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(EthereumSuite.class);
 	private static final long depositAmount = 20_000L;
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-	private static final long gasLimit = 1_000_000;
+	private static final long GAS_LIMIT = 1_000_000;
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -60,18 +61,19 @@ public class EthereumSuite extends HapiApiSuite {
 				Stream.of(
 						invalidTxData(),
 						ETX_014_contractCreateInheritsSignerProperties(),
-						invalidNonceEthereumTxFails()
+						invalidNonceEthereumTxFails(),
+						ETX_026_accountWithoutAliasCannotMakeEthTxns()
 				)).toList();
 	}
 
 	List<HapiApiSpec> feePaymentMatrix() {
 		final long gasPrice = 47;
-		final long chargedGasLimit = gasLimit * 4 / 5;
+		final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 
 		final long noPayment = 0L;
 		final long thirdOfFee = gasPrice / 3;
 		final long thirdOfPayment = thirdOfFee * chargedGasLimit;
-		final long thirdOfLimit = thirdOfFee * gasLimit;
+		final long thirdOfLimit = thirdOfFee * GAS_LIMIT;
 		final long fullAllowance = gasPrice * chargedGasLimit * 5/4;
 		final long fullPayment = gasPrice * chargedGasLimit;
 		final long ninteyPercentFee = gasPrice * 9 / 10;
@@ -142,7 +144,7 @@ public class EthereumSuite extends HapiApiSuite {
 									.nonce(0)
 									.maxGasAllowance(relayerOffered)
 									.maxFeePerGas(senderGasPrice)
-									.gasLimit(gasLimit)
+									.gasLimit(GAS_LIMIT)
 									.sending(depositAmount)
 									.hasKnownStatus(
 											success ? ResponseCodeEnum.SUCCESS : ResponseCodeEnum.INSUFFICIENT_TX_FEE);
@@ -282,6 +284,26 @@ public class EthereumSuite extends HapiApiSuite {
 						getAccountBalance(RELAYER).hasTinyBars(6 * ONE_MILLION_HBARS)
 				);
 	}
+
+	HapiApiSpec ETX_026_accountWithoutAliasCannotMakeEthTxns() {
+		final String ACCOUNT = "account";
+		return defaultHapiSpec("accountWithoutAliasCannotMakeEthTxns")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(ACCOUNT)
+								.key(SECP_256K1_SOURCE_KEY)
+								.balance(ONE_HUNDRED_HBARS)
+				).when(
+						ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(ACCOUNT)
+								.nonce(0)
+								.gasLimit(GAS_LIMIT)
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				).then();
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {
