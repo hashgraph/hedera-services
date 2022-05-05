@@ -21,8 +21,10 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -36,6 +38,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.NoFungibleTransfers.changingNoFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.NoNftTransfers.changingNoNftOwners;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -47,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -58,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -160,6 +165,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						newSlotsCanBeOpenedViaDissociate(),
 						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
 						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
+						autoAssociationWorksForContracts()
 				}
 		);
 	}
@@ -485,11 +491,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).via(transferTxn)
 				).then(
 						getTxnRecord(transferTxn)
-								.logged()
 								.hasPriority(recordWith()
-								.autoAssociated(accountTokenPairs(List.of(
-										Pair.of(beneficiary, fungibleToken),
-										Pair.of(beneficiary, uniqueToken))))),
+										.autoAssociated(accountTokenPairs(List.of(
+												Pair.of(beneficiary, fungibleToken),
+												Pair.of(beneficiary, uniqueToken))))),
 						getAccountInfo(beneficiary)
 								.hasAlreadyUsedAutomaticAssociations(2)
 								.has(accountWith().newAssociationsFromSnapshot(
@@ -643,6 +648,75 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec autoAssociationWorksForContracts() {
+		final var theContract = "CreateDonor";
+		final String tokenA = "tokenA";
+		final String tokenB = "tokenB";
+		final String uniqueToken = "unique";
+		final String treasury = "treasury";
+		final String tokenAcreateTxn = "tokenACreate";
+		final String tokenBcreateTxn = "tokenBCreate";
+		final String transferToFU = "transferToFU";
+
+		return defaultHapiSpec("autoAssociationWorksForContracts")
+				.given(
+						newKeyNamed("supplyKey"),
+						uploadInitCode(theContract),
+						contractCreate(theContract)
+								.maxAutomaticTokenAssociations(2),
+						cryptoCreate(treasury)
+								.balance(ONE_HUNDRED_HBARS),
+						tokenCreate(tokenA)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenAcreateTxn),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBcreateTxn),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyKey("supplyKey")
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						getTxnRecord(tokenAcreateTxn)
+								.hasNewTokenAssociation(tokenA, treasury)
+								.logged(),
+						getTxnRecord(tokenBcreateTxn)
+								.hasNewTokenAssociation(tokenB, treasury)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(treasury, theContract))
+								.via(transferToFU).logged(),
+						getTxnRecord(transferToFU)
+								.hasNewTokenAssociation(tokenA, theContract)
+								.logged(),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(1)
+										.maxAutoAssociations(2))
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, theContract)),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
+				).then(
+						cryptoTransfer(moving(1, tokenB).between(treasury, theContract))
+								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
+								.via("failedTransfer"),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
+
+								.logged()
+				);
+	}
 
 	public HapiApiSpec missingEntitiesRejected() {
 		return defaultHapiSpec("MissingTokensRejected")

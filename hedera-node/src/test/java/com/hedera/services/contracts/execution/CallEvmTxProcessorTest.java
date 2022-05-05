@@ -27,7 +27,7 @@ import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -65,19 +65,21 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CallEvmTxProcessorTest {
@@ -109,11 +111,11 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 	@Mock
-	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
-	@Mock
-	private MerkleNetworkContext merkleNetworkContext;
+	private BlockManager blockManager;
 	@Mock
 	private BlockValues blockValues;
+	@Mock
+	private HederaBlockValues hederaBlockValues;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -134,17 +136,15 @@ class CallEvmTxProcessorTest {
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource,
 				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, merkleNetworkContextSupplier);
+				operations, precompiledContractMap, aliasManager, storageExpiry, blockManager);
 	}
 
 	@Test
 	void assertSuccessExecution() {
 		givenValidMock();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-		given(merkleNetworkContext.getBlockNo()).willReturn(1234L);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
@@ -157,11 +157,9 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionEth() {
 		givenValidMockEth();
 
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-		given(merkleNetworkContext.getBlockNo()).willReturn(1234L);
 		var evmAccount = mock(EvmAccount.class);
 		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
 		var senderMutableAccount = mock(MutableAccount.class);
@@ -206,7 +204,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutionChargesCorrectMinimumGas() {
 		givenValidMock();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -372,7 +369,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessEthereumTransactionExecutionChargesBothSenderAndRelayerWithoutRefunds() {
 		givenValidMockEth();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -413,7 +409,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessEthereumTransactionExecutionChargesBothSenderAndRelayerAndRefunds() {
 		givenValidMockEth();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -453,7 +448,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessEthereumTransactionExecutionChargesBothSenderAndRelayerAndRefundsOnlyRelayer() {
 		givenValidMockEth();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		final var MAX_REFUND_PERCENTAGE = 1;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -584,7 +578,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessEthereumTransactionExecutionChargesRelayerWhenSenderGasPriceIs0() {
 		givenValidMockEth();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -679,7 +672,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceAndChargesOnlySender() {
 		givenValidMockEth();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -746,7 +738,6 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutionWithRefund() {
 		givenValidMock();
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(100);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -771,7 +762,6 @@ class CallEvmTxProcessorTest {
 	}
 
 	private void givenValidMock() {
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -797,10 +787,11 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenValidMockEth() {
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -825,6 +816,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenSenderWithBalance(final long amount) {

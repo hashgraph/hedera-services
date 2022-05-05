@@ -35,6 +35,7 @@ import java.util.Map;
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+
 	static {
 		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
 		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
@@ -70,6 +71,9 @@ public final class HederaAccountCustomizer extends
 		}
 		if (changes.containsKey(AccountProperty.AUTO_RENEW_ACCOUNT_ID)) {
 			op.setAutoRenewAccountId(((EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID)).toGrpcAccountId());
+		}
+		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(((int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)));
 		}
 	}
 

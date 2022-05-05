@@ -22,7 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hedera.services.sysfiles.ParsingUtils;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
@@ -43,7 +43,7 @@ class UtilsConstructorTest {
 			ParsingUtils.class,
 			CommonUtils.class,
 			Ed25519Utils.class,
-			ProtoCommonUtils.class,
+			ByteStringUtils.class,
 			SignatureGenerator.class,
 			ThrottlesJsonToProtoSerde.class,
 			ErrorCodeUtils.class,

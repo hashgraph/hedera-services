@@ -24,6 +24,7 @@ import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
@@ -255,5 +256,25 @@ public record EthTxData(
 				.add("r", Hex.encodeHexString(r))
 				.add("s", Hex.encodeHexString(s))
 				.toString();
+	}
+
+	public boolean hasCallData() {
+		return callData != null && callData.length > 0;
+	}
+
+	public boolean hasToAddress() {
+		return to != null && to.length > 0;
+	}
+
+	public boolean matchesChainId(final byte[] hederaChainId) {
+		return Arrays.compare(chainId, hederaChainId) == 0;
+	}
+
+	@VisibleForTesting
+	EthTxData replaceTo(byte[] to) {
+		return new EthTxData(
+				null, type, chainId, nonce, gasPrice, maxPriorityGas, maxGas, gasLimit,
+				to, value, callData, accessList, recId, v, r, s);
+
 	}
 }

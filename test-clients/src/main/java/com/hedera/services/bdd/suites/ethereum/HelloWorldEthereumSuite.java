@@ -1,5 +1,25 @@
 package com.hedera.services.bdd.suites.ethereum;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -62,9 +82,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     List<HapiApiSpec> ethereumCreates() {
         return List.of(
-//                smallContractCreate(),
+                smallContractCreate(),
+                contractCreateWithConstructorArgs(),
                 bigContractCreate()
-//                contractCreateWithConstructorArgs()
         );
     }
 
@@ -122,10 +142,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))    .via("autoAccount"),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
-
-
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT)
                 ).when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -158,7 +177,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))   .via("autoAccount"),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
 

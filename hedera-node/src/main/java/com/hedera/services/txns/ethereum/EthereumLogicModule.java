@@ -32,11 +32,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTra
 
 @Module
 public class EthereumLogicModule {
-
 	@Provides
 	@IntoMap
 	@FunctionKey(EthereumTransaction)
-	public static List<TransitionLogic> provideContractCallLogic(
+	public static List<TransitionLogic> provideEthereumTransactionLogic(
 			final EthereumTransitionLogic ethereumTransitionLogic
 	) {
 		return List.of(ethereumTransitionLogic);

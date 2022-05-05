@@ -58,6 +58,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -145,6 +146,13 @@ class MutableEntityAccessTest {
 	@Test
 	void commitsIfContractOpActive() {
 		givenActive(ContractCall);
+		subject.commit();
+		verify(tokensLedger).commit();
+	}
+
+	@Test
+	void commitsIfEthOpActive() {
+		givenActive(EthereumTransaction);
 		subject.commit();
 		verify(tokensLedger).commit();
 	}

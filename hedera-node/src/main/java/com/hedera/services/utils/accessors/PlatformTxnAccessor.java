@@ -81,7 +81,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public void setSigMeta(RationalizedSigMeta sigMeta) {
+	public void setSigMeta(final RationalizedSigMeta sigMeta) {
 		this.sigMeta = sigMeta;
 	}
 
@@ -131,8 +131,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
 		final var meta = getSigMeta();
 		if (!meta.couldRationalizeOthers()) {
-			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
-					"failed");
+			throw new IllegalStateException("Public-key-to-sig mapping is unusable after rationalization failed");
 		}
 		return meta.pkToVerifiedSigFn();
 	}
@@ -226,6 +225,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	@Override
 	public long getGasLimitForContractTx() {
 		return delegate.getGasLimitForContractTx();
+	}
+
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		delegate.setRationalizedSpanMap(newSpanMap);
 	}
 
 	@Override
