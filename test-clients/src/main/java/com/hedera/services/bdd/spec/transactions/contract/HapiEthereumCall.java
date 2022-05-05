@@ -82,9 +82,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
+    private boolean useSpecNonce = true;
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private boolean useSpecNonce = true;
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);

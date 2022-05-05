@@ -684,7 +684,6 @@ class ContractCreateTransitionLogicTest {
 		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}
 
-
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(true, false, false);
 	}

@@ -130,9 +130,8 @@ class EthereumTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), WRONG_NONCE);
 	}
 
-
 	@Test
-	void transitionFailsGivenEip2930Txn() {
+	void transitionFailsFastGivenEip2930Txn() {
 		givenValidlyCalled(callTxn);
 		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
 
@@ -165,16 +164,6 @@ class EthereumTransitionLogicTest {
 		verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
 	}
 
-	private void givenLegacyOfferedPrice() {
-		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.LEGACY_ETHEREUM);
-		given(ethTxData.gasPrice()).willReturn(Longs.toByteArray(offeredGasPrice));
-	}
-
-	private void givenEip1559OfferedPrice() {
-		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP1559);
-		given(ethTxData.maxGas()).willReturn(Longs.toByteArray(offeredGasPrice));
-	}
-
 	@Test
 	void invalidIfAllowanceIsNegative() {
 		given(accessor.getTxn()).willReturn(TransactionBody.newBuilder()
@@ -190,6 +179,16 @@ class EthereumTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxn);
 
 		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+	}
+
+	private void givenLegacyOfferedPrice() {
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.LEGACY_ETHEREUM);
+		given(ethTxData.gasPrice()).willReturn(Longs.toByteArray(offeredGasPrice));
+	}
+
+	private void givenEip1559OfferedPrice() {
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP1559);
+		given(ethTxData.maxGas()).willReturn(Longs.toByteArray(offeredGasPrice));
 	}
 
 	@Test
