@@ -69,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 @Singleton
@@ -227,6 +228,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getGas() > properties.maxGas()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
+		}
+		if (properties.areTokenAssociationsLimited() &&
+				op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {
+			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
 		return validator.memoCheck(op.getMemo());
 	}

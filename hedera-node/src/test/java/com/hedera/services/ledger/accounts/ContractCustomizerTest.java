@@ -44,6 +44,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
@@ -100,6 +101,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+		given(ledger.get(sponsorId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociation);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -116,6 +118,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+		given(ledger.get(sponsorId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociation);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -127,6 +130,7 @@ class ContractCustomizerTest {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.setProxyAccountID(proxy.toGrpcAccountId())
+				.setMaxAutomaticTokenAssociations(10)
 				.setMemo(memo)
 				.build();
 
@@ -140,6 +144,7 @@ class ContractCustomizerTest {
 	void worksWithCryptoKeyAndNoExplicitProxy() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setMaxAutomaticTokenAssociations(10)
 				.setMemo(memo)
 				.build();
 
@@ -154,6 +159,7 @@ class ContractCustomizerTest {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId())
+				.setMaxAutomaticTokenAssociations(10)
 				.setMemo(memo)
 				.build();
 
@@ -162,6 +168,21 @@ class ContractCustomizerTest {
 
 		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
 		verify(ledger).set(newContractId, AUTO_RENEW_ACCOUNT_ID, autoRenewAccount);
+	}
+
+	@Test
+	void worksWithAutoAssociationSlots() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setMaxAutomaticTokenAssociations(10)
+				.setMemo(memo)
+				.build();
+
+		final var subject = ContractCustomizer.fromHapiCreation(
+				cryptoAdminKey, consensusNow, op);
+
+		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, 10);
 	}
 
 	@Test
@@ -197,6 +218,7 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, maxAutoAssociation);
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(cryptoAdminKey, keyUsed));
 	}
@@ -212,6 +234,7 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, maxAutoAssociation);
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
 	}
@@ -227,4 +250,5 @@ class ContractCustomizerTest {
 	private static final String memo = "the grey rock";
 	private static final EntityId proxy = new EntityId(0, 0, 3);
 	private static final EntityId autoRenewAccount = new EntityId(0, 0, 4);
+	private static final int maxAutoAssociation = 10;
 }

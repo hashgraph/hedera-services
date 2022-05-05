@@ -129,29 +129,6 @@ class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	void firstUsedTimestampIsFirstPrecedingChildIfPreset() {
-		subject = mock(RecordsHistorian.class);
-		willCallRealMethod().given(subject).firstUsedTimestamp();
-
-		given(subject.hasPrecedingChildRecords()).willReturn(true);
-		given(subject.getPrecedingChildRecords()).willReturn(List.of(rso));
-		given(rso.getTimestamp()).willReturn(topLevelNow);
-
-		assertSame(topLevelNow, subject.firstUsedTimestamp());
-	}
-
-	@Test
-	void firstUsedTimestampIsTopLevelIfNoPrecedingChildren() {
-		subject = mock(RecordsHistorian.class);
-		willCallRealMethod().given(subject).firstUsedTimestamp();
-		given(rso.getTimestamp()).willReturn(topLevelNow);
-
-		given(subject.getTopLevelRecord()).willReturn(rso);
-
-		assertSame(topLevelNow, subject.firstUsedTimestamp());
-	}
-
-	@Test
 	void lastUsedRunningHashIsLastSucceedingChildIfPreset() {
 		final var mockHash = new RunningHash();
 		subject = mock(RecordsHistorian.class);

@@ -293,14 +293,14 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part1.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompileEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
 				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -806,8 +806,7 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
-											" " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
 											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");

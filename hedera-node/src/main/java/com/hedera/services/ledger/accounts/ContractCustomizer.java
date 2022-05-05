@@ -91,6 +91,7 @@ public class ContractCustomizer {
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}
@@ -119,6 +120,7 @@ public class ContractCustomizer {
 				.proxy((EntityId) ledger.get(sponsor, PROXY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
 				.autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}

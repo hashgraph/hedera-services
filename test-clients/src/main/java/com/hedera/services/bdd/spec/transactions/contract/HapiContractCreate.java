@@ -72,9 +72,15 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 	}
 
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
+		return this;
+	}
+
+	public HapiContractCreate maxAutomaticTokenAssociations(int max) {
+		maxAutomaticTokenAssociations = Optional.of(max);
 		return this;
 	}
 
@@ -287,6 +293,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 							} else {
 								payer.ifPresent(s -> b.setAutoRenewAccountId(asId(s, spec)));
 							}
+							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);
