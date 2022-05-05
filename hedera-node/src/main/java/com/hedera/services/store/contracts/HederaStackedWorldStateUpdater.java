@@ -24,14 +24,12 @@ package com.hedera.services.store.contracts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -50,6 +48,8 @@ public class HederaStackedWorldStateUpdater
 		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
 		implements HederaWorldUpdater {
 
+	// Returned when a client tries to un-alias a mirror address that has an EIP-1014 address
+	private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
 
 	private final HederaMutableWorldState worldState;
@@ -93,14 +93,30 @@ public class HederaStackedWorldStateUpdater
 		return (long) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0L;
 	}
 
+	/**
+	 * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros
+	 * if the given address is the mirror address of an account with an EIP-1014 address.
+	 *
+	 * @param evmAddress an EVM address
+	 * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for this account
+	 */
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
 		if (!addressOrAlias.equals(trackingLedgers().canonicalAddress(addressOrAlias))) {
-			throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+			return NON_CANONICAL_REFERENCE;
 		}
-		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+		return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
 	}
 
+	/**
+	 * Returns the mirror form of the given EVM address.
+	 *
+	 * @param evmAddress an EVM address
+	 * @return its mirror form
+	 */
+	public byte[] permissivelyUnaliased(final byte[] evmAddress) {
+		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+	}
 	/**
 	 * Returns the underlying entity id of the last allocated EVM address.
 	 *
