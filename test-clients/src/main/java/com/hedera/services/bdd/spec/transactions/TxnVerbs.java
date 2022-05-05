@@ -338,10 +338,6 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, params);
 	}
 
-	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
-		return new HapiContractCall(abi, contract, params);
-	}
-
 	/**
 	 * This method allows the developer to invoke a contract function by the name of the called contract and the name
 	 * of the desired function and make an ethereum call
