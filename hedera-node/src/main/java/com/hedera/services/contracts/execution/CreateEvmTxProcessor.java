@@ -120,7 +120,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long maxGasAllowance
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-//		validateTrue(providedMaxGasPrice >= gasPrice || maxGasAllowance > 0, INSUFFICIENT_TX_FEE);
 
 		return super.execute(
 				sender,

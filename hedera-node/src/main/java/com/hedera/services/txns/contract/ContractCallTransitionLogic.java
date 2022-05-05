@@ -127,11 +127,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				: Bytes.EMPTY;
 
 		// --- Do the business logic ---
-		if (relayerId != null) {
-			sender.incrementEthereumNonce();
-			accountStore.commitAccount(sender);
-		}
-
 		TransactionProcessingResult result;
 		if (relayerId == null) {
 			result = evmTxProcessor.execute(
@@ -142,6 +137,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 					callData,
 					txnCtx.consensusTime());
 		} else {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+
 			result = evmTxProcessor.executeEth(
 					sender,
 					receiver.canonicalAddress(),

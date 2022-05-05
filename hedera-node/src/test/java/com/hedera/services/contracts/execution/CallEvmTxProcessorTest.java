@@ -400,8 +400,9 @@ class CallEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(result.getGasUsed(), gasLimit);
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		verify(mutableRelayerAccount,
-				never()).incrementBalance(any());
+		verify(mutableSenderAccount).decrementBalance(Wei.of(offeredGasPrice * gasLimit));
+		verify(mutableRelayerAccount).decrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
+		verify(mutableRelayerAccount, never()).incrementBalance(any());
 		verify(mutableSenderAccount, never()).incrementBalance(any());
 	}
 
@@ -438,6 +439,8 @@ class CallEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(0, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		verify(mutableSenderAccount).decrementBalance(Wei.of(offeredGasPrice * gasLimit));
+		verify(mutableRelayerAccount).decrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
 		verify(mutableRelayerAccount).incrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
 		verify(mutableSenderAccount).incrementBalance(Wei.of(offeredGasPrice * gasLimit));
 	}
@@ -475,6 +478,8 @@ class CallEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(gasLimit - gasLimit * MAX_REFUND_PERCENTAGE / 100, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		verify(mutableSenderAccount).decrementBalance(Wei.of(offeredGasPrice * gasLimit));
+		verify(mutableRelayerAccount).decrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
 		verify(mutableRelayerAccount).incrementBalance(any());
 		verify(mutableSenderAccount, never()).incrementBalance(any());
 	}
@@ -697,8 +702,8 @@ class CallEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(result.getGasUsed(), gasLimit);
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		verify(mutableRelayerAccount, never()).decrementBalance(Wei.of(gasPrice * gasLimit));
 		verify(mutableSenderAccount).decrementBalance(Wei.of(gasPrice * gasLimit));
+		verify(mutableRelayerAccount, never()).decrementBalance(Wei.of(gasPrice * gasLimit));
 	}
 
 	@Test

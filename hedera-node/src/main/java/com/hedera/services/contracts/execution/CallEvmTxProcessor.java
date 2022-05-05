@@ -119,7 +119,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final long maxGasAllowanceInTinybars
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-//		validateTrue(userOfferedGasPrice >= gasPrice || maxGasAllowanceInTinybars > 0, INSUFFICIENT_TX_FEE);
 
 		return super.execute(sender,
 				receiver,
