@@ -225,6 +225,7 @@ public class AutoRenewCalcs {
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
 				.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
+				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.build();
 	}
 

@@ -257,6 +257,7 @@ public class BaseOperationUsage {
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentMaxAutomaticAssociations(0)
 				.build();
 		final var contractContext = new ExtantContractContext(
 				CANONICAL_NUM_CONTRACT_KV_PAIRS,
