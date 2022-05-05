@@ -242,7 +242,5 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		mutableNft.setMetadata(nft.getMetadata());
 		final var creationTime = nft.getCreationTime();
 		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
-		mutableNft.setPrev(nft.getPrev());
-		mutableNft.setNext(nft.getNext());
 	}
 }

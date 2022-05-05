@@ -104,4 +104,27 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 		verify(uniqueTokensLinkManager).updateLinks(owner, newOwner, nftKey);
 	}
+
+	@Test
+	void triggersUpdateLinksOnWipeAsExpected() {
+		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(MerkleUniqueToken.class);
+		final long ownerNum = 1111L;
+		final long tokenNum = 2222L;
+		final long serialNum = 2L;
+		EntityNum owner = EntityNum.fromLong(ownerNum);
+		EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
+
+
+		given(changes.size()).willReturn(1);
+		given(changes.entity(0)).willReturn(nft);
+		given(changes.changes(0)).willReturn(null);
+		given(nft.getOwner()).willReturn(owner.toEntityId());
+		given(nft.getKey()).willReturn(nftKey);
+
+
+		subject.preview(changes);
+
+		verify(uniqueTokensLinkManager).updateLinks(owner, null, nftKey);
+	}
 }

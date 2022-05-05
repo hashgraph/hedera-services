@@ -27,6 +27,9 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+
 /**
  * Placeholder for upcoming work.
  */
@@ -49,14 +52,20 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 		for (int i = 0; i < n; i++) {
 			final var entity = pendingChanges.entity(i);
 			final var change = pendingChanges.changes(i);
-			if (entity != null && change != null && change.containsKey(NftProperty.OWNER)) {
-				// we are changing the owner of an uniqueToken. we have to update the links
+			if (entity != null) {
 				final var fromAccount = entity.getOwner();
-				final var toAccount = (EntityId) change.get(NftProperty.OWNER);
-				uniqueTokensLinkManager.updateLinks(
-						fromAccount.asNum(),
-						toAccount.asNum(),
-						entity.getKey());
+				if (change == null && !entity.getOwner().equals(MISSING_ENTITY_ID)) {
+					uniqueTokensLinkManager.updateLinks(
+							fromAccount.asNum(),
+							null,
+							entity.getKey());
+				} else if (change != null && change.containsKey(OWNER)) {
+					final var toAccount = (EntityId) change.get(OWNER);
+					uniqueTokensLinkManager.updateLinks(
+							fromAccount.asNum(),
+							toAccount.asNum(),
+							entity.getKey());
+				}
 			}
 		}
 	}

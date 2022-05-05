@@ -22,7 +22,6 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -55,7 +54,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final UniqueTokensLinkManager uniqueTokensLinkManager;
 
 	@Inject
 	public TokenWipeTransitionLogic(
@@ -63,15 +61,13 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 			final TypedTokenStore tokenStore,
 			final AccountStore accountStore,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties,
-			final UniqueTokensLinkManager uniqueTokensLinkManager
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
-		this.uniqueTokensLinkManager = uniqueTokensLinkManager;
 	}
 
 	@Override
@@ -94,7 +90,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 			token.wipe(accountRel, op.getAmount());
 		} else {
 			tokenStore.loadUniqueTokens(token, op.getSerialNumbersList());
-			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList(), uniqueTokensLinkManager);
+			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
 		}
 		/* --- Persist the updated models --- */
 		tokenStore.commitToken(token);

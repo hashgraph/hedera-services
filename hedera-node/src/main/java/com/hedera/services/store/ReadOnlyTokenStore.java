@@ -358,8 +358,6 @@ public class ReadOnlyTokenStore {
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
 		uniqueToken.setSpender(immutableUniqueToken.getSpender().asId());
-		uniqueToken.setPrev(immutableUniqueToken.getPrev());
-		uniqueToken.setNext(immutableUniqueToken.getNext());
 	}
 
 	private TokenRelationship buildTokenRelationship(
