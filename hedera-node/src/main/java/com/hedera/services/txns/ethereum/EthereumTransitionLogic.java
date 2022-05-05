@@ -67,7 +67,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 
 public class EthereumTransitionLogic implements PreFetchableTransition {
@@ -296,7 +296,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		return switch (ethTxData.type()) {
 			case LEGACY_ETHEREUM -> new BigInteger(ethTxData.gasPrice());
 			case EIP1559 -> new BigInteger(ethTxData.maxGas());
-			case EIP2930 -> throw new InvalidTransactionException(FAIL_INVALID);
+			case EIP2930 -> throw new InvalidTransactionException(INVALID_ETHEREUM_TRANSACTION);
 		};
 	}
 }

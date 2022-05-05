@@ -48,7 +48,7 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final long depositAmount = 20_000L;
 
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-	private static final long gasLimit = 800_000;
+	private static final long gasLimit = 1_000_000;
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -120,42 +120,50 @@ public class EthereumSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> feePaymentMatrix() {
 		final long gasPrice = 47;
+		final long chargedGasLimit = gasLimit * 4 / 5;
 
 		final long noPayment = 0L;
-		final long partialFee = gasPrice / 3;
-		final long partialPayment = partialFee * gasLimit;
-		final long fullAllowance = gasPrice * gasLimit * 5/4;
+		final long thirdOfFee = gasPrice / 3;
+		final long thirdOfPayment = thirdOfFee * chargedGasLimit;
+		final long thirdOfLimit = thirdOfFee * gasLimit;
+		final long fullAllowance = gasPrice * chargedGasLimit * 5/4;
+		final long fullPayment = gasPrice * chargedGasLimit;
+		final long ninteyPercentFee = gasPrice * 9 / 10;
 
-		return Stream.concat(Stream.of(bothPayFeesSucceeds()), Stream.of(
-				new Object[] { false, noPayment, noPayment, false, false},
-				new Object[] { false, noPayment, partialPayment, false, false },
-				new Object[] { true, noPayment, fullAllowance, false, true },
-				new Object[] { false, partialFee, noPayment, false, false },
-				new Object[] { false, partialFee, partialPayment, false, false },
-//				new Object[] { true, partialFee, fullAllowance, false, false }, // done in bothPayFeesSucceeds()
-				new Object[] { true, gasPrice, noPayment, true, false },
-				new Object[] { true, gasPrice, partialPayment, true, false },
-				new Object[] { true, gasPrice, fullAllowance, true, false}
+		return Stream.of(
+				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
+				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
+				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
+				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
+				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
+				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
+				new Object[] { true, thirdOfFee, fullAllowance*9/10, thirdOfLimit, fullPayment - thirdOfLimit},
+				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment},
+				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment},
+				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
+				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
+				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
 		).map(params ->
 				// [0] - success
 				// [1] - sender gas price
 				// [2] - relayer offered
-				// [3] - is sender charged
-				// [4] - is relayer charged
-				matrixedPayerRelayerTest((boolean) params[0],
+				// [3] - sender charged amount
+				// [4] - relayer charged amount 
+				matrixedPayerRelayerTest(
+						(boolean) params[0],
 						(long) params[1],
 						(long) params[2],
-						(boolean) params[3],
-						(boolean) params[4])
-		)).toList();
+						(long) params[3],
+						(long) params[4])
+		).toList();
 	}
 
 	HapiApiSpec matrixedPayerRelayerTest(
 			final boolean success,
 			final long senderGasPrice,
 			final long relayerOffered,
-			final boolean senderCharged,
-			final boolean relayerCharged
+			final long senderCharged,
+			final long relayerCharged
 	) {
 		return defaultHapiSpec(
 				"feePaymentMatrix " + (success ? "Success/" : "Failure/") + senderGasPrice + "/" + relayerOffered)
@@ -196,29 +204,11 @@ public class EthereumSuite extends HapiApiSuite {
 							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
-							if (success) {
-								if (senderCharged) {
-									var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
-									final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-											changeFromSnapshot(senderBalance, -fees-depositAmount));
-									final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-											changeFromSnapshot(payerBalance, 0));
-									allRunFor(spec, subop4, subop5);
-								} else if (relayerCharged) {
-									var fees = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
-									final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-											changeFromSnapshot(senderBalance, -depositAmount));
-									final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-											changeFromSnapshot(payerBalance, -fees));
-									allRunFor(spec, subop4, subop5);
-								}
-							} else {
-								final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
-										changeFromSnapshot(senderBalance, 0));
-								final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-										changeFromSnapshot(payerBalance, 0));
-								allRunFor(spec, subop4, subop5);
-							}
+							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+									changeFromSnapshot(senderBalance, success ? (-depositAmount - senderCharged) : 0));
+							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
+									changeFromSnapshot(payerBalance, success ? -relayerCharged : 0));
+							allRunFor(spec, subop4, subop5);
 						})
 				);
 	}
