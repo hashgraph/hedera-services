@@ -33,10 +33,12 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
@@ -111,9 +113,12 @@ public class ContractCustomizer {
 		final var customizer = new HederaAccountCustomizer()
 				.memo((String) ledger.get(sponsor, MEMO))
 				.expiry((long) ledger.get(sponsor, EXPIRY))
-				.proxy((EntityId) ledger.get(sponsor, PROXY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
-				.isSmartContract(true);
+				.isSmartContract(true)
+				.isDeclinedReward((boolean) ledger.get(sponsor, DECLINE_REWARD))
+				.stakedToMe((long) ledger.get(sponsor, STAKED_TO_ME))
+				.stakePeriodStart((long) ledger.get(sponsor, STAKE_PERIOD_START))
+				.stakedId((long) ledger.get(sponsor, STAK));
 		return new ContractCustomizer(key, customizer);
 	}
 

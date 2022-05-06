@@ -304,7 +304,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getStakedToMe;
 		}
 	},
-	STAKE_START_PERIOD {
+	STAKE_PERIOD_START {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> a.setStakePeriodStart((long) t);
@@ -315,10 +315,18 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getStakePeriodStart;
 		}
 	},
-	STAKED_NODE_ID {
+	STAKED_ID {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setStakedNodeId((long) t);
+			return (a, t) -> {
+				final var val = (long) t;
+				if (val < 0) {
+					a.setStakedNodeId(val);
+				} else {
+
+				}
+
+			}
 		}
 
 		@Override

@@ -35,6 +35,7 @@ import java.util.Map;
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+
 	static {
 		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
 		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
@@ -47,7 +48,11 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED);
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
-		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
+		optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
+		optionAccountPropertyMap.put(Option.STAKED_TO_ME, AccountProperty.STAKED_TO_ME);
+		optionAccountPropertyMap.put(Option.STAKE_PERIOD_START, AccountProperty.STAKE_PERIOD_START);
+		optionAccountPropertyMap.put(Option.STAKED_ID, AccountProperty.STAKED_ID);
+		optionAccountPropertyMap.put(Option.STAKED_ACCOUNT, AccountProperty.STAKED_ACCOUNT);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}
 
@@ -64,8 +69,13 @@ public final class HederaAccountCustomizer extends
 			op.setAutoRenewPeriod(Duration.newBuilder()
 					.setSeconds((long) changes.get(AccountProperty.AUTO_RENEW_PERIOD)));
 		}
-		if (changes.containsKey(AccountProperty.PROXY)) {
-			op.setProxyAccountID(((EntityId) changes.get(AccountProperty.PROXY)).toGrpcAccountId());
+		if (changes.containsKey(AccountProperty.STAKED_ACCOUNT)) {
+			op.setStakedAccountId(((EntityId) changes.get(AccountProperty.STAKED_ACCOUNT)).toGrpcAccountId());
+		} else if (changes.containsKey(AccountProperty.STAKED_ID)) {
+			op.setStakedNodeId(((long) changes.get(AccountProperty.STAKED_ID)));
+		}
+		if (changes.containsKey(AccountProperty.DECLINE_REWARD)) {
+			op.setDeclineReward((boolean) changes.get(AccountProperty.DECLINE_REWARD));
 		}
 	}
 
