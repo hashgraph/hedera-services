@@ -21,9 +21,13 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -129,5 +133,16 @@ public final class PureValidation {
 		} catch (DecoderException ignore) {
 			return failure;
 		}
+	}
+
+	public static boolean isValidStakedId(final AccountID stakedAccountId,
+			final long stakedNodeId,
+			final MerkleMap<EntityNum, MerkleAccount> accounts) {
+		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
+			return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
+		} else if (stakedNodeId > 0) {
+			return queryableAccountStatus(EntityNum.fromLong(stakedNodeId), accounts) == OK;
+		}
+		return true;
 	}
 }

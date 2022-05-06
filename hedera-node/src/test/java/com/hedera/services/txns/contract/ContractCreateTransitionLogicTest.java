@@ -30,11 +30,13 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,6 +116,8 @@ class ContractCreateTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -127,7 +132,7 @@ class ContractCreateTransitionLogicTest {
 				hfs,
 				txnCtx, accountStore, validator,
 				worldState, recordServices, evmTxProcessor,
-				properties, sigImpactHistorian);
+				properties, sigImpactHistorian, () -> accounts);
 	}
 
 	@Test

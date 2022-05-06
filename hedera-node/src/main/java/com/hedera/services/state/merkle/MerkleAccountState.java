@@ -92,7 +92,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long stakePeriodStart;
 	// if -ve we are staking ot a node, if +ve we are staking to an account and 0 if not staking to anyone.
 	private long stakedNum;
-//	private long stakedRealm;
 	private boolean declineReward;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
@@ -648,15 +647,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		assertMutable("stakedNum");
 		this.stakedNum = stakedNum;
 	}
-
-//	public long getStakedRealm() {
-//		return stakedRealm;
-//	}
-//
-//	public void setStakedRealm(final long stakedRealm) {
-//		assertMutable("stakedRealm");
-//		this.stakedRealm = stakedRealm;
-//	}
 
 	public boolean isDeclineReward() {
 		return declineReward;

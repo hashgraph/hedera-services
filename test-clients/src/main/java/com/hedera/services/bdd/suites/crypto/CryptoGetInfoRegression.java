@@ -230,7 +230,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 								.has(accountWith()
 										.accountId("target")
 										.solidityId("target")
-										.proxy("1.2.3")
+										.stakedId("1.2.3")
 										.key("misc")
 										.balance(balance)
 										.sendThreshold(sendThresh)

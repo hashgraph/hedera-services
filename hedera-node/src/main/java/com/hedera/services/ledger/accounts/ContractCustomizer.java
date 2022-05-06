@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWA
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -79,17 +80,26 @@ public class ContractCustomizer {
 	) {
 		final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
-		final var proxyId = op.hasProxyAccountID()
-				? EntityId.fromGrpcAccountId(op.getProxyAccountID())
-				: MISSING_ENTITY_ID;
+		final var stakedId = getStakedId(op);
+
 		final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
 		final var customizer = new HederaAccountCustomizer()
 				.memo(op.getMemo())
-				.proxy(proxyId)
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
+				.isDeclinedReward(op.getDeclineReward())
+				.stakedId(stakedId)
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
+	}
+
+	private static EntityId getStakedId(final ContractCreateTransactionBody op) {
+		if (op.hasStakedAccountId()) {
+			return EntityId.fromGrpcAccountId(op.getStakedAccountId());
+		} else if (op.getStakedNodeId() > 0) {
+			return EntityId.fromIdentityCode((int) op.getStakedNodeId());
+		}
+		return MISSING_ENTITY_ID;
 	}
 
 	/**
@@ -114,11 +124,7 @@ public class ContractCustomizer {
 				.memo((String) ledger.get(sponsor, MEMO))
 				.expiry((long) ledger.get(sponsor, EXPIRY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
-				.isSmartContract(true)
-				.isDeclinedReward((boolean) ledger.get(sponsor, DECLINE_REWARD))
-				.stakedToMe((long) ledger.get(sponsor, STAKED_TO_ME))
-				.stakePeriodStart((long) ledger.get(sponsor, STAKE_PERIOD_START))
-				.stakedId((long) ledger.get(sponsor, STAK));
+				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}
 

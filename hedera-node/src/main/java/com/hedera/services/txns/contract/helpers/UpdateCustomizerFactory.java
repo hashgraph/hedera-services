@@ -24,6 +24,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -46,37 +47,38 @@ public class UpdateCustomizerFactory {
 	public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
 			MerkleAccount contract,
 			OptionValidator validator,
-			ContractUpdateTransactionBody updateOp
+			ContractUpdateTransactionBody op
 	) {
-		if (!onlyAffectsExpiry(updateOp) && !isMutable(contract)) {
+		if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
 			return Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT);
 		}
 
-		if (reducesExpiry(updateOp, contract.getExpiry())) {
+		if (reducesExpiry(op, contract.getExpiry())) {
 			return Pair.of(Optional.empty(), EXPIRATION_REDUCTION_NOT_ALLOWED);
 		}
 
-		var cid = updateOp.getContractID();
+		var cid = op.getContractID();
 		var customizer = new HederaAccountCustomizer();
-		if (updateOp.hasAdminKey() && processAdminKey(updateOp, cid, customizer)) {
+		if (op.hasAdminKey() && processAdminKey(op, cid, customizer)) {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
-		if (updateOp.hasProxyAccountID()) {
-			customizer.proxy(fromGrpcAccountId(updateOp.getProxyAccountID()));
+		if (op.hasAutoRenewPeriod()) {
+			customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
 		}
-		if (updateOp.hasAutoRenewPeriod()) {
-			customizer.autoRenewPeriod(updateOp.getAutoRenewPeriod().getSeconds());
-		}
-		if (updateOp.hasExpirationTime()) {
-			if (!validator.isValidExpiry(updateOp.getExpirationTime())) {
+		if (op.hasExpirationTime()) {
+			if (!validator.isValidExpiry(op.getExpirationTime())) {
 				return Pair.of(Optional.empty(), INVALID_EXPIRATION_TIME);
 			}
-			customizer.expiry(updateOp.getExpirationTime().getSeconds());
+			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
-		if (affectsMemo(updateOp)) {
-			processMemo(updateOp, customizer);
+		if (affectsMemo(op)) {
+			processMemo(op, customizer);
 		}
-
+		if (op.hasStakedAccountId()) {
+			customizer.stakedId(EntityId.fromGrpcAccountId(op.getStakedAccountId()));
+		} else if (op.getStakedNodeId() > 0) {
+			customizer.stakedId(EntityId.fromIdentityCode((int) op.getStakedNodeId()));
+		}
 		return Pair.of(Optional.of(customizer), OK);
 	}
 

@@ -227,7 +227,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getFungibleTokenAllowancesUnsafe;
 		}
 	},
-	APPROVE_FOR_ALL_NFTS_ALLOWANCES  {
+	APPROVE_FOR_ALL_NFTS_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> a.setApproveForAllNfts((Set<FcTokenAllowanceId>) t);
@@ -320,24 +320,12 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> {
 				final var val = (long) t;
-				if (val < 0) {
+				if ((val < 0)) {
 					a.setStakedNodeId(val);
 				} else {
-
+					a.setStakedAccount(val);
 				}
-
-			}
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getStakedNum;
-		}
-	},
-	STAKED_ACCOUNT {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setStakedAccount((long) t);
+			};
 		}
 
 		@Override

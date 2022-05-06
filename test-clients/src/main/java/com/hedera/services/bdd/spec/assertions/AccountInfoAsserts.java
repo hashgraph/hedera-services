@@ -84,11 +84,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts proxy(String idLiteral) {
+	public AccountInfoAsserts stakedId(String idLiteral) {
 		registerProvider((spec, o) -> {
 			assertEquals(HapiPropertySource.asAccount(idLiteral),
-					((AccountInfo) o).getProxyAccountID(),
-					"Bad proxy id!");
+					((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+					"Bad stakedId id!");
 		});
 		return this;
 	}

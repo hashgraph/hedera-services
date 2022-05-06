@@ -29,22 +29,26 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -56,7 +60,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 @Singleton
@@ -72,6 +78,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -83,7 +90,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final TransactionRecordService recordService,
 			final CreateEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
@@ -94,6 +102,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
+		this.accounts = accounts;
 	}
 
 	@Override
@@ -183,6 +192,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getGas() > properties.maxGas()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
+		}
+		if (op.hasProxyAccountID()) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
+		if (!validator.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
+			return INVALID_STAKING_ID;
 		}
 		return validator.memoCheck(op.getMemo());
 	}

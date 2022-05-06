@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,12 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,26 +48,43 @@ import java.time.Instant;
 
 public interface OptionValidator {
 	boolean hasGoodEncoding(Key key);
+
 	boolean isValidExpiry(Timestamp expiry);
+
 	boolean isThisNodeAccount(AccountID id);
+
 	boolean isValidTxnDuration(long duration);
+
 	boolean isAfterConsensusSecond(long now);
+
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
+
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+
 	JKey attemptDecodeOrThrow(Key k);
 
 	ResponseCodeEnum memoCheck(String cand);
+
 	ResponseCodeEnum rawMemoCheck(byte[] cand);
+
 	ResponseCodeEnum rawMemoCheck(byte[] cand, boolean hasZeroByte);
+
 	ResponseCodeEnum tokenNameCheck(String name);
+
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 
 	boolean isPermissibleTotalNfts(long proposedTotal);
+
 	ResponseCodeEnum nftMetadataCheck(byte[] metadata);
+
 	ResponseCodeEnum maxBatchSizeMintCheck(int length);
+
 	ResponseCodeEnum maxBatchSizeWipeCheck(int length);
+
 	ResponseCodeEnum maxBatchSizeBurnCheck(int length);
+
 	ResponseCodeEnum maxNftTransfersLenCheck(int length);
+
 	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
@@ -118,5 +138,10 @@ public interface OptionValidator {
 			Instant estimatedConsensusTime
 	) {
 		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
+	}
+
+	default boolean isValidStakedId(AccountID stakedAccountId, long stakedNodeId,
+			MerkleMap<EntityNum, MerkleAccount> accounts){
+		return PureValidation.isValidStakedId(stakedAccountId, stakedNodeId, accounts);
 	}
 }

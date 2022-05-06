@@ -52,7 +52,6 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.STAKED_TO_ME, AccountProperty.STAKED_TO_ME);
 		optionAccountPropertyMap.put(Option.STAKE_PERIOD_START, AccountProperty.STAKE_PERIOD_START);
 		optionAccountPropertyMap.put(Option.STAKED_ID, AccountProperty.STAKED_ID);
-		optionAccountPropertyMap.put(Option.STAKED_ACCOUNT, AccountProperty.STAKED_ACCOUNT);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}
 
@@ -69,10 +68,13 @@ public final class HederaAccountCustomizer extends
 			op.setAutoRenewPeriod(Duration.newBuilder()
 					.setSeconds((long) changes.get(AccountProperty.AUTO_RENEW_PERIOD)));
 		}
-		if (changes.containsKey(AccountProperty.STAKED_ACCOUNT)) {
-			op.setStakedAccountId(((EntityId) changes.get(AccountProperty.STAKED_ACCOUNT)).toGrpcAccountId());
-		} else if (changes.containsKey(AccountProperty.STAKED_ID)) {
-			op.setStakedNodeId(((long) changes.get(AccountProperty.STAKED_ID)));
+		if (changes.containsKey(AccountProperty.STAKED_ID)) {
+			final var id = (EntityId) changes.get(AccountProperty.STAKED_ID);
+			if (id.num() < 0) {
+				op.setStakedNodeId(id.num());
+			} else {
+				op.setStakedAccountId(id.toGrpcAccountId());
+			}
 		}
 		if (changes.containsKey(AccountProperty.DECLINE_REWARD)) {
 			op.setDeclineReward((boolean) changes.get(AccountProperty.DECLINE_REWARD));

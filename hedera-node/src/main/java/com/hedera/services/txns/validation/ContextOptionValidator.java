@@ -26,8 +26,12 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -136,7 +140,7 @@ public class ContextOptionValidator implements OptionValidator {
 			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
 		}
 	}
-	
+
 
 	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {

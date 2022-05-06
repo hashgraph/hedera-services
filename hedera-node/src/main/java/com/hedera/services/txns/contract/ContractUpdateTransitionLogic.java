@@ -43,7 +43,9 @@ import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateTransitionLogic implements TransitionLogic {
@@ -134,7 +136,12 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		if ((status = validator.memoCheck(newMemoIfAny)) != OK) {
 			return status;
 		}
-
+		if (op.hasProxyAccountID()) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
+		if (!validator.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), contracts.get())) {
+			return INVALID_STAKING_ID;
+		}
 		return OK;
 	}
 }
