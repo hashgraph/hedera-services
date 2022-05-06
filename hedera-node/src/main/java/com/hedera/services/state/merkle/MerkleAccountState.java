@@ -90,6 +90,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numTreasuryTitles;
 	private long stakedToMe;
 	private long stakePeriodStart;
+	// if -ve we are staking ot a node, if +ve we are staking to an account and 0 if not staking to anyone.
 	private long stakedNum;
 //	private long stakedRealm;
 	private boolean declineReward;
