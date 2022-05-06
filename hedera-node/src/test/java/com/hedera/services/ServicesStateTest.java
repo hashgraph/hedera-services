@@ -29,6 +29,7 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -77,6 +78,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -153,6 +155,92 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void doesNoMigrationsFromCurrentVersion() {
+		mockMigrators();
+
+		subject = mock(ServicesState.class);
+
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		subject.migrate();
+
+		verifyNoInteractions(
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, linkMigrator);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesAllMigrationsFromRelease024Version() {
+		mockMigrators();
+		final var inOrder = inOrder(
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, linkMigrator,
+				vmf, scheduledTxnsMigrator);
+
+		subject = mock(ServicesState.class);
+
+		doCallRealMethod().when(subject).migrate();
+		given(subject.accounts()).willReturn(accounts);
+		given(subject.tokenAssociations()).willReturn(tokenAssociations);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
+		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
+		given(vmf.apply(any())).willReturn(virtualMapFactory);
+		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+		given(subject.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(mock(MerkleMap.class));
+
+		subject.migrate();
+
+		inOrder.verify(linkMigrator).updateLinks(accounts, tokenAssociations);
+		inOrder.verify(titleCountsMigrator).accept(subject);
+		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
+				eq(subject), any(), any(), eq(iterableStorage));
+		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+		inOrder.verify(scheduledTxnsMigrator).accept(subject);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesScheduledTxnMigrationRegardlessOfVersion() {
+		mockMigrators();
+		subject = mock(ServicesState.class);
+
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(mock(MerkleMap.class));
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.CURRENT_VERSION);
+
+		subject.migrate();
+
+		verify(linkMigrator, never()).updateLinks(any(), any());
+		verify(titleCountsMigrator, never()).accept(any());
+		verify(iterableStorageMigrator, never()).makeStorageIterable(any(), any(), any(), any());
+		verify(autoRenewalMigrator, never()).grantFreeAutoRenew(any(), any());
+
+		verify(scheduledTxnsMigrator).accept(subject);
+
+		unmockMigrators();
+	}
+
+	private void mockMigrators() {
+		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
+		ServicesState.setTitleCountsMigrator(titleCountsMigrator);
+		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
+		ServicesState.setLinkMigrator(linkMigrator);
+		ServicesState.setVmFactory(vmf);
+		ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
+	}
+
+	private void unmockMigrators() {
+		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
+		ServicesState.setTitleCountsMigrator(ReleaseTwentyFiveMigration::initTreasuryTitleCounts);
+		ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
+		ServicesState.setLinkMigrator(ReleaseTwentyFiveMigration::updateLinks);
+		ServicesState.setVmFactory(VirtualMapFactory::new);
+		ServicesState.setScheduledTransactionsMigrator(
+				LongTermScheduledTransactionsMigration::migrateScheduledTransactions);
 	}
 
 	@Test
@@ -571,6 +659,34 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
+	}
+
+	@Test
+	void initHandlesScheduledTxnMigration() {
+
+		assertNull(subject.scheduleTxs());
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleScheduledTransactions.class));
+		assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+		assertNull(subject.scheduleTxs());
+
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
 	}
 
 	@Test

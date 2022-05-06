@@ -30,7 +30,6 @@ import java.util.function.BiFunction;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
@@ -72,9 +71,10 @@ public class LongTermScheduledTransactionsMigration {
 			return;
 		}
 
-		final MerkleMap<EntityNum, MerkleSchedule> legacySchedules = initializingState.getChild(StateChildIndices.SCHEDULE_TXS);
+		final MerkleMap<EntityNum, MerkleSchedule> legacySchedules =
+				initializingState.getChild(StateChildIndices.SCHEDULE_TXS);
 
-		final var newScheduledTxns = new MerkleScheduledTransactions();
+		final var newScheduledTxns = initializingState.scheduleTxs();
 
 		// all legacy schedules have their expiration date generated from the consensus time so if we order
 		// by expiry, it will order by consensus time (to the second, we can't get the nanos)

@@ -86,6 +86,7 @@ class LongTermScheduledTransactionsMigrationTest {
 				Math.min(schedule3.expiry(), Math.min(schedule4.expiry(), schedule5.expiry()))));
 
 		given(state.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(oldSchedules);
+		given(state.scheduleTxs()).willReturn(new MerkleScheduledTransactions());
 
 		migrateScheduledTransactions(state, (e, s) -> e.longValue() == schedule5.getKey().longValue() ?
 				new ScheduleVirtualValue(schedule4).equalityCheckKey() : s.equalityCheckKey());
@@ -229,6 +230,7 @@ class LongTermScheduledTransactionsMigrationTest {
 		oldSchedules.put(schedule1.getKey(), schedule1);
 
 		given(state.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(oldSchedules);
+		given(state.scheduleTxs()).willReturn(new MerkleScheduledTransactions());
 
 		migrateScheduledTransactions(state);
 

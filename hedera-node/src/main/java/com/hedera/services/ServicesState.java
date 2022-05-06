@@ -101,6 +101,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
+	/**
+	 * For scheduled transaction migration we need to initialize the new scheduled transactions' storage
+	 * _before_ the {@link #migrate()} call. There are things that call {@link #scheduleTxs()} before
+	 * {@link #migrate()} is called, like initializationFlow, which would cause casting and other issues if
+	 * not handled.
+	 *
+	 * Remove this once we no longer need to handle migrations from pre-0.26
+	 */
+	private MerkleScheduledTransactions migrationSchedules;
+
 	public ServicesState() {
 		/* RuntimeConstructable */
 	}
@@ -174,7 +184,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
+		}
 
+		// we know for a fact that we need to migrate scheduled transactions if they are a MerkleMap, the version
+		// doesn't really matter.
+		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
 			scheduledTxnsMigrator.accept(this);
 		}
 	}
@@ -186,6 +200,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+
+		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
+			migrationSchedules = new MerkleScheduledTransactions();
+		}
 
 		internalInit(platform, new BootstrapProperties(), dualState);
 	}
@@ -337,7 +355,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public MerkleScheduledTransactions scheduleTxs() {
-		return getChild(StateChildIndices.SCHEDULE_TXS);
+		MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
+		if (scheduledTxns instanceof MerkleMap) {
+			return migrationSchedules;
+		}
+		return (MerkleScheduledTransactions) scheduledTxns;
 	}
 
 	public MerkleNetworkContext networkCtx() {
