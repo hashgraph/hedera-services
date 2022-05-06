@@ -282,4 +282,59 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNumTreasuryTitles;
 		}
 	},
+	DECLINE_REWARD {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setDeclineReward((boolean) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::isDeclinedReward;
+		}
+	},
+	STAKED_TO_ME {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setStakedToMe((long) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getStakedToMe;
+		}
+	},
+	STAKE_START_PERIOD {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setStakePeriodStart((long) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getStakePeriodStart;
+		}
+	},
+	STAKED_NODE_ID {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setStakedNodeId((long) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getStakedNum;
+		}
+	},
+	STAKED_ACCOUNT {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setStakedAccount((long) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getStakedNum;
+		}
+	}
 }

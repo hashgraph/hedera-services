@@ -62,7 +62,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0250_ALPHA_VERSION = 11;
 	static final int RELEASE_0250_VERSION = 12;
-	private static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0270_VERSION = 14;
+	private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	public static final String DEFAULT_MEMO = "";
@@ -87,6 +88,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numPositiveBalances;
 	private long headTokenId;
 	private int numTreasuryTitles;
+	private long stakedToMe;
+	private long stakePeriodStart;
+	private long stakedNum;
+//	private long stakedRealm;
+	private boolean declineReward;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -121,6 +127,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.headTokenId = that.headTokenId;
 		this.nftsOwned = that.nftsOwned;
 		this.numTreasuryTitles = that.numTreasuryTitles;
+		this.stakedToMe = that.stakedToMe;
+		this.stakePeriodStart = that.stakePeriodStart;
+		this.stakedNum = that.stakedNum;
+//		this.stakedRealm = that.stakedRealm;
+		this.declineReward = that.declineReward;
 	}
 
 	public MerkleAccountState(
@@ -145,7 +156,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int numPositiveBalances,
 			final long headTokenId,
 			final long nftsOwned,
-			final int numTreasuryTitles
+			final int numTreasuryTitles,
+			final long stakedToMe,
+			final long stakePeriodStart,
+			final long stakedNum,
+//			final long stakedRealm,
+			final boolean declineReward
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -169,6 +185,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.headTokenId = headTokenId;
 		this.nftsOwned = nftsOwned;
 		this.numTreasuryTitles = numTreasuryTitles;
+		this.stakedToMe = stakedToMe;
+		this.stakePeriodStart = stakePeriodStart;
+		this.stakedNum = stakedNum;
+//		this.stakedRealm = stakedRealm;
+		this.declineReward = declineReward;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -227,6 +248,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0250_VERSION) {
 			numTreasuryTitles = in.readInt();
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakedToMe = in.readLong();
+			stakePeriodStart = in.readLong();
+			stakedNum = in.readLong();
+//			stakedRealm = in.readLong();
+			declineReward = in.readBoolean();
+		}
 	}
 
 	@Override
@@ -253,6 +281,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
 		out.writeInt(numTreasuryTitles);
+		out.writeLong(stakedToMe);
+		out.writeLong(stakePeriodStart);
+		out.writeLong(stakedNum);
+//		out.writeLong(stakedRealm);
+		out.writeBoolean(declineReward);
 	}
 
 	/* --- Copyable --- */
@@ -293,7 +326,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numAssociations == that.numAssociations &&
 				this.numPositiveBalances == that.numPositiveBalances &&
 				this.headTokenId == that.headTokenId &&
-				this.numTreasuryTitles == that.numTreasuryTitles;
+				this.numTreasuryTitles == that.numTreasuryTitles &&
+				this.stakedToMe == that.stakedToMe &&
+				this.stakePeriodStart == that.stakePeriodStart &&
+				this.stakedNum == that.stakedNum &&
+//				this.stakedRealm == that.stakedRealm &&
+				this.declineReward == that.declineReward;
 	}
 
 	@Override
@@ -319,7 +357,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numAssociations,
 				numPositiveBalances,
 				headTokenId,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+//				stakedRealm,
+				declineReward);
 	}
 
 	/* --- Bean --- */
@@ -348,6 +391,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenId", headTokenId)
 				.add("numTreasuryTitles", numTreasuryTitles)
+				.add("stakedToMe", stakedToMe)
+				.add("stakePeriodStart", stakePeriodStart)
+				.add("stakedNum", stakedNum)
+//				.add("stakedRealm", stakedRealm)
+				.add("declineReward", declineReward)
 				.toString();
 	}
 
@@ -571,6 +619,51 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		assertMutable("fungibleTokenAllowances");
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public long getStakedToMe() {
+		return stakedToMe;
+	}
+
+	public void setStakedToMe(final long stakedToMe) {
+		assertMutable("stakedToMe");
+		this.stakedToMe = stakedToMe;
+	}
+
+	public long getStakePeriodStart() {
+		return stakePeriodStart;
+	}
+
+	public void setStakePeriodStart(final long stakePeriodStart) {
+		assertMutable("stakePeriodStart");
+		this.stakePeriodStart = stakePeriodStart;
+	}
+
+	public long getStakedNum() {
+		return stakedNum;
+	}
+
+	public void setStakedNum(final long stakedNum) {
+		assertMutable("stakedNum");
+		this.stakedNum = stakedNum;
+	}
+
+//	public long getStakedRealm() {
+//		return stakedRealm;
+//	}
+//
+//	public void setStakedRealm(final long stakedRealm) {
+//		assertMutable("stakedRealm");
+//		this.stakedRealm = stakedRealm;
+//	}
+
+	public boolean isDeclineReward() {
+		return declineReward;
+	}
+
+	public void setDeclineReward(final boolean declineReward) {
+		assertMutable("declineReward");
+		this.declineReward = declineReward;
 	}
 
 	private void assertMutable(String proximalField) {
