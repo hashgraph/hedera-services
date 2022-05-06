@@ -83,6 +83,10 @@ class MerkleAccountTest {
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	private static final FcTokenAllowanceId tokenAllowanceKey =
 			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
+	private static final long stakedToMe = 12_345L;
+	private static final long stakePeriodStart = 786L;
+	private static final long stakedNum = 1111L;
+	private static final boolean declinedReward = false;
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -129,7 +133,11 @@ class MerkleAccountTest {
 				0,
 				lastAssociatedTokenNum,
 				nftsOwned,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declinedReward);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -233,6 +241,10 @@ class MerkleAccountTest {
 		assertEquals(state.getHeadTokenId(), subject.getHeadTokenId());
 		assertEquals(state.getNumTreasuryTitles(), subject.getNumTreasuryTitles());
 		assertEquals(state.isTokenTreasury(), subject.isTokenTreasury());
+		assertEquals(state.getStakedToMe(), subject.getStakedToMe());
+		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
+		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
+		assertEquals(state.getStakedNum(), subject.getStakedNum());
 	}
 
 	@Test
@@ -272,6 +284,10 @@ class MerkleAccountTest {
 		subject.setNumPositiveBalances(0);
 		subject.setNumAssociations(0);
 		subject.setNumTreasuryTitles(numTreasuryTitles);
+		subject.setStakedToMe(stakedToMe);
+		subject.setStakePeriodStart(stakePeriodStart);
+		subject.setDeclineReward(declinedReward);
+		subject.setStakedNodeId(stakedNum);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -295,6 +311,13 @@ class MerkleAccountTest {
 		verify(delegate).setNumAssociations(0);
 		verify(delegate).setHeadTokenId(lastAssociatedTokenNum);
 		verify(delegate).setNumTreasuryTitles(numTreasuryTitles);
+		verify(delegate).setStakedNum(-stakedNum);
+		verify(delegate).setStakedToMe(stakedToMe);
+		verify(delegate).setStakePeriodStart(stakePeriodStart);
+		verify(delegate).setDeclineReward(declinedReward);
+
+		subject.setStakedAccount(stakedNum);
+		verify(delegate).setStakedNum(stakedNum);
 	}
 
 	@Test

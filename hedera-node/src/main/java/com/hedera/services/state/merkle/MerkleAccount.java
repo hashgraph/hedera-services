@@ -439,13 +439,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setStakePeriodStart(long stakePeriodStart) {
 		throwIfImmutable("Cannot change this account's stakePeriodStart if it's immutable");
-		state().setStakedToMe(stakePeriodStart);
+		state().setStakePeriodStart(stakePeriodStart);
 	}
 
 	/**
 	 * Get the num [of shard.realm.num] of node/account this account has staked its Hbar to
 	 * If the returned value is negative it is staked to a node and node num is the absolute value
-	 * If the returned value is positive it is staked to an account. 
+	 * If the returned value is positive it is staked to an account.
 	 * @return num [of shard.realm.num] of node/account
 	 */
 	public long getStakedNum() {

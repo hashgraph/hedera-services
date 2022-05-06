@@ -62,7 +62,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0250_ALPHA_VERSION = 11;
 	static final int RELEASE_0250_VERSION = 12;
-	static final int RELEASE_0270_VERSION = 14;
+	static final int RELEASE_0270_VERSION = 13;
 	private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
