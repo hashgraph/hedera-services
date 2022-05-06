@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -507,7 +508,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									childRecordsCheck(FIRST_CREATE_TXN, SUCCESS,
 											TransactionRecordAsserts.recordWith().status(SUCCESS)));
 
-							final var delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls() 
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS 
+									: subop3.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var subop4 = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(
@@ -804,7 +807,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L),
 									emptyChildRecordsCheck(FIRST_CREATE_TXN,
 											ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var changeFromSnapshot = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -926,7 +931,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 													.contractCallResult(
 															ContractFnResultAsserts.resultWith()
 																	.error(MISSING_TOKEN_SYMBOL.name()))));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var accountBalance = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -1222,7 +1229,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 															ContractFnResultAsserts.resultWith()
 																	.error(INSUFFICIENT_TX_FEE.name())))
 							);
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							var changeFromSnapshot = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));

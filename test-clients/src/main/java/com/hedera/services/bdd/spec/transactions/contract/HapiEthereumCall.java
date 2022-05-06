@@ -63,7 +63,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -80,12 +79,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
     private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static  final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
