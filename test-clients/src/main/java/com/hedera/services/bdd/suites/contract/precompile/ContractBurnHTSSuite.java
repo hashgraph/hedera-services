@@ -353,9 +353,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(bob)), 0,
 													2L, serialNumbers
 											)
-													.payingWith(ALICE)
-													.alsoSigningWithFullPrefix(ALICE)
-													.alsoSigningWithFullPrefix(SUPPLY_KEY)
+													.alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
 													.gas(GAS_TO_OFFER)
 													.via("contractCallTxn")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));

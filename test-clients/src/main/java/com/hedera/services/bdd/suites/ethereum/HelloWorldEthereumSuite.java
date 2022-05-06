@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -53,11 +54,14 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCal
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -84,16 +88,16 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     List<HapiApiSpec> ethereumCalls() {
         return List.of(new HapiApiSpec[] {
-//                depositSuccess(),
+                depositSuccess(),
                 badRelayClient(),
         });
     }
 
     List<HapiApiSpec> ethereumCreates() {
         return List.of(new HapiApiSpec[] {
-//                smallContractCreate(),
-//                contractCreateWithConstructorArgs(),
-//                bigContractCreate()
+                smallContractCreate(),
+                contractCreateWithConstructorArgs(),
+                bigContractCreate()
         });
     }
 
@@ -148,10 +152,16 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(RELAYER)
                                 .via(maliciousTxn)
                                 .nonce(0)
-                                .gasLimit(4_000_000L))
+                                .gasLimit(4_000_000L)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 ).then(
                         getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
-                        sourcing(() -> getAccountBalance(maliciousEOAId.get()).logged())
+                        childRecordsCheck(maliciousTxn, CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_SIGNATURE)),
+                        sourcing(() -> getAccountBalance(maliciousEOAId.get())
+                                .hasTinyBars(spec -> amount -> (amount > maliciousStartBalance)
+                                        ? Optional.of("Malicious EOA balance increased")
+                                        : Optional.empty()))
                 );
     }
 
@@ -173,9 +183,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .via("payTxn")
                                 .nonce(0)
                                 .maxFeePerGas(50L)
-                                .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
-                                .gasLimit(1_000_000L)
+                                .gasLimit(2_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
@@ -185,7 +194,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .via("payTxn")
                                 .nonce(1)
                                 .gasPrice(50L)
-                                .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)

@@ -10,6 +10,8 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -19,6 +21,8 @@ import com.hedera.services.txns.span.EthTxExpansion;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -30,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
@@ -84,6 +89,10 @@ class EthereumTransitionLogicTest {
 	private ContractCreateTransitionLogic contractCreateTransitionLogic;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private SwirldsTxnAccessor swirldsTxnAccessor;
+	@Mock
+	private RationalizedSigMeta rationalizedSigMeta;
 
 	private EthereumTransitionLogic subject;
 
@@ -132,7 +141,12 @@ class EthereumTransitionLogicTest {
 
 	@Test
 	void transitionFailsFastGivenEip2930Txn() {
-		givenValidlyCalled(callTxn);
+		givenOkExtantContextualAccessor();
+		given(ethTxData.nonce()).willReturn(requiredNonce);
+		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(callTxn);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getPayer()).willReturn(relayerId);
+		given(accessor.getTxn()).willReturn(ethTxn);
 		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_ETHEREUM_TRANSACTION);;
@@ -140,14 +154,16 @@ class EthereumTransitionLogicTest {
 
 	@Test
 	void transitionDelegatesToContractCallForSynthCall() {
+		final var inOrder = Mockito.inOrder(rationalizedSigMeta, contractCallTransitionLogic, recordService);
 		givenValidlyCalled(callTxn);
 		givenEip1559OfferedPrice();
 
 		subject.doStateTransition();
 
-		verify(contractCallTransitionLogic).doStateTransitionOperation(
+		inOrder.verify(rationalizedSigMeta).revokeCryptoSigsFrom(relayerKey);
+		inOrder.verify(contractCallTransitionLogic).doStateTransitionOperation(
 				callTxn, callerNum.toId(), relayerNum.toId(), maxGasAllowance, biOfferedGasPrice);
-		verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
+		inOrder.verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
 	}
 
 	@Test
@@ -251,6 +267,9 @@ class EthereumTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(accessor.getPayer()).willReturn(relayerId);
 		given(accessor.getTxn()).willReturn(ethTxn);
+		given(txnCtx.activePayerKey()).willReturn(relayerKey);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
+		given(swirldsTxnAccessor.getSigMeta()).willReturn(rationalizedSigMeta);
 	}
 
 	private void givenOkExtantContextualAccessor() {
@@ -294,4 +313,5 @@ class EthereumTransitionLogicTest {
 			.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
 			.build();
 	private static final TransactionBody nonEthTxn = TransactionBody.getDefaultInstance();
+	private static final JKey relayerKey = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
 }

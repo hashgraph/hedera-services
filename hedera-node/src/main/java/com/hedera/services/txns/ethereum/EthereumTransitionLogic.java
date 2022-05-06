@@ -106,6 +106,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
+		// Collect everything from the context
 		final var accessor = txnCtx.accessor();
 		final var callerNum = validatedCallerOf(accessor);
 		final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
@@ -113,6 +114,9 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
 		final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
 		final var userOfferedGasPrice = getOfferedGasPrice(ethTxData);
+
+		// Revoke the relayer's key for Ethereum operations
+		txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
 		if (synthTxn.hasContractCall()) {
 			delegateToCallTransition(
 					callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
@@ -120,6 +124,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			delegateToCreateTransition(
 					callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
 		}
+
 		recordService.updateForEvmCall(spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
 	}
 
