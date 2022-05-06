@@ -36,8 +36,8 @@ import javax.inject.Inject;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.unlinkFromMapValueLink;
+import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
+import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 public class UniqueTokensLinkManager {
 	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
@@ -75,7 +75,7 @@ public class UniqueTokensLinkManager {
 			var rootKey = rootKeyOf(fromAccount);
 
 			if (rootKey != null) {
-				rootKey = unlinkFromMapValueLink(nftId, rootKey, listMutation);
+				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
 			} else {
 				log.error("Should not be possible : Root of owned nfts list is null, but account : {} owns nft : {}", from, nftId);
 			}
@@ -83,7 +83,6 @@ public class UniqueTokensLinkManager {
 			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
 			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
 		}
-
 
 		// update `to` Account
 		if (isValidAndNotTreasury(to, token)) {
@@ -93,8 +92,7 @@ public class UniqueTokensLinkManager {
 				final var nftNumPair = nftId.asNftNumPair();
 				final var rootKey = rootKeyOf(toAccount);
 
-				inPlaceInsertAtMapValueListHead(
-						nftId, nft, rootKey, null, listMutation, false);
+				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
 				toAccount.setHeadNftId(nftNumPair.tokenNum());
 				toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 			}
