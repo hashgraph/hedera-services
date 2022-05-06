@@ -375,6 +375,9 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
 		}
+		if (nextBoolean()) {
+			builder.setStakingRewardsPaid(nextCurrencyAdjustments());
+		}
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
