@@ -135,13 +135,8 @@ public class RationalizedSigMeta {
 	 */
 	public void revokeCryptoSigsFrom(final JKey key) {
 		final Set<BytesKey> revokedKeys = new HashSet<>();
-		visitSimpleKeys(key, publicKey -> {
-			if (publicKey.hasEd25519Key()) {
-				revokedKeys.add(new BytesKey(publicKey.getEd25519()));
-			} else {
-				revokedKeys.add(new BytesKey(publicKey.getECDSASecp256k1Key()));
-			}
-		});
+		visitSimpleKeys(key, publicKey ->
+				revokedKeys.add(new BytesKey(publicKey.primitiveKeyIfPresent())));
 
 		final var wrappedFn = pkToVerifiedSigFn;
 		pkToVerifiedSigFn = publicKey ->

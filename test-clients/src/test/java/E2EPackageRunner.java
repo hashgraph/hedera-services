@@ -322,11 +322,11 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part2.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2Eth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")

@@ -103,6 +103,8 @@ class RationalizedSigMetaTest {
 		for (final var publicKey : publicKeys) {
 			assertSame(INVALID, newVerifiedSigsFn.apply(publicKey).getSignatureStatus());
 		}
+		// And cover the remaining branch
+		assertSame(INVALID, newVerifiedSigsFn.apply(payerKey.primitiveKeyIfPresent()).getSignatureStatus());
 	}
 
 	@Test

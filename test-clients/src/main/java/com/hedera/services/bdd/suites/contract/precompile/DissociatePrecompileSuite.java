@@ -102,11 +102,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
 				nestedDissociateWorksAsExpected(),
 				multiplePrecompileDissociationWithSigsForFungibleWorks()
-		);
+		});
 	}
 
 	/* -- Not specifically required in the HTS Precompile Test Plan -- */
@@ -184,8 +184,10 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
 												tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
 
-												cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
-												cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+												cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY,
+														nonZeroBalanceFrozen)),
+												cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY,
+														nonZeroBalanceUnfrozen)),
 
 												tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
 												getAccountBalance(TOKEN_TREASURY)
@@ -193,43 +195,46 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenDelete(TBD_TOKEN),
 												tokenDelete(tbdUniqToken),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get())
+														asAddress(zeroBalanceFrozenID.get()),
+														asAddress(tbdTokenID.get())
 												)
-														.payingWith(zeroBalanceFrozen)
-														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.alsoSigningWithFullPrefix(zeroBalanceFrozen)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceFrozenTxn"),
-												getTxnRecord("dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
+												getTxnRecord(
+														"dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get())
+														asAddress(zeroBalanceUnfrozenID.get()),
+														asAddress(tbdTokenID.get())
 												)
-														.payingWith(zeroBalanceUnfrozen)
-														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.alsoSigningWithFullPrefix(zeroBalanceUnfrozen)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceUnfrozenTxn"),
-												getTxnRecord("dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
+												getTxnRecord(
+														"dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get())
+														asAddress(nonZeroBalanceFrozenID.get()),
+														asAddress(tbdTokenID.get())
 												)
-														.payingWith(nonZeroBalanceFrozen)
-														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.alsoSigningWithFullPrefix(nonZeroBalanceFrozen)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceFrozenTxn"),
-												getTxnRecord("dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
+												getTxnRecord(
+														"dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get())
+														asAddress(nonZeroBalanceUnfrozenID.get()),
+														asAddress(tbdTokenID.get())
 												)
-														.payingWith(nonZeroBalanceUnfrozen)
-														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.alsoSigningWithFullPrefix(nonZeroBalanceUnfrozen)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceUnfrozenTxn"),
-												getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
+												getTxnRecord(
+														"dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
 														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get())
 												)
-														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.alsoSigningWithFullPrefix(TOKEN_TREASURY)
 														.gas(GAS_TO_OFFER)
-														.payingWith(TOKEN_TREASURY)
 										)
 						)
 				).then(
@@ -272,12 +277,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT
+														, spec)),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(OUTER_CONTRACT, "dissociateAssociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
 												)
-														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("nestedDissociateTxn")
 														.gas(3_000_000L)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
@@ -333,7 +339,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 																asAddress(vanillaTokenID.get()),
 																asAddress(knowableTokenTokenID.get()))
 												)
-														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("multipleDissociationTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
