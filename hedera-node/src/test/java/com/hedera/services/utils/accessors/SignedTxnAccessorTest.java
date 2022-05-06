@@ -77,6 +77,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.bouncycastle.util.encoders.Hex;

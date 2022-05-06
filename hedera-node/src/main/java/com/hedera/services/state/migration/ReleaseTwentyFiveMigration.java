@@ -58,7 +58,7 @@ public class ReleaseTwentyFiveMigration {
 		});
 	}
 
-	public static void updateLinks(
+	public static void buildAccountTokenAssociationsLinkedList(
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels
 	) {

@@ -36,6 +36,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.utils.accessors.TxnAccessor;

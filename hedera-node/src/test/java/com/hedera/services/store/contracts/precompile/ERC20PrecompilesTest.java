@@ -65,8 +65,8 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -221,8 +221,8 @@ class ERC20PrecompilesTest {
         subject = new HTSPrecompiledContract(
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

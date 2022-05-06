@@ -156,6 +156,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
 			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
+			entry("autoRemove.maxReturnedNftsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),

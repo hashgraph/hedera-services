@@ -65,16 +65,14 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -94,6 +92,7 @@ import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
@@ -215,9 +214,9 @@ public class SeededPropertySource {
 
 	public FcCustomFee.FeeType nextFeeType() {
 		// size of FcCustomFee.FeeType.class.getEnumConstants() in 0.25
-		return nextFeeType(3);  
+		return nextFeeType(3);
 	}
-	
+
 	public FcCustomFee.FeeType nextFeeType(final int range) {
 		final var choices = FcCustomFee.FeeType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
@@ -227,7 +226,7 @@ public class SeededPropertySource {
 		// size of TokenType.class.getEnumConstants() in 0.25
 		return nextTokenType(2);
 	}
-	
+
 	public TokenType nextTokenType(final int range) {
 		final var choices = TokenType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
@@ -237,7 +236,7 @@ public class SeededPropertySource {
 		// size of TokenSupplyType.class.getEnumConstants() in 0.25
 		return nextTokenSupplyType(2);
 	}
-	
+
 	public TokenSupplyType nextTokenSupplyType(final int range) {
 		final var choices = TokenSupplyType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
@@ -258,6 +257,22 @@ public class SeededPropertySource {
 		}
 		seeded.setKey(nextNum());
 		return seeded;
+	}
+
+	public MerkleUniqueToken next0260UniqueToken() {
+		final var ownerCode = SEEDED_RANDOM.nextInt(1234);
+		final var spenderCode = SEEDED_RANDOM.nextInt(1234);
+		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
+		final var metadata = nextBytes(10);
+		final var numbers = SEEDED_RANDOM.nextLong(1234);
+		final var prev = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var next = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+
+		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		subject.setSpender(new EntityId(0,0, spenderCode));
+		subject.setPrev(prev);
+		subject.setNext(next);
+		return subject;
 	}
 
 	/**
@@ -336,7 +351,9 @@ public class SeededPropertySource {
 				nextInRangeLong(),
 				0,
 				0,
-				null);
+				null,
+				0,
+				0);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
@@ -370,13 +387,15 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				firstContractKey,
 				firstKeyBytes,
-				nextUnsignedInt(),
+				nextUnsignedLong(),
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedInt(),
 				nextUnsignedLong(),
-				nextEntityId());
+				nextEntityId(),
+				nextInRangeLong(),
+				nextUnsignedLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -925,17 +944,6 @@ public class SeededPropertySource {
 
 	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
 		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
-	}
-
-	public MerkleUniqueToken nextMerkleUniqueToken() {
-		final var seeded = new MerkleUniqueToken(
-				nextNonZeroInt(Integer.MAX_VALUE),
-				nextBytes(nextNonZeroInt(100)),
-				nextUnsignedLong(),
-				nextUnsignedLong()
-		);
-		seeded.setSpender(EntityNum.fromInt(nextNonZeroInt(Integer.MAX_VALUE)).toEntityId());
-		return seeded;
 	}
 
 	public FcTokenAllowance nextFcTokenAllowance() {

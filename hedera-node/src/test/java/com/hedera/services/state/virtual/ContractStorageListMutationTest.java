@@ -35,16 +35,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ContractStorageListRemovalTest {
+class ContractStorageListMutationTest {
 	private static final long contractId = 123L;
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> storage;
 
-	private ContractStorageListRemoval subject;
+	private ContractStorageListMutation subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ContractStorageListRemoval(contractId, storage);
+		subject = new ContractStorageListMutation(contractId, storage);
 	}
 
 	@Test

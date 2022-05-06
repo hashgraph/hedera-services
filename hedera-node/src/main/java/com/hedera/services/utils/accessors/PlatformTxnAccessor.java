@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 
@@ -48,7 +49,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Encapsulates access to several commonly referenced parts of a {@link SwirldTransaction}
+ * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.system.transaction.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)

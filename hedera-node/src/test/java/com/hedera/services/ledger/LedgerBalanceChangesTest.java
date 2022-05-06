@@ -32,7 +32,7 @@ import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -120,7 +120,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 	@Mock
-	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 
 	private HederaLedger subject;
 
@@ -134,7 +134,7 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
-		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
@@ -490,7 +490,7 @@ class LedgerBalanceChangesTest {
 				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo), payer),
 				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo), payer),
-				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo), payer));
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, aSerialNo), payer));
 	}
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {

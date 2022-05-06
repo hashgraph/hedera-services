@@ -31,7 +31,8 @@ import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -77,14 +78,15 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final UniqueTokensLinkManager uniqueTokensLinkManager
 	) {
 		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
 				new ChangeSummaryManager<>());
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		return uniqueTokensLedger;
 	}
