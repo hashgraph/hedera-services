@@ -65,7 +65,6 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -73,8 +72,6 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
@@ -330,7 +327,11 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedLong(),
-				nextUnsignedInt());
+				nextUnsignedInt(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextInRangeLong(),
+				nextBoolean());
 	}
 
 	public ExpirableTxnRecord nextRecord() {

@@ -27,6 +27,7 @@ import com.swirlds.common.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
 	@Override
@@ -49,15 +50,20 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		if (version == RELEASE_0230_VERSION) {
 			return propertySource.next0241AccountState();
-		} else {
-			final var seededAccount = propertySource.nextAccountState();
-			if (version < RELEASE_0250_VERSION) {
-				// NFTs owned was always set to 0 in these serialized forms
-				seededAccount.setNftsOwned(0);
-				seededAccount.setNumTreasuryTitles(0);
-			}
-			return seededAccount;
 		}
+		final var seededAccount = propertySource.nextAccountState();
+		if (version < RELEASE_0250_VERSION) {
+			// NFTs owned was always set to 0 in these serialized forms
+			seededAccount.setNftsOwned(0);
+			seededAccount.setNumTreasuryTitles(0);
+		}
+		if (version < RELEASE_0270_VERSION) {
+			seededAccount.setStakedToMe(0);
+			seededAccount.setDeclineReward(false);
+			seededAccount.setStakePeriodStart(0);
+			seededAccount.setStakedNum(0);
+		}
+		return seededAccount;
 	}
 
 	@Override
