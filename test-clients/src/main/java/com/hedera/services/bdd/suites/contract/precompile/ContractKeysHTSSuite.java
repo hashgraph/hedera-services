@@ -820,6 +820,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("StaticCallForAssociatePrecompileFails")
 				.given(
 						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)

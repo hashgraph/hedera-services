@@ -1,5 +1,6 @@
 package com.hedera.services.txns.ethereum;
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
@@ -39,6 +41,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
@@ -128,12 +131,22 @@ class EthereumTransitionLogicTest {
 	}
 
 	@Test
+	void transitionFailsFastGivenEip2930Txn() {
+		givenValidlyCalled(callTxn);
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
+
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_ETHEREUM_TRANSACTION);;
+	}
+
+	@Test
 	void transitionDelegatesToContractCallForSynthCall() {
 		givenValidlyCalled(callTxn);
+		givenEip1559OfferedPrice();
 
 		subject.doStateTransition();
 
-		verify(contractCallTransitionLogic).doStateTransitionOperation(callTxn, callerNum.toId(), true);
+		verify(contractCallTransitionLogic).doStateTransitionOperation(
+				callTxn, callerNum.toId(), relayerNum.toId(), maxGasAllowance, biOfferedGasPrice);
 		verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
 	}
 
@@ -141,20 +154,46 @@ class EthereumTransitionLogicTest {
 	void transitionDelegatesToCustomContractCreateForSynthCreate() {
 		givenValidlyCalled(createTxn);
 		given(creationCustomizer.customize(createTxn, callerId)).willReturn(createTxn);
+		givenLegacyOfferedPrice();
 
 		subject.doStateTransition();
 
-		verify(contractCreateTransitionLogic).doStateTransitionOperation(createTxn, callerNum.toId(), true, true);
+		verify(contractCreateTransitionLogic).doStateTransitionOperation(
+				createTxn, callerNum.toId(),
+				true, relayerNum.toId(), maxGasAllowance, biOfferedGasPrice);
 		verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
 	}
 
 	@Test
+	void invalidIfAllowanceIsNegative() {
+		given(accessor.getTxn()).willReturn(TransactionBody.newBuilder()
+				.setEthereumTransaction(EthereumTransactionBody.newBuilder().setMaxGasAllowance(-1L))
+				.build()
+		);
+
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void invalidIfNoEthTxData() {
+		given(accessor.getTxn()).willReturn(ethTxn);
+
 		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+	}
+
+	private void givenLegacyOfferedPrice() {
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.LEGACY_ETHEREUM);
+		given(ethTxData.gasPrice()).willReturn(Longs.toByteArray(offeredGasPrice));
+	}
+
+	private void givenEip1559OfferedPrice() {
+		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP1559);
+		given(ethTxData.maxGas()).willReturn(Longs.toByteArray(offeredGasPrice));
 	}
 
 	@Test
 	void invalidIfChainIdDoesntMatch() {
+		given(accessor.getTxn()).willReturn(ethTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(dynamicProperties.chainIdBytes()).willReturn(chainIdBytes);
 
@@ -202,12 +241,16 @@ class EthereumTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(dynamicProperties.chainIdBytes()).willReturn(chainIdBytes);
 		given(ethTxData.matchesChainId(chainIdBytes)).willReturn(true);
+		given(accessor.getTxn()).willReturn(ethTxn);
 	}
 
 	private void givenValidlyCalled(final TransactionBody txn) {
 		givenOkExtantContextualAccessor();
 		given(ethTxData.nonce()).willReturn(requiredNonce);
 		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(txn);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getPayer()).willReturn(relayerId);
+		given(accessor.getTxn()).willReturn(ethTxn);
 	}
 
 	private void givenOkExtantContextualAccessor() {
@@ -228,15 +271,21 @@ class EthereumTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
+	private static final long maxGasAllowance = 666_666L;
+	private static final long offeredGasPrice = 123_456L;
+	private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(offeredGasPrice);
 	private static final byte[] chainIdBytes = "0123".getBytes();
 	private static final long requiredNonce = 666L;
 	private static final EthTxExpansion okExpansion = new EthTxExpansion(null, OK);
 	private static final EthTxExpansion notOkExpansion = new EthTxExpansion(null, INVALID_ETHEREUM_TRANSACTION);
 	private static final EntityNum callerNum = EntityNum.fromLong(666);
+	private static final EntityNum relayerNum = EntityNum.fromLong(777);
 	private static final AccountID callerId = callerNum.toGrpcAccountId();
+	private static final AccountID relayerId = relayerNum.toGrpcAccountId();
 	private static final byte[] callerAddress = callerNum.toRawEvmAddress();
 	private static final TransactionBody ethTxn = TransactionBody.newBuilder()
-			.setEthereumTransaction(EthereumTransactionBody.newBuilder())
+			.setEthereumTransaction(EthereumTransactionBody.newBuilder()
+					.setMaxGasAllowance(maxGasAllowance))
 			.build();
 	private static final TransactionBody callTxn = TransactionBody.newBuilder()
 			.setContractCall(ContractCallTransactionBody.getDefaultInstance())

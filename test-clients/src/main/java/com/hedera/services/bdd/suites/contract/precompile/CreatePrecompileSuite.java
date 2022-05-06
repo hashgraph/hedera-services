@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -166,7 +167,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
 						newKeyNamed(contractAdminKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						cryptoCreate(AUTO_RENEW_ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
@@ -265,7 +266,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
@@ -343,7 +344,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						newKeyNamed(ECDSA_KEY),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						cryptoCreate(AUTO_RENEW_ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
@@ -407,7 +408,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
 						newKeyNamed(contractAdminKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						cryptoCreate(AUTO_RENEW_ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
@@ -468,7 +469,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
@@ -507,7 +508,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									childRecordsCheck(FIRST_CREATE_TXN, SUCCESS,
 											TransactionRecordAsserts.recordWith().status(SUCCESS)));
 
-							final var delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls() 
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS 
+									: subop3.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var subop4 = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(
@@ -559,7 +562,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						newKeyNamed(treasuryAndFeeCollectorKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.key(treasuryAndFeeCollectorKey)
@@ -639,7 +642,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY)
 								.maxAutomaticTokenAssociations(1),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -710,7 +713,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
 				.given(
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -774,7 +777,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
 				.given(
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
 						withOpContext(
@@ -804,7 +807,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L),
 									emptyChildRecordsCheck(FIRST_CREATE_TXN,
 											ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var changeFromSnapshot = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -820,7 +825,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("tokenCreateWithKeyWithMultipleKeyValuesReverts")
 				.given(
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -856,7 +861,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -894,7 +899,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("createTokenWithEmptyTokenStruct")
 				.given(
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
 						withOpContext(
@@ -926,7 +931,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 													.contractCallResult(
 															ContractFnResultAsserts.resultWith()
 																	.error(MISSING_TOKEN_SYMBOL.name()))));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var accountBalance = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -944,7 +951,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("ecdsa").shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -990,7 +997,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(contractAdminKey),
 						newKeyNamed(treasuryAndFeeCollectorKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.key(treasuryAndFeeCollectorKey)
@@ -1042,7 +1049,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
@@ -1086,7 +1093,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
@@ -1136,7 +1143,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
@@ -1183,7 +1190,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
 								.key(ED25519KEY)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
 						withOpContext(
@@ -1222,7 +1229,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 															ContractFnResultAsserts.resultWith()
 																	.error(INSUFFICIENT_TX_FEE.name())))
 							);
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							var changeFromSnapshot = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -1239,7 +1248,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)

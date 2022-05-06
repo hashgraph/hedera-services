@@ -55,23 +55,26 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEthereumContractCreate> {
 	private static final int BYTES_PER_KB = 1024;
 	private static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
+    private static final TupleType longTuple = TupleType.parse("(int64)");
 
-	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-	private EthTxData.EthTransactionType type;
-	private byte[] chainId = Integers.toBytes(298);
-	private long nonce;
-	private long gasPrice = 20L;
-	private long maxPriorityGas = 20_000L;
-	private Optional<FileID> ethFileID = Optional.empty();
-	private boolean invalidateEthData = false;
-	private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
-	private String privateKeyRef = SECP_256K1_SOURCE_KEY;
+    private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    private EthTxData.EthTransactionType type;
+    private byte[] chainId = Integers.toBytes(298);
+    private long nonce;
+    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private long maxPriorityGas = 20_000L;
+    private Optional<FileID> ethFileID = Optional.empty();
+    private boolean invalidateEthData = false;
+    private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
+    private String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
 	public HapiEthereumContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
@@ -219,10 +222,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 		return this;
 	}
 
-	public HapiEthereumContractCreate gasPrice(long gasPrice) {
-		this.gasPrice = gasPrice;
-		return this;
-	}
+    public HapiEthereumContractCreate gasPrice(long gasPrice) {
+        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        return this;
+    }
 
 	public HapiEthereumContractCreate maxPriorityGas(long maxPriorityGas) {
 		this.maxPriorityGas = maxPriorityGas;
@@ -251,13 +254,13 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
         final byte[] callData = Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
         final var longTuple = TupleType.parse("(int64)");
-        final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice)).array()).toArray();
+        final var gasPriceBytes = gasLongToBytes(gasPrice);;
+        final var maxFeePerGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxFeePerGas.longValueExact())).array()).toArray();
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
-        final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.getAsLong())).array()).toArray();
 
-		final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-				maxPriorityGasBytes, gasBytes, gas.orElse(0L),
-				new byte[] { }, BigInteger.valueOf(balance.orElse(0L)), callData, new byte[] { }, 0, null, null, null);
+        final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
+                maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(0L),
+                new byte[] { }, BigInteger.valueOf(balance.orElse(0L)), callData, new byte[]{}, 0, null, null, null);
 
 		final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
 		var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
@@ -308,4 +311,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
 	}
+
+    private byte[] gasLongToBytes(BigInteger gas) {
+        return Bytes.wrap(longTuple.encode(Tuple.of(gas.longValueExact())).array()).toArray();
+    }
 }
