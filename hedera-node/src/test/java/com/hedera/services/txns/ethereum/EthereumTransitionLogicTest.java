@@ -145,8 +145,6 @@ class EthereumTransitionLogicTest {
 		given(ethTxData.nonce()).willReturn(requiredNonce);
 		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(callTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
-		given(accessor.getPayer()).willReturn(relayerId);
-		given(accessor.getTxn()).willReturn(ethTxn);
 		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_ETHEREUM_TRANSACTION);;
@@ -156,7 +154,7 @@ class EthereumTransitionLogicTest {
 	void transitionDelegatesToContractCallForSynthCall() {
 		final var inOrder = Mockito.inOrder(rationalizedSigMeta, contractCallTransitionLogic, recordService);
 		givenValidlyCalled(callTxn);
-		givenEip1559OfferedPrice();
+		givenOfferedPrice();
 
 		subject.doStateTransition();
 
@@ -170,7 +168,7 @@ class EthereumTransitionLogicTest {
 	void transitionDelegatesToCustomContractCreateForSynthCreate() {
 		givenValidlyCalled(createTxn);
 		given(creationCustomizer.customize(createTxn, callerId)).willReturn(createTxn);
-		givenLegacyOfferedPrice();
+		givenOfferedPrice();
 
 		subject.doStateTransition();
 
@@ -197,14 +195,8 @@ class EthereumTransitionLogicTest {
 		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
-	private void givenLegacyOfferedPrice() {
-		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.LEGACY_ETHEREUM);
-		given(ethTxData.gasPrice()).willReturn(Longs.toByteArray(offeredGasPrice));
-	}
-
-	private void givenEip1559OfferedPrice() {
-		given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP1559);
-		given(ethTxData.maxGas()).willReturn(Longs.toByteArray(offeredGasPrice));
+	private void givenOfferedPrice() {
+		given(ethTxData.getMaxGasAsBigInteger()).willReturn(BigInteger.valueOf(offeredGasPrice));
 	}
 
 	@Test

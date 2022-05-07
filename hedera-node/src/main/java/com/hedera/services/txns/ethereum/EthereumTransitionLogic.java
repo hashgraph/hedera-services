@@ -50,6 +50,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
@@ -111,9 +112,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		final var callerNum = validatedCallerOf(accessor);
 		final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
 		final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		// we don't support 2930 transactions, even though we parse them.
+		validateFalse(ethTxData.type() == EthTxData.EthTransactionType.EIP2930, INVALID_ETHEREUM_TRANSACTION);
 		final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
 		final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
-		final var userOfferedGasPrice = getOfferedGasPrice(ethTxData);
+		final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
 
 		// Revoke the relayer's key for Ethereum operations
 		txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
@@ -213,14 +216,6 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		validateTrue(expectedNonce == ethTxData.nonce(), WRONG_NONCE);
 
 		return callerNum;
-	}
-
-	private BigInteger getOfferedGasPrice(final EthTxData ethTxData) {
-		return switch (ethTxData.type()) {
-			case LEGACY_ETHEREUM -> new BigInteger(ethTxData.gasPrice());
-			case EIP1559 -> new BigInteger(ethTxData.maxGas());
-			case EIP2930 -> throw new InvalidTransactionException(INVALID_ETHEREUM_TRANSACTION);
-		};
 	}
 }
 
