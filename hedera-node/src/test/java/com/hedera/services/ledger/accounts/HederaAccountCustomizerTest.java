@@ -59,13 +59,13 @@ class HederaAccountCustomizerTest {
 	@Test
 	void customizesSyntheticContractCreation() {
 		final var memo = "Inherited";
-		final var proxy = new EntityId(0, 0, 4);
+		final var stakedId = new EntityId(0, 0, 4);
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
 
 		final var customizer = new HederaAccountCustomizer()
 				.memo(memo)
-				.proxy(proxy)
+				.stakedId(stakedId)
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
 				.isSmartContract(true);
@@ -74,8 +74,33 @@ class HederaAccountCustomizerTest {
 		customizer.customizeSynthetic(op);
 
 		assertEquals(memo, op.getMemo());
-		assertEquals(proxy.toGrpcAccountId(), op.getProxyAccountID());
+		assertEquals(stakedId.toGrpcAccountId(), op.getStakedAccountId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(false, op.getDeclineReward());
+	}
+
+	@Test
+	void negativeNumForStakedIdIsNodeID() {
+		final var memo = "Inherited";
+		final var stakedId = new EntityId(0, 0, -4);
+		final var autoRenew = 7776001L;
+		final var expiry = 1_234_567L;
+
+		final var customizer = new HederaAccountCustomizer()
+				.memo(memo)
+				.stakedId(stakedId)
+				.autoRenewPeriod(autoRenew)
+				.expiry(expiry)
+				.isSmartContract(true)
+				.isDeclinedReward(true);
+
+		final var op = ContractCreateTransactionBody.newBuilder();
+		customizer.customizeSynthetic(op);
+
+		assertEquals(memo, op.getMemo());
+		assertEquals(stakedId.num(), op.getStakedNodeId());
+		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(true, op.getDeclineReward());
 	}
 
 	@Test

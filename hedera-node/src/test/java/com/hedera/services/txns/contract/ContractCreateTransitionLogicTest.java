@@ -69,15 +69,19 @@ import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -150,9 +154,39 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(properties.maxGas()).willReturn(gas + 1);
+		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void failsForInvalidStakingId() {
+		givenValidTxnCtxWithStaking();
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void failsForProxyId() {
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L))
+				.setGas(gas);
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -167,7 +201,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false);
+		givenValidTxnCtx(false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -225,7 +259,6 @@ class ContractCreateTransitionLogicTest {
 				.setGas(gas)
 				.setAdminKey(IMMUTABILITY_SENTINEL_KEY)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -284,7 +317,6 @@ class ContractCreateTransitionLogicTest {
 				.setInitialBalance(balance)
 				.setGas(gas)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -349,7 +381,6 @@ class ContractCreateTransitionLogicTest {
 				.setInitialBalance(balance)
 				.setGas(gas)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -499,6 +530,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 		given(properties.maxGas()).willReturn(gas + 1);
+		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));
@@ -541,8 +573,7 @@ class ContractCreateTransitionLogicTest {
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
-				.setAdminKey(key)
-				.setProxyAccountID(proxy);
+				.setAdminKey(key);
 
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -572,17 +603,24 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
+		givenValidTxnCtx(true, false);
 	}
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew) {
+	private void givenValidTxnCtxWithStaking() {
+		givenValidTxnCtx(true, true);
+	}
+
+	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean stakingEnabled) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
-				.setGas(gas)
-				.setProxyAccountID(proxy);
+				.setGas(gas);
 		if (rememberAutoRenew) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+		}
+		if (stakingEnabled) {
+			op.setStakedNodeId(10L);
+			op.setDeclineReward(true);
 		}
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())

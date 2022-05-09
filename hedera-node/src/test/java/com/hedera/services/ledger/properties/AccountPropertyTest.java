@@ -233,7 +233,9 @@ class AccountPropertyTest {
 		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
 		DECLINE_REWARD.setter().accept(account, newDeclinedReward);
-		STAKED_ID.setter().accept(account, newStakedNum);
+		STAKED_TO_ME.setter().accept(account, newStakedToMe);
+		STAKE_PERIOD_START.setter().accept(account, newStakePeriodStart);
+		STAKED_ID.setter().accept(account, -newStakedNum);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -259,7 +261,7 @@ class AccountPropertyTest {
 		assertEquals(newDeclinedReward, DECLINE_REWARD.getter().apply(account));
 		assertEquals(newStakedToMe, STAKED_TO_ME.getter().apply(account));
 		assertEquals(newStakePeriodStart, STAKE_PERIOD_START.getter().apply(account));
-//		assertEquals(-newStakedNum, STAKED_NODE_ID.getter().apply(account));
+		assertEquals(newStakedNum, STAKED_ID.getter().apply(account));
 
 		STAKED_ID.setter().accept(account, origStakedNum);
 		assertEquals(origStakedNum, STAKED_ID.getter().apply(account));

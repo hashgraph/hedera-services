@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
@@ -48,6 +50,7 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED);
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
+		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
 		optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
 		optionAccountPropertyMap.put(Option.STAKED_TO_ME, AccountProperty.STAKED_TO_ME);
 		optionAccountPropertyMap.put(Option.STAKE_PERIOD_START, AccountProperty.STAKE_PERIOD_START);
@@ -69,11 +72,11 @@ public final class HederaAccountCustomizer extends
 					.setSeconds((long) changes.get(AccountProperty.AUTO_RENEW_PERIOD)));
 		}
 		if (changes.containsKey(AccountProperty.STAKED_ID)) {
-			final var id = (EntityId) changes.get(AccountProperty.STAKED_ID);
-			if (id.num() < 0) {
-				op.setStakedNodeId(id.num());
-			} else {
-				op.setStakedAccountId(id.toGrpcAccountId());
+			final long id = (long) changes.get(AccountProperty.STAKED_ID);
+			if (id < 0) {
+				op.setStakedNodeId(-1L * id);
+			} else if (id > 0) {
+				op.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(id));
 			}
 		}
 		if (changes.containsKey(AccountProperty.DECLINE_REWARD)) {

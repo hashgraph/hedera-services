@@ -39,6 +39,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -146,7 +147,8 @@ class ContextOptionValidatorTest {
 		topics = mock(MerkleMap.class);
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
-		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
+		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(
+				now.plusSeconds(555L).getEpochSecond()).get();
 		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 		given(topics.get(EntityNum.fromTopicId(missingTopicId))).willReturn(null);
 		given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
@@ -570,6 +572,30 @@ class ContextOptionValidatorTest {
 	}
 
 	@Test
+	void validatesStakingId() {
+		final var deletedAccount = new MerkleAccount();
+		deletedAccount.setDeleted(true);
+
+		given(accounts.get(EntityNum.fromLong(10L))).willReturn(new MerkleAccount());
+		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
+				.setStakedNodeId(10L)
+				.build();
+		assertEquals(true, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+
+		given(accounts.get(EntityNum.fromLong(10L))).willReturn(deletedAccount);
+		op = CryptoCreateTransactionBody.newBuilder()
+				.setStakedNodeId(10L)
+				.build();
+		assertEquals(false, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+
+		given(accounts.get(EntityNum.fromLong(10L))).willReturn(null);
+		op = CryptoCreateTransactionBody.newBuilder()
+				.setStakedNodeId(10L)
+				.build();
+		assertEquals(false, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+	}
+
+	@Test
 	void rejectsImplausibleAccounts() {
 		// given:
 		var implausibleShard = AccountID.newBuilder().setShardNum(-1).build();
@@ -683,7 +709,7 @@ class ContextOptionValidatorTest {
 	@Test
 	void rejectsInvalidMetadata() {
 		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
-		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[] { 1, 2, 3, 4 }));
 	}
 
 	@Test

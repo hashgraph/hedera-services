@@ -38,13 +38,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -95,13 +103,12 @@ class ContractCustomizerTest {
 	void worksFromSponsorCustomizerWithCryptoKey() {
 		given(ledger.get(sponsorId, KEY)).willReturn(cryptoAdminKey);
 		given(ledger.get(sponsorId, MEMO)).willReturn(memo);
-		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
-		assertCustomizesWithCryptoKey(subject, proxy);
+		assertCustomizesWithCryptoKey(subject);
 	}
 
 	@Test
@@ -110,7 +117,6 @@ class ContractCustomizerTest {
 
 		given(ledger.get(sponsorId, KEY)).willReturn(immutableSponsorKey);
 		given(ledger.get(sponsorId, MEMO)).willReturn(memo);
-		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 
@@ -134,6 +140,50 @@ class ContractCustomizerTest {
 	}
 
 	@Test
+	void worksForStakedId() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setProxyAccountID(proxy.toGrpcAccountId())
+				.setMemo(memo)
+				.setStakedAccountId(stakedId.toGrpcAccountId())
+				.setDeclineReward(true)
+				.build();
+
+		final var subject = ContractCustomizer.fromHapiCreation(
+				STANDIN_CONTRACT_ID_KEY, consensusNow, op);
+
+		final var captor = ArgumentCaptor.forClass(JKey.class);
+
+		subject.customize(newContractId, ledger);
+
+		verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
+		verify(ledger).set(newContractId, MEMO, memo);
+		verify(ledger).set(newContractId, EXPIRY, expiry);
+		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
+		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
+		verify(ledger).set(newContractId, DECLINE_REWARD, true);
+		verify(ledger).set(newContractId, STAKED_ID, stakedId);
+		final var keyUsed = captor.getValue();
+		assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
+	}
+
+	@Test
+	void getStakedIdReturnsLatestSet(){
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setStakedAccountId(stakedId.toGrpcAccountId())
+				.setDeclineReward(true)
+				.build();
+
+		assertEquals(stakedId, getStakedId(op.getStakedAccountId(), op.getStakedNodeId()).get());
+
+		op = ContractCreateTransactionBody.newBuilder()
+				.setDeclineReward(true)
+				.build();
+
+		assertEquals(Optional.empty(), getStakedId(op.getStakedAccountId(), op.getStakedNodeId()));
+	}
+
+	@Test
 	void worksWithCryptoKeyAndNoExplicitProxy() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
@@ -143,7 +193,7 @@ class ContractCustomizerTest {
 		final var subject = ContractCustomizer.fromHapiCreation(
 				cryptoAdminKey, consensusNow, op);
 
-		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
+		assertCustomizesWithCryptoKey(subject);
 	}
 
 	@Test
@@ -158,6 +208,36 @@ class ContractCustomizerTest {
 	}
 
 	@Test
+	void customizesSyntheticWithNegStakedId() {
+		given(accountCustomizer.getChanges()).willReturn(Map.of(STAKED_ID, -1L));
+		final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+		final var op = ContractCreateTransactionBody.newBuilder();
+		willCallRealMethod().given(accountCustomizer).customizeSynthetic(op);
+
+		subject.customizeSynthetic(op);
+
+		verify(accountCustomizer).customizeSynthetic(op);
+		assertEquals(MiscUtils.asKeyUnchecked(cryptoAdminKey), op.getAdminKey());
+		assertEquals(AccountID.getDefaultInstance(), op.getStakedAccountId());
+		assertEquals(1, op.getStakedNodeId());
+	}
+
+	@Test
+	void customizesSyntheticWithPositiveStakedId() {
+		given(accountCustomizer.getChanges()).willReturn(Map.of(STAKED_ID, 10L));
+		final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+		final var op = ContractCreateTransactionBody.newBuilder();
+		willCallRealMethod().given(accountCustomizer).customizeSynthetic(op);
+
+		subject.customizeSynthetic(op);
+
+		verify(accountCustomizer).customizeSynthetic(op);
+		assertEquals(MiscUtils.asKeyUnchecked(cryptoAdminKey), op.getAdminKey());
+		assertEquals(STATIC_PROPERTIES.scopedAccountWith(10L), op.getStakedAccountId());
+		assertEquals(0, op.getStakedNodeId());
+	}
+
+	@Test
 	void customizesSyntheticWithImmutableKey() {
 		final var subject = new ContractCustomizer(accountCustomizer);
 		final var op = ContractCreateTransactionBody.newBuilder();
@@ -168,14 +248,13 @@ class ContractCustomizerTest {
 		assertFalse(op.hasAdminKey());
 	}
 
-	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject, final EntityId expectedProxy) {
+	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject) {
 		final var captor = ArgumentCaptor.forClass(JKey.class);
 
 		subject.customize(newContractId, ledger);
 
 		verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
 		verify(ledger).set(newContractId, MEMO, memo);
-		verify(ledger).set(newContractId, PROXY, expectedProxy);
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
@@ -190,7 +269,6 @@ class ContractCustomizerTest {
 
 		verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
 		verify(ledger).set(newContractId, MEMO, memo);
-		verify(ledger).set(newContractId, PROXY, proxy);
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
@@ -208,4 +286,5 @@ class ContractCustomizerTest {
 	private static final Instant consensusNow = Instant.ofEpochSecond(expiry - autoRenewPeriod);
 	private static final String memo = "the grey rock";
 	private static final EntityId proxy = new EntityId(0, 0, 3);
+	private static final EntityId stakedId = new EntityId(0, 0, 2);
 }

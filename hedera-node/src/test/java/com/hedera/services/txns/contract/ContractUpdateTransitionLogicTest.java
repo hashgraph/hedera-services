@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
@@ -33,6 +34,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -50,13 +52,16 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -191,7 +196,7 @@ class ContractUpdateTransitionLogicTest {
 
 	@Test
 	void acceptsOmittedAutoRenew() {
-		givenValidTxnCtx(false);
+		givenValidTxnCtx(false, false);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -201,7 +206,8 @@ class ContractUpdateTransitionLogicTest {
 	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(
+				CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
@@ -228,12 +234,17 @@ class ContractUpdateTransitionLogicTest {
 		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
-	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
+	@Test
+	void failsForInvalidStakingId() {
+		givenValidTxnCtxWithStaking();
+
+		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
-	private void givenValidTxnCtx(boolean useAutoRenew) {
-		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+	@Test
+	void failsForProxyId() {
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractUpdateInstance(
@@ -241,9 +252,38 @@ class ContractUpdateTransitionLogicTest {
 								.setMemo(memo)
 								.setContractID(target)
 								.setProxyAccountID(proxy));
+
+		contractUpdateTxn = op.build();
+		given(accessor.getTxn()).willReturn(contractUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(contracts.get(EntityNum.fromContractId(target))).willReturn(contract);
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractUpdateTxn));
+	}
+
+	private void givenValidTxnCtx() {
+		givenValidTxnCtx(true, false);
+	}
+
+	private void givenValidTxnCtxWithStaking() {
+		givenValidTxnCtx(true, true);
+	}
+
+	private void givenValidTxnCtx(boolean useAutoRenew, boolean stakingEnabled) {
+		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target));
 		if (useAutoRenew) {
 			op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
 			op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));
+		}
+		if (stakingEnabled) {
+			op.getContractUpdateInstanceBuilder().setStakedNodeId(10L);
+			op.getContractUpdateInstanceBuilder().setDeclineReward(BoolValue.of(true));
 		}
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
