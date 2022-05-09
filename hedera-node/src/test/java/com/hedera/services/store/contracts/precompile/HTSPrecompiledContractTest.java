@@ -198,8 +198,8 @@ class HTSPrecompiledContractTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 	}
 
 	@Test
@@ -878,6 +878,7 @@ class HTSPrecompiledContractTest {
 	void prepareFieldsWithAliasedMessageSender() {
 		givenFrameContext();
 		given(worldUpdater.permissivelyUnaliased(contractAddress.toArray())).willReturn("0x000000000000000123".getBytes());
+
 		subject.prepareFields(messageFrame);
 
 		verify(messageFrame, times(1)).getSenderAddress();

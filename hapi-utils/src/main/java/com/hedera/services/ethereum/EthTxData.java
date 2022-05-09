@@ -180,6 +180,13 @@ public record EthTxData(
 		return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
 	}
 
+	public BigInteger getMaxGasAsBigInteger() {
+		return switch (type) {
+			case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
+			case EIP1559 -> new BigInteger(1, maxGas);
+		};
+	}
+
 	public byte[] getEthereumHash() {
 		return new Keccak.Digest256().digest(rawTx == null ? encodeTx() : rawTx);
 	}

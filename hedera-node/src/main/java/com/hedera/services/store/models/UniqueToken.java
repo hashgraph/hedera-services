@@ -114,7 +114,6 @@ public class UniqueToken {
 		this.metadata = metadata;
 	}
 
-
 	public void clearSpender() {
 		this.spender = Id.DEFAULT;
 	}

@@ -52,6 +52,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,8 @@ class ContractCallTransitionLogicTest {
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	private int gas = 1_234;
 	private long sent = 1_234L;
+	private static final long maxGas = 666_666L;
+	private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -101,6 +104,7 @@ class ContractCallTransitionLogicTest {
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
+	private final Account relayerAccount = new Account(new Id(0, 0, 1003));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
 	ContractCallTransitionLogic subject;
 
@@ -141,6 +145,39 @@ class ContractCallTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
+
+		// then:
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
+
+	@Test
+	void verifyExternaliseContractResultCallEth() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+		// and:
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(evmTxProcessor.executeEth(
+				senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime(), biOfferedGasPrice, relayerAccount, maxGas))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+		// when:
+		subject.doStateTransitionOperation(
+				accessor.getTxn(),
+				senderAccount.getId(),
+				relayerAccount.getId(),
+				maxGas, biOfferedGasPrice);
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());

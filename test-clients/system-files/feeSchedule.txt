@@ -650,14 +650,14 @@ currentFeeSchedule {
   		max: 1000000000000000
   	  },
   	  servicedata: {
-  		constant: 53384243355,
-  		bpt: 85345408,
-  		vpt: 213363518838,
-  		rbh: 56897,
-  		sbh: 4267,
+  		constant: 0,
+  		bpt: 0,
+  		vpt: 0,
+  		rbh: 0,
+  		sbh: 0,
   		gas: 568969,
-  		bpr: 85345408,
-  		sbpr: 2133635,
+  		bpr: 0,
+  		sbpr: 0,
   		min: 0,
   		max: 1000000000000000
   	  }

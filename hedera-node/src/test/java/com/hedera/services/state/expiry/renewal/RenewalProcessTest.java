@@ -95,7 +95,8 @@ class RenewalProcessTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(accountGC, contractGC, fees, helper, dynamicProperties, recordsHelper);
+		subject = new RenewalProcess(
+				accountGC, contractGC, fees, helper, dynamicProperties, recordsHelper);
 	}
 
 	@Test

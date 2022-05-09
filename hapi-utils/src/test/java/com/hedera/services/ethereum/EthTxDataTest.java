@@ -334,4 +334,26 @@ class EthTxDataTest {
 		assertEquals(parsed, parsedAgain);
 		assertNotEquals(parsed, parsed0);
 	}
+
+	@Test
+	void maxGasIsPositive() {
+		var oneByte = new byte[] { 1 };
+		// high bit of most significant byte is zero
+		// 45 tinybar as weibar
+		var smallGasPrice = Hex.decode("68c6171400");
+		// high bit of most significant byte is one
+		// 71 tinybar as weibar
+		var largeGasPrice = Hex.decode("a54f4c3c00");
+
+		for (var type : EthTxData.EthTransactionType.values()) {
+			for (var gasPrice : List.of(smallGasPrice, largeGasPrice)) {
+				EthTxData testTransaction =
+						new EthTxData(oneByte, type, oneByte, 1,
+								gasPrice, gasPrice, gasPrice, 1,
+								oneByte, BigInteger.ONE, oneByte, oneByte, 1,
+								oneByte, oneByte, oneByte);
+				assertTrue(testTransaction.getMaxGasAsBigInteger().compareTo(BigInteger.ZERO) > 0);
+			}
+		}
+	}
 }

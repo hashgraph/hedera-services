@@ -326,7 +326,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													accounts.toArray(),
 													amounts.toArray()
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -403,10 +403,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
-													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
+													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS)
 									);
 
@@ -420,7 +419,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -436,10 +435,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
-													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								}
 						)
@@ -538,10 +536,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
-													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
 
 									/* --- HSCS-PREC-018 --- */
@@ -555,7 +552,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -572,10 +569,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
-													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 									);
 								})
@@ -671,7 +667,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(hbarReceiverAccountID.get()),
 													AMOUNT_TO_SEND,
 													CUSTOM_HBAR_FEE_AMOUNT)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -744,7 +740,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													receiver,
 													1L
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -813,7 +809,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													theReceivers,
 													theSerialNumbers
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx"));
 								}
@@ -879,7 +875,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													accounts.toArray(),
 													amounts.toArray()
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 													.via("distributeTx"));

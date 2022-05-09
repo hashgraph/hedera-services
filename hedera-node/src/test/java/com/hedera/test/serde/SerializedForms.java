@@ -56,12 +56,9 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractKeySerializer;
-import com.hedera.services.state.virtual.ContractKeySupplier;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
@@ -176,7 +173,7 @@ public class SerializedForms {
 					entry(MerkleTokenRelStatus.class, SeededPropertySource::nextMerkleTokenRelStatus,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
-					entry(MerkleUniqueToken.class, SeededPropertySource::nextMerkleUniqueToken,
+					entry(MerkleUniqueToken.class, SeededPropertySource::next0260UniqueToken,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,

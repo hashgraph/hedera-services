@@ -61,6 +61,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
@@ -69,6 +70,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public static final String ETH_HASH_KEY = "EthHash";
 
+    private static final TupleType longTuple = TupleType.parse("(int64)");
+
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
@@ -76,13 +79,15 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
     private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static  final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private long gasPrice = 1L;
+    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
     private long maxPriorityGas = 1_000L;
-    private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
+    private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
@@ -194,7 +199,12 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall gasPrice(long gasPrice) {
-        this.gasPrice = gasPrice;
+        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        return this;
+    }
+
+    public HapiEthereumCall maxFeePerGas(long maxFeePerGas) {
+        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -261,16 +271,15 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             contractID = TxnUtils.asContractId(contract, spec);
         }
 
-        final var longTuple = TupleType.parse("(int64)");
-        final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice)).array()).toArray();
+        final var gasPriceBytes = gasLongToBytes(gasPrice);;
+        final var maxFeePerGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxFeePerGas.longValueExact())).array()).toArray();
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
-        final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.get())).array()).toArray();
 
         if (useSpecNonce) {
             nonce = spec.getNonce();
         }
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-                maxPriorityGasBytes, gasBytes, gas.orElse(100_000L),
+                maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
                 Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
@@ -353,5 +362,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 .add("contract", contract)
                 .add("abi", abi)
                 .add("params", Arrays.toString(params));
+    }
+
+    private byte[] gasLongToBytes(BigInteger gas) {
+        return Bytes.wrap(longTuple.encode(Tuple.of(gas.longValueExact())).array()).toArray();
     }
 }
