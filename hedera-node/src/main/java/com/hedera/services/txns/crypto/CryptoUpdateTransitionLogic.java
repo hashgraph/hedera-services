@@ -232,7 +232,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
 		}
-		if (op.hasProxyAccountID()) {
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {

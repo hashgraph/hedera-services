@@ -37,6 +37,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -193,7 +194,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getGas() > properties.maxGas()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
-		if (op.hasProxyAccountID()) {
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {

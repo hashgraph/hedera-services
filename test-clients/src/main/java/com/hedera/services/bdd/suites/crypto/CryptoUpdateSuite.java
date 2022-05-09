@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -45,17 +47,22 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -63,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static javax.management.timer.Timer.ONE_DAY;
 
 public class CryptoUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
@@ -115,8 +123,39 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+						updateStakingFieldsWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec updateStakingFieldsWorks() {
+		return defaultHapiSpec("updateStakingFieldsWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						cryptoCreate("user")
+								.key(ADMIN_KEY)
+								.stakedAccountId("0.0.20")
+								.declinedReward(true)
+				)
+				.when(
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.stakedAccountId("0.0.20")
+										.stakedNodeId(0)
+										.isDeclinedReward(true)),
+
+						cryptoUpdate("user")
+								.newStakedNodeId(10L)
+								.newDeclinedReward(false)
+				)
+				.then(
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.stakedNodeId(10)
+										.isDeclinedReward(false))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
@@ -241,7 +280,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-						overriding( "accounts.limitTokenAssociations", "false"),
+						overriding("accounts.limitTokenAssociations", "false"),
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
 						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)

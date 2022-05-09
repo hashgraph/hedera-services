@@ -190,7 +190,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
-		if (op.hasProxyAccountID()) {
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {

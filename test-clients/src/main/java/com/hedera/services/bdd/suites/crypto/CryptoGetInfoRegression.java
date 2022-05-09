@@ -207,7 +207,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 
 	private HapiApiSpec succeedsNormally() {
 		long balance = 1_234_567L;
-		long autoRenew = 5_555_555L;
+		long autoRenew = 6999999L;
 		long sendThresh = 1_111L;
 		long receiveThresh = 2_222L;
 		long expiry = Instant.now().getEpochSecond() + autoRenew;
@@ -219,22 +219,38 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				).when(
 						cryptoCreate("target")
 								.key("misc")
-								.proxy("1.2.3")
 								.balance(balance)
 								.sendThreshold(sendThresh)
 								.receiveThreshold(receiveThresh)
 								.receiverSigRequired(true)
 								.autoRenewSecs(autoRenew)
+								.stakedNodeId(10L),
+						cryptoCreate("targetWithStakedAccountId")
+								.key("misc")
+								.balance(balance)
+								.sendThreshold(sendThresh)
+								.receiveThreshold(receiveThresh)
+								.receiverSigRequired(true)
+								.autoRenewSecs(autoRenew)
+								.stakedAccountId("0.0.20")
 				).then(
 						getAccountInfo("target")
 								.has(accountWith()
 										.accountId("target")
 										.solidityId("target")
-										.stakedId("1.2.3")
+										.stakedNodeId(10L)
 										.key("misc")
 										.balance(balance)
-										.sendThreshold(sendThresh)
-										.receiveThreshold(receiveThresh)
+										.expiry(expiry, 5L)
+										.autoRenew(autoRenew)
+								).logged(),
+						getAccountInfo("targetWithStakedAccountId")
+								.has(accountWith()
+										.accountId("targetWithStakedAccountId")
+										.solidityId("targetWithStakedAccountId")
+										.stakedAccountId("0.0.20")
+										.key("misc")
+										.balance(balance)
 										.expiry(expiry, 5L)
 										.autoRenew(autoRenew)
 								).logged()

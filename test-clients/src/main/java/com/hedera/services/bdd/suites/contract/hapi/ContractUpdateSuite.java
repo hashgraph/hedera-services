@@ -40,9 +40,9 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.unhex;
 
@@ -85,20 +86,76 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-						updateWithBothMemoSettersWorks(),
-						updatingExpiryWorks(),
-						rejectsExpiryTooFarInTheFuture(),
-						updateAutoRenewWorks(),
-						updateAdminKeyWorks(),
-						canMakeContractImmutableWithEmptyKeyList(),
-						givenAdminKeyMustBeValid(),
-						fridayThe13thSpec(),
-						updateDoesNotChangeBytecode(),
-						eip1014AddressAlwaysHasPriority(),
-						immutableContractKeyFormIsStandard()
+		return List.of(new HapiApiSpec[] {
+//						updateWithBothMemoSettersWorks(),
+//						updatingExpiryWorks(),
+//						rejectsExpiryTooFarInTheFuture(),
+//						updateAutoRenewWorks(),
+//						updateAdminKeyWorks(),
+//						canMakeContractImmutableWithEmptyKeyList(),
+//						givenAdminKeyMustBeValid(),
+//						fridayThe13thSpec(),
+//						updateDoesNotChangeBytecode(),
+//						eip1014AddressAlwaysHasPriority(),
+//						immutableContractKeyFormIsStandard(),
+						updateStakingFieldsWorks(),
+//						deprecatedProxyIdUsageFails()
 				}
 		);
+	}
+
+	private HapiApiSpec deprecatedProxyIdUsageFails() {
+		return defaultHapiSpec("deprecatedProxyIdUsageFails")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.proxy("0.0.20")
+								.hasPrecheck(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED)
+				)
+				.when(
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY),
+						contractUpdate(CONTRACT)
+								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
+								.newProxy("0.0.30")
+								.hasPrecheck(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED)
+				)
+				.then(
+				);
+	}
+
+	private HapiApiSpec updateStakingFieldsWorks() {
+		return defaultHapiSpec("updateStakingFieldsWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.stakedAccountId("0.0.20")
+								.declinedReward(true)
+				)
+				.when(
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.stakedAccountId("0.0.20")
+										.stakedNodeId(0)
+										.isDeclinedReward(true)),
+
+						contractUpdate(CONTRACT)
+								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
+								.newStakedNodeId(10L)
+								.newDeclinedReward(false)
+				)
+				.then(
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.noStakedAccountId()
+										.stakedNodeId(10)
+										.isDeclinedReward(false))
+								.logged()
+				);
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2877
@@ -126,22 +183,23 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeNormalCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeStaticCall").via(staticcallTxn),
 						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeStaticCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
-						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
-								resultWith().resultThruAbi(
-										getABIFor(FUNCTION, "makeDelegateCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						sourcing(
+								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+										resultWith().resultThruAbi(
+												getABIFor(FUNCTION, "makeDelegateCall", contract),
+												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeCallCode").via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeCallCode", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())})))))
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
 				);
 	}
 
@@ -250,7 +308,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT).immutable()
-				).when( ).then(
+				).when().then(
 						getContractInfo(CONTRACT)
 								.has(contractWith().immutableContractKey(CONTRACT))
 				);

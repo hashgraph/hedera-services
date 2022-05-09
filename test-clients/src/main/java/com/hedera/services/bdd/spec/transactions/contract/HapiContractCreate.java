@@ -98,6 +98,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<AccountID> stakedAccountId = Optional.empty();
 	private Optional<Long> stakedNodeId = Optional.empty();
+	private boolean isDeclinedReward = false;
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
@@ -230,6 +231,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
+	public HapiContractCreate declinedReward(boolean isDeclined) {
+		isDeclinedReward = isDeclined;
+		return this;
+	}
+
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		return (omitAdminKey || useDeprecatedAdminKey)
@@ -324,6 +330,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							} else if (stakedNodeId.isPresent()) {
 								b.setStakedNodeId(stakedNodeId.get());
 							}
+							b.setDeclineReward(isDeclinedReward);
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);

@@ -67,6 +67,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -457,7 +458,24 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		info.setStakingInfo(stakingInfo(account));
+
 		return Optional.of(info.build());
+	}
+
+	public StakingInfo stakingInfo(final MerkleAccount account) {
+		// TODO : will be updated with pending_reward in future PR
+		final var stakingInfo = StakingInfo.newBuilder()
+				.setDeclineReward(account.isDeclinedReward())
+				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build())
+				.setStakedToMe(account.getStakedToMe());
+		final var stakedNum = account.getStakedNum();
+		if (stakedNum < 0) {
+			stakingInfo.setStakedNodeId(-1 * account.getStakedNum());
+		} else if (stakedNum > 0) {
+			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
+		}
+		return stakingInfo.build();
 	}
 
 	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
@@ -546,6 +564,8 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+
+		info.setStakingInfo(stakingInfo(contract));
 
 		try {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());

@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
@@ -183,6 +184,43 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		final long numStorageBytes = expectedKvPairs * 64L;
 		registerProvider((spec, o) -> {
 			assertEquals(numStorageBytes, object2ContractInfo(o).getStorage(), "Bad storage size!");
+		});
+		return this;
+	}
+
+
+	public ContractInfoAsserts stakedAccountId(String idLiteral) {
+		registerProvider((spec, o) -> {
+			assertEquals(HapiPropertySource.asAccount(idLiteral),
+					(object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts stakedNodeId(long idLiteral) {
+		registerProvider((spec, o) -> {
+			assertEquals(idLiteral,
+					(object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts isDeclinedReward(boolean isDeclined) {
+		registerProvider((spec, o) -> {
+			assertEquals(isDeclined,
+					(object2ContractInfo(o)).getStakingInfo().getDeclineReward(),
+					"Bad isDeclinedReward!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts noStakedAccountId(){
+		registerProvider((spec, o) -> {
+			assertEquals(AccountID.getDefaultInstance(),
+					(object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
 		});
 		return this;
 	}

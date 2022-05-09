@@ -78,6 +78,9 @@ public class UpdateCustomizerFactory {
 		if (stakedId.isPresent()) {
 			customizer.stakedId(stakedId.get());
 		}
+		if (op.hasDeclineReward()) {
+			customizer.isDeclinedReward(op.getDeclineReward().getValue());
+		}
 		return Pair.of(Optional.of(customizer), OK);
 	}
 

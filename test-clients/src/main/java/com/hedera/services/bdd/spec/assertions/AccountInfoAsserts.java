@@ -84,11 +84,38 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts stakedId(String idLiteral) {
+	public AccountInfoAsserts stakedAccountId(String idLiteral) {
 		registerProvider((spec, o) -> {
 			assertEquals(HapiPropertySource.asAccount(idLiteral),
+					((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noStakedAccountId(){
+		registerProvider((spec, o) -> {
+			assertEquals(AccountID.getDefaultInstance(),
+					((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts stakedNodeId(long idLiteral) {
+		registerProvider((spec, o) -> {
+			assertEquals(idLiteral,
 					((AccountInfo) o).getStakingInfo().getStakedNodeId(),
-					"Bad stakedId id!");
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts isDeclinedReward(boolean isDeclined){
+		registerProvider((spec, o) -> {
+			assertEquals(isDeclined,
+					((AccountInfo) o).getStakingInfo().getDeclineReward(),
+					"Bad isDeclinedReward!");
 		});
 		return this;
 	}
