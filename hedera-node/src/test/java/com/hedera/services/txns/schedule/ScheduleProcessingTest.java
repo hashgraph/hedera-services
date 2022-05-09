@@ -24,9 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.logic.SigsAndPayerKeyScreen;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
@@ -48,7 +46,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.TreeMap;
 
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
@@ -58,12 +55,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -87,9 +82,7 @@ class ScheduleProcessingTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
-	@Mock
-	private CharacteristicsFactory characteristics;
+	private ScheduleSigsVerifier scheduleSigsVerifier;
 	@Mock
 	private TimedFunctionalityThrottling scheduleThrottling;
 	@Mock
@@ -110,7 +103,7 @@ class ScheduleProcessingTest {
 	@BeforeEach
 	void setUp() {
 		subject = new ScheduleProcessing(sigImpactHistorian, store, scheduleExecutor, dynamicProperties,
-				sigsAndPayerKeyScreen, characteristics, scheduleThrottling);
+				scheduleSigsVerifier, scheduleThrottling);
 	}
 
 	@Test
@@ -143,19 +136,17 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededWorksAsExpected() throws InvalidProtocolBufferException {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
+		subject.isFullySigned = k -> {
 			assertEquals(k, schedule1);
-			assertNotNull(b);
 			return true;
 		};
 
@@ -172,28 +163,24 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId1, store, false);
 
 		inOrder.verifyNoMoreInteractions();
 	}
 
 	@Test
-	void triggerNextTransactionExpiringAsNeededOnlyExpireWorksAsExpected() throws InvalidProtocolBufferException {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+	void triggerNextTransactionExpiringAsNeededOnlyExpireWorksAsExpected() {
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
+		subject.isFullySigned = k -> {
 			assertEquals(k, schedule1);
-			assertNotNull(b);
 			return true;
 		};
 
@@ -208,16 +195,14 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 
 		inOrder.verifyNoMoreInteractions();
 	}
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromExternal() {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
@@ -239,8 +224,8 @@ class ScheduleProcessingTest {
 	@Test
 	void triggerNextTransactionExpiringAsNeededWithLongTermDisabledWorksAsExpected() {
 
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
@@ -267,8 +252,8 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededHandlesNotReady() throws InvalidProtocolBufferException {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -276,11 +261,8 @@ class ScheduleProcessingTest {
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
 		given(store.get(scheduleId2)).willReturn(schedule2);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
-		given(schedule2.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
-			assertNotNull(b);
+		subject.isFullySigned = k -> {
 			if (k == schedule1) {
 				return false;
 			}
@@ -301,8 +283,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
@@ -310,8 +290,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId2, store, false);
 
 		inOrder.verifyNoMoreInteractions();
@@ -319,8 +297,8 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededHandlesTriggerNotOk() throws InvalidProtocolBufferException {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -328,11 +306,8 @@ class ScheduleProcessingTest {
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
 		given(store.get(scheduleId2)).willReturn(schedule2);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
-		given(schedule2.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
-			assertNotNull(b);
+		subject.isFullySigned = k -> {
 			if (k == schedule1) {
 				return true;
 			}
@@ -354,8 +329,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId1, store, false);
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
@@ -364,8 +337,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId2, store, false);
 
 		inOrder.verifyNoMoreInteractions();
@@ -373,8 +344,8 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededHandlesErrorProcessing() throws InvalidProtocolBufferException {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -382,11 +353,8 @@ class ScheduleProcessingTest {
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
 		given(store.get(scheduleId2)).willReturn(schedule2);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
-		given(schedule2.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
-			assertNotNull(b);
+		subject.isFullySigned = k -> {
 			if (k == schedule1) {
 				throw new IllegalStateException();
 			}
@@ -407,8 +375,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 
@@ -416,8 +382,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId2);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId2, store, false);
 
 		inOrder.verifyNoMoreInteractions();
@@ -425,21 +389,15 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromInternal() {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
-		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, scheduleId1);
+		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, scheduleId2, scheduleId3,
+				scheduleId1);
 
-		given(store.get(scheduleId1)).willReturn(schedule1);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
-
-		subject.isReady = (k, b) -> {
-			assertNotNull(b);
-			assertEquals(k, schedule1);
-			throw new IllegalStateException();
-		};
+		subject.isFullySigned = k -> false;
 
 		// when:
 		assertThrows(IllegalStateException.class, () ->
@@ -451,10 +409,22 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
+
+		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
+		inOrder.verify(store).get(scheduleId2);
+		inOrder.verify(store).expire(scheduleId2);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId2).longValue());
+
+		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
+		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
+		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
+		inOrder.verify(store).get(scheduleId3);
+		inOrder.verify(store).expire(scheduleId3);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId3).longValue());
 
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
@@ -464,18 +434,16 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededSkipsOnNextNull() {
-		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, sigsAndPayerKeyScreen,
-				characteristics, scheduleExecutor);
+		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
+				scheduleExecutor);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, null);
 
 		given(store.get(scheduleId1)).willReturn(schedule1);
-		given(schedule1.parentAsSignedTxn()).willReturn(getSignedTxn());
 
-		subject.isReady = (k, b) -> {
-			assertNotNull(b);
+		subject.isFullySigned = k -> {
 			assertEquals(k, schedule1);
 			throw new IllegalStateException();
 		};
@@ -491,8 +459,6 @@ class ScheduleProcessingTest {
 		inOrder.verify(store).nextScheduleToEvaluate(consensusTime);
 		inOrder.verify(dynamicProperties).schedulingLongTermEnabled();
 		inOrder.verify(store).get(scheduleId1);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(argThat(a -> a.getTxn().getMemo().equals("scheduled")),
-				argThat(Optional::isEmpty));
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 

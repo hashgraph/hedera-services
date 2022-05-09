@@ -20,8 +20,6 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import java.util.Optional;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 
@@ -79,7 +77,7 @@ public class TopLevelTransition implements Runnable {
 		final var now = txnCtx.consensusTime();
 		networkCtxManager.advanceConsensusClockTo(now);
 
-		final var sigStatus = sigsAndPayerKeyScreen.applyTo(accessor, Optional.of(txnCtx));
+		final var sigStatus = sigsAndPayerKeyScreen.applyTo(accessor);
 		// We update the network utilization before we compute and charge fees b/c
 		// network utilization determines the congestion pricing multiplier; so this
 		// is the simplest way to guarantee a reconnected node will apply the same

@@ -185,16 +185,6 @@ public class ScheduleVirtualValue implements VirtualValue {
 				.build();
 	}
 
-	public Transaction parentAsSignedTxn() {
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(ByteString.copyFrom(bodyBytes))
-								.build()
-								.toByteString())
-				.build();
-	}
-
 	public TransactionID scheduledTransactionId() {
 		if (schedulingAccount == null || schedulingTXValidStart == null) {
 			throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");

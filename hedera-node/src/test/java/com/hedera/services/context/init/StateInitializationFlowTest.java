@@ -96,8 +96,6 @@ class StateInitializationFlowTest {
 	@Mock
 	private MerkleScheduledTransactions schedules;
 	@Mock
-	private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
-	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
@@ -123,7 +121,7 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(schedules.byId()).willReturn(schedulesById);
+		given(schedules.getNumSchedules()).willReturn(1L);
 		givenMockMerkleMaps();
 
 		// when:
@@ -146,7 +144,7 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(schedules.byId()).willReturn(schedulesById);
+		given(schedules.getNumSchedules()).willReturn(1L);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
 		givenMockMerkleMaps();
 

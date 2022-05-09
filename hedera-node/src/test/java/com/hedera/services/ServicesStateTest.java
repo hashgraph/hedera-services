@@ -667,7 +667,11 @@ class ServicesStateTest {
 		assertNull(subject.scheduleTxs());
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleScheduledTransactions.class));
 		assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
-		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+
+		var mockLegacyScheduledTxns = mock(MerkleMap.class);
+		given(mockLegacyScheduledTxns.size()).willReturn(2);
+
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockLegacyScheduledTxns);
 		assertNull(subject.scheduleTxs());
 
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
@@ -686,7 +690,10 @@ class ServicesStateTest {
 		// when:
 		subject.init(platform, addressBook, dualState);
 
-		assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
+		var scheduledTxns = subject.scheduleTxs();
+
+		assertInstanceOf(MerkleScheduledTransactions.class, scheduledTxns);
+		assertEquals(2, scheduledTxns.getNumSchedules());
 	}
 
 	@Test

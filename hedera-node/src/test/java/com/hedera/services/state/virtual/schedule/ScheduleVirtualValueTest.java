@@ -240,7 +240,6 @@ public class ScheduleVirtualValueTest {
 		assertEquals(scheduledTxn, subject.scheduledTxn());
 		assertEquals(ordinaryVersionOfScheduledTxn, subject.ordinaryViewOfScheduledTxn());
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
-		assertEquals(expectedParentSignedTxn(), subject.parentAsSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 		assertEquals(HederaFunctionality.CryptoDelete, subject.scheduledFunction());
 	}

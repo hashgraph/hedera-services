@@ -41,6 +41,8 @@ import org.apache.logging.log4j.Logger;
 public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
+	private int pendingMigrationSize;
+
 	static Runnable stackDump = Thread::dumpStack;
 
 	public static final int RELEASE_0260_VERSION = 1;
@@ -51,7 +53,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	/* Order of Merkle node children */
 	public static final class ChildIndices {
 		private static final int STATE = 0;
-		private static final int BY_ID = 1;
+		static final int BY_ID = 1;
 		private static final int BY_EXPIRATION_SECOND = 2;
 		private static final int BY_EQUALITY = 3;
 		static final int NUM_0260_CHILDREN = 4;
@@ -79,6 +81,16 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 				virtualMapFactory.newScheduleListStorage(),
 				virtualMapFactory.newScheduleTemporalStorage(),
 				virtualMapFactory.newScheduleEqualityStorage()), CURRENT_VERSION);
+	}
+
+	/**
+	 * @param pendingMigrationSize the size of the legacy schedules map
+	 * @deprecated remove once 0.26 migration is no longer needed
+	 */
+	@Deprecated(since = "0.26")
+	public MerkleScheduledTransactions(int pendingMigrationSize) {
+		this();
+		this.pendingMigrationSize = pendingMigrationSize;
 	}
 
 	/* --- MerkleInternal --- */
@@ -147,6 +159,14 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 
 	public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
 		return getChild(ChildIndices.BY_EQUALITY);
+	}
+
+	public long getNumSchedules() {
+		var byIdSize = byId().size();
+		if (pendingMigrationSize > 0 && byIdSize <= 0) {
+			return pendingMigrationSize;
+		}
+		return byIdSize;
 	}
 
 	public long getCurrentMinSecond() {

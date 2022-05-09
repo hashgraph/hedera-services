@@ -51,7 +51,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-        var op = txn.getScheduleCreate();
+		var op = txn.getScheduleCreate();
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
 		final long lifetimeSecs;

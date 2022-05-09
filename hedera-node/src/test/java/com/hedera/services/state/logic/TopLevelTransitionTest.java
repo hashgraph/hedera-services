@@ -32,12 +32,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -82,8 +79,7 @@ class TopLevelTransitionTest {
 	void switchesToStandinUtilizationAndAbortsWhenKeyActivationScreenFails() {
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(sigsAndPayerKeyScreen.applyTo(eq(accessor), argThat((Optional<TransactionContext> o) -> o.get() == txnCtx)))
-				.willReturn(INVALID_SIGNATURE);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(INVALID_SIGNATURE);
 
 		// when:
 		subject.run();
@@ -102,8 +98,7 @@ class TopLevelTransitionTest {
 
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(sigsAndPayerKeyScreen.applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx))).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
 		given(nonPayerKeysScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
 		given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
@@ -112,8 +107,7 @@ class TopLevelTransitionTest {
 
 		// then:
 		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx));
+		inOrder.verify(sigsAndPayerKeyScreen).applyTo(accessor);
 		inOrder.verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
 		inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
@@ -130,8 +124,7 @@ class TopLevelTransitionTest {
 
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(sigsAndPayerKeyScreen.applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx))).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
 		given(nonPayerKeysScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
 		// when:
@@ -139,8 +132,7 @@ class TopLevelTransitionTest {
 
 		// then:
 		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		inOrder.verify(sigsAndPayerKeyScreen).applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx));
+		inOrder.verify(sigsAndPayerKeyScreen).applyTo(accessor);
 		inOrder.verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
 		inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
@@ -152,8 +144,7 @@ class TopLevelTransitionTest {
 	void abortsWhenChargingPolicyAgentFails() {
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(sigsAndPayerKeyScreen.applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx))).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 
 		// when:
 		subject.run();
@@ -166,8 +157,7 @@ class TopLevelTransitionTest {
 	void abortsWhenKeyActivationScreenFails() {
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(sigsAndPayerKeyScreen.applyTo(eq(accessor),
-				argThat((Optional<TransactionContext> o) -> o.get() == txnCtx))).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
 
 		// when:

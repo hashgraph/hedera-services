@@ -912,6 +912,20 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
+	void advanceCurrentMinSecondHandlesLargeValues() {
+		given(schedules.getCurrentMinSecond()).willReturn(Long.MAX_VALUE);
+
+		assertFalse(subject.advanceCurrentMinSecond(consensusTime.toJava()));
+
+		given(schedules.getCurrentMinSecond()).willReturn(Instant.MAX.getEpochSecond());
+
+		assertFalse(subject.advanceCurrentMinSecond(consensusTime.toJava()));
+
+		verify(byExpirationSecond, never()).containsKey(any());
+		verify(schedules, never()).setCurrentMinSecond(anyLong());
+	}
+
+	@Test
 	void nextSchedulesToExpireWorks() {
 
 		ScheduleID notExecutedId = IdUtils.asSchedule("0.0.331233");

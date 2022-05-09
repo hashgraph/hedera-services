@@ -189,4 +189,17 @@ class MerkleScheduledTransactionsTest {
 		verify(byExpirationSecond).decrementReferenceCount();
 		verify(byEquality).decrementReferenceCount();
 	}
+
+	@Test
+	void pendingMigrationSizeWorks() {
+		subject = new MerkleScheduledTransactions(5);
+
+		subject.setChild(MerkleScheduledTransactions.ChildIndices.BY_ID, byId);
+
+		assertEquals(5L, subject.getNumSchedules());
+
+		given(byId.size()).willReturn(4L);
+
+		assertEquals(4L, subject.getNumSchedules());
+	}
 }

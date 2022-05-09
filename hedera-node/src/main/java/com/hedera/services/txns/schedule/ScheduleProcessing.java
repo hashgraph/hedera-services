@@ -22,34 +22,29 @@ package com.hedera.services.txns.schedule;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.logic.SigsAndPayerKeyScreen;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.throttling.TimedFunctionalityThrottling;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -67,26 +62,23 @@ public class ScheduleProcessing {
 	private final ScheduleStore store;
 	private final ScheduleExecutor scheduleExecutor;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
-	private final CharacteristicsFactory characteristics;
 	private final TimedFunctionalityThrottling scheduleThrottling;
 
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
-	BiPredicate<ScheduleVirtualValue, InHandleActivationHelper> isReady = SignatoryUtils::isReady;
+	Predicate<ScheduleVirtualValue> isFullySigned;
 
 	@Inject
 	public ScheduleProcessing(final SigImpactHistorian sigImpactHistorian, final ScheduleStore store,
 			final ScheduleExecutor scheduleExecutor, final GlobalDynamicProperties dynamicProperties,
-			final SigsAndPayerKeyScreen sigsAndPayerKeyScreen, final CharacteristicsFactory characteristics,
+			final ScheduleSigsVerifier scheduleSigsVerifier,
 			@ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.store = store;
 		this.scheduleExecutor = scheduleExecutor;
 		this.dynamicProperties = dynamicProperties;
-		this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
-		this.characteristics = characteristics;
 		this.scheduleThrottling = scheduleThrottling;
+		isFullySigned = scheduleSigsVerifier::areAllKeysActive;
 	}
 
 	/**
@@ -124,7 +116,7 @@ public class ScheduleProcessing {
 	public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime,
 			@Nullable TxnAccessor previous, boolean onlyExpire) {
 
-		var previousId = previous == null ? null : previous.getScheduleRef();
+		LongHashSet seen = null;
 
 		while (true) {
 
@@ -136,15 +128,23 @@ public class ScheduleProcessing {
 				return null;
 			}
 
-			if (next.equals(previousId)) {
+			// avoid creating a hash set in the normal case where we don't actually process any scheduled txns
+			if (seen == null) {
+				seen = new LongHashSet();
+				if ((previous != null) && (previous.getScheduleRef() != null)) {
+					seen.add(fromScheduleId(previous.getScheduleRef()).longValue());
+				}
+			}
+
+			var nextLong = fromScheduleId(next).longValue();
+
+			if (!seen.add(nextLong)) {
 				log.error("tried to process the same transaction twice! {}", next);
 				throw new IllegalStateException("tried to process the same transaction twice!");
 			}
 
-			previousId = next;
-
 			// if we were going to check throttling to prevent scheduled transactions from all executing
-			// rapidly after downtime, it would be done here.
+			// rapidly after downtime, it would be done here. We don't do that currently.
 
 			try {
 
@@ -152,27 +152,17 @@ public class ScheduleProcessing {
 					// if long term is disabled, we always expire transactions that would otherwise
 					// execute autonomously
 					store.expire(next);
-					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+					sigImpactHistorian.markEntityChanged(nextLong);
 					continue;
 				}
 
 				var schedule = store.get(next);
 
-				var parentSignedTxn = schedule.parentAsSignedTxn();
-
-				var accessor = PlatformTxnAccessor.from(
-						SignedTxnAccessor.from(parentSignedTxn.toByteArray()),
-						new SwirldTransaction(parentSignedTxn.toByteArray()));
-
-				sigsAndPayerKeyScreen.applyTo(accessor, Optional.empty());
-
-				var inHandleActivationHelper = new InHandleActivationHelper(characteristics, () -> accessor);
-
-				if (!isReady.test(schedule, inHandleActivationHelper)) {
+				if (!this.isFullySigned.test(schedule)) {
 
 					// expire transactions that are not ready to execute
 					store.expire(next);
-					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+					sigImpactHistorian.markEntityChanged(nextLong);
 
 				} else if (onlyExpire) {
 
@@ -187,7 +177,7 @@ public class ScheduleProcessing {
 						log.error("Scheduled transaction was not trigger-able even though it should be! Expiring it. {}",
 								next);
 						store.expire(next);
-						sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+						sigImpactHistorian.markEntityChanged(nextLong);
 					} else {
 						return triggerResult.getRight();
 					}
@@ -200,7 +190,7 @@ public class ScheduleProcessing {
 				// Immediately expire malfunctioning transactions, if we get here then there is a bug.
 				// We can't leave it in the db, it will prevent other scheduled transactions from processing.
 				store.expire(next);
-				sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+				sigImpactHistorian.markEntityChanged(nextLong);
 			}
 
 		}

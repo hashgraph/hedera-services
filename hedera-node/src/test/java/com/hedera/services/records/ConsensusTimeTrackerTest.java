@@ -31,9 +31,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.Instant;
 
 import static com.hedera.services.records.ConsensusTimeTracker.MAX_FOLLOWING_RECORDS;
-import static com.hedera.services.records.ConsensusTimeTracker.MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND;
-import static com.hedera.services.records.ConsensusTimeTracker.MAX_PRECEDING_RECORDS_REMAINING_TXN;
-import static com.hedera.services.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_ROUND;
+import static com.hedera.services.records.ConsensusTimeTracker.MAX_PRECEDING_RECORDS;
+import static com.hedera.services.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_INCORPORATE_CALL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -71,7 +70,7 @@ class ConsensusTimeTrackerTest {
 		assertTrue(subject.hasMoreTransactionTime(true));
 		assertTrue(subject.hasMoreTransactionTime(false));
 
-		long maxPreceding = MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND;
+		long maxPreceding = MAX_PRECEDING_RECORDS;
 		long maxFollowing = MAX_FOLLOWING_RECORDS;
 		int count = 0;
 		int standaloneCount = 0;
@@ -90,9 +89,9 @@ class ConsensusTimeTrackerTest {
 			assertTrue(subject.isFirstUsed());
 
 			if (count > 1) {
-				assertTrue(subject.getRoundStartConsensusTime().isBefore(subject.getCurrentTxnMinTime()));
+				assertTrue(subject.getMinConsensusTime().isBefore(subject.getCurrentTxnMinTime()));
 			} else {
-				assertEquals(subject.getRoundStartConsensusTime(), subject.getCurrentTxnMinTime());
+				assertEquals(subject.getMinConsensusTime(), subject.getCurrentTxnMinTime());
 			}
 
 			long availableCount = 0;
@@ -102,15 +101,15 @@ class ConsensusTimeTrackerTest {
 				var msg = "x = " + x + " isStandalone = " + isStandalone;
 
 				assertEquals(subject.isAllowablePrecedingTime(time),
-						x > 0 && x <= maxPreceding, msg);
+						x > 0 && (x <= maxPreceding || count <= 1), msg);
 				assertEquals(subject.isAllowablePrecedingOffset(x),
-						x > 0 && x <= maxPreceding, msg);
+						x > 0 && (x <= maxPreceding || count <= 1), msg);
 
 				if (subject.isAllowablePrecedingTime(time)) {
 					++availableCount;
 					if (x == maxPreceding) {
 						assertEquals(time, subject.getCurrentTxnMinTime(), msg);
-					} else {
+					} else if (count > 1) {
 						assertTrue(time.isAfter(subject.getCurrentTxnMinTime()), msg);
 					}
 					assertTrue(time.isBefore(subject.getCurrentTxnTime()), msg);
@@ -139,11 +138,15 @@ class ConsensusTimeTrackerTest {
 				}
 			}
 
-			assertEquals(availableCount, maxFollowing + maxPreceding);
+			if (count > 1) {
+				assertEquals(availableCount, maxFollowing + maxPreceding);
+			} else {
+				assertTrue(availableCount > maxFollowing + maxPreceding);
+			}
 
 			var hadMore = subject.hasMoreTransactionTime(nextCanTriggerTxn);
 
-			subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_ROUND);
+			subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL);
 			assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(false));
 			assertThrows(IllegalStateException.class, () -> subject.hasMoreStandaloneRecordTime());
 
@@ -158,8 +161,6 @@ class ConsensusTimeTrackerTest {
 					nextCanTriggerTxn = false;
 				}
 				assertTrue(subject.hasMoreTransactionTime(false));
-			} else {
-				assertFalse(subject.hasMoreTransactionTime(false));
 			}
 
 			if (subject.hasMoreTransactionTime(nextCanTriggerTxn)) {
@@ -181,7 +182,7 @@ class ConsensusTimeTrackerTest {
 				if (actualFollowing > MAX_FOLLOWING_RECORDS) {
 					actualFollowing = 0;
 				}
-				maxPreceding = MAX_PRECEDING_RECORDS_REMAINING_TXN;
+				maxPreceding = MAX_PRECEDING_RECORDS;
 				maxFollowing = MAX_FOLLOWING_RECORDS;
 
 			} else if (subject.hasMoreStandaloneRecordTime()) {
@@ -227,7 +228,7 @@ class ConsensusTimeTrackerTest {
 		subject.nextTransactionTime(false);
 		assertTrue(subject.isFirstUsed());
 		assertTrue(subject.isAllowableFollowingOffset(MAX_FOLLOWING_RECORDS));
-		assertTrue(subject.isAllowablePrecedingOffset(MAX_PRECEDING_RECORDS_REMAINING_TXN));
+		assertTrue(subject.isAllowablePrecedingOffset(MAX_PRECEDING_RECORDS));
 
 		checkBounds(null, false);
 
@@ -257,7 +258,7 @@ class ConsensusTimeTrackerTest {
 		subject.firstTransactionTime();
 		assertTrue(subject.isFirstUsed());
 		assertTrue(subject.isAllowableFollowingOffset(MAX_FOLLOWING_RECORDS));
-		assertTrue(subject.isAllowablePrecedingOffset(MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND));
+		assertTrue(subject.isAllowablePrecedingOffset(1_000_000_000));
 
 		checkBounds(null, false);
 
@@ -301,7 +302,7 @@ class ConsensusTimeTrackerTest {
 		subject.reset(consensusTime);
 		subject.firstTransactionTime();
 
-		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_ROUND - MAX_FOLLOWING_RECORDS - 1);
+		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - MAX_PRECEDING_RECORDS - 1);
 		assertFalse(subject.hasMoreTransactionTime(false));
 		assertFalse(subject.hasMoreTransactionTime(true));
 		assertFalse(subject.hasMoreStandaloneRecordTime());
@@ -311,7 +312,7 @@ class ConsensusTimeTrackerTest {
 		assertThrows(IllegalStateException.class, () -> subject.nextTransactionTime(true));
 		assertThrows(IllegalStateException.class, () -> subject.nextStandaloneRecordTime());
 
-		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_ROUND - MAX_FOLLOWING_RECORDS);
+		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - MAX_PRECEDING_RECORDS);
 
 		assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(false));
 		assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(true));
@@ -335,25 +336,25 @@ class ConsensusTimeTrackerTest {
 
 	private void checkBounds(ConsensusTimeTracker previous, boolean isStandalone) {
 		var minTime = consensusTime;
-		var maxTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_ROUND);
+		var maxTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_INCORPORATE_CALL);
 
-		assertTrue(maxTime.isAfter(subject.getRoundStartConsensusTime()));
+		assertTrue(maxTime.isAfter(subject.getMinConsensusTime()));
 		assertTrue(maxTime.isAfter(subject.getCurrentTxnMinTime()));
 		assertTrue(maxTime.isAfter(subject.getCurrentTxnTime()));
 		assertTrue(maxTime.isAfter(subject.getCurrentTxnMaxTime()));
 		assertTrue(maxTime.isAfter(subject.getMaxConsensusTime()));
 
-		assertTrue(minTime.compareTo(subject.getRoundStartConsensusTime()) <= 0);
+		assertTrue(minTime.compareTo(subject.getMinConsensusTime()) <= 0);
 		assertTrue(minTime.compareTo(subject.getCurrentTxnMinTime()) <= 0);
 		assertTrue(minTime.compareTo(subject.getCurrentTxnTime()) <= 0);
 		assertTrue(minTime.compareTo(subject.getCurrentTxnMaxTime()) <= 0);
 		assertTrue(minTime.compareTo(subject.getMaxConsensusTime()) <= 0);
 
 
-		assertTrue(subject.getRoundStartConsensusTime().compareTo(subject.getCurrentTxnMinTime()) <= 0);
-		assertTrue(subject.getRoundStartConsensusTime().isBefore(subject.getCurrentTxnTime()));
-		assertTrue(subject.getRoundStartConsensusTime().isBefore(subject.getCurrentTxnMaxTime()));
-		assertTrue(subject.getRoundStartConsensusTime().isBefore(subject.getMaxConsensusTime()));
+		assertTrue(subject.getMinConsensusTime().compareTo(subject.getCurrentTxnMinTime()) <= 0);
+		assertTrue(subject.getMinConsensusTime().isBefore(subject.getCurrentTxnTime()));
+		assertTrue(subject.getMinConsensusTime().isBefore(subject.getCurrentTxnMaxTime()));
+		assertTrue(subject.getMinConsensusTime().isBefore(subject.getMaxConsensusTime()));
 
 		if (isStandalone) {
 			assertEquals(subject.getCurrentTxnMinTime(), subject.getCurrentTxnTime());
@@ -376,7 +377,7 @@ class ConsensusTimeTrackerTest {
 		if (previous != null) {
 			var prev = previous;
 
-			assertEquals(prev.getRoundStartConsensusTime(), subject.getRoundStartConsensusTime());
+			assertEquals(prev.getMinConsensusTime(), subject.getMinConsensusTime());
 			assertEquals(prev.getMaxConsensusTime(), subject.getMaxConsensusTime());
 
 			assertTrue(subject.getCurrentTxnMinTime().isAfter(prev.getCurrentTxnTime()

@@ -39,27 +39,27 @@ public class ConsensusTimeTracker {
 	private static final Logger log = LogManager.getLogger(ConsensusTimeTracker.class);
 
 	@VisibleForTesting
-	static final long DEFAULT_NANOS_PER_ROUND = TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 	/**
-	 * The max number of records that can be placed before the first transaction in a round. We need this because
-	 * the first transaction might have more than a normal number of proceeding records.
-	 * For example {@link com.hedera.services.state.migration.MigrationRecordsManager}
+	 * The max number of records that can be placed before transactions in a
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+	 *
+	 * There is a special case. When the system first starts up, the first
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call can
+	 * haven an unlimited number of preceding records. This is for migrations.
 	 */
-	public static final long MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND = 10;
+	public static final long MAX_PRECEDING_RECORDS = 3;
 
 	/**
-	 * The max number of records that can be placed before subsequent transactions in a round.
-	 */
-	public static final long MAX_PRECEDING_RECORDS_REMAINING_TXN = 3;
-	/**
-	 * The max number of records that can be placed after a transaction.
+	 * The max number of records that can be placed after a transaction in a
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
 	 */
 	public static final long MAX_FOLLOWING_RECORDS = 10;
 
-	private final long nanosPerRound;
+	private final long nanosBetweenIncorporateCalls;
 
-	private Instant roundStartConsensusTime;
+	private Instant minConsensusTime;
 	private Instant currentTxnMinTime;
 	private Instant currentTxnTime;
 	private Instant currentTxnMaxTime;
@@ -67,19 +67,20 @@ public class ConsensusTimeTracker {
 
 	private long followingRecordsCount;
 
+	private boolean isFirstSinceStartup = true;
+
 	private boolean firstUsed;
 
 	@Inject
 	public ConsensusTimeTracker() {
-		this(DEFAULT_NANOS_PER_ROUND);
+		this(DEFAULT_NANOS_PER_INCORPORATE_CALL);
 	}
 
 	@VisibleForTesting
-	ConsensusTimeTracker(final long nanosPerRound) {
-		this.nanosPerRound = nanosPerRound;
-		if (nanosPerRound <
-				(MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND + MAX_FOLLOWING_RECORDS
-						+ MAX_PRECEDING_RECORDS_REMAINING_TXN + 10)) {
+	ConsensusTimeTracker(final long nanosBetweenIncorporateCalls) {
+		this.nanosBetweenIncorporateCalls = nanosBetweenIncorporateCalls;
+		if (nanosBetweenIncorporateCalls <
+				(MAX_FOLLOWING_RECORDS + MAX_PRECEDING_RECORDS + 10)) {
 			throw new IllegalArgumentException("TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS is too small!");
 		}
 	}
@@ -87,13 +88,14 @@ public class ConsensusTimeTracker {
 	@VisibleForTesting
 	ConsensusTimeTracker(ConsensusTimeTracker toCopy) {
 		this();
-		roundStartConsensusTime = toCopy.roundStartConsensusTime;
+		minConsensusTime = toCopy.minConsensusTime;
 		currentTxnMinTime = toCopy.currentTxnMinTime;
 		currentTxnTime = toCopy.currentTxnTime;
 		currentTxnMaxTime = toCopy.currentTxnMaxTime;
 		maxConsensusTime = toCopy.maxConsensusTime;
 		followingRecordsCount = toCopy.followingRecordsCount;
 		firstUsed = toCopy.firstUsed;
+		isFirstSinceStartup = toCopy.isFirstSinceStartup;
 	}
 
 	/**
@@ -107,7 +109,8 @@ public class ConsensusTimeTracker {
 	}
 
 	/**
-	 * @return true if firstTransactionTime() cannot be used again in this round
+	 * @return true if firstTransactionTime() cannot be used again in the current
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
 	 */
 	public boolean isFirstUsed() {
 		return firstUsed;
@@ -119,26 +122,28 @@ public class ConsensusTimeTracker {
 	 * @param consensusTime the consensusTime passed to incorporateConsensusTxn
 	 */
 	public void reset(final Instant consensusTime) {
-		roundStartConsensusTime = consensusTime;
-		currentTxnMinTime = roundStartConsensusTime;
-		currentTxnTime = roundStartConsensusTime.plusNanos(MAX_PRECEDING_RECORDS_FIRST_TXN_IN_ROUND);
+		minConsensusTime = consensusTime;
+		currentTxnMinTime = minConsensusTime;
+		currentTxnTime = minConsensusTime.plusNanos(MAX_PRECEDING_RECORDS);
 		currentTxnMaxTime = currentTxnTime.plusNanos(MAX_FOLLOWING_RECORDS);
 		followingRecordsCount = MAX_FOLLOWING_RECORDS;
 		firstUsed = false;
-		maxConsensusTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_ROUND - 1);
+		maxConsensusTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_INCORPORATE_CALL - 1);
 	}
 
 	/**
-	 * The first transaction in a round can have more "preceding" transactions than normal, this method
-	 * returns the first consensus time, if it hasn't been used yet.
+	 * The first transaction in a {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn}
+	 * call can have more "preceding" transactions than normal, this method returns the first consensus time.
+	 * If it has already been used, and exception is thrown. See {@link #isFirstUsed()}.
 	 *
-	 * @return the consensus time to use for the first transaction in a round.
+	 * @return the consensus time to use for the first transaction in a
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
 	 */
 	public Instant firstTransactionTime() {
 
 		if (firstUsed) {
 			throw new IllegalStateException(
-					"firstTransactionTime can only be used once, before nextTransactionTime is called, per round!");
+					"firstTransactionTime can only be used once, before nextTransactionTime is called, per incorporateConsensusTxn call!");
 		}
 
 		firstUsed = true;
@@ -161,7 +166,7 @@ public class ConsensusTimeTracker {
 	 * @return the consensus time to use.
 	 */
 	public Instant nextTransactionTime(boolean canTriggerTxn) {
-		return nextTime(canTriggerTxn, MAX_PRECEDING_RECORDS_REMAINING_TXN, MAX_FOLLOWING_RECORDS);
+		return nextTime(canTriggerTxn, MAX_PRECEDING_RECORDS, MAX_FOLLOWING_RECORDS);
 	}
 
 	/**
@@ -169,7 +174,7 @@ public class ConsensusTimeTracker {
 	 * @return true if there are more full transaction times available.
 	 */
 	public boolean hasMoreTransactionTime(boolean canTriggerTxn) {
-		return hasMoreTime(canTriggerTxn, MAX_PRECEDING_RECORDS_REMAINING_TXN, MAX_FOLLOWING_RECORDS);
+		return hasMoreTime(canTriggerTxn, MAX_PRECEDING_RECORDS, MAX_FOLLOWING_RECORDS);
 	}
 
 	/**
@@ -217,6 +222,11 @@ public class ConsensusTimeTracker {
 	 * @return true if time should be allowed as a record consensus time in a "preceding" record.
 	 */
 	public boolean isAllowablePrecedingTime(final Instant time) {
+
+		if (isFirstSinceStartup) {
+			return time.isBefore(currentTxnTime);
+		}
+
 		return time.isBefore(currentTxnTime) && (time.isAfter(currentTxnMinTime) || time.equals(currentTxnMinTime));
 	}
 
@@ -237,6 +247,7 @@ public class ConsensusTimeTracker {
 		}
 
 		firstUsed = true;
+		isFirstSinceStartup = false;
 
 		currentTxnMinTime = currentTxnTime.plusNanos(followingRecordsCount + 1);
 
@@ -269,8 +280,8 @@ public class ConsensusTimeTracker {
 	@Override
 	public String toString() {
 		return "ConsensusTimeTracker{" +
-				"nanosPerRound=" + nanosPerRound +
-				", roundStartConsensusTime=" + roundStartConsensusTime +
+				"nanosBetweenIncorporateCalls=" + nanosBetweenIncorporateCalls +
+				", minConsensusTime=" + minConsensusTime +
 				", currentTxnMinTime=" + currentTxnMinTime +
 				", currentTxnTime=" + currentTxnTime +
 				", currentTxnMaxTime=" + currentTxnMaxTime +
@@ -281,8 +292,8 @@ public class ConsensusTimeTracker {
 	}
 
 	@VisibleForTesting
-	Instant getRoundStartConsensusTime() {
-		return roundStartConsensusTime;
+	Instant getMinConsensusTime() {
+		return minConsensusTime;
 	}
 
 	@VisibleForTesting

@@ -32,8 +32,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -45,22 +43,25 @@ public class SigsAndPayerKeyScreen {
 	private final Rationalization rationalization;
 	private final PayerSigValidity payerSigValidity;
 	private final MiscSpeedometers speedometers;
+	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
 	public SigsAndPayerKeyScreen(
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,
+			TransactionContext txnCtx,
 			MiscSpeedometers speedometers,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
+		this.txnCtx = txnCtx;
 		this.validityTest = validityTest;
 		this.speedometers = speedometers;
 		this.rationalization = rationalization;
 		this.payerSigValidity = payerSigValidity;
 	}
 
-	public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor, Optional<TransactionContext> txnCtx) {
+	public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor) {
 		rationalization.performFor(accessor);
 
 		final var sigStatus = rationalization.finalStatus();
@@ -68,8 +69,8 @@ public class SigsAndPayerKeyScreen {
 			speedometers.cycleSyncVerifications();
 		}
 
-		if (txnCtx.isPresent() && hasActivePayerSig(accessor)) {
-			txnCtx.get().payerSigIsKnownActive();
+		if (hasActivePayerSig(accessor)) {
+			txnCtx.payerSigIsKnownActive();
 		}
 
 		return sigStatus;

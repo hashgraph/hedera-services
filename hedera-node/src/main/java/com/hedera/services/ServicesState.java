@@ -202,7 +202,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
 		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
-			migrationSchedules = new MerkleScheduledTransactions();
+			migrationSchedules = new MerkleScheduledTransactions(
+					((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
 		}
 
 		internalInit(platform, new BootstrapProperties(), dualState);

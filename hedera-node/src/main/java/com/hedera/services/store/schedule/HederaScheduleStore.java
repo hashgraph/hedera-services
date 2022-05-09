@@ -45,6 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -351,10 +352,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
-		while ((curSecond < Long.MAX_VALUE) && ((curSecond + 1) < Instant.MAX.getEpochSecond()) &&
-				// for processing, we only use the second component for comparison, we only process stuff from the
-				// _previous_ second
-				(consensusTime.getEpochSecond() > (curSecond + 1))
+		while ((consensusTime.getEpochSecond() - 1 > curSecond)
 				&& (!schedules.get().byExpirationSecond().containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
 
 			++curSecond;
@@ -371,18 +369,18 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 	@Override
 	public List<ScheduleID> nextSchedulesToExpire(Instant consensusTime) {
-		final List<ScheduleID> list = new ArrayList<>();
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
 		if (!shouldProcessSecond(consensusTime, curSecond)) {
-			return list;
+			return Collections.emptyList();
 		}
 
 		var bySecondKey = new SecondSinceEpocVirtualKey(curSecond);
 
 		var bySecond = schedules.get().byExpirationSecond().get(bySecondKey);
 
+		final List<ScheduleID> list = new ArrayList<>();
 		List<Pair<RichInstant, Long>> toRemove = new ArrayList<>();
 
 		if (bySecond != null) {
@@ -486,10 +484,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	private boolean shouldProcessSecond(final Instant consensusTime, final long curSecond) {
-		return (curSecond < Long.MAX_VALUE) && (curSecond < Instant.MAX.getEpochSecond())
-				// for processing, we only use the second component for comparison, we only process stuff from the
-				// _previous_ second
-			   && consensusTime.getEpochSecond() > curSecond;
+		return consensusTime.getEpochSecond() > curSecond;
 	}
 
 	private void resetPendingCreation() {

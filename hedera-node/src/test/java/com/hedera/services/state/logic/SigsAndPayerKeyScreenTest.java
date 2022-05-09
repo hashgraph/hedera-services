@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -46,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -73,7 +71,7 @@ class SigsAndPayerKeyScreenTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SigsAndPayerKeyScreen(
-				rationalization, payerSigValidity, speedometers, validityTest);
+				rationalization, payerSigValidity, txnCtx, speedometers, validityTest);
 	}
 
 	@Test
@@ -81,7 +79,7 @@ class SigsAndPayerKeyScreenTest {
 		given(rationalization.finalStatus()).willReturn(INVALID_ACCOUNT_ID);
 
 		// when:
-		final var result = subject.applyTo(accessor, Optional.of(txnCtx));
+		final var result = subject.applyTo(accessor);
 
 		// then:
 		verify(rationalization).performFor(accessor);
@@ -96,24 +94,10 @@ class SigsAndPayerKeyScreenTest {
 		given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
 
 		// when:
-		final var result = subject.applyTo(accessor, Optional.of(txnCtx));
+		final var result = subject.applyTo(accessor);
 
 		// then:
 		verify(txnCtx).payerSigIsKnownActive();
-		// and:
-		Assertions.assertEquals(OK, result);
-	}
-
-	@Test
-	void doesNotValidatePayerWhenNoTransactionContext() {
-		givenOkRationalization();
-
-		// when:
-		final var result = subject.applyTo(accessor, Optional.empty());
-
-		// then:
-		verify(txnCtx, never()).payerSigIsKnownActive();
-		verify(payerSigValidity, never()).test(accessor, validityTest);
 		// and:
 		Assertions.assertEquals(OK, result);
 	}
@@ -124,7 +108,7 @@ class SigsAndPayerKeyScreenTest {
 		given(payerSigValidity.test(accessor, validityTest)).willThrow(IllegalArgumentException.class);
 
 		// when:
-		subject.applyTo(accessor, Optional.of(txnCtx));
+		subject.applyTo(accessor);
 
 		// then:
 		assertThat(logCaptor.warnLogs(),
@@ -136,7 +120,7 @@ class SigsAndPayerKeyScreenTest {
 		givenOkRationalization(true);
 
 		// when:
-		subject.applyTo(accessor, Optional.of(txnCtx));
+		subject.applyTo(accessor);
 
 		// then:
 		verify(speedometers).cycleSyncVerifications();
@@ -146,7 +130,7 @@ class SigsAndPayerKeyScreenTest {
 	void doesntCyclesAsyncAnymore() {
 		givenOkRationalization();
 
-		subject.applyTo(accessor, Optional.of(txnCtx));
+		subject.applyTo(accessor);
 
 		verifyNoInteractions(speedometers);
 	}
