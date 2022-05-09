@@ -92,7 +92,8 @@ public class EthereumSuite extends HapiApiSuite {
 						invalidTxData(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
-						ETX_026_accountWithoutAliasCannotMakeEthTxns()
+						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+						ETX_009_callsToTokenAddresses()
 				)).toList();
 	}
 
