@@ -84,7 +84,7 @@ public class ReleaseTwentySixMigration {
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
 	) {
-		log.info("Migrating {} NFTs into iterable form with threads", uniqueTokens.size());
+		log.info("Migrating {} NFTs into iterable form", uniqueTokens.size());
 		final var watch = StopWatch.createStarted();
 		for (final var nftId : uniqueTokens.keySet()) {
 			var nft = uniqueTokens.getForModify(nftId);
