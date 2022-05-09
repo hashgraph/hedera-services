@@ -20,20 +20,24 @@ package com.hedera.services.bdd.suites.ethereum;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -51,7 +55,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -69,6 +75,7 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final long depositAmount = 20_000L;
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
 	private static final long GAS_LIMIT = 1_000_000;
+	private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -80,6 +87,7 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns()
@@ -322,6 +330,55 @@ public class EthereumSuite extends HapiApiSuite {
 								.gasLimit(GAS_LIMIT)
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				).then();
+	}
+
+	HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+		final AtomicLong fungibleNum = new AtomicLong();
+		final String fungibleToken = "token";
+		final String mintTxn = "mintTxn";
+		final String MULTI_KEY = "MULTI_KEY";
+		return defaultHapiSpec("ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+						ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5
+						)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(RELAYER)
+								.alsoSigningWithFullPrefix(MULTI_KEY)
+								.nonce(0)
+								.gasPrice(50L)
+								.maxGasAllowance(FIVE_HBARS)
+								.gasLimit(1_000_000L)
+								.via(mintTxn)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord(mintTxn)
+								.logged()
+								.hasPriority(recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.logs(inOrder())
+														.senderId(spec.registry().getAccountID(
+																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+																		.getAlias().toStringUtf8())))
+										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+				);
 	}
 
 
