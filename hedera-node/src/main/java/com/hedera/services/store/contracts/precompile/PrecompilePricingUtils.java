@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -105,7 +106,9 @@ public class PrecompilePricingUtils {
 		BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
 		BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
-		DISSOCIATE(TokenDissociateFromAccount, DEFAULT);
+		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
+		APPROVE_FUNGIBLE(CryptoApproveAllowance, TOKEN_FUNGIBLE_COMMON),
+		APPROVE_NFT(CryptoApproveAllowance, TOKEN_NON_FUNGIBLE_UNIQUE);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;
