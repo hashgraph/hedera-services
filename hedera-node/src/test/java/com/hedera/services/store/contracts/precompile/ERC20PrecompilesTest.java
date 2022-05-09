@@ -705,7 +705,6 @@ class ERC20PrecompilesTest {
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(accounts.get(any(), any())).willReturn(allowances);
 
         // when:
         subject.prepareFields(frame);
@@ -757,7 +756,6 @@ class ERC20PrecompilesTest {
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -1018,5 +1016,5 @@ class ERC20PrecompilesTest {
     private static final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(token), EntityId.fromGrpcAccountId(receiver).asNum());
 
-    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, BigInteger.ONE, true);
+    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, true);
 }

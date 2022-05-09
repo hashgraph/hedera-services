@@ -367,8 +367,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedAdjustAllowance() {
 		final var amount = BigInteger.ONE;
-		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, BigInteger.ZERO, true);
-		allowances = allowances.withAdjustment(BigInteger.ONE);
+		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
 
 		final var result = subject.createApproveAllowance(allowances);
 		final var txnBody = result.build();
@@ -380,7 +379,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedAdjustAllowanceNFT() {
-		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
 		final var result = subject.createApproveAllowance(allowances);
 		final var txnBody = result.build();
@@ -404,7 +403,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsDeleteAllowance() {
-		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
 		final var result = subject.createDeleteAllowance(allowances, EntityId.fromGrpcAccountId(sender));
 		final var txnBody = result.build();

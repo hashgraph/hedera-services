@@ -411,7 +411,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -462,7 +461,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER_0);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -513,7 +511,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER);
-        given(accounts.get(any(), any())).willReturn(allowances);
 
         // when:
         subject.prepareFields(frame);
@@ -946,7 +943,7 @@ class ERC721PrecompilesTest {
 
     public static final SetApprovalForAllWrapper SET_APPROVAL_FOR_ALL_WRAPPER = new SetApprovalForAllWrapper(receiver, true);
 
-    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
-    public static final ApproveWrapper APPROVE_WRAPPER_0 = new ApproveWrapper(token, IdUtils.asAccount("0.0.0"), BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+    public static final ApproveWrapper APPROVE_WRAPPER_0 = new ApproveWrapper(token, IdUtils.asAccount("0.0.0"), BigInteger.ZERO, BigInteger.ONE, false);
 }

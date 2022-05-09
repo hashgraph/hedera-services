@@ -118,7 +118,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -143,6 +142,7 @@ import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isT
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_NFT;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
@@ -1681,20 +1681,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-			final var fungibleTokenAllowances = (Map<FcTokenAllowanceId, Long>) ledgers.accounts().get(accountId, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES);
-
 			final var nestedInput = input.slice(24);
 			approveOp = decoder.decodeTokenApprove(nestedInput, token, isFungible, aliasResolver);
 
 			if (isFungible) {
-				long value = 0;
-				final var fcTokenAllowanceId =
-						FcTokenAllowanceId.from(EntityNum.fromTokenId(token), EntityNum.fromAccountId(approveOp.spender()));
-				if (fungibleTokenAllowances.containsKey(fcTokenAllowanceId)) {
-					value = fungibleTokenAllowances.get(fcTokenAllowanceId);
-				}
-				return syntheticTxnFactory.createApproveAllowance(approveOp.withAdjustment(approveOp.amount().subtract(BigInteger.valueOf(value))));
+				return syntheticTxnFactory.createApproveAllowance(approveOp);
 			} else {
 				if (approveOp.spender().getAccountNum() == 0) {
 					var nftId = new NftId(token.getShardNum(), token.getRealmNum(), token.getTokenNum(), approveOp.serialNumber().longValue());
@@ -1761,8 +1752,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			Objects.requireNonNull(approveOp);
 
-			return precompilePricingUtils.getMinimumPriceInTinybars(
-					(approveOp.isFungible()) ? APPROVE_FUNGIBLE : APPROVE_NFT, consensusTime);
+			if (approveOp.isFungible()) {
+				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_FUNGIBLE, consensusTime);
+			} else {
+				if (approveOp.spender().getAccountNum() == 0) {
+					return precompilePricingUtils.getMinimumPriceInTinybars(DELETE_NFT_APPROVE, consensusTime);
+				}
+				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
+			}
 		}
 
 		@Override
@@ -1837,7 +1834,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
+			return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
 		}
 
 		private Log getLogForSetApprovalForAll(final Address logger) {

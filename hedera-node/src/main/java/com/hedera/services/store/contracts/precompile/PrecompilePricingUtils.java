@@ -34,12 +34,13 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -108,7 +109,8 @@ public class PrecompilePricingUtils {
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
 		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
 		APPROVE_FUNGIBLE(CryptoApproveAllowance, TOKEN_FUNGIBLE_COMMON),
-		APPROVE_NFT(CryptoApproveAllowance, TOKEN_NON_FUNGIBLE_UNIQUE);
+		APPROVE_NFT(CryptoApproveAllowance, TOKEN_NON_FUNGIBLE_UNIQUE),
+		DELETE_NFT_APPROVE(CryptoDeleteAllowance, TOKEN_NON_FUNGIBLE_UNIQUE);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;
