@@ -232,7 +232,7 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedStakedIdProperty() {
 		setupWithMockChangeManager();
-		final EntityId stakedId = EntityId.fromIdentityCode(2);
+		final Long stakedId = EntityId.fromIdentityCode(2).num();
 
 		subject.stakedId(stakedId);
 

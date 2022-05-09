@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -194,7 +193,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID()) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
+		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
 			return INVALID_STAKING_ID;
 		}
 		return OK;

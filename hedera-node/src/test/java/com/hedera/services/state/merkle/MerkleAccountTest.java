@@ -287,7 +287,7 @@ class MerkleAccountTest {
 		subject.setStakedToMe(stakedToMe);
 		subject.setStakePeriodStart(stakePeriodStart);
 		subject.setDeclineReward(declinedReward);
-		subject.setStakedNodeId(stakedNum);
+		subject.setStakedNodeId(-stakedNum);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);

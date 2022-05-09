@@ -69,7 +69,6 @@ import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -154,7 +153,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -165,7 +164,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtxWithStaking();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractCreateTxn));
 	}
@@ -530,7 +529,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));

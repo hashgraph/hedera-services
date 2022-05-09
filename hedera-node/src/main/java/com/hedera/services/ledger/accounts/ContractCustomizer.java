@@ -160,11 +160,11 @@ public class ContractCustomizer {
 	 * 		given staked_node_id
 	 * @return valid staked id
 	 */
-	public static Optional<EntityId> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
+	public static Optional<Long> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
 		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
-			return Optional.of(EntityId.fromGrpcAccountId(stakedAccountId));
+			return Optional.of(stakedAccountId.getAccountNum());
 		} else if (stakedNodeId > 0) {
-			return Optional.of(EntityId.fromIdentityCode((int) stakedNodeId));
+			return Optional.of((-1 * stakedNodeId));
 		}
 		return Optional.empty();
 	}

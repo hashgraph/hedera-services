@@ -56,9 +56,11 @@ import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import java.util.EnumSet;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -75,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -127,7 +130,7 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void updatesProxyIfPresent() {
+	void ignoresProxyIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.PROXY));
 
@@ -137,8 +140,38 @@ class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
 		final var changes = captor.getValue().getChanges();
+		assertEquals(0, changes.size());
+	}
+
+	@Test
+	void updatesStakedIdIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(STAKED_ID));
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));
+		assertEquals(-10L, changes.get(AccountProperty.STAKED_ID));
+		assertEquals(null, changes.get(AccountProperty.DECLINE_REWARD));
+	}
+
+	@Test
+	void updatesDeclineRewardIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(DECLINE_REWARD));
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
+		final var changes = captor.getValue().getChanges();
+		assertEquals(1, changes.size());
+		assertEquals(true, changes.get(AccountProperty.DECLINE_REWARD));
 	}
 
 
@@ -428,7 +461,8 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx(EnumSet.of(
 				AccountCustomizer.Option.KEY,
 				AccountCustomizer.Option.MEMO,
-				AccountCustomizer.Option.PROXY,
+				STAKED_ID,
+				DECLINE_REWARD,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
 				AccountCustomizer.Option.AUTO_RENEW_PERIOD
@@ -473,6 +507,12 @@ class CryptoUpdateTransitionLogicTest {
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
 		}
+		if (updating.contains(STAKED_ID)) {
+			op.setStakedNodeId(10L);
+		}
+		if (updating.contains(DECLINE_REWARD)) {
+			op.setDeclineReward(BoolValue.of(true));
+		}
 		op.setAccountIDToUpdate(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
@@ -493,5 +533,6 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 	}
 }

@@ -34,7 +34,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -189,6 +188,7 @@ class ContractUpdateTransitionLogicTest {
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -197,6 +197,7 @@ class ContractUpdateTransitionLogicTest {
 	@Test
 	void acceptsOmittedAutoRenew() {
 		givenValidTxnCtx(false, false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -238,7 +239,7 @@ class ContractUpdateTransitionLogicTest {
 	void failsForInvalidStakingId() {
 		givenValidTxnCtxWithStaking();
 
-		given(validator.isValidStakedId(any(), anyLong(), any())).willReturn(false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 	}

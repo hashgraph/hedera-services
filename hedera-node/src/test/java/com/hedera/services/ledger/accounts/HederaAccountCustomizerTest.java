@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +60,7 @@ class HederaAccountCustomizerTest {
 	@Test
 	void customizesSyntheticContractCreation() {
 		final var memo = "Inherited";
-		final var stakedId = new EntityId(0, 0, 4);
+		final var stakedId = 4L;
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
 
@@ -74,7 +75,7 @@ class HederaAccountCustomizerTest {
 		customizer.customizeSynthetic(op);
 
 		assertEquals(memo, op.getMemo());
-		assertEquals(stakedId.toGrpcAccountId(), op.getStakedAccountId());
+		assertEquals(STATIC_PROPERTIES.scopedAccountWith(stakedId), op.getStakedAccountId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
 		assertEquals(false, op.getDeclineReward());
 	}
@@ -82,7 +83,7 @@ class HederaAccountCustomizerTest {
 	@Test
 	void negativeNumForStakedIdIsNodeID() {
 		final var memo = "Inherited";
-		final var stakedId = new EntityId(0, 0, -4);
+		final var stakedId = -4L;
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
 
@@ -98,7 +99,7 @@ class HederaAccountCustomizerTest {
 		customizer.customizeSynthetic(op);
 
 		assertEquals(memo, op.getMemo());
-		assertEquals(stakedId.num(), op.getStakedNodeId());
+		assertEquals(-1 * stakedId, op.getStakedNodeId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
 		assertEquals(true, op.getDeclineReward());
 	}

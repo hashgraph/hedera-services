@@ -446,6 +446,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	 * Get the num [of shard.realm.num] of node/account this account has staked its Hbar to
 	 * If the returned value is negative it is staked to a node and node num is the absolute value
 	 * If the returned value is positive it is staked to an account.
+	 *
 	 * @return num [of shard.realm.num] of node/account
 	 */
 	public long getStakedNum() {
@@ -453,17 +454,21 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/**
-	 * Set the node to which this account is staking its Hbar to
+	 * Set the node to which this account is staking its Hbar to. The value of the nodeNum will be negative if its
+	 * staked node id.
+	 *
 	 * @param nodeNum
 	 * 		The node num of the node
 	 */
 	public void setStakedNodeId(long nodeNum) {
 		throwIfImmutable("Cannot change this account's staked nodeId if it's immutable");
-		state().setStakedNum(-nodeNum);
+		state().setStakedNum(nodeNum);
 	}
 
 	/**
-	 * Set the account to which this accout is staking its Hbar to
+	 * Set the account to which this accout is staking its Hbar to.The value of the nodeNum will be positive if its
+	 * staked to account id.
+	 *
 	 * @param accountNum
 	 * 		The account num of the account.
 	 */

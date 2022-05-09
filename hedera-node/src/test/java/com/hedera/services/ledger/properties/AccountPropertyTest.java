@@ -193,7 +193,7 @@ class AccountPropertyTest {
 		account.setUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
 		account.setNumTreasuryTitles(origNumTreasuryTitles);
 		account.setDeclineReward(origDeclinedReward);
-		account.setStakedAccount(origStakedNum);
+		account.setStakedAccount(-origStakedNum);
 		account.setStakePeriodStart(origStakePeriodStart);
 		account.setStakedToMe(origStakedToMe);
 
@@ -235,7 +235,7 @@ class AccountPropertyTest {
 		DECLINE_REWARD.setter().accept(account, newDeclinedReward);
 		STAKED_TO_ME.setter().accept(account, newStakedToMe);
 		STAKE_PERIOD_START.setter().accept(account, newStakePeriodStart);
-		STAKED_ID.setter().accept(account, -newStakedNum);
+		STAKED_ID.setter().accept(account, newStakedNum);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));

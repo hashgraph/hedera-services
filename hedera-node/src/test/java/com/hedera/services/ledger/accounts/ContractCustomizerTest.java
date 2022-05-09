@@ -49,7 +49,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -59,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -162,7 +160,7 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
 		verify(ledger).set(newContractId, DECLINE_REWARD, true);
-		verify(ledger).set(newContractId, STAKED_ID, stakedId);
+		verify(ledger).set(newContractId, STAKED_ID, stakedId.num());
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
 	}
@@ -174,7 +172,7 @@ class ContractCustomizerTest {
 				.setDeclineReward(true)
 				.build();
 
-		assertEquals(stakedId, getStakedId(op.getStakedAccountId(), op.getStakedNodeId()).get());
+		assertEquals(stakedId.num(), getStakedId(op.getStakedAccountId(), op.getStakedNodeId()).get());
 
 		op = ContractCreateTransactionBody.newBuilder()
 				.setDeclineReward(true)

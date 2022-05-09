@@ -136,9 +136,10 @@ public final class PureValidation {
 	public static boolean isValidStakedId(final AccountID stakedAccountId,
 			final long stakedNodeId,
 			final MerkleMap<EntityNum, MerkleAccount> accounts) {
+		// resulting stakedId will be < 0 if it is stakingNodeId and will be  > 0 if it is stakingAccountId
 		final var stakedId = getStakedId(stakedAccountId, stakedNodeId);
 		if (stakedId.isPresent()) {
-			return queryableAccountStatus(stakedId.get().asNum(), accounts) == OK;
+			return queryableAccountStatus(EntityNum.fromLong(Math.abs(stakedId.get())), accounts) == OK;
 		}
 		return true;
 	}

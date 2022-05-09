@@ -51,9 +51,11 @@ import java.time.Instant;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -62,9 +64,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,6 +94,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final AccountID STAKED_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(1000L).build();
 	private static final Instant consensusTime = Instant.now();
 
 	private HederaLedger ledger;
@@ -197,6 +202,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -217,6 +223,7 @@ class CryptoCreateTransitionLogicTest {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -226,12 +233,14 @@ class CryptoCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
 		final var changes = captor.getValue().getChanges();
-		assertEquals(7, changes.size());
+		assertEquals(8, changes.size());
 		assertEquals(CUSTOM_AUTO_RENEW_PERIOD, (long) changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long) changes.get(EXPIRY));
 		assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
-		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));
+		assertEquals(null, changes.get(AccountProperty.PROXY));
+		assertEquals(EntityId.fromGrpcAccountId(STAKED_ACCOUNT_ID).num(), changes.get(STAKED_ID));
+		assertEquals(false, changes.get(DECLINE_REWARD));
 		assertEquals(MEMO, changes.get(AccountProperty.MEMO));
 		assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
@@ -258,6 +267,35 @@ class CryptoCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
+
+	@Test
+	void validatesStakedId(){
+		givenValidTxnCtx();
+
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
+	void usingProxyAccountFails(){
+		cryptoCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoCreateAccount(
+						CryptoCreateTransactionBody.newBuilder()
+								.setMemo(MEMO)
+								.setInitialBalance(BALANCE)
+								.setProxyAccountID(PROXY)
+								.setReceiverSigRequired(true)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
+								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
+								.setKey(KEY)
+								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
+				).build();
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	private Key unmappableKey() {
@@ -323,7 +361,7 @@ class CryptoCreateTransitionLogicTest {
 						CryptoCreateTransactionBody.newBuilder()
 								.setMemo(MEMO)
 								.setInitialBalance(BALANCE)
-								.setProxyAccountID(PROXY)
+								.setStakedAccountId(STAKED_ACCOUNT_ID)
 								.setReceiverSigRequired(true)
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
 								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
@@ -344,7 +382,8 @@ class CryptoCreateTransitionLogicTest {
 						CryptoCreateTransactionBody.newBuilder()
 								.setMemo(MEMO)
 								.setInitialBalance(BALANCE)
-								.setProxyAccountID(PROXY)
+								.setStakedAccountId(STAKED_ACCOUNT_ID)
+								.setDeclineReward(false)
 								.setReceiverSigRequired(true)
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
 								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)

@@ -196,7 +196,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID()) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
+		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
 			return INVALID_STAKING_ID;
 		}
 		return validator.memoCheck(op.getMemo());

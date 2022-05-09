@@ -580,19 +580,19 @@ class ContextOptionValidatorTest {
 		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		assertEquals(true, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(deletedAccount);
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		assertEquals(false, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(null);
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		assertEquals(false, subject.isValidStakedId(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
 	}
 
 	@Test

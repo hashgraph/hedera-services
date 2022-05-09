@@ -60,6 +60,7 @@ class UpdateCustomizerFactoryTest {
 	private AccountID newProxy = IdUtils.asAccount("0.0.4321");
 	private String newMemo = "The commonness of thoughts and images";
 	private Key newAdminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asKey();
+	private AccountID newStakedId = IdUtils.asAccount("0.0.12345");
 
 	private UpdateCustomizerFactory subject = new UpdateCustomizerFactory();
 
@@ -81,6 +82,7 @@ class UpdateCustomizerFactoryTest {
 				.setAdminKey(newAdminKey)
 				.setAutoRenewPeriod(newAutoRenew)
 				.setProxyAccountID(newProxy)
+				.setStakedNodeId(newStakedId.getAccountNum())
 				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
 				.setExpirationTime(newExpiryTime)
 				.build();
@@ -97,7 +99,9 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newAutoRenew.getSeconds(), mutableContract.getAutoRenewSecs());
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
-		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
+		assertEquals(null, mutableContract.getProxy());
+		assertEquals(-12345, mutableContract.getStakedNum());
+		assertEquals(false, mutableContract.isDeclinedReward());
 	}
 
 	@Test

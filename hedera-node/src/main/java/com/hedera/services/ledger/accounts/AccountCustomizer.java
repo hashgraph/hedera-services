@@ -176,7 +176,7 @@ public abstract class AccountCustomizer<
 		return self();
 	}
 
-	public T stakedId(final EntityId option) {
+	public T stakedId(final long option) {
 		changeManager.update(changes, optionProperties.get(STAKED_ID), option);
 		return self();
 	}
