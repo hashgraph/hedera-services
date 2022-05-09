@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.ethereum;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,8 +74,8 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(EthereumSuite.class);
 	private static final long depositAmount = 20_000L;
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-	private static final long GAS_LIMIT = 1_000_000;
 	private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
+	private static final long GAS_LIMIT = 1_000_000;
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -87,6 +87,7 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
 						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
@@ -102,7 +103,7 @@ public class EthereumSuite extends HapiApiSuite {
 		final long thirdOfFee = gasPrice / 3;
 		final long thirdOfPayment = thirdOfFee * chargedGasLimit;
 		final long thirdOfLimit = thirdOfFee * GAS_LIMIT;
-		final long fullAllowance = gasPrice * chargedGasLimit * 5/4;
+		final long fullAllowance = gasPrice * chargedGasLimit * 5 / 4;
 		final long fullPayment = gasPrice * chargedGasLimit;
 		final long ninteyPercentFee = gasPrice * 9 / 10;
 
@@ -113,9 +114,9 @@ public class EthereumSuite extends HapiApiSuite {
 				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
 				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
 				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
-				new Object[] { true, thirdOfFee, fullAllowance*9/10, thirdOfLimit, fullPayment - thirdOfLimit},
-				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment},
-				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment},
+				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
+				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
+				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
 				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
 				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
 				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
@@ -332,6 +333,52 @@ public class EthereumSuite extends HapiApiSuite {
 				).then();
 	}
 
+	HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
+		final AtomicLong fungibleNum = new AtomicLong();
+		final String fungibleToken = "token";
+		final String mintTxn = "mintTxn";
+		return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.adminKey(SECP_256K1_SOURCE_KEY)
+								.supplyKey(SECP_256K1_SOURCE_KEY)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+						ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5
+						)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(RELAYER)
+								.nonce(0)
+								.gasPrice(50L)
+								.maxGasAllowance(FIVE_HBARS)
+								.gasLimit(1_000_000L)
+								.via(mintTxn)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord(mintTxn)
+								.logged()
+								.hasPriority(recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.logs(inOrder())
+														.senderId(spec.registry().getAccountID(
+																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+																		.getAlias().toStringUtf8())))
+										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+				);
+	}
+
 	HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
 		final AtomicLong fungibleNum = new AtomicLong();
 		final String fungibleToken = "token";
@@ -380,7 +427,6 @@ public class EthereumSuite extends HapiApiSuite {
 										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
 				);
 	}
-
 
 	@Override
 	protected Logger getResultsLogger() {
