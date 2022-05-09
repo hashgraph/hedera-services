@@ -142,7 +142,7 @@ public class IterableStorageUtils {
 			@NotNull final ContractKey root,
 			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		return overwritingRemoveFromMapValueList(key, root, new ContractStorageListRemoval(key.getContractId(), storage));
+		return overwritingRemoveFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
 	}
 
 	private static ContractKey internalUpsertMapping(

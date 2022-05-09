@@ -156,7 +156,9 @@ class ServicesStateTest {
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> iterableStorage;
 	@Mock
-	private ServicesState.LinkMigrator linkMigrator;
+	private ServicesState.TokenRelsLinkMigrator tokenRelsLinkMigrator;
+	@Mock
+	private ServicesState.OwnedNftsLinkMigrator ownedNftsLinkMigrator;
 	@Mock
 	private ServicesState.IterableStorageMigrator iterableStorageMigrator;
 	@Mock
@@ -189,7 +191,7 @@ class ServicesStateTest {
 		subject.migrate();
 
 		verifyNoInteractions(
-				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, linkMigrator);
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator);
 
 		unmockMigrators();
 	}
@@ -198,7 +200,7 @@ class ServicesStateTest {
 	void doesAllMigrationsFromRelease024Version() {
 		mockMigrators();
 		final var inOrder = inOrder(
-				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, linkMigrator, vmf);
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf);
 
 		subject = mock(ServicesState.class);
 
@@ -212,7 +214,7 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		inOrder.verify(linkMigrator).updateLinks(accounts, tokenAssociations);
+		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
 		inOrder.verify(titleCountsMigrator).accept(subject);
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
@@ -225,7 +227,8 @@ class ServicesStateTest {
 		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
 		ServicesState.setTitleCountsMigrator(titleCountsMigrator);
 		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
-		ServicesState.setLinkMigrator(linkMigrator);
+		ServicesState.setTokenRelsLinkMigrator(tokenRelsLinkMigrator);
+		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
 		ServicesState.setVmFactory(vmf);
 	}
 
@@ -233,7 +236,8 @@ class ServicesStateTest {
 		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
 		ServicesState.setTitleCountsMigrator(ReleaseTwentyFiveMigration::initTreasuryTitleCounts);
 		ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
-		ServicesState.setLinkMigrator(ReleaseTwentyFiveMigration::updateLinks);
+		ServicesState.setTokenRelsLinkMigrator(ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList);
+		ServicesState.setOwnedNftsLinkMigrator(ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList);
 		ServicesState.setVmFactory(VirtualMapFactory::new);
 	}
 

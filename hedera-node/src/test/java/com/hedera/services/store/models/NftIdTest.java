@@ -20,6 +20,7 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +72,14 @@ class NftIdTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void asEnumPairWorks() {
+		final var subject = new NftId(shard, realm, num, serialNo);
+		final var expected = EntityNumPair.fromLongs(num, serialNo);
+
+		assertEquals(expected, subject.asEntityNumPair());
 	}
 
 	@Test

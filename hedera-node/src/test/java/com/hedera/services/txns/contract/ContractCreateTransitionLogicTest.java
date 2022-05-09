@@ -58,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +88,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCreateTransitionLogicTest {
+	private static final long maxGas = 666_666L;
+	private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
 	private int gas = 33_333;
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
@@ -133,6 +136,7 @@ class ContractCreateTransitionLogicTest {
 
 	private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
+	private final Account relayerAccount = new Account(new Id(0, 0, 1003));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
 	private TransactionBody contractCreateTxn;
 
@@ -548,6 +552,7 @@ class ContractCreateTransitionLogicTest {
 		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
@@ -568,18 +573,23 @@ class ContractCreateTransitionLogicTest {
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		final var newEvmAddress = contractAccount.getId().asEvmAddress();
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
-		given(evmTxProcessor.execute(
+		given(evmTxProcessor.executeEth(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
 				gas,
 				balance,
 				Bytes.fromHexString(new String(bytecode)),
 				txnCtx.consensusTime(),
-				expiry))
-				.willReturn(result);
+				expiry,
+				relayerAccount,
+				biOfferedGasPrice,
+				maxGas)
+		).willReturn(result);
 
 		// when:
-		subject.doStateTransitionOperation(contractCreateTxn, senderAccount.getId(), true, true);
+		subject.doStateTransitionOperation(
+				contractCreateTxn, senderAccount.getId(),
+				true, relayerAccount.getId(), maxGas, biOfferedGasPrice);
 
 		// then:
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
@@ -674,7 +684,6 @@ class ContractCreateTransitionLogicTest {
 		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}
 
-
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(true, false, false);
 	}
@@ -683,7 +692,8 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx(true, true, false);
 	}
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount, boolean useMaxAutoAssociations) {
+	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount,
+			boolean useMaxAutoAssociations) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)

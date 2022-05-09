@@ -198,8 +198,8 @@ class BurnPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

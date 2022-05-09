@@ -414,7 +414,7 @@ public class SigRequirements {
 			required = mutable(required);
 			required.add(result.metadata().key());
 		}
-		if (hasNondeprecatedAdminKey(op)) {
+		if (hasNonDeprecatedAdminKey(op)) {
 			var candidate = asUsableFcKey(op.getAdminKey());
 			required = mutable(required);
 			candidate.ifPresent(required::add);
@@ -433,14 +433,14 @@ public class SigRequirements {
 
 	private boolean needsCurrentAdminSig(final ContractUpdateTransactionBody op) {
 		return !op.hasExpirationTime()
-				|| hasNondeprecatedAdminKey(op)
+				|| hasNonDeprecatedAdminKey(op)
 				|| op.hasProxyAccountID()
 				|| op.hasAutoRenewPeriod()
 				|| op.hasFileID()
 				|| op.getMemo().length() > 0;
 	}
 
-	private boolean hasNondeprecatedAdminKey(final ContractUpdateTransactionBody op) {
+	private boolean hasNonDeprecatedAdminKey(final ContractUpdateTransactionBody op) {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID();
 	}
 

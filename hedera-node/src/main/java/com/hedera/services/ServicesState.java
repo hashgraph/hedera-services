@@ -158,7 +158,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
 		if (deserializedVersionFromState < RELEASE_025X_VERSION) {
-			linkMigrator.updateLinks(accounts(), tokenAssociations());
+			tokenRelsLinkMigrator.buildAccountTokenAssociationsLinkedList(accounts(), tokenAssociations());
 			titleCountsMigrator.accept(this);
 		}
 		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
@@ -169,6 +169,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
 			// Grant all contracts one free ~90 day auto-renewal upon enabling contract expiry
 			autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
 		}
 	}
 
@@ -457,7 +458,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static LinkMigrator linkMigrator = ReleaseTwentyFiveMigration::updateLinks;
+	private static TokenRelsLinkMigrator tokenRelsLinkMigrator = ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList;
+	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator = ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
 	private static IterableStorageMigrator iterableStorageMigrator = ReleaseTwentySixMigration::makeStorageIterable;
 	private static Consumer<ServicesState> titleCountsMigrator = ReleaseTwentyFiveMigration::initTreasuryTitleCounts;
 	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
@@ -465,10 +467,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	@FunctionalInterface
-	interface LinkMigrator {
-		void updateLinks(
+	interface TokenRelsLinkMigrator {
+		void buildAccountTokenAssociationsLinkedList(
 				MerkleMap<EntityNum, MerkleAccount> accounts,
 				MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations);
+	}
+
+	@FunctionalInterface
+	interface OwnedNftsLinkMigrator {
+		void buildAccountNftsOwnedLinkedList(
+				MerkleMap<EntityNum, MerkleAccount> accounts,
+				MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
+		);
 	}
 
 	@FunctionalInterface
@@ -512,8 +522,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@VisibleForTesting
-	static void setLinkMigrator(LinkMigrator linkMigrator) {
-		ServicesState.linkMigrator = linkMigrator;
+	static void setTokenRelsLinkMigrator(TokenRelsLinkMigrator tokenRelsLinkMigrator) {
+		ServicesState.tokenRelsLinkMigrator = tokenRelsLinkMigrator;
+	}
+
+	@VisibleForTesting
+	static void setOwnedNftsLinkMigrator(OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
+		ServicesState.ownedNftsLinkMigrator = ownedNftsLinkMigrator;
 	}
 
 	@VisibleForTesting

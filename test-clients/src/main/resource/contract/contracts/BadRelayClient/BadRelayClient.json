@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"address","name":"haplessRelayer","type":"address"},{"internalType":"address","name":"exploitTokenAddress","type":"address"}],"name":"stealFrom","outputs":[],"stateMutability":"payable","type":"function"}]

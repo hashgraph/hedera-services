@@ -95,8 +95,8 @@ public class SystemOpPolicies {
 	}
 
 	private SystemOpAuthorization checkEthereumTransaction(final TransactionBody txn) {
-		//Apply more fine-tuned logic
-		return AUTHORIZED;
+		// Apply more fine-tuned logic
+		return UNNECESSARY;
 	}
 
 	private SystemOpAuthorization checkSystemUndelete(final TransactionBody txn) {

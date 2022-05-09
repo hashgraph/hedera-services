@@ -65,7 +65,7 @@ class ReleaseTwentyFiveMigrationTest {
 		List.of(bNum, cNum, dNum).forEach(num -> tokenRels.put(
 				EntityNumPair.fromNums(aNum, num), new MerkleTokenRelStatus(1L, true, false, true)));
 
-		ReleaseTwentyFiveMigration.updateLinks(accounts, tokenRels);
+		ReleaseTwentyFiveMigration.buildAccountTokenAssociationsLinkedList(accounts, tokenRels);
 
 		assertEquals(3, legacyAccount.getNumAssociations());
 		assertEquals(3, legacyAccount.getNumPositiveBalances());

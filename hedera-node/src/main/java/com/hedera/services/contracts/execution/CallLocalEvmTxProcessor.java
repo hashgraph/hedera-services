@@ -111,7 +111,10 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				true,
 				storageExpiry.hapiStaticCallOracle(),
-				aliasManager.resolveForEvm(receiver));
+				aliasManager.resolveForEvm(receiver),
+				null,
+				0,
+				null);
 	}
 
 	@Override

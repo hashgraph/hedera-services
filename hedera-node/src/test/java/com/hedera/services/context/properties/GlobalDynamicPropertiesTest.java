@@ -161,6 +161,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(54, subject.maxIndividualContractKvPairs());
 		assertEquals(55, subject.maxNumQueryableRecords());
 		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
+		assertEquals(64, subject.getMaxReturnedNftsPerTouch());
 	}
 
 	@Test
@@ -396,6 +397,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
+		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
 	}
 

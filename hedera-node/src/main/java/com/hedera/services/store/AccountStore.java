@@ -165,6 +165,8 @@ public class AccountStore {
 		account.setNumAssociations(merkleAccount.getNumAssociations());
 		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
+		account.setHeadNftId(merkleAccount.getHeadNftId());
+		account.setHeadNftSerialNum(merkleAccount.getHeadNftSerialNum());
 
 		return account;
 	}
@@ -204,6 +206,8 @@ public class AccountStore {
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());
 		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());
+		mutableAccount.setHeadNftId(model.getHeadNftId());
+		mutableAccount.setHeadNftSerialNum(model.getHeadNftSerialNum());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

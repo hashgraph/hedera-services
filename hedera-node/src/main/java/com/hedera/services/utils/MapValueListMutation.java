@@ -120,7 +120,7 @@ public interface MapValueListMutation<K, V extends FastCopyable> {
 	K next(V node);
 
 	/**
-	 * Returns the (map key of) the next node in the linked list containing the given node.
+	 * Returns the (map key of) the prev node in the linked list containing the given node.
 	 *
 	 * @param node
 	 * 		the current node in the list

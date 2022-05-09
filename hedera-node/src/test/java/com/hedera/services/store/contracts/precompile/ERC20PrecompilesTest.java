@@ -249,8 +249,8 @@ class ERC20PrecompilesTest {
         subject = new HTSPrecompiledContract(
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

@@ -328,7 +328,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 																asAddress(kycTokenID.get()),
 																asAddress(vanillaTokenID.get()))
 												)
-														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("MultipleTokensAssociationsTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
@@ -371,7 +371,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
 												)
-														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("nestedAssociateTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)

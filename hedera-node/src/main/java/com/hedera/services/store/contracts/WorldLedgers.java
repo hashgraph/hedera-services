@@ -253,9 +253,9 @@ public class WorldLedgers {
 
 	public boolean areMutable() {
 		return nftsLedger != null &&
-			   tokensLedger != null &&
-			   accountsLedger != null &&
-			   tokenRelsLedger != null;
+				tokensLedger != null &&
+				accountsLedger != null &&
+				tokenRelsLedger != null;
 	}
 
 	public WorldLedgers wrapped() {

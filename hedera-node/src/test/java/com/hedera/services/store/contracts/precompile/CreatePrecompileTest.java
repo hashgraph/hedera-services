@@ -36,6 +36,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -90,13 +92,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
@@ -331,23 +337,24 @@ class CreatePrecompileTest {
 		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
 	}
 
-//	@Test
-//	void createNonFungibleHappyPathWorks() {
-//		// test-specific preparations
-//		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
-//				new TokenCreateWrapper.TokenKeyWrapper(
-//						1,
-//						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
-//								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
-//				))
-//		);
-//		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
-//		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-//		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
-//		given(ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID)).willReturn()
-//
-//		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
-//	}
+	@Test
+	void createNonFungibleHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						1,
+						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
+								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
+				))
+		);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
+		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
 
 	@Test
 	void createFungibleWithFeesHappyPathWorks() {
@@ -370,28 +377,30 @@ class CreatePrecompileTest {
 		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
 	}
 
-//	@Test
-//	void createNonFungibleWithFeesHappyPathWorks() {
-//		// test-specific preparations
-//		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
-//				new TokenCreateWrapper.TokenKeyWrapper(
-//						1,
-//						new TokenCreateWrapper.KeyValueWrapper(
-//								true,
-//								null,
-//								new byte[] { },
-//								new byte[] { },
-//								null))
-//		));
-//		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
-//		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
-//		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
-//		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-//		given(accounts.get(any(), any()))
-//				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
-//
-//		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
-//	}
+	@Test
+	void createNonFungibleWithFeesHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						1,
+						new TokenCreateWrapper.KeyValueWrapper(
+								true,
+								null,
+								new byte[] { },
+								new byte[] { },
+								null))
+		));
+		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
+		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(accounts.get(any(), eq(KEY)))
+				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
 
 	@Test
 	void createFailurePath() {

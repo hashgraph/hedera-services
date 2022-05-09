@@ -28,6 +28,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
@@ -39,6 +40,7 @@ import java.util.Objects;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
@@ -46,11 +48,11 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHi
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
-	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
 	static final int RELEASE_0250_VERSION = 3;
+	static final int RELEASE_0260_VERSION = 4;
 
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
@@ -60,6 +62,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	private long packedCreationTime;
 	private byte[] metadata;
 	private long numbers;
+	// the NFT the owner has acquired after this UniqueToken
+	private NftNumPair prev = MISSING_NFT_NUM_PAIR;
+	// the NFT the owner has acquired before this UniqueToken
+	private NftNumPair next = MISSING_NFT_NUM_PAIR;
 
 	/**
 	 * Constructs a Merkle-usable unique token from an explicit owner id.
@@ -111,6 +117,11 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	/* Object */
 	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -124,7 +135,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 				this.ownerCode == that.ownerCode &&
 				this.spenderCode == that.spenderCode &&
 				this.packedCreationTime == that.packedCreationTime &&
-				Objects.deepEquals(this.metadata, that.metadata);
+				Objects.deepEquals(this.metadata, that.metadata) &&
+				this.prev.equals(that.prev) &&
+				this.next.equals(that.next);
 	}
 
 	@Override
@@ -134,7 +147,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 				ownerCode,
 				spenderCode,
 				packedCreationTime,
-				Arrays.hashCode(metadata));
+				Arrays.hashCode(metadata),
+				prev,
+				next);
 	}
 
 	@Override
@@ -148,6 +163,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 				.add("creationTime", then)
 				.add("metadata", metadata)
 				.add("spender", EntityId.fromIdentityCode(spenderCode).toAbbrevString())
+				.add("prevNftOwned", prev)
+				.add("nextNftOwned", next)
 				.toString();
 	}
 
@@ -167,11 +184,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		ownerCode = in.readInt();
 		packedCreationTime = in.readLong();
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
-		if (version >= RELEASE_0180_VERSION) {
-			numbers = in.readLong();
-		}
+		// added in 18
+		numbers = in.readLong();
 		if (version >= RELEASE_0250_VERSION) {
 			spenderCode = in.readInt();
+		}
+		if (version >= RELEASE_0260_VERSION) {
+			prev = NftNumPair.fromLongs(in.readLong(), in.readLong());
+			next = NftNumPair.fromLongs(in.readLong(), in.readLong());
 		}
 	}
 
@@ -182,6 +202,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		out.writeByteArray(metadata);
 		out.writeLong(numbers);
 		out.writeInt(spenderCode);
+		out.writeLong(prev.tokenNum());
+		out.writeLong(prev.serialNum());
+		out.writeLong(next.tokenNum());
+		out.writeLong(next.serialNum());
 	}
 
 	/* --- FastCopyable --- */
@@ -190,6 +214,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		setImmutable(true);
 		final var copy = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
 		copy.setSpender(EntityId.fromIdentityCode(spenderCode));
+		copy.setPrev(prev);
+		copy.setNext(next);
 		return copy;
 	}
 
@@ -209,6 +235,24 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public EntityId getSpender() {
 		return new EntityId(0, 0, BitPackUtils.numFromCode(spenderCode));
+	}
+
+	public NftNumPair getPrev() {
+		return prev;
+	}
+
+	public void setPrev(final NftNumPair prev) {
+		throwIfImmutable("Cannot change this unique token's prev NFT owned field if it's immutable.");
+		this.prev = prev;
+	}
+
+	public NftNumPair getNext() {
+		return next;
+	}
+
+	public void setNext(final NftNumPair next) {
+		throwIfImmutable("Cannot change this unique token's next NFT owned field if it's immutable.");
+		this.next = next;
 	}
 
 	public byte[] getMetadata() {
@@ -243,10 +287,5 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	@Override
 	public void setKey(EntityNumPair phl) {
 		this.numbers = phl.value();
-	}
-
-	@Override
-	public int getMinimumSupportedVersion() {
-		return RELEASE_0180_VERSION;
 	}
 }

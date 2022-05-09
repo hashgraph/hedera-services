@@ -69,12 +69,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0260_VERSION = 9;
 	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
 
