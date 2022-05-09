@@ -20,10 +20,12 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -55,7 +57,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
@@ -357,6 +362,55 @@ class SyntheticTxnFactoryTest {
 
 		assertEquals(fungible, txnBody.getTokenMint().getToken());
 		assertEquals(amount, txnBody.getTokenMint().getAmount());
+	}
+
+	@Test
+	void createsExpectedAdjustAllowance() {
+		final var amount = BigInteger.ONE;
+		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
+
+		final var result = subject.createApproveAllowance(allowances);
+		final var txnBody = result.build();
+
+		assertEquals(amount.longValue(), txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
+	}
+
+	@Test
+	void createsExpectedAdjustAllowanceNFT() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+
+		final var result = subject.createApproveAllowance(allowances);
+		final var txnBody = result.build();
+
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+		assertEquals(1L, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSerialNumbers(0));
+	}
+
+	@Test
+	void createsAdjustAllowanceForAllNFT() {
+		var allowances = new SetApprovalForAllWrapper(receiver, true);
+
+		final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
+		final var txnBody = result.build();
+
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(BoolValue.of(true), txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
+	}
+
+	@Test
+	void createsDeleteAllowance() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+
+		final var result = subject.createDeleteAllowance(allowances, EntityId.fromGrpcAccountId(sender));
+		final var txnBody = result.build();
+
+		assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
+		assertEquals(sender, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
 	}
 
 	@Test

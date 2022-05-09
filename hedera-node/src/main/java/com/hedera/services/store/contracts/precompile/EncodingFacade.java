@@ -35,6 +35,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -42,17 +43,23 @@ public class EncodingFacade {
 	public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final String STRING_RETURN_TYPE = "(string)";
+	public static final String UINT256_RETURN_TYPE = "(uint256)";
+	public static final String BOOL_RETURN_TYPE = "(bool)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
-	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
+	private static final TupleType getApprovedType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType ercTransferType = TupleType.parse("(bool)");
+	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
 
 	@Inject
 	public EncodingFacade() {
@@ -91,10 +98,31 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeGetApproved(final Address approved) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_APPROVED)
+				.withApproved(approved)
+				.build();
+	}
+
 	public Bytes encodeBalance(final long balance) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.BALANCE)
 				.withBalance(balance)
+				.build();
+	}
+
+	public Bytes encodeAllowance(final long allowance) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.ALLOWANCE)
+				.withAllowance(allowance)
+				.build();
+	}
+
+	public Bytes encodeApprove(final boolean approve) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.APPROVE)
+				.withApprove(approve)
 				.build();
 	}
 
@@ -114,7 +142,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
 		return functionResultBuilder()
-				.forFunction(FunctionType.MINT)
+				.forFunction(MINT)
 				.withStatus(SUCCESS.getNumber())
 				.withTotalSupply(totalSupply)
 				.withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
@@ -123,7 +151,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintFailure(final ResponseCodeEnum status) {
 		return functionResultBuilder()
-				.forFunction(FunctionType.MINT)
+				.forFunction(MINT)
 				.withStatus(status.getNumber())
 				.withTotalSupply(0L)
 				.withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
@@ -169,8 +197,15 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeIsApprovedForAll(final boolean isApprovedForAllStatus) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.IS_APPROVED_FOR_ALL)
+				.withIsApprovedForAllStatus(isApprovedForAllStatus)
+				.build();
+	}
+
 	protected enum FunctionType {
-		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -183,11 +218,15 @@ public class EncodingFacade {
 		private int status;
 		private Address newTokenAddress;
 		private boolean ercFungibleTransferStatus;
+		private boolean isApprovedForAllStatus;
 		private long totalSupply;
 		private long balance;
+		private long allowance;
+		private boolean approve;
 		private long[] serialNumbers;
 		private int decimals;
 		private Address owner;
+		private Address approved;
 		private String name;
 		private String symbol;
 		private String metadata;
@@ -196,15 +235,19 @@ public class EncodingFacade {
 			this.tupleType = switch (functionType) {
 				case CREATE -> createReturnType;
 				case MINT -> mintReturnType;
-				case BURN ->  burnReturnType;
-				case TOTAL_SUPPLY ->  totalSupplyType;
-				case DECIMALS ->  decimalsType;
-				case BALANCE ->  balanceOfType;
-				case OWNER ->  ownerOfType;
-				case NAME ->  nameType;
-				case SYMBOL ->  symbolType;
-				case TOKEN_URI ->  tokenUriType;
-				case ERC_TRANSFER ->  ercTransferType;
+				case BURN -> burnReturnType;
+				case TOTAL_SUPPLY -> totalSupplyType;
+				case DECIMALS -> decimalsType;
+				case BALANCE -> balanceOfType;
+				case OWNER -> ownerOfType;
+				case NAME -> nameType;
+				case SYMBOL -> symbolType;
+				case TOKEN_URI -> tokenUriType;
+				case ERC_TRANSFER -> ercTransferType;
+				case ALLOWANCE -> allowanceOfType;
+				case APPROVE -> approveOfType;
+				case GET_APPROVED -> getApprovedType;
+				case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
 			};
 
 			this.functionType = functionType;
@@ -241,8 +284,23 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withAllowance(final long allowance) {
+			this.allowance = allowance;
+			return this;
+		}
+
+		private FunctionResultBuilder withApprove(final boolean approve) {
+			this.approve = approve;
+			return this;
+		}
+
 		private FunctionResultBuilder withOwner(final Address address) {
 			this.owner = address;
+			return this;
+		}
+
+		private FunctionResultBuilder withApproved(final Address approved) {
+			this.approved = approved;
 			return this;
 		}
 
@@ -266,6 +324,11 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withIsApprovedForAllStatus(final boolean isApprovedForAllStatus) {
+			this.isApprovedForAllStatus = isApprovedForAllStatus;
+			return this;
+		}
+
 		private Bytes build() {
 			final var result = switch (functionType) {
 				case CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
@@ -279,6 +342,10 @@ public class EncodingFacade {
 				case SYMBOL -> Tuple.of(symbol);
 				case TOKEN_URI -> Tuple.of(metadata);
 				case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
+				case ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
+				case APPROVE -> Tuple.of(approve);
+				case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(approved));
+				case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
 			};
 
 			return Bytes.wrap(tupleType.encode(result).array());
@@ -317,7 +384,7 @@ public class EncodingFacade {
 		}
 
 		public Log build() {
-			if(tupleTypes.length()>1) {
+			if (tupleTypes.length() > 1) {
 				tupleTypes.deleteCharAt(tupleTypes.length() - 1);
 				tupleTypes.append(")");
 				final var tuple = Tuple.of(data.toArray());
@@ -368,7 +435,7 @@ public class EncodingFacade {
 		private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 			byte[] expandedArray = new byte[32];
 
-			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 			return expandedArray;
 		}
 	}
