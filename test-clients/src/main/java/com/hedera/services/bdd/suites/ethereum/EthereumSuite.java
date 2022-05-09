@@ -24,8 +24,10 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,14 +53,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -69,6 +75,10 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final long depositAmount = 20_000L;
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
 	private static final long GAS_LIMIT = 1_000_000;
+
+	public static final String ERC20_CONTRACT = "ERC20Contract";
+
+	private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
 	public static void main(String... args) {
 		new EthereumSuite().runSuiteSync();
@@ -82,7 +92,8 @@ public class EthereumSuite extends HapiApiSuite {
 						invalidTxData(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
-						ETX_026_accountWithoutAliasCannotMakeEthTxns()
+						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+						ETX_009_callsToTokenAddresses()
 				)).toList();
 	}
 
@@ -322,6 +333,61 @@ public class EthereumSuite extends HapiApiSuite {
 								.gasLimit(GAS_LIMIT)
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				).then();
+	}
+
+	HapiApiSpec ETX_009_callsToTokenAddresses() {
+		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
+		final var totalSupply = 50;
+
+		return defaultHapiSpec("CallsToTokenAddresses")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+
+						tokenCreate(FUNGIBLE_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(totalSupply)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(SECP_256K1_SOURCE_KEY)
+								.supplyKey(SECP_256K1_SOURCE_KEY),
+
+						uploadInitCode(ERC20_CONTRACT),
+						contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD)
+				).when(withOpContext(
+								(spec, opLog) -> {
+									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
+									allRunFor(
+											spec,
+											ethereumCall(ERC20_CONTRACT, "totalSupply", tokenAddr.get())
+													.type(EthTxData.EthTransactionType.EIP1559)
+													.signingWith(SECP_256K1_SOURCE_KEY)
+													.payingWith(RELAYER)
+													.via("totalSupplyTxn")
+													.nonce(0)
+													.gasPrice(10L)
+													.maxGasAllowance(5L)
+													.maxPriorityGas(2L)
+													.gasLimit(1_000_000L)
+													.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+									);
+								}
+						)
+				).then(
+						childRecordsCheck("totalSupplyTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.TOTAL_SUPPLY)
+																.withTotalSupply(totalSupply)
+														)
+										)
+						)
+				);
 	}
 
 
