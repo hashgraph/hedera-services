@@ -68,6 +68,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -243,6 +244,8 @@ class StateViewTest {
 		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
 		tokenAccount.setNumAssociations(1);
 		tokenAccount.setNumPositiveBalances(0);
+		tokenAccount.setStakedAccount(10L);
+		tokenAccount.setDeclineReward(true);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -694,6 +697,10 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
@@ -758,6 +765,10 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
 		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo);

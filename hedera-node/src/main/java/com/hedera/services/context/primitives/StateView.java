@@ -467,13 +467,17 @@ public class StateView {
 		// TODO : will be updated with pending_reward in future PR
 		final var stakingInfo = StakingInfo.newBuilder()
 				.setDeclineReward(account.isDeclinedReward())
-				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build())
 				.setStakedToMe(account.getStakedToMe());
 		final var stakedNum = account.getStakedNum();
+
 		if (stakedNum < 0) {
 			stakingInfo.setStakedNodeId(-1 * account.getStakedNum());
 		} else if (stakedNum > 0) {
 			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
+		}
+
+		if (account.getStakePeriodStart() > 0) {
+			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
 		}
 		return stakingInfo.build();
 	}
