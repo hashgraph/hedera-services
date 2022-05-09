@@ -51,6 +51,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -162,12 +163,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 			}
 		}
-
-		if (keyChanges.contains(AccountProperty.STAKED_ID)) {
-			final AccountID id = ((EntityId) changes.get(AccountProperty.STAKED_ID)).toGrpcAccountId();
-			//todo
-		}
-
 		return OK;
 	}
 
@@ -199,10 +194,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasDeclineReward()) {
 			customizer.isDeclinedReward(op.getDeclineReward().getValue());
 		}
-		if (op.hasStakedAccountId()) {
-			customizer.stakedId(EntityId.fromGrpcAccountId(op.getStakedAccountId()));
-		} else if (op.getStakedNodeId() > 0) {
-			customizer.stakedId(EntityId.fromIdentityCode((int) op.getStakedNodeId()));
+		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
+		if (stakedId.isPresent()) {
+			customizer.stakedId(stakedId.get());
 		}
 		return customizer;
 	}

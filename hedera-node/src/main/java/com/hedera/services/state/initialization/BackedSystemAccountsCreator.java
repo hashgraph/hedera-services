@@ -132,7 +132,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private MerkleAccount accountWith(long balance, long expiry) {
 		var account = new HederaAccountCustomizer()
 				.isReceiverSigRequired(false)
-				.proxy(MISSING_ENTITY_ID)
 				.isDeleted(false)
 				.expiry(expiry)
 				.memo("")

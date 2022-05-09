@@ -91,15 +91,6 @@ public class ContractCustomizer {
 		return new ContractCustomizer(key, customizer);
 	}
 
-	public static Optional<EntityId> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
-		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
-			return Optional.of(EntityId.fromGrpcAccountId(stakedAccountId));
-		} else if (stakedNodeId > 0) {
-			return Optional.of(EntityId.fromIdentityCode((int) stakedNodeId));
-		}
-		return Optional.empty();
-	}
-
 	/**
 	 * Given a {@link TransactionalLedger} containing the sponsor contract, returns a customizer appropriate
 	 * to use for contracts created by the sponsor via internal {@code CONTRACT_CREATION} message calls.
@@ -158,5 +149,23 @@ public class ContractCustomizer {
 			op.setAdminKey(asKeyUnchecked(cryptoAdminKey));
 		}
 		accountCustomizer.customizeSynthetic(op);
+	}
+
+	/**
+	 * Gets the stakedId from the provided staked_account_id or staked_node_id.
+	 *
+	 * @param stakedAccountId
+	 * 		given staked_account_id
+	 * @param stakedNodeId
+	 * 		given staked_node_id
+	 * @return valid staked id
+	 */
+	public static Optional<EntityId> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
+		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
+			return Optional.of(EntityId.fromGrpcAccountId(stakedAccountId));
+		} else if (stakedNodeId > 0) {
+			return Optional.of(EntityId.fromIdentityCode((int) stakedNodeId));
+		}
+		return Optional.empty();
 	}
 }

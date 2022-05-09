@@ -24,7 +24,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,8 +34,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 
+import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -74,10 +73,10 @@ public class UpdateCustomizerFactory {
 		if (affectsMemo(op)) {
 			processMemo(op, customizer);
 		}
-		if (op.hasStakedAccountId()) {
-			customizer.stakedId(EntityId.fromGrpcAccountId(op.getStakedAccountId()));
-		} else if (op.getStakedNodeId() > 0) {
-			customizer.stakedId(EntityId.fromIdentityCode((int) op.getStakedNodeId()));
+
+		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
+		if (stakedId.isPresent()) {
+			customizer.stakedId(stakedId.get());
 		}
 		return Pair.of(Optional.of(customizer), OK);
 	}

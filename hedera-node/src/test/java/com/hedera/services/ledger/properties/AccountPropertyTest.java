@@ -174,7 +174,6 @@ class AccountPropertyTest {
 		final var account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
 				.expiry(origExpiry)
-				.proxy(EntityId.fromGrpcAccountId(origProxy))
 				.autoRenewPeriod(origAutoRenew)
 				.isDeleted(origIsDeleted)
 				.alias(oldAlias)
@@ -234,8 +233,6 @@ class AccountPropertyTest {
 		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
 		DECLINE_REWARD.setter().accept(account, newDeclinedReward);
-		STAKED_TO_ME.setter().accept(account, newStakedToMe);
-		STAKE_PERIOD_START.setter().accept(account, newStakePeriodStart);
 		STAKED_ID.setter().accept(account, newStakedNum);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));

@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -125,7 +126,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
 		final JKey key = asFcKeyUnchecked(op.getKey());
-		final EntityId stakedId = getStakedId(op);
+		final var stakedId = ContractCustomizer.getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
 				.memo(op.getMemo())
@@ -135,21 +136,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
 				.isDeclinedReward(op.getDeclineReward());
 
-		if (stakedId != EntityId.MISSING_ENTITY_ID) {
-			customizer
-					.stakedId(stakedId)
-					.stakePeriodStart(consensusTime);
+		if (stakedId.isPresent()) {
+			customizer.stakedId(stakedId.get());
 		}
 		return customizer;
-	}
-
-	private EntityId getStakedId(final CryptoCreateTransactionBody op) {
-		if (op.hasStakedAccountId()) {
-			return EntityId.fromGrpcAccountId(op.getStakedAccountId());
-		} else if (op.getStakedNodeId() > 0) {
-			return EntityId.fromIdentityCode((int) op.getStakedNodeId());
-		}
-		return EntityId.MISSING_ENTITY_ID;
 	}
 
 	@Override
