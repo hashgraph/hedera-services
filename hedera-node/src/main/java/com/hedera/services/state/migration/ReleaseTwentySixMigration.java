@@ -70,7 +70,7 @@ public class ReleaseTwentySixMigration {
 			log.info("Migrating contract storage into iterable VirtualMap with {} threads", THREAD_COUNT);
 			final var watch = StopWatch.createStarted();
 			migrationUtility.extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
-			log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
+			logDone(watch);
 		} catch (InterruptedException e) {
 			log.error("Interrupted while making contract storage iterable", e);
 			Thread.currentThread().interrupt();
@@ -108,7 +108,7 @@ public class ReleaseTwentySixMigration {
 				merkleAccount.setHeadNftSerialNum(serialNum);
 			}
 		}
-		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
+		logDone(watch);
 	}
 
 	public static void grantFreeAutoRenew(
@@ -123,6 +123,10 @@ public class ReleaseTwentySixMigration {
 				setNewExpiry(upgradeTime, contracts, id, random);
 			}
 		});
+		logDone(watch);
+	}
+
+	private static void logDone(final StopWatch watch) {
 		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
 	}
 
