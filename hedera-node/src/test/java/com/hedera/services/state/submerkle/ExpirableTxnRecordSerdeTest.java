@@ -22,15 +22,8 @@ package com.hedera.services.state.submerkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.io.SerializableDataInputStream;
-import org.bouncycastle.util.Arrays;
-import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -42,7 +35,17 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 
 	@Override
 	protected int getNumTestCasesFor(int version) {
-		return version == RELEASE_0230_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+		return NUM_TEST_CASES;
+	}
+
+	@Override
+	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
+		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+		final var seededRecord = propertySource.nextRecord();
+		if (version < RELEASE_0270_VERSION) {
+			seededRecord.clearStakingRewardsPaid();
+		}
+		return seededRecord;
 	}
 
 	@Override

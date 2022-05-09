@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -70,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -358,12 +360,12 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void rejectsKeyWithBadEncoding() {
-		rejectsKey(unmappableKey());
+		rejectsKey(unmappableKey(), BAD_ENCODING);
 	}
 
 	@Test
 	void rejectsInvalidKey() {
-		rejectsKey(emptyKey());
+		rejectsKey(emptyKey(), INVALID_ADMIN_KEY);
 	}
 
 	@Test
@@ -496,13 +498,13 @@ class CryptoUpdateTransitionLogicTest {
 		).build();
 	}
 
-	private void rejectsKey(final Key key) {
+	private void rejectsKey(final Key key, ResponseCodeEnum err) {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
 				.build();
 
-		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoUpdateTxn));
+		assertEquals(err, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenTxnCtx() {

@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -56,10 +57,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.legacy.core.jproto.JEd25519Key.ED25519_BYTE_LENGTH;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -153,6 +157,13 @@ class CryptoCreateTransitionLogicTest {
 		givenMissingKey();
 
 		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
+	void rejectsInvalidKey() {
+		givenEmptyKey();
+
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -327,6 +338,15 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setInitialBalance(BALANCE)
+				).build();
+	}
+
+	private void givenEmptyKey() {
+		cryptoCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+						.setKey(asKeyUnchecked(new JEd25519Key(new byte[ED25519_BYTE_LENGTH - 1])))
+						.setInitialBalance(BALANCE)
 				).build();
 	}
 

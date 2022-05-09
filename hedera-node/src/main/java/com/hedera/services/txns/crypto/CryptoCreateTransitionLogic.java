@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -169,7 +170,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			return KEY_REQUIRED;
 		}
 		if (!fcKey.isValid()) {
-			return BAD_ENCODING;
+			return INVALID_ADMIN_KEY;
 		}
 		if (op.getInitialBalance() < 0L) {
 			return INVALID_INITIAL_BALANCE;

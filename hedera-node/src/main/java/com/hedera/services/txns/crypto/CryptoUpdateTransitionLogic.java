@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -222,7 +223,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				JKey fcKey = JKey.mapKey(op.getKey());
 				/* Note that an empty key is never valid. */
 				if (!fcKey.isValid()) {
-					return BAD_ENCODING;
+					return INVALID_ADMIN_KEY;
 				}
 			} catch (DecoderException e) {
 				return BAD_ENCODING;
