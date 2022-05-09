@@ -74,6 +74,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
 	private Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
+	private Optional<AccountID> stakedAccountId = Optional.empty();
+	private Optional<Long> stakedNodeId = Optional.empty();
 
 
 	@Override
@@ -180,6 +182,17 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		return this;
 	}
 
+	public HapiCryptoCreate stakedAccountId(String idLit) {
+		stakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		return this;
+	}
+
+	public HapiCryptoCreate stakedNodeId(long idLit) {
+		stakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+
 	@Override
 	protected HapiCryptoCreate self() {
 		return this;
@@ -218,6 +231,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 							autoRenewDurationSecs.ifPresent(
 									s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
+
+							if (stakedAccountId.isPresent()) {
+								b.setStakedAccountId(stakedAccountId.get());
+							} else if (stakedNodeId.isPresent()) {
+								b.setStakedNodeId(stakedNodeId.get());
+							}
 						});
 		return b -> b.setCryptoCreateAccount(opBody);
 	}

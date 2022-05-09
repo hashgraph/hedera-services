@@ -154,7 +154,7 @@ public class CreateAndUpdateOps extends HapiApiSuite {
 							var record = lookup.getResponseRecord();
 							consensusNow.set(record.getConsensusTimestamp().getSeconds());
 						}),
-						cryptoCreate("stakedId")
+						cryptoCreate("proxy")
 								.fee(feeToOffer)
 				).when(
 						cryptoCreate("sksenp")
@@ -194,19 +194,19 @@ public class CreateAndUpdateOps extends HapiApiSuite {
 						sourcing(() -> cryptoUpdate("sksenp")
 								.fee(feeToOffer)
 								.payingWith("payer")
-								.newProxy("stakedId")
+								.newProxy("proxy")
 								.key("lk")
 								.expiring(consensusNow.get() + mediumExpiry)),
 						sourcing(() -> cryptoUpdate("skmenp")
 								.fee(feeToOffer)
 								.payingWith("payer")
-								.newProxy("stakedId")
+								.newProxy("proxy")
 								.key("lk")
 								.expiring(consensusNow.get() + eternalExpiry)),
 						sourcing(() -> cryptoUpdate("skeenp")
 								.fee(feeToOffer)
 								.payingWith("payer")
-								.newProxy("stakedId")
+								.newProxy("proxy")
 								.key("lk")),
 						getAccountInfo("sksenp"),
 						getAccountInfo("skmenp"),
