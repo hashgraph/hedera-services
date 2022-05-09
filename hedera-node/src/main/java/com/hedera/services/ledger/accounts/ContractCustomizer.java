@@ -31,16 +31,12 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
-import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 /**
@@ -80,7 +76,7 @@ public class ContractCustomizer {
 	) {
 		final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
-		final var stakedId = getStakedId(op);
+		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
 
 		final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
 		final var customizer = new HederaAccountCustomizer()
@@ -88,18 +84,20 @@ public class ContractCustomizer {
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 				.isDeclinedReward(op.getDeclineReward())
-				.stakedId(stakedId)
 				.isSmartContract(true);
+		if (stakedId.isPresent()) {
+			customizer.stakedId(stakedId.get());
+		}
 		return new ContractCustomizer(key, customizer);
 	}
 
-	private static EntityId getStakedId(final ContractCreateTransactionBody op) {
-		if (op.hasStakedAccountId()) {
-			return EntityId.fromGrpcAccountId(op.getStakedAccountId());
-		} else if (op.getStakedNodeId() > 0) {
-			return EntityId.fromIdentityCode((int) op.getStakedNodeId());
+	public static Optional<EntityId> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
+		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
+			return Optional.of(EntityId.fromGrpcAccountId(stakedAccountId));
+		} else if (stakedNodeId > 0) {
+			return Optional.of(EntityId.fromIdentityCode((int) stakedNodeId));
 		}
-		return MISSING_ENTITY_ID;
+		return Optional.empty();
 	}
 
 	/**

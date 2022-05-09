@@ -140,8 +140,10 @@ public interface OptionValidator {
 		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
 	}
 
-	default boolean isValidStakedId(AccountID stakedAccountId, long stakedNodeId,
-			MerkleMap<EntityNum, MerkleAccount> accounts){
+	default boolean isValidStakedId(
+			final AccountID stakedAccountId,
+			final long stakedNodeId,
+			final MerkleMap<EntityNum, MerkleAccount> accounts){
 		return PureValidation.isValidStakedId(stakedAccountId, stakedNodeId, accounts);
 	}
 }
