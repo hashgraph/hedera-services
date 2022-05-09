@@ -84,7 +84,8 @@ public class ReleaseTwentySixMigration {
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
 	) {
-
+		log.info("Migrating {} NFTs into iterable form with threads", uniqueTokens.size());
+		final var watch = StopWatch.createStarted();
 		for (final var nftId : uniqueTokens.keySet()) {
 			var nft = uniqueTokens.getForModify(nftId);
 			final var owner = nft.getOwner();
@@ -107,6 +108,7 @@ public class ReleaseTwentySixMigration {
 				merkleAccount.setHeadNftSerialNum(serialNum);
 			}
 		}
+		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
 	}
 
 	public static void grantFreeAutoRenew(
