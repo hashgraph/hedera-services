@@ -464,7 +464,7 @@ public class StateView {
 	}
 
 	public StakingInfo stakingInfo(final MerkleAccount account) {
-		// TODO : will be updated with pending_reward in future PR
+		// will be updated with pending_reward in future PR
 		final var stakingInfo = StakingInfo.newBuilder()
 				.setDeclineReward(account.isDeclinedReward())
 				.setStakedToMe(account.getStakedToMe());

@@ -78,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -186,6 +187,22 @@ class ContractCreateTransitionLogicTest {
 		given(properties.maxGas()).willReturn(gas + 1);
 
 		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
+
+		op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setProxyAccountID(AccountID.getDefaultInstance())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L))
+				.setGas(gas);
+		txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test

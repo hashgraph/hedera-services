@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -120,7 +121,8 @@ class CryptoCreateTransitionLogicTest {
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties, () -> accounts);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
+				() -> accounts);
 	}
 
 	@Test
@@ -270,7 +272,7 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void validatesStakedId(){
+	void validatesStakedId() {
 		givenValidTxnCtx();
 
 		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
@@ -279,7 +281,7 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void usingProxyAccountFails(){
+	void usingProxyAccountFails() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -296,6 +298,23 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 
 		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoCreateTxn));
+
+		cryptoCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoCreateAccount(
+						CryptoCreateTransactionBody.newBuilder()
+								.setMemo(MEMO)
+								.setInitialBalance(BALANCE)
+								.setProxyAccountID(AccountID.getDefaultInstance())
+								.setReceiverSigRequired(true)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
+								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
+								.setKey(KEY)
+								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
+				).build();
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	private Key unmappableKey() {

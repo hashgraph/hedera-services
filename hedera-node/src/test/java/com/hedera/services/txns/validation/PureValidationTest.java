@@ -20,12 +20,20 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.TxnUtils;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class PureValidationTest {
 	private static final Instant now = Instant.now();
@@ -53,5 +61,25 @@ class PureValidationTest {
 		final var proto = TxnUtils.timestampFrom(impossiblyBigSecs, impossiblyBigNanos);
 
 		assertEquals(Instant.MAX, PureValidation.asCoercedInstant(proto));
+	}
+
+	@Test
+	void validatesStakedId() {
+		final var stakedAccountID = asAccount("0.0.2");
+		final var stakedNodeId = 0;
+		final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
+		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(new MerkleAccount());
+
+		assertTrue(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts));
+
+		final var deletedAccount = new MerkleAccount();
+		deletedAccount.setDeleted(true);
+		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(deletedAccount);
+		assertFalse(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts));
+
+		final var smartContract = new MerkleAccount();
+		smartContract.setSmartContract(true);
+		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(smartContract);
+		assertFalse(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts));
 	}
 }

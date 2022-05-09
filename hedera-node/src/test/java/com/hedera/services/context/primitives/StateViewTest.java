@@ -710,6 +710,35 @@ class StateViewTest {
 	}
 
 	@Test
+	void stakingInfoReturnedCorrectly() {
+		tokenAccount = MerkleAccountFactory.newAccount()
+				.isSmartContract(false)
+				.tokens(tokenId)
+				.get();
+		tokenAccount.setStakedAccount(-10L);
+		tokenAccount.setDeclineReward(false);
+		tokenAccount.setStakePeriodStart(10000L);
+
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+				.thenReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var expectedResponse = StakingInfo.newBuilder()
+				.setDeclineReward(false)
+				.setStakedNodeId(10L)
+				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(10000L))
+				.build();
+
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+
+		assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
+		mockedStatic.close();
+	}
+
+	@Test
 	void accountDetails() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 

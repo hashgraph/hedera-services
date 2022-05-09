@@ -40,6 +40,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -70,12 +71,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
@@ -157,6 +161,23 @@ class CryptoUpdateTransitionLogicTest {
 		assertEquals(1, changes.size());
 		assertEquals(-10L, changes.get(AccountProperty.STAKED_ID));
 		assertEquals(null, changes.get(AccountProperty.DECLINE_REWARD));
+	}
+
+	@Test
+	void validatesStakedId() {
+		final var deletedAccount = new MerkleAccount();
+		deletedAccount.setDeleted(true);
+
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
+				.build();
+
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -245,6 +266,33 @@ class CryptoUpdateTransitionLogicTest {
 
 		verify(ledger, never()).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+	}
+
+	@Test
+	void usingProxyAccountFails(){
+		cryptoUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoUpdateAccount(
+						CryptoUpdateTransactionBody.newBuilder()
+								.setMemo(StringValue.of(MEMO))
+								.setProxyAccountID(PROXY)
+								.setReceiverSigRequired(true)
+								.setKey(KEY)
+				).build();
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoUpdateAccount(
+						CryptoUpdateTransactionBody.newBuilder()
+								.setMemo(StringValue.of(MEMO))
+								.setProxyAccountID(AccountID.getDefaultInstance())
+								.setReceiverSigRequired(true)
+								.setKey(KEY)
+				).build();
+
+		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test

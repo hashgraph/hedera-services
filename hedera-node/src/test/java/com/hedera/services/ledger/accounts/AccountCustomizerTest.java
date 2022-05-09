@@ -260,7 +260,7 @@ class AccountCustomizerTest {
 		setupWithMockChangeManager();
 		final Long stakeToMe = 1000L;
 
-		subject.stakePeriodStart(stakeToMe);
+		subject.stakedToMe(stakeToMe);
 
 		verify(changeManager).update(
 				any(EnumMap.class),
