@@ -65,10 +65,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
-	static final int RELEASE_0230_VERSION = 7;
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0270_VERSION = 9;
-	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -271,7 +270,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0230_VERSION;
+		return RELEASE_0250_VERSION;
 	}
 
 	@Override
@@ -316,6 +315,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			out.writeBoolean(false);
 		}
 		out.writeByteArray(alias.toByteArray());
+//		writeNullableSerializable(stakingRewardsPaid, out);
 	}
 
 	@Override
@@ -558,10 +558,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
 		return grpc.build();
-	}
-
-	public void clearStakingRewardsPaid() {
-		stakingRewardsPaid = null;
 	}
 
 	private static void setGrpcTokens(TransactionRecord.Builder grpcBuilder,
@@ -870,5 +866,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
 		}
+	}
+
+	// only used in unit tests
+	public void clearStakingRewardsPaid() {
+		stakingRewardsPaid = null;
 	}
 }
