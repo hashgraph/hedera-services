@@ -199,6 +199,7 @@ class ExpirableTxnRecordBuilderTest {
 	void revertClearsAllSideEffects() {
 		subject.setTokens(List.of(MISSING_ENTITY_ID));
 		subject.setHbarAdjustments(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
+		subject.setStakingRewardsPaid(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
 		subject.setReceiptBuilder(receiptBuilder);
 		subject.setTokenAdjustments(
 				List.of(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() })));
@@ -216,6 +217,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getTokens());
 		assertNull(subject.getScheduleRef());
 		assertNull(subject.getHbarAdjustments());
+		assertNull(subject.getStakingRewardsPaid());
 		assertNull(subject.getTokenAdjustments());
 		assertNotNull(subject.getContractCallResult());
 		assertNull(subject.getNftTokenAdjustments());
