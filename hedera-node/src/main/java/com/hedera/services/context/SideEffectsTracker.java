@@ -282,13 +282,14 @@ public class SideEffectsTracker {
 	 * 		Reward amount.
 	 */
 	public void trackRewardPayment(final long accountNum, final long amount) {
-		if (rewardAmounts.length == 0 || rewardedAccounts.length == 0) {
-			rewardAmounts = new long[BALANCE_CHANGES_LENGTH];
-			rewardedAccounts = new long[BALANCE_CHANGES_LENGTH];
+		if (amount != 0) {
+			if (rewardAmounts.length == 0 || rewardedAccounts.length == 0) {
+				rewardAmounts = new long[BALANCE_CHANGES_LENGTH];
+				rewardedAccounts = new long[BALANCE_CHANGES_LENGTH];
+			}
+			numRewardedAccounts = includeOrderedFungibleChange(
+					rewardedAccounts, rewardAmounts, numRewardedAccounts, accountNum, amount);
 		}
-		rewardedAccounts[numRewardedAccounts] = accountNum;
-		rewardAmounts[numRewardedAccounts] = amount;
-		numRewardedAccounts++;
 	}
 
 	/**
@@ -376,8 +377,6 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-		numHbarChangesSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
-
 		// copy the range of elements that are modified from balance changes and account numbers
 		final long[] changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
 		final long[] changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
