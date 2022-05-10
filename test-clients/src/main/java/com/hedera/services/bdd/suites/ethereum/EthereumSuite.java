@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -181,7 +181,7 @@ public class EthereumSuite extends HapiApiSuite {
 							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
-							final var subop4 = getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+							final var subop4 = getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
 									changeFromSnapshot(senderBalance, success ? (-depositAmount - senderCharged) : 0));
 							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
 									changeFromSnapshot(payerBalance, success ? -relayerCharged : 0));

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -28,6 +29,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -35,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,6 +74,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private String repr;
 
 	private String aliasKeySource = null;
+	private String literalHexedAlias = null;
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 	private boolean assertAccountIDIsNotAlias = false;
 
@@ -85,6 +89,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		if (type == ReferenceType.ALIAS_KEY_NAME) {
 			aliasKeySource = reference;
 			repr = "KeyAlias(" + aliasKeySource + ")";
+		} else if (type == ReferenceType.HEXED_CONTRACT_ALIAS) {
+			literalHexedAlias = reference;
+			repr = "0.0." + reference;
 		} else {
 			account = reference;
 			repr = account;
@@ -228,6 +235,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getAccountBalanceQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
+		System.out.println("RESPONSE: " + response);
 		ResponseCodeEnum status = response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 		if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
 			log.info(spec.logPrefix() + repr + " was actually deleted!");
@@ -252,6 +260,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		Consumer<CryptoGetAccountBalanceQuery.Builder> config;
 		if (spec.registry().hasContractId(account)) {
 			config = b -> b.setContractID(spec.registry().getContractId(account));
+		} else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
+			final var cid = ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(literalHexedAlias)))
+					.build();
+			config = b -> b.setContractID(cid);
 		} else {
 			AccountID id;
 			if (referenceType == ReferenceType.REGISTRY_NAME) {
