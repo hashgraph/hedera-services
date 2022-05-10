@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -55,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -68,6 +70,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -438,7 +441,7 @@ public class EthereumSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec ETX_009_callsToTokenAddresses() {
-		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
+		final AtomicReference<String> tokenNum = new AtomicReference<>();
 		final var totalSupply = 50;
 
 		return defaultHapiSpec("CallsToTokenAddresses")
@@ -453,23 +456,24 @@ public class EthereumSuite extends HapiApiSuite {
 								.initialSupply(totalSupply)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(SECP_256K1_SOURCE_KEY)
-								.supplyKey(SECP_256K1_SOURCE_KEY),
+								.supplyKey(SECP_256K1_SOURCE_KEY)
+								.exposingCreatedIdTo(tokenNum::set),
 
 						uploadInitCode(ERC20_CONTRACT),
 						contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD)
 				).when(withOpContext(
 								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
 									allRunFor(
 											spec,
-											ethereumCall(ERC20_CONTRACT, "totalSupply", tokenAddr.get())
+											ethereumCallWithFunctionAbi(true, FUNGIBLE_TOKEN,
+													getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
 													.type(EthTxData.EthTransactionType.EIP1559)
 													.signingWith(SECP_256K1_SOURCE_KEY)
 													.payingWith(RELAYER)
 													.via("totalSupplyTxn")
 													.nonce(0)
-													.gasPrice(10L)
-													.maxGasAllowance(5L)
+													.gasPrice(50L)
+													.maxGasAllowance(FIVE_HBARS)
 													.maxPriorityGas(2L)
 													.gasLimit(1_000_000L)
 													.hasKnownStatus(ResponseCodeEnum.SUCCESS)
