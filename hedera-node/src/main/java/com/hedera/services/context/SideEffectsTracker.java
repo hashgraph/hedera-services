@@ -377,6 +377,8 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
+		numHbarChangesSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
+
 		// copy the range of elements that are modified from balance changes and account numbers
 		final long[] changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
 		final long[] changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
@@ -388,8 +390,6 @@ public class SideEffectsTracker {
 	}
 
 	public CurrencyAdjustments getStakingRewardsPaid() {
-		numRewardedAccounts = purgeZeroChanges(rewardedAccounts, rewardAmounts, numRewardedAccounts);
-
 		final long[] rewards = Arrays.copyOfRange(rewardAmounts, 0, numRewardedAccounts);
 		final long[] accounts = Arrays.copyOfRange(rewardedAccounts, 0, numRewardedAccounts);
 		return CurrencyAdjustments.fromChanges(rewards, accounts);
