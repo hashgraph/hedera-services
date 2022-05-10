@@ -126,6 +126,12 @@ class FeeBuilderTest {
 	}
 
 	@Test
+	void canGetTinycentsFromTinybars() {
+		var exchangeRate = ExchangeRate.newBuilder().setCentEquiv(15).setHbarEquiv(3).build();
+		assertEquals(500, FeeBuilder.getTinycentsFromTinybars(exchangeRate, 100));
+	}
+
+	@Test
 	void assertGetContractFunctionSize() {
 		assertEquals(52, FeeBuilder.getContractFunctionSize(contractFunctionResult));
 	}

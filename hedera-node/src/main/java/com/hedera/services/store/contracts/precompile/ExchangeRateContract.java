@@ -17,6 +17,20 @@ import java.util.function.Supplier;
 import static com.hedera.services.calc.OverflowCheckingCalc.tinybarsToTinycents;
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
 
+/**
+ * System contract to interconvert tinybars and tinycents at the active exchange rate.
+ * The ABI consists of 1 to 9 packed bytes where,
+ * <ol>
+ *    <li>The first byte is either {@code 0xbb}, when converting to tinybars; or
+ *    {@code 0xcc}, when converting to tinycents.</li>
+ *    <li>The remaining 0 to 8 bytes are (logically) left-padded with zeros to
+ *    form an eight-byte big-endian representation of a {@code long} value.</li>
+ * </ol>
+ *
+ * <p> When the input {@code Bytes} take this form, <i>and</i> the given value can
+ * be converted to the requested denomination without over-flowing an eight-byte
+ * value, the contract returns the conversion result. Otherwise, it returns null.
+ */
 @Singleton
 public class ExchangeRateContract extends AbstractPrecompiledContract {
 	private static final String PRECOMPILE_NAME = "ExchangeRate";
@@ -50,9 +64,9 @@ public class ExchangeRateContract extends AbstractPrecompiledContract {
 			final var input = bytes.trimLeadingZeros();
 			return switch (input.get(0)) {
 				case TO_TINYBARS_SELECTOR ->
-						wrapped(tinycentsToTinybars(input.slice(1).toLong(), exchange.activeRate(consensusNow.get())));
+						padded(tinycentsToTinybars(input.slice(1).toLong(), exchange.activeRate(consensusNow.get())));
 				case TO_TINYCENTS_SELECTOR ->
-						wrapped(tinybarsToTinycents(input.slice(1).toLong(), exchange.activeRate(consensusNow.get())));
+						padded(tinybarsToTinycents(input.slice(1).toLong(), exchange.activeRate(consensusNow.get())));
 				default -> null;
 			};
 		} catch (IllegalArgumentException ignore) {
@@ -60,7 +74,7 @@ public class ExchangeRateContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private Bytes wrapped(final long primitive) {
+	private Bytes padded(final long primitive) {
 		return Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(primitive)));
 	}
 }
