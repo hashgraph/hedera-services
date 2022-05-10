@@ -48,9 +48,8 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testNftsFromSignedStateV24() throws IOException {
-		final var signedState = loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
-		signedState.getSwirldState().migrate();
+	void testNftsFromSignedStateV24() {
+		Assertions.assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh"));
 	}
 
 	private static SignedState loadSignedState(final String path) throws IOException {

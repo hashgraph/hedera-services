@@ -104,7 +104,7 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 			if (rootKey != null) {
 				contract.setFirstUint256StorageKey(rootKey.getKey());
 			}
-			log.info("Migrated {} k/v pairs from contract {}",
+			log.debug("Migrated {} k/v pairs from contract {}",
 					contract.getNumContractKvPairs(), contractNum.toIdString());
 		});
 	}
