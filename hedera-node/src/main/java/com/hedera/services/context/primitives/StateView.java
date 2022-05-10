@@ -45,7 +45,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -107,7 +107,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
@@ -449,7 +449,8 @@ public class StateView {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
 				.setContractAccountID(asHexedEvmAddress(accountID))
 				.setOwnedNfts(account.getNftsOwned())
-				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
+				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
+				.setEthereumNonce(account.getEthereumNonce());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
@@ -536,7 +537,9 @@ public class StateView {
 				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()));
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
+				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId())
+				.setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
@@ -581,7 +584,7 @@ public class StateView {
 		return stateChildren == null ? emptyVm() : stateChildren.storage();
 	}
 
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
 	}
 

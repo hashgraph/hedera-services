@@ -37,6 +37,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -102,6 +103,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.chainId", 1),
 			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
@@ -153,6 +155,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
+			entry("autoRemove.maxReturnedNftsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
@@ -214,7 +218,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", false)
+			entry("entities.limitTokenAssociations", false)
 	);
 
 	@Test

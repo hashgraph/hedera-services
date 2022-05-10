@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
@@ -49,6 +50,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class AccountCustomizerTest {
 	private TestAccountCustomizer subject;
@@ -75,7 +77,6 @@ class AccountCustomizerTest {
 		assertNotNull(subject.getChanges());
 		assertNotEquals(0, subject.getChanges().size());
 	}
-
 
 	@Test
 	void directlyCustomizesAnAccount() {
@@ -145,6 +146,29 @@ class AccountCustomizerTest {
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(PROXY)::equals),
 				argThat(proxy::equals));
+	}
+
+	@Test
+	void nullProxyAndAutoRenewAreNoops() {
+		setupWithMockChangeManager();
+
+		subject.proxy(null);
+		subject.autoRenewAccount(null);
+
+		verifyNoInteractions(changeManager);
+	}
+
+	@Test
+	void changesExpectedAutoRenewAccountProperty() {
+		setupWithMockChangeManager();
+		final var autoRenewId = new EntityId();
+
+		subject.autoRenewAccount(autoRenewId);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)::equals),
+				argThat(autoRenewId::equals));
 	}
 
 	@Test

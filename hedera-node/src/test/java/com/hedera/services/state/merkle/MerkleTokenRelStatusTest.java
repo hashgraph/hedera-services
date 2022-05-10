@@ -22,9 +22,9 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.MutabilityException;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -220,7 +220,7 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void cannotModifyImmutable() {
-		final var subjectCopy = subject.copy();
+		subject.copy();
 		assertTrue(subject.isImmutable());
 
 		assertThrows(MutabilityException.class, () -> subject.setBalance(balance+1));

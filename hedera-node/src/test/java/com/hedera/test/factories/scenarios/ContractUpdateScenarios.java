@@ -99,5 +99,25 @@ public enum ContractUpdateScenarios implements TxnHandlingScenario {
 					newSignedContractUpdate(MISC_CONTRACT_ID).newAdminKt(SIMPLE_NEW_ADMIN_KT).get()
 			));
 		}
-	}
+	},
+	CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractUpdate(MISC_CONTRACT_ID)
+							.newAutoRenewAccount(MISC_ACCOUNT_ID)
+							.newExpiration(DEFAULT_EXPIRY)
+							.get()
+			));
+		}
+	},
+	CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractUpdate(MISC_CONTRACT_ID)
+							.newAutoRenewAccount(MISSING_ACCOUNT_ID)
+							.newExpiration(DEFAULT_EXPIRY)
+							.get()
+			));
+		}
+	},
 }

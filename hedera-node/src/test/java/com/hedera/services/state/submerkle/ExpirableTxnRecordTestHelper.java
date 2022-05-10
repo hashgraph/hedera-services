@@ -85,7 +85,8 @@ public class ExpirableTxnRecordTestHelper {
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setAssessedCustomFees(fcAssessedFees)
 				.setNewTokenAssociations(newTokenAssociations)
-				.setAlias(record.getAlias());
+				.setAlias(record.getAlias())
+				.setEthereumHash(record.getEthereumHash().toByteArray());
 		if (record.hasParentConsensusTimestamp()) {
 			builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
 		}

@@ -37,7 +37,7 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -289,6 +289,10 @@ public interface HapiPropertySource {
 
 	static String asHexedSolidityAddress(final ContractID contractId) {
 		return CommonUtils.hex(asSolidityAddress(contractId));
+	}
+
+	static String asHexedSolidityAddress(final TokenID tokenId) {
+		return CommonUtils.hex(asSolidityAddress(tokenId));
 	}
 
 	static byte[] asSolidityAddress(final ContractID contractId) {

@@ -21,8 +21,10 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
@@ -39,13 +41,28 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	}
 
 	@Override
+	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
+		return SerializedForms.loadForm(ExpirableTxnRecord.class, version, testCaseNo);
+	}
+
+	@Override
 	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
-		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
-		final var seededRecord = propertySource.nextRecord();
-		if (version < RELEASE_0270_VERSION) {
-			seededRecord.clearStakingRewardsPaid();
+		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
+		if (version < RELEASE_0260_VERSION) {
+			// Ethereum hash added in release 0.26
+			seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);
+			// sender ID add in release 0.26
+			if (seeded.getContractCallResult() != null) {
+				seeded.getContractCallResult().setSenderId(null);
+			}
+			if (seeded.getContractCreateResult() != null) {
+				seeded.getContractCreateResult().setSenderId(null);
+			}
 		}
-		return seededRecord;
+		if (version < RELEASE_0270_VERSION) {
+			seeded.clearStakingRewardsPaid();
+		}
+		return seeded;
 	}
 
 	@Override

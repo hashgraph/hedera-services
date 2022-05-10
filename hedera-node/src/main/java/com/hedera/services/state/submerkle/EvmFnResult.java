@@ -24,14 +24,15 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,7 +52,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableString;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class EvmFnResult implements SelfSerializable {
@@ -59,7 +60,8 @@ public class EvmFnResult implements SelfSerializable {
 
 	static final int RELEASE_0240_VERSION = 3;
 	static final int RELEASE_0250_VERSION = 4;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 5;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -82,6 +84,7 @@ public class EvmFnResult implements SelfSerializable {
 	private long gas;
 	private long amount;
 	private byte[] functionParameters = EMPTY;
+	private EntityId senderId;
 
 	public EvmFnResult() {
 		// RuntimeConstructable
@@ -129,7 +132,8 @@ public class EvmFnResult implements SelfSerializable {
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
 			final long gas,
 			final long amount,
-			final byte[] functionParameters
+			final byte[] functionParameters,
+			final EntityId senderId
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -143,6 +147,7 @@ public class EvmFnResult implements SelfSerializable {
 		this.gas = gas;
 		this.amount = amount;
 		this.functionParameters = functionParameters;
+		this.senderId = senderId;
 	}
 
 	/* --- SelfSerializable --- */
@@ -194,6 +199,9 @@ public class EvmFnResult implements SelfSerializable {
 			amount = in.readLong();
 			functionParameters = in.readByteArray(MAX_FUNCTION_PARAMETERS_BYTES);
 		}
+		if (version >= RELEASE_0260_VERSION) {
+			senderId = readNullableSerializable(in);
+		}
 	}
 
 	@Override
@@ -226,6 +234,7 @@ public class EvmFnResult implements SelfSerializable {
 		out.writeLong(gas);
 		out.writeLong(amount);
 		out.writeByteArray(functionParameters);
+		writeNullableSerializable(senderId, out);
 	}
 
 	/* --- Object --- */
@@ -249,7 +258,8 @@ public class EvmFnResult implements SelfSerializable {
 				this.stateChanges.equals(that.stateChanges) &&
 				gas == that.gas &&
 				amount == that.amount &&
-				Arrays.equals(functionParameters, that.functionParameters);
+				Arrays.equals(functionParameters, that.functionParameters) && 
+			    Objects.equals(senderId, that.senderId);
 	}
 
 	@Override
@@ -275,6 +285,7 @@ public class EvmFnResult implements SelfSerializable {
 				.add("gas", gas)
 				.add("amount", amount)
 				.add("functionParameters", hex(functionParameters))
+				.add("senderId", senderId)
 				.toString();
 	}
 
@@ -331,6 +342,10 @@ public class EvmFnResult implements SelfSerializable {
 		return functionParameters;
 	}
 
+	public EntityId getSenderId() {
+		return senderId;
+	}
+
 	public void setEvmAddress(final byte[] evmAddress) {
 		this.evmAddress = evmAddress;
 	}
@@ -349,6 +364,17 @@ public class EvmFnResult implements SelfSerializable {
 
 	public void setFunctionParameters(final byte[] functionParameters) {
 		this.functionParameters = functionParameters;
+	}
+
+	public void setSenderId(final EntityId senderId) {
+		this.senderId = senderId;
+	}
+
+	public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
+		setGas(callContext.gasLimit());
+		setAmount(callContext.getAmount());
+		setFunctionParameters(callContext.callData());
+		setSenderId(senderId);
 	}
 
 	public ContractFunctionResult toGrpc() {
@@ -380,6 +406,9 @@ public class EvmFnResult implements SelfSerializable {
 		grpc.setGas(gas);
 		grpc.setAmount(amount);
 		grpc.setFunctionParameters(ByteString.copyFrom(functionParameters));
+		if (senderId != null) {
+			grpc.setSenderId(senderId.toGrpcAccountId());
+		}
 		return grpc.build();
 	}
 
@@ -402,8 +431,8 @@ public class EvmFnResult implements SelfSerializable {
 		final var n = grpcCreations.size();
 		if (n > 0) {
 			final List<EntityId> createdContractIds = new ArrayList<>();
-			for (int i = 0; i < n; i++) {
-				createdContractIds.add(EntityId.fromGrpcContractId(grpcCreations.get(i)));
+			for (ContractID grpcCreation : grpcCreations) {
+				createdContractIds.add(EntityId.fromGrpcContractId(grpcCreation));
 			}
 			return createdContractIds;
 		} else {
@@ -432,7 +461,8 @@ public class EvmFnResult implements SelfSerializable {
 				stateChanges,
 				0L,
 				0L,
-				EMPTY);
+				EMPTY,
+				null);
 	}
 
 
@@ -453,6 +483,7 @@ public class EvmFnResult implements SelfSerializable {
 				stateChanges,
 				0L,
 				0L,
-				EMPTY);
+				EMPTY,
+				null);
 	}
 }

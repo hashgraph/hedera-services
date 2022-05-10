@@ -91,7 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public final class TokenPauseSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPauseSpecs.class);
 
-	private static final String associationsLimitProperty = "accounts.limitTokenAssociations";
+	private static final String associationsLimitProperty = "entities.limitTokenAssociations";
 	private static final String defaultAssociationsLimit =
 			HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 	static final String defaultMinAutoRenewPeriod =

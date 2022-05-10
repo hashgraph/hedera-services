@@ -39,13 +39,13 @@ public final class StateVersions {
 	//   - Release 0.18.x was state version 12
 	//   - Release 0.19.x and 0.20.x were state version 13
 	//   - Release 0.21.x was state version 14
-	public static final int RELEASE_0220_VERSION = 15;
-	public static final int RELEASE_0230_VERSION = 16;
-	public static final int RELEASE_0240_VERSION = 17;
-	public static final int RELEASE_0250_VERSION = 18;
+	//   - Release 0.22.x was state version 15
+	public static final int RELEASE_024X_VERSION = 17;
+	public static final int RELEASE_025X_VERSION = 18;
+	public static final int RELEASE_0260_VERSION = 19;
 
-	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0220_VERSION;
-	public static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_024X_VERSION;
+	public static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	private StateVersions() {
 		throw new UnsupportedOperationException("Utility Class");

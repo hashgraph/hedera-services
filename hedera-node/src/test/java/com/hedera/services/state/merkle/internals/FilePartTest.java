@@ -23,8 +23,8 @@ package com.hedera.services.state.merkle.internals;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -74,7 +74,6 @@ class FilePartTest {
 	void liveFireSerdeWorksWithNonEmpty() throws IOException {
 		final var baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
-		final var sha384 =
 
 		subject = new FilePart(SOME_DATA);
 

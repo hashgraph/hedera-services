@@ -22,6 +22,7 @@ package com.hedera.services.utils.accessors;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -39,6 +40,7 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -51,6 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,12 +61,12 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -88,7 +91,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
-	private final Map<String, Object> spanMap = new HashMap<>();
+	private Map<String, Object> spanMap = new HashMap<>();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -107,6 +110,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
+	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
 
 	private AccountID payer;
@@ -209,6 +213,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
+	}
+
+	@Override
+	public void setExpandedSigStatus(final ResponseCodeEnum status) {
+		this.expandedSigStatus = status;
+	}
+
+	@Override
+	public ResponseCodeEnum getExpandedSigStatus() {
+		return expandedSigStatus;
 	}
 
 	public PubKeyToSigBytes getPkToSigsFn() {
@@ -344,6 +358,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return spanMap;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		spanMap = Collections.unmodifiableMap(newSpanMap);
+	}
+
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
@@ -351,8 +373,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public long getGasLimitForContractTx() {
-		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() :
-				getTxn().getContractCall().getGas();
+		return switch (getFunction()) {
+			case ContractCreate -> getTxn().getContractCreateInstance().getGas();
+			case ContractCall -> getTxn().getContractCall().getGas();
+			case EthereumTransaction -> getSpanMapAccessor().getEthTxDataMeta(this).gasLimit();
+			default -> 0L;
+		};
 	}
 
 	private void setBaseUsageMeta() {
@@ -395,6 +421,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoApproveUsageMeta();
 		} else if (function == CryptoDeleteAllowance) {
 			setCryptoDeleteAllowanceUsageMeta();
+		} else if (function == EthereumTransaction) {
+			setEthTxDataMeta();
 		}
 	}
 
@@ -482,6 +510,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
 	}
 
+	private void setEthTxDataMeta() {
+		var hapiTx = txn.getEthereumTransaction();
+		final var ethTxData = EthTxData.populateEthTxData(hapiTx.getEthereumData().toByteArray());
+		SPAN_MAP_ACCESSOR.setEthTxDataMeta(this, ethTxData);
+	}
+	
 	@Override
 	public SubType getSubType() {
 		if (function == CryptoTransfer) {

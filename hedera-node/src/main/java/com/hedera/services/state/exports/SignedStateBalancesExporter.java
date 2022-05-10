@@ -38,7 +38,7 @@ import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
