@@ -87,19 +87,6 @@ class ExchangeRateContractTest {
 	}
 
 	@Test
-	void signExtendsAsExpected() {
-		givenRate(someRate);
-
-		final var smolInput = Bytes.concatenate(
-				Bytes.of(TO_TINYBARS_SELECTOR),
-				Bytes.wrap(new byte[] { (byte) 0x80 }));
-		System.out.println(smolInput.slice(1).toLong());
-		final var result = subject.compute(smolInput, frame);
-
-		assertEquals(unpackedBytesFor(0x80), result);
-	}
-
-	@Test
 	void inputCannotBeOutOfRange() {
 		final var outOfRangeInput = Bytes.concatenate(
 				Bytes.of(TO_TINYBARS_SELECTOR),
