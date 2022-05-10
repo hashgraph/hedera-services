@@ -314,14 +314,18 @@ public class FeeBuilder {
 	 * @return tinyHbars
 	 */
 	public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
-		BigInteger hbarMultiplier = BigInteger.valueOf(exchangeRate.getHbarEquiv());
-		BigInteger centsDivisor = BigInteger.valueOf(exchangeRate.getCentEquiv());
-		BigInteger feeInBigInt = BigInteger.valueOf(tinyCentsFee);
-		feeInBigInt = feeInBigInt.multiply(hbarMultiplier);
-		feeInBigInt = feeInBigInt.divide(centsDivisor);
-		return feeInBigInt.longValue();
+		return getAFromB(tinyCentsFee, exchangeRate.getHbarEquiv(), exchangeRate.getCentEquiv());
 	}
 
+	public static long getTinycentsFromTinybars(final ExchangeRate exchangeRate, final long tinybars) {
+		return getAFromB(tinybars, exchangeRate.getCentEquiv(), exchangeRate.getHbarEquiv());
+	}
+
+	public static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+		final var aMultiplier = BigInteger.valueOf(aEquiv);
+		final var bDivisor = BigInteger.valueOf(bEquiv);
+		return BigInteger.valueOf(bAmount).multiply(aMultiplier).divide(bDivisor).longValueExact();
+	}
 
 	public static FeeData getFeeDataMatrices(FeeComponents feeComponents, int payerVpt, long rbsNetwork) {
 

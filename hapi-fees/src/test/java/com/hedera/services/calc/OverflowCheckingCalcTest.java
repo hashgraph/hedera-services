@@ -56,9 +56,29 @@ class OverflowCheckingCalcTest {
 		final var highFee = Long.MAX_VALUE / rateTinycentComponent;
 		final var expectedTinybarFee = FeeBuilder.getTinybarsFromTinyCents(someRate, highFee);
 
-		final long computedTinybarFee = subject.tinycentsToTinybars(highFee, someRate);
+		final long computedTinybarFee = OverflowCheckingCalc.tinycentsToTinybars(highFee, someRate);
 
 		assertEquals(expectedTinybarFee, computedTinybarFee);
+	}
+
+	@Test
+	void tinycentConverterCanUseJustPrimitive() {
+		final var normalAmount = 100_000_000 / rateTinybarComponent;
+		final var expectedTinycents = FeeBuilder.getTinycentsFromTinybars(someRate, normalAmount);
+
+		final long actualTinycents = OverflowCheckingCalc.tinybarsToTinycents(normalAmount, someRate);
+
+		assertEquals(expectedTinycents, actualTinycents);
+	}
+
+	@Test
+	void tinycentConverterCanFallbackToBigDecimal() {
+		final var largeAmount = Long.MAX_VALUE / rateTinybarComponent * 2;
+		final var expectedTinycents = FeeBuilder.getTinycentsFromTinybars(someRate, largeAmount);
+
+		final long actualTinycents = OverflowCheckingCalc.tinybarsToTinycents(largeAmount, someRate);
+
+		assertEquals(expectedTinycents, actualTinycents);
 	}
 
 	@Test
