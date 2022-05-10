@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -180,8 +179,6 @@ class HTSPrecompiledContractTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
-	@Mock
-	private PureTransferSemanticChecks transferSemanticChecks;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 

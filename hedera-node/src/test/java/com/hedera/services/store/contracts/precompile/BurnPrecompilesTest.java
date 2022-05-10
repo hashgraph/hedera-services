@@ -28,7 +28,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -191,8 +190,6 @@ class BurnPrecompilesTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
-	@Mock
-	private PureTransferSemanticChecks transferSemanticChecks;
 
 	private HTSPrecompiledContract subject;
 

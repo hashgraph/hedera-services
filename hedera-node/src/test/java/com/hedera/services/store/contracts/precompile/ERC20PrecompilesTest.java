@@ -29,7 +29,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -236,8 +235,6 @@ class ERC20PrecompilesTest {
     private EntityIdSource entityIdSource;
     @Mock
     private ApproveAllowanceChecks allowanceChecks;
-    @Mock
-    private PureTransferSemanticChecks transferSemanticChecks;
     @Mock
     private AccountStore accountStore;
     @Mock
