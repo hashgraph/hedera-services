@@ -82,6 +82,7 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -1212,9 +1213,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(
 				final MessageFrame frame
 		) {
-			transferSemanticChecks.fullPureValidation(transactionBody.getCryptoTransfer().getTransfers(),
-					transactionBody.getCryptoTransfer().getTokenTransfersList(),
-					impliedTransfersMarshal.currentProps());
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
 			}
@@ -1676,13 +1674,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			final var allowance = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
+			final var allowances = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
 			long value = 0;
-			for (Map.Entry<FcTokenAllowanceId, Long> e : allowance.entrySet()) {
-				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue() &&
-					tokenId.getTokenNum() == e.getKey().getTokenNum().longValue()) {
-					value = e.getValue();
-				}
+			final var fcTokenAllowanceId =
+					FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(allowanceWrapper.spender()));
+			if (allowances.containsKey(fcTokenAllowanceId)) {
+				value = allowances.get(fcTokenAllowanceId);
 			}
 			return encoder.encodeAllowance(value);
 		}
