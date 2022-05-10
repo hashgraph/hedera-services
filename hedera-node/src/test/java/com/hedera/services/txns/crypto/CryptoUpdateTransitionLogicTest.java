@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -34,13 +35,11 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -116,6 +115,7 @@ class CryptoUpdateTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	private CryptoUpdateTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private NodeInfo nodeInfo;
 
 	@BeforeEach
 	private void setup() {
@@ -129,10 +129,11 @@ class CryptoUpdateTransitionLogicTest {
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		accounts = mock(MerkleMap.class);
+		nodeInfo = mock(NodeInfo.class);
 		withRubberstampingValidator();
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
-				() -> accounts);
+				() -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -177,7 +178,7 @@ class CryptoUpdateTransitionLogicTest {
 						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
 				.build();
 
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
@@ -583,6 +584,6 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 	}
 }

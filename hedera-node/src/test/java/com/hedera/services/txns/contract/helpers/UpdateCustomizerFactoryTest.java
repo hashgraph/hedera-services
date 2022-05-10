@@ -100,7 +100,7 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
 		assertEquals(null, mutableContract.getProxy());
-		assertEquals(-12345, mutableContract.getStakedNum());
+		assertEquals(-12345, mutableContract.getStakedId());
 		assertEquals(false, mutableContract.isDeclinedReward());
 	}
 

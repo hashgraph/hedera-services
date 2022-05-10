@@ -61,6 +61,7 @@ import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -575,25 +576,48 @@ class ContextOptionValidatorTest {
 	void validatesStakingId() {
 		final var deletedAccount = new MerkleAccount();
 		deletedAccount.setDeleted(true);
+		final NodeInfo nodeInfo = mock(NodeInfo.class);
 
-		given(accounts.get(EntityNum.fromLong(10L))).willReturn(new MerkleAccount());
+		given(nodeInfo.accountOf(10L)).willReturn(asAccount("0.0.2"));
 		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts,
+				nodeInfo));
+
+		op = CryptoCreateTransactionBody.newBuilder()
+				.setStakedNodeId(10L)
+				.build();
+		given(nodeInfo.accountOf(10L)).willThrow(IllegalArgumentException.class);
+		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts,
+				nodeInfo));
+	}
+
+	@Test
+	void validatesStakingAccountId() {
+		final var deletedAccount = new MerkleAccount();
+		deletedAccount.setDeleted(true);
+		final NodeInfo nodeInfo = mock(NodeInfo.class);
+
+		given(accounts.get(EntityNum.fromLong(10L))).willReturn(new MerkleAccount());
+		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
+				.setStakedAccountId(asAccount("0.0.10"))
+				.build();
+		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(deletedAccount);
 		op = CryptoCreateTransactionBody.newBuilder()
-				.setStakedNodeId(10L)
+				.setStakedAccountId(asAccount("0.0.10"))
 				.build();
-		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(null);
 		op = CryptoCreateTransactionBody.newBuilder()
-				.setStakedNodeId(10L)
+				.setStakedAccountId(asAccount("0.0.10"))
 				.build();
-		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts));
+		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 	}
+
 
 	@Test
 	void rejectsImplausibleAccounts() {

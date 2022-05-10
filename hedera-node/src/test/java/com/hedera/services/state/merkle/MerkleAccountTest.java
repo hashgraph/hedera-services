@@ -244,7 +244,7 @@ class MerkleAccountTest {
 		assertEquals(state.getStakedToMe(), subject.getStakedToMe());
 		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
 		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
-		assertEquals(state.getStakedNum(), subject.getStakedNum());
+		assertEquals(state.getStakedNum(), subject.getStakedId());
 	}
 
 	@Test
@@ -287,7 +287,7 @@ class MerkleAccountTest {
 		subject.setStakedToMe(stakedToMe);
 		subject.setStakePeriodStart(stakePeriodStart);
 		subject.setDeclineReward(declinedReward);
-		subject.setStakedNodeId(-stakedNum);
+		subject.setStakedId(-stakedNum);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -316,7 +316,7 @@ class MerkleAccountTest {
 		verify(delegate).setStakePeriodStart(stakePeriodStart);
 		verify(delegate).setDeclineReward(declinedReward);
 
-		subject.setStakedAccount(stakedNum);
+		subject.setStakedId(stakedNum);
 		verify(delegate).setStakedNum(stakedNum);
 	}
 

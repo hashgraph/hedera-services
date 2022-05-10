@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
@@ -122,6 +123,8 @@ class ContractCreateTransitionLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private NodeInfo nodeInfo;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -136,7 +139,7 @@ class ContractCreateTransitionLogicTest {
 				hfs,
 				txnCtx, accountStore, validator,
 				worldState, recordServices, evmTxProcessor,
-				properties, sigImpactHistorian, () -> accounts);
+				properties, sigImpactHistorian, () -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -154,7 +157,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -165,7 +168,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtxWithStaking();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractCreateTxn));
 	}
@@ -200,7 +203,7 @@ class ContractCreateTransitionLogicTest {
 		contractCreateTxn = txn.build();
 
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 		given(properties.maxGas()).willReturn(gas + 1);
 		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
 	}
@@ -546,7 +549,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 		given(properties.maxGas()).willReturn(gas + 1);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));

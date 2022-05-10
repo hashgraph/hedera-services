@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -140,7 +141,8 @@ public interface OptionValidator {
 	default boolean isValidStakedIdIfPresent(
 			final AccountID stakedAccountId,
 			final long stakedNodeId,
-			final MerkleMap<EntityNum, MerkleAccount> accounts){
-		return PureValidation.isValidStakedId(stakedAccountId, stakedNodeId, accounts);
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final NodeInfo nodeInfo){
+		return PureValidation.isValidStakedId(stakedAccountId, stakedNodeId, accounts, nodeInfo);
 	}
 }

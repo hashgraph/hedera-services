@@ -244,7 +244,7 @@ class StateViewTest {
 		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
 		tokenAccount.setNumAssociations(1);
 		tokenAccount.setNumPositiveBalances(0);
-		tokenAccount.setStakedAccount(10L);
+		tokenAccount.setStakedId(10L);
 		tokenAccount.setDeclineReward(true);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
@@ -715,7 +715,7 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
-		tokenAccount.setStakedAccount(-10L);
+		tokenAccount.setStakedId(-10L);
 		tokenAccount.setDeclineReward(false);
 		tokenAccount.setStakePeriodStart(10000L);
 

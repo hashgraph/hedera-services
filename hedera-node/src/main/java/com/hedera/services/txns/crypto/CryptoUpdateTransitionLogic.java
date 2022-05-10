@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -86,6 +87,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final NodeInfo nodeInfo;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
@@ -94,7 +96,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
@@ -102,6 +105,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -236,7 +240,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
+		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
 		return OK;

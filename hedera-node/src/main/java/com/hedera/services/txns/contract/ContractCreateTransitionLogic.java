@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
@@ -80,6 +81,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final NodeInfo nodeInfo;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -92,7 +94,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final CreateEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
 			final SigImpactHistorian sigImpactHistorian,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
@@ -104,6 +107,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
 		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -197,7 +201,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get())) {
+		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
 		return validator.memoCheck(op.getMemo());

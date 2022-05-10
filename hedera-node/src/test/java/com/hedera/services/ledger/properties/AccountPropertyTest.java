@@ -193,7 +193,7 @@ class AccountPropertyTest {
 		account.setUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
 		account.setNumTreasuryTitles(origNumTreasuryTitles);
 		account.setDeclineReward(origDeclinedReward);
-		account.setStakedAccount(-origStakedNum);
+		account.setStakedId(-origStakedNum);
 		account.setStakePeriodStart(origStakePeriodStart);
 		account.setStakedToMe(origStakedToMe);
 

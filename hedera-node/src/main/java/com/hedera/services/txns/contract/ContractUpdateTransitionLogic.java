@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -59,6 +60,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+	private final NodeInfo nodeInfo;
 
 	public ContractUpdateTransitionLogic(
 			final HederaLedger ledger,
@@ -67,7 +69,8 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final UpdateCustomizerFactory customizerFactory,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
@@ -76,6 +79,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		this.contracts = contracts;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.customizerFactory = customizerFactory;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -142,7 +146,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(),
-				contracts.get())) {
+				contracts.get(), nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
 		return OK;

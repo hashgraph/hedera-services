@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -135,12 +136,27 @@ public final class PureValidation {
 
 	public static boolean isValidStakedId(final AccountID stakedAccountId,
 			final long stakedNodeId,
-			final MerkleMap<EntityNum, MerkleAccount> accounts) {
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final NodeInfo nodeInfo) {
 		// resulting stakedId will be < 0 if it is stakingNodeId and will be  > 0 if it is stakingAccountId
 		final var stakedId = getStakedId(stakedAccountId, stakedNodeId);
 		if (stakedId.isPresent()) {
-			return queryableAccountStatus(EntityNum.fromLong(Math.abs(stakedId.get())), accounts) == OK;
+			if (stakedId.get() > 0) {
+				return queryableAccountStatus(EntityNum.fromLong(Math.abs(stakedId.get())), accounts) == OK;
+			} else {
+				return isValidNodeId(Math.abs(stakedId.get()), nodeInfo);
+			}
 		}
 		return true;
 	}
+
+	private static boolean isValidNodeId(final long nodeId, final NodeInfo nodeInfo) {
+		try {
+			nodeInfo.accountOf(nodeId);
+			return true;
+		} catch (IllegalArgumentException ex) {
+			return false;
+		}
+	}
+
 }

@@ -468,10 +468,10 @@ public class StateView {
 		final var stakingInfo = StakingInfo.newBuilder()
 				.setDeclineReward(account.isDeclinedReward())
 				.setStakedToMe(account.getStakedToMe());
-		final var stakedNum = account.getStakedNum();
 
+		final var stakedNum = account.getStakedId();
 		if (stakedNum < 0) {
-			stakingInfo.setStakedNodeId(-1 * account.getStakedNum());
+			stakingInfo.setStakedNodeId(-1 * account.getStakedId());
 		} else if (stakedNum > 0) {
 			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
 		}
@@ -479,6 +479,7 @@ public class StateView {
 		if (account.getStakePeriodStart() > 0) {
 			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
 		}
+
 		return stakingInfo.build();
 	}
 

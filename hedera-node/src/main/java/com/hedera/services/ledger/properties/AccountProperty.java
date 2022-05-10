@@ -320,17 +320,13 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> {
 				final var val = (long) t;
-				if ((val < 0)) {
-					a.setStakedNodeId(val);
-				} else {
-					a.setStakedAccount(val);
-				}
+				a.setStakedId(val);
 			};
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getStakedNum;
+			return MerkleAccount::getStakedId;
 		}
 	}
 }

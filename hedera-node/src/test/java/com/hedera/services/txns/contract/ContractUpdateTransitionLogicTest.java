@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -90,6 +91,7 @@ class ContractUpdateTransitionLogicTest {
 	private SignedTxnAccessor accessor;
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	private ContractUpdateTransitionLogic subject;
+	private NodeInfo nodeInfo;
 
 	@BeforeEach
 	private void setup() {
@@ -105,9 +107,10 @@ class ContractUpdateTransitionLogicTest {
 		withRubberstampingValidator();
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		aliasManager = mock(AliasManager.class);
+		nodeInfo = mock(NodeInfo.class);
 
 		subject = new ContractUpdateTransitionLogic(
-				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
+				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts, nodeInfo);
 	}
 
 	@Test
@@ -188,7 +191,7 @@ class ContractUpdateTransitionLogicTest {
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -197,7 +200,7 @@ class ContractUpdateTransitionLogicTest {
 	@Test
 	void acceptsOmittedAutoRenew() {
 		givenValidTxnCtx(false, false);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(true);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -239,7 +242,7 @@ class ContractUpdateTransitionLogicTest {
 	void failsForInvalidStakingId() {
 		givenValidTxnCtxWithStaking();
 
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any())).willReturn(false);
+		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 	}

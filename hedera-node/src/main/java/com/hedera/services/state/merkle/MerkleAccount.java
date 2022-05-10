@@ -449,32 +449,20 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	 *
 	 * @return num [of shard.realm.num] of node/account
 	 */
-	public long getStakedNum() {
+	public long getStakedId() {
 		return state().getStakedNum();
 	}
 
 	/**
-	 * Set the node to which this account is staking its Hbar to. The value of the nodeNum will be negative if its
-	 * staked node id.
+	 * Sets the id of account or node to which this account is staking its hbar to. If stakedId < 0 it will be a node
+	 * id and if stakedId > 0 it is an account number.
 	 *
-	 * @param nodeNum
+	 * @param stakedId
 	 * 		The node num of the node
 	 */
-	public void setStakedNodeId(long nodeNum) {
-		throwIfImmutable("Cannot change this account's staked nodeId if it's immutable");
-		state().setStakedNum(nodeNum);
-	}
-
-	/**
-	 * Set the account to which this accout is staking its Hbar to.The value of the nodeNum will be positive if its
-	 * staked to account id.
-	 *
-	 * @param accountNum
-	 * 		The account num of the account.
-	 */
-	public void setStakedAccount(long accountNum) {
-		throwIfImmutable("Cannot change this account's staked account if it's immutable");
-		state().setStakedNum(accountNum);
+	public void setStakedId(long stakedId) {
+		throwIfImmutable("Cannot change this account's staked id if it's immutable");
+		state().setStakedNum(stakedId);
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {
