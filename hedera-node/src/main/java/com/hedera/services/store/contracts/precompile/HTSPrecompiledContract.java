@@ -34,6 +34,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -81,7 +82,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -118,6 +118,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -307,6 +308,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
 	private ApproveAllowanceChecks allowanceChecks;
+	private PureTransferSemanticChecks transferSemanticChecks;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -328,7 +330,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final ApproveAllowanceChecks allowanceChecks
+			final ApproveAllowanceChecks allowanceChecks,
+			final PureTransferSemanticChecks transferSemanticChecks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -349,6 +352,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
 		this.allowanceChecks = allowanceChecks;
+		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -1208,6 +1212,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(
 				final MessageFrame frame
 		) {
+			transferSemanticChecks.fullPureValidation(transactionBody.getCryptoTransfer().getTransfers(),
+					transactionBody.getCryptoTransfer().getTokenTransfersList(),
+					impliedTransfersMarshal.currentProps());
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
 			}
@@ -1478,6 +1485,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer(precompileAddress));
 			} else {
+				//logic for delete approvals in case of transfer of ERC721
+				final var accountStore = createAccountStore();
+				final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
+				final var approveWrapper = new ApproveWrapper(tokenId, null, BigInteger.ZERO, BigInteger.valueOf(transferOp.get(0).nftExchanges().get(0).getSerialNo()), BigInteger.ZERO, isFungible);
+				var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), approveWrapper.serialNumber().longValue());
+				var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
+				final var deleteAllowanceTxn = syntheticTxnFactory.createDeleteAllowance(approveWrapper, owner);
+				final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
+				deleteAllowanceLogic.deleteAllowance(deleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
+						EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+
 				frame.addLog(getLogForNftExchange(precompileAddress));
 			}
 		}
@@ -1658,12 +1676,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			final var allowances = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
+			final var allowance = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
 			long value = 0;
-			final var fcTokenAllowanceId =
-					FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(allowanceWrapper.spender()));
-			if (allowances.containsKey(fcTokenAllowanceId)) {
-				value = allowances.get(fcTokenAllowanceId);
+			for (Map.Entry<FcTokenAllowanceId, Long> e : allowance.entrySet()) {
+				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue() &&
+					tokenId.getTokenNum() == e.getKey().getTokenNum().longValue()) {
+					value = e.getValue();
+				}
 			}
 			return encoder.encodeAllowance(value);
 		}
