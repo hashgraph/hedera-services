@@ -69,7 +69,7 @@ public class UniqueTokensLinkManager {
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
-		// Update `from` Account
+		// Update "from" account
 		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
@@ -84,7 +84,7 @@ public class UniqueTokensLinkManager {
 			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
 		}
 
-		// update `to` Account
+		// Update "to" account
 		if (isValidAndNotTreasury(to, token)) {
 			final var nft = listMutation.getForModify(nftId);
 			if (nft != null) {

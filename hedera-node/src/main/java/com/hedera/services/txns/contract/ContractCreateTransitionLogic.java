@@ -51,6 +51,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -123,14 +124,16 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
+		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
 	}
 
 	public void doStateTransitionOperation(
 			final TransactionBody contractCreateTxn,
 			final Id senderId,
-			final boolean incrementCounter,
-			final boolean createSyntheticRecord
+			final boolean createSyntheticRecord,
+			final Id relayerId,
+			final long maxGasAllowance,
+			final BigInteger userOfferedGasPrice
 	) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
@@ -157,23 +160,35 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 
 		// --- Do the business logic ---
-		if (incrementCounter) {
-			sender.incrementEthereumNonce();
-			accountStore.commitAccount(sender);
-		}
-
 		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
 		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {
-			result = evmTxProcessor.execute(
-					sender,
-					newContractAddress,
-					op.getGas(),
-					op.getInitialBalance(),
-					codeWithConstructorArgs,
-					consensusTime,
-					expiry);
+			if (relayerId == null) {
+				result = evmTxProcessor.execute(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry);
+			} else {
+				sender.incrementEthereumNonce();
+				accountStore.commitAccount(sender);
+
+				result = evmTxProcessor.executeEth(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry,
+						accountStore.loadAccount(relayerId),
+						userOfferedGasPrice,
+						maxGasAllowance);
+			}
 		} finally {
 			worldState.resetHapiSenderCustomizer();
 		}

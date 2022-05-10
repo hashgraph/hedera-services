@@ -293,14 +293,14 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part1.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompileEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-		);
+//				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+		});
 	}
 
 	@Tag("contract")
@@ -308,13 +308,13 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part2")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuite(DelegatePrecompileSuite::new),
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
 				extractSpecsFromSuite(DynamicGasCostSuite::new),
 				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -322,22 +322,11 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part2.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2Eth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
-		);
-	}
-
-	@Tag("contract")
-	@Tag("contract.precompile")
-	@Tag("contract.precompile.part2.eth.failing")
-	@TestFactory
-	Collection<DynamicContainer> contractPrecompile2EthFailing() {
-		return List.of(
-				extractSpecsFromSuiteForEth(DynamicGasCostSuite::new),
-				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -806,8 +795,7 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
-											" " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
 											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");

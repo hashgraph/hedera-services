@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -41,10 +41,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
@@ -65,7 +65,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
 			final StorageExpiry storageExpiry,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
+			final BlockManager blockManager
 	) {
 		super(
 				worldState,
@@ -74,7 +74,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				merkleNetworkContextSupplier);
+				blockManager);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;
@@ -88,7 +88,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Bytes callData,
 			final Instant consensusTime
 	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
 		return super.execute(
 				sender,
@@ -101,7 +101,40 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				storageExpiry.hapiCallOracle(),
-				aliasManager.resolveForEvm(receiver));
+				aliasManager.resolveForEvm(receiver),
+				null,
+				0,
+				null);
+	}
+
+	public TransactionProcessingResult executeEth(
+			final Account sender,
+			final Address receiver,
+			final long providedGasLimit,
+			final long value,
+			final Bytes callData,
+			final Instant consensusTime,
+			final BigInteger userOfferedGasPrice,
+			final Account relayer,
+			final long maxGasAllowanceInTinybars
+	) {
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				callData,
+				false,
+				consensusTime,
+				false,
+				storageExpiry.hapiCallOracle(),
+				aliasManager.resolveForEvm(receiver),
+				userOfferedGasPrice,
+				maxGasAllowanceInTinybars,
+				relayer);
 	}
 
 	@Override
@@ -117,7 +150,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final long value) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* The ContractCallTransitionLogic would have rejected a missing or deleted
-		 * contract, so at this point we should have non-null bytecode available. 
+		 * contract, so at this point we should have non-null bytecode available.
 		 * If there is no bytecode, it means we have a non-token and non-contract account,
 		 * hence the code should be null and there must be a value transfer.
 		 */
