@@ -34,7 +34,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -119,7 +118,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -309,8 +307,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
 	private ApproveAllowanceChecks allowanceChecks;
-	private PureTransferSemanticChecks transferSemanticChecks;
-
+	
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -331,8 +328,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final ApproveAllowanceChecks allowanceChecks,
-			final PureTransferSemanticChecks transferSemanticChecks
+			final ApproveAllowanceChecks allowanceChecks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -353,7 +349,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
 		this.allowanceChecks = allowanceChecks;
-		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
