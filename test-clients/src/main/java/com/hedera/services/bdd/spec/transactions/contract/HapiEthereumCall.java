@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -91,6 +92,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
+    private boolean isTokenFlow;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
@@ -150,6 +152,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = abi;
         this.params = params;
         this.contract = contract;
+    }
+
+    public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
+        this.abi = abi;
+        this.params = params;
+        this.contract = contract;
+        this.isTokenFlow = isTokenFlow;
     }
 
     public HapiEthereumCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
@@ -264,11 +273,18 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             }
         }
 
-        final ContractID contractID;
-        if (!tryAsHexedAddressIfLenMatches) {
-            contractID = spec.registry().getContractId(contract);
+         ContractID contractID = ContractID.getDefaultInstance();
+
+         TokenID tokenID = TokenID.getDefaultInstance();
+
+        if (isTokenFlow) {
+            tokenID = spec.registry().getTokenID(contract);
         } else {
-            contractID = TxnUtils.asContractId(contract, spec);
+            if (!tryAsHexedAddressIfLenMatches) {
+                contractID = spec.registry().getContractId(contract);
+            } else {
+                contractID = TxnUtils.asContractId(contract, spec);
+            }
         }
 
         final var gasPriceBytes = gasLongToBytes(gasPrice);;
@@ -279,8 +295,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             nonce = spec.getNonce();
         }
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-                maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
-                Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
+                maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L), isTokenFlow ?  Utils.asAddress(tokenID) : Utils.asAddress(contractID),
+                valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);

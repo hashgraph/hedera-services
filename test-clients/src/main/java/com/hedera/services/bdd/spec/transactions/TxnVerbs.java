@@ -354,6 +354,10 @@ public class TxnVerbs {
 		return new HapiEthereumCall(abi, contract, params);
 	}
 
+	public static HapiEthereumCall ethereumCallWithFunctionAbi(boolean isTokenFlow, String contract, String abi, Object... params) {
+		return new HapiEthereumCall(isTokenFlow, abi, contract, params);
+	}
+
 	/**
 	 * This method provides for the proper execution of specs, which execute contract calls with a function ABI instead
 	 * of
