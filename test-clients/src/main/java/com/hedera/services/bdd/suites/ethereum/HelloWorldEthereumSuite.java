@@ -93,8 +93,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     List<HapiApiSpec> ethereumCalls() {
         return List.of(new HapiApiSpec[] {
                 depositSuccess(),
-                badRelayClient(),
-                hbarTransferToAccountSucceeds()
+                badRelayClient()
         });
     }
 
@@ -171,46 +170,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .has(accountWith().nonce(1L))
                 );
     }
-
-    HapiApiSpec hbarTransferToAccountSucceeds() {
-        String RECEIVER = "RECEIVER";
-        return defaultHapiSpec("hbarTransferToAccountSucceeds")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RECEIVER)
-                                .balance(0L),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords()
-                ).when(
-                        ethereumCryptoTransfer(RECEIVER, FIVE_HBARS)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(50L)
-                                .gasLimit(2_000_000L)
-                                .via("payTxn")
-                                .hasKnownStatus(SUCCESS)
-                ).then(
-                        withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .logs(inOrder())
-                                                        .senderId(spec.registry().getAccountID(
-                                                                spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                        .getAlias().toStringUtf8())))
-                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(1L)),
-                        getAccountInfo(RECEIVER).has(accountWith().balance(FIVE_HBARS))
-                );
-    }
-
 
     HapiApiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")

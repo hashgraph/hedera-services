@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -55,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
@@ -87,12 +89,57 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_010_transferToCryptoAccountSucceeds(),
 						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
 						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns()
 				)).toList();
+	}
+
+	HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
+		String RECEIVER = "RECEIVER";
+		final String aliasBalanceSnapshot = "aliasBalance";
+		return defaultHapiSpec("ETX_010_transferToCryptoAccountSucceeds")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RECEIVER)
+								.balance(0L),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords()
+				).when(
+						balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
+						ethereumCryptoTransfer(RECEIVER, FIVE_HBARS)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(RELAYER)
+								.nonce(0)
+								.maxFeePerGas(0L)
+								.maxGasAllowance(FIVE_HBARS)
+								.gasLimit(2_000_000L)
+								.via("payTxn")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
+								.logged()
+								.hasPriority(recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.logs(inOrder())
+														.senderId(spec.registry().getAccountID(
+																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+																		.getAlias().toStringUtf8())))
+										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
+						getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+								.has(accountWith().nonce(1L)),
+						getAccountBalance(RECEIVER).hasTinyBars(FIVE_HBARS),
+						getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
+								changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS))
+				);
 	}
 
 	List<HapiApiSpec> feePaymentMatrix() {
