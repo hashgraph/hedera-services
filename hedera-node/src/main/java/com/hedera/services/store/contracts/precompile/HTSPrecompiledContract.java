@@ -192,13 +192,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
 	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
-	private ApproveAllowanceLogicFactory approveAllowanceLogicFactory = ApproveAllowanceLogic::new;
-	private DeleteAllowanceLogicFactory deleteAllowanceLogicFactory = DeleteAllowanceLogic::new;
+	private final ApproveAllowanceLogicFactory approveAllowanceLogicFactory = ApproveAllowanceLogic::new;
+	private final DeleteAllowanceLogicFactory deleteAllowanceLogicFactory = DeleteAllowanceLogic::new;
 	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
 	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
-	private RedirectExecutorFactory redirectExecutorFactory = RedirectViewExecutor::new;
+	private final RedirectExecutorFactory redirectExecutorFactory = RedirectViewExecutor::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
 	private final EntityCreator creator;
@@ -306,8 +306,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
-	private ApproveAllowanceChecks allowanceChecks;
-
+	private final ApproveAllowanceChecks allowanceChecks;
+	
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -1477,6 +1477,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer(precompileAddress));
 			} else {
+				//logic for delete approvals in case of transfer of ERC721
+				final var accountStore = createAccountStore();
+				final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
+				final var approveWrapper = new ApproveWrapper(tokenId, null, BigInteger.ZERO, BigInteger.valueOf(transferOp.get(0).nftExchanges().get(0).getSerialNo()), BigInteger.ZERO, isFungible);
+				var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), approveWrapper.serialNumber().longValue());
+				var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
+				final var deleteAllowanceTxn = syntheticTxnFactory.createDeleteAllowance(approveWrapper, owner);
+				final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
+				deleteAllowanceLogic.deleteAllowance(deleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
+						EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+
 				frame.addLog(getLogForNftExchange(precompileAddress));
 			}
 		}

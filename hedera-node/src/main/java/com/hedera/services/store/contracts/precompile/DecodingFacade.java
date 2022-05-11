@@ -356,10 +356,10 @@ public class DecodingFacade {
 
 		if (isFungible) {
 			final var amount = (BigInteger) decodedArguments.get(1);
-			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
+			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, BigInteger.ZERO, isFungible);
 		} else {
 			final var serialNumber = (BigInteger) decodedArguments.get(1);
-			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, isFungible);
+			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, BigInteger.ZERO, isFungible);
 		}
 	}
 
