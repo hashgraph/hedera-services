@@ -163,25 +163,4 @@ public class ContractCustomizer {
 		}
 		accountCustomizer.customizeSynthetic(op);
 	}
-
-	/**
-	 * Gets the stakedId from the provided staked_account_id or staked_node_id.
-	 *
-	 * @param stakedAccountId
-	 * 		given staked_account_id
-	 * @param stakedNodeId
-	 * 		given staked_node_id
-	 * @return valid staked id
-	 */
-	public static long getStakedId(
-			final String idCase,
-			final AccountID stakedAccountId,
-			final long stakedNodeId) {
-		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
-			return stakedAccountId.getAccountNum();
-		} else {
-			// return a number less than the given node Id, in order to recognize the if nodeId 0 is set
-			return -stakedNodeId - 1;
-		}
-	}
 }

@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -58,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -70,8 +68,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
@@ -143,28 +141,31 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
+						cryptoCreate("stakingAccount")
+								.balance(ONE_HUNDRED_HBARS),
 						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
-								.stakedAccountId("0.0.20")
+								.stakedAccountId("stakingAccount")
 								.declinedReward(true)
+								.logged()
 				)
 				.when(
 						getContractInfo(CONTRACT)
 								.has(contractWith()
-										.stakedAccountId("0.0.20")
+										.stakedAccountId("stakingAccount")
 										.stakedNodeId(0)
 										.isDeclinedReward(true)),
 
 						contractUpdate(CONTRACT)
 								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
-								.newStakedNodeId(10L)
+								.newStakedNodeId(0L)
 								.newDeclinedReward(false)
 				)
 				.then(
 						getContractInfo(CONTRACT)
 								.has(contractWith()
 										.noStakedAccountId()
-										.stakedNodeId(10)
+										.stakedNodeId(0L)
 										.isDeclinedReward(false))
 								.logged()
 				);

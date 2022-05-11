@@ -244,7 +244,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
 	public ContractInfoAsserts stakedAccountId(String idLiteral) {
 		registerProvider((spec, o) -> {
-			assertEquals(HapiPropertySource.asAccount(idLiteral),
+			assertEquals(TxnUtils.asId(idLiteral, spec),
 					(object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
 					"Bad stakedAccountId id!");
 		});

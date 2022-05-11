@@ -69,31 +69,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		super(contract);
 	}
 
-	private Key adminKey;
-	private boolean omitAdminKey = false;
-	private boolean makeImmutable = false;
-	private boolean advertiseCreation = false;
-	private boolean shouldAlsoRegisterAsAccount = true;
-	private boolean useDeprecatedAdminKey = false;
-	private OptionalLong gas = OptionalLong.empty();
-	Optional<String> key = Optional.empty();
-	Optional<Long> autoRenewPeriodSecs = Optional.empty();
-	Optional<Long> balance = Optional.empty();
-	Optional<SigControl> adminKeyControl = Optional.empty();
-	Optional<KeyFactory.KeyType> adminKeyType = Optional.empty();
-	Optional<String> memo = Optional.empty();
-	Optional<String> bytecodeFile = Optional.empty();
-	Optional<Supplier<String>> bytecodeFileFn = Optional.empty();
-	Optional<Consumer<HapiSpecRegistry>> successCb = Optional.empty();
-	Optional<String> abi = Optional.empty();
-	Optional<Object[]> args = Optional.empty();
-	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
-	Optional<LongConsumer> newNumObserver = Optional.empty();
-	private Optional<String> proxy = Optional.empty();
-	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
-	private Optional<AccountID> stakedAccountId = Optional.empty();
-	private Optional<Long> stakedNodeId = Optional.empty();
-	private boolean isDeclinedReward = false;
 	public HapiContractCreate(String contract, String abi, Object... args) {
 		super(contract, abi, args);
 	}
@@ -197,6 +172,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		return this;
 	}
 
+	public HapiContractCreate useDeprecatedAdminKey() {
+		useDeprecatedAdminKey = true;
+		return this;
+	}
+
 	public HapiContractCreate adminKey(String existingKey) {
 		key = Optional.of(existingKey);
 		return this;
@@ -218,7 +198,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 	}
 
 	public HapiContractCreate stakedAccountId(String idLit) {
-		stakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		stakedAccountId = Optional.of(idLit);
 		return this;
 	}
 
@@ -329,7 +309,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
 							if (stakedAccountId.isPresent()) {
-								b.setStakedAccountId(stakedAccountId.get());
+								b.setStakedAccountId(asId(String.valueOf(stakedAccountId.get()), spec));
 							} else if (stakedNodeId.isPresent()) {
 								b.setStakedNodeId(stakedNodeId.get());
 							}

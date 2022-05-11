@@ -41,7 +41,7 @@ import java.time.Instant;
 import java.util.Map;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.getStakedId;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;

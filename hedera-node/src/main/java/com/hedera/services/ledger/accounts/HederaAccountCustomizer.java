@@ -33,7 +33,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
@@ -110,5 +109,26 @@ public final class HederaAccountCustomizer extends
 			final long stakedNodeId) {
 		final var stakedId = getStakedId(idCase, stakedAccountId, stakedNodeId);
 		this.stakedId(stakedId);
+	}
+
+	/**
+	 * Gets the stakedId from the provided staked_account_id or staked_node_id.
+	 *
+	 * @param stakedAccountId
+	 * 		given staked_account_id
+	 * @param stakedNodeId
+	 * 		given staked_node_id
+	 * @return valid staked id
+	 */
+	static long getStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId) {
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return stakedAccountId.getAccountNum();
+		} else {
+			// return a number less than the given node Id, in order to recognize the if nodeId 0 is set
+			return -stakedNodeId - 1;
+		}
 	}
 }
