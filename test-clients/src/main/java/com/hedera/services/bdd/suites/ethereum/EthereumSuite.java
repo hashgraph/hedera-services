@@ -515,7 +515,7 @@ public class EthereumSuite extends HapiApiSuite {
 		final var txn = "creation";
 		final var contract = "Fuse";
 
-		return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
+		return defaultHapiSpec("ETX_008_contractCreateExecutesWithExpectedRecord")
 				.given(
 						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
 						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -550,7 +550,7 @@ public class EthereumSuite extends HapiApiSuite {
 		final var firstTxn = "firstCreateTxn";
 		final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
 
-		return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+		return defaultHapiSpec("ETX_007_fungibleTokenCreateWithFeesHappyPath")
 				.given(
 						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
 						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
