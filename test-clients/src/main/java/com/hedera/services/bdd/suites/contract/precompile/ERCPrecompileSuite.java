@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -94,6 +96,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final String FUNGIBLE_TOKEN = "fungibleToken";
 	private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
 	private static final String MULTI_KEY = "purpose";
+	private static final String ERC_20_CONTRACT_NAME = "erc20Contract";
 	private static final String OWNER = "owner";
 	private static final String ACCOUNT = "anybody";
 	private static final String RECIPIENT = "recipient";
@@ -221,17 +224,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
-									allRunFor(
-											spec,
-											contractCall(ERC_20_CONTRACT, "symbol", tokenAddr.get())
-													.payingWith(ACCOUNT)
-													.via(symbolTxn)
-													.hasKnownStatus(SUCCESS)
-													.gas(GAS_TO_OFFER)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_20_CONTRACT, "symbol", asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))
+												)
+														.payingWith(ACCOUNT)
+														.via(symbolTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
 						)
 				).then(
 						childRecordsCheck(symbolTxn, SUCCESS,
@@ -245,7 +247,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "symbol", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "symbol", tokenAddr.get()))
 				);
 	}
 
@@ -267,20 +269,20 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
+						fileCreate(ERC_20_CONTRACT_NAME),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
-									allRunFor(
-											spec,
-											contractCall(ERC_20_CONTRACT, "decimals", tokenAddr.get())
-													.payingWith(ACCOUNT)
-													.via(decimalsTxn)
-													.hasKnownStatus(SUCCESS)
-													.gas(GAS_TO_OFFER)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_20_CONTRACT, "decimals", asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))
+												)
+														.payingWith(ACCOUNT)
+														.via(decimalsTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
 						)
 				).then(
 						childRecordsCheck(decimalsTxn, SUCCESS,
@@ -291,7 +293,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
 																.withDecimals(decimals)))),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "decimals", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "decimals", tokenAddr.get()))
 				);
 	}
 
@@ -314,17 +316,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
-									allRunFor(
-											spec,
-											contractCall(ERC_20_CONTRACT, "totalSupply", tokenAddr.get())
-													.payingWith(ACCOUNT)
-													.via(supplyTxn)
-													.hasKnownStatus(SUCCESS)
-													.gas(GAS_TO_OFFER)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_20_CONTRACT, "totalSupply", asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))
+												)
+														.payingWith(ACCOUNT)
+														.via(supplyTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
 						)
 				).then(
 						childRecordsCheck(supplyTxn, SUCCESS,
@@ -339,7 +340,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "decimals", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "decimals", tokenAddr.get()))
 				);
 	}
 
@@ -366,19 +367,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
-									accountAddr.set(asAddress(spec.registry().getAccountID(ACCOUNT)));
-									allRunFor(
-											spec,
-											contractCall(ERC_20_CONTRACT, "balanceOf",
-													tokenAddr.get(), accountAddr.get())
-													.payingWith(ACCOUNT)
-													.via(balanceTxn)
-													.hasKnownStatus(SUCCESS)
-													.gas(GAS_TO_OFFER)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_20_CONTRACT, "balanceOf",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)))
+														.payingWith(ACCOUNT)
+														.via(balanceTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
 						)
 				).then(
 						/* expect 0 returned from balanceOf() if the account and token are not associated -*/
@@ -405,7 +404,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						),
 						sourcing(() -> contractCallLocal(
-								ERC_20_CONTRACT, "balanceOf",
+								ERC_20_CONTRACT_NAME, "balanceOf",
 								tokenAddr.get(), accountAddr.get()))
 				);
 	}
@@ -434,17 +433,15 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT))
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
-									accountAddr.set(asAddress(spec.registry().getAccountID(RECIPIENT)));
-									allRunFor(
-											spec,
-											contractCall(ERC_20_CONTRACT, "transfer",
-													tokenAddr.get(), accountAddr.get(), 2)
-													.via(transferTxn).gas(GAS_TO_OFFER)
-													.hasKnownStatus(SUCCESS)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_20_CONTRACT, "transfer",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
+														.via(transferTxn).gas(GAS_TO_OFFER)
+														.hasKnownStatus(SUCCESS)
+										)
 						)
 				).then(
 						getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
@@ -481,7 +478,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
 						sourcing(() -> contractCallLocal(
-								ERC_20_CONTRACT, "transfer",
+										ERC_20_CONTRACT_NAME, "transfer",
 										tokenAddr.get(), accountAddr.get(), 1
 								).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
 						)
@@ -1114,6 +1111,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						fileCreate(ERC_20_CONTRACT_NAME),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
@@ -1395,6 +1393,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+						cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER)),
 						uploadInitCode(ERC_721_CONTRACT),
 						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
@@ -1471,18 +1471,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						uploadInitCode(ERC_721_CONTRACT),
 						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
-								(spec, opLog) -> {
-									tokenAddr.set(asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)));
-									allRunFor(
-											spec,
-											contractCall(ERC_721_CONTRACT, "ownerOf",
-													tokenAddr.get(), 1)
-													.payingWith(OWNER)
-													.via(ownerOfTxn)
-													.hasKnownStatus(SUCCESS)
-													.gas(GAS_TO_OFFER)
-									);
-								}
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_721_CONTRACT, "ownerOf",
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 1
+												)
+														.payingWith(OWNER)
+														.via(ownerOfTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
 						)
 				).then(
 						withOpContext(

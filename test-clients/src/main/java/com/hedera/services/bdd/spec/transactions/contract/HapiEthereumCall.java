@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -90,6 +91,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
+    private boolean isTokenFlow;
     private String account = null;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
@@ -158,6 +160,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = abi;
         this.params = params;
         this.contract = contract;
+    }
+
+    public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
+        this.abi = abi;
+        this.params = params;
+        this.contract = contract;
+        this.isTokenFlow = isTokenFlow;
     }
 
     public HapiEthereumCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
@@ -275,6 +284,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final byte[] to;
         if (account != null) {
             to = Utils.asAddress(spec.registry().getAccountID(account));
+        } else if (isTokenFlow) {
+            to = Utils.asAddress(spec.registry().getTokenID(contract));
         } else {
             if (!tryAsHexedAddressIfLenMatches) {
                 to = Utils.asAddress(spec.registry().getContractId(contract));

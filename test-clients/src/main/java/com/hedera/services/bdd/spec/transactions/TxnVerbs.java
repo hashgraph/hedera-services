@@ -354,6 +354,10 @@ public class TxnVerbs {
 		return new HapiEthereumCall(abi, contract, params);
 	}
 
+	public static HapiEthereumCall ethereumCallWithFunctionAbi(boolean isTokenFlow, String contract, String abi, Object... params) {
+		return new HapiEthereumCall(isTokenFlow, abi, contract, params);
+	}
+
 	/**
 	 * This method allows the developer to transfer hbars to an <b>account that's not a smart contract</b> through an
 	 * Ethereum transaction.

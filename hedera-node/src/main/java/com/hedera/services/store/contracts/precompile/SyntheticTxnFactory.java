@@ -26,9 +26,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -217,7 +217,7 @@ public class SyntheticTxnFactory {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
 					.setTokenId(approveWrapper.token())
 					.setSpender(approveWrapper.spender())
-					.setAmount(approveWrapper.amount().longValue())
+					.setAmount(approveWrapper.adjustment().longValue())
 					.build());
 		} else {
 			builder.addNftAllowances(NftAllowance.newBuilder()
