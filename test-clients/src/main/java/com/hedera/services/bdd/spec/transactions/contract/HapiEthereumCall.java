@@ -132,6 +132,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.usdFee = contractCall.getUsdFee();
         this.retryLimits = contractCall.getRetryLimits();
         this.resultObserver = contractCall.getResultObserver();
+        this.explicitHexedParams = contractCall.getExplicitHexedParams();
         if (contractCall.getValueSent().isPresent()) {
             this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
         }
