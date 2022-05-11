@@ -60,7 +60,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 						"txn.start.offset.secs", "-5")
 				)
 				.given(
-						sleepFor(Duration.ofSeconds(25).toMillis()),
+						sleepFor(Duration.ofSeconds(50).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.8")
 								.unavailableNode()

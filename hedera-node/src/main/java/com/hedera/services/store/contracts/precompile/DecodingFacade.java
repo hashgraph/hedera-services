@@ -56,6 +56,8 @@ public class DecodingFacade {
 	private static final String INT_OUTPUT = "(int)";
 	private static final String BOOL_OUTPUT = "(bool)";
 	private static final String STRING_OUTPUT = "(string)";
+	private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
+	public static final String UINT256_RAW_TYPE = "(uint256)";
 
 	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
 	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
@@ -104,7 +106,7 @@ public class DecodingFacade {
 	private static final Function ASSOCIATE_TOKEN_FUNCTION =
 			new Function("associateToken(address,address)", INT_OUTPUT);
 	private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function DISSOCIATE_TOKENS_FUNCTION =
 			new Function("dissociateTokens(address,address[])", INT_OUTPUT);
@@ -114,12 +116,12 @@ public class DecodingFacade {
 	private static final Function DISSOCIATE_TOKEN_FUNCTION =
 			new Function("dissociateToken(address,address)", INT_OUTPUT);
 	private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function TOKEN_URI_NFT_FUNCTION =
 			new Function("tokenURI(uint256)", STRING_OUTPUT);
 	private static final Bytes TOKEN_URI_NFT_SELECTOR = Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create("(uint256)");
+	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function BALANCE_OF_TOKEN_FUNCTION =
 			new Function("balanceOf(address)", INT_OUTPUT);
@@ -129,7 +131,7 @@ public class DecodingFacade {
 	private static final Function OWNER_OF_NFT_FUNCTION =
 			new Function("ownerOf(uint256)", INT_OUTPUT);
 	private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
-	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create("(uint256)");
+	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function ERC_TRANSFER_FUNCTION =
 			new Function("transfer(address,uint256)", BOOL_OUTPUT);
@@ -196,6 +198,31 @@ public class DecodingFacade {
 			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + "," + FIXED_FEE_DECODER + "[]," + ROYALTY_FEE_DECODER
 					+ "[])");
 
+	private static final Function TOKEN_ALLOWANCE_FUNCTION =
+			new Function("allowance(address,address)", INT_OUTPUT);
+	private static final Bytes TOKEN_ALLOWANCE_SELECTOR = Bytes.wrap(TOKEN_ALLOWANCE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+	private static final Function GET_APPROVED_FUNCTION =
+			new Function("getApproved(uint256)", INT_OUTPUT);
+	private static final Bytes GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(GET_APPROVED_FUNCTION.selector());
+	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
+
+	private static final Function IS_APPROVED_FOR_ALL =
+			new Function("isApprovedForAll(address,address)");
+	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
+	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+	private static final Function SET_APPROVAL_FOR_ALL =
+			new Function("setApprovalForAll(address,bool)");
+	private static final Bytes SET_APPROVAL_FOR_ALL_SELECTOR = Bytes.wrap(SET_APPROVAL_FOR_ALL.selector());
+	private static final ABIType<Tuple> SET_APPROVAL_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bool)");
+
+	private static final Function TOKEN_APPROVE_FUNCTION =
+			new Function("approve(address,uint256)", BOOL_OUTPUT);
+	private static final Bytes TOKEN_APPROVE_SELECTOR = Bytes.wrap(TOKEN_APPROVE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_APPROVE_DECODER = TypeFactory.create("(bytes32,uint256)");
+
 	@Inject
 	public DecodingFacade() {
 	}
@@ -254,7 +281,7 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeErcTransfer(final Bytes input, final TokenID token,
+	public List<TokenTransferWrapper> decodeERCTransfer(final Bytes input, final TokenID token,
 														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
@@ -305,6 +332,46 @@ public class DecodingFacade {
 		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
 	}
 
+	public GetApprovedWrapper decodeGetApproved(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, GET_APPROVED_FUNCTION_SELECTOR, GET_APPROVED_FUNCTION_DECODER);
+
+		final var tokenId = (BigInteger) decodedArguments.get(0);
+
+		return new GetApprovedWrapper(tokenId.longValue());
+	}
+
+	public TokenAllowanceWrapper decodeTokenAllowance(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_ALLOWANCE_SELECTOR, TOKEN_ALLOWANCE_DECODER);
+
+		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+
+		return new TokenAllowanceWrapper(owner, spender);
+	}
+
+	public ApproveWrapper decodeTokenApprove(final Bytes input, final TokenID token, final boolean isFungible, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_APPROVE_SELECTOR, TOKEN_APPROVE_DECODER);
+
+		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+
+		if (isFungible) {
+			final var amount = (BigInteger) decodedArguments.get(1);
+			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, BigInteger.ZERO, isFungible);
+		} else {
+			final var serialNumber = (BigInteger) decodedArguments.get(1);
+			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, BigInteger.ZERO, isFungible);
+		}
+	}
+
+	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, SET_APPROVAL_FOR_ALL_SELECTOR, SET_APPROVAL_FOR_ALL_DECODER);
+
+		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var approved = (boolean) decodedArguments.get(1);
+
+		return new SetApprovalForAllWrapper(to, approved);
+	}
+
 	public MintWrapper decodeMint(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 
@@ -331,6 +398,15 @@ public class DecodingFacade {
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES,
 				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenID, sender, receiver))));
+	}
+
+	public IsApproveForAllWrapper decodeIsApprovedForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, IS_APPROVED_FOR_ALL_SELECTOR, IS_APPROVED_FOR_ALL_DECODER);
+
+		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var operator = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+
+		return new IsApproveForAllWrapper(owner, operator);
 	}
 
 	public List<TokenTransferWrapper> decodeTransferTokens(

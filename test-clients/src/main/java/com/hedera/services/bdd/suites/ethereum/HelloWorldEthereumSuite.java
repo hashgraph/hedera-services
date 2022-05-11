@@ -36,11 +36,13 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -161,7 +163,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         sourcing(() -> getAccountBalance(maliciousEOAId.get())
                                 .hasTinyBars(spec -> amount -> (amount > maliciousStartBalance)
                                         ? Optional.of("Malicious EOA balance increased")
-                                        : Optional.empty()))
+                                        : Optional.empty())),
+                        getAliasedAccountInfo(maliciousEOA)
+                                .has(accountWith().nonce(1L))
                 );
     }
 
@@ -208,7 +212,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                         .senderId(spec.registry().getAccountID(
                                                                 spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias().toStringUtf8())))
-                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(2L))
                 );
     }
 
@@ -240,7 +246,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                         .senderId(spec.registry().getAccountID(
                                                                 spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias().toStringUtf8())))
-                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L))
                 );
     }
 
@@ -276,7 +284,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                         .senderId(spec.registry().getAccountID(
                                                                 spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias().toStringUtf8())))
-                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L))
                 );
     }
 
