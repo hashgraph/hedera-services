@@ -134,16 +134,17 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 	private ResponseCodeEnum hbarCheck(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
-			final Map<AccountProperty, Object> changeSet) {
+			final Map<AccountProperty, Object> changeSet
+	) {
 		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
 
+		final var expiry = (long) getEffective(EXPIRY, account, extantProps, changeSet);
 		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-		final var isDetached = dynamicProperties.shouldAutoRenewSomeEntityType() &&
-				balance == 0L &&
-				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
-		if (isDetached) {
+		final var isContract = (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
+		final var expiryStatus = validator.expiryStatusGiven(balance, expiry, isContract);
+		if (expiryStatus != OK) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 

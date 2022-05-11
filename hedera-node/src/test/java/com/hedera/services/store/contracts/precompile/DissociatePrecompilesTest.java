@@ -244,7 +244,7 @@ class DissociatePrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(
@@ -290,7 +290,7 @@ class DissociatePrecompilesTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);

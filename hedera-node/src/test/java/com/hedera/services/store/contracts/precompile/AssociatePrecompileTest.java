@@ -295,7 +295,7 @@ class AssociatePrecompileTest {
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -341,7 +341,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(true, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -380,7 +380,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -424,7 +424,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -468,7 +468,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false,
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);

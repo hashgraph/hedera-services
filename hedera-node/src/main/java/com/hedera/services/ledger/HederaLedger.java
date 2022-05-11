@@ -420,16 +420,7 @@ public class HederaLedger {
 	}
 
 	public boolean isDetached(final AccountID id) {
-		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
-			return false;
-		}
-		final var shouldAutoRenewThisType = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
-				? dynamicProperties.shouldAutoRenewContracts() : dynamicProperties.shouldAutoRenewAccounts();
-		if (!shouldAutoRenewThisType) {
-			return false;
-		}
-		return (long) accountsLedger.get(id, BALANCE) == 0L
-				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+		return validator.expiryStatusGiven(accountsLedger, id) != OK;
 	}
 
 	public JKey key(AccountID id) {

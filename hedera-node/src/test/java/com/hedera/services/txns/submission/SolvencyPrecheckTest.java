@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -30,8 +29,8 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -63,6 +62,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MIS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,9 +105,6 @@ class SolvencyPrecheckTest {
 					.build().toByteString())
 			.build());
 
-
-	private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
-
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -125,8 +123,7 @@ class SolvencyPrecheckTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SolvencyPrecheck(
-				feeExemptions, feeCalculator, validator, precheckVerifier,
-				() -> stateView, dynamicProperties, () -> accounts);
+				feeExemptions, feeCalculator, validator, precheckVerifier, () -> stateView, () -> accounts);
 	}
 
 	@Test
@@ -245,7 +242,8 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void refinesInsufficientPayerBalanceToDetachedResponseIfExpired() {
-		given(validator.isAfterConsensusSecond(insolventExpiry)).willReturn(false);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+				.willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 		givenInsolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
@@ -259,13 +257,12 @@ class SolvencyPrecheckTest {
 	}
 
 	@Test
-	void cannotBeDetachedIfAutorenewDisabled() {
+	void reportsIpbIfNotDetached() {
 		givenInsolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
-		// and:
-		dynamicProperties.disableAutoRenew();
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -276,11 +273,11 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void recognizesInTxnAdjustmentsDontCreateSolvency() {
-		given(validator.isAfterConsensusSecond(insolventExpiry)).willReturn(true);
 		givenInsolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -294,6 +291,7 @@ class SolvencyPrecheckTest {
 		givenSolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-payerBalance);
 
 		// when:

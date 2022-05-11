@@ -22,8 +22,8 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -179,10 +178,9 @@ public class QueryFeeCheck {
 		if (balance >= req) {
 			return OK;
 		} else {
-			final var isDetached = balance == 0
-					&& dynamicProperties.shouldAutoRenewSomeEntityType()
-					&& !validator.isAfterConsensusSecond(payingAccount.getExpiry());
-			return isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
+			final var expiryStatus = validator.expiryStatusGiven(
+					balance, payingAccount.getExpiry(), payingAccount.isSmartContract());
+			return (expiryStatus == OK) ? INSUFFICIENT_PAYER_BALANCE : expiryStatus;
 		}
 	}
 }

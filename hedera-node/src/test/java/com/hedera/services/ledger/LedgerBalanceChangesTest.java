@@ -76,12 +76,15 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
@@ -203,7 +206,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsDetachedAccount() {
 		givenInitialBalancesAndOwnership();
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(validator.expiryStatusGiven(any(), any())).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		// when:
 		subject.begin();
@@ -223,6 +226,7 @@ class LedgerBalanceChangesTest {
 		givenInitialBalancesAndOwnership();
 		// and:
 		backingAccounts.getRef(bModel).setDeleted(true);
+		givenUnexpiredEntities();
 
 		// when:
 		subject.begin();
@@ -262,6 +266,7 @@ class LedgerBalanceChangesTest {
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setMutableEntityAccess(mutableEntityAccess);
 		tokenStore.rebuildViews();
+		givenUnexpiredEntities();
 
 		givenInitialBalancesAndOwnership();
 
@@ -282,6 +287,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
 		givenInitialBalancesAndOwnership();
+		givenUnexpiredEntities();
 
 		// when:
 		subject.begin();
@@ -359,6 +365,7 @@ class LedgerBalanceChangesTest {
 			return Pair.of(OK, 100L);
 		});
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		subject.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(changes));
@@ -412,6 +419,11 @@ class LedgerBalanceChangesTest {
 		assertEquals(
 				bYetAnotherTokenBalance,
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
+	}
+
+	private void givenUnexpiredEntities() {
+		given(validator.expiryStatusGiven(eq(accountsLedger), any())).willReturn(OK);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 	}
 
 	private void givenInitialBalancesAndOwnership() {

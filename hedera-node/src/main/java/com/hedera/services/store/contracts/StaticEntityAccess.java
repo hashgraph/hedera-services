@@ -64,6 +64,7 @@ import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class StaticEntityAccess implements EntityAccess {
 	private final StateView view;
@@ -136,15 +137,9 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public boolean isDetached(AccountID id) {
-		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
-			return false;
-		}
-		final var account = accounts.get(fromAccountId(id));
-		Objects.requireNonNull(account);
-		return !account.isSmartContract()
-				&& account.getBalance() == 0
-				&& !validator.isAfterConsensusSecond(account.getExpiry());
+	public boolean isDetached(final AccountID id) {
+		final var account = Objects.requireNonNull(accounts.get(fromAccountId(id)));
+		return validator.expiryStatusGiven(account.getBalance(), account.getExpiry(), account.isSmartContract()) != OK;
 	}
 
 	@Override

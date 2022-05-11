@@ -84,7 +84,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),

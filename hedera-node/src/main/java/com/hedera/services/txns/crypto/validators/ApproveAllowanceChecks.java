@@ -97,7 +97,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
 		if (validity != OK) {
 			return validity;

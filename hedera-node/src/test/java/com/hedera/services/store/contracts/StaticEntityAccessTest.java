@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -64,9 +63,11 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYT
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -167,39 +168,22 @@ class StaticEntityAccessTest {
 	}
 
 	@Test
-	void notDetachedIfAutoRenewNotEnabled() {
-		assertFalse(subject.isDetached(id));
-	}
-
-	@Test
-	void notDetachedIfSmartContract() {
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
-		assertFalse(subject.isDetached(id));
-	}
-
-	@Test
-	void notDetachedIfNonZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+	void notDetachedIfOkStatus() {
+		given(validator.expiryStatusGiven(
+				someNonContractAccount.getBalance(),
+				someNonContractAccount.getExpiry(),
+				someNonContractAccount.isSmartContract())).willReturn(OK);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-		someNonContractAccount.setBalance(1L);
 		assertFalse(subject.isDetached(id));
 	}
 
 	@Test
-	void notDetachedIfNotExpired() throws NegativeAccountBalanceException {
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+	void detachedIfValidatorSaysSo() {
+		given(validator.expiryStatusGiven(
+				someNonContractAccount.getBalance(),
+				someNonContractAccount.getExpiry(),
+				someNonContractAccount.isSmartContract())).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-		someNonContractAccount.setBalance(0L);
-		given(validator.isAfterConsensusSecond(someNonContractAccount.getExpiry())).willReturn(true);
-		assertFalse(subject.isDetached(id));
-	}
-
-	@Test
-	void detachedIfExpiredWithZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-		someNonContractAccount.setBalance(0L);
 		assertTrue(subject.isDetached(id));
 	}
 
