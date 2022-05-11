@@ -24,13 +24,13 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
-public class ReleaseTwentySevenMigration {
-	private static final Logger log = LogManager.getLogger(ReleaseTwentySevenMigration.class);
+public final class ReleaseTwentySevenMigration {
+	private ReleaseTwentySevenMigration() {
+		throw new UnsupportedOperationException("Utility class");
+	}
 
 	public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook) {
 		MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
