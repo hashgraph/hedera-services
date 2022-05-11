@@ -138,12 +138,29 @@ public interface OptionValidator {
 		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
 	}
 
+
+	/**
+	 * Validates if the stakedNodeId or stakedAccountId is set in the CryptoCreate, CryptoUpdate, ContractCreate and
+	 * ContractUpdate operations.
+	 *
+	 * @param idCase
+	 * 		if stakedNodeId or stakedAccountId is set
+	 * @param stakedAccountId
+	 * 		given stakedAccountId
+	 * @param stakedNodeId
+	 * 		given stakedNodeId
+	 * @param accounts
+	 * 		accounts merkle map
+	 * @param nodeInfo
+	 * 		node info
+	 * @return true if valid, false otherwise
+	 */
 	default boolean isValidStakedId(
 			final String idCase,
 			final AccountID stakedAccountId,
 			final long stakedNodeId,
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
-			final NodeInfo nodeInfo){
+			final NodeInfo nodeInfo) {
 		return PureValidation.isValidStakedId(idCase, stakedAccountId, stakedNodeId, accounts, nodeInfo);
 	}
 }

@@ -147,6 +147,16 @@ public final class PureValidation {
 		}
 	}
 
+	/**
+	 * Validates if the stakedNodeId set in the CryptoCreate, CryptoUpdate, ContractCreate and ContractUpdate operations
+	 * is valid.
+	 *
+	 * @param nodeId
+	 * 		given node id
+	 * @param nodeInfo
+	 * 		nodeInfo object
+	 * @return true if valid, false otherwise
+	 */
 	private static boolean isValidNodeId(final long nodeId, final NodeInfo nodeInfo) {
 		try {
 			nodeInfo.accountOf(nodeId);

@@ -464,6 +464,14 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
+	/**
+	 * Builds {@link StakingInfo} object for the {@link com.hederahashgraph.api.proto.java.CryptoGetInfo} and
+	 * {@link com.hederahashgraph.api.proto.java.ContractGetInfo}
+	 *
+	 * @param account
+	 * 		given account for which info is queried
+	 * @return staking info
+	 */
 	public StakingInfo stakingInfo(final MerkleAccount account) {
 		// will be updated with pending_reward in future PR
 		final var stakingInfo = StakingInfo.newBuilder()
