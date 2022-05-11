@@ -24,6 +24,7 @@ import com.hedera.services.utils.EntityNum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -82,6 +83,29 @@ class MerkleStakingInfoTest {
 				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[1, 2]}";
 
 		assertEquals(expected, subject.toString());
+	}
+
+	@Test
+	void gettersAndSettersWork() {
+		var subject = new MerkleStakingInfo();
+
+		subject.setKey(EntityNum.fromInt(number));
+		subject.setMinStake(minStake);
+		subject.setMaxStake(maxStake);
+		subject.setStakeToReward(stakeToReward);
+		subject.setStakeToNotReward(stakeToNotReward);
+		subject.setStakeRewardStart(stakeRewardStart);
+		subject.setStake(stake);
+		subject.setRewardSumHistory(rewardSumHistory);
+
+		assertEquals(number, subject.getKey().intValue());
+		assertEquals(minStake, subject.getMinStake());
+		assertEquals(maxStake, subject.getMaxStake());
+		assertEquals(stakeToReward, subject.getStakeToReward());
+		assertEquals(stakeToNotReward, subject.getStakeToNotReward());
+		assertEquals(stakeRewardStart, subject.getStakeRewardStart());
+		assertEquals(stake, subject.getStake());
+		assertArrayEquals(rewardSumHistory, subject.getRewardSumHistory());
 	}
 
 }
