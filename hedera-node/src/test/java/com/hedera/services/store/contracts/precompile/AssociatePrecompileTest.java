@@ -198,8 +198,8 @@ class AssociatePrecompileTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

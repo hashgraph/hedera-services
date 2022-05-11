@@ -328,4 +328,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		});
 		return this;
 	}
+
+	public AccountInfoAsserts nonce(long nonce) {
+		registerProvider((spec, o) -> {
+			assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(),
+					"Bad nonce!");
+		});
+		return this;
+	}
 }

@@ -111,9 +111,7 @@ public class AccountStore {
 	 * 		if the requested contract is missing, deleted or is not smart contract
 	 */
 	public Account loadContract(Id id) {
-		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
-		validateTrue(account.isSmartContract(), INVALID_CONTRACT_ID);
-		return account;
+		return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
 	}
 
 	/**
@@ -160,12 +158,15 @@ public class AccountStore {
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
 		account.setAlias(merkleAccount.getAlias());
+		account.setEthereumNonce(merkleAccount.getEthereumNonce());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
 		account.setNumAssociations(merkleAccount.getNumAssociations());
 		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
+		account.setHeadNftId(merkleAccount.getHeadNftId());
+		account.setHeadNftSerialNum(merkleAccount.getHeadNftSerialNum());
 
 		return account;
 	}
@@ -198,12 +199,15 @@ public class AccountStore {
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
+		mutableAccount.setEthereumNonce(model.getEthereumNonce());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());
 		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());
+		mutableAccount.setHeadNftId(model.getHeadNftId());
+		mutableAccount.setHeadNftSerialNum(model.getHeadNftSerialNum());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

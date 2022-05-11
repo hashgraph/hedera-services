@@ -55,8 +55,9 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
-		  ]
+			"FileDelete",
+            "EthereumTransaction"
+          ]
 		},
 		{
 		  "opsPerSec": 3000,
@@ -92,8 +93,9 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
-		  ]
+			"FileDelete",
+            "EthereumTransaction"
+          ]
 		}
 	  ]
 	},

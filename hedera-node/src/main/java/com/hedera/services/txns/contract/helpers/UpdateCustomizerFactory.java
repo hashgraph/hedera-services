@@ -36,6 +36,7 @@ import java.util.Optional;
 
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -79,6 +80,13 @@ public class UpdateCustomizerFactory {
 		if (op.hasDeclineReward()) {
 			customizer.isDeclinedReward(op.getDeclineReward().getValue());
 		}
+		if (op.hasAutoRenewAccountId()) {
+			customizer.autoRenewAccount(fromGrpcAccountId(op.getAutoRenewAccountId()));
+		}
+		if (op.hasMaxAutomaticTokenAssociations()) {
+			customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
+		}
+
 		return Pair.of(Optional.of(customizer), OK);
 	}
 

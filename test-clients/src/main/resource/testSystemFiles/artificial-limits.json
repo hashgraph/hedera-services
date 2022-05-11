@@ -39,15 +39,16 @@
 		  ]
 		},
 		{
-		  "opsPerSec": 3,
-		  "operations": [
-			"ContractCall",
-			"ContractCreate",
-			"FileCreate",
-			"FileUpdate",
-			"FileAppend",
-			"FileDelete"
-		  ]
+		  "opsPerSec": 3, 
+          "operations": [
+            "ContractCall", 
+            "ContractCreate", 
+            "FileCreate",
+            "FileUpdate",
+            "FileAppend",
+            "FileDelete",
+            "EthereumTransaction"
+          ]
 		},
 		{
 		  "opsPerSec": 30,
@@ -84,7 +85,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+            "EthereumTransaction"
 		  ]
 		}
 	  ]

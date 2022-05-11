@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,11 +42,13 @@ import java.util.Map;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
@@ -102,10 +104,14 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, MEMO)).willReturn(memo);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+		given(ledger.get(sponsorId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociation);
+		given(ledger.get(sponsorId, STAKED_ID)).willReturn(stakedId);
+		given(ledger.get(sponsorId, DECLINE_REWARD)).willReturn(declineReward);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
-		assertCustomizesWithCryptoKey(subject);
+		assertCustomizesWithCryptoKey(subject, true);
 	}
 
 	@Test
@@ -116,6 +122,10 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, MEMO)).willReturn(memo);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+		given(ledger.get(sponsorId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociation);
+		given(ledger.get(sponsorId, STAKED_ID)).willReturn(stakedId);
+		given(ledger.get(sponsorId, DECLINE_REWARD)).willReturn(declineReward);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -127,6 +137,7 @@ class ContractCustomizerTest {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.setProxyAccountID(proxy.toGrpcAccountId())
+				.setMaxAutomaticTokenAssociations(10)
 				.setMemo(memo)
 				.build();
 
@@ -142,7 +153,7 @@ class ContractCustomizerTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.setProxyAccountID(proxy.toGrpcAccountId())
 				.setMemo(memo)
-				.setStakedAccountId(stakedId.toGrpcAccountId())
+				.setStakedAccountId(asAccount("0.0." + stakedId))
 				.setDeclineReward(true)
 				.build();
 
@@ -159,19 +170,19 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
 		verify(ledger).set(newContractId, DECLINE_REWARD, true);
-		verify(ledger).set(newContractId, STAKED_ID, stakedId.num());
+		verify(ledger).set(newContractId, STAKED_ID, stakedId);
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
 	}
 
 	@Test
-	void getStakedIdReturnsLatestSet(){
+	void getStakedIdReturnsLatestSet() {
 		var op = ContractCreateTransactionBody.newBuilder()
-				.setStakedAccountId(stakedId.toGrpcAccountId())
+				.setStakedAccountId(asAccount("0.0." + stakedId))
 				.setDeclineReward(true)
 				.build();
 
-		assertEquals(stakedId.num(), getStakedId(op.getStakedIdCase().name(),
+		assertEquals(stakedId, getStakedId(op.getStakedIdCase().name(),
 				op.getStakedAccountId(), op.getStakedNodeId()));
 
 		op = ContractCreateTransactionBody.newBuilder()
@@ -186,6 +197,7 @@ class ContractCustomizerTest {
 	void worksWithCryptoKeyAndNoExplicitProxy() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setMaxAutomaticTokenAssociations(10)
 				.setMemo(memo)
 				.build();
 
@@ -193,6 +205,37 @@ class ContractCustomizerTest {
 				cryptoAdminKey, consensusNow, op);
 
 		assertCustomizesWithCryptoKey(subject);
+	}
+
+	@Test
+	void worksWithAutoRenewAccount() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId())
+				.setMaxAutomaticTokenAssociations(10)
+				.setMemo(memo)
+				.build();
+
+		final var subject = ContractCustomizer.fromHapiCreation(
+				cryptoAdminKey, consensusNow, op);
+
+		assertCustomizesWithCryptoKey(subject);
+		verify(ledger).set(newContractId, AUTO_RENEW_ACCOUNT_ID, autoRenewAccount);
+	}
+
+	@Test
+	void worksWithAutoAssociationSlots() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setMaxAutomaticTokenAssociations(10)
+				.setMemo(memo)
+				.build();
+
+		final var subject = ContractCustomizer.fromHapiCreation(
+				cryptoAdminKey, consensusNow, op);
+
+		assertCustomizesWithCryptoKey(subject);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, 10);
 	}
 
 	@Test
@@ -248,6 +291,10 @@ class ContractCustomizerTest {
 	}
 
 	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject) {
+		assertCustomizesWithCryptoKey(subject, false);
+	}
+
+	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject, final boolean hasStakedId) {
 		final var captor = ArgumentCaptor.forClass(JKey.class);
 
 		subject.customize(newContractId, ledger);
@@ -257,6 +304,12 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, maxAutoAssociation);
+		if (hasStakedId) {
+			verify(ledger).set(newContractId, STAKED_ID, stakedId);
+			verify(ledger).set(newContractId, DECLINE_REWARD, declineReward);
+		}
+
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(cryptoAdminKey, keyUsed));
 	}
@@ -271,6 +324,7 @@ class ContractCustomizerTest {
 		verify(ledger).set(newContractId, EXPIRY, expiry);
 		verify(ledger).set(newContractId, IS_SMART_CONTRACT, true);
 		verify(ledger).set(newContractId, AUTO_RENEW_PERIOD, autoRenewPeriod);
+		verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, maxAutoAssociation);
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
 	}
@@ -285,5 +339,8 @@ class ContractCustomizerTest {
 	private static final Instant consensusNow = Instant.ofEpochSecond(expiry - autoRenewPeriod);
 	private static final String memo = "the grey rock";
 	private static final EntityId proxy = new EntityId(0, 0, 3);
-	private static final EntityId stakedId = new EntityId(0, 0, 2);
+	private static final long stakedId = 2;
+	private static final EntityId autoRenewAccount = new EntityId(0, 0, 4);
+	private static final int maxAutoAssociation = 10;
+	private static final boolean declineReward = false;
 }

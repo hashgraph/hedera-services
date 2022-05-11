@@ -35,8 +35,8 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

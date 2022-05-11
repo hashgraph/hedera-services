@@ -52,7 +52,7 @@ public class ServicesStateE2ETest {
 		loadSignedState(signedStateDir + "v0.25.3/SignedState.swh");
 	}
 
-	private static SignedState loadSignedState(String path) throws IOException {
+	private static SignedState loadSignedState(final String path) throws IOException {
 		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.getRight());

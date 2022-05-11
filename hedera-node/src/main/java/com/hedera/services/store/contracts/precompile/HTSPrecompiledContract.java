@@ -82,6 +82,7 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -118,7 +119,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -132,13 +132,18 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_NFT;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
@@ -289,7 +294,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Bytes APPROVAL_EVENT = Bytes.fromHexString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925");
 	//ApprovalForAll(address indexed owner, address indexed operator, bool approved)
 	private static final Bytes APPROVAL_FOR_ALL_EVENT = Bytes.fromHexString("17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31");
-
 
 	private int functionId;
 	private Precompile precompile;
@@ -644,7 +648,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
-							EvmFnResult.EMPTY);
+							EvmFnResult.EMPTY,
+					null);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -977,7 +982,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Validate Solidity input and massage it to be able to transform it to tokenCreateTxnBody --- */
 			verifySolidityInput();
 			try {
-				replaceInheritedKeysWithSenderKey();
+				replaceInheritedProperties();
 			} catch (DecoderException e) {
 				throw new InvalidTransactionException(FAIL_INVALID);
 			}
@@ -1102,9 +1107,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 		}
 
-		private void replaceInheritedKeysWithSenderKey() throws DecoderException {
-			tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(
-					EntityIdUtils.accountIdFromEvmAddress(senderAddress), AccountProperty.KEY));
+		private void replaceInheritedKeysWithSenderKey(AccountID parentId) throws DecoderException {
+			tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(parentId, AccountProperty.KEY));
+		}
+
+		private void replaceInheritedProperties() throws DecoderException {
+			final var parentId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+			final var parentAutoRenewId = (EntityId) ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID);
+			if (!MISSING_ENTITY_ID.equals(parentAutoRenewId) && !tokenCreateOp.hasAutoRenewAccount()) {
+				tokenCreateOp.inheritAutoRenewAccount(parentAutoRenewId);
+			}
+			replaceInheritedKeysWithSenderKey(parentId);
 		}
 
 		private boolean validateAdminKey(
@@ -1663,13 +1676,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			final var allowance = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
+			final var allowances = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
 			long value = 0;
-			for (Map.Entry<FcTokenAllowanceId, Long> e : allowance.entrySet()) {
-				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue() &&
-						tokenId.getTokenNum() == e.getKey().getTokenNum().longValue()) {
-					value = e.getValue();
-				}
+			final var fcTokenAllowanceId =
+					FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(allowanceWrapper.spender()));
+			if (allowances.containsKey(fcTokenAllowanceId)) {
+				value = allowances.get(fcTokenAllowanceId);
 			}
 			return encoder.encodeAllowance(value);
 		}
@@ -1687,20 +1699,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-			final var fungibleTokenAllowances = (Map<FcTokenAllowanceId, Long>) ledgers.accounts().get(accountId, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES);
-
 			final var nestedInput = input.slice(24);
 			approveOp = decoder.decodeTokenApprove(nestedInput, token, isFungible, aliasResolver);
 
 			if (isFungible) {
-				long value = 0;
-				for (Map.Entry<FcTokenAllowanceId, Long> e : fungibleTokenAllowances.entrySet()) {
-					if (approveOp.spender().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
-						value = e.getValue();
-					}
-				}
-				return syntheticTxnFactory.createApproveAllowance(approveOp.withAdjustment(approveOp.amount().subtract(BigInteger.valueOf(value))));
+				return syntheticTxnFactory.createApproveAllowance(approveOp);
 			} else {
 				if (approveOp.spender().getAccountNum() == 0) {
 					var nftId = new NftId(token.getShardNum(), token.getRealmNum(), token.getTokenNum(), approveOp.serialNumber().longValue());
@@ -1729,9 +1732,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						payerAccount,
 						currentView);
 
-				if (!OK.equals(checkResponseCode)) {
-					throw new InvalidTransactionException(checkResponseCode);
-				}
+				validateTrue(checkResponseCode == OK, checkResponseCode);
 
 				final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
 						accountStore, tokenStore, dynamicProperties);
@@ -1767,7 +1768,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
+			Objects.requireNonNull(approveOp);
+
+			if (approveOp.isFungible()) {
+				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_FUNGIBLE, consensusTime);
+			} else {
+				if (approveOp.spender().getAccountNum() == 0) {
+					return precompilePricingUtils.getMinimumPriceInTinybars(DELETE_NFT_APPROVE, consensusTime);
+				}
+				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
+			}
 		}
 
 		@Override
@@ -1842,7 +1852,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
+			return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
 		}
 
 		private Log getLogForSetApprovalForAll(final Address logger) {

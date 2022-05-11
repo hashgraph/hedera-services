@@ -22,7 +22,7 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 

@@ -20,7 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 

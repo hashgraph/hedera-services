@@ -30,7 +30,7 @@ import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -65,7 +65,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 	@Mock
-	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 
 	final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
@@ -85,7 +85,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
-		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,

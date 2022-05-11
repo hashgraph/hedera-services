@@ -124,8 +124,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -420,7 +420,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -471,7 +470,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER_0);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -522,7 +520,6 @@ class ERC721PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
                 APPROVE_WRAPPER);
-        given(accounts.get(any(), any())).willReturn(allowances);
 
         // when:
         subject.prepareFields(frame);

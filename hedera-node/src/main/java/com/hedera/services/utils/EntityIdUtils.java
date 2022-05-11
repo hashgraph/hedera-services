@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,6 +52,7 @@ import static java.lang.System.arraycopy;
 
 public final class EntityIdUtils {
 	public static final int EVM_ADDRESS_SIZE = 20;
+	public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 	private static final Pattern ENTITY_NUM_RANGE_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
@@ -192,7 +193,11 @@ public final class EntityIdUtils {
 	}
 
 	public static byte[] asEvmAddress(final ContractID id) {
-		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
+			return id.getEvmAddress().toByteArray();
+		} else {
+			return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		}
 	}
 
 	public static byte[] asEvmAddress(final AccountID id) {

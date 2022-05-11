@@ -22,7 +22,10 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.EntityId;
@@ -31,6 +34,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -60,10 +64,12 @@ import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
@@ -72,9 +78,54 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class SyntheticTxnFactory {
+	protected static final byte[] MOCK_INITCODE = new byte[32];
+	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+
+	private final GlobalDynamicProperties dynamicProperties;
+
 	@Inject
-	public SyntheticTxnFactory() {
-		// For Dagger2
+	public SyntheticTxnFactory(final GlobalDynamicProperties dynamicProperties) {
+		this.dynamicProperties = dynamicProperties;
+	}
+
+	/**
+	 * Given an instance of {@link EthTxData} populated from a raw Ethereum transaction, synthesizes a
+	 * {@link TransactionBody} for use during precheck. In the case of a {@code ContractCreate}, if the
+	 * call data is missing, replaces it with dummy initcode (it is not the job of precheck to look up
+	 * initcode from a file).
+	 *
+	 * @param ethTxData the Ethereum transaction data available in precheck
+	 * @return the pre-checkable HAPI transaction
+	 */
+	public TransactionBody synthPrecheckContractOpFromEth(EthTxData ethTxData) {
+		if (ethTxData.hasToAddress()) {
+			return synthCallOpFromEth(ethTxData).build();
+		} else {
+			if (!ethTxData.hasCallData()) {
+				ethTxData = ethTxData.replaceCallData(MOCK_INITCODE);
+			}
+			return synthCreateOpFromEth(ethTxData).build();
+		}
+	}
+
+	/**
+	 * Given an instance of {@link EthTxData} populated from a raw Ethereum transaction, tries to
+	 * synthesize a builder for an appropriate HAPI TransactionBody---ContractCall if the given
+	 * {@code ethTxData} has a "to" address, and ContractCreate otherwise.
+	 *
+	 * @param ethTxData the populated Ethereum transaction data
+	 * @return an optional of the HAPI transaction builder if it could be synthesized
+	 */
+	public Optional<TransactionBody.Builder> synthContractOpFromEth(final EthTxData ethTxData) {
+		if (ethTxData.hasToAddress()) {
+			return Optional.of(synthCallOpFromEth(ethTxData));
+		} else {
+			// We can only synthesize a ContractCreate given initcode populated into the EthTxData callData field
+			if (!ethTxData.hasCallData()) {
+				return Optional.empty();
+			}
+			return Optional.of(synthCreateOpFromEth(ethTxData));
+		}
 	}
 
 	public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
@@ -94,12 +145,13 @@ public class SyntheticTxnFactory {
 				.setCryptoDelete(op);
 	}
 
-	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry) {
+	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry,
+			final AccountID payerForAutoRenew) {
 		final var op = ContractUpdateTransactionBody.newBuilder()
 				.setContractID(contractNum.toGrpcContractID())
 				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
 				.setContractUpdateInstance(op);
 	}
 
@@ -115,7 +167,9 @@ public class SyntheticTxnFactory {
 
 	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
+
 		customizer.customizeSynthetic(builder);
+
 		return TransactionBody.newBuilder().setContractCreateInstance(builder);
 	}
 
@@ -163,7 +217,7 @@ public class SyntheticTxnFactory {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
 					.setTokenId(approveWrapper.token())
 					.setSpender(approveWrapper.spender())
-					.setAmount(approveWrapper.adjustment().longValue())
+					.setAmount(approveWrapper.amount().longValue())
 					.build());
 		} else {
 			builder.addNftAllowances(NftAllowance.newBuilder()
@@ -258,7 +312,8 @@ public class SyntheticTxnFactory {
 		txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
 		txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
 		txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
-		txnBodyBuilder.setSupplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+		txnBodyBuilder.setSupplyType(
+				tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
 		txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
 		txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
 		if (tokenCreateWrapper.getTreasury() != null)
@@ -270,7 +325,8 @@ public class SyntheticTxnFactory {
 		if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null)
 			txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
 		if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0)
-			txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+			txnBodyBuilder.setAutoRenewPeriod(
+					Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
 		tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
 			final var key = tokenKeyWrapper.key().asGrpc();
 			if (tokenKeyWrapper.isUsedForAdminKey()) txnBodyBuilder.setAdminKey(key);
@@ -428,5 +484,28 @@ public class SyntheticTxnFactory {
 		return a.getSerialNumber() == b.getSerialNumber()
 				&& a.getSenderAccountID().equals(b.getSenderAccountID())
 				&& a.getReceiverAccountID().equals(b.getReceiverAccountID());
+	}
+
+	private TransactionBody.Builder synthCreateOpFromEth(final EthTxData ethTxData) {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setGas(ethTxData.gasLimit())
+				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+				.setAutoRenewPeriod(dynamicProperties.typedMinAutoRenewDuration())
+				.setInitcode(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
+		return TransactionBody.newBuilder().setContractCreateInstance(op);
+	}
+
+	private TransactionBody.Builder synthCallOpFromEth(final EthTxData ethTxData) {
+		final var targetId = ContractID.newBuilder()
+				.setEvmAddress(ByteStringUtils.wrapUnsafely(ethTxData.to()))
+				.build();
+		final var op = ContractCallTransactionBody.newBuilder()
+				.setGas(ethTxData.gasLimit())
+				.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+				.setContractID(targetId);
+		if (ethTxData.hasCallData()) {
+			op.setFunctionParameters(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
+		}
+		return TransactionBody.newBuilder().setContractCall(op);
 	}
 }

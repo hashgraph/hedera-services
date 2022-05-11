@@ -22,9 +22,9 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.io.MerkleDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

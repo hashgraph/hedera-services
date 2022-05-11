@@ -73,7 +73,7 @@ class AccountStoreTest {
 		setupAccounts();
 
 		subject = new AccountStore(validator, dynamicProperties, accounts);
-	}
+	} 
 
 	@Test
 	void objectContractWorks() {
@@ -102,7 +102,6 @@ class AccountStoreTest {
 	@Test
 	void failsLoadingContractWithInvalidId() {
 		miscMerkleAccount.setSmartContract(false);
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		TxnUtils.assertFailsWith(() -> subject.loadContract(miscId), INVALID_CONTRACT_ID);
 	}
 

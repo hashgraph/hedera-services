@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -63,6 +64,8 @@ import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -70,6 +73,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class WorldLedgers {
+	public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] { 0x3a, 0x21 });
+
 	private final ContractAliases aliases;
 	private final StaticEntityAccess staticEntityAccess;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -195,10 +200,16 @@ public class WorldLedgers {
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
-		} else {
-			return address;
+			if (alias.size() == EVM_ADDRESS_SIZE) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+				byte[] value = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				if (value != null) {
+					return Address.wrap(Bytes.wrap(value));
+				}
+			}
 		}
+		return address;
 	}
 
 	public void commit() {

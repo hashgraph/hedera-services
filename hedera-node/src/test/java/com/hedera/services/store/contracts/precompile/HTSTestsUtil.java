@@ -308,7 +308,7 @@ public class HTSTestsUtil {
 				5054L,
 				false,
 				keys,
-				new TokenCreateWrapper.TokenExpiryWrapper(442L, payer, 555L)
+				new TokenExpiryWrapper(442L, payer, 555L)
 		);
 	}
 
@@ -327,7 +327,7 @@ public class HTSTestsUtil {
 				5054L,
 				true,
 				keys,
-				new TokenCreateWrapper.TokenExpiryWrapper(0L, null, 0L)
+				new TokenExpiryWrapper(0L, null, 0L)
 		);
 	}
 

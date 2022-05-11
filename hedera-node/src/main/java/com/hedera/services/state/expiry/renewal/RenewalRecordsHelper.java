@@ -92,23 +92,25 @@ public class RenewalRecordsHelper {
 			final EntityNum entityNum,
 			final long fee,
 			final long newExpiry,
-			final boolean isContract
+			final boolean isContract,
+			final EntityNum payerForAutoRenew
 	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = entityNum.toGrpcAccountId();
+		final var payerId = payerForAutoRenew.toGrpcAccountId();
 		final var memo = (isContract ? "Contract " : "Account ") +
 				entityNum.toIdString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";
 		final var synthBody = isContract
-				? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
+				? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry, payerId)
 				: syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
 		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
-				.setHbarAdjustments(feeXfers(fee, grpcId))
+				.setHbarAdjustments(feeXfers(fee, payerId))
 				.setFee(fee)
 				.build();
 		stream(expirableTxnRecord, synthBody, eventTime);
@@ -120,7 +122,7 @@ public class RenewalRecordsHelper {
 			final Instant at
 	) {
 		final var rso = new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
-		recordStreaming.stream(rso);
+		recordStreaming.streamSystemRecord(rso);
 	}
 
 	public void endRenewalCycle() {

@@ -29,6 +29,8 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.util.Base64;
 
+import static com.swirlds.common.utility.CommonUtils.hex;
+
 /**
  * Common utilities.
  */
@@ -71,8 +73,9 @@ public class CommonUtils {
 		copyArray(4, solidityByteArray, realmNumBytes);
 		byte[] accountNumBytes = Longs.toByteArray(accountNum);
 		copyArray(12, solidityByteArray, accountNumBytes);
-		return com.swirlds.common.CommonUtils.hex(solidityByteArray);
+		return hex(solidityByteArray);
 	}
+
 	private static void copyArray(int startInToArray, byte[] toArray, byte[] fromArray) {
 		if (fromArray == null || toArray == null) {
 			return;

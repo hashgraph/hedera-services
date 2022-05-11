@@ -210,6 +210,7 @@ public final class BootstrapProperties implements PropertySource {
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultLifetime",
+			"contracts.knownBlockHash",
 			"contracts.localCall.estRetBytes",
 			"contracts.allowCreate2",
 			"contracts.maxGas",
@@ -233,6 +234,8 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.transaction.maxValidDuration",
 			"hedera.transaction.minValidDuration",
 			"hedera.transaction.minValidityBufferSecs",
+			"autoRemove.maxPurgedKvPairsPerTouch",
+			"autoRemove.maxReturnedNftsPerTouch",
 			"autoRenew.targetTypes",
 			"autorenew.numberOfEntitiesToScan",
 			"autorenew.maxNumberOfEntitiesToRenewOrDelete",
@@ -273,7 +276,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.allowances.maxTransactionLimit",
 			"hedera.allowances.maxAccountLimit",
 			"hedera.allowances.isEnabled",
-			"accounts.limitTokenAssociations"
+			"entities.limitTokenAssociations"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -366,6 +369,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.transaction.minValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidityBufferSecs", AS_INT),
 			entry("autoCreation.enabled", AS_BOOLEAN),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", AS_INT),
+			entry("autoRemove.maxReturnedNftsPerTouch", AS_INT),
 			entry("autoRenew.targetTypes", AS_ENTITY_TYPES),
 			entry("autorenew.numberOfEntitiesToScan", AS_INT),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", AS_INT),
@@ -422,6 +427,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
+			entry("contracts.knownBlockHash", AS_KNOWN_BLOCK_VALUES),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.allowCreate2", AS_BOOLEAN),
 			entry("contracts.defaultLifetime", AS_LONG),
@@ -452,6 +458,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
-			entry("accounts.limitTokenAssociations", AS_BOOLEAN)
+			entry("entities.limitTokenAssociations", AS_BOOLEAN)
 	);
 }

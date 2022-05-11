@@ -282,13 +282,14 @@ public class SideEffectsTracker {
 	 * 		Reward amount.
 	 */
 	public void trackRewardPayment(final long accountNum, final long amount) {
-		if (rewardAmounts.length == 0 || rewardedAccounts.length == 0) {
-			rewardAmounts = new long[BALANCE_CHANGES_LENGTH];
-			rewardedAccounts = new long[BALANCE_CHANGES_LENGTH];
+		if (amount != 0) {
+			if (rewardAmounts.length == 0 || rewardedAccounts.length == 0) {
+				rewardAmounts = new long[BALANCE_CHANGES_LENGTH];
+				rewardedAccounts = new long[BALANCE_CHANGES_LENGTH];
+			}
+			numRewardedAccounts = includeOrderedFungibleChange(
+					rewardedAccounts, rewardAmounts, numRewardedAccounts, accountNum, amount);
 		}
-		rewardedAccounts[numRewardedAccounts] = accountNum;
-		rewardAmounts[numRewardedAccounts] = amount;
-		numRewardedAccounts++;
 	}
 
 	/**
@@ -389,8 +390,6 @@ public class SideEffectsTracker {
 	}
 
 	public CurrencyAdjustments getStakingRewardsPaid() {
-		numRewardedAccounts = purgeZeroChanges(rewardedAccounts, rewardAmounts, numRewardedAccounts);
-
 		final long[] rewards = Arrays.copyOfRange(rewardAmounts, 0, numRewardedAccounts);
 		final long[] accounts = Arrays.copyOfRange(rewardedAccounts, 0, numRewardedAccounts);
 		return CurrencyAdjustments.fromChanges(rewards, accounts);

@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.removeFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.inPlaceRemoveFromMapValueList;
 
 @Singleton
 public class TokenRelsLinkManager {
@@ -77,7 +77,7 @@ public class TokenRelsLinkManager {
 		if (rootKey != null && dissociatedTokenNums != null) {
 			for (final var tokenNum : dissociatedTokenNums) {
 				final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
-				rootKey = removeFromMapValueList(tbdKey, rootKey, listMutation);
+				rootKey = inPlaceRemoveFromMapValueList(tbdKey, rootKey, listMutation);
 			}
 		}
 		if (newTokenRels != null) {
@@ -85,7 +85,7 @@ public class TokenRelsLinkManager {
 			for (final var newRel : newTokenRels) {
 				final var literalTokenNum = newRel.getRelatedTokenNum();
 				final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
-				rootKey = inPlaceInsertAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
+				rootKey = inPlaceInsertAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation, true);
 				rootRel = newRel;
 			}
 		}

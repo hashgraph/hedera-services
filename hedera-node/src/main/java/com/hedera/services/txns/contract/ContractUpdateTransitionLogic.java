@@ -22,9 +22,12 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
@@ -44,11 +47,13 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateTransitionLogic implements TransitionLogic {
@@ -61,6 +66,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+	private final GlobalDynamicProperties properties;
 	private final NodeInfo nodeInfo;
 
 	public ContractUpdateTransitionLogic(
@@ -71,6 +77,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final UpdateCustomizerFactory customizerFactory,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+			final GlobalDynamicProperties properties,
 			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
@@ -80,6 +87,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		this.contracts = contracts;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.customizerFactory = customizerFactory;
+		this.properties = properties;
 		this.nodeInfo = nodeInfo;
 	}
 
@@ -94,6 +102,12 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			var result = customizerFactory.customizerFor(target, validator, op);
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
+				final var validity = sanityCheckAutoAssociations(id, customizer.get());
+				if (validity != OK) {
+					txnCtx.setStatus(validity);
+					return;
+				}
+
 				ledger.customize(id.toGrpcAccountId(), customizer.get());
 				sigImpactHistorian.markEntityChanged(id.longValue());
 				if (target.hasAlias()) {
@@ -108,6 +122,20 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
+	}
+
+	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target, final HederaAccountCustomizer customizer) {
+		final var changes = customizer.getChanges();
+		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+			if (newMax < ledger.alreadyUsedAutomaticAssociations(target.toGrpcAccountId())) {
+				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+			}
+			if (properties.areTokenAssociationsLimited() && newMax > properties.maxTokensPerAccount()) {
+				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+			}
+		}
+		return OK;
 	}
 
 	@Override

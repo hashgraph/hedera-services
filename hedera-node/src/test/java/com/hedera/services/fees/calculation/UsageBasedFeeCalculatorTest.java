@@ -51,6 +51,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -79,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -184,10 +186,10 @@ class UsageBasedFeeCalculatorTest {
 		// setup:
 		final var expected = new RenewAssessment(456L, 123L);
 
-		given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any())).willReturn(expected);
+		given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any(), any())).willReturn(expected);
 
 		// when:
-		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L));
+		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L), new MerkleAccount());
 
 		// then:
 		assertSame(expected, actual);
@@ -213,6 +215,24 @@ class UsageBasedFeeCalculatorTest {
 
 		// expect:
 		assertEquals(-(gas * expectedGasPrice + sent), subject.estimatedNonFeePayerAdjustments(accessor, at));
+	}
+
+	@Test
+	void estimatesEthereumTransactionChanges() throws Throwable {
+		// setup:
+		long gas = 1_234L, sent = 5_432L;
+		signedTxn = newSignedContractCall()
+				.payer(asAccountString(payer))
+				.gas(gas)
+				.sending(sent)
+				.txnValidStart(at)
+				.get();
+		accessor = Mockito.spy(new SignedTxnAccessor(signedTxn));
+
+		given(accessor.getFunction()).willReturn(EthereumTransaction);
+
+		// expect:
+		assertEquals(0, subject.estimatedNonFeePayerAdjustments(accessor, at));
 	}
 
 	@Test

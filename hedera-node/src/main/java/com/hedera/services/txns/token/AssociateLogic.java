@@ -54,10 +54,10 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		final var modifiedTokenRelationships = account.associateWith(
+		final var newTokenRelationships = account.associateWith(
 				tokens, tokenStore, false, false, dynamicProperties);
 
 		accountStore.commitAccount(account);
-		tokenStore.commitTokenRelationships(modifiedTokenRelationships);
+		tokenStore.commitTokenRelationships(newTokenRelationships);
 	}
 }

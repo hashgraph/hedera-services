@@ -57,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
 
-	private static final String associationsLimitProperty = "accounts.limitTokenAssociations";
+	private static final String associationsLimitProperty = "entities.limitTokenAssociations";
 	private static final String defaultAssociationsLimit =
 			HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 

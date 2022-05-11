@@ -26,7 +26,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.utility.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
@@ -35,7 +36,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,14 +67,14 @@ class JKeySerializerTest {
 
 	@Test
 	void throwsAsExpectedWhenDeserializingLegacyVersions() throws IOException {
-		final var in = mock(DataInputStream.class);
+		final var in = mock(SerializableDataInputStream.class);
 		given(in.readLong()).willReturn(1L);
 		assertThrows(IllegalArgumentException.class, () -> JKeySerializer.deserialize(in));
 	}
 
 	@Test
 	void throwsAsExpectedWhenDeserializingIllegalKeyType() throws IOException {
-		final var in = mock(DataInputStream.class);
+		final var in = mock(SerializableDataInputStream.class);
 		given(in.readLong()).willReturn(2L);
 		assertThrows(IllegalStateException.class, () -> JKeySerializer.deserialize(in));
 	}
@@ -88,7 +88,7 @@ class JKeySerializerTest {
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JECDSA_384Key result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JECDSA_384Key result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
 		assertArrayEquals(subject.getECDSA384(), result.getECDSA384());
 	}
 
@@ -100,7 +100,7 @@ class JKeySerializerTest {
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
@@ -112,7 +112,7 @@ class JKeySerializerTest {
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
@@ -126,7 +126,7 @@ class JKeySerializerTest {
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JContractAliasKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JContractAliasKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
@@ -140,7 +140,7 @@ class JKeySerializerTest {
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JDelegatableContractAliasKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JDelegatableContractAliasKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
@@ -398,7 +398,7 @@ class JKeySerializerTest {
 		// Now take the bytearray and build it back
 
 		try (final var in = new ByteArrayInputStream(serializedThresholdKey);
-			 final var dis = new DataInputStream(in)
+			 final var dis = new SerializableDataInputStream(in)
 		) {
 			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
 			assertAll("JKeyRebornChecks1",
@@ -432,7 +432,7 @@ class JKeySerializerTest {
 		assertNotNull(serializedJKey);
 
 		try (final var in = new ByteArrayInputStream(serializedJKey);
-			 final var dis = new DataInputStream(in)
+			 final var dis = new SerializableDataInputStream(in)
 		) {
 			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
 			//Write Assertions Here
@@ -472,7 +472,7 @@ class JKeySerializerTest {
 		byte[] serializedJKey = jkey.serialize();
 
 		try (final var in = new ByteArrayInputStream(serializedJKey);
-			 final var dis = new DataInputStream(in)
+			 final var dis = new SerializableDataInputStream(in)
 		) {
 			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
 			//Write Top Assertions Here
@@ -503,7 +503,7 @@ class JKeySerializerTest {
 		}
 
 		try (final var in = new ByteArrayInputStream(serializedJKey);
-			 final var dis = new DataInputStream(in)
+			 final var dis = new SerializableDataInputStream(in)
 		) {
 			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
 			assertAll("JKeyRebornChecks-Top Level",

@@ -22,6 +22,8 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
@@ -30,11 +32,14 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,30 +61,177 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiv
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
+import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
+import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
-	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
-
+	@Mock
+	private EthTxData ethTxData;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+
+	private SyntheticTxnFactory subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new SyntheticTxnFactory(dynamicProperties);
+	}
+
+	@Test
+	void synthesizesPrecheckCallFromEthDataWithFnParams() {
+		given(ethTxData.hasToAddress()).willReturn(true);
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(ethTxData.to()).willReturn(addressTo);
+		final var expectedId = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+				.build();
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCall());
+		final var op = synthBody.getContractCall();
+		assertArrayEquals(callData, op.getFunctionParameters().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getAmount());
+		assertEquals(expectedId, op.getContractID());
+	}
+
+	@Test
+	void synthesizesCallFromEthDataWithFnParams() {
+		given(ethTxData.hasToAddress()).willReturn(true);
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(ethTxData.to()).willReturn(addressTo);
+		final var expectedId = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+				.build();
+
+		final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
+		assertTrue(optSynthBody.isPresent());
+		final var synthBody = optSynthBody.get().build();
+
+		assertTrue(synthBody.hasContractCall());
+		final var op = synthBody.getContractCall();
+		assertArrayEquals(callData, op.getFunctionParameters().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getAmount());
+		assertEquals(expectedId, op.getContractID());
+	}
+
+	@Test
+	void synthesizesCallFromEthDataWithNoFnParams() {
+		given(ethTxData.hasToAddress()).willReturn(true);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(ethTxData.to()).willReturn(addressTo);
+		final var expectedId = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+				.build();
+
+		final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
+		assertTrue(optSynthBody.isPresent());
+		final var synthBody = optSynthBody.get().build();
+
+		assertTrue(synthBody.hasContractCall());
+		final var op = synthBody.getContractCall();
+		assertTrue(op.getFunctionParameters().isEmpty());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getAmount());
+		assertEquals(expectedId, op.getContractID());
+	}
+
+	@Test
+	void requiresCreateFromEthDataToHaveInitcode() {
+		final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
+
+		assertTrue(optSynthBody.isEmpty());
+	}
+
+	@Test
+	void synthesizesCreateFromEthDataWithInitcode() {
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
+
+		final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
+
+		assertTrue(optSynthBody.isPresent());
+		final var synthBody = optSynthBody.get().build();
+
+		assertTrue(synthBody.hasContractCreateInstance());
+		final var op = synthBody.getContractCreateInstance();
+		assertArrayEquals(callData, op.getInitcode().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getInitialBalance());
+		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());
+	}
+
+	@Test
+	void synthesizesPrecheckCreateFromEthDataWithInitcode() {
+		given(ethTxData.hasCallData()).willReturn(true);
+		given(ethTxData.callData()).willReturn(callData);
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCreateInstance());
+		final var op = synthBody.getContractCreateInstance();
+		assertArrayEquals(callData, op.getInitcode().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getInitialBalance());
+		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());
+	}
+
+	@Test
+	void synthesizesPrecheckCreateFromEthDataWithoutInitcode() {
+		given(ethTxData.gasLimit()).willReturn(gasLimit);
+		given(ethTxData.value()).willReturn(value);
+		given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
+		given(ethTxData.replaceCallData(MOCK_INITCODE)).willReturn(ethTxData);
+		given(ethTxData.callData()).willReturn(MOCK_INITCODE);
+
+		final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
+
+		assertTrue(synthBody.hasContractCreateInstance());
+		final var op = synthBody.getContractCreateInstance();
+		assertArrayEquals(SyntheticTxnFactory.MOCK_INITCODE, op.getInitcode().toByteArray());
+		assertEquals(gasLimit, op.getGas());
+		assertEquals(valueInTinyBars, op.getInitialBalance());
+		assertEquals(autoRenewPeriod, op.getAutoRenewPeriod());
+	}
 
 	@Test
 	void synthesizesExpectedContractAutoRenew() {
-		final var result = subject.synthContractAutoRenew(contractNum, newExpiry);
+		final var result = subject.synthContractAutoRenew(
+				contractNum, newExpiry, autoRenewAccountNum.toGrpcAccountId());
 		final var synthBody = result.build();
 
 		assertTrue(result.hasContractUpdateInstance());
 		final var op = synthBody.getContractUpdateInstance();
 		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
-		assertEquals(contractNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
+		assertEquals(autoRenewAccountNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
 		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
 	}
 
@@ -121,6 +273,7 @@ class SyntheticTxnFactoryTest {
 		final var result = subject.contractCreation(customizer);
 		verify(customizer).customizeSynthetic(any());
 		assertTrue(result.hasContractCreateInstance());
+		assertFalse(result.getContractCreateInstance().hasAutoRenewAccountId());
 	}
 
 	@Test
@@ -557,6 +710,7 @@ class SyntheticTxnFactoryTest {
 	private static final long newExpiry = 1_234_567L;
 	private final EntityNum contractNum = EntityNum.fromLong(666);
 	private final EntityNum accountNum = EntityNum.fromLong(1234);
+	private final EntityNum autoRenewAccountNum = EntityNum.fromLong(999);
 	private static final AccountID a = IdUtils.asAccount("0.0.2");
 	private static final AccountID b = IdUtils.asAccount("0.0.3");
 	private static final AccountID c = IdUtils.asAccount("0.0.4");
@@ -565,4 +719,10 @@ class SyntheticTxnFactoryTest {
 	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
+	private static final long valueInTinyBars = 123;
+	private static final BigInteger value = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(valueInTinyBars));
+	private static final long gasLimit = 123;
+	private static final byte[] callData = "Between the idea and the reality".getBytes();
+	private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Duration autoRenewPeriod = Duration.newBuilder().setSeconds(1_234_567).build();
 }

@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
@@ -75,6 +76,8 @@ public class SystemOpPolicies {
 		functionPolicies.put(SystemUndelete, this::checkSystemUndelete);
 
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
+
+		functionPolicies.put(EthereumTransaction, this::checkEthereumTransaction);
 	}
 
 	public SystemOpAuthorization checkAccessor(final TxnAccessor accessor) {
@@ -89,6 +92,11 @@ public class SystemOpPolicies {
 
 	private SystemOpAuthorization checkUncheckedSubmit(final TransactionBody txn) {
 		return entityNums.accounts().isSuperuser(payerFor(txn)) ? AUTHORIZED : UNAUTHORIZED;
+	}
+
+	private SystemOpAuthorization checkEthereumTransaction(final TransactionBody txn) {
+		// Apply more fine-tuned logic
+		return UNNECESSARY;
 	}
 
 	private SystemOpAuthorization checkSystemUndelete(final TransactionBody txn) {

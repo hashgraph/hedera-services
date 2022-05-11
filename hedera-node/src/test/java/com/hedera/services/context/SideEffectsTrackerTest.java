@@ -133,7 +133,7 @@ class SideEffectsTrackerTest {
 				new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
 
 		subject.trackAutoAssociation(aToken, aAccount);
-		subject.trackExplicitAutoAssociation(expected.get(1));
+		subject.trackAutoAssociation(bToken, bAccount);
 
 		assertEquals(expected, subject.getTrackedAutoAssociations());
 		assertNotSame(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());

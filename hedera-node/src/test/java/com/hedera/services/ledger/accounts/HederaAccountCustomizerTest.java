@@ -23,6 +23,7 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -62,13 +63,16 @@ class HederaAccountCustomizerTest {
 		final var stakedId = 4L;
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
+		final var autoRenewAccount = new EntityId(0, 0, 5);
 
 		final var customizer = new HederaAccountCustomizer()
 				.memo(memo)
 				.stakedId(stakedId)
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
-				.isSmartContract(true);
+				.isSmartContract(true)
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(10);
 
 		final var op = ContractCreateTransactionBody.newBuilder();
 		customizer.customizeSynthetic(op);
@@ -85,6 +89,8 @@ class HederaAccountCustomizerTest {
 		final var stakedId = -4L;
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
+		final var autoRenewAccount = new EntityId(0, 0, 5);
+
 
 		final var customizer = new HederaAccountCustomizer()
 				.memo(memo)
@@ -92,7 +98,8 @@ class HederaAccountCustomizerTest {
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
 				.isSmartContract(true)
-				.isDeclinedReward(true);
+				.isDeclinedReward(true)
+				.autoRenewAccount(autoRenewAccount);
 
 		final var op = ContractCreateTransactionBody.newBuilder();
 		customizer.customizeSynthetic(op);
@@ -100,6 +107,7 @@ class HederaAccountCustomizerTest {
 		assertEquals(memo, op.getMemo());
 		assertEquals(-1 * stakedId -1, op.getStakedNodeId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(autoRenewAccount.toGrpcAccountId(), op.getAutoRenewAccountId());
 		assertEquals(true, op.getDeclineReward());
 	}
 

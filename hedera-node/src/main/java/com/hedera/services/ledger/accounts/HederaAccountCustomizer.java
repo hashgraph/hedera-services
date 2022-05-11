@@ -23,6 +23,7 @@ package com.hedera.services.ledger.accounts;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -54,6 +55,7 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
+		optionAccountPropertyMap.put(Option.AUTO_RENEW_ACCOUNT_ID, AccountProperty.AUTO_RENEW_ACCOUNT_ID);
 		optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
 		optionAccountPropertyMap.put(Option.STAKED_TO_ME, AccountProperty.STAKED_TO_ME);
 		optionAccountPropertyMap.put(Option.STAKE_PERIOD_START, AccountProperty.STAKE_PERIOD_START);
@@ -84,6 +86,12 @@ public final class HederaAccountCustomizer extends
 		}
 		if (changes.containsKey(AccountProperty.DECLINE_REWARD)) {
 			op.setDeclineReward((boolean) changes.get(AccountProperty.DECLINE_REWARD));
+		}
+		if (changes.containsKey(AccountProperty.AUTO_RENEW_ACCOUNT_ID)) {
+			op.setAutoRenewAccountId(((EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID)).toGrpcAccountId());
+		}
+		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(((int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)));
 		}
 	}
 

@@ -29,7 +29,6 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFe
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

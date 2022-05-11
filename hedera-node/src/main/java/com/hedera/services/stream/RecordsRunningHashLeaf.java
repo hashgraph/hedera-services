@@ -20,9 +20,10 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
@@ -138,5 +139,9 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		// should invalidate current Hash when updating the runningHash object
 		// because its Hash should be calculated based on the runningHash object
 		this.invalidateHash();
+	}
+
+	public Hash getLatestBlockHash() throws InterruptedException {
+		return runningHash.getFutureHash().get();
 	}
 }

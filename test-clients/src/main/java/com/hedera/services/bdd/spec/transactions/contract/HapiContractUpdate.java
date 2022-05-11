@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -40,7 +41,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,6 +75,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<Long> newStakedNodeId = Optional.empty();
 	private boolean newDeclinedReward = false;
 	private Optional<String> newProxy = Optional.empty();
+	private Optional<String> newAutoRenewAccount = Optional.empty();
+	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -89,10 +92,17 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		return this;
 	}
 
+	public HapiContractUpdate newMaxAutomaticAssociations(int max) {
+		newMaxAutomaticAssociations = Optional.of(max);
+		return this;
+	}
+
+
 	public HapiContractUpdate newExpiryTime(long t) {
 		newExpiryTime = OptionalLong.of(t);
 		return this;
 	}
+
 
 	public HapiContractUpdate newProxy(String proxy) {
 		newProxy = Optional.of(proxy);
@@ -113,6 +123,12 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		newAutoRenew = Optional.of(autoRenewSecs);
 		return this;
 	}
+
+	public HapiContractUpdate newAutoRenewAccount(String id) {
+		newAutoRenewAccount = Optional.of(id);
+		return this;
+	}
+
 
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
@@ -202,6 +218,9 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(
 									Duration.newBuilder().setSeconds(autoRenew).build()));
 							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
+							newAutoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+							newMaxAutomaticAssociations.ifPresent(p ->
+									b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 
 							if (newStakedAccountId.isPresent()) {
 								b.setStakedAccountId(newStakedAccountId.get());
@@ -220,6 +239,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		if (!useDeprecatedAdminKey && newKey.isPresent()) {
 			signers.add(spec -> spec.registry().getKey(newKey.get()));
 		}
+		newAutoRenewAccount.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
 		return signers;
 	}
 

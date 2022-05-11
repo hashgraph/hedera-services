@@ -105,6 +105,10 @@ public record EntityNumPair(long value) {
 		return EntityNum.fromLong(getLowOrderAsLong());
 	}
 
+	public NftNumPair asNftNumPair() {
+		return NftNumPair.fromLongs(getHiOrderAsLong(), getLowOrderAsLong());
+	}
+
 	@Override
 	public int hashCode() {
 		return (int) MiscUtils.perm64(value);

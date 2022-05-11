@@ -25,6 +25,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 
@@ -32,11 +33,13 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 /**
@@ -78,11 +81,16 @@ public class ContractCustomizer {
 		final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
 
 		final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
+		final var autoRenewAccount = op.hasAutoRenewAccountId()
+				? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId())
+				: MISSING_ENTITY_ID;
 		final var customizer = new HederaAccountCustomizer()
 				.memo(op.getMemo())
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 				.isDeclinedReward(op.getDeclineReward())
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
 				.isSmartContract(true);
 
 		if (hasStakedId(op.getStakedIdCase().name())) {
@@ -114,6 +122,10 @@ public class ContractCustomizer {
 				.memo((String) ledger.get(sponsor, MEMO))
 				.expiry((long) ledger.get(sponsor, EXPIRY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
+				.autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+				.stakedId((long)ledger.get(sponsor, AccountProperty.STAKED_ID))
+				.isDeclinedReward((boolean)ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}

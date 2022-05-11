@@ -37,7 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -62,8 +63,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_TO_WHITELIST_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ASSOCIATOR_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IS_WHITELISTED_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -91,6 +90,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
@@ -109,6 +109,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -224,7 +225,8 @@ public class ContractCallSuite extends HapiApiSuite {
 								contractCall(WHITELISTER, "addToWhitelist", childEip1014.get())
 										.payingWith(DEFAULT_PAYER),
 								contractCallWithFunctionAbi(asContractString(
-												contractIdFromHexedMirrorAddress(childMirror.get())), IS_WHITELISTED_ABI,
+												contractIdFromHexedMirrorAddress(childMirror.get())),
+										IS_WHITELISTED_ABI,
 										getNestedContractAddress(WHITELISTER, spec))
 										.payingWith(DEFAULT_PAYER)
 										.via(mirrorWhitelistCheckTxn),
@@ -234,8 +236,10 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via(evmWhitelistCheckTxn)
 						))
 				).then(
-						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(1)))).logged(),
-						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(1)))).logged()
+						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(
+								resultWith().contractCallResult(bigIntResult(1)))).logged(),
+						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(
+								resultWith().contractCallResult(bigIntResult(1)))).logged()
 				);
 	}
 
@@ -261,28 +265,33 @@ public class ContractCallSuite extends HapiApiSuite {
 						))
 				).when(
 						withOpContext((spec, op) -> {
-								allRunFor(spec,
-										captureChildCreate2MetaFor(
-												1, 0,
-												"setup", creationTxn, childMirror, childEip1014),
-										tokenCreate("TokenA")
-												.initialSupply(100)
-												.treasury("Treasury")
-												.exposingCreatedIdTo(id -> {
-													tokenID.set(asToken(id));
-												})
-								);
-								final var create2address = childEip1014.get();
-								final var mirrorAddress = childMirror.get();
-								allRunFor(spec,
-										contractCall(ASSOCIATOR, "associate", create2address,
-												asAddress(tokenID.get()))
-												.gas(GAS_TO_OFFER),
-										contractCall(ASSOCIATOR, "associate", mirrorAddress,
-												asAddress(tokenID.get()))
-												.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-												.gas(GAS_TO_OFFER)
-								);
+							allRunFor(spec,
+									captureChildCreate2MetaFor(
+											1, 0,
+											"setup", creationTxn, childMirror, childEip1014),
+									tokenCreate("TokenA")
+											.initialSupply(100)
+											.treasury("Treasury")
+											.exposingCreatedIdTo(id -> {
+												tokenID.set(asToken(id));
+											})
+							);
+							final var create2address = childEip1014.get();
+							final var mirrorAddress = childMirror.get();
+							allRunFor(spec,
+									contractCall(ASSOCIATOR, "associate", mirrorAddress,
+											asAddress(tokenID.get()))
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+											.gas(GAS_TO_OFFER)
+											.via("NOPE"),
+									childRecordsCheck(
+											"NOPE",
+											CONTRACT_REVERT_EXECUTED,
+											recordWith().status(INVALID_ACCOUNT_ID)),
+									contractCall(ASSOCIATOR, "associate", create2address,
+											asAddress(tokenID.get()))
+											.gas(GAS_TO_OFFER)
+							);
 						})
 				).then();
 	}
@@ -363,7 +372,8 @@ public class ContractCallSuite extends HapiApiSuite {
 										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
 				).when(
 						contractCall(minters)
-								.withExplicitParams(() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
+								.withExplicitParams(
+										() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
 						contractCall(jurisdictions)
 								.withExplicitParams(() -> explicitJurisdictionsAddParams)
 								.via(addJurisTxn)
@@ -377,24 +387,24 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(jurisdictions, "isValid", nyJurisCode.get())
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "isValid", jurisdictions),
-												isLiteralResult(new Object[]{Boolean.TRUE})))
+												isLiteralResult(new Object[] { Boolean.TRUE })))
 						),
 						contractCallLocal(minters, "seven")
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "seven", minters),
-												isLiteralResult(new Object[]{BigInteger.valueOf(7L)}))),
+												isLiteralResult(new Object[] { BigInteger.valueOf(7L) }))),
 						sourcing(() -> contractCallLocal(minters, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												isLiteralResult(new Object[] { defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCallLocal(jurisdictions, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												isLiteralResult(new Object[] { defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCall(
@@ -849,7 +859,8 @@ public class ContractCallSuite extends HapiApiSuite {
 											return tx;
 										})
 				).then(
-						getTxnRecord("lightTxn").logged().exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
+						getTxnRecord("lightTxn").logged().exposingTo(
+								tr -> System.out.println(Bytes.of(tr.toByteArray())))
 				);
 	}
 
@@ -1007,8 +1018,12 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
 		return defaultHapiSpec("InvalidContract")
-				.given().when().then(
-						contractCallWithFunctionAbi(invalidContract, function)
+				.given(
+						withOpContext((spec, ctxLog) -> {
+							spec.registry().saveContractId("invalid", asContract("1.1.1"));
+						})
+				).when().then(
+						contractCallWithFunctionAbi("invalid", function)
 								.hasKnownStatus(INVALID_CONTRACT_ID));
 	}
 
@@ -1204,7 +1219,8 @@ public class ContractCallSuite extends HapiApiSuite {
 											.via("getBalance");
 
 									final var contractAccountId = asId(contract, spec);
-									final var subop3 = contractCall(contract, "killMe", contractAccountId.getAccountNum()
+									final var subop3 = contractCall(contract, "killMe",
+											contractAccountId.getAccountNum()
 									)
 											.payingWith("payer")
 											.gas(300_000L)
@@ -1217,7 +1233,8 @@ public class ContractCallSuite extends HapiApiSuite {
 											.hasKnownStatus(INVALID_SOLIDITY_ADDRESS);
 
 									final var receiverAccountId = asId("receiver", spec);
-									final var subop5 = contractCall(contract, "killMe", receiverAccountId.getAccountNum()
+									final var subop5 = contractCall(contract, "killMe",
+											receiverAccountId.getAccountNum()
 									)
 											.payingWith("payer")
 											.gas(300_000L)
@@ -1235,7 +1252,9 @@ public class ContractCallSuite extends HapiApiSuite {
 												.contractCallResult(
 														resultWith()
 																.resultViaFunctionName("getBalance", contract,
-																		isLiteralResult(new Object[]{BigInteger.valueOf(1_000L)})
+																		isLiteralResult(
+																				new Object[] { BigInteger.valueOf(
+																						1_000L) })
 																)
 												)
 								),
@@ -1382,7 +1401,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				)
 				.when(
 						withOpContext((spec, log) -> {
-							final var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							final var receiverAddr = spec.registry().getAccountInfo(
+									"receiverInfo").getContractAccountID();
 							final var transferCall = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
 									receiverAddr, 10
 							)
@@ -1476,7 +1496,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				)
 				.when(
 						withOpContext((spec, log) -> {
-							var cto = spec.registry().getContractInfo(TRANSFERRING_CONTRACT + to).getContractAccountID();
+							var cto =
+									spec.registry().getContractInfo(TRANSFERRING_CONTRACT + to).getContractAccountID();
 							var transferCall = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
 									cto, 10
 							)
@@ -1669,7 +1690,8 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec,
 									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
-											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
+											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(
+											10_000L).payingWith(ACCOUNT),
 
 									contractCall(NESTED_TRANSFERRING_CONTRACT,
 											"transferFromDifferentAddressesToAddress",
@@ -1702,7 +1724,8 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec,
 									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
-											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
+											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(
+											10_000L).payingWith(ACCOUNT),
 
 									contractCall(
 											NESTED_TRANSFERRING_CONTRACT,
@@ -1738,7 +1761,8 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec,
 									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
-											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(GENESIS),
+											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(
+											10_000L).payingWith(GENESIS),
 									contractCall(
 											NESTED_TRANSFERRING_CONTRACT,
 											"transferToCallerFromDifferentAddresses", 100L)
@@ -1796,7 +1820,8 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec,
 									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
-											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
+											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(
+											10_000L).payingWith(ACCOUNT),
 
 									contractCall(
 											NESTED_TRANSFERRING_CONTRACT,
@@ -1872,7 +1897,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn").payingWith(GENESIS);
 							var saveAccountInfoAfterCall = getAccountInfo(ACCOUNT).savingSnapshot(
 									"accountInfoAfterCall").payingWith(GENESIS);
-							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from");
+							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(
+									"contract_from");
 
 							allRunFor(spec, transferCall, saveTxnRecord, saveAccountInfoAfterCall, saveContractInfo);
 						})
@@ -1912,10 +1938,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									.payingWith(ACCOUNT).via(transferTxn).logged();
 
 							var saveTxnRecord =
-									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn_registry").payingWith(GENESIS);
+									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn_registry").payingWith(
+											GENESIS);
 							var saveAccountInfoAfterCall = getAccountInfo(ACCOUNT).savingSnapshot(
 									"accountInfoAfterCall").payingWith(GENESIS);
-							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from");
+							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(
+									"contract_from");
 
 							allRunFor(spec, transferCall, saveTxnRecord, saveAccountInfoAfterCall, saveContractInfo);
 						})
@@ -1958,7 +1986,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									"transferToAddress", receiverAddr, 0)
 									.payingWith(ACCOUNT).via(transferTxn).logged();
 
-							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from");
+							var saveContractInfo = getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(
+									"contract_from");
 
 							allRunFor(spec, transferCall, saveContractInfo);
 						})

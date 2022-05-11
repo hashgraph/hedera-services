@@ -31,6 +31,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
@@ -77,6 +78,7 @@ public abstract class AccountCustomizer<
 		MAX_AUTOMATIC_ASSOCIATIONS,
 		USED_AUTOMATIC_ASSOCIATIONS,
 		ALIAS,
+		AUTO_RENEW_ACCOUNT_ID,
 		DECLINE_REWARD,
 		STAKED_TO_ME,
 		STAKE_PERIOD_START,
@@ -127,7 +129,9 @@ public abstract class AccountCustomizer<
 	}
 
 	public T proxy(final EntityId option) {
-		changeManager.update(changes, optionProperties.get(PROXY), option);
+		if(option != null) {
+			changeManager.update(changes, optionProperties.get(PROXY), option);
+		}
 		return self();
 	}
 
@@ -168,6 +172,13 @@ public abstract class AccountCustomizer<
 
 	public T usedAutomaticAssociations(final int option) {
 		changeManager.update(changes, optionProperties.get(USED_AUTOMATIC_ASSOCIATIONS), option);
+		return self();
+	}
+
+	public T autoRenewAccount(final EntityId option) {
+		if(option != null) {
+			changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
+		}
 		return self();
 	}
 

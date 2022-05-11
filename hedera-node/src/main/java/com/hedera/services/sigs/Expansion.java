@@ -95,9 +95,9 @@ class Expansion {
 	private void finalizeForExpansionUpTo(final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
 		txnAccessor.getPlatformTxn().addAll(expandedSigs.toArray(new TransactionSignature[0]));
 		if (lastExpandSuccess == Role.PAYER) {
-			txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs));
+			txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs, txnAccessor));
 		} else {
-			txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs));
+			txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs, txnAccessor));
 		}
 		txnAccessor.setExpandedSigStatus(finalStatus);
 		txnAccessor.setLinkedRefs(linkedRefs);
