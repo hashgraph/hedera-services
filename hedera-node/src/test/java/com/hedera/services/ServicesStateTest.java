@@ -200,8 +200,7 @@ class ServicesStateTest {
 	void doesAllMigrationsFromRelease024Version() {
 		mockMigrators();
 		final var inOrder = inOrder(
-				autoRenewalMigrator, titleCountsMigrator,
-				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
 		subject = mock(ServicesState.class);
 
@@ -214,7 +213,6 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
 		subject.migrate();
 
@@ -222,8 +220,9 @@ class ServicesStateTest {
 		inOrder.verify(titleCountsMigrator).accept(subject);
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
-		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
 		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+
+		verifyNoInteractions(autoRenewalMigrator);
 
 		unmockMigrators();
 	}

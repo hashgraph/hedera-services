@@ -167,9 +167,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
-			// Grant all contracts one free ~90 day auto-renewal upon enabling contract expiry
-			autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
 			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
+
+			// When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the autoRenewalMigrator
+
 			// Give the MutableStateChildren up-to-date WeakReferences
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);
