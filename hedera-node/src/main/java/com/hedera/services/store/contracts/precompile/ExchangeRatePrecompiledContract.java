@@ -39,10 +39,10 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
 
 	static final Bytes INVALID_CALL_REVERT_REASON = Bytes.of("Invalid call".getBytes());
 
-	//toTinybars(uint256)
-	static final int TO_TINYBARS_SELECTOR = 0x56a08187;
-	//toTinycents(uint256)
-	static final int TO_TINYCENTS_SELECTOR = 0xe9a7716b;
+	//tinycentsToTinybars(uint256)
+	static final int TO_TINYBARS_SELECTOR = 0x2e3cff6a;
+	//tinybarsToTinycents(uint256)
+	static final int TO_TINYCENTS_SELECTOR = 0x43a88229;
 
 	public static final String EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS = "0x21d4";
 
