@@ -26,8 +26,6 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.ethereum.EthTxData;
@@ -43,8 +41,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
@@ -99,11 +95,13 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 	public HapiEthereumContractCreate(String contract) {
 		super(contract);
 		this.payer = Optional.of(RELAYER);
+		super.omitAdminKey = true;
 	}
 
 	public HapiEthereumContractCreate(String contract, String abi, Object... args) {
 		super(contract, abi, args);
 		this.payer = Optional.of(RELAYER);
+		super.omitAdminKey = true;
 	}
 
 	@Override
@@ -118,7 +116,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
 	@Override
 	protected Key lookupKey(HapiApiSpec spec, String name) {
-		return name.equals(contract) ? adminKey : spec.registry().getKey(name);
+		return spec.registry().getKey(name);
 	}
 
 	public HapiEthereumContractCreate exposingGasTo(ObjLongConsumer<ResponseCodeEnum> gasObserver) {
@@ -151,16 +149,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 		return this;
 	}
 
-	public HapiEthereumContractCreate adminKey(KeyFactory.KeyType type) {
-		adminKeyType = Optional.of(type);
-		return this;
-	}
-
-	public HapiEthereumContractCreate adminKeyShape(SigControl controller) {
-		adminKeyControl = Optional.of(controller);
-		return this;
-	}
-
 	public HapiEthereumContractCreate autoRenewSecs(long period) {
 		autoRenewPeriodSecs = Optional.of(period);
 		return this;
@@ -178,27 +166,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
 	public HapiEthereumContractCreate entityMemo(String s) {
 		memo = Optional.of(s);
-		return this;
-	}
-
-	public HapiEthereumContractCreate omitAdminKey() {
-		omitAdminKey = true;
-		return this;
-	}
-
-	public HapiEthereumContractCreate immutable() {
-		omitAdminKey = true;
-		makeImmutable = true;
-		return this;
-	}
-
-	public HapiEthereumContractCreate useDeprecatedAdminKey() {
-		useDeprecatedAdminKey = true;
-		return this;
-	}
-
-	public HapiEthereumContractCreate adminKey(String existingKey) {
-		key = Optional.of(existingKey);
 		return this;
 	}
 
@@ -239,9 +206,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		if (!omitAdminKey && !useDeprecatedAdminKey) {
-			generateAdminKey(spec);
-		}
 		if (bytecodeFileFn.isPresent()) {
 			bytecodeFile = Optional.of(bytecodeFileFn.get().get());
 		}
@@ -287,17 +251,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 						}
 				);
 		return b -> b.setEthereumTransaction(opBody);
-	}
-
-	@Override
-	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		if (omitAdminKey || useDeprecatedAdminKey) {
-			return super.defaultSigners();
-		}
-		List<Function<HapiApiSpec, Key>> signers =
-				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
-		Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
-		return signers;
 	}
 
 	@Override

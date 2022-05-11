@@ -223,7 +223,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT)
                 ).when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .adminKey(THRESHOLD)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -232,7 +231,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .gasLimit(1_000_000L).hasKnownStatus(SUCCESS)
                                 .via("payTxn")
                 ).then(
-//                        getAliasedAccountInfo()
                         withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
                                 .logged()
                                 .hasPriority(recordWith()
@@ -260,7 +258,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCode(TOKEN_CREATE_CONTRACT)
                 ).when(
                         ethereumContractCreate(TOKEN_CREATE_CONTRACT)
-                                .adminKey(contractAdminKey)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -295,7 +292,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCodeWithConstructorArguments(OC_TOKEN_CONTRACT, getABIFor(CONSTRUCTOR, EMPTY, OC_TOKEN_CONTRACT), 1_000_000L, "OpenCrowd Token", "OCT")
                 ).when(
                         ethereumContractCreate(OC_TOKEN_CONTRACT)
-                                .adminKey(contractAdminKey)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
