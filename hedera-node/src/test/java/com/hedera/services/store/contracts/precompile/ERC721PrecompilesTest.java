@@ -52,7 +52,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
@@ -712,15 +711,9 @@ class ERC721PrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
                 .willReturn(mockSynthBodyBuilder);
-        given(syntheticTxnFactory.createDeleteAllowance(any(), any()))
-                .willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
-        given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-        given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcAccount(sender)));
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -950,7 +943,7 @@ class ERC721PrecompilesTest {
 
     public static final SetApprovalForAllWrapper SET_APPROVAL_FOR_ALL_WRAPPER = new SetApprovalForAllWrapper(receiver, true);
 
-    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
-    public static final ApproveWrapper APPROVE_WRAPPER_0 = new ApproveWrapper(token, IdUtils.asAccount("0.0.0"), BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+    public static final ApproveWrapper APPROVE_WRAPPER_0 = new ApproveWrapper(token, IdUtils.asAccount("0.0.0"), BigInteger.ZERO, BigInteger.ONE, false);
 }

@@ -1478,17 +1478,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer(precompileAddress));
 			} else {
-				//logic for delete approvals in case of transfer of ERC721
-				final var accountStore = createAccountStore();
-				final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
-				final var approveWrapper = new ApproveWrapper(tokenId, null, BigInteger.ZERO, BigInteger.valueOf(transferOp.get(0).nftExchanges().get(0).getSerialNo()), BigInteger.ZERO, isFungible);
-				var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), approveWrapper.serialNumber().longValue());
-				var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
-				final var deleteAllowanceTxn = syntheticTxnFactory.createDeleteAllowance(approveWrapper, owner);
-				final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
-				deleteAllowanceLogic.deleteAllowance(deleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
-						EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
-
 				frame.addLog(getLogForNftExchange(precompileAddress));
 			}
 		}

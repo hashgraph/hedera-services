@@ -217,7 +217,7 @@ public class SyntheticTxnFactory {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
 					.setTokenId(approveWrapper.token())
 					.setSpender(approveWrapper.spender())
-					.setAmount(approveWrapper.adjustment().longValue())
+					.setAmount(approveWrapper.amount().longValue())
 					.build());
 		} else {
 			builder.addNftAllowances(NftAllowance.newBuilder()
