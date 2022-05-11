@@ -317,11 +317,7 @@ public class FeeBuilder {
 		return getAFromB(tinyCentsFee, exchangeRate.getHbarEquiv(), exchangeRate.getCentEquiv());
 	}
 
-	public static long getTinycentsFromTinybars(final ExchangeRate exchangeRate, final long tinybars) {
-		return getAFromB(tinybars, exchangeRate.getCentEquiv(), exchangeRate.getHbarEquiv());
-	}
-
-	public static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+	private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
 		final var aMultiplier = BigInteger.valueOf(aEquiv);
 		final var bDivisor = BigInteger.valueOf(bEquiv);
 		return BigInteger.valueOf(bAmount).multiply(aMultiplier).divide(bDivisor).longValueExact();

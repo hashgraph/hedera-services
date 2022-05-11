@@ -62,26 +62,6 @@ class OverflowCheckingCalcTest {
 	}
 
 	@Test
-	void tinycentConverterCanUseJustPrimitive() {
-		final var normalAmount = 100_000_000 / rateTinybarComponent;
-		final var expectedTinycents = FeeBuilder.getTinycentsFromTinybars(someRate, normalAmount);
-
-		final long actualTinycents = OverflowCheckingCalc.tinybarsToTinycents(normalAmount, someRate);
-
-		assertEquals(expectedTinycents, actualTinycents);
-	}
-
-	@Test
-	void tinycentConverterCanFallbackToBigDecimal() {
-		final var largeAmount = Long.MAX_VALUE / rateTinybarComponent * 2;
-		final var expectedTinycents = FeeBuilder.getTinycentsFromTinybars(someRate, largeAmount);
-
-		final long actualTinycents = OverflowCheckingCalc.tinybarsToTinycents(largeAmount, someRate);
-
-		assertEquals(expectedTinycents, actualTinycents);
-	}
-
-	@Test
 	void matchesLegacyCalc() {
 		final var legacyFees = FeeBuilder.getFeeObject(mockPrices, mockUsage, mockRate, multiplier);
 		final var usage = new UsageAccumulator();

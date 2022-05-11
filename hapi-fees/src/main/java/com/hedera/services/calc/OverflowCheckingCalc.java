@@ -110,14 +110,6 @@ public final class OverflowCheckingCalc {
 		return amount * hbarEquiv / rate.getCentEquiv();
 	}
 
-	public static long tinybarsToTinycents(final long amount, final ExchangeRate rate) {
-		final var centEquiv = rate.getCentEquiv();
-		if (productWouldOverflow(amount, centEquiv)) {
-			return FeeBuilder.getTinycentsFromTinybars(rate, amount);
-		}
-		return amount * centEquiv / rate.getHbarEquiv();
-	}
-
 	private long networkFeeInTinycents(final UsageAccumulator usage, final FeeComponents networkPrices) {
 		final var nominal = safeAccumulateThree(networkPrices.getConstant(),
 				usage.getUniversalBpt() * networkPrices.getBpt(),

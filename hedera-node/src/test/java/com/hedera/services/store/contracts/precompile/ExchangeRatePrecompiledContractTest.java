@@ -1,10 +1,12 @@
 package com.hedera.services.store.contracts.precompile;
 
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,32 +19,34 @@ import java.math.BigInteger;
 import java.time.Instant;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
-import static com.hedera.services.store.contracts.precompile.ExchangeRateContract.GAS_REQUIREMENT;
-import static com.hedera.services.store.contracts.precompile.ExchangeRateContract.TO_TINYBARS_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.ExchangeRateContract.TO_TINYCENTS_SELECTOR;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class ExchangeRateContractTest {
+class ExchangeRatePrecompiledContractTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
 	private HbarCentExchange exchange;
 	@Mock
 	private GasCalculator gasCalculator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
-	private ExchangeRateContract subject;
+	private ExchangeRatePrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ExchangeRateContract(gasCalculator, exchange, () -> now);
+		subject = new ExchangeRatePrecompiledContract(gasCalculator, exchange, dynamicProperties, () -> now);
 	}
 
 	@Test
 	void hasExpectedGasRequirement() {
+		given(dynamicProperties.exchangeRateGasReq()).willReturn(GAS_REQUIREMENT);
 		assertSame(GAS_REQUIREMENT, subject.gasRequirement(argOf(123)));
 	}
 
@@ -50,7 +54,7 @@ class ExchangeRateContractTest {
 	void convertsPositiveNumberToTinybarsAsExpected() {
 		givenRate(someRate);
 
-		final var someInput = unpackedBytesFor(TO_TINYBARS_SELECTOR, someTinycentAmount);
+		final var someInput = tinycentsInput(someTinycentAmount);
 		final var result = subject.compute(someInput, frame);
 
 		assertEquals(unpackedBytesFor(someTinybarAmount), result);
@@ -60,45 +64,57 @@ class ExchangeRateContractTest {
 	void convertsPositiveNumberToTinycentsAsExpected() {
 		givenRate(someRate);
 
-		final var someInput = unpackedBytesFor(TO_TINYCENTS_SELECTOR, someTinybarAmount);
-		final var result = subject.compute(someInput, frame);
+		final var positiveInput = tinybarsInput(someTinybarAmount);
+		final var result = subject.compute(positiveInput, frame);
 
 		assertEquals(unpackedBytesFor(someTinycentAmount), result);
-	}
-
-	@Test
-	void convertsNegativeNumberToTinybarsAsExpected() {
-		givenRate(someRate);
-
-		final var someInput = unpackedBytesFor(TO_TINYBARS_SELECTOR, -someTinycentAmount);
-		final var result = subject.compute(someInput, frame);
-
-		assertEquals(unpackedBytesFor(-someTinybarAmount), result);
 	}
 
 	@Test
 	void convertsZeroToTinybarsAsExpected() {
 		givenRate(someRate);
 
-		final var someInput = Bytes.wrap(new byte[] { TO_TINYBARS_SELECTOR });
-		final var result = subject.compute(someInput, frame);
+		final var zeroInput = tinycentsInput(0);
+		final var result = subject.compute(zeroInput, frame);
 
 		assertEquals(unpackedBytesFor(0), result);
 	}
 
 	@Test
-	void inputCannotBeOutOfRange() {
-		final var outOfRangeInput = Bytes.concatenate(
-				Bytes.of(TO_TINYBARS_SELECTOR),
+	void inputCannotUnderflow() {
+		final var underflowInput = tinycentsInput(
 				Bytes.wrap(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TEN).toByteArray()));
 
-		assertNull(subject.compute(outOfRangeInput, frame));
+		assertNull(subject.compute(underflowInput, frame));
 	}
 
 	@Test
-	void selectorMustBeValid() {
-		final var unrecognizedSelector = Bytes.of(0xab);
-		assertNull(subject.compute(unrecognizedSelector, frame));
+	void selectorMustBeFullyPresent() {
+		final var fragmentSelector = Bytes.of(0xab);
+		assertNull(subject.compute(fragmentSelector, frame));
+	}
+
+	@Test
+	void selectorMustBeRecognized() {
+		final var fragmentSelector = Bytes.of((byte) 0xab, (byte) 0xab,(byte) 0xab,(byte) 0xab);
+		final var input = Bytes.concatenate(fragmentSelector, Bytes32.ZERO);
+		assertNull(subject.compute(input, frame));
+	}
+
+	private static Bytes tinycentsInput(final long validAmount) {
+		return input(TO_TINYBARS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
+	}
+
+	private static Bytes tinybarsInput(final long validAmount) {
+		return input(TO_TINYCENTS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
+	}
+
+	private static Bytes tinycentsInput(final Bytes wordInput) {
+		return input(TO_TINYBARS_SELECTOR, wordInput);
+	}
+
+	private static Bytes input(final int selector, final Bytes wordInput) {
+		return Bytes.concatenate(Bytes.ofUnsignedInt(selector & 0xffffffffL), wordInput);
 	}
 
 	private static Bytes unpackedBytesFor(final long amount) {
@@ -132,4 +148,5 @@ class ExchangeRateContractTest {
 			.build();
 	private static final long someTinybarAmount = tinycentsToTinybars(someTinycentAmount, someRate);
 	private static final Instant now = Instant.ofEpochSecond(1_234_567, 890);
+	private static final Gas GAS_REQUIREMENT = Gas.of(100L);
 }
