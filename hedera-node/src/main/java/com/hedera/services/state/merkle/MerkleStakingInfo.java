@@ -20,6 +20,8 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,9 +29,11 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int MAX_REWARD_HISTORY = 336;
+	static final int MAX_REWARD_HISTORY = 366;
 	static final long[] EMPTY_REWARD_HISTORY = new long[MAX_REWARD_HISTORY];
 
 	static final int RELEASE_0270_VERSION = 1;
@@ -122,6 +126,52 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	@Override
 	public void setKey(final EntityNum entityNum) {
 		this.number = entityNum.intValue();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || MerkleStakingInfo.class != o.getClass()) {
+			return false;
+		}
+
+		var that = (MerkleStakingInfo) o;
+		return this.minStake == that.minStake &&
+				this.maxStake == that.maxStake &&
+				this.stakeToReward == that.stakeToReward &&
+				this.stakeToNotReward == that.stakeToNotReward &&
+				this.stakeRewardStart == that.stakeRewardStart &&
+				this.stake == that.stake &&
+				Arrays.equals(this.rewardSumHistory, that.rewardSumHistory);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+				minStake,
+				maxStake,
+				stakeToReward,
+				stakeToNotReward,
+				stakeRewardStart,
+				stake,
+				Arrays.hashCode(rewardSumHistory)
+		);
+	}
+
+	@Override
+	public String toString() {
+		return  MoreObjects.toStringHelper(MerkleStakingInfo.class)
+				.add("id", EntityIdUtils.asScopedSerialNoLiteral(number))
+				.add("minStake", minStake)
+				.add("maxStake", maxStake)
+				.add("stakeToReward", stakeToReward)
+				.add("stakeToNotReward", stakeToNotReward)
+				.add("stakeRewardStart", stakeRewardStart)
+				.add("stake", stake)
+				.add("rewardSumHistory", rewardSumHistory)
+				.toString();
 	}
 
 	public long getMinStake() {
