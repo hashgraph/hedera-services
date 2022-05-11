@@ -494,8 +494,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/**
-	 * Sets the id of account or node to which this account is staking its hbar to. If stakedId < 0 it will be a node
-	 * id and if stakedId > 0 it is an account number.
+	 * Sets the id of account or node to which this account is staking its hbar to. If stakedId &lt; 0 it will be a node
+	 * id and if stakedId &gt; 0 it is an account number.
 	 *
 	 * @param stakedId
 	 * 		The node num of the node

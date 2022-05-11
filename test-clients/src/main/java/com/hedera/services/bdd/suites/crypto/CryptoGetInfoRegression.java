@@ -73,14 +73,14 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//					failsForDeletedAccount(),
-//					failsForMissingAccount(),
-//					failsForMissingPayment(),
-//					failsForInsufficientPayment(),
-//					failsForMalformedPayment(),
-//					failsForUnfundablePayment(),
+					failsForDeletedAccount(),
+					failsForMissingAccount(),
+					failsForMissingPayment(),
+					failsForInsufficientPayment(),
+					failsForMalformedPayment(),
+					failsForUnfundablePayment(),
 					succeedsNormally(),
-//					fetchesOnlyALimitedTokenAssociations()
+					fetchesOnlyALimitedTokenAssociations()
 				}
 		);
 	}
@@ -220,46 +220,30 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				).when(
 						cryptoCreate("noStakingTarget")
 								.key("misc")
-								.balance(balance)
-								.sendThreshold(sendThresh)
-								.receiveThreshold(receiveThresh)
-								.receiverSigRequired(true)
-								.autoRenewSecs(autoRenew),
+								.balance(balance),
 						cryptoCreate("target")
 								.key("misc")
 								.balance(balance)
-								.sendThreshold(sendThresh)
-								.receiveThreshold(receiveThresh)
-								.receiverSigRequired(true)
-								.autoRenewSecs(autoRenew)
 								.stakedNodeId(0L),
 						cryptoCreate("targetWithStakedAccountId")
 								.key("misc")
 								.balance(balance)
-								.sendThreshold(sendThresh)
-								.receiveThreshold(receiveThresh)
-								.receiverSigRequired(true)
-								.autoRenewSecs(autoRenew)
 								.stakedAccountId("0.0.20")
 				).then(
 						getAccountInfo("noStakingTarget")
 								.has(accountWith()
 										.accountId("noStakingTarget")
-										.noStakingNodeId()
+										.stakedNodeId(-1L) // stakedNodeId is -1 only if no staking info is present. Will be 0 if staked account id is present.
 										.noStakedAccountId()
 										.key("misc")
 										.balance(balance)
-										.expiry(expiry, 5L)
-										.autoRenew(autoRenew)
 								).logged(),
 						getAccountInfo("target")
 								.has(accountWith()
 										.accountId("target")
-										.stakedNodeId(0L)
+										.noStakingNodeId()
 										.key("misc")
 										.balance(balance)
-										.expiry(expiry, 5L)
-										.autoRenew(autoRenew)
 								).logged(),
 						getAccountInfo("targetWithStakedAccountId")
 								.has(accountWith()
@@ -267,8 +251,6 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 										.stakedAccountId("0.0.20")
 										.key("misc")
 										.balance(balance)
-										.expiry(expiry, 5L)
-										.autoRenew(autoRenew)
 								).logged()
 				);
 	}

@@ -141,18 +141,19 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						getAccountInfo("user")
 								.has(AccountInfoAsserts.accountWith()
 										.stakedAccountId("0.0.20")
-										.stakedNodeId(0)
-										.isDeclinedReward(true)),
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged(),
 
 						cryptoUpdate("user")
-								.newStakedNodeId(10L)
+								.newStakedNodeId(0L)
 								.newDeclinedReward(false)
 				)
 				.then(
 						getAccountInfo("user")
 								.has(AccountInfoAsserts.accountWith()
 										.noStakedAccountId()
-										.stakedNodeId(10)
+										.stakedNodeId(0L)
 										.isDeclinedReward(false))
 								.logged()
 				);

@@ -197,11 +197,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		return this;
 	}
 
-	public HapiContractCreate useDeprecatedAdminKey() {
-		useDeprecatedAdminKey = true;
-		return this;
-	}
-
 	public HapiContractCreate adminKey(String existingKey) {
 		key = Optional.of(existingKey);
 		return this;

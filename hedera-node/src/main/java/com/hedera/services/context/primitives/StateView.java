@@ -471,7 +471,7 @@ public class StateView {
 				.setStakedToMe(account.getStakedToMe());
 
 		final var stakedNum = account.getStakedId();
-		if (stakedNum < 0) {
+		if (stakedNum <= 0) {
 			// since we store the staking node id as (-nodeId -1), the node id account is staking to will be
 			// -stakedNum -1
 			stakingInfo.setStakedNodeId(-stakedNum - 1);
