@@ -15,6 +15,6 @@ contract ExchangeRatePrecompile is SelfFunding {
     }
 
     function approxUsdValue() external payable returns (uint256 tinycents) {
-        tinycents = toTinycents(msg.value);
+        tinycents = tinybarsToTinycents(msg.value);
     }
 }

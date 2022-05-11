@@ -7,23 +7,23 @@ abstract contract SelfFunding {
     uint256 constant TINY_PARTS_PER_WHOLE = 100_000_000;
     address constant PRECOMPILE_ADDRESS = address(0x21d4);
 
-    function toTinybars(uint256 tinycents) internal returns (uint256 tinybars) {
+    function tinycentsToTinybars(uint256 tinycents) internal returns (uint256 tinybars) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
-            abi.encodeWithSelector(IExchangeRate.toTinybars.selector, tinycents));
+            abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents));
         require(success);
         tinybars = abi.decode(result, (uint256));
     }
 
-    function toTinycents(uint256 tinybars) internal returns (uint256 tinycents) {
+    function tinybarsToTinycents(uint256 tinybars) internal returns (uint256 tinycents) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
-            abi.encodeWithSelector(IExchangeRate.toTinycents.selector, tinybars));
+            abi.encodeWithSelector(IExchangeRate.tinybarsToTinycents.selector, tinybars));
         require(success);
         tinycents = abi.decode(result, (uint256));
     }
 
     modifier costsCents(uint256 cents) {
         uint256 tinycents = cents * TINY_PARTS_PER_WHOLE;
-        uint256 requiredTinybars = toTinybars(tinycents);
+        uint256 requiredTinybars = tinycentsToTinybars(tinycents);
         require(msg.value >= requiredTinybars);
         _;
     } 
