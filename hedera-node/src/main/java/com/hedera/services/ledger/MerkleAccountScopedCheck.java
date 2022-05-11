@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -51,17 +50,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	private BalanceChange balanceChange;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	public MerkleAccountScopedCheck(
-			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
-		this.dynamicProperties = dynamicProperties;
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+	) {
 		this.validator = validator;
 		this.nftsLedger = nftsLedger;
 	}

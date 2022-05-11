@@ -20,7 +20,6 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -49,18 +48,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class QueryFeeCheck {
 	private final OptionValidator validator;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public QueryFeeCheck(
-			OptionValidator validator,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final OptionValidator validator,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {

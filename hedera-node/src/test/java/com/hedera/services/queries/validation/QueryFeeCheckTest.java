@@ -20,10 +20,9 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -79,7 +78,6 @@ class QueryFeeCheckTest {
 
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
-	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private QueryFeeCheck subject;
@@ -117,7 +115,7 @@ class QueryFeeCheckTest {
 
 		validator = mock(OptionValidator.class);
 
-		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts);
+		subject = new QueryFeeCheck(validator, () -> accounts);
 	}
 
 	@Test

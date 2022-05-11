@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -81,8 +80,6 @@ import static org.mockito.BDDMockito.given;
 class StaticEntityAccessTest {
 	@Mock
 	private OptionValidator validator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView stateView;
 	@Mock
@@ -148,7 +145,7 @@ class StaticEntityAccessTest {
 		given(stateView.tokenAssociations()).willReturn(tokenAssociations);
 		given(stateView.uniqueTokens()).willReturn(nfts);
 
-		subject = new StaticEntityAccess(stateView, aliases, validator, dynamicProperties);
+		subject = new StaticEntityAccess(stateView, aliases, validator);
 	}
 
 	@Test

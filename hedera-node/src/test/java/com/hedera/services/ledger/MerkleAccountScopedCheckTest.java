@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,8 +60,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountScopedCheckTest {
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
 	private OptionValidator validator;
 	@Mock
 	private BalanceChange balanceChange;
@@ -74,14 +71,12 @@ class MerkleAccountScopedCheckTest {
 	private Map<AccountProperty, Object> changeSet;
 	@Mock
 	private Function<AccountProperty, Object> extantProps;
-	@Mock
-	private MerkleUniqueToken merkleUniqueToken;
 
 	private MerkleAccountScopedCheck subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new MerkleAccountScopedCheck(dynamicProperties, validator, nftsLedger);
+		subject = new MerkleAccountScopedCheck(validator, nftsLedger);
 		subject.setBalanceChange(balanceChange);
 	}
 
