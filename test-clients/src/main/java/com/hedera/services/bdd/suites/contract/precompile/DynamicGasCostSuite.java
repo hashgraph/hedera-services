@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -96,6 +98,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -557,41 +560,42 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation2),
 						captureOneChildCreate2MetaFor(
 								"Precompile user", creation2, userMirrorAddr, userAliasAddr),
-						sourcing(() -> getAliasedContractBalance(userAliasAddr.get()).logged())
-//						withOpContext((spec, opLog) ->
-//								userLiteralId.set(
-//										asContractString(
-//												contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
-//						sourcing(() -> tokenCreate(nft)
-//								.tokenType(NON_FUNGIBLE_UNIQUE)
-//								.treasury(userLiteralId.get())
-//								.initialSupply(0L)
-//								.supplyKey(multiKey)
-//								.fee(ONE_HUNDRED_HBARS)
-//								.signedBy(DEFAULT_PAYER, multiKey)),
-//						mintToken(nft, List.of(
-//								ByteString.copyFromUtf8("PRICELESS")
-//						))
+						sourcing(() -> getAliasedContractBalance(userAliasAddr.get())
+								.hasId(accountIdFromHexedMirrorAddress(userMirrorAddr.get()))),
+						withOpContext((spec, opLog) ->
+								userLiteralId.set(
+										asContractString(
+												contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
+						sourcing(() -> tokenCreate(nft)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(userLiteralId.get())
+								.initialSupply(0L)
+								.supplyKey(multiKey)
+								.fee(ONE_HUNDRED_HBARS)
+								.signedBy(DEFAULT_PAYER, multiKey)),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("PRICELESS")
+						))
 				).when(
-//						withOpContext((spec, opLog) -> {
-//							final var nftType = spec.registry().getTokenID(nft);
-//							nftAddress.set(asSolidityAddress(nftType));
-//						}),
-//						sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
-//						sourcing(() -> contractCall(ercContract,
-//								"ownerOf", nftAddress.get(), 1)
-//								.via(lookup)
-//								.gas(4_000_000))
+						withOpContext((spec, opLog) -> {
+							final var nftType = spec.registry().getTokenID(nft);
+							nftAddress.set(asSolidityAddress(nftType));
+						}),
+						sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
+						sourcing(() -> contractCall(ercContract,
+								"ownerOf", nftAddress.get(), 1)
+								.via(lookup)
+								.gas(4_000_000))
 				).then(
-//						sourcing(() -> childRecordsCheck(lookup, SUCCESS,
-//								recordWith()
-//										.status(SUCCESS)
-//										.contractCallResult(
-//												resultWith()
-//														.contractCallResult(htsPrecompileResult()
-//																.forFunction(HTSPrecompileResult.FunctionType.OWNER)
-//																.withOwner(unhex(userAliasAddr.get()))
-//														))))
+						sourcing(() -> childRecordsCheck(lookup, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.OWNER)
+																.withOwner(unhex(userAliasAddr.get()))
+														))))
 				);
 	}
 
