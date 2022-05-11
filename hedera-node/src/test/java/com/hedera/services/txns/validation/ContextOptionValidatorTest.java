@@ -206,6 +206,17 @@ class ContextOptionValidatorTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void shortCircuitsIfContractExpiryNotEnabled() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
+		given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY)).willReturn(now.getEpochSecond() - 1);
+		given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
+		assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void usesPreciseExpiryCheckIfBalanceIsZero() {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
 		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
