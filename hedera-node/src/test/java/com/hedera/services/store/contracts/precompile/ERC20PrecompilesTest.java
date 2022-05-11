@@ -1016,5 +1016,5 @@ class ERC20PrecompilesTest {
     private static final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(token), EntityId.fromGrpcAccountId(receiver).asNum());
 
-    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, true);
+    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, BigInteger.ONE, true);
 }
