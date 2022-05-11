@@ -21,18 +21,19 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -42,7 +43,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
-import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
@@ -62,24 +62,25 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public static final String ETH_HASH_KEY = "EthHash";
-
-    private static final TupleType longTuple = TupleType.parse("(int64)");
-
+    private static final String callDataFileName = "CallData";
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
     private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
-    private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
     public static  final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
@@ -92,6 +93,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
+    private Optional<FileID> ethFileID = Optional.empty();
+    private boolean createCallDataFile;
     private boolean isTokenFlow;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
@@ -228,6 +231,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return this;
     }
 
+    public HapiEthereumCall createCallDataFile() {
+        this.createCallDataFile = true;
+        return this;
+    }
+
     @Override
     protected HapiEthereumCall self() {
         return this;
@@ -275,7 +283,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
 
          ContractID contractID = ContractID.getDefaultInstance();
-
          TokenID tokenID = TokenID.getDefaultInstance();
 
         if (isTokenFlow) {
@@ -288,9 +295,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             }
         }
 
-        final var gasPriceBytes = gasLongToBytes(gasPrice);;
-        final var maxFeePerGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxFeePerGas.longValueExact())).array()).toArray();
-        final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
+        final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());;
+        final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
+        final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
         if (useSpecNonce) {
             nonce = spec.getNonce();
@@ -303,12 +310,23 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
+        System.out.println("Size = " + callData.length + " vs " + MAX_CALL_DATA_SIZE);
+        if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
+            final var callDataBytesString = ByteString.copyFrom(callData);
+            final var createFile = new HapiFileCreate(callDataFileName);
+            final var updateLargeFile = updateLargeFile(payer.orElse(DEFAULT_CONTRACT_SENDER), callDataFileName, callDataBytesString);
+            createFile.execFor(spec);
+            updateLargeFile.execFor(spec);
+            ethFileID = Optional.of(TxnUtils.asFileId(callDataFileName, spec));
+        }
+
         final EthereumTransactionBody ethOpBody = spec
                 .txns()
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
                             builder.setEthereumData(ByteString.copyFrom(signedEthTxData.encodeTx()));
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
+                            ethFileID.ifPresent(builder::setCallData);
                         }
                 );
         return b -> b.setEthereumTransaction(ethOpBody);
@@ -379,9 +397,5 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 .add("contract", contract)
                 .add("abi", abi)
                 .add("params", Arrays.toString(params));
-    }
-
-    private byte[] gasLongToBytes(BigInteger gas) {
-        return Bytes.wrap(longTuple.encode(Tuple.of(gas.longValueExact())).array()).toArray();
     }
 }
