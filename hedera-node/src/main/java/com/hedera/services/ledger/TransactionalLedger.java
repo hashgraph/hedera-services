@@ -259,6 +259,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			if (commitInterceptor != null) {
 				computePendingChanges();
 				commitInterceptor.preview(pendingChanges);
+				commitInterceptor.finalizeSideEffects();
 				flushPendingChanges();
 			} else {
 				flushListed(changedKeys);
@@ -289,6 +290,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -363,6 +365,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- BackingStore implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */

@@ -28,10 +28,11 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
-import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.StakeAwareAccountsCommitsInterceptor;
+import com.hedera.services.ledger.interceptors.StakedAccountsImpactManager;
+import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -132,14 +133,15 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final StakedAccountsImpactManager manager
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, manager);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

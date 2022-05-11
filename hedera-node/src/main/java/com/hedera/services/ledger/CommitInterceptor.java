@@ -54,4 +54,6 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	default boolean completesPendingRemovals() {
 		return false;
 	}
+
+	default void finalizeSideEffects(){ }
 }
