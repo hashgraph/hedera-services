@@ -11,7 +11,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
@@ -70,15 +69,6 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
-		final var output = internalCompute(input);
-		if (output == null) {
-			frame.setRevertReason(INVALID_CALL_REVERT_REASON);
-		}
-		return output;
-	}
-
-	@Nullable
-	private Bytes internalCompute(final Bytes input) {
 		try {
 			final var selector = input.getInt(0);
 			final var amount = biValueFrom(input);

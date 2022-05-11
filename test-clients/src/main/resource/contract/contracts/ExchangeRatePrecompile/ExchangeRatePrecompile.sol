@@ -17,4 +17,11 @@ contract ExchangeRatePrecompile is SelfFunding {
     function approxUsdValue() external payable returns (uint256 tinycents) {
         tinycents = tinybarsToTinycents(msg.value);
     }
+
+    function invalidCall() external payable {
+        // Should fail, this is not a valid selector 
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSelector(ExchangeRatePrecompile.approxUsdValue.selector));
+        require(success);
+    }
 }

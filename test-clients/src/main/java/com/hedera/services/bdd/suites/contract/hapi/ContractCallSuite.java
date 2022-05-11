@@ -553,7 +553,10 @@ public class ContractCallSuite extends HapiApiSuite {
 												isLiteralResult(new Object[] {
 														BigInteger.valueOf(
 																minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
-												}))))
+												})))),
+						sourcing(() -> contractCall(rateAware, "invalidCall")
+								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				);
 	}
 
