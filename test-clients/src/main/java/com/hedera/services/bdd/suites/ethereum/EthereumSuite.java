@@ -230,7 +230,6 @@ public class EthereumSuite extends HapiApiSuite {
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT)
 				).when(
 						ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-								.adminKey(THRESHOLD)
 								.type(EthTxData.EthTransactionType.EIP1559)
 								.signingWith(SECP_256K1_SOURCE_KEY)
 								.payingWith(RELAYER)

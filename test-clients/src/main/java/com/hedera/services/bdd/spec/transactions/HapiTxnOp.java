@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -47,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -90,6 +93,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
 	private boolean ensureResolvedStatusIsntFromDuplicate = false;
+	private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
 	protected boolean acceptAnyStatus = false;
 	protected boolean acceptAnyPrecheck = false;
@@ -490,6 +494,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED) == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
 				? OverlappingKeyGenerator.withDefaultOverlaps()
 				: DEFAULT_KEY_GEN;
+	}
+
+	protected byte[] gasLongToBytes(final Long gas) {
+		return Bytes.wrap(LONG_TUPLE.encode(Tuple.of(gas)).array()).toArray();
 	}
 
 	/* Fluent builder methods to chain. */
