@@ -728,7 +728,7 @@ class StateViewTest {
 
 		final var expectedResponse = StakingInfo.newBuilder()
 				.setDeclineReward(false)
-				.setStakedNodeId(10L)
+				.setStakedNodeId(9L)
 				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(10000L))
 				.build();
 

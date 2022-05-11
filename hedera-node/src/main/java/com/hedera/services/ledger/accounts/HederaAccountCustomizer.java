@@ -32,10 +32,14 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+	public static final String STAKED_ID_NOT_SET_CASE = "STAKEDID_NOT_SET";
+	public static final String STAKED_ACCOUNT_ID_CASE = "STAKED_ACCOUNT_ID";
+	public static final String STAKED_NODE_ID_CASE = "STAKED_NODE_ID";
 
 	static {
 		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
@@ -72,8 +76,8 @@ public final class HederaAccountCustomizer extends
 		}
 		if (changes.containsKey(AccountProperty.STAKED_ID)) {
 			final long id = (long) changes.get(AccountProperty.STAKED_ID);
-			if (id < 0) {
-				op.setStakedNodeId(-1L * id);
+			if (id <= 0) {
+				op.setStakedNodeId(-id - 1);
 			} else if (id > 0) {
 				op.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(id));
 			}
@@ -86,5 +90,17 @@ public final class HederaAccountCustomizer extends
 	@Override
 	protected HederaAccountCustomizer self() {
 		return this;
+	}
+
+	public static boolean hasStakedId(final String idCase) {
+		return !idCase.equals(STAKED_ID_NOT_SET_CASE);
+	}
+
+	public void customizeStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId) {
+		final var stakedId = getStakedId(idCase, stakedAccountId, stakedNodeId);
+		this.stakedId(stakedId);
 	}
 }

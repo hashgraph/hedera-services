@@ -102,6 +102,14 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts noStakingNodeId(){
+		registerProvider((spec, o) -> {
+			assertEquals(0, ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts stakedNodeId(long idLiteral) {
 		registerProvider((spec, o) -> {
 			assertEquals(idLiteral,

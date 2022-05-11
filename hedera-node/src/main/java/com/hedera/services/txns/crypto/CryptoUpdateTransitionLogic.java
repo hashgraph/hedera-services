@@ -50,7 +50,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -197,10 +197,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasDeclineReward()) {
 			customizer.isDeclinedReward(op.getDeclineReward().getValue());
 		}
-		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
-		if (stakedId.isPresent()) {
-			customizer.stakedId(stakedId.get());
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
 		}
+
 		return customizer;
 	}
 
@@ -240,7 +240,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
+
+		final var stakedIdCase = op.getStakedIdCase().name();
+		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+				stakedIdCase,
+				op.getStakedAccountId(),
+				op.getStakedNodeId(),
+				accounts.get(),
+				nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
 		return OK;

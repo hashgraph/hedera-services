@@ -217,7 +217,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -238,7 +238,7 @@ class CryptoCreateTransitionLogicTest {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -288,7 +288,7 @@ class CryptoCreateTransitionLogicTest {
 	void validatesStakedId() {
 		givenValidTxnCtx();
 
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(false);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -326,7 +326,7 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
 				).build();
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 

@@ -39,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
@@ -172,13 +171,15 @@ class ContractCustomizerTest {
 				.setDeclineReward(true)
 				.build();
 
-		assertEquals(stakedId.num(), getStakedId(op.getStakedAccountId(), op.getStakedNodeId()).get());
+		assertEquals(stakedId.num(), getStakedId(op.getStakedIdCase().name(),
+				op.getStakedAccountId(), op.getStakedNodeId()));
 
 		op = ContractCreateTransactionBody.newBuilder()
 				.setDeclineReward(true)
 				.build();
 
-		assertEquals(Optional.empty(), getStakedId(op.getStakedAccountId(), op.getStakedNodeId()));
+		assertEquals(-1, getStakedId(op.getStakedIdCase().name(),
+				op.getStakedAccountId(), op.getStakedNodeId()));
 	}
 
 	@Test
@@ -217,7 +218,7 @@ class ContractCustomizerTest {
 		verify(accountCustomizer).customizeSynthetic(op);
 		assertEquals(MiscUtils.asKeyUnchecked(cryptoAdminKey), op.getAdminKey());
 		assertEquals(AccountID.getDefaultInstance(), op.getStakedAccountId());
-		assertEquals(1, op.getStakedNodeId());
+		assertEquals(0, op.getStakedNodeId());
 	}
 
 	@Test

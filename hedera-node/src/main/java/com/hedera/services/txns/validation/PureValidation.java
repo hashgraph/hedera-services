@@ -37,7 +37,7 @@ import org.apache.commons.codec.DecoderException;
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -134,20 +134,17 @@ public final class PureValidation {
 		}
 	}
 
-	public static boolean isValidStakedId(final AccountID stakedAccountId,
+	public static boolean isValidStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
 			final long stakedNodeId,
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final NodeInfo nodeInfo) {
-		// resulting stakedId will be < 0 if it is stakingNodeId and will be  > 0 if it is stakingAccountId
-		final var stakedId = getStakedId(stakedAccountId, stakedNodeId);
-		if (stakedId.isPresent()) {
-			if (stakedId.get() > 0) {
-				return queryableAccountStatus(EntityNum.fromLong(Math.abs(stakedId.get())), accounts) == OK;
-			} else {
-				return isValidNodeId(Math.abs(stakedId.get()), nodeInfo);
-			}
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
+		} else {
+			return isValidNodeId(stakedNodeId, nodeInfo);
 		}
-		return true;
 	}
 
 	private static boolean isValidNodeId(final long nodeId, final NodeInfo nodeInfo) {

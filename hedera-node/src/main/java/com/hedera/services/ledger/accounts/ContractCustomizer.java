@@ -30,12 +30,13 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
-import java.util.Optional;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 /**
@@ -75,7 +76,6 @@ public class ContractCustomizer {
 	) {
 		final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
-		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
 
 		final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
 		final var customizer = new HederaAccountCustomizer()
@@ -84,9 +84,11 @@ public class ContractCustomizer {
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 				.isDeclinedReward(op.getDeclineReward())
 				.isSmartContract(true);
-		if (stakedId.isPresent()) {
-			customizer.stakedId(stakedId.get());
+
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
 		}
+
 		return new ContractCustomizer(key, customizer);
 	}
 
@@ -159,12 +161,15 @@ public class ContractCustomizer {
 	 * 		given staked_node_id
 	 * @return valid staked id
 	 */
-	public static Optional<Long> getStakedId(final AccountID stakedAccountId, final long stakedNodeId) {
-		if (stakedAccountId != null && !stakedAccountId.equals(AccountID.getDefaultInstance())) {
-			return Optional.of(stakedAccountId.getAccountNum());
-		} else if (stakedNodeId > 0) {
-			return Optional.of((-1 * stakedNodeId));
+	public static long getStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId) {
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return stakedAccountId.getAccountNum();
+		} else {
+			// return a number less than the given node Id, in order to recognize the if nodeId 0 is set
+			return -stakedNodeId - 1;
 		}
-		return Optional.empty();
 	}
 }

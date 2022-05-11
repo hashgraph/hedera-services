@@ -443,9 +443,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/**
-	 * Get the num [of shard.realm.num] of node/account this account has staked its Hbar to
-	 * If the returned value is negative it is staked to a node and node num is the absolute value
-	 * If the returned value is positive it is staked to an account.
+	 * Get the num [of shard.realm.num] of node/account this account has staked its hbar to
+	 * If the returned value is negative it is staked to a node and node num is the absolute value of (-stakedNum - 1)
+	 * If the returned value is positive it is staked to an account and the accountNum is stakedNum.
 	 *
 	 * @return num [of shard.realm.num] of node/account
 	 */

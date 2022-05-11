@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -145,10 +146,16 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 
-		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(),
-				contracts.get(), nodeInfo)) {
+		final var stakedIdCase = op.getStakedIdCase().name();
+		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+				stakedIdCase,
+				op.getStakedAccountId(),
+				op.getStakedNodeId(),
+				contracts.get(),
+				nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
+
 		return OK;
 	}
 }

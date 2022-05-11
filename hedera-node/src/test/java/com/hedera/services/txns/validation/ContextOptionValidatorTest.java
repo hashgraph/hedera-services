@@ -582,14 +582,14 @@ class ContextOptionValidatorTest {
 		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts,
+		assertEquals(true, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts,
 				nodeInfo));
 
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
 		given(nodeInfo.accountOf(10L)).willThrow(IllegalArgumentException.class);
-		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts,
+		assertEquals(false, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts,
 				nodeInfo));
 	}
 
@@ -603,19 +603,19 @@ class ContextOptionValidatorTest {
 		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedAccountId(asAccount("0.0.10"))
 				.build();
-		assertEquals(true, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
+		assertEquals(true, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(deletedAccount);
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedAccountId(asAccount("0.0.10"))
 				.build();
-		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
+		assertEquals(false, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 
 		given(accounts.get(EntityNum.fromLong(10L))).willReturn(null);
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedAccountId(asAccount("0.0.10"))
 				.build();
-		assertEquals(false, subject.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
+		assertEquals(false, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts, nodeInfo));
 	}
 
 

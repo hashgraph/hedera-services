@@ -23,7 +23,6 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +80,7 @@ class HederaAccountCustomizerTest {
 	}
 
 	@Test
-	void negativeNumForStakedIdIsNodeID() {
+	void negativeNumMinusOneForStakedIdIsNodeID() {
 		final var memo = "Inherited";
 		final var stakedId = -4L;
 		final var autoRenew = 7776001L;
@@ -99,7 +98,7 @@ class HederaAccountCustomizerTest {
 		customizer.customizeSynthetic(op);
 
 		assertEquals(memo, op.getMemo());
-		assertEquals(-1 * stakedId, op.getStakedNodeId());
+		assertEquals(-1 * stakedId -1, op.getStakedNodeId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
 		assertEquals(true, op.getDeclineReward());
 	}

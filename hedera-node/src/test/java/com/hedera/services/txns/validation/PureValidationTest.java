@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_NODE_ID_CASE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,17 +75,17 @@ class PureValidationTest {
 		final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
 		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(new MerkleAccount());
 
-		assertTrue(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts, nodeInfo));
+		assertTrue(PureValidation.isValidStakedId(STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
 		final var deletedAccount = new MerkleAccount();
 		deletedAccount.setDeleted(true);
 		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(deletedAccount);
-		assertFalse(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts, nodeInfo));
+		assertFalse(PureValidation.isValidStakedId(STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
 		final var smartContract = new MerkleAccount();
 		smartContract.setSmartContract(true);
 		given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(smartContract);
-		assertFalse(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts, nodeInfo));
+		assertFalse(PureValidation.isValidStakedId(STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 	}
 
 	@Test
@@ -95,9 +97,9 @@ class PureValidationTest {
 		final NodeInfo nodeInfo = mock(NodeInfo.class);
 
 		given(nodeInfo.accountOf(stakedNodeId)).willReturn(asAccount("0.0.2"));
-		assertTrue(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts, nodeInfo));
+		assertTrue(PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
 		given(nodeInfo.accountOf(stakedNodeId)).willThrow(IllegalArgumentException.class);
-		assertFalse(PureValidation.isValidStakedId(stakedAccountID, stakedNodeId, accounts, nodeInfo));
+		assertFalse(PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 	}
 }

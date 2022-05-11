@@ -34,8 +34,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 
-import static com.hedera.services.ledger.accounts.ContractCustomizer.getStakedId;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -73,10 +73,8 @@ public class UpdateCustomizerFactory {
 		if (affectsMemo(op)) {
 			processMemo(op, customizer);
 		}
-
-		final var stakedId = getStakedId(op.getStakedAccountId(), op.getStakedNodeId());
-		if (stakedId.isPresent()) {
-			customizer.stakedId(stakedId.get());
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
 		}
 		if (op.hasDeclineReward()) {
 			customizer.isDeclinedReward(op.getDeclineReward().getValue());

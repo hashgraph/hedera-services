@@ -162,7 +162,7 @@ class CryptoUpdateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(-10L, changes.get(AccountProperty.STAKED_ID));
+		assertEquals(-11L, changes.get(AccountProperty.STAKED_ID));
 		assertEquals(null, changes.get(AccountProperty.DECLINE_REWARD));
 	}
 
@@ -178,7 +178,7 @@ class CryptoUpdateTransitionLogicTest {
 						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
 				.build();
 
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(false);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
@@ -584,6 +584,6 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(validator.isValidStakedIdIfPresent(any(), anyLong(), any(), any())).willReturn(true);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 	}
 }

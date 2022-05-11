@@ -55,6 +55,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
@@ -201,7 +202,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
-		if (!validator.isValidStakedIdIfPresent(op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
+		final var stakedIdCase = op.getStakedIdCase().name();
+		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+				stakedIdCase,
+				op.getStakedAccountId(),
+				op.getStakedNodeId(),
+				accounts.get(),
+				nodeInfo)) {
 			return INVALID_STAKING_ID;
 		}
 		return validator.memoCheck(op.getMemo());
