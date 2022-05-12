@@ -12,13 +12,13 @@ import java.util.List;
 
 public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitInterceptor {
 	// Map of changed stakedAccounts and the effective change on its stakedToMe
-	private final List<StakeImpact> stakeChanges;
-	private final StakedAccountsImpactManager stakedAccountsManager;
+	private final List<StakeAdjustment> stakeAdjustments;
+	private final StakedAccountsAdjustmentsManager stakedAccountsManager;
 
 	public StakeAwareAccountsCommitsInterceptor(final SideEffectsTracker sideEffectsTracker,
-			final StakedAccountsImpactManager manager) {
+			final StakedAccountsAdjustmentsManager manager) {
 		super(sideEffectsTracker);
-		stakeChanges = new ArrayList<>();
+		stakeAdjustments = new ArrayList<>();
 		stakedAccountsManager = manager;
 	}
 
@@ -29,7 +29,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			return;
 		}
 		super.preview(pendingChanges);
-		stakeChanges.clear();
+		stakeAdjustments.clear();
 
 		for (int i = 0; i < n; i++) {
 			final var entity = pendingChanges.entity(i);
@@ -39,12 +39,17 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				if (change.containsKey(AccountProperty.BALANCE)) {
 					final long newBalance = (long) change.get(AccountProperty.BALANCE);
 					final long adjustment = (entity != null) ? newBalance - entity.getBalance() : newBalance;
-					stakeChanges.add(new StakeImpact(stakedId, adjustment));
+					stakeAdjustments.add(new StakeAdjustment(stakedId, adjustment));
 				}
 
 				if (change.containsKey(AccountProperty.STAKED_ID)) {
 					final var newStakeId = (long) change.get(AccountProperty.STAKED_ID);
-					stakedAccountsManager.updateStakeId(stakeChanges, entity, newStakeId);
+					stakedAccountsManager.updateStakeId(stakeAdjustments, entity, newStakeId);
+				}
+
+				if (change.containsKey(AccountProperty.DECLINE_REWARD)) {
+					final var declineRewards = (boolean) change.get(AccountProperty.DECLINE_REWARD);
+					// todo
 				}
 			}
 		}
@@ -52,6 +57,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	@Override
 	public void finalizeSideEffects() {
-		stakedAccountsManager.aggregateAndCommitStakeImpacts(stakeChanges);
+		stakedAccountsManager.aggregateAndCommitStakeAdjustments(stakeAdjustments);
 	}
 }

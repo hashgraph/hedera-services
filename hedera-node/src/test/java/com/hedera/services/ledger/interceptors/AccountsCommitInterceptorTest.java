@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;

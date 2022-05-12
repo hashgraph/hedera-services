@@ -10,15 +10,15 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-public class StakedAccountsImpactManager {
+public class StakedAccountsAdjustmentsManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	public StakedAccountsImpactManager(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+	public StakedAccountsAdjustmentsManager(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
-	public void aggregateAndCommitStakeImpacts(List<StakeImpact> changes) {
+	public void aggregateAndCommitStakeAdjustments(List<StakeAdjustment> changes) {
 		Map<EntityNum, Long> aggregateStakes = new TreeMap<>();
 		for (final var change : changes) {
 			if (aggregateStakes.containsKey(change.stakedAccount())) {
@@ -40,17 +40,17 @@ public class StakedAccountsImpactManager {
 		}
 	}
 
-	public void updateStakeId(final List<StakeImpact> stakeChanges, final MerkleAccount entity,
+	public void updateStakeId(final List<StakeAdjustment> stakeChanges, final MerkleAccount entity,
 			final long newStakedIdNum) {
 		final long newStake = entity.getBalance();
 		if (newStakedIdNum > 0) {
 			final var newStakedId = EntityNum.fromLong(newStakedIdNum);
-			stakeChanges.add(new StakeImpact(newStakedId, newStake));
+			stakeChanges.add(new StakeAdjustment(newStakedId, newStake));
 		}
 
 		final var oldStakedId = EntityNum.fromLong(entity.getStakedId());
 		if (oldStakedId.longValue() > 0) {
-			stakeChanges.add(new StakeImpact(oldStakedId, -newStake));
+			stakeChanges.add(new StakeAdjustment(oldStakedId, -newStake));
 		}
 	}
 }
