@@ -27,16 +27,34 @@
 
 	<developers>
 		<developer>
+			<name>Abhishek Pandey</name>
+			<email>abhishek.pandey@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
+		</developer>
+		<developer>
 			<name>Anirudh Ghanta</name>
 			<email>anirudh.ghanta@hedera.com</email>
 			<organization>Hedera Hashgraph, LLC</organization>
 			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
+			<name>Cesar Vazquez</name>
+			<email>cesarvazquez@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
 			<name>Jeffrey Tang</name>
 			<email>jeffrey@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Leo Jiang</name>
+			<email>leo.jiang@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
 			<name>Michael Tinker</name>
@@ -55,6 +73,18 @@
 			<email>nosh@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Qian Qiu</name>
+			<email>qianqiu@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Quan Nguyen</name>
+			<email>quan.nguyen@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 	</developers>
 
@@ -88,6 +118,56 @@
 		<repository>
 			<id>ossrh-snapshots</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-prerelease-channel</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>maven-develop-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-adhoc-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-daily-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>
