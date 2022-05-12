@@ -881,7 +881,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-														Utils.asSolidityAddress(0, 0, 1543L),
+														Utils.asSolidityAddress(0, 0, 9_991_543L),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
@@ -900,10 +900,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
 						childRecordsCheck(FIRST_CREATE_TXN, CONTRACT_REVERT_EXECUTED,
 								TransactionRecordAsserts.recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_ACCOUNT_ID)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(INVALID_SIGNATURE.name()))),
+														.error(INVALID_ACCOUNT_ID.name()))),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
