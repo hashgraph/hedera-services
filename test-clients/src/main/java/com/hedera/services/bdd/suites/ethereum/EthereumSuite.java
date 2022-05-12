@@ -24,21 +24,29 @@ import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.ethereum.EthTxData;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -46,43 +54,58 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EthereumSuite extends HapiApiSuite {
 
@@ -106,6 +129,8 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+						ETX_008_contractCreateExecutesWithExpectedRecord(),
 						ETX_009_callsToTokenAddresses(),
 						ETX_010_transferToCryptoAccountSucceeds(),
 						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
@@ -574,6 +599,105 @@ public class EthereumSuite extends HapiApiSuite {
 							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,
 									originalBytecode.length);
 							Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+						})
+				);
+	}
+
+
+	private HapiApiSpec ETX_008_contractCreateExecutesWithExpectedRecord() {
+		final var txn = "creation";
+		final var contract = "Fuse";
+
+		return defaultHapiSpec("ETX_008_contractCreateExecutesWithExpectedRecord")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+
+						uploadInitCode(contract),
+						ethereumContractCreate(contract)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.gasLimit(GAS_LIMIT)
+								.via(txn),
+						withOpContext((spec, opLog) -> {
+							final var op = getTxnRecord(txn);
+							allRunFor(spec, op);
+							final var record = op.getResponseRecord();
+							final var creationResult = record.getContractCreateResult();
+							final var createdIds = creationResult.getCreatedContractIDsList();
+							assertEquals(
+									4, createdIds.size(),
+									"Expected four creations but got " + createdIds);
+						})
+				).when()
+				.then();
+	}
+
+	private HapiApiSpec ETX_007_fungibleTokenCreateWithFeesHappyPath() {
+		final var createdTokenNum = new AtomicLong();
+		final var feeCollector = "feeCollector";
+		final var contract = "TokenCreateContract";
+		final var EXISTING_TOKEN = "EXISTING_TOKEN";
+		final var firstTxn = "firstCreateTxn";
+		final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
+
+		return defaultHapiSpec("ETX_007_fungibleTokenCreateWithFeesHappyPath")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+
+						cryptoCreate(feeCollector)
+								.balance(ONE_HUNDRED_HBARS),
+						uploadInitCode(contract),
+						contractCreate(contract)
+								.gas(GAS_LIMIT),
+						tokenCreate(EXISTING_TOKEN)
+								.decimals(5),
+						tokenAssociate(feeCollector, EXISTING_TOKEN)
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												ethereumCall(contract,
+														"createTokenWithAllCustomFeesAvailable",
+														spec.registry().getKey(
+																SECP_256K1_SOURCE_KEY).getECDSASecp256K1().toByteArray(),
+														asAddress(spec.registry().getAccountID(feeCollector)),
+														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
+														asAddress(spec.registry().getAccountID(RELAYER)),
+														8_000_000L)
+														.via(firstTxn)
+														.gasLimit(GAS_LIMIT)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[]) result[0];
+															createdTokenNum.set(new BigInteger(res).longValueExact());
+														})
+
+						))
+				).then(
+						getTxnRecord(firstTxn).andAllChildRecords().logged(),
+						childRecordsCheck(firstTxn, ResponseCodeEnum.SUCCESS,
+								TransactionRecordAsserts.recordWith()
+										.status(ResponseCodeEnum.SUCCESS)),
+						withOpContext((spec, ignore) -> {
+							final var op = getTxnRecord(firstTxn);
+							allRunFor(spec, op);
+
+							final var callResult = op.getResponseRecord().getContractCallResult();
+							final var gasUsed = callResult.getGasUsed();
+							final var amount = callResult.getAmount();
+							final var gasLimit = callResult.getGas();
+							Assertions.assertEquals(DEFAULT_AMOUNT_TO_SEND,amount);
+							Assertions.assertEquals(GAS_LIMIT,gasLimit);
+							Assertions.assertTrue(gasUsed > 0L);
+							Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
 						})
 				);
 	}
