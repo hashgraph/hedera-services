@@ -202,6 +202,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return retryLimits;
 	}
 
+	public Optional<Supplier<String>> getExplicitHexedParams() {
+		return explicitHexedParams;
+	}
+
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
