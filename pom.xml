@@ -117,6 +117,56 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>platform-maven-prerelease-channel</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>maven-develop-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-adhoc-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-daily-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
 	</repositories>
 	<distributionManagement>
 		<snapshotRepository>
