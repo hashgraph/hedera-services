@@ -1,0 +1,136 @@
+package com.hedera.services.bdd.suites.block;
+
+import com.google.common.primitives.Longs;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
+import com.hedera.services.ethereum.EthTxData;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+public class BlockSuite extends HapiApiSuite {
+
+    private static final Logger log = LogManager.getLogger(EthereumSuite.class);
+
+    public static void main(String... args) {
+        new BlockSuite().runSuiteSync();
+    }
+
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(
+                BLCK_001_002_003_004_returnsCorrectBlockProperties()
+
+        );
+    }
+
+    private HapiApiSpec BLCK_001_002_003_004_returnsCorrectBlockProperties() {
+        final var contract = "EmitBlockTimestamp";
+        final var firstBlock = "firstBlock";
+        final var timeLoggingTxn = "timeLoggingTxn";
+
+        return defaultHapiSpec("returnsCorrectBlockProperties")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                ).when(
+                        ethereumCall(contract, "logNow")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .gasLimit(1_000_000L)
+                                .via(firstBlock)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+
+                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
+
+                        ethereumCall(contract, "logNow")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(1)
+                                .maxFeePerGas(50L)
+                                .gasLimit(1_000_000L)
+                                .via(timeLoggingTxn)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS)
+                ).then(
+                        withOpContext((spec, opLog) -> {
+                            final var firstBlockOp = getTxnRecord(firstBlock);
+                            final var recordOp = getTxnRecord(timeLoggingTxn);
+                            allRunFor(spec, firstBlockOp, recordOp);
+
+                            //First block info
+                            final var firstBlockRecord = firstBlockOp.getResponseRecord();
+                            final var firstBlockLogs = firstBlockRecord.getContractCallResult().getLogInfoList();
+                            final var firstBlockTimeLogData = firstBlockLogs.get(0).getData().toByteArray();
+                            final var firstBlockTimestamp = Longs.fromByteArray(
+                                    Arrays.copyOfRange(firstBlockTimeLogData, 24, 32));
+                            final var firstBlockHashLogData = firstBlockLogs.get(1).getData().toByteArray();
+                            final var firstBlockNumber = Longs.fromByteArray(
+                                    Arrays.copyOfRange(firstBlockHashLogData, 24, 32));
+                            final var firstBlockHash = Bytes32.wrap(
+                                    Arrays.copyOfRange(firstBlockHashLogData, 32, 64));
+
+                            assertEquals(Bytes32.ZERO, firstBlockHash);
+
+                            //Second block info
+                            final var secondBlockRecord = recordOp.getResponseRecord();
+                            final var secondBlockLogs = secondBlockRecord.getContractCallResult().getLogInfoList();
+                            assertEquals(2, secondBlockLogs.size());
+                            final var secondBlockTimeLogData = secondBlockLogs.get(0).getData().toByteArray();
+                            final var secondBlockTimestamp = Longs.fromByteArray(
+                                    Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
+
+                            assertNotEquals(firstBlockTimestamp, secondBlockTimestamp,
+                                    "Block timestamps should change");
+
+                            final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
+                            final var secondBlockNumber = Longs.fromByteArray(
+                                    Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
+
+                            assertEquals(firstBlockNumber + 1, secondBlockNumber,
+                                    "Wrong previous block number");
+
+                            final var secondBlockHash = Bytes32.wrap(
+                                    Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
+
+                            assertEquals(Bytes32.ZERO, secondBlockHash);
+                        })
+                );
+
+    }
+
+
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
+}
