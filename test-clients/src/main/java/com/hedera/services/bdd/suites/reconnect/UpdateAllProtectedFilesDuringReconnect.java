@@ -89,7 +89,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 						saveFileToRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
 						saveFileToRegistry(FEE_SCHEDULE, FEES_FILE_REGISTRY),
 
-						sleepFor(Duration.ofSeconds(25).toMillis()),
+						sleepFor(Duration.ofSeconds(50).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.8")
 								.unavailableNode()
