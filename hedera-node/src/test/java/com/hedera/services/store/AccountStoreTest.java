@@ -50,9 +50,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,7 +75,7 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
-		subject = new AccountStore(validator, dynamicProperties, accounts);
+		subject = new AccountStore(validator, accounts);
 	} 
 
 	@Test
@@ -84,7 +87,7 @@ class AccountStoreTest {
 	@Test
 	void loadsContractAsExpected() {
 		miscMerkleAccount.setSmartContract(true);
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
 		Account account = subject.loadContract(miscId);
 
 		assertEquals(Id.fromGrpcAccount(miscMerkleId.toGrpcAccountId()), account.getId());
@@ -93,7 +96,7 @@ class AccountStoreTest {
 	@Test
 	void loadsTreasuryTitles() {
 		miscMerkleAccount.setNumTreasuryTitles(34);
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
 		Account account = subject.loadAccount(miscId);
 
 		assertEquals(34, account.getNumTreasuryTitles());
@@ -121,20 +124,19 @@ class AccountStoreTest {
 	@Test
 	void failsLoadingDetached() throws NegativeAccountBalanceException {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
-		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscMerkleAccount.setBalance(0L);
+		given(validator.expiryStatusGiven(0L, 1234567L, false))
+				.willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
 	@Test
 	void canAlwaysLoadWithNonzeroBalance() {
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
 		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
 		miscMerkleAccount.setNumAssociations(associatedTokensCount);
 		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
 		miscAccount.setApproveForAllNfts(Collections.emptySet());
@@ -163,14 +165,13 @@ class AccountStoreTest {
 
 	@Test
 	void persistenceUpdatesTokens() {
-		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
 		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
 		miscMerkleAccount.setKey(miscMerkleId);
 		miscMerkleAccount.setNumAssociations(associatedTokensCount);
 		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		// and:
 		final var aThirdToken = new Token(new Id(0, 0, 888));
-		final var thirdRelKey = EntityNumPair.fromLongs(miscAccountNum, aThirdToken.getId().num());
 		// and:
 		final var expectedReplacement = MerkleAccountFactory.newAccount()
 				.balance(balance)
@@ -204,9 +205,9 @@ class AccountStoreTest {
 		assertEquals(FAIL_INVALID, ex.getResponseCode());
 
 		miscMerkleAccount.setDeleted(false);
-		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
-		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscMerkleAccount.setBalance(0L);
+		given(validator.expiryStatusGiven(0L, expiry, false))
+				.willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		var ex2 = assertThrows(
 				InvalidTransactionException.class,
@@ -257,8 +258,14 @@ class AccountStoreTest {
 		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
+	private void setupWithUnexpiredAccount(EntityNum anId, MerkleAccount anAccount) {
+		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+	}
+
 	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 	}
 
 	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {

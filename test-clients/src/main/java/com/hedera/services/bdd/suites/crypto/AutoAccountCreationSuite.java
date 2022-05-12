@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -132,10 +132,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getTxnRecord(autoCreation).andAllChildRecords()
 								.hasAliasInChildRecord(ed25519SourceKey, 0)
 								.hasAliasInChildRecord(secp256k1SourceKey, 1).logged(),
-						getAliasedAccountBalance(ed25519SourceKey)
+						getAutoCreatedAccountBalance(ed25519SourceKey)
 								.hasExpectedAccountID()
 								.logged(),
-						getAliasedAccountBalance(secp256k1SourceKey)
+						getAutoCreatedAccountBalance(secp256k1SourceKey)
 								.hasExpectedAccountID()
 								.logged(),
 						getAliasedAccountInfo(ed25519SourceKey)

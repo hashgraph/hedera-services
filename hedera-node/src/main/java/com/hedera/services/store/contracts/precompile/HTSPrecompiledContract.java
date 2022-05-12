@@ -561,7 +561,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	/* --- Helpers --- */
 	private AccountStore createAccountStore() {
-		return accountStoreFactory.newAccountStore(validator, dynamicProperties, ledgers.accounts());
+		return accountStoreFactory.newAccountStore(validator, ledgers.accounts());
 	}
 
 	private TypedTokenStore createTokenStore(
@@ -725,7 +725,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface AccountStoreFactory {
 		AccountStore newAccountStore(
 				OptionValidator validator,
-				GlobalDynamicProperties dynamicProperties,
 				BackingStore<AccountID, MerkleAccount> accounts);
 	}
 

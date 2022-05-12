@@ -132,7 +132,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				fungibleTokenCreateThenQueryAndTransfer(),
 				nonFungibleTokenCreateThenQuery(),
 				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-				inheritsSenderAutoRenewAccountForTokenCreate()
+				inheritsSenderAutoRenewAccountForTokenCreate(),
+				createTokenWithDefaultExpiryAndEmptyKeys()
 		});
 	}
 
@@ -1280,6 +1281,67 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.contractCallResult(ContractFnResultAsserts.resultWith()
 												.error(INSUFFICIENT_TX_FEE.name()))
 						)
+				);
+	}
+
+	private HapiApiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+		final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
+		final var createTokenNum = new AtomicLong();
+		final var ACCOUNT2 = "account2";
+		final var contractAdminKey = "contractAdminKey";
+		final var ACCOUNT_TO_ASSOCIATE = "account3";
+		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
+		return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
+				.given(
+						newKeyNamed(ED25519KEY).shape(ED25519),
+						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+						newKeyNamed(contractAdminKey),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(ACCOUNT2)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ECDSA_KEY),
+						cryptoCreate(ACCOUNT_TO_ASSOCIATE)
+								.key(ACCOUNT_TO_ASSOCIATE_KEY),
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						contractCreate(TOKEN_CREATE_CONTRACT)
+								.gas(GAS_TO_OFFER)
+								.adminKey(contractAdminKey)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
+
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithDefaultExpiryAndEmptyKeys")
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[]) result[0];
+															createTokenNum.set(new BigInteger(res).longValueExact());
+														}),
+												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
+														.shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
+												newKeyNamed(tokenCreateContractAsKeyDelegate)
+														.shape(DELEGATE_CONTRACT.signedWith(TOKEN_CREATE_CONTRACT))
+										)
+						)
+				).then(
+						getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged()
 				);
 	}
 

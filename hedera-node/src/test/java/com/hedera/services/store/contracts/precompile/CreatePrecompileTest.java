@@ -760,7 +760,7 @@ class CreatePrecompileTest {
 		final var tokenCreateValidator = Mockito.mock(Function.class);
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(typedTokenStore);
 		given(createLogicFactory.newTokenCreateLogic(

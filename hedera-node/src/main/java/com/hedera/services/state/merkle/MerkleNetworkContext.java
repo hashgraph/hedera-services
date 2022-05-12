@@ -718,9 +718,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	/* --- Utility methods --- */
 	public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
 		final byte[] hashBytesToConvert = hash.getValue();
-		final byte[] suffixBytes = new byte[32];
-		System.arraycopy(hashBytesToConvert, 16, suffixBytes, 0, 32);
-		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(suffixBytes));
+		final byte[] prefixBytes = new byte[32];
+		System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
+		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
 	}
 
 	/* --- Used for tests --- */

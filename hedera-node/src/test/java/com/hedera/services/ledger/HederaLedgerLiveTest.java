@@ -102,7 +102,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				nftsLedger,
 				new HashMapBackingTokens());
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, liveSideEffects, historian, dynamicProps, accountsLedger,
+				tokenStore, ids, creator, validator, liveSideEffects, historian, accountsLedger,
 				transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
 	}

@@ -697,7 +697,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 
@@ -748,7 +748,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 

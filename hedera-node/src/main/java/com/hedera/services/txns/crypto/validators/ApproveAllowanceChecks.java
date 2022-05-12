@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 @Singleton
 public class ApproveAllowanceChecks extends AllowanceChecks {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	@Inject
@@ -62,7 +61,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
 		super(dynamicProperties);
-		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
 
@@ -97,7 +95,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
 		if (validity != OK) {
 			return validity;

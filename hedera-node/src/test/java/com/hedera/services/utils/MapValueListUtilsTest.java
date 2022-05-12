@@ -25,10 +25,13 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.utils.MapValueListUtils.overwritingRemoveFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.internalDetachFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.removeFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MapValueListUtilsTest {
@@ -40,15 +43,15 @@ class MapValueListUtilsTest {
 
 		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = overwritingRemoveFromMapValueList(aRelKey, aRelKey, relsListRemoval);
+		final var k1 = removeFromMapValueList(aRelKey, aRelKey, relsListRemoval);
 		assertEquals(bRelKey, k1);
 		assertFalse(tokenRels.containsKey(aRelKey));
 
-		final var k2 = overwritingRemoveFromMapValueList(k1, k1, relsListRemoval);
+		final var k2 = removeFromMapValueList(k1, k1, relsListRemoval);
 		assertEquals(cRelKey, k2);
 		assertFalse(tokenRels.containsKey(bRelKey));
 
-		final var k3 = overwritingRemoveFromMapValueList(k2, k2, relsListRemoval);
+		final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
 		assertNull(k3);
 		assertTrue(tokenRels.isEmpty());
 	}
@@ -59,7 +62,7 @@ class MapValueListUtilsTest {
 
 		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = overwritingRemoveFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+		final var k1 = removeFromMapValueList(bRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
 		assertFalse(tokenRels.containsKey(bRelKey));
 	}
@@ -70,9 +73,52 @@ class MapValueListUtilsTest {
 
 		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = overwritingRemoveFromMapValueList(cRelKey, aRelKey, relsListRemoval);
+		final var k1 = removeFromMapValueList(cRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
 		assertFalse(tokenRels.containsKey(cRelKey));
+	}
+
+	@Test
+	void unlinkingWorksWithGetForModify() {
+		initializeRels();
+
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+
+		final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+		assertSame(aRelKey, newRoot);
+		final var unlinkedValue = tokenRels.get(bRelKey);
+		assertEquals(0, unlinkedValue.prevKey());
+		assertEquals(0, unlinkedValue.nextKey());
+		// and:
+		final var newRootValue = tokenRels.get(aRelKey);
+		assertEquals(c.longValue(), newRootValue.nextKey());
+		// and:
+		final var newTailValue = tokenRels.get(cRelKey);
+		assertEquals(a.longValue(), newTailValue.prevKey());
+		// and:
+		assertTrue(tokenRels.containsKey(bRelKey));
+	}
+
+	@Test
+	void unlinkingWorksWithOverwriting() {
+		initializeRels();
+
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+
+		final var newRoot = internalDetachFromMapValueList(
+				bRelKey, aRelKey, relsListRemoval, false, false, true);
+		assertSame(aRelKey, newRoot);
+		final var unlinkedValue = tokenRels.get(bRelKey);
+		assertEquals(0, unlinkedValue.prevKey());
+		assertEquals(0, unlinkedValue.nextKey());
+		// and:
+		final var newRootValue = tokenRels.get(aRelKey);
+		assertEquals(c.longValue(), newRootValue.nextKey());
+		// and:
+		final var newTailValue = tokenRels.get(cRelKey);
+		assertEquals(a.longValue(), newTailValue.prevKey());
+		// and:
+		assertTrue(tokenRels.containsKey(bRelKey));
 	}
 
 	private void initializeRels() {
