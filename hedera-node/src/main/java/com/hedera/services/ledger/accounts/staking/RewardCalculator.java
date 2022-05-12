@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import java.util.function.Supplier;
 
 public class RewardCalculator {
+	private static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final GlobalDynamicProperties properties;
 
@@ -19,18 +20,20 @@ public class RewardCalculator {
 		this.properties = properties;
 	}
 
-	final boolean areRewardsActivated(){
-		
-	}
-
-	final long computeRewards() {
-		final var stakingAccount = "0.0.800";
-		final var startThreshold = 100;
-
-		if (accounts.get().get(stakingAccount).getBalance() < startThreshold) {
+	final void computeAndApply() {
+		if (!areRewardsActivated()) {
 			return;
 		}
 
+		final var rewardsTobeApplied = computeRewards();
+	}
+
+	final boolean areRewardsActivated() {
+		final var stakingAccountBalance = accounts.get().get(stakingFundAccount).getBalance();
+		return stakingAccountBalance >= properties.getStakingStartThreshold();
+	}
+
+	final long computeRewards() {
 
 	}
 }
