@@ -353,13 +353,17 @@ public class SeededPropertySource {
 				0,
 				null,
 				0,
-				0);
+				0,
+				0,
+				0,
+				0,
+				false);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
 	}
 
-	public MerkleAccountState next0260AccountState() {
+	public MerkleAccountState nextAccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
@@ -395,7 +399,11 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextEntityId(),
 				nextInRangeLong(),
-				nextUnsignedLong());
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextInRangeLong(),
+				nextBoolean());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -438,6 +446,9 @@ public class SeededPropertySource {
 		}
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
+		}
+		if (nextBoolean()) {
+			builder.setStakingRewardsPaid(nextCurrencyAdjustments());
 		}
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());

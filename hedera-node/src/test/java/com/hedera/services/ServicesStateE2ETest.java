@@ -48,8 +48,8 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testNftsFromSignedStateV24() {
-		Assertions.assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh"));
+	void testNftsFromSignedStateV25() throws IOException {
+		loadSignedState(signedStateDir + "v0.25.3/SignedState.swh");
 	}
 
 	private static SignedState loadSignedState(final String path) throws IOException {

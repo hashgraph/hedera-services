@@ -253,21 +253,28 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void tracksAndResetsAllowanceAdjusts() {
-		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
-		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
+	void tracksAndResetsRewardsPaidAsExpected() {
+		final var rewardA = 1_000L;
+		final var rewardB = 333L;
+		final var rewardC = 1_234_567L;
+		subject.trackRewardPayment(aAccount.getAccountNum(), rewardA);
+		subject.trackRewardPayment(bAccount.getAccountNum(), rewardB);
+		subject.trackRewardPayment(cAccount.getAccountNum(), rewardC);
 
-		final var trackedCryptoAllowances = subject.getCryptoAllowances();
-		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));
-		assertEquals(cryptoAllowance, trackedCryptoAllowances.get(ownerNum));
-
-		final var trackedTokenAllowances = subject.getFungibleTokenAllowances();
-		assertTrue(trackedTokenAllowances.containsKey(ownerNum));
-		assertEquals(fungibleAllowance, trackedTokenAllowances.get(ownerNum));
+		final var rewardsPaid = subject.getStakingRewardsPaid();
+		assertEquals(3, rewardsPaid.getAccountNums().length);
+		assertEquals(3, rewardsPaid.getHbars().length);
+		assertEquals(aAccount.getAccountNum(), rewardsPaid.getAccountNums()[0]);
+		assertEquals(rewardA, rewardsPaid.getHbars()[0]);
+		assertEquals(bAccount.getAccountNum(), rewardsPaid.getAccountNums()[1]);
+		assertEquals(rewardB, rewardsPaid.getHbars()[1]);
+		assertEquals(cAccount.getAccountNum(), rewardsPaid.getAccountNums()[2]);
+		assertEquals(rewardC, rewardsPaid.getHbars()[2]);
 
 		subject.reset();
-		assertTrue(subject.getCryptoAllowances().isEmpty());
-		assertTrue(subject.getFungibleTokenAllowances().isEmpty());
+		final var emptyRewards = subject.getStakingRewardsPaid();
+		assertEquals(0, emptyRewards.getAccountNums().length);
+		assertEquals(0, emptyRewards.getHbars().length);
 	}
 
 	@Test
@@ -331,15 +338,6 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void gettersAndSettersWork() {
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setCryptoAllowances(cryptoAllowances);
-
-		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
-		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
-	}
-
-	@Test
 	void purgesZeroChangesSuccessfully() {
 		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
 		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
@@ -366,6 +364,16 @@ class SideEffectsTrackerTest {
 		assertEquals(2, subject.getNumHbarChangesSoFar());
 		subject.reset();
 		assertEquals(0, subject.getNumHbarChangesSoFar());
+	}
+
+	@Test
+	void resetsRewardedNumsCorrectly() {
+		subject.trackRewardPayment(100L, 200L);
+		subject.trackRewardPayment(200L, 200L);
+		subject.trackRewardPayment(800L, -400L);
+		assertEquals(3, subject.getNumRewardedAccounts());
+		subject.reset();
+		assertEquals(0, subject.getNumRewardedAccounts());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

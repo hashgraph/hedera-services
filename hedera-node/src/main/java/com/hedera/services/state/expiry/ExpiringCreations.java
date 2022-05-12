@@ -169,6 +169,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
 				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
+				.setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 

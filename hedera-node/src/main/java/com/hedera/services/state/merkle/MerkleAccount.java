@@ -455,6 +455,63 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
 	}
 
+	public boolean isDeclinedReward() {
+		return state().isDeclineReward();
+	}
+
+	public void setDeclineReward(boolean declineReward) {
+		throwIfImmutable("Cannot change this account's declineReward if it's immutable");
+		state().setDeclineReward(declineReward);
+	}
+
+	public long getStakedToMe() {
+		return state().getStakedToMe();
+	}
+
+	public void setStakedToMe(long stakedToMe) {
+		throwIfImmutable("Cannot change this account's stakedToMe if it's immutable");
+		state().setStakedToMe(stakedToMe);
+	}
+
+	public long getStakePeriodStart() {
+		return state().getStakePeriodStart();
+	}
+
+	public void setStakePeriodStart(long stakePeriodStart) {
+		throwIfImmutable("Cannot change this account's stakePeriodStart if it's immutable");
+		state().setStakePeriodStart(stakePeriodStart);
+	}
+
+	/**
+	 * Get the num [of shard.realm.num] of node/account this account has staked its Hbar to
+	 * If the returned value is negative it is staked to a node and node num is the absolute value
+	 * If the returned value is positive it is staked to an account.
+	 * @return num [of shard.realm.num] of node/account
+	 */
+	public long getStakedNum() {
+		return state().getStakedNum();
+	}
+
+	/**
+	 * Set the node to which this account is staking its Hbar to
+	 * @param nodeNum
+	 * 		The node num of the node
+	 */
+	public void setStakedNodeId(long nodeNum) {
+		throwIfImmutable("Cannot change this account's staked nodeId if it's immutable");
+		state().setStakedNum(-nodeNum);
+	}
+
+	/**
+	 * Set the account to which this accout is staking its Hbar to
+	 * @param accountNum
+	 * 		The account num of the account.
+	 */
+	public void setStakedAccount(long accountNum) {
+		throwIfImmutable("Cannot change this account's staked account if it's immutable");
+		state().setStakedNum(accountNum);
+	}
+
 	public Iterator<ExpirableTxnRecord> recordIterator() {
 		return records().iterator();
 	}

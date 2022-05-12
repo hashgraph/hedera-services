@@ -54,6 +54,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
@@ -70,6 +71,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ACCOUNT;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_NODE_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKE_START_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -145,6 +150,14 @@ class AccountPropertyTest {
 		final int origNumPositiveBalances = 4;
 		final int newNumPositiveBalances = 7;
 		final int newNumTreasuryTitles = 77;
+		final long origStakedToMe = 12_345L;
+		final long newStakedToMe = 4_567_890L;
+		final long origStakePeriodStart = 786L;
+		final long newStakePeriodStart = 945L;
+		final long origStakedNum = 1111L;
+		final long newStakedNum = 5L;
+		final boolean origDeclinedReward = false;
+		final boolean newDeclinedReward = true;
 		final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
 		final EntityNum payerNum = EntityNum.fromAccountId(payer);
 		final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -194,6 +207,10 @@ class AccountPropertyTest {
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
 		account.setUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
 		account.setNumTreasuryTitles(origNumTreasuryTitles);
+		account.setDeclineReward(origDeclinedReward);
+		account.setStakedAccount(origStakedNum);
+		account.setStakePeriodStart(origStakePeriodStart);
+		account.setStakedToMe(origStakedToMe);
 
 		final var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		final var unfrozenToken = new MerkleToken(
@@ -230,6 +247,10 @@ class AccountPropertyTest {
 		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
+		DECLINE_REWARD.setter().accept(account, newDeclinedReward);
+		STAKED_TO_ME.setter().accept(account, newStakedToMe);
+		STAKE_START_PERIOD.setter().accept(account, newStakePeriodStart);
+		STAKED_NODE_ID.setter().accept(account, newStakedNum);
 		ETHEREUM_NONCE.setter().accept(account, newEthereumNonce);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -254,6 +275,13 @@ class AccountPropertyTest {
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
 		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
 		assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
+		assertEquals(newDeclinedReward, DECLINE_REWARD.getter().apply(account));
+		assertEquals(newStakedToMe, STAKED_TO_ME.getter().apply(account));
+		assertEquals(newStakePeriodStart, STAKE_START_PERIOD.getter().apply(account));
+		assertEquals(-newStakedNum, STAKED_NODE_ID.getter().apply(account));
+
+		STAKED_ACCOUNT.setter().accept(account, origStakedNum);
+		assertEquals(origStakedNum, STAKED_ACCOUNT.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

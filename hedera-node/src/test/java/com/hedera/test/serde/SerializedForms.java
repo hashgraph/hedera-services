@@ -160,7 +160,7 @@ public class SerializedForms {
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState,
 							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
