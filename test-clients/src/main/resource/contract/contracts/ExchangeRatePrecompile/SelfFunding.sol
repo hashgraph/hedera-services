@@ -5,7 +5,7 @@ import "./IExchangeRate.sol";
 
 abstract contract SelfFunding {
     uint256 constant TINY_PARTS_PER_WHOLE = 100_000_000;
-    address constant PRECOMPILE_ADDRESS = address(0x21d4);
+    address constant PRECOMPILE_ADDRESS = address(0x168);
 
     function tinycentsToTinybars(uint256 tinycents) internal returns (uint256 tinybars) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
