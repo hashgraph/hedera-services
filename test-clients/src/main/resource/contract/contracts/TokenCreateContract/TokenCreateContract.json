@@ -392,6 +392,19 @@
   },
   {
     "inputs": [],
+    "name": "createTokenWithDefaultExpiryAndEmptyKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "createTokenWithDefaultKeys",
     "outputs": [
       {
