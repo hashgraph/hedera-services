@@ -36,12 +36,12 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
@@ -315,24 +315,26 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 to, valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
-        final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         System.out.println("Size = " + callData.length + " vs " + MAX_CALL_DATA_SIZE);
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
-            final var callDataBytesString = ByteString.copyFrom(callData);
+            final var callDataBytesString = ByteString.copyFrom(Hex.encode(callData));
             final var createFile = new HapiFileCreate(callDataFileName);
             final var updateLargeFile = updateLargeFile(payer.orElse(DEFAULT_CONTRACT_SENDER), callDataFileName, callDataBytesString);
             createFile.execFor(spec);
             updateLargeFile.execFor(spec);
             ethFileID = Optional.of(TxnUtils.asFileId(callDataFileName, spec));
+            signedEthTxData = signedEthTxData.replaceCallData(new byte[] { });
         }
+        final var finalEthTxData = signedEthTxData;
 
         final EthereumTransactionBody ethOpBody = spec
                 .txns()
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
-                            builder.setEthereumData(ByteString.copyFrom(signedEthTxData.encodeTx()));
+                            builder.setEthereumData(ByteString.copyFrom(finalEthTxData.encodeTx()));
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                             ethFileID.ifPresent(builder::setCallData);
                         }
