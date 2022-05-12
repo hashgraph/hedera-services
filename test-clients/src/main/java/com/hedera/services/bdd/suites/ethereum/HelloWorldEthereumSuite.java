@@ -240,7 +240,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
-        final var LARGER_THAN_MAX_CALLDATA = new byte[MAX_CALL_DATA_SIZE + 1];
+        final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -251,7 +251,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCode(CALLDATA_SIZE_CONTRACT),
                         contractCreate(CALLDATA_SIZE_CONTRACT).adminKey(THRESHOLD)
                 ).when(
-                        ethereumCall(CALLDATA_SIZE_CONTRACT, "callme", LARGER_THAN_MAX_CALLDATA)
+                        ethereumCall(CALLDATA_SIZE_CONTRACT, "callme", largerThanMaxCalldata)
                                 .via("payTxn")
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                 ).then(
@@ -261,7 +261,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                         .contractCallResult(
                                                 resultWith()
                                                         .logs(inOrder(logWith()
-                                                                        .longAtBytes(LARGER_THAN_MAX_CALLDATA.length,24)
+                                                                        .longAtBytes(largerThanMaxCalldata.length, 24)
                                                                         .withTopicsInOrder(List.of(eventSignatureOf("Info(uint256)"))))
                                                                 )
                                                         .senderId(spec.registry().getAccountID(
