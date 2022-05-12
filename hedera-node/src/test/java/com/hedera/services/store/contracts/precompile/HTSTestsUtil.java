@@ -69,6 +69,7 @@ public class HTSTestsUtil {
 			Dissociation.singleDissociation(account, nonFungible);
 	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);

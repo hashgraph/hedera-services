@@ -47,7 +47,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -484,7 +484,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(500, fungibleToken).between(treasury, beneficiary)
 						).via(transferTxn)
 				).then(
-						getTxnRecord(transferTxn).hasPriority(recordWith()
+						getTxnRecord(transferTxn)
+								.hasPriority(recordWith()
 								.autoAssociated(accountTokenPairs(List.of(
 										Pair.of(beneficiary, fungibleToken),
 										Pair.of(beneficiary, uniqueToken))))),
@@ -570,7 +571,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return defaultHapiSpec("CannotGiveNftsToDissociatedContractsOrAccounts")
 				.given(
 						newKeyNamed(theKey),
-						contractCreate(theContract),
+						createDefaultContract(theContract),
 						cryptoCreate(theAccount),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -607,9 +608,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec cannotSendFungibleToDissociatedContractsOrAccounts() {
 		final var theContract = "tbd";
 		final var theAccount = "alsoTbd";
-		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
+		return defaultHapiSpec("CannotSendFungibleToDissociatedContractsOrAccounts")
 				.given(
-						contractCreate(theContract),
+						createDefaultContract(theContract),
 						cryptoCreate(theAccount),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)

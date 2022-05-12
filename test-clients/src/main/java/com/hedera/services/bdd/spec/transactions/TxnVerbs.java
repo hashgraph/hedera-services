@@ -345,6 +345,10 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, fn);
 	}
 
+	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
+		return new HapiContractCall(abi, contract, params);
+	}
+
 	public static HapiContractCreate contractCreate(final String contractName, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
