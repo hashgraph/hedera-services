@@ -94,6 +94,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
+	private static boolean expiryJustEnabled = false;
+
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
@@ -170,6 +172,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
 
 			// When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the autoRenewalMigrator
+			if (expiryJustEnabled) {
+				autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+			}
 
 			// Give the MutableStateChildren up-to-date WeakReferences
 			final var app = getMetadata().app();
@@ -547,5 +552,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@VisibleForTesting
 	static void setVmFactory(final Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory) {
 		ServicesState.vmFactory = vmFactory;
+	}
+
+	@VisibleForTesting
+	static void setExpiryJustEnabled(final boolean expiryJustEnabled) {
+		ServicesState.expiryJustEnabled = expiryJustEnabled;
 	}
 }
