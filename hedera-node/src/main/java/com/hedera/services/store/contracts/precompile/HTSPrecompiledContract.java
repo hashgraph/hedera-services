@@ -1872,7 +1872,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
+			TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(),
 					getApprovedWrapper.tokenId());
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);

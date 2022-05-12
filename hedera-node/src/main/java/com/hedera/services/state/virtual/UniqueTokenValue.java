@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
@@ -50,9 +51,9 @@ public class UniqueTokenValue implements VirtualValue {
 	/* package */ static final int CURRENT_VERSION = 1;
 
 	/** The account number field of the owner's account id. */
-	private long ownerAccountNum;
+	private volatile long ownerAccountNum;
 	/** The account number field of the spender's account id. */
-	private long spenderAccountNum;
+	private volatile long spenderAccountNum;
 
 	/**
 	 * The compressed creation time of the token:
@@ -61,11 +62,11 @@ public class UniqueTokenValue implements VirtualValue {
 	 *  - the lower 32-bits represents a signed integer containing nanosecond resolution to the timestamp in which the
 	 *    token was created.
 	 */
-	private long packedCreationTime;
+	private volatile long packedCreationTime;
 	/** The metadata associated with the unique token, the maximum number of bytes for this field is 100 bytes. */
-	private byte[] metadata = new byte[0];
+	private final AtomicReference<byte[]> metadata = new AtomicReference<>(new byte[0]);
 	/** Whether this instance is immutable (e.g., the ownerAccountNum field may only be mutated when this is false). */
-	private boolean isImmutable = false;
+	private volatile boolean isImmutable = false;
 
 	public UniqueTokenValue() {}
 
@@ -77,14 +78,14 @@ public class UniqueTokenValue implements VirtualValue {
 		this.ownerAccountNum = ownerAccountNum;
 		this.spenderAccountNum = spenderAccountNum;
 		this.packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
-		this.metadata = metadata;
+		this.metadata.set(metadata);
 	}
 
 	public UniqueTokenValue(UniqueTokenValue other) {
 		ownerAccountNum = other.ownerAccountNum;
 		spenderAccountNum = other.spenderAccountNum;
 		packedCreationTime = other.packedCreationTime;
-		metadata = other.metadata;
+		metadata.set(other.metadata.get());
 		// Do not copy over the isImmutable field.
 	}
 
@@ -129,10 +130,11 @@ public class UniqueTokenValue implements VirtualValue {
 		writeLongFn.accept(packedCreationTime);
 
 		// Cap the maximum metadata bytes to avoid malformed inputs with too many metadata bytes.
-		int len = min(MAX_METADATA_BYTES, metadata.length);
+		byte[] metadataBytes = this.metadata.get();
+		int len = min(MAX_METADATA_BYTES, metadataBytes.length);
 		writeByteFn.accept((byte) len);
 		if (len > 0) {
-			writeBytesFn.accept(metadata, len);
+			writeBytesFn.accept(metadataBytes, len);
 		}
 	}
 
@@ -157,11 +159,11 @@ public class UniqueTokenValue implements VirtualValue {
 		len = min(len, MAX_METADATA_BYTES);
 		// Create a new byte array everytime. This way, copies can be references to
 		// previously allocated content without worrying about mutation.
-		metadata = new byte[len];
-
+		byte[] metadataBytes = new byte[len];
 		if (len > 0) {
-			readBytesFn.accept(metadata);
+			readBytesFn.accept(metadataBytes);
 		}
+		metadata.set(metadataBytes);
 	}
 
 	@Override
@@ -201,7 +203,7 @@ public class UniqueTokenValue implements VirtualValue {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ownerAccountNum, spenderAccountNum, packedCreationTime, Arrays.hashCode(metadata));
+		return Objects.hash(ownerAccountNum, spenderAccountNum, packedCreationTime, Arrays.hashCode(metadata.get()));
 	}
 
 	@Override
@@ -212,7 +214,7 @@ public class UniqueTokenValue implements VirtualValue {
 				.add("creationTime", Instant.ofEpochSecond(
 						unsignedHighOrder32From(packedCreationTime),
 						signedLowOrder32From(packedCreationTime)))
-				.add("metadata", metadata)
+				.add("metadata", metadata.get())
 				.add("isImmutable", isImmutable)
 				.toString();
 	}
@@ -223,7 +225,7 @@ public class UniqueTokenValue implements VirtualValue {
 			return other.ownerAccountNum == this.ownerAccountNum
 					&& other.spenderAccountNum == this.spenderAccountNum
 					&& other.packedCreationTime == this.packedCreationTime
-					&& Arrays.equals(other.metadata, this.metadata);
+					&& Arrays.equals(other.metadata.get(), this.metadata.get());
 		}
 		return false;
 	}
@@ -251,7 +253,7 @@ public class UniqueTokenValue implements VirtualValue {
 	}
 
 	public byte[] getMetadata() {
-		return metadata;
+		return metadata.get();
 	}
 
 	public void setOwner(EntityId entityId) {
@@ -271,6 +273,6 @@ public class UniqueTokenValue implements VirtualValue {
 
 	public void setMetadata(byte[] newMetadata) {
 		throwIfImmutable();
-		this.metadata = newMetadata;
+		this.metadata.set(newMetadata);
 	}
 }
