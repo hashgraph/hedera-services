@@ -143,10 +143,7 @@ public class NodeInfo {
 			readBook();
 		}
 		final int index = (int) nodeId;
-		if (isIndexOutOfBounds(index) || accounts[index] == null) {
-			return false;
-		}
-		return true;
+		return !isIndexOutOfBounds(index) && accounts[index] != null;
 	}
 
 	/**
