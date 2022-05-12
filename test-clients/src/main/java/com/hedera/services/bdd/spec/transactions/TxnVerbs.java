@@ -359,6 +359,19 @@ public class TxnVerbs {
 	}
 
 	/**
+	 * This method allows the developer to transfer hbars to an <b>account that's not a smart contract</b> through an
+	 * Ethereum transaction.
+	 *
+	 * @param account
+	 * 		the name of the account in the registry
+	 * @param amount
+	 * 		the amount of tinybars to be transferred from the Ethereum transaction sender to the specified account
+	 */
+	public static HapiEthereumCall ethereumCryptoTransfer(String account, long amount) {
+		return new HapiEthereumCall(account, amount);
+	}
+
+	/**
 	 * This method provides for the proper execution of specs, which execute contract calls with a function ABI instead
 	 * of
 	 * function name
