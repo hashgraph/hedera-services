@@ -188,8 +188,6 @@ class MintPrecompilesTest {
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
-	private PureTransferSemanticChecks transferSemanticChecks;
-	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private CreateChecks createChecks;
@@ -204,7 +202,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

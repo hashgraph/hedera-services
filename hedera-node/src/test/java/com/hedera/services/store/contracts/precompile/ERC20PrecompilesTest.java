@@ -29,7 +29,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -237,8 +236,6 @@ class ERC20PrecompilesTest {
     @Mock
     private ApproveAllowanceChecks allowanceChecks;
     @Mock
-    private PureTransferSemanticChecks transferSemanticChecks;
-    @Mock
     private AccountStore accountStore;
     @Mock
     CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
@@ -252,8 +249,8 @@ class ERC20PrecompilesTest {
         subject = new HTSPrecompiledContract(
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
+                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

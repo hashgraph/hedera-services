@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -91,6 +91,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
+    private boolean isTokenFlow;
+    private String account = null;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
@@ -110,6 +112,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = FALLBACK_ABI;
         this.params = new Object[0];
         this.contract = contract;
+        this.payer = Optional.of(RELAYER);
+    }
+
+    public HapiEthereumCall(String account, long amount) {
+        this.account = account;
+        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        this.abi = FALLBACK_ABI;
+        this.params = new Object[0];
         this.payer = Optional.of(RELAYER);
     }
 
@@ -150,6 +160,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = abi;
         this.params = params;
         this.contract = contract;
+    }
+
+    public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
+        this.abi = abi;
+        this.params = params;
+        this.contract = contract;
+        this.isTokenFlow = isTokenFlow;
     }
 
     public HapiEthereumCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
@@ -264,11 +281,17 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             }
         }
 
-        final ContractID contractID;
-        if (!tryAsHexedAddressIfLenMatches) {
-            contractID = spec.registry().getContractId(contract);
+        final byte[] to;
+        if (account != null) {
+            to = Utils.asAddress(spec.registry().getAccountID(account));
+        } else if (isTokenFlow) {
+            to = Utils.asAddress(spec.registry().getTokenID(contract));
         } else {
-            contractID = TxnUtils.asContractId(contract, spec);
+            if (!tryAsHexedAddressIfLenMatches) {
+                to = Utils.asAddress(spec.registry().getContractId(contract));
+            } else {
+                to = Utils.asAddress(TxnUtils.asContractId(contract, spec));
+            }
         }
 
         final var gasPriceBytes = gasLongToBytes(gasPrice);;
@@ -280,7 +303,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
-                Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
+                to, valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);

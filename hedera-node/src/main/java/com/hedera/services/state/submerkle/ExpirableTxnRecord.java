@@ -545,7 +545,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setTransferList(hbarAdjustments.toGrpc());
 		}
 		if (stakingRewardsPaid != null) {
-			grpc.addAllPaidStakingRewards(stakingRewardsPaid.toGrpc().getAccountAmountsList());
+			grpc.addAllPaidStakingRewards(stakingRewardsPaid.asAccountAmountsList());
 		}
 		if (contractCallResult != null) {
 			grpc.setContractCallResult(contractCallResult.toGrpc());
