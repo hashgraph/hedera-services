@@ -352,7 +352,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		long curSecond = schedules.get().getCurrentMinSecond();
 
-		while ((consensusTime.getEpochSecond() - 1 > curSecond)
+		while ((consensusTime.getEpochSecond() > curSecond)
 				&& (!schedules.get().byExpirationSecond().containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
 
 			++curSecond;

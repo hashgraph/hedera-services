@@ -873,7 +873,7 @@ class HederaScheduleStoreTest {
 
 		assertTrue(subject.advanceCurrentMinSecond(consensusTime.toJava().plusSeconds(5)));
 
-		verify(byExpirationSecond, times(4)).containsKey(any());
+		verify(byExpirationSecond, times(5)).containsKey(any());
 		verify(byExpirationSecond).containsKey(new SecondSinceEpocVirtualKey(consensusTime.getSeconds()));
 		verify(byExpirationSecond).containsKey(new SecondSinceEpocVirtualKey(
 				consensusTime.toJava().plusSeconds(1).getEpochSecond()));
@@ -881,7 +881,9 @@ class HederaScheduleStoreTest {
 				consensusTime.toJava().plusSeconds(2).getEpochSecond()));
 		verify(byExpirationSecond).containsKey(new SecondSinceEpocVirtualKey(
 				consensusTime.toJava().plusSeconds(3).getEpochSecond()));
-		verify(schedules).setCurrentMinSecond(consensusTime.toJava().plusSeconds(4).getEpochSecond());
+		verify(byExpirationSecond).containsKey(new SecondSinceEpocVirtualKey(
+				consensusTime.toJava().plusSeconds(4).getEpochSecond()));
+		verify(schedules).setCurrentMinSecond(consensusTime.toJava().plusSeconds(5).getEpochSecond());
 	}
 
 	@Test
