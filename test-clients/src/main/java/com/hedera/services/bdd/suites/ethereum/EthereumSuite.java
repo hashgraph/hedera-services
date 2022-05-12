@@ -23,18 +23,21 @@ package com.hedera.services.bdd.suites.ethereum;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.ethereum.EthTxData;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -53,15 +56,19 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
@@ -75,11 +82,14 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -570,7 +580,6 @@ public class EthereumSuite extends HapiApiSuite {
 
 						uploadInitCode(contract),
 						ethereumContractCreate(contract)
-								.omitAdminKey()
 								.type(EthTxData.EthTransactionType.EIP1559)
 								.gasLimit(GAS_LIMIT)
 								.via(txn),
@@ -637,35 +646,26 @@ public class EthereumSuite extends HapiApiSuite {
 						))
 				).then(
 						getTxnRecord(firstTxn).andAllChildRecords().logged(),
-						getAccountBalance(RELAYER).logged(),
-						getAccountBalance(contract).logged(),
-						getContractInfo(contract).logged(),
 						childRecordsCheck(firstTxn, ResponseCodeEnum.SUCCESS,
 								TransactionRecordAsserts.recordWith()
 										.status(ResponseCodeEnum.SUCCESS)),
-						sourcing(() -> {
-							final var newToken = asTokenString(TokenID.newBuilder()
-									.setTokenNum(createdTokenNum.get())
-									.build()
-							);
-							return getTokenInfo(newToken).logged()
-									.hasTokenType(TokenType.FUNGIBLE_COMMON)
-									.hasSymbol("tokenSymbol")
-									.hasName("tokenName")
-									.hasDecimals(8)
-									.hasTotalSupply(200)
-									.hasEntityMemo("memo")
-									.hasTreasury(contract)
-									.hasSupplyType(TokenSupplyType.INFINITE)
-									.searchKeysGlobally()
-									.hasCustom(fixedHtsFeeInSchedule(1, EXISTING_TOKEN, feeCollector))
-									.hasCustom(fixedHbarFeeInSchedule(2, feeCollector))
-									.hasCustom(fixedHtsFeeInSchedule(4, newToken, feeCollector))
-									.hasCustom(
-											fractionalFeeInSchedule(4, 5, 10, OptionalLong.of(30), true, feeCollector));
+						withOpContext((spec, ignore) -> {
+							final var op = getTxnRecord(firstTxn);
+							allRunFor(spec, op);
+
+							final var callResult = op.getResponseRecord().getContractCallResult();
+							final var gasUsed = callResult.getGasUsed();
+							final var amount = callResult.getAmount();
+							final var gasLimit = callResult.getGas();
+							Assertions.assertEquals(DEFAULT_AMOUNT_TO_SEND,amount);
+							Assertions.assertEquals(GAS_LIMIT,gasLimit);
+							Assertions.assertTrue(gasUsed > 0L);
+							Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
 						})
 				);
 	}
+
+
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
