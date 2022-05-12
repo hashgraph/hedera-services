@@ -35,7 +35,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-public class ReleaseTwentySevenMigrationTest {
+class ReleaseTwentySevenMigrationTest {
 	@Mock
 	AddressBook addressBook;
 
