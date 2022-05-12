@@ -134,6 +134,22 @@ public final class PureValidation {
 		}
 	}
 
+	/**
+	 * Validates if the stakedNodeId set in the CryptoCreate, CryptoUpdate, ContractCreate and ContractUpdate operations
+	 * is valid.
+	 *
+	 * @param idCase
+	 * 		case if staked account id or staked node id is set
+	 * @param stakedAccountId
+	 * 		given staked account id
+	 * @param stakedNodeId
+	 * 		given staked node id
+	 * @param accounts
+	 * 		account map
+	 * @param nodeInfo
+	 * 		node Info object
+	 * @return true if valid, false otherwise
+	 */
 	public static boolean isValidStakedId(
 			final String idCase,
 			final AccountID stakedAccountId,
@@ -143,27 +159,7 @@ public final class PureValidation {
 		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
 			return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
 		} else {
-			return isValidNodeId(stakedNodeId, nodeInfo);
+			return nodeInfo.isValidId(stakedNodeId);
 		}
 	}
-
-	/**
-	 * Validates if the stakedNodeId set in the CryptoCreate, CryptoUpdate, ContractCreate and ContractUpdate operations
-	 * is valid.
-	 *
-	 * @param nodeId
-	 * 		given node id
-	 * @param nodeInfo
-	 * 		nodeInfo object
-	 * @return true if valid, false otherwise
-	 */
-	private static boolean isValidNodeId(final long nodeId, final NodeInfo nodeInfo) {
-		try {
-			nodeInfo.accountOf(nodeId);
-			return true;
-		} catch (IllegalArgumentException ex) {
-			return false;
-		}
-	}
-
 }

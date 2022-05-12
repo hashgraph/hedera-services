@@ -77,7 +77,7 @@ public final class HederaAccountCustomizer extends
 		}
 		if (changes.containsKey(AccountProperty.STAKED_ID)) {
 			final long id = (long) changes.get(AccountProperty.STAKED_ID);
-			if (id <= 0) {
+			if (id < 0) {
 				op.setStakedNodeId(-id - 1);
 			} else if (id > 0) {
 				op.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(id));
