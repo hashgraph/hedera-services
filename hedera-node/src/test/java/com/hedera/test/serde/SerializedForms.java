@@ -31,6 +31,8 @@ import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.merkle.MerkleStakingInfoSerdeTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
@@ -186,7 +188,9 @@ public class SerializedForms {
 					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
-							MIN_TEST_CASES_PER_VERSION)
+							MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleStakingInfo.class, SeededPropertySource::nextStakingInfo,
+							MerkleStakingInfoSerdeTest.NUM_TEST_CASES)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

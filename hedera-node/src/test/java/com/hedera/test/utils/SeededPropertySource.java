@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -460,6 +461,19 @@ public class SeededPropertySource {
 			seeded.getContractCreateResult().setSenderId(nextEntityId());
 		}
 		return seeded;
+	}
+
+	public MerkleStakingInfo nextStakingInfo() {
+		final var MAX_REWARD_HISTORY = 366;
+		return new MerkleStakingInfo(
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLongs(MAX_REWARD_HISTORY)
+		);
 	}
 
 	public MerkleNetworkContext nextNetworkContext() {
