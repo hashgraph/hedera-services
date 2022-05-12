@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -160,6 +161,8 @@ class ServicesStateTest {
 	@Mock
 	private ServicesState.OwnedNftsLinkMigrator ownedNftsLinkMigrator;
 	@Mock
+	private ServicesState.StakingInfoBuilder stakingInfoBuilder;
+	@Mock
 	private ServicesState.IterableStorageMigrator iterableStorageMigrator;
 	@Mock
 	private Consumer<ServicesState> titleCountsMigrator;
@@ -187,7 +190,7 @@ class ServicesStateTest {
 		subject = mock(ServicesState.class);
 
 		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0270_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -235,6 +238,7 @@ class ServicesStateTest {
 		ServicesState.setTokenRelsLinkMigrator(tokenRelsLinkMigrator);
 		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
 		ServicesState.setVmFactory(vmf);
+		ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
 	}
 
 	private void unmockMigrators() {
@@ -244,6 +248,7 @@ class ServicesStateTest {
 		ServicesState.setTokenRelsLinkMigrator(ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList);
 		ServicesState.setOwnedNftsLinkMigrator(ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList);
 		ServicesState.setVmFactory(VirtualMapFactory::new);
+		ServicesState.setStakingInfoBuilder(ReleaseTwentySevenMigration::buildStakingInfoMap);
 	}
 
 	@Test
@@ -344,7 +349,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(6)).archive();
+		verify(mockMm, times(7)).archive();
 	}
 
 	@Test
@@ -464,6 +469,12 @@ class ServicesStateTest {
 		assertEquals(
 				StateChildIndices.NUM_POST_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION));
+		assertEquals(
+				StateChildIndices.NUM_POST_0210_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0260_VERSION));
+		assertEquals(
+				StateChildIndices.NUM_POST_0270_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.CURRENT_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
@@ -751,5 +762,6 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.STORAGE, mockMm);
 		subject.setChild(StateChildIndices.TOPICS, mockMm);
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
+		subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
 	}
 }
