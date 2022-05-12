@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.ethereum;
  * ‍
  */
 
+import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -38,8 +39,12 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
+import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +66,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -94,6 +100,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -130,7 +137,8 @@ public class EthereumSuite extends HapiApiSuite {
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
 						ETX_009_callsToTokenAddresses(),
 						ETX_008_contractCreateExecutesWithExpectedRecord(),
-						ETX_007_fungibleTokenCreateWithFeesHappyPath()
+						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
 				)).toList();
 	}
 
@@ -563,6 +571,38 @@ public class EthereumSuite extends HapiApiSuite {
 														)
 										)
 						)
+				);
+	}
+
+	private HapiApiSpec ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode() {
+		final var txn = "creation";
+		final var contract = "EmptyConstructor";
+		return HapiApiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+
+						uploadInitCode(contract),
+						ethereumContractCreate(contract)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.gasLimit(GAS_LIMIT)
+								.via(txn)
+				).when(
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var getBytecode = getContractBytecode(contract).saveResultTo(
+									"contractByteCode");
+							allRunFor(spec, getBytecode);
+
+							final var originalBytecode = Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
+							final var actualBytecode = spec.registry().getBytes("contractByteCode");
+							// The original bytecode is modified on deployment
+							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,
+									originalBytecode.length);
+							Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+						})
 				);
 	}
 
