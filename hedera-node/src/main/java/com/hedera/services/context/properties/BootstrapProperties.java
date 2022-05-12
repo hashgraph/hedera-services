@@ -198,7 +198,9 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat",
-			"ledger.id"
+			"ledger.id",
+			"staking.periodMins",
+			"staking.rewardHistory.numStoredPeriods"
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
@@ -256,6 +258,10 @@ public final class BootstrapProperties implements PropertySource {
 			"scheduling.whitelist",
 			"scheduling.triggerTxn.windBackNanos",
 			"sigs.expandFromLastSignedState",
+			"staking.rewardRate",
+			"staking.startThreshold",
+			"staking.fees.nodeRewardPercentage",
+			"staking.fees.stakingRewardPercentage",
 			"tokens.maxRelsPerInfoQuery",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
@@ -413,6 +419,12 @@ public final class BootstrapProperties implements PropertySource {
 			entry("netty.prod.maxConnectionIdle", AS_LONG),
 			entry("netty.prod.keepAliveTime", AS_LONG),
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
+			entry("staking.periodMins", AS_LONG),
+			entry("staking.rewardHistory.numStoredPeriods", AS_INT),
+			entry("staking.rewardRate", AS_DOUBLE),
+			entry("staking.startThreshold", AS_LONG),
+			entry("staking.fees.nodeRewardPercentage", AS_INT),
+			entry("staking.fees.stakingRewardPercentage", AS_INT),
 			entry("tokens.maxRelsPerInfoQuery", AS_INT),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxCustomFeesAllowed", AS_INT),

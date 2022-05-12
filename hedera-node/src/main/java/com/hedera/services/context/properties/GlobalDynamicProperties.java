@@ -120,6 +120,10 @@ public class GlobalDynamicProperties {
 	private int maxPurgedKvPairsPerTouch;
 	private KnownBlockValues knownBlockValues;
 	private int maxReturnedNftsPerTouch;
+	private double stakingRewardRate;
+	private long stakingStartThreshold;
+	private int nodeRewardPercent;
+	private int stakingRewardPercent;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -217,6 +221,10 @@ public class GlobalDynamicProperties {
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+		stakingRewardRate = properties.getDoubleProperty("staking.rewardRate");
+		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
+		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
+		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
 	}
 
 	public int maxTokensPerAccount() {
@@ -529,5 +537,21 @@ public class GlobalDynamicProperties {
 
 	public int getMaxReturnedNftsPerTouch() {
 		return maxReturnedNftsPerTouch;
+	}
+
+	public double getStakingRewardRate() {
+		return stakingRewardRate;
+	}
+
+	public long getStakingStartThreshold() {
+		return stakingStartThreshold;
+	}
+
+	public int getNodeRewardPercent() {
+		return nodeRewardPercent;
+	}
+
+	public int getStakingRewardPercent() {
+		return stakingRewardPercent;
 	}
 }
