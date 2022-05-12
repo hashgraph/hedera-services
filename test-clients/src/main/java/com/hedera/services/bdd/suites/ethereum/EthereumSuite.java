@@ -129,15 +129,15 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+						ETX_008_contractCreateExecutesWithExpectedRecord(),
+						ETX_009_callsToTokenAddresses(),
 						ETX_010_transferToCryptoAccountSucceeds(),
 						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
 						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
-						invalidNonceEthereumTxFails(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-						ETX_009_callsToTokenAddresses(),
-						ETX_008_contractCreateExecutesWithExpectedRecord(),
-						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
 						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
 				)).toList();
 	}
@@ -290,8 +290,6 @@ public class EthereumSuite extends HapiApiSuite {
 								tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)).via(
 								"autoAccount"),
 						getTxnRecord("autoAccount").andAllChildRecords(),
-
-
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT)
 				).when(
 						ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -362,46 +360,45 @@ public class EthereumSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec invalidNonceEthereumTxFails() {
-		return defaultHapiSpec("InvalidNonceEthereumTxFails")
-				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-
-						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
-				).when(
-						ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
-								.type(EthTxData.EthTransactionType.EIP1559)
-								.signingWith(SECP_256K1_SOURCE_KEY)
-								.payingWith(RELAYER)
-								.via("payTxn")
-								.nonce(1l)
-								.gasPrice(10L)
-								.maxGasAllowance(5L)
-								.maxPriorityGas(2L)
-								.gasLimit(1_000_000L)
-								.sending(depositAmount)
-								.hasKnownStatus(ResponseCodeEnum.WRONG_NONCE),
-						ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
-								.type(EthTxData.EthTransactionType.EIP1559)
-								.signingWith(SECP_256K1_SOURCE_KEY)
-								.payingWith(RELAYER)
-								.via("payTxn")
-								.nonce(-111111111l)
-								.gasPrice(10L)
-								.maxGasAllowance(5L)
-								.maxPriorityGas(2L)
-								.gasLimit(1_000_000L)
-								.sending(depositAmount)
-								.hasKnownStatus(ResponseCodeEnum.WRONG_NONCE)
-				).then(
-						getTxnRecord("payTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith().logs(inOrder()))),
-						getAccountBalance(RELAYER).hasTinyBars(6 * ONE_MILLION_HBARS)
-				);
+	HapiApiSpec ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer() {
+			final var relayerSnapshot = "relayer";
+			final var senderSnapshot = "sender";
+			return defaultHapiSpec("ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer")
+					.given(
+							newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+							cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+							cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+									.via("autoAccount"),
+							getTxnRecord("autoAccount").andAllChildRecords(),
+							uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+							contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+					).when(
+							balanceSnapshot(relayerSnapshot, RELAYER),
+							balanceSnapshot(senderSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
+							ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+									.type(EthTxData.EthTransactionType.EIP1559)
+									.signingWith(SECP_256K1_SOURCE_KEY)
+									.payingWith(RELAYER)
+									.nonce(999L)
+									.via("payTxn")
+									.hasKnownStatus(ResponseCodeEnum.WRONG_NONCE)
+					).then(
+							withOpContext((spec, opLog) -> {
+								final var payTxn = getTxnRecord("payTxn")
+										.logged()
+										.hasPriority(recordWith()
+												.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))));
+								allRunFor(spec, payTxn);
+								final var fee = payTxn.getResponseRecord().getTransactionFee();
+								final var relayerBalance =
+										getAccountBalance(RELAYER).hasTinyBars(changeFromSnapshot(relayerSnapshot, -fee));
+								final var senderBalance =
+										getAliasedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(changeFromSnapshot(senderSnapshot, 0));
+								allRunFor(spec, relayerBalance, senderBalance);
+							}),
+							getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+									.has(accountWith().nonce(0L))
+					);
 	}
 
 	HapiApiSpec ETX_026_accountWithoutAliasCannotMakeEthTxns() {
