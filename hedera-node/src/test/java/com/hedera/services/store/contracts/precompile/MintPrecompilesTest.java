@@ -280,7 +280,7 @@ class MintPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
@@ -461,7 +461,7 @@ class MintPrecompilesTest {
 	private void givenFungibleCollaborators() {
 		given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);

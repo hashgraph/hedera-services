@@ -62,7 +62,7 @@ public class BalanceSnapshot extends UtilOp {
 	protected boolean submitOp(HapiApiSpec spec) {
 		snapshot = snapshotFn.map(fn -> fn.apply(spec)).orElse(snapshot);
 
-		HapiGetAccountBalance delegate = aliased? QueryVerbs.getAliasedAccountBalance(account).logged() :
+		HapiGetAccountBalance delegate = aliased? QueryVerbs.getAutoCreatedAccountBalance(account).logged() :
 				QueryVerbs.getAccountBalance(account).logged();
 		payer.ifPresent(delegate::payingWith);
 		Optional<Throwable> error = delegate.execFor(spec);

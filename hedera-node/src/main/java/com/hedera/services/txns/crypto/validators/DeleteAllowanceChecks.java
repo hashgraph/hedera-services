@@ -46,15 +46,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  */
 @Singleton
 public class DeleteAllowanceChecks extends AllowanceChecks {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	@Inject
 	public DeleteAllowanceChecks(
 			final GlobalDynamicProperties dynamicProperties,
-			final OptionValidator validator) {
+			final OptionValidator validator
+	) {
 		super(dynamicProperties);
-		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
 
@@ -84,7 +83,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),

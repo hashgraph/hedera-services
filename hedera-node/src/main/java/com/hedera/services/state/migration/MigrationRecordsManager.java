@@ -66,11 +66,10 @@ import static com.hedera.services.state.initialization.BackedSystemAccountsCreat
 public class MigrationRecordsManager {
 	private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
 
+	private static boolean expiryJustEnabled = false;
 	private static final Key immutableKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 	private static final String MEMO = "Release 0.24.1 migration record";
-	private static final String CONTRACT_UPGRADE_MEMO = "Contract {} was renewed during 0.26.0 upgrade. New expiry: " +
-			"{}" +
-			" .";
+	static final String AUTO_RENEW_MEMO_TPL = "Contract {} was renewed during 0.26.0 upgrade; new expiry is {}";
 
 	private final EntityCreator creator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -115,8 +114,10 @@ public class MigrationRecordsManager {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
 			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
 		} else {
-			// publish the migration records for 0.26.0, for granting free auto-renewal when starting from a saved state
-			publishContractFreeAutoRenewalRecords();
+			// Publish free auto-renewal migration records if expiry is just being enabled
+			if (expiryJustEnabled) {
+				publishContractFreeAutoRenewalRecords();
+			}
 		}
 
 		curNetworkCtx.markMigrationRecordsStreamed();
@@ -150,8 +151,9 @@ public class MigrationRecordsManager {
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 				// for 0.26.0 migration we use the contract account's hbar since auto-renew accounts are not set
-				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
-				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry,
+						contractNum.toGrpcAccountId());
+				final var memo = String.format(AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)
 						.setReceipt(syntheticSuccessReceipt);
@@ -165,5 +167,10 @@ public class MigrationRecordsManager {
 	@VisibleForTesting
 	void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
 		this.sideEffectsFactory = sideEffectsFactory;
+	}
+
+	@VisibleForTesting
+	static void setExpiryJustEnabled(boolean expiryJustEnabled) {
+		MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
 	}
 }

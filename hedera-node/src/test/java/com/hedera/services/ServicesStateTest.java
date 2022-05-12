@@ -197,11 +197,10 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesAllMigrationsFromRelease024Version() {
+	void doesAllMigrationsExceptAutoRenewFromRelease024VersionIfExpiryNotJustEnabled() {
 		mockMigrators();
 		final var inOrder = inOrder(
-				autoRenewalMigrator, titleCountsMigrator,
-				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
 		subject = mock(ServicesState.class);
 
@@ -214,9 +213,43 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
+
+		subject.migrate();
+
+		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
+		inOrder.verify(titleCountsMigrator).accept(subject);
+		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
+				eq(subject), any(), any(), eq(iterableStorage));
+		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+
+		verifyNoInteractions(autoRenewalMigrator);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesAllMigrationsFromRelease024VersionIfExpiryJustEnabled() {
+		mockMigrators();
+		final var inOrder = inOrder(
+				autoRenewalMigrator, titleCountsMigrator,
+				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+
+		subject = mock(ServicesState.class);
+
+		ServicesState.setExpiryJustEnabled(true);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.accounts()).willReturn(accounts);
+		given(subject.tokenAssociations()).willReturn(tokenAssociations);
+		given(subject.getMetadata()).willReturn(metadata);
+		given(metadata.app()).willReturn(app);
+		given(app.workingState()).willReturn(workingState);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
+		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
+		given(vmf.apply(any())).willReturn(virtualMapFactory);
 		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
 		subject.migrate();
+		ServicesState.setExpiryJustEnabled(false);
 
 		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
 		inOrder.verify(titleCountsMigrator).accept(subject);

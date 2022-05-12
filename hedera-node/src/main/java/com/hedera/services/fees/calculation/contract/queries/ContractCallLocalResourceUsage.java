@@ -114,7 +114,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, properties);
+				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
 				evmTxProcessor.setWorldState(worldState);

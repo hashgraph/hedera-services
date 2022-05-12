@@ -402,7 +402,7 @@ class ERC721PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -453,7 +453,7 @@ class ERC721PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -502,7 +502,7 @@ class ERC721PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -550,7 +550,7 @@ class ERC721PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -719,7 +719,7 @@ class ERC721PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
         given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcAccount(sender)));
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
