@@ -273,6 +273,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxIndividualContractKvPairs());
 		assertEquals(57, subject.maxAllowanceLimitPerTransaction());
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
+		assertEquals(67, subject.getNodeRewardPercent());
+		assertEquals(68, subject.getStakingRewardPercent());
 	}
 
 	@Test
@@ -295,6 +297,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(66L, subject.getStakingStartThreshold());
 	}
 
 	@Test
@@ -399,6 +402,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
 		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
+		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 64L);
+		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 65);
+		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 66);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
