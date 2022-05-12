@@ -34,7 +34,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -193,13 +192,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
 	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
-	private ApproveAllowanceLogicFactory approveAllowanceLogicFactory = ApproveAllowanceLogic::new;
-	private DeleteAllowanceLogicFactory deleteAllowanceLogicFactory = DeleteAllowanceLogic::new;
+	private final ApproveAllowanceLogicFactory approveAllowanceLogicFactory = ApproveAllowanceLogic::new;
+	private final DeleteAllowanceLogicFactory deleteAllowanceLogicFactory = DeleteAllowanceLogic::new;
 	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
 	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
-	private RedirectExecutorFactory redirectExecutorFactory = RedirectViewExecutor::new;
+	private final RedirectExecutorFactory redirectExecutorFactory = RedirectViewExecutor::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
 	private final EntityCreator creator;
@@ -307,9 +306,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
-	private ApproveAllowanceChecks allowanceChecks;
-	private PureTransferSemanticChecks transferSemanticChecks;
-
+	private final ApproveAllowanceChecks allowanceChecks;
+	
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -330,8 +328,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final ApproveAllowanceChecks allowanceChecks,
-			final PureTransferSemanticChecks transferSemanticChecks
+			final ApproveAllowanceChecks allowanceChecks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -352,7 +349,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
 		this.allowanceChecks = allowanceChecks;
-		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -1212,9 +1208,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(
 				final MessageFrame frame
 		) {
-			transferSemanticChecks.fullPureValidation(transactionBody.getCryptoTransfer().getTransfers(),
-					transactionBody.getCryptoTransfer().getTokenTransfersList(),
-					impliedTransfersMarshal.currentProps());
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
 			}

@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -544,7 +545,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setTransferList(hbarAdjustments.toGrpc());
 		}
 		if (stakingRewardsPaid != null) {
-			grpc.addAllPaidStakingRewards(stakingRewardsPaid.toGrpc().getAccountAmountsList());
+			grpc.addAllPaidStakingRewards(stakingRewardsPaid.asAccountAmountsList());
 		}
 		if (contractCallResult != null) {
 			grpc.setContractCallResult(contractCallResult.toGrpc());
@@ -893,8 +894,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 	}
 
-	// only used in unit tests
-	public void clearStakingRewardsPaid() {
+	@VisibleForTesting
+	void clearStakingRewardsPaid() {
 		stakingRewardsPaid = null;
 	}
 }
