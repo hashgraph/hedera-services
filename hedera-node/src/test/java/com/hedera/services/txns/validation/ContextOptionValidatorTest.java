@@ -578,7 +578,7 @@ class ContextOptionValidatorTest {
 		deletedAccount.setDeleted(true);
 		final NodeInfo nodeInfo = mock(NodeInfo.class);
 
-		given(nodeInfo.accountOf(10L)).willReturn(asAccount("0.0.2"));
+		given(nodeInfo.isValidId(10L)).willReturn(true);
 		CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
@@ -588,7 +588,7 @@ class ContextOptionValidatorTest {
 		op = CryptoCreateTransactionBody.newBuilder()
 				.setStakedNodeId(10L)
 				.build();
-		given(nodeInfo.accountOf(10L)).willThrow(IllegalArgumentException.class);
+		given(nodeInfo.isValidId(10L)).willReturn(false);
 		assertEquals(false, subject.isValidStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId(), accounts,
 				nodeInfo));
 	}

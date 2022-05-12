@@ -96,10 +96,10 @@ class PureValidationTest {
 		final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
 		final NodeInfo nodeInfo = mock(NodeInfo.class);
 
-		given(nodeInfo.accountOf(stakedNodeId)).willReturn(asAccount("0.0.2"));
+		given(nodeInfo.isValidId(stakedNodeId)).willReturn(true);
 		assertTrue(PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
-		given(nodeInfo.accountOf(stakedNodeId)).willThrow(IllegalArgumentException.class);
+		given(nodeInfo.isValidId(stakedNodeId)).willReturn(false);
 		assertFalse(PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 	}
 }

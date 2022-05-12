@@ -177,6 +177,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// Grant all contracts one free ~90 day auto-renewal upon enabling contract expiry
 			autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
 			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
+		}
+		if (deserializedVersionFromState < RELEASE_0270_VERSION) {
+			// build stakingInfo child
+			setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook()));
 			// Give the MutableStateChildren up-to-date WeakReferences
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);

@@ -190,7 +190,7 @@ class ServicesStateTest {
 		subject = mock(ServicesState.class);
 
 		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0270_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
