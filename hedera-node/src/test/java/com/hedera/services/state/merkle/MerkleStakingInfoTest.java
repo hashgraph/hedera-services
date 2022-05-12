@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MerkleStakingInfoTest {
 	private MerkleStakingInfo subject;
@@ -64,6 +65,7 @@ class MerkleStakingInfoTest {
 		final var subject8 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake, otherRewardSumHistory);
 		final var identical = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake, rewardSumHistory);
 
+		assertNotEquals(subject, new Object());
 		assertNotEquals(subject, subject2);
 		assertNotEquals(subject, subject3);
 		assertNotEquals(subject, subject4);
@@ -72,6 +74,7 @@ class MerkleStakingInfoTest {
 		assertNotEquals(subject, subject7);
 		assertNotEquals(subject, subject8);
 		assertEquals(subject, identical);
+		assertEquals(subject, subject);
 
 		assertNotEquals(subject.hashCode(), subject2.hashCode());
 		assertEquals(subject.hashCode(), identical.hashCode());
@@ -106,6 +109,14 @@ class MerkleStakingInfoTest {
 		assertEquals(stakeRewardStart, subject.getStakeRewardStart());
 		assertEquals(stake, subject.getStake());
 		assertArrayEquals(rewardSumHistory, subject.getRewardSumHistory());
+	}
+
+	@Test
+	void copyWorks() {
+		var copy = subject.copy();
+
+		assertTrue(subject.isImmutable());
+		assertEquals(copy, subject);
 	}
 
 }

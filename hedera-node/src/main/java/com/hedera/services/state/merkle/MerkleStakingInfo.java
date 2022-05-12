@@ -79,7 +79,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	@Override
-	public AbstractMerkleLeaf copy() {
+	public MerkleStakingInfo copy() {
 		setImmutable(true);
 		return new MerkleStakingInfo(this);
 	}
