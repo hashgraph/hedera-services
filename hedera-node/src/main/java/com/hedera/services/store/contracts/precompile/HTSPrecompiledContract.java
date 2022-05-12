@@ -1238,6 +1238,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var change = changes.get(i);
 				final var units = change.getAggregatedUnits();
 				if (change.isForNft() || units < 0) {
+					if (change.isApprovedAllowance()) {
+						/* Ignore transfers through approval, since the spender is msg.sender, and we always consider
+						msg.sender to have signed the transaction. Rather, we check whether the msg.sender has allowance */
+						continue;
+					}
 					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(),
 							sigsVerifier::hasActiveKey);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
@@ -1292,23 +1297,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()),
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount,
+												fungibleTransfer.isApproval),
+										EntityIdUtils.accountIdFromEvmAddress(HTSPrecompiledContract.this.senderAddress)),
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer())));
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount,
+												fungibleTransfer.isApproval),
+										EntityIdUtils.accountIdFromEvmAddress(HTSPrecompiledContract.this.senderAddress))));
 					} else if (fungibleTransfer.sender == null) {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()));
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount, fungibleTransfer.isApproval),
+										EntityIdUtils.accountIdFromEvmAddress(HTSPrecompiledContract.this.senderAddress)));
 					} else {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()));
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount, fungibleTransfer.isApproval),
+										EntityIdUtils.accountIdFromEvmAddress(HTSPrecompiledContract.this.senderAddress)));
 					}
 				}
 				if (changes.isEmpty()) {

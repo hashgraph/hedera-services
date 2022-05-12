@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -139,7 +138,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				transferErc20TokenReceiverContract(),
 				transferErc20TokenSenderAccount(),
 				transferErc20TokenAliasedSender(),
-				directCallsWorkForERC20()
+				directCallsWorkForERC20(),
+				erc20TransferFrom()
 		});
 	}
 
@@ -2305,6 +2305,98 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getTokenNftInfo(nft, 1L).hasNoSpender(),
 						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 3L).hasSpenderID(spender1)
+				);
+	}
+
+	private HapiApiSpec erc20TransferFrom() {
+		final var allowanceTxn = "allowanceTxn";
+		final var allowanceTxn2 = "allowanceTxn2";
+		final var transferFromAccountTxn = "transferFromAccountTxn";
+
+		return defaultHapiSpec("ERC_20_ALLOWANCE")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECIPIENT),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(FUNGIBLE_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.initialSupply(10L)
+								.maxSupply(1000L)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						uploadInitCode(ERC_20_CONTRACT),
+						contractCreate(ERC_20_CONTRACT),
+						tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+						tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+						cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												// ERC_20_CONTRACT is approved as spender of fungible tokens for OWNER
+												cryptoApproveAllowance()
+														.payingWith(DEFAULT_PAYER)
+														.addTokenAllowance(OWNER, FUNGIBLE_TOKEN, ERC_20_CONTRACT, 2L)
+														.via("baseApproveTxn")
+														.logged()
+														.signedBy(DEFAULT_PAYER, OWNER)
+														.fee(ONE_HBAR),
+												// Check that ERC_20_CONTRACT has allowance of 2
+												contractCall(ERC_20_CONTRACT, "allowance",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))
+												)
+														.gas(500_000L)
+														.via(allowanceTxn)
+														.hasKnownStatus(SUCCESS),
+												// ERC_20_CONTRACT calls the precompile transferFrom as the spender
+												contractCall(ERC_20_CONTRACT, "transferFrom",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)),
+														2)
+														.gas(500_000L)
+														.via(transferFromAccountTxn)
+														.hasKnownStatus(SUCCESS),
+												// ERC_20_CONTRACT should have spent its allowance
+												contractCall(ERC_20_CONTRACT, "allowance",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))
+												)
+														.gas(500_000L)
+														.via(allowanceTxn2)
+														.hasKnownStatus(SUCCESS)
+										)
+						)
+				).then(
+						childRecordsCheck(allowanceTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.ALLOWANCE)
+																.withAllowance(2)
+														)
+										)
+						),
+						childRecordsCheck(allowanceTxn2, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.ALLOWANCE)
+																.withAllowance(0)
+														)
+										)
+						)
 				);
 	}
 
