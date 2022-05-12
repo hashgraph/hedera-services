@@ -20,10 +20,12 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -35,6 +37,7 @@ import org.apache.commons.codec.DecoderException;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -128,6 +131,35 @@ public final class PureValidation {
 			return OK;
 		} catch (DecoderException ignore) {
 			return failure;
+		}
+	}
+
+	/**
+	 * Validates if the stakedNodeId set in the CryptoCreate, CryptoUpdate, ContractCreate and ContractUpdate operations
+	 * is valid.
+	 *
+	 * @param idCase
+	 * 		case if staked account id or staked node id is set
+	 * @param stakedAccountId
+	 * 		given staked account id
+	 * @param stakedNodeId
+	 * 		given staked node id
+	 * @param accounts
+	 * 		account map
+	 * @param nodeInfo
+	 * 		node Info object
+	 * @return true if valid, false otherwise
+	 */
+	public static boolean isValidStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId,
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final NodeInfo nodeInfo) {
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
+		} else {
+			return nodeInfo.isValidId(stakedNodeId);
 		}
 	}
 }

@@ -68,6 +68,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -243,6 +244,8 @@ class StateViewTest {
 		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
 		tokenAccount.setNumAssociations(1);
 		tokenAccount.setNumPositiveBalances(0);
+		tokenAccount.setStakedId(10L);
+		tokenAccount.setDeclineReward(true);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -698,11 +701,44 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
 
 		assertEquals(expectedResponse, actualResponse.get());
+		mockedStatic.close();
+	}
+
+	@Test
+	void stakingInfoReturnedCorrectly() {
+		tokenAccount = MerkleAccountFactory.newAccount()
+				.isSmartContract(false)
+				.tokens(tokenId)
+				.get();
+		tokenAccount.setStakedId(-10L);
+		tokenAccount.setDeclineReward(false);
+		tokenAccount.setStakePeriodStart(10000L);
+
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+				.thenReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var expectedResponse = StakingInfo.newBuilder()
+				.setDeclineReward(false)
+				.setStakedNodeId(9L)
+				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(10000L))
+				.build();
+
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+
+		assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
 		mockedStatic.close();
 	}
 
@@ -762,6 +798,10 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
 		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo);

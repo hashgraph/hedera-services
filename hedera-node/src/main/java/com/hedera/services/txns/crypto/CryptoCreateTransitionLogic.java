@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -27,13 +28,15 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +44,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -52,8 +57,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -73,6 +80,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final NodeInfo nodeInfo;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
@@ -80,13 +89,17 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
+		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -112,19 +125,22 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
 		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
+		long consensusTime = txnCtx.consensusTime().getEpochSecond();
+		long expiry = consensusTime + autoRenewPeriod;
 
 		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-		JKey key = asFcKeyUnchecked(op.getKey());
+		final JKey key = asFcKeyUnchecked(op.getKey());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
 				.memo(op.getMemo())
 				.expiry(expiry)
 				.autoRenewPeriod(autoRenewPeriod)
 				.isReceiverSigRequired(op.getReceiverSigRequired())
-				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
+				.isDeclinedReward(op.getDeclineReward());
+
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
 		}
 		return customizer;
 	}
@@ -178,7 +194,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
-
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
+		final var stakedIdCase = op.getStakedIdCase().name();
+		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+				stakedIdCase,
+				op.getStakedAccountId(),
+				op.getStakedNodeId(),
+				accounts.get(),
+				nodeInfo)) {
+			return INVALID_STAKING_ID;
+		}
 		return OK;
 	}
 }

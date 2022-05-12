@@ -63,6 +63,7 @@ class UpdateCustomizerFactoryTest {
 	private Key newAdminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asKey();
 	private AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.12345");
 	private int maxAutoAssociations = 25;
+	private AccountID newStakedId = IdUtils.asAccount("0.0.12345");
 
 	private UpdateCustomizerFactory subject = new UpdateCustomizerFactory();
 
@@ -84,6 +85,7 @@ class UpdateCustomizerFactoryTest {
 				.setAdminKey(newAdminKey)
 				.setAutoRenewPeriod(newAutoRenew)
 				.setProxyAccountID(newProxy)
+				.setStakedNodeId(newStakedId.getAccountNum())
 				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
 				.setExpirationTime(newExpiryTime)
 				.setAutoRenewAccountId(newAutoRenewAccount)
@@ -102,9 +104,11 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newAutoRenew.getSeconds(), mutableContract.getAutoRenewSecs());
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
-		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
 		assertEquals(newAutoRenewAccount, mutableContract.getAutoRenewAccount().toGrpcAccountId());
 		assertEquals(maxAutoAssociations, mutableContract.getMaxAutomaticAssociations());
+		assertEquals(null, mutableContract.getProxy());
+		assertEquals(-12346, mutableContract.getStakedId());
+		assertEquals(false, mutableContract.isDeclinedReward());
 	}
 
 	@Test

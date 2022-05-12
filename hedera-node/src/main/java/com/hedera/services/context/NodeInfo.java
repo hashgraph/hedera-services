@@ -138,6 +138,14 @@ public class NodeInfo {
 		return index;
 	}
 
+	public boolean isValidId(long nodeId) {
+		if (!bookIsRead) {
+			readBook();
+		}
+		final int index = (int) nodeId;
+		return !isIndexOutOfBounds(index) && accounts[index] != null;
+	}
+
 	/**
 	 * Convenience method to check if this node has an account in the address book.
 	 *
