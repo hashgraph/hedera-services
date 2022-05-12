@@ -32,7 +32,7 @@
     <sourceDirectory>src/main/java</sourceDirectory>
     <resources>
       <resource>
-        <directory>src/main/resource</directory>
+        <directory>src/main/resources</directory>
       </resource>
     </resources>
     <plugins>
@@ -138,7 +138,7 @@
                 </manifest>
               </archive>
               <descriptors>
-                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+                <descriptor>src/main/resources/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -156,7 +156,7 @@
                 </manifest>
               </archive>
               <descriptors>
-                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+                <descriptor>src/main/resources/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -174,7 +174,7 @@
                 </manifest>
               </archive>
               <descriptors>
-                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+                <descriptor>src/main/resources/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -193,7 +193,7 @@
                 </manifest>
               </archive>
               <descriptors>
-                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+                <descriptor>src/main/resources/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
