@@ -106,13 +106,13 @@ public class EthereumSuite extends HapiApiSuite {
 				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
+						ETX_009_callsToTokenAddresses(),
 						ETX_010_transferToCryptoAccountSucceeds(),
 						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
 						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
-						invalidNonceEthereumTxFailsAndChargesRelayer(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-						ETX_009_callsToTokenAddresses(),
+						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
 						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
 				)).toList();
 	}
@@ -335,10 +335,10 @@ public class EthereumSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec invalidNonceEthereumTxFailsAndChargesRelayer() {
+	HapiApiSpec ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer() {
 			final var relayerSnapshot = "relayer";
 			final var senderSnapshot = "sender";
-			return defaultHapiSpec("invalidNonceEthereumTxFailsAndChargesRelayer")
+			return defaultHapiSpec("ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer")
 					.given(
 							newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
 							cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
