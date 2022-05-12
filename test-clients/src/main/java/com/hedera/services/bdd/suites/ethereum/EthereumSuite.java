@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -71,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -86,6 +88,7 @@ public class EthereumSuite extends HapiApiSuite {
 	private static final long GAS_LIMIT = 1_000_000;
 
 	public static final String ERC20_CONTRACT = "ERC20Contract";
+	public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
 	private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
@@ -105,7 +108,8 @@ public class EthereumSuite extends HapiApiSuite {
 						ETX_014_contractCreateInheritsSignerProperties(),
 						invalidNonceEthereumTxFails(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-						ETX_009_callsToTokenAddresses()
+						ETX_009_callsToTokenAddresses(),
+						originAndSenderAreEthereumSigner()
 				)).toList();
 	}
 
@@ -542,6 +546,47 @@ public class EthereumSuite extends HapiApiSuite {
 				);
 	}
 
+	// ETX-011 and ETX-030
+	HapiApiSpec originAndSenderAreEthereumSigner() {
+		return defaultHapiSpec("originAndSenderAreEthereumSigner")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(EMIT_SENDER_ORIGIN_CONTRACT),
+						contractCreate(EMIT_SENDER_ORIGIN_CONTRACT)
+				).when(
+						ethereumCall(EMIT_SENDER_ORIGIN_CONTRACT, "logNow")
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.signingWith(SECP_256K1_SOURCE_KEY)
+								.payingWith(RELAYER)
+								.nonce(0)
+								.maxFeePerGas(50L)
+								.gasLimit(1_000_000L)
+								.via("payTxn")
+								.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+				).then(
+						withOpContext( (spec, ignore) -> allRunFor(spec, getTxnRecord("payTxn").logged()
+								.hasPriority(recordWith()
+										.contractCallResult(
+												resultWith()
+														.logs(inOrder(
+																logWith()
+																		.ecdsaAliasStartingAt(SECP_256K1_SOURCE_KEY, 12)
+																		.ecdsaAliasStartingAt(SECP_256K1_SOURCE_KEY, 44)
+																		.withTopicsInOrder(
+																				List.of(eventSignatureOf("Info(address,address)")))
+														))
+														.senderId(spec.registry().getAccountID(
+																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+																		.getAlias().toStringUtf8())))
+										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY)))))),
+						getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+								.has(accountWith().nonce(1L))
+				);
+	}
 
 	@Override
 	protected Logger getResultsLogger() {
