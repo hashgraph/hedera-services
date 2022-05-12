@@ -78,6 +78,7 @@ public class BalanceChange {
 	public static BalanceChange changingFtUnits(
 			final Id token, final TokenID tokenId, final AccountAmount aa, final AccountID payerID) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE, payerID);
+		tokenChange.isApprovedAllowance = aa.getIsApproval();
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}

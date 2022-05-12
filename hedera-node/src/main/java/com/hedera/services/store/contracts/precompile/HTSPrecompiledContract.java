@@ -24,6 +24,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -139,8 +140,7 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
@@ -216,6 +216,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final EntityIdSource entityIdSource;
 
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
+	private final TransactionContext txnCtx;
 
 	//cryptoTransfer(TokenTransferList[] memory tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -307,7 +308,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
 	private final ApproveAllowanceChecks allowanceChecks;
-	
+
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -328,7 +329,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final ApproveAllowanceChecks allowanceChecks
+			final ApproveAllowanceChecks allowanceChecks,
+			final TransactionContext txnCtx
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -349,6 +351,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
 		this.allowanceChecks = allowanceChecks;
+		this.txnCtx = txnCtx;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -506,34 +509,34 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							}
 							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ALLOWANCE == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new AllowancePrecompile(tokenId);
 						} else if (ABI_ID_APPROVE == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ApprovePrecompile(tokenId, isFungibleToken);
 						} else if (ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new SetApprovalForAllPrecompile(tokenId);
 						} else if (ABI_ID_GET_APPROVED == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new GetApprovedPrecompile(tokenId);
 						} else if (ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
-							if(!dynamicProperties.areAllowancesEnabled()) {
+							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new IsApprovedForAllPrecompile(tokenId);
@@ -1289,23 +1292,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount), null),
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()),
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount), null)));
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer())));
 					} else if (fungibleTransfer.sender == null) {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount), null));
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()));
 					} else {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount), null));
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount, fungibleTransfer.isApproval), txnCtx.activePayer()));
 					}
 				}
 				if (changes.isEmpty()) {
@@ -1325,10 +1328,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return allChanges;
 		}
 
-		private AccountAmount aaWith(final AccountID account, final long amount) {
+		private AccountAmount aaWith(final AccountID account, final long amount, final boolean isApproval) {
 			return AccountAmount.newBuilder()
 					.setAccountID(account)
 					.setAmount(amount)
+					.setIsApproval(isApproval)
 					.build();
 		}
 
@@ -1751,14 +1755,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			Objects.requireNonNull(approveOp);
-
-			if (approveOp.isFungible()) {
-				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_FUNGIBLE, consensusTime);
+			if (approveOp.spender().getAccountNum() == 0) {
+				return precompilePricingUtils.getMinimumPriceInTinybars(DELETE_NFT_APPROVE, consensusTime);
 			} else {
-				if (approveOp.spender().getAccountNum() == 0) {
-					return precompilePricingUtils.getMinimumPriceInTinybars(DELETE_NFT_APPROVE, consensusTime);
-				}
-				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
+				return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE, consensusTime);
 			}
 		}
 
@@ -1834,7 +1834,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE_NFT, consensusTime);
+			return precompilePricingUtils.getMinimumPriceInTinybars(APPROVE, consensusTime);
 		}
 
 		private Log getLogForSetApprovalForAll(final Address logger) {
@@ -1929,12 +1929,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1979,14 +1976,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall
-		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers
-		 * 		the worldLedgers representing current state
+		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers   the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

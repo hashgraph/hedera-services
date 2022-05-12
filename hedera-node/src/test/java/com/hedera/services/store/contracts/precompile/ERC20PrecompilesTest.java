@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -238,7 +239,9 @@ class ERC20PrecompilesTest {
     @Mock
     private AccountStore accountStore;
     @Mock
-    CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    private CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    @Mock
+    private TransactionContext txnCtx;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -250,7 +253,7 @@ class ERC20PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, txnCtx);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
@@ -840,7 +843,7 @@ class ERC20PrecompilesTest {
         givenLedgers();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
-        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
                 .willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
@@ -879,7 +882,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfersMeta.code()).willReturn(OK);
 
         given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any())).willReturn(
-                Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+                Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -1009,8 +1012,14 @@ class ERC20PrecompilesTest {
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
             new ArrayList<>() {},
-            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, token, null, receiver),
-                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, token, sender, null))
+            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, false, token, null, receiver),
+                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, false, token, sender, null))
+    );
+
+    public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER = new TokenTransferWrapper(
+            new ArrayList<>() {},
+            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, true, token, null, receiver),
+                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, true, token, sender, null))
     );
 
     private static final FcTokenAllowanceId fungibleAllowanceId =

@@ -160,6 +160,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					receiver
@@ -167,6 +168,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					null
@@ -174,6 +176,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					null,
 					receiver

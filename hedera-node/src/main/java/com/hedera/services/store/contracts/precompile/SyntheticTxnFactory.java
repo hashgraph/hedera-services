@@ -363,27 +363,29 @@ public class SyntheticTxnFactory {
 		protected final long amount;
 		protected final AccountID sender;
 		protected final AccountID receiver;
+		protected final boolean isApproval;
 
-		public HbarTransfer(long amount, AccountID sender, AccountID receiver) {
+		public HbarTransfer(long amount, boolean isApproval, AccountID sender, AccountID receiver) {
 			this.amount = amount;
+			this.isApproval = isApproval;
 			this.sender = sender;
 			this.receiver = receiver;
 		}
 
 		public AccountAmount senderAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build();
+			return AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).setIsApproval(isApproval).build();
 		}
 
 		public AccountAmount receiverAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build();
+			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(isApproval).build();
 		}
 	}
 
 	public static class FungibleTokenTransfer extends HbarTransfer {
 		private final TokenID denomination;
 
-		public FungibleTokenTransfer(long amount, TokenID denomination, AccountID sender, AccountID receiver) {
-			super(amount, sender, receiver);
+		public FungibleTokenTransfer(long amount, boolean isApproval, TokenID denomination, AccountID sender, AccountID receiver) {
+			super(amount, isApproval, sender, receiver);
 			this.denomination = denomination;
 		}
 

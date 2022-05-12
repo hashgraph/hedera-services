@@ -289,8 +289,8 @@ public class DecodingFacade {
 		final var amount = (BigInteger) decodedArguments.get(1);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-		addAdjustmentAsTransfer(fungibleTransfers, token, recipient, amount.longValue());
-		addAdjustmentAsTransfer(fungibleTransfers, token, caller, -amount.longValue());
+		addAdjustmentAsTransfer(fungibleTransfers, token, recipient, amount.longValue(), false);
+		addAdjustmentAsTransfer(fungibleTransfers, token, caller, -amount.longValue(), false);
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 	}
@@ -305,8 +305,8 @@ public class DecodingFacade {
 		if(isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);
-			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue());
-			addAdjustmentAsTransfer(fungibleTransfers, token, from, -amount.longValue());
+			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue(), false);
+			addAdjustmentAsTransfer(fungibleTransfers, token, from, -amount.longValue(), true);
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
@@ -397,7 +397,7 @@ public class DecodingFacade {
 		final var amount = (long) decodedArguments.get(3);
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES,
-				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenID, sender, receiver))));
+				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, false, tokenID, sender, receiver))));
 	}
 
 	public IsApproveForAllWrapper decodeIsApprovedForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -424,7 +424,7 @@ public class DecodingFacade {
 			final var accountID = accountIDs.get(i);
 			final var amount = amounts[i];
 
-			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
+			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount, false);
 		}
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -739,7 +739,7 @@ public class DecodingFacade {
 			final AccountID accountID = convertLeftPaddedAddressToAccountId((byte[]) transfer.get(0), aliasResolver);
 			final long amount = (long) transfer.get(1);
 
-			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
+			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount, false);
 		}
 		return fungibleTransfers;
 	}
@@ -748,12 +748,13 @@ public class DecodingFacade {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
 			final TokenID tokenType,
 			final AccountID accountID,
-			final long amount
+			final long amount,
+			final boolean isApproval
 	) {
 		if (amount > 0) {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, null, accountID));
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, isApproval, tokenType, null, accountID));
 		} else {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(-amount, tokenType, accountID, null));
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(-amount, isApproval, tokenType, accountID, null));
 		}
 	}
 }

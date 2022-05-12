@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -238,7 +239,9 @@ class ERC721PrecompilesTest {
     @Mock
     private ImpliedTransfersMeta impliedTransfersMeta;
     @Mock
-    CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    private CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    @Mock
+    private TransactionContext txnCtx;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -250,7 +253,7 @@ class ERC721PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, txnCtx);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

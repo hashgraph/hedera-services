@@ -528,7 +528,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransfer() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(
 				List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
@@ -552,7 +552,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void mergesRepeatedTokenIds() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 		final var nonFungibleTransfer = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
 
 		final var result = subject.createCryptoTransfer(
@@ -592,7 +592,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransferForFungibleTransfer() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				Collections.emptyList(),
@@ -611,7 +611,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedCryptoTransfersForMultipleTransferWrappers() {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount,false,  fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(
 				List.of(
@@ -641,12 +641,12 @@ class SyntheticTxnFactoryTest {
 		final var source = new TokenTransferWrapper(
 				Collections.emptyList(),
 				List.of(
-						new SyntheticTxnFactory.FungibleTokenTransfer(1, fungible, a, b)
+						new SyntheticTxnFactory.FungibleTokenTransfer(1, false, fungible, a, b)
 				)).asGrpcBuilder();
 		final var target = new TokenTransferWrapper(
 				Collections.emptyList(),
 				List.of(
-						new SyntheticTxnFactory.FungibleTokenTransfer(2, fungible, b, c)
+						new SyntheticTxnFactory.FungibleTokenTransfer(2, false, fungible, b, c)
 				)).asGrpcBuilder();
 
 		SyntheticTxnFactory.mergeTokenTransfers(target, source);
