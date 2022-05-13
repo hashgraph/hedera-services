@@ -176,7 +176,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
-		this.networkCtx = new WeakReference<>(networkCtx());
+		this.networkCtx = new WeakReference<>(networkCtx);
 	}
 
 	@Override

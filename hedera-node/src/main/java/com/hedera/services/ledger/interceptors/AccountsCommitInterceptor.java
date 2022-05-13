@@ -107,7 +107,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
-			if (merkleAccount != null && (merkleAccount.getNumber() == STAKING_FUNDING_ACCOUNT_NUMBER)) {
+			if (merkleAccount != null && (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER)) {
 				rewardBalanceChanged = true;
 				newRewardBalance = newBalance;
 			}

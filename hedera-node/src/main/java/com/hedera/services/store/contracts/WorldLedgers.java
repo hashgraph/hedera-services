@@ -125,8 +125,8 @@ public class WorldLedgers {
 		accountsLedger = null;
 		tokensLedger = null;
 		nftsLedger = null;
-		networkCtx = staticEntityAccess::getNetworkCtx;
-		stakingInfo = staticEntityAccess::getStakingInfo;
+		networkCtx = null;
+		stakingInfo = null;
 		dynamicProperties = null;
 
 		this.aliases = aliases;

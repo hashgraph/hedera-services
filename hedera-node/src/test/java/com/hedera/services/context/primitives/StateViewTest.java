@@ -266,7 +266,7 @@ class StateViewTest {
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 		stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
-		networkContext = (MerkleNetworkContext) mock(MerkleNetworkContext.class);
+		networkContext = mock(MerkleNetworkContext.class);
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
@@ -334,7 +334,6 @@ class StateViewTest {
 		children.setSpecialFiles(specialFiles);
 		children.setTokens(tokens);
 		children.setStakingInfo(stakingInfo);
-		children.setNetworkCtx(networkContext);
 
 		networkInfo = mock(NetworkInfo.class);
 

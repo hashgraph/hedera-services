@@ -87,10 +87,6 @@ class ServicesTxnManagerTest {
 	private RecordStreaming recordStreaming;
 	@Mock
 	private BlockManager blockManager;
-	@Mock
-	private NetworkCtxManager networkCtxManager;
-	@Mock
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
