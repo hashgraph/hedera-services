@@ -289,7 +289,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
-
 	/**
 	 * {@inheritDoc}
 	 */

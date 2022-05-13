@@ -23,8 +23,8 @@ package com.hedera.services.state.serdes;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;

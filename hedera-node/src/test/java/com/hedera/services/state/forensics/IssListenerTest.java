@@ -26,11 +26,12 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
-import com.swirlds.common.events.Event;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.events.Event;
+import com.swirlds.common.utility.CommonUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,14 +93,12 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+				platform, book, (SwirldState) state, new Event[0],
+				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
 		var desired = String.format(
-				IssListener.ISS_FALLBACK_ERROR_MSG_PATTERN,
-				round,
-				String.valueOf(self),
-				String.valueOf(other));
+				IssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, self, other);
 		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
 	}
 
@@ -110,7 +109,8 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+				platform, book, (SwirldState) state, new Event[0],
+				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
 		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
@@ -127,7 +127,8 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+				platform, book, (SwirldState) state, new Event[0],
+				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
 		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
@@ -144,7 +145,8 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+				platform, book, (SwirldState) state, new Event[0],
+				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
 		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);

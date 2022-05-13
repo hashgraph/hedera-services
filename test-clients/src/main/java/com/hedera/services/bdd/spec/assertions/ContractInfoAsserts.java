@@ -21,11 +21,16 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
+
+import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {
@@ -74,6 +79,54 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 					hexedEvm,
 					object2ContractInfo(o).getContractAccountID(),
 					"Bad EVM address");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts maxAutoAssociations(final int num) {
+		registerProvider((spec, o) -> {
+			assertEquals(
+					num,
+					object2ContractInfo(o).getMaxAutomaticTokenAssociations(),
+					"Bad Contract maxAutoAssociations");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts newAssociationsFromSnapshot(
+			final String snapshot,
+			final List<ExpectedTokenRel> newRels
+	) {
+		for (final var newRel : newRels) {
+			registerProvider((spec, o) -> {
+				final var baseline = spec.registry().getAccountInfo(snapshot);
+				for (final var existingRel : baseline.getTokenRelationshipsList()) {
+					assertFalse(newRel.matches(spec, existingRel),
+							"Expected no existing rel to match " + newRel
+									+ ", but " + existingRel + " did");
+				}
+
+				final var current = (CryptoGetInfoResponse.AccountInfo) o;
+				var someMatches = false;
+				for (final var currentRel : current.getTokenRelationshipsList()) {
+					someMatches |= newRel.matches(spec, currentRel);
+				}
+				assertTrue(someMatches, "Expected some new rel to match " + newRel + ", but none did");
+			});
+		}
+		return this;
+	}
+
+	public ContractInfoAsserts hasAlreadyUsedAutomaticAssociations(final int num) {
+		registerProvider((spec, o) -> {
+			var actualTokenRels = object2ContractInfo(o).getTokenRelationshipsList();
+			int actualCount = 0;
+			for (var rel : actualTokenRels) {
+				if (rel.getAutomaticAssociation()) {
+					actualCount++;
+				}
+			}
+			assertEquals(actualCount, num);
 		});
 		return this;
 	}
@@ -183,6 +236,14 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		final long numStorageBytes = expectedKvPairs * 64L;
 		registerProvider((spec, o) -> {
 			assertEquals(numStorageBytes, object2ContractInfo(o).getStorage(), "Bad storage size!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts autoRenewAccountId(String id) {
+		registerProvider((spec, o) -> {
+			assertEquals(spec.registry().getAccountID(id)
+					, object2ContractInfo(o).getAutoRenewAccountId(), "Bad autoRenewAccountId !");
 		});
 		return this;
 	}

@@ -20,7 +20,7 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.statistics.StatsRunningAverage;
 
 public class MiscRunningAvgs {

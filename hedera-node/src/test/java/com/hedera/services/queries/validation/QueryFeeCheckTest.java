@@ -20,10 +20,9 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -49,6 +48,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -77,7 +78,6 @@ class QueryFeeCheckTest {
 
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
-	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private QueryFeeCheck subject;
@@ -115,7 +115,7 @@ class QueryFeeCheckTest {
 
 		validator = mock(OptionValidator.class);
 
-		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts);
+		subject = new QueryFeeCheck(validator, () -> accounts);
 	}
 
 	@Test
@@ -255,6 +255,7 @@ class QueryFeeCheckTest {
 	@Test
 	void brokePayerRejected() {
 		final var adjustment = adjustmentWith(aBroke, -aLot);
+		givenOkExpiry();
 
 		final var status = subject.adjustmentPlausibility(adjustment);
 
@@ -265,6 +266,8 @@ class QueryFeeCheckTest {
 	void detachedPayerRejectedWithRefinement() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		final var adjustment = adjustmentWith(aDetached, -aLot);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+				.willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
 
@@ -273,20 +276,8 @@ class QueryFeeCheckTest {
 
 	@Test
 	void cannotBeDetachedIfNoAutoRenew() {
-		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
-		dynamicProps.disableAutoRenew();
 		final var adjustment = adjustmentWith(aDetached, -aLot);
-
-		final var status = subject.adjustmentPlausibility(adjustment);
-
-		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
-	}
-
-	@Test
-	void noLongerDetachedWithNonzeroBalance() {
-		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
-		given(detached.getBalance()).willReturn(1L);
-		final var adjustment = adjustmentWith(aDetached, -aLot);
+		givenOkExpiry();
 
 		final var status = subject.adjustmentPlausibility(adjustment);
 
@@ -324,6 +315,7 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
+		givenOkExpiry();
 
 		assertEquals(aRich, body.getTransactionID().getAccountID());
 		assertFalse(checkPayerInTransferList(body, aRich));
@@ -342,6 +334,7 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
+		givenOkExpiry();
 
 		assertEquals(aBroke, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, aBroke));
@@ -392,12 +385,17 @@ class QueryFeeCheckTest {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
 		final var body = getPaymentTxnBody(amount, transList);
+		givenOkExpiry();
 
 		assertEquals(4, body.getCryptoTransfer().getTransfers()
 				.getAccountAmountsList().stream()
 				.filter(aa -> aa.getAmount() < 0)
 				.collect(Collectors.toList()).size());
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
+	}
+
+	private void givenOkExpiry() {
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 	}
 
 	private AccountAmount adjustmentWith(final AccountID id, final long amount) {

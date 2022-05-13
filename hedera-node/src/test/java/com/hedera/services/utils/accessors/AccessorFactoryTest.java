@@ -21,13 +21,12 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.goterl.lazysodium.interfaces.Sign;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

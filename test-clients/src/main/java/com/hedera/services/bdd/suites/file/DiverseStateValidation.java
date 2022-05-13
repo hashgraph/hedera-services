@@ -23,7 +23,7 @@ package com.hedera.services.bdd.suites.file;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

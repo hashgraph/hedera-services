@@ -195,7 +195,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("UpdateFailsWithInvalidMaxAutoAssociations")
 				.given(
 						overridingTwo(
-								"accounts.limitTokenAssociations", "true",
+								"entities.limitTokenAssociations", "true",
 								"tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
@@ -241,7 +241,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-						overriding( "accounts.limitTokenAssociations", "false"),
+						overriding( "entities.limitTokenAssociations", "false"),
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
 						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)

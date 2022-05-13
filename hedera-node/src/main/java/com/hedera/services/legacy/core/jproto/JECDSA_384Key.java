@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 public class JECDSA_384Key extends JKey {
 	private byte[] ecdsa384;

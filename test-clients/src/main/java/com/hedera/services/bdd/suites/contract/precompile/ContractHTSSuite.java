@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -41,18 +42,37 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -98,14 +118,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				HSCS_PREC_017_rollback_after_insufficient_balance(),
 				nonZeroTransfersFail()
-		);
+		});
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						distributeMultipleTokens(),
 						depositAndWithdrawFungibleTokens(),
 						transferNft(),
@@ -157,7 +177,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+												contractCreate(theContract,
+														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 										)
 						),
 						tokenAssociate(alice, tokenWithHbarFee),
@@ -202,7 +223,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("depositAndWithdrawFungibleTokens")
 				.given(
 						newKeyNamed(UNIVERSAL_KEY),
-						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -214,17 +234,19 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, asAddress(spec.registry().getTokenID(A_TOKEN))
+												contractCreate(theContract,
+														asAddress(spec.registry().getTokenID(A_TOKEN))
 												)
 														.via("creationTx")
 										)
 						),
-						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
+						tokenAssociate(DEFAULT_CONTRACT_SENDER, List.of(A_TOKEN)),
 						tokenAssociate(theContract, List.of(A_TOKEN)),
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
+						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, DEFAULT_CONTRACT_SENDER))
 				).when(
+						// If we are using Ethereum transactions, the DEFAULT_CONTRACT_SENDER signature will have to
+						// be validated via EthTxSigs, because in any case only DEFAULT_PAYER signs this call
 						contractCall(theContract, "depositTokens", 50)
-								.payingWith(ACCOUNT)
 								.gas(GAS_TO_OFFER)
 								.via("zeno"),
 						contractCall(theContract, "withdrawTokens")
@@ -232,6 +254,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.alsoSigningWithFullPrefix(theContract)
 								.gas(GAS_TO_OFFER)
 								.via("receiverTx")
+								// The depositTokens will associate the Ethereum DEFAULT_CONTRACT_SENDER; and this
+								// contract fails if the msg.sender is already associated
+								.refusingEthConversion()
 				).then(
 						childRecordsCheck("zeno",
 								SUCCESS,
@@ -239,7 +264,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										.status(SUCCESS)
 										.tokenTransfers(
 												changingFungibleBalances()
-														.including(A_TOKEN, ACCOUNT, -50L)
+														.including(A_TOKEN, DEFAULT_CONTRACT_SENDER, -50L)
 														.including(A_TOKEN, theContract, 50L)
 										)),
 						childRecordsCheck("receiverTx",
@@ -276,7 +301,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
@@ -300,7 +326,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													accounts.toArray(),
 													amounts.toArray()
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -354,7 +380,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						)
 				).when(
@@ -376,10 +403,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
-													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
+													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS)
 									);
 
@@ -393,7 +419,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -409,10 +435,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
-													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								}
 						)
@@ -487,7 +512,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						)
 				).when(
@@ -502,30 +528,31 @@ public class ContractHTSSuite extends HapiApiSuite {
 									/* --- HSCS-PREC-009 --- */
 									allRunFor(
 											spec,
-											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransferStaticNestedCall",
+											contractCall(VERSATILE_TRANSFERS,
+													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
 													accounts.toArray(),
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
-													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
 
 									/* --- HSCS-PREC-018 --- */
 									allRunFor(
 											spec,
-											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransferStaticNestedCall",
+											contractCall(VERSATILE_TRANSFERS,
+													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
 													accounts.toArray(),
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -534,17 +561,17 @@ public class ContractHTSSuite extends HapiApiSuite {
 									/* --- HSCS-PREC-023 --- */
 									allRunFor(
 											spec,
-											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransferStaticNestedCall",
+											contractCall(VERSATILE_TRANSFERS,
+													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
 													accounts.toArray(),
 													amounts.toArray(),
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
-													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 									);
 								})
@@ -616,7 +643,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(outerContract, getNestedContractAddress(innerContract, spec))
+												contractCreate(outerContract,
+														getNestedContractAddress(innerContract, spec))
 										)
 						)
 				).when(
@@ -639,7 +667,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(hbarReceiverAccountID.get()),
 													AMOUNT_TO_SEND,
 													CUSTOM_HBAR_FEE_AMOUNT)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -654,7 +682,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
-										.transfers(including(tinyBarsFromTo(ACCOUNT, outerContract, CUSTOM_HBAR_FEE_AMOUNT)))
+										.transfers(including(
+												tinyBarsFromTo(ACCOUNT, outerContract, CUSTOM_HBAR_FEE_AMOUNT)))
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)
@@ -681,17 +710,21 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						contractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR).maxAutomaticTokenAssociations(2),
+						getContractInfo(FEE_DISTRIBUTOR)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(2))
+								.logged(),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
-						cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT))
+						cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT)).logged()
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -707,7 +740,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													receiver,
 													1L
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 									);
@@ -751,7 +784,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
@@ -775,7 +809,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													theReceivers,
 													theSerialNumbers
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx"));
 								}
@@ -816,7 +850,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS,
+														getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
@@ -840,7 +875,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													accounts.toArray(),
 													amounts.toArray()
 											)
-													.payingWith(ACCOUNT)
+													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 													.via("distributeTx"));

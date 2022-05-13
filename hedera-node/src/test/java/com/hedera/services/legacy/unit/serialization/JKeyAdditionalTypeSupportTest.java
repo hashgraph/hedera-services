@@ -28,13 +28,13 @@ import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -85,7 +85,7 @@ class JKeyAdditionalTypeSupportTest {
 
 		final var ser = JKeySerializer.serialize(jKey);
 		final var in = new ByteArrayInputStream(ser);
-		final var dis = new DataInputStream(in);
+		final var dis = new SerializableDataInputStream(in);
 
 		final var jKeyReborn = (JKey) JKeySerializer.deserialize(dis);
 		final var keyReborn = JKey.mapJKey(jKeyReborn);

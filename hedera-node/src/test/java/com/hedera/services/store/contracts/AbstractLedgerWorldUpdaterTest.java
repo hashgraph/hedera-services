@@ -22,15 +22,15 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -67,7 +67,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,7 +113,7 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
-	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 	@Mock
 	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
@@ -540,7 +540,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nfts();
-		trackingNfts.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		trackingNfts.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);

@@ -23,6 +23,7 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -55,17 +56,14 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractKeySerializer;
-import com.hedera.services.state.virtual.ContractKeySupplier;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -80,14 +78,13 @@ import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
- *  The purpose of this executable is to generate the latest serialized bytes for the
- *  serialization-deserialization (serde) tests for serializable classes. Please DO NOT remove classes from being
- *  serialized unless you are absolutely sure they are no longer in saved signed state data.
+ * The purpose of this executable is to generate the latest serialized bytes for the
+ * serialization-deserialization (serde) tests for serializable classes. Please DO NOT remove classes from being
+ * serialized unless you are absolutely sure they are no longer in saved signed state data.
  *
- *  When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
- *  before running.
+ * When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
+ * before running.
  */
-
 public class SerializedForms {
 	private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
@@ -140,18 +137,17 @@ public class SerializedForms {
 	/**
 	 * The entries in this map will be used to construct serializable object classes and generate serialized bytes that
 	 * can be used for testing. The entries consist of:
-	 *  - the serializable class type (e.g., SomeSerializableObject.class)
-	 *  - function that takes a SeededPropertySource instance and generates an instance of the class filled with random
-	 *    data
-	 *  - an integer specifying the number of test cases to generate.
+	 * - the serializable class type (e.g., SomeSerializableObject.class)
+	 * - function that takes a SeededPropertySource instance and generates an instance of the class filled with random
+	 * data
+	 * - an integer specifying the number of test cases to generate.
 	 */
 	private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
 			Map.ofEntries(
 					entry(CurrencyAdjustments.class, SeededPropertySource::nextCurrencyAdjustments,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(EntityId.class, SeededPropertySource::nextEntityId, MIN_TEST_CASES_PER_VERSION),
-					entry(EvmFnResult.class, SeededPropertySource::nextEvmResult,
-							EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION),
+					entry(EvmFnResult.class, SeededPropertySource::nextEvmResult, EvmFnResultSerdeTest.NUM_TEST_CASES),
 					entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTest.NUM_TEST_CASES),
 					entry(ExchangeRates.class, SeededPropertySource::nextExchangeRates, MIN_TEST_CASES_PER_VERSION),
 					entry(ExpirableTxnRecord.class, SeededPropertySource::nextRecord,
@@ -164,7 +160,8 @@ public class SerializedForms {
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState, MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
 							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
@@ -176,7 +173,7 @@ public class SerializedForms {
 					entry(MerkleTokenRelStatus.class, SeededPropertySource::nextMerkleTokenRelStatus,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
-					entry(MerkleUniqueToken.class, SeededPropertySource::nextMerkleUniqueToken,
+					entry(MerkleUniqueToken.class, SeededPropertySource::next0260UniqueToken,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,
