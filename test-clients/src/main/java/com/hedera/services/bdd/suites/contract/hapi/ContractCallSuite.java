@@ -149,7 +149,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -191,8 +191,9 @@ public class ContractCallSuite extends HapiApiSuite {
 				bitcarbonTestStillPasses(),
 				contractCreationStoragePriceMatchesFinalExpiry(),
 				whitelistingAliasedContract(),
-				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
-		);
+				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
+				exchangeRatePrecompileWorks(),
+		});
 	}
 
 	private HapiApiSpec whitelistingAliasedContract() {
@@ -515,6 +516,50 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Review the history */
 						getTxnRecord(ticketTaking).andAllChildRecords().logged(),
 						getTxnRecord(ticketWorking).andAllChildRecords().logged()
+				);
+	}
+
+	private HapiApiSpec exchangeRatePrecompileWorks() {
+		final var valueToTinycentCall = "recoverUsd";
+		final var rateAware = "ExchangeRatePrecompile";
+		// Must send $6.66 USD to access the gated method
+		final var minPriceToAccessGatedMethod = 666L;
+		final var minValueToAccessGatedMethodAtCurrentRate = new AtomicLong();
+
+		return defaultHapiSpec("ExchangeRatePrecompileWorks")
+				.given(
+						uploadInitCode(rateAware),
+						contractCreate(rateAware, minPriceToAccessGatedMethod),
+						withOpContext((spec, opLog) -> {
+							final var rates = spec.ratesProvider().rates();
+							minValueToAccessGatedMethodAtCurrentRate.set(
+									minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE
+											* rates.getHbarEquiv() / rates.getCentEquiv());
+							log.info("Requires {} tinybar of value to access the method",
+									minValueToAccessGatedMethodAtCurrentRate::get);
+						})
+				).when(
+						sourcing(() -> contractCall(rateAware, "gatedAccess")
+								.sending(minValueToAccessGatedMethodAtCurrentRate.get() - 1)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(rateAware, "gatedAccess")
+								.sending(minValueToAccessGatedMethodAtCurrentRate.get()))
+				).then(
+						sourcing(() -> contractCall(rateAware, "approxUsdValue")
+								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
+								.via(valueToTinycentCall)),
+						getTxnRecord(valueToTinycentCall).hasPriority(recordWith()
+								.contractCallResult(resultWith()
+										.resultViaFunctionName(
+												"approxUsdValue",
+												rateAware,
+												isLiteralResult(new Object[] {
+														BigInteger.valueOf(
+																minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
+												})))),
+						sourcing(() -> contractCall(rateAware, "invalidCall")
+								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				);
 	}
 
