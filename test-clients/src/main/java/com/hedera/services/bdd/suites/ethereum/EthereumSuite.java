@@ -86,8 +86,10 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -120,6 +122,7 @@ public class EthereumSuite extends HapiApiSuite {
 						ETX_010_transferToCryptoAccountSucceeds(),
 						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
 						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
 						ETX_009_callsToTokenAddresses(),
@@ -421,7 +424,7 @@ public class EthereumSuite extends HapiApiSuite {
 						getTxnRecord("autoAccount").andAllChildRecords(),
 						uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
 						tokenCreate(fungibleToken)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+							.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(0)
 								.adminKey(SECP_256K1_SOURCE_KEY)
 								.supplyKey(SECP_256K1_SOURCE_KEY)
@@ -500,6 +503,49 @@ public class EthereumSuite extends HapiApiSuite {
 																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
 																		.getAlias().toStringUtf8())))
 										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+				);
+	}
+
+	HapiApiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
+		final AtomicLong fungibleNum = new AtomicLong();
+		final String fungibleToken = "token";
+		final String mintTxn = "mintTxn";
+		final String MULTI_KEY = "MULTI_KEY";
+		return defaultHapiSpec("ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+						getTxnRecord("autoAccount").andAllChildRecords(),
+						uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+						ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.nonce(0)
+								.via(mintTxn)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+				).then(
+						withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord(mintTxn)
+								.logged()
+								.hasPriority(recordWith()
+										.contractCallResult(
+												resultWith()
+														.logs(inOrder())
+														.senderId(spec.registry().getAccountID(
+																spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+																		.getAlias().toStringUtf8())))
+										.ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))
+						)),
+						childRecordsCheck(mintTxn, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_SIGNATURE))
 				);
 	}
 
