@@ -146,16 +146,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_721() {
 		return List.of(new HapiApiSpec[] {
-//				getErc721TokenName(),
-//				getErc721Symbol(),
-//				getErc721TokenURI(),
-//				getErc721OwnerOf(),
-//				getErc721BalanceOf(),
-//				getErc721TotalSupply(),
-//				getErc721TokenURIFromErc20TokenFails(),
-//				getErc721OwnerOfFromErc20TokenFails(),
-//				directCallsWorkForERC721(),
-//				someERC721ScenariosPass(),
+				getErc721TokenName(),
+				getErc721Symbol(),
+				getErc721TokenURI(),
+				getErc721OwnerOf(),
+				getErc721BalanceOf(),
+				getErc721TotalSupply(),
+				getErc721TokenURIFromErc20TokenFails(),
+				getErc721OwnerOfFromErc20TokenFails(),
+				directCallsWorkForERC721(),
+				someERC721ScenariosPass(),
 		});
 	}
 
@@ -224,7 +224,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
-								.exposingCreatedIdTo(tokenAddr::set),
+								.exposingCreatedIdTo(id -> tokenAddr.set(
+										asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
@@ -252,14 +253,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "symbol", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "symbol", tokenAddr.get()))
 				);
 	}
 
 	private HapiApiSpec getErc20TokenDecimals() {
 		final var decimals = 10;
 		final var decimalsTxn = "decimalsTxn";
-		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
+		final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
 		return defaultHapiSpec("ERC_20_DECIMALS")
 				.given(
@@ -273,7 +274,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.decimals(decimals)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
-								.supplyKey(MULTI_KEY),
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> tokenAddr.set(
+										asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
@@ -299,14 +302,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
 																.withDecimals(decimals)))),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "decimals", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "decimals", tokenAddr.get()))
 				);
 	}
 
 	private HapiApiSpec getErc20TotalSupply() {
 		final var totalSupply = 50;
 		final var supplyTxn = "supplyTxn";
-		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
+		final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
 		return defaultHapiSpec("ERC_20_TOTAL_SUPPLY")
 				.given(
@@ -318,7 +321,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.initialSupply(totalSupply)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
-								.supplyKey(MULTI_KEY),
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> tokenAddr.set(
+										asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
@@ -347,20 +352,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						),
-						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, "decimals", tokenAddr.get()))
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT, "decimals", tokenAddr.get()))
 				);
 	}
 
 	private HapiApiSpec getErc20BalanceOfAccount() {
 		final var balanceTxn = "balanceTxn";
 		final var zeroBalanceTxn = "zBalanceTxn";
-		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
-		final AtomicReference<byte[]> accountAddr = new AtomicReference<>();
+		final AtomicReference<String> tokenAddr = new AtomicReference<>();
+		final AtomicReference<String> accountAddr = new AtomicReference<>();
 
 		return defaultHapiSpec("ERC_20_BALANCE_OF")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(id -> accountAddr.set(asHexedSolidityAddress(id))),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
@@ -368,15 +374,24 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.initialSupply(5)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
-								.supplyKey(MULTI_KEY),
-						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-						cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> tokenAddr.set(
+										asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
+												contractCall(ERC_20_CONTRACT, "balanceOf",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)))
+														.payingWith(ACCOUNT)
+														.via(zeroBalanceTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER),
+												tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+												cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
 												contractCall(ERC_20_CONTRACT, "balanceOf",
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)))
@@ -411,20 +426,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						),
 						sourcing(() -> contractCallLocal(
-								ERC_20_CONTRACT_NAME, "balanceOf",
+								ERC_20_CONTRACT, "balanceOf",
 								tokenAddr.get(), accountAddr.get()))
 				);
 	}
 
 	private HapiApiSpec transferErc20Token() {
 		final var transferTxn = "transferTxn";
-		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
-		final AtomicReference<byte[]> accountAddr = new AtomicReference<>();
+		final AtomicReference<String> tokenAddr = new AtomicReference<>();
+		final AtomicReference<String> accountAddr = new AtomicReference<>();
 
 		return defaultHapiSpec("ERC_20_TRANSFER")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(id -> accountAddr.set(asHexedSolidityAddress(id))),
 						cryptoCreate(RECIPIENT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
@@ -432,7 +448,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.initialSupply(5)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
-								.supplyKey(MULTI_KEY),
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> tokenAddr.set(
+										HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						uploadInitCode(ERC_20_CONTRACT),
 						contractCreate(ERC_20_CONTRACT),
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
@@ -485,7 +503,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
 						sourcing(() -> contractCallLocal(
-										ERC_20_CONTRACT_NAME, "transfer",
+										ERC_20_CONTRACT, "transfer",
 										tokenAddr.get(), accountAddr.get(), 1
 								).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
 						)
@@ -1485,7 +1503,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(id -> tokenAddr.set(
-										HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
+										asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
 						cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER)),

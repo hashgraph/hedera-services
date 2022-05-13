@@ -617,7 +617,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 		} catch (final Exception e) {
 			log.warn("Internal precompile failure", e);
-			e.printStackTrace();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
 			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
