@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -156,6 +158,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721OwnerOfFromErc20TokenFails(),
 				directCallsWorkForERC721(),
 				someERC721ScenariosPass(),
+				erc721TransferFromWithApproval(),
+				erc721TransferFromWithApproveForAll()
 		});
 	}
 
@@ -2535,6 +2539,115 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				);
+	}
+
+	private HapiApiSpec erc721TransferFromWithApproval() {
+		final var theSpender = "spender";
+		final var approveTxn = "approveTxn";
+		final var transferFromAccountTxn = "transferFromAccountTxn";
+
+		return defaultHapiSpec("ERC_721_TRANSFER_FROM_WITH_APPROVAL")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theSpender),
+						cryptoCreate(RECIPIENT),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						uploadInitCode(ERC_721_CONTRACT),
+						contractCreate(ERC_721_CONTRACT),
+						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(theSpender, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
+						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, OWNER))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												cryptoApproveAllowance()
+														.payingWith(DEFAULT_PAYER)
+														.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ERC_721_CONTRACT, false, List.of(1L))
+														.via("baseApproveTxn")
+														.logged()
+														.signedBy(DEFAULT_PAYER, OWNER)
+														.fee(ONE_HBAR),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
+												contractCall(ERC_721_CONTRACT, "transferFrom",
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)),
+														1)
+														.via(transferFromAccountTxn)
+														.hasKnownStatus(SUCCESS),
+												getAccountDetails(RECIPIENT).logged(),
+												getAccountDetails(OWNER).logged(),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender()
+										)
+						)
+				).then();
+	}
+
+	private HapiApiSpec erc721TransferFromWithApproveForAll() {
+		final var theSpender = "spender";
+		final var transferFromAccountTxn = "transferFromAccountTxn";
+
+		return defaultHapiSpec("ERC_721_TRANSFER_FROM_WITH_APPROVAL_FOR_ALL")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theSpender),
+						cryptoCreate(RECIPIENT),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						uploadInitCode(ERC_721_CONTRACT),
+						contractCreate(ERC_721_CONTRACT),
+						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(theSpender, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
+						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												cryptoApproveAllowance()
+														.payingWith(DEFAULT_PAYER)
+														.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ERC_721_CONTRACT, true, List.of(1L, 2L))
+														.via("baseApproveTxn")
+														.logged()
+														.signedBy(DEFAULT_PAYER, OWNER)
+														.fee(ONE_HBAR),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(ERC_721_CONTRACT),
+												getAccountDetails(OWNER).logged(),
+												getAccountDetails(OWNER)
+														.payingWith(GENESIS)
+														.has(accountWith().nftApprovedForAllAllowancesCount(1)),
+												contractCall(ERC_721_CONTRACT, "transferFrom",
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)),
+														1)
+														.via(transferFromAccountTxn)
+														.hasKnownStatus(SUCCESS),
+												getAccountDetails(RECIPIENT).logged(),
+												getAccountDetails(OWNER).logged()
+										)
+						)
+				).then();
 	}
 
 	@Override
