@@ -57,7 +57,6 @@ import org.hyperledger.besu.datatypes.Address;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;

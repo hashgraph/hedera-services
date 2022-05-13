@@ -35,8 +35,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -92,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.context.primitives.StateView.EMPTY_CTX;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -186,6 +189,8 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	private MerkleNetworkContext networkContext;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -259,8 +264,9 @@ class StateViewTest {
 				.maxAutomaticAssociations(10)
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
+		stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
+		networkContext = (MerkleNetworkContext) mock(MerkleNetworkContext.class);
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
@@ -327,6 +333,8 @@ class StateViewTest {
 		children.setTokenAssociations(tokenRels);
 		children.setSpecialFiles(specialFiles);
 		children.setTokens(tokens);
+		children.setStakingInfo(stakingInfo);
+		children.setNetworkCtx(networkContext);
 
 		networkInfo = mock(NetworkInfo.class);
 
@@ -825,6 +833,21 @@ class StateViewTest {
 	}
 
 	@Test
+	void getStakingInfoAndContext() {
+		final var children = new MutableStateChildren();
+		children.setStakingInfo(stakingInfo);
+		children.setNetworkCtx(networkContext);
+
+		subject = new StateView(null, children, null);
+
+		final var actualStakingInfo = subject.stakingInfo();
+		final var actualNetworkContext = subject.networkCtx();
+
+		assertEquals(stakingInfo, actualStakingInfo);
+		assertEquals(networkContext, actualNetworkContext);
+	}
+
+	@Test
 	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
@@ -1028,6 +1051,8 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_MM, subject.contracts());
 		assertSame(StateView.EMPTY_MM, subject.accounts());
 		assertSame(StateView.EMPTY_MM, subject.topics());
+		assertSame(StateView.EMPTY_MM, subject.stakingInfo());
+		assertSame(EMPTY_CTX, subject.networkCtx());
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).isEmpty());

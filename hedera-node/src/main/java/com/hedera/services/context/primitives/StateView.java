@@ -122,6 +122,7 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+	static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
@@ -595,7 +596,7 @@ public class StateView {
 	}
 
 	public MerkleNetworkContext networkCtx() {
-		return stateChildren == null ? new MerkleNetworkContext() : stateChildren.networkCtx();
+		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
 	}
 
 	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {

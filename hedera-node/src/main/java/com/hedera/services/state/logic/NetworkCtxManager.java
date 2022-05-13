@@ -27,16 +27,12 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,8 +67,6 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final TransactionContext txnCtx;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
@@ -88,9 +82,7 @@ public class NetworkCtxManager {
 			final @HandleThrottle FunctionalityThrottling handleThrottling,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final TransactionContext txnCtx,
-			final MiscRunningAvgs runningAvgs,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo
+			final MiscRunningAvgs runningAvgs
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -104,8 +96,6 @@ public class NetworkCtxManager {
 		this.dynamicProperties = dynamicProperties;
 		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
-		this.accounts = accounts;
-		this.stakingInfo = stakingInfo;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -163,16 +153,6 @@ public class NetworkCtxManager {
 				}
 			}, issInfo::relax);
 		}
-	}
-
-	public void permanentlyActivateStakingRewards() {
-		networkCtx.get().setStakingRewards(true);
-		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
-		log.info("Staking rewards is activated and rewardSumHistory is cleared");
-	}
-
-	public boolean areRewardsActivated() {
-		return networkCtx.get().areRewardsActivated();
 	}
 
 	public boolean currentTxnIsFirstInConsensusSecond() {

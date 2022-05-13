@@ -31,7 +31,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
@@ -65,9 +64,6 @@ public class MutableEntityAccess implements EntityAccess {
 	private final SizeLimitedStorage sizeLimitedStorage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-	private final Supplier<MerkleNetworkContext> networkCtx;
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public MutableEntityAccess(
@@ -86,9 +82,6 @@ public class MutableEntityAccess implements EntityAccess {
 		this.bytecode = bytecode;
 		this.tokensLedger = tokensLedger;
 		this.sizeLimitedStorage = sizeLimitedStorage;
-		this.networkCtx = networkCtx;
-		this.stakingInfo = stakingInfo;
-		this.dynamicProperties = dynamicProperties;
 
 		this.worldLedgers = new WorldLedgers(
 				aliasManager,

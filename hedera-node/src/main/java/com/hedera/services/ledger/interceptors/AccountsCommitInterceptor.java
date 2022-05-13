@@ -25,7 +25,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
@@ -90,13 +89,15 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
-		if (!rewardsActivated && rewardBalanceChanged) {
-			if (newRewardBalance >= dynamicProperties.getStakingStartThreshold()) {
-				networkCtx.get().setStakingRewards(true);
-				stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
-				log.info("Staking rewards is activated and rewardSumHistory is cleared");
-			}
+		if (shouldActivateStakingRewards()) {
+			networkCtx.get().setStakingRewards(true);
+			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+			log.info("Staking rewards is activated and rewardSumHistory is cleared");
 		}
+	}
+
+	private boolean shouldActivateStakingRewards() {
+		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
 	}
 
 	private void trackBalanceChangeIfAny(
@@ -106,7 +107,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
-			if (merkleAccount.state().number() == STAKING_FUNDING_ACCOUNT_NUMBER) {
+			if (merkleAccount != null && (merkleAccount.getNumber() == STAKING_FUNDING_ACCOUNT_NUMBER)) {
 				rewardBalanceChanged = true;
 				newRewardBalance = newBalance;
 			}

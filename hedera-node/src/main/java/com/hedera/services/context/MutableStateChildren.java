@@ -175,6 +175,10 @@ public class MutableStateChildren implements StateChildren {
 		this.stakingInfo = new WeakReference<>(stakingInfo);
 	}
 
+	public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
+		this.networkCtx = new WeakReference<>(networkCtx());
+	}
+
 	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
 		return Objects.requireNonNull(runningHashLeaf.get());

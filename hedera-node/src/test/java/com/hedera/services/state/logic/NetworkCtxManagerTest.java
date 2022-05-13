@@ -28,16 +28,12 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -95,10 +90,6 @@ class NetworkCtxManagerTest {
 	private SignedTxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	private NetworkCtxManager subject;
 
@@ -117,9 +108,7 @@ class NetworkCtxManagerTest {
 				handleThrottling,
 				() -> networkCtx,
 				txnCtx,
-				runningAvgs,
-				() -> accounts,
-				() -> stakingInfo);
+				runningAvgs);
 	}
 
 	@Test
