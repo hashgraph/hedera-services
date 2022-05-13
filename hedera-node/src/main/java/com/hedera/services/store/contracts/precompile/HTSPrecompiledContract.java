@@ -1341,8 +1341,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingNftOwnership(
 										Id.fromGrpcToken(nftExchange.getTokenType()),
 										nftExchange.getTokenType(),
-										nftExchange.asGrpc(), null
-								)
+										nftExchange.asGrpc(),
+										EntityIdUtils.accountIdFromEvmAddress(HTSPrecompiledContract.this.senderAddress))
 						);
 					}
 				}
