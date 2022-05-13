@@ -446,6 +446,7 @@ public class SyntheticTxnFactory {
 					.setSenderAccountID(sender)
 					.setReceiverAccountID(receiver)
 					.setSerialNumber(serialNo)
+					.setIsApproval(isApproval)
 					.build();
 		}
 
