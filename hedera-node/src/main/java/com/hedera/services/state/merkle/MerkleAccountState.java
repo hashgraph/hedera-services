@@ -106,7 +106,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long headNftSerialNum;
 	private long ethereumNonce;
 	private long stakedToMe;
-	private long stakePeriodStart;
+	private long stakePeriodStart = -1;
 	// if -ve we are staking to a node, if +ve we are staking to an account and 0 if not staking to anyone.
 	private long stakedNum;
 	private boolean declineReward;

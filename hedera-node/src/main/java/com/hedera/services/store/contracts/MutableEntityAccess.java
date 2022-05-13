@@ -24,12 +24,14 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -59,6 +61,8 @@ public class MutableEntityAccess implements EntityAccess {
 	private final SizeLimitedStorage sizeLimitedStorage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	private final NetworkCtxManager networkCtxManager;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public MutableEntityAccess(
@@ -67,20 +71,26 @@ public class MutableEntityAccess implements EntityAccess {
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
+			final NetworkCtxManager networkCtxManager,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.bytecode = bytecode;
 		this.tokensLedger = tokensLedger;
 		this.sizeLimitedStorage = sizeLimitedStorage;
+		this.networkCtxManager = networkCtxManager;
+		this.dynamicProperties = dynamicProperties;
 
 		this.worldLedgers = new WorldLedgers(
 				aliasManager,
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
-				tokensLedger);
+				tokensLedger,
+				networkCtxManager,
+				dynamicProperties);
 
 		ledger.setMutableEntityAccess(this);
 	}

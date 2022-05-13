@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -33,6 +34,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -81,6 +83,8 @@ public class WorldLedgers {
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	private final NetworkCtxManager networkCtxManager;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	public static WorldLedgers staticLedgersWith(
 			final ContractAliases aliases,
@@ -94,13 +98,17 @@ public class WorldLedgers {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
+			final NetworkCtxManager networkCtxManager,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.accountsLedger = accountsLedger;
 		this.tokensLedger = tokensLedger;
 		this.nftsLedger = nftsLedger;
 		this.aliases = aliases;
+		this.networkCtxManager = networkCtxManager;
+		this.dynamicProperties = dynamicProperties;
 
 		staticEntityAccess = null;
 	}
@@ -110,6 +118,8 @@ public class WorldLedgers {
 		accountsLedger = null;
 		tokensLedger = null;
 		nftsLedger = null;
+		networkCtxManager = null;
+		dynamicProperties = null;
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
@@ -282,7 +292,7 @@ public class WorldLedgers {
 		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
 		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
 		if (sideEffectsTracker != null) {
-			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtxManager, dynamicProperties);
 			wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		}
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
@@ -292,7 +302,9 @@ public class WorldLedgers {
 				wrappedTokenRelsLedger,
 				wrappedAccountsLedger,
 				wrappedNftsLedger,
-				wrappedTokensLedger);
+				wrappedTokensLedger,
+				networkCtxManager,
+				dynamicProperties);
 	}
 
 	public ContractAliases aliases() {

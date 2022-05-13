@@ -162,7 +162,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	@Override
 	public String toString() {
-		return  MoreObjects.toStringHelper(MerkleStakingInfo.class)
+		return MoreObjects.toStringHelper(MerkleStakingInfo.class)
 				.add("id", EntityIdUtils.asScopedSerialNoLiteral(number))
 				.add("minStake", minStake)
 				.add("maxStake", maxStake)
@@ -228,5 +228,9 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void setRewardSumHistory(final long[] rewardSumHistory) {
 		this.rewardSumHistory = rewardSumHistory;
+	}
+
+	public void clearRewardSumHistory() {
+		Arrays.fill(rewardSumHistory, 0);
 	}
 }

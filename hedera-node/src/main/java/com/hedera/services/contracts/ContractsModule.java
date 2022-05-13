@@ -21,6 +21,7 @@ package com.hedera.services.contracts;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
@@ -42,6 +43,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.IterableStorageUtils;
@@ -127,9 +129,12 @@ public interface ContractsModule {
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
+			final NetworkCtxManager networkCtxManager,
+			final GlobalDynamicProperties dynamicProperties
 	) {
-		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
+		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode, networkCtxManager,
+				dynamicProperties);
 	}
 
 	@Provides

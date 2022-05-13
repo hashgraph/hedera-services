@@ -25,7 +25,9 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.MigrationRecordsManager;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -35,6 +37,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +87,10 @@ class ServicesTxnManagerTest {
 	private RecordStreaming recordStreaming;
 	@Mock
 	private BlockManager blockManager;
+	@Mock
+	private NetworkCtxManager networkCtxManager;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -94,7 +101,8 @@ class ServicesTxnManagerTest {
 	void setup() {
 		subject = new ServicesTxnManager(
 				processLogic, triggeredProcessLogic, recordCache, ledger,
-				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager);
+				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager,
+				networkCtxManager, () -> stakingInfo);
 	}
 
 	@Test

@@ -9,9 +9,9 @@ package com.hedera.services.ledger.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,11 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.jetbrains.annotations.NotNull;
@@ -41,9 +43,21 @@ import java.util.Map;
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
+	private final NetworkCtxManager networkCtxManager;
+	private final GlobalDynamicProperties dynamicProperties;
+	private boolean rewardsActivated;
+	private boolean rewardBalanceChanged;
+	private long newRewardBalance;
 
-	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
+
+	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
+			final NetworkCtxManager networkCtxManager,
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.networkCtxManager = networkCtxManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	/**
@@ -54,6 +68,9 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		rewardsActivated = rewardsActivated || networkCtxManager.areRewardsActivated();
+		rewardBalanceChanged = false;
+
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			trackBalanceChangeIfAny(
 					pendingChanges.id(i).getAccountNum(),
@@ -61,6 +78,11 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
+		if (!rewardsActivated && rewardBalanceChanged) {
+			if (newRewardBalance >= dynamicProperties.getStakingStartThreshold()) {
+				networkCtxManager.permanentlyActivateStakingRewards();
+			}
+		}
 	}
 
 	private void trackBalanceChangeIfAny(
@@ -70,6 +92,10 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+			if (merkleAccount.state().number() == STAKING_FUNDING_ACCOUNT_NUMBER) {
+				rewardBalanceChanged = true;
+				newRewardBalance = newBalance;
+			}
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
