@@ -214,7 +214,7 @@
 		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
-		<besu.version>21.10.9</besu.version>
+		<besu.version>22.4.0</besu.version>
 		<besu-native.version>0.4.3</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
