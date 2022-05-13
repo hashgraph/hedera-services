@@ -185,7 +185,7 @@ class DecodingFacadeTest {
 	void decodeGetApprovedInput() {
 		final var decodedInput = subject.decodeGetApproved(GET_APPROVED_INPUT);
 
-		assertEquals(1, decodedInput.tokenId());
+		assertEquals(1, decodedInput.serialNo());
 	}
 
 	@Test

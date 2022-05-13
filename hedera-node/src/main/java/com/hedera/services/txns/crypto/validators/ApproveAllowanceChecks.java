@@ -79,12 +79,13 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	 * 		working view
 	 * @return response code after validation
 	 */
-	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
+	public ResponseCodeEnum allowancesValidation(
+			final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final StateView view) {
-
+			final StateView view
+	) {
 		// feature flag for allowances
 		if (!isEnabled()) {
 			return NOT_SUPPORTED;
@@ -273,7 +274,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		}
 		return OK;
 	}
-
 
 	public ResponseCodeEnum validateTokenAmount(final long amount, final Token token) {
 		if (amount < 0) {

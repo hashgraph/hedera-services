@@ -42,6 +42,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -57,7 +58,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -89,6 +94,7 @@ class WorldLedgersTest {
 	private static final EntityId treasury = new EntityId(0, 0, 666);
 	private static final EntityId notTreasury = new EntityId(0, 0, 777);
 	private static final AccountID accountID = treasury.toGrpcAccountId();
+	private static final AccountID ownerId = notTreasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final ByteString pkAlias = ByteString.copyFrom(
 			Bytes.fromHexString("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d").toArrayUnsafe());
@@ -172,7 +178,32 @@ class WorldLedgersTest {
 	}
 
 	@Test
-	void metadataOfWorksWithNonExistant() {
+	void approvedForAllLookupOnlyAvailableForMutable() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		assertThrows(IllegalStateException.class, () -> subject.hasApprovedForAll(ownerId, accountID, nft));
+	}
+
+	@Test
+	void approvedForAllFindsExpectedMissing() {
+		given(accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES)).willReturn(Collections.emptySet());
+
+		final var ans = subject.hasApprovedForAll(ownerId, accountID, nft);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void approvedForAllFindsExpectedPresent() {
+		given(accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES))
+				.willReturn(Set.of(FcTokenAllowanceId.from(nft, accountID)));
+
+		final var ans = subject.hasApprovedForAll(ownerId, accountID, nft);
+
+		assertTrue(ans);
+	}
+
+	@Test
+	void metadataOfWorksWithNonExistent() {
 		given(nftsLedger.exists(nftId)).willReturn(false);
 
 		assertEquals(URI_QUERY_NON_EXISTING_TOKEN_ERROR, subject.metadataOf(nftId));

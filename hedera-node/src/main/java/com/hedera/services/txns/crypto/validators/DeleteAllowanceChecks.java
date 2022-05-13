@@ -82,19 +82,12 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		if (validity != OK) {
 			return validity;
 		}
-
 		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),
 				view.asReadOnlyAssociationStore());
-
-		validity = validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
-		if (validity != OK) {
-			return validity;
-		}
-
-		return OK;
+		return validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
 	}
 
 	/**
@@ -115,26 +108,23 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
 			final AccountStore accountStore,
-			final ReadOnlyTokenStore tokenStore) {
+			final ReadOnlyTokenStore tokenStore
+	) {
 		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
-
-		for (var allowance : nftAllowances) {
+		for (final var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
-
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
-
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 			final var ownerAccount = fetchResult.getLeft();
-
 			if (!tokenStore.hasAssociation(token, ownerAccount)) {
 				return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 			}
@@ -143,19 +133,17 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 				return validity;
 			}
 		}
-
 		return OK;
 	}
 
 	ResponseCodeEnum validateDeleteSerialNums(
 			final List<Long> serialNums,
 			final Token token,
-			final ReadOnlyTokenStore tokenStore) {
-
+			final ReadOnlyTokenStore tokenStore
+	) {
 		if (serialNums.isEmpty()) {
 			return EMPTY_ALLOWANCES;
 		}
-
 		return validateSerialNums(serialNums, token, tokenStore);
 	}
 

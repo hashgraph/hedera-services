@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -43,6 +42,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.WorldStateAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -183,7 +183,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
-	private TransactionContext txnCtx;
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -205,7 +205,8 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, txnCtx);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+				deleteAllowanceChecks);
 	}
 
 	@Test

@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -47,12 +48,14 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -165,6 +168,16 @@ public class WorldLedgers {
 			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
 		}
 		return owner.toEvmAddress();
+	}
+
+	@SuppressWarnings("unchecked")
+	public boolean hasApprovedForAll(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+		if (!areMutable()) {
+			throw new IllegalStateException("Static ledgers cannot be used to check approvedForAll");
+		}
+		final Set<FcTokenAllowanceId> approvedForAll =
+				(Set<FcTokenAllowanceId>) accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+		return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));
 	}
 
 	public String metadataOf(final NftId nftId) {

@@ -57,6 +57,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -241,7 +242,7 @@ class ERC20PrecompilesTest {
     @Mock
     private CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
     @Mock
-    private TransactionContext txnCtx;
+    private DeleteAllowanceChecks deleteAllowanceChecks;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -253,7 +254,8 @@ class ERC20PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, txnCtx);
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+                deleteAllowanceChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

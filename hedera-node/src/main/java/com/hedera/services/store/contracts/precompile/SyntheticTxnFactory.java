@@ -94,7 +94,8 @@ public class SyntheticTxnFactory {
 	 * call data is missing, replaces it with dummy initcode (it is not the job of precheck to look up
 	 * initcode from a file).
 	 *
-	 * @param ethTxData the Ethereum transaction data available in precheck
+	 * @param ethTxData
+	 * 		the Ethereum transaction data available in precheck
 	 * @return the pre-checkable HAPI transaction
 	 */
 	public TransactionBody synthPrecheckContractOpFromEth(EthTxData ethTxData) {
@@ -113,7 +114,8 @@ public class SyntheticTxnFactory {
 	 * synthesize a builder for an appropriate HAPI TransactionBody---ContractCall if the given
 	 * {@code ethTxData} has a "to" address, and ContractCreate otherwise.
 	 *
-	 * @param ethTxData the populated Ethereum transaction data
+	 * @param ethTxData
+	 * 		the populated Ethereum transaction data
 	 * @return an optional of the HAPI transaction builder if it could be synthesized
 	 */
 	public Optional<TransactionBody.Builder> synthContractOpFromEth(final EthTxData ethTxData) {
@@ -210,9 +212,7 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder createApproveAllowance(final ApproveWrapper approveWrapper) {
-
 		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
-
 		if (approveWrapper.isFungible()) {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
 					.setTokenId(approveWrapper.token())
@@ -221,7 +221,6 @@ public class SyntheticTxnFactory {
 					.build());
 		} else {
 			builder.addNftAllowances(NftAllowance.newBuilder()
-					.setApprovedForAll(BoolValue.of(false))
 					.setTokenId(approveWrapper.token())
 					.setSpender(approveWrapper.spender())
 					.addSerialNumbers(approveWrapper.serialNumber().longValue())
@@ -231,19 +230,19 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final EntityId owner) {
-
 		final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
-
-			builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder().setOwner(owner.toGrpcAccountId())
+		builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder().setOwner(owner.toGrpcAccountId())
 						.setTokenId(approveWrapper.token())
 						.addAllSerialNumbers(List.of(approveWrapper.serialNumber().longValue()))
 						.build()))
-					.build();
-
+				.build();
 		return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
 	}
 
-	public TransactionBody.Builder createApproveAllowanceForAllNFT(final SetApprovalForAllWrapper setApprovalForAllWrapper, TokenID tokenID) {
+	public TransactionBody.Builder createApproveAllowanceForAllNFT(
+			final SetApprovalForAllWrapper setApprovalForAllWrapper,
+			final TokenID tokenID
+	) {
 		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
 		builder.addNftAllowances(NftAllowance.newBuilder()
@@ -264,7 +263,8 @@ public class SyntheticTxnFactory {
 	 * {@link SyntheticTxnFactory#mergeTokenTransfers(TokenTransferList.Builder, TokenTransferList.Builder)}
 	 * helper method.
 	 *
-	 * @param wrappers the wrappers to consolidate in a synthetic transaction
+	 * @param wrappers
+	 * 		the wrappers to consolidate in a synthetic transaction
 	 * @return the synthetic transaction
 	 */
 	public TransactionBody.Builder createCryptoTransfer(final List<TokenTransferWrapper> wrappers) {
@@ -377,14 +377,21 @@ public class SyntheticTxnFactory {
 		}
 
 		public AccountAmount receiverAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(isApproval).build();
+			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(
+					isApproval).build();
 		}
 	}
 
 	public static class FungibleTokenTransfer extends HbarTransfer {
 		private final TokenID denomination;
 
-		public FungibleTokenTransfer(long amount, boolean isApproval, TokenID denomination, AccountID sender, AccountID receiver) {
+		public FungibleTokenTransfer(
+				long amount,
+				boolean isApproval,
+				TokenID denomination,
+				AccountID sender,
+				AccountID receiver
+		) {
 			super(amount, isApproval, sender, receiver);
 			this.denomination = denomination;
 		}
@@ -400,11 +407,38 @@ public class SyntheticTxnFactory {
 		private final TokenID tokenType;
 		private final AccountID sender;
 		private final AccountID receiver;
-		public NftExchange(long serialNo, TokenID tokenType, AccountID sender, AccountID receiver) {
+		private final boolean isApproval;
+
+		public NftExchange(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver
+		) {
+			this(serialNo, tokenType, sender, receiver, false);
+		}
+
+		public NftExchange fromApproval(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver
+		) {
+			return new NftExchange(serialNo, tokenType, sender, receiver, true);
+		}
+
+		private NftExchange(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver,
+				final boolean isApproval
+		) {
 			this.serialNo = serialNo;
 			this.tokenType = tokenType;
 			this.sender = sender;
 			this.receiver = receiver;
+			this.isApproval = isApproval;
 		}
 
 		public NftTransfer asGrpc() {
@@ -422,6 +456,10 @@ public class SyntheticTxnFactory {
 		public long getSerialNo() {
 			return serialNo;
 		}
+
+		public boolean isApproval() {
+			return isApproval;
+		}
 	}
 
 	/**
@@ -432,8 +470,10 @@ public class SyntheticTxnFactory {
 	 * appears in either list.  NFT exchanges are "merged" by checking that each exchange from either list
 	 * appears at most once.
 	 *
-	 * @param to   the builder to merge source transfers into
-	 * @param from a source of fungible transfers and NFT exchanges
+	 * @param to
+	 * 		the builder to merge source transfers into
+	 * @param from
+	 * 		a source of fungible transfers and NFT exchanges
 	 * @return the consolidated target builder
 	 */
 	static TokenTransferList.Builder mergeTokenTransfers(
