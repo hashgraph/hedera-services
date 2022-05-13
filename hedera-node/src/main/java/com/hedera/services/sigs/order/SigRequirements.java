@@ -560,30 +560,33 @@ public class SigRequirements {
 			final List<TokenAllowance> tokenAllowancesList,
 			final List<NftAllowance> nftAllowancesList,
 			final SigningOrderResultFactory<T> factory,
-			final @Nullable LinkedRefs linkedRefs) {
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		List<JKey> requiredKeys = new ArrayList<>();
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : tokenAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : nftAllowancesList) {
-			final var owner = allowance.getOwner();
-			var delegatingEntity = allowance.hasDelegatingSpender() ?
-					allowance.getDelegatingSpender() : owner;
-			// ApproveForAll allowance grant can only be granted by the owner.
-			delegatingEntity = allowance.getApprovedForAll().getValue() ? owner : delegatingEntity;
-
-			if ((includeOwnerIfNecessary(payer, delegatingEntity, requiredKeys, linkedRefs)) != NONE) {
-				if (delegatingEntity == owner) {
+			final var ownerId = allowance.getOwner();
+			var operatorId = allowance.hasDelegatingSpender()
+					? allowance.getDelegatingSpender()
+					: ownerId;
+			// Only the owner can grant approveForAll
+			if (allowance.getApprovedForAll().getValue()) {
+				operatorId = ownerId;
+			}
+			if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != NONE) {
+				if (operatorId == ownerId) {
 					return factory.forInvalidAllowanceOwner();
 				} else {
 					return factory.forInvalidDelegatingSpender();
@@ -602,7 +605,7 @@ public class SigRequirements {
 		List<JKey> requiredKeys = new ArrayList<>();
 		for (final var allowance : nftAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
@@ -1209,7 +1212,8 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID owner,
 			final List<JKey> required,
-			final LinkedRefs linkedRefs) {
+			final LinkedRefs linkedRefs
+	) {
 		if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
 			var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
 			if (!ownerResult.succeeded()) {

@@ -20,5 +20,5 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-public record GetApprovedWrapper(long tokenId) {
+public record GetApprovedWrapper(long serialNo) {
 }

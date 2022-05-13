@@ -57,6 +57,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -203,6 +204,8 @@ class CreatePrecompileTest {
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -223,7 +226,8 @@ class CreatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				entityIdSource, allowanceChecks, deleteAllowanceChecks);
 		subject.setCreateLogicFactory(createLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

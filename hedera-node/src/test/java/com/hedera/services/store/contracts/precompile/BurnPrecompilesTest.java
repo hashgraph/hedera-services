@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -190,6 +191,8 @@ class BurnPrecompilesTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -199,7 +202,8 @@ class BurnPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+				deleteAllowanceChecks);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
