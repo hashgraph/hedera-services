@@ -101,8 +101,7 @@ class ServicesTxnManagerTest {
 	void setup() {
 		subject = new ServicesTxnManager(
 				processLogic, triggeredProcessLogic, recordCache, ledger,
-				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager,
-				networkCtxManager, () -> stakingInfo);
+				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager);
 	}
 
 	@Test

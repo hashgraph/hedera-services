@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -38,6 +39,8 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -45,10 +48,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -59,6 +64,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -124,6 +131,12 @@ class AbstractLedgerWorldUpdaterTest {
 	private StaticEntityAccess staticEntityAccess;
 	@Mock
 	private WorldLedgers mockLedgers;
+	@Mock
+	private MerkleNetworkContext networkCtx;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -522,7 +535,7 @@ class AbstractLedgerWorldUpdaterTest {
 		nftsLedger.begin();
 		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, ()-> networkCtx, () -> stakingInfo, dynamicProperties);
 	}
 
 	private void setupWellKnownAccounts() {

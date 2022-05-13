@@ -27,11 +27,18 @@ import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -43,7 +50,8 @@ import java.util.Map;
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
-	private final NetworkCtxManager networkCtxManager;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
 	private boolean rewardsActivated;
 	private boolean rewardBalanceChanged;
@@ -51,13 +59,17 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 
 	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
 
+	private static final Logger log = LogManager.getLogger(AccountsCommitInterceptor.class);
+
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
-			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.networkCtxManager = networkCtxManager;
+		this.networkCtx = networkCtx;
 		this.dynamicProperties = dynamicProperties;
+		this.stakingInfo = stakingInfo;
 	}
 
 	/**
@@ -68,7 +80,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		rewardsActivated = rewardsActivated || networkCtxManager.areRewardsActivated();
+		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
 		rewardBalanceChanged = false;
 
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
@@ -80,7 +92,9 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		assertZeroSum();
 		if (!rewardsActivated && rewardBalanceChanged) {
 			if (newRewardBalance >= dynamicProperties.getStakingStartThreshold()) {
-				networkCtxManager.permanentlyActivateStakingRewards();
+				networkCtx.get().setStakingRewards(true);
+				stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+				log.info("Staking rewards is activated and rewardSumHistory is cleared");
 			}
 		}
 	}

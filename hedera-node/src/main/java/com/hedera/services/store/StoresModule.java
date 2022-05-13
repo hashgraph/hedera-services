@@ -41,6 +41,8 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -50,6 +52,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -135,7 +138,8 @@ public interface StoresModule {
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final SideEffectsTracker sideEffectsTracker,
-			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
@@ -143,7 +147,7 @@ public interface StoresModule {
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtxManager, dynamicProperties);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx, stakingInfo, dynamicProperties);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

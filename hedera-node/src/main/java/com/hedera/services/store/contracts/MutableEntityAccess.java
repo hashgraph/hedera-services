@@ -33,12 +33,16 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -61,7 +65,8 @@ public class MutableEntityAccess implements EntityAccess {
 	private final SizeLimitedStorage sizeLimitedStorage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-	private final NetworkCtxManager networkCtxManager;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
@@ -72,7 +77,8 @@ public class MutableEntityAccess implements EntityAccess {
 			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
-			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.txnCtx = txnCtx;
@@ -80,7 +86,8 @@ public class MutableEntityAccess implements EntityAccess {
 		this.bytecode = bytecode;
 		this.tokensLedger = tokensLedger;
 		this.sizeLimitedStorage = sizeLimitedStorage;
-		this.networkCtxManager = networkCtxManager;
+		this.networkCtx = networkCtx;
+		this.stakingInfo = stakingInfo;
 		this.dynamicProperties = dynamicProperties;
 
 		this.worldLedgers = new WorldLedgers(
@@ -89,8 +96,10 @@ public class MutableEntityAccess implements EntityAccess {
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
 				tokensLedger,
-				networkCtxManager,
-				dynamicProperties);
+				networkCtx,
+				stakingInfo,
+				dynamicProperties
+		);
 
 		ledger.setMutableEntityAccess(this);
 	}

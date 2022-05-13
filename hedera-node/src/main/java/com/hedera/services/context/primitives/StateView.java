@@ -38,6 +38,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -590,6 +592,14 @@ public class StateView {
 
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
+	}
+
+	public MerkleNetworkContext networkCtx() {
+		return stateChildren == null ? new MerkleNetworkContext() : stateChildren.networkCtx();
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
 	}
 
 	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {

@@ -36,13 +36,17 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,6 +54,7 @@ import org.hyperledger.besu.datatypes.Address;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -83,7 +88,8 @@ public class WorldLedgers {
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
-	private final NetworkCtxManager networkCtxManager;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	public static WorldLedgers staticLedgersWith(
@@ -99,7 +105,8 @@ public class WorldLedgers {
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -107,7 +114,8 @@ public class WorldLedgers {
 		this.tokensLedger = tokensLedger;
 		this.nftsLedger = nftsLedger;
 		this.aliases = aliases;
-		this.networkCtxManager = networkCtxManager;
+		this.networkCtx = networkCtx;
+		this.stakingInfo = stakingInfo;
 		this.dynamicProperties = dynamicProperties;
 
 		staticEntityAccess = null;
@@ -118,7 +126,8 @@ public class WorldLedgers {
 		accountsLedger = null;
 		tokensLedger = null;
 		nftsLedger = null;
-		networkCtxManager = null;
+		networkCtx = () -> staticEntityAccess.getNetworkCtx();
+		stakingInfo = () -> staticEntityAccess.getStakingInfo();
 		dynamicProperties = null;
 
 		this.aliases = aliases;
@@ -292,7 +301,8 @@ public class WorldLedgers {
 		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
 		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
 		if (sideEffectsTracker != null) {
-			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtxManager, dynamicProperties);
+			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx,
+					stakingInfo, dynamicProperties);
 			wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		}
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
@@ -303,8 +313,10 @@ public class WorldLedgers {
 				wrappedAccountsLedger,
 				wrappedNftsLedger,
 				wrappedTokensLedger,
-				networkCtxManager,
-				dynamicProperties);
+				networkCtx,
+				stakingInfo,
+				dynamicProperties
+		);
 	}
 
 	public ContractAliases aliases() {

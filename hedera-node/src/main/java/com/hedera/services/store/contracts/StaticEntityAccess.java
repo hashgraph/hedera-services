@@ -31,6 +31,8 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -55,6 +57,7 @@ import org.hyperledger.besu.datatypes.Address;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -77,6 +80,17 @@ public class StaticEntityAccess implements EntityAccess {
 	private final VirtualMap<ContractKey, IterableContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
+	public MerkleNetworkContext getNetworkCtx() {
+		return networkCtx;
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> getStakingInfo() {
+		return stakingInfo;
+	}
+
+	private final MerkleNetworkContext networkCtx;
+	private final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+
 	public StaticEntityAccess(
 			final StateView view,
 			final ContractAliases aliases,
@@ -93,6 +107,8 @@ public class StaticEntityAccess implements EntityAccess {
 		this.tokens = view.tokens();
 		this.nfts = view.uniqueTokens();
 		this.tokenAssociations = view.tokenAssociations();
+		this.networkCtx = view.networkCtx();
+		this.stakingInfo = view.stakingInfo();
 	}
 
 	@Override

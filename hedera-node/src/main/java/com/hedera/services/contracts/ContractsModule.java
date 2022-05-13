@@ -44,6 +44,8 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.IterableStorageUtils;
@@ -56,7 +58,9 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -130,11 +134,11 @@ public interface ContractsModule {
 			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
-			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties
 	) {
-		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode, networkCtxManager,
-				dynamicProperties);
+		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode, networkCtx, stakingInfo, dynamicProperties);
 	}
 
 	@Provides

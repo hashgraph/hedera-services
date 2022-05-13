@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -30,8 +31,12 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -96,6 +101,12 @@ class TransactionalLedgerTest {
 	private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
 	@Mock
 	private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
+	@Mock
+	private MerkleNetworkContext networkCtx;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
@@ -389,7 +400,7 @@ class TransactionalLedgerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void recoversFromChangeSetDescriptionProblem() {
-		final CommitInterceptor<Long,  TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
+		final CommitInterceptor<Long, TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
 		willThrow(IllegalStateException.class).given(unhappy).preview(any());
 
 		setupTestLedger();
@@ -774,7 +785,10 @@ class TransactionalLedgerTest {
 
 	private void setupInterceptedAccountsLedger() {
 		setupAccountsLedger();
-		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker());
+
+
+		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker(), () -> networkCtx,
+				() -> stakingInfo, dynamicProperties);
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}
 
