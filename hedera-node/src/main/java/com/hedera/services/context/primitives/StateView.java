@@ -595,14 +595,6 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
 
-	public MerkleNetworkContext networkCtx() {
-		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
-	}
-
-	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
-	}
-
 	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
 		if (backingTokens == null) {
 			backingTokens = new BackingTokens(stateChildren::tokens);
@@ -747,5 +739,14 @@ public class StateView {
 	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	/* --- used only in unit tests ---*/
+	public MerkleNetworkContext networkCtx() {
+		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
 	}
 }

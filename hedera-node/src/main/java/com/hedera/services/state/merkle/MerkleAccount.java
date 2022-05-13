@@ -295,10 +295,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().balance();
 	}
 
-	public long getNumber() {
-		return state().number();
-	}
-
 	public void setBalance(final long balance) throws NegativeAccountBalanceException {
 		if (balance < 0) {
 			throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
