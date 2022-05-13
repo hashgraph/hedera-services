@@ -88,6 +88,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	private static final String SUPPLY_KEY = "supplyKey";
 	private static final String FIRST_USER = "Client1";
 	private static final int BIGGER_THAN_LIMIT = 11;
+	private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(0).build();
 
 	public static void main(String... args) {
 		new UniqueTokenManagementSpecs().runSuiteSync();
@@ -884,8 +885,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							tokenTransferLists.stream().forEach(tokenTransferList -> {
 								Assertions.assertEquals(1, tokenTransferList.getNftTransfersList().size());
 								tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
-									Assertions.assertEquals(AccountID.getDefaultInstance(),
-											nftTransfers.getSenderAccountID());
+									Assertions.assertEquals(DEFAULT_ACCOUNT_ID, nftTransfers.getSenderAccountID());
 									Assertions.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec),
 											nftTransfers.getReceiverAccountID());
 									Assertions.assertEquals(1L, nftTransfers.getSerialNumber());
