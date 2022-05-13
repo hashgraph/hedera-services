@@ -577,14 +577,16 @@ public class SigRequirements {
 			}
 		}
 		for (final var allowance : nftAllowancesList) {
-			final var owner = allowance.getOwner();
-			var delegatingEntity = allowance.hasDelegatingSpender()
+			final var ownerId = allowance.getOwner();
+			var operatorId = allowance.hasDelegatingSpender()
 					? allowance.getDelegatingSpender()
-					: owner;
+					: ownerId;
 			// Only the owner can grant approveForAll
-			delegatingEntity = allowance.getApprovedForAll().getValue() ? owner : delegatingEntity;
-			if (includeOwnerIfNecessary(payer, delegatingEntity, requiredKeys, linkedRefs) != NONE) {
-				if (delegatingEntity == owner) {
+			if (allowance.getApprovedForAll().getValue()) {
+				operatorId = ownerId;
+			}
+			if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != NONE) {
+				if (operatorId == ownerId) {
 					return factory.forInvalidAllowanceOwner();
 				} else {
 					return factory.forInvalidDelegatingSpender();

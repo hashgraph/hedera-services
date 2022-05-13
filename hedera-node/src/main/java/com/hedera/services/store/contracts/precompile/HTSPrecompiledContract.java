@@ -111,6 +111,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -158,6 +159,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -617,6 +619,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 		} catch (final Exception e) {
 			log.warn("Internal precompile failure", e);
+			e.printStackTrace();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
 			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
@@ -1222,7 +1225,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
 			}
-			if (impliedValidity != ResponseCodeEnum.OK) {
+			if (impliedValidity != OK) {
 				throw new InvalidTransactionException(impliedValidity);
 			}
 
@@ -1255,7 +1258,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
 				if (i >= numExplicitChanges) {
-					/* Ignore receiver sig requirements for custom fee payments (which are never NFT transfers) */
+					// Ignore receiver sig requirements for custom fee payments (which are never NFT transfers)
 					continue;
 				}
 				var hasReceiverSigIfReq = true;
@@ -1281,7 +1284,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		private void extrapolateDetailsFromSyntheticTxn() {
 			final var op = syntheticTxn.getCryptoTransfer();
 			impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
-			if (impliedValidity != ResponseCodeEnum.OK) {
+			if (impliedValidity != OK) {
 				return;
 			}
 			explicitChanges = constructBalanceChanges(transferOp);
@@ -1487,9 +1490,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
-				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenId, isFungible,
-						aliasResolver);
+				case ABI_ID_ERC_TRANSFER ->
+						decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
+				case ABI_ID_ERC_TRANSFER_FROM -> {
+					final var operatorId = EntityId.fromGrpcAccountId(callerId);
+					yield decoder.decodeERCTransferFrom(
+							nestedInput, tokenId, isFungible, aliasResolver, ledgers, operatorId);
+				}
 				default -> null;
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
@@ -1698,6 +1705,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class ApprovePrecompile implements Precompile {
 		protected ApproveWrapper approveOp;
+		@Nullable
+		protected EntityId operatorId;
+		@Nullable
+		protected EntityId ownerId;
 		protected TokenID tokenId;
 
 		private final boolean isFungible;
@@ -1710,18 +1721,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var nestedInput = input.slice(24);
+			operatorId = EntityId.fromAddress(senderAddress);
 			approveOp = decoder.decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver);
 			if (isFungible) {
-				return syntheticTxnFactory.createApproveAllowance(approveOp);
+				return syntheticTxnFactory.createFungibleApproval(approveOp);
 			} else {
+				final var nftId = NftId.fromGrpc(tokenId, approveOp.serialNumber().longValue());
+				ownerId = ledgers.ownerIfPresent(nftId);
 				// Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
 				// translate this approveAllowance into a deleteAllowance
 				if (isNftApprovalRevocation()) {
-					final var nftId = NftId.fromGrpc(tokenId, approveOp.serialNumber().longValue());
-					final var owner = EntityId.fromAddress(ledgers.ownerOf(nftId));
-					return syntheticTxnFactory.createDeleteAllowance(approveOp, owner);
+					final var nominalOwnerId = ownerId != null ? ownerId : MISSING_ENTITY_ID;
+					return syntheticTxnFactory.createDeleteAllowance(approveOp, nominalOwnerId);
+				} else {
+					return syntheticTxnFactory.createNonfungibleApproval(approveOp, ownerId, operatorId);
 				}
-				return syntheticTxnFactory.createApproveAllowance(approveOp);
 			}
 		}
 
@@ -1729,12 +1743,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(approveOp);
 
+			validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+			final var grpcOperatorId = Objects.requireNonNull(operatorId).toGrpcAccountId();
+			//  Per the ERC-721 spec, "Throws unless `msg.sender` is the current NFT owner, or
+			//  an authorized operator of the current owner"
+			if (!isFungible) {
+				final var isApproved = operatorId.equals(ownerId) ||
+						ledgers.hasApprovedForAll(ownerId.toGrpcAccountId(), grpcOperatorId, tokenId);
+				validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+			}
+
 			// --- Build the necessary infrastructure to execute the transaction ---
 			final var accountStore = createAccountStore();
 			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
-			final var callerId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(callerId));
-
+			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(grpcOperatorId));
 			// --- Execute the transaction and capture its results ---
 			if (isNftApprovalRevocation()) {
 				final var deleteAllowanceLogic =
@@ -1744,11 +1766,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var status = deleteAllowanceChecks.deleteAllowancesValidation(
 						revocationWrapper, payerAccount, currentView);
 				validateTrueOrRevert(status == OK, status);
-				final var revocation = revocationWrapper.get(0);
-				final var isApproved = callerId.equals(revocation.getOwner()) ||
-						ledgers.hasApprovedForAll(revocation.getOwner(), callerId, tokenId);
-				validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-				deleteAllowanceLogic.deleteAllowance(revocationWrapper, callerId);
+				deleteAllowanceLogic.deleteAllowance(revocationWrapper, grpcOperatorId);
 			} else {
 				final var status = approveAllowanceChecks.allowancesValidation(
 						transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
@@ -1764,7 +1782,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
 							transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
 							transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-							callerId);
+							grpcOperatorId);
 				} catch (InvalidTransactionException e) {
 					throw InvalidTransactionException.fromReverting(e.getResponseCode());
 				}

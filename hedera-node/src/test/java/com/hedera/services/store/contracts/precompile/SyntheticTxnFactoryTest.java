@@ -60,6 +60,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
@@ -365,11 +366,11 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
-	void createsExpectedAdjustAllowance() {
+	void createsExpectedFungibleApproveAllowance() {
 		final var amount = BigInteger.ONE;
 		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
 
-		final var result = subject.createApproveAllowance(allowances);
+		final var result = subject.createFungibleApproval(allowances);
 		final var txnBody = result.build();
 
 		assertEquals(amount.longValue(), txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
@@ -378,15 +379,50 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
-	void createsExpectedAdjustAllowanceNFT() {
+	void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
 		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var ownerId = new EntityId(0, 0, 666);
 
-		final var result = subject.createApproveAllowance(allowances);
+		final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
 		final var txnBody = result.build();
 
-		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
-		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
-		assertEquals(1L, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSerialNumbers(0));
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
+		assertEquals(1L, allowance.getSerialNumbers(0));
+	}
+
+	@Test
+	void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var ownerId = new EntityId(0, 0, 666);
+		final var operatorId = new EntityId(0, 0, 777);
+
+		final var result = subject.createNonfungibleApproval(allowances, ownerId, operatorId);
+		final var txnBody = result.build();
+
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
+		assertEquals(operatorId.toGrpcAccountId(), allowance.getDelegatingSpender());
+		assertEquals(1L, allowance.getSerialNumbers(0));
+	}
+
+	@Test
+	void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var operatorId = new EntityId(0, 0, 666);
+
+		final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
+		final var txnBody = result.build();
+
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(AccountID.getDefaultInstance(), allowance.getOwner());
+		assertEquals(1L, allowance.getSerialNumbers(0));
 	}
 
 	@Test
@@ -405,7 +441,7 @@ class SyntheticTxnFactoryTest {
 	void createsDeleteAllowance() {
 		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
-		final var result = subject.createDeleteAllowance(allowances, EntityId.fromGrpcAccountId(sender));
+		final var result = subject.createDeleteAllowance(allowances, senderId);
 		final var txnBody = result.build();
 
 		assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());

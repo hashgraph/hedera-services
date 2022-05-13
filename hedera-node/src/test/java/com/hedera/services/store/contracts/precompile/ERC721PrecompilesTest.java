@@ -134,6 +134,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiv
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
@@ -144,7 +145,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
-import static org.hyperledger.besu.datatypes.Address.SHA256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -418,7 +418,7 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -426,6 +426,8 @@ class ERC721PrecompilesTest {
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 		given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
 		given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances,
 				new Account(accountId), stateView))
@@ -468,7 +470,7 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -480,6 +482,8 @@ class ERC721PrecompilesTest {
 		given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances,
 				new Account(accountId), stateView))
 				.willReturn(OK);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
 		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
 				APPROVE_WRAPPER);
@@ -522,7 +526,7 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(wrappedLedgers.ownerOf(any())).willReturn(SHA256);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
@@ -544,6 +548,8 @@ class ERC721PrecompilesTest {
 		given(encoder.encodeApprove(true)).willReturn(successResult);
 		subject.setDeleteAllowanceLogicFactory(deleteAllowanceLogicFactory);
 		given(deleteAllowanceLogicFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
 		// when:
 		subject.prepareFields(frame);
@@ -578,7 +584,7 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(wrappedLedgers.ownerOf(any())).willReturn(SHA256);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
@@ -587,7 +593,7 @@ class ERC721PrecompilesTest {
 						.setOwner(feeCollector)
 						.build()
 		));
-		given(wrappedLedgers.hasApprovedForAll(feeCollector, sender, token)).willReturn(true);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
 		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
@@ -619,9 +625,6 @@ class ERC721PrecompilesTest {
 		givenMinimalFrameContext();
 
 		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(wrappedLedgers.nfts()).willReturn(nfts);
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -633,27 +636,17 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(wrappedLedgers.ownerOf(any())).willReturn(SHA256);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
 				.willReturn(mockSynthBodyBuilder);
-		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
-		given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(List.of(
-				NftRemoveAllowance.newBuilder()
-						.setOwner(feeCollector)
-						.build()
-		));
 
-		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-		given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-		given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
-				.willReturn(OK);
 
 		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
 				APPROVE_WRAPPER_0);
 		subject.setDeleteAllowanceLogicFactory(deleteAllowanceLogicFactory);
-		given(deleteAllowanceLogicFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
 
 		// when:
 		subject.prepareFields(frame);
@@ -686,7 +679,7 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(wrappedLedgers.ownerOf(any())).willReturn(SHA256);
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
@@ -697,6 +690,8 @@ class ERC721PrecompilesTest {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
 		given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
 		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
 				APPROVE_WRAPPER_0);
@@ -735,7 +730,9 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
+		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
+		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -989,8 +986,8 @@ class ERC721PrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 
-		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any())).willReturn(
-				Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
+				.willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
@@ -1043,8 +1040,8 @@ class ERC721PrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any())).willReturn(
-				Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
+				.willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);

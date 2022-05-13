@@ -62,6 +62,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.tuweni.bytes.Bytes;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
@@ -211,7 +212,15 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
-	public TransactionBody.Builder createApproveAllowance(final ApproveWrapper approveWrapper) {
+	public TransactionBody.Builder createFungibleApproval(final ApproveWrapper approveWrapper) {
+		return createNonfungibleApproval(approveWrapper, null, null);
+	}
+
+	public TransactionBody.Builder createNonfungibleApproval(
+			final ApproveWrapper approveWrapper,
+			@Nullable final EntityId ownerId,
+			@Nullable final EntityId operatorId
+	) {
 		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 		if (approveWrapper.isFungible()) {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
@@ -220,11 +229,17 @@ public class SyntheticTxnFactory {
 					.setAmount(approveWrapper.amount().longValue())
 					.build());
 		} else {
-			builder.addNftAllowances(NftAllowance.newBuilder()
-					.setTokenId(approveWrapper.token())
-					.setSpender(approveWrapper.spender())
-					.addSerialNumbers(approveWrapper.serialNumber().longValue())
-					.build());
+			final var op = NftAllowance.newBuilder()
+							.setTokenId(approveWrapper.token())
+							.setSpender(approveWrapper.spender())
+							.addSerialNumbers(approveWrapper.serialNumber().longValue());
+			if (ownerId != null) {
+				op.setOwner(ownerId.toGrpcAccountId());
+			}
+			if (operatorId != null) {
+				op.setDelegatingSpender(operatorId.toGrpcAccountId());
+			}
+			builder.addNftAllowances(op.build());
 		}
 		return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
 	}

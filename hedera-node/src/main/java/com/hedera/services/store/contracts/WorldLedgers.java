@@ -73,7 +73,6 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class WorldLedgers {
 	public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] { 0x3a, 0x21 });
@@ -158,16 +157,19 @@ public class WorldLedgers {
 		}
 	}
 
-	public Address ownerOf(final NftId nft) {
+	@Nullable
+	public EntityId ownerIfPresent(final NftId nftId) {
 		if (!areMutable()) {
-			return staticEntityAccess.ownerOf(nft);
+			throw new IllegalStateException("Static ledgers cannot be used to get owner if present");
 		}
-		var owner = (EntityId) nftsLedger.get(nft, OWNER);
-		validateTrue(owner != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-		if (MISSING_ENTITY_ID.equals(owner)) {
-			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
+		return nftsLedger.contains(nftId) ? explicitOwnerOfExtant(nftId): null;
+	}
+
+	public Address ownerOf(final NftId nftId) {
+		if (!areMutable()) {
+			return staticEntityAccess.ownerOf(nftId);
 		}
-		return owner.toEvmAddress();
+		return explicitOwnerOfExtant(nftId).toEvmAddress();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -345,5 +347,13 @@ public class WorldLedgers {
 		final var value = (T) tokensLedger.get(tokenId, property);
 		validateTrue(value != null, INVALID_TOKEN_ID);
 		return value;
+	}
+
+	private EntityId explicitOwnerOfExtant(final NftId nftId) {
+		var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+		if (MISSING_ENTITY_ID.equals(owner)) {
+			owner = (EntityId) tokensLedger.get(nftId.tokenId(), TREASURY);
+		}
+		return owner;
 	}
 }

@@ -70,6 +70,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -1966,9 +1967,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								ByteString.copyFromUtf8("and"),
 								ByteString.copyFromUtf8("read")
 						)),
-						tokenAssociate(aCivilian, nfToken)
+						tokenAssociate(aCivilian, nfToken),
+						tokenAssociate(bCivilian, nfToken)
 				).when(
 						cryptoTransfer(movingUnique(nfToken, 1L, 2L).between(someERC721Scenarios, aCivilian)),
+						cryptoTransfer(movingUnique(nfToken, 3L, 4L).between(someERC721Scenarios, bCivilian)),
 						getTokenNftInfo(nfToken, 1L).hasAccountID(aCivilian),
 						getTokenNftInfo(nfToken, 2L).hasAccountID(aCivilian),
 						sourcing(() -> contractCall(
@@ -1976,6 +1979,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), 1L
 						)
 								.via("A").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						// Approve the contract as an operator of aCivilian's NFTs
 						cryptoApproveAllowance()
 								.payingWith(aCivilian)
 								.addNftAllowance(aCivilian, nfToken, someERC721Scenarios, true, List.of())
@@ -1986,18 +1990,49 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), 1L
 						)
 								.via("B").gas(4_000_000)),
+						// These should work because the contract is an operator for aCivilian
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "doSpecificApproval",
 								tokenMirrorAddr.get(), bCivilianMirrorAddr.get(), 2L
 						)
-								.via("C").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-						// If Alice receives an NFT, the ownerOf() precompile knows as much
+								.via("C").gas(4_000_000)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "iMustOwnAfterReceiving",
-								tokenMirrorAddr.get(), 1L
+								tokenMirrorAddr.get(), 5L
 						)
-								.payingWith(aCivilian).via("D")),
-						getTxnRecord("D").andAllChildRecords().logged()
+								.payingWith(bCivilian).via("D")),
+						// Should NOT work because the contract is not an operator for bCivilian
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 3L
+						)
+								.via("D").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						cryptoApproveAllowance()
+								.payingWith(bCivilian)
+								.addNftAllowance(bCivilian, nfToken, someERC721Scenarios, false, List.of(3L))
+								.signedBy(DEFAULT_PAYER, bCivilian)
+								.fee(ONE_HBAR),
+						// Still shouldn't work because having one approval doesn't make you an operator
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 3L
+						)
+								.via("E").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						// Now make contract operator for bCivilian
+						cryptoApproveAllowance()
+								.payingWith(bCivilian)
+								.addNftAllowance(bCivilian, nfToken, someERC721Scenarios, true, List.of())
+								.signedBy(DEFAULT_PAYER, bCivilian)
+								.fee(ONE_HBAR),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 3L
+						)
+								.via("F").gas(4_000_000)),
+						cryptoTransfer(movingUniqueWithAllowance(nfToken, 3L)
+								.between(bCivilian, aCivilian)
+						).payingWith(aCivilian).fee(ONE_HBAR),
+						getTokenNftInfo(nfToken, 3L).hasAccountID(aCivilian)
 				).then(
 				);
 	}
@@ -2543,7 +2578,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec erc721TransferFromWithApproval() {
 		final var theSpender = "spender";
-		final var approveTxn = "approveTxn";
 		final var transferFromAccountTxn = "transferFromAccountTxn";
 
 		return defaultHapiSpec("ERC_721_TRANSFER_FROM_WITH_APPROVAL")
@@ -2578,7 +2612,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.logged()
 														.signedBy(DEFAULT_PAYER, OWNER)
 														.fee(ONE_HBAR),
-												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
+														.hasSpenderID(ERC_721_CONTRACT),
 												contractCall(ERC_721_CONTRACT, "transferFrom",
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
@@ -2586,9 +2621,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														1)
 														.via(transferFromAccountTxn)
 														.hasKnownStatus(SUCCESS),
+												getTxnRecord(transferFromAccountTxn).andAllChildRecords().logged(),
 												getAccountDetails(RECIPIENT).logged(),
 												getAccountDetails(OWNER).logged(),
-												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender()
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
+														.hasNoSpender()
 										)
 						)
 				).then();

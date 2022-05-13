@@ -80,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -175,6 +176,24 @@ class WorldLedgersTest {
 		given(nftsLedger.get(nftId, METADATA)).willReturn("There, the eyes are".getBytes());
 
 		assertEquals("There, the eyes are", subject.metadataOf(nftId));
+	}
+
+	@Test
+	void ownerIfPresentOnlyAvailableForMutable() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		assertThrows(IllegalStateException.class, () -> subject.ownerIfPresent(nftId));
+	}
+
+	@Test
+	void ownerIfPresentReturnsNullForNonexistentNftId() {
+		assertNull(subject.ownerIfPresent(nftId));
+	}
+
+	@Test
+	void ownerIfPresentReturnsOwnerIfPresent() {
+		given(nftsLedger.contains(nftId)).willReturn(true);
+		given(nftsLedger.get(nftId, OWNER)).willReturn(notTreasury);
+		assertEquals(notTreasury, subject.ownerIfPresent(nftId));
 	}
 
 	@Test

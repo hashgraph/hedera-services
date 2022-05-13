@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -137,7 +136,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -682,8 +680,6 @@ class ERC20PrecompilesTest {
         givenMinimalFrameContext();
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(wrappedLedgers.accounts()).willReturn(accounts);
 
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
@@ -695,16 +691,10 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
-
-        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
-                .willReturn(FAIL_INVALID);
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
                 APPROVE_WRAPPER);
@@ -746,7 +736,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -754,8 +744,8 @@ class ERC20PrecompilesTest {
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 
-        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
-                .willReturn(OK);
+        given(allowanceChecks.allowancesValidation(
+                cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView)).willReturn(OK);
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
                 APPROVE_WRAPPER);
@@ -883,8 +873,8 @@ class ERC20PrecompilesTest {
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
 
-        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any())).willReturn(
-                Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
+        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any(), any(), any()))
+                .willReturn(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);

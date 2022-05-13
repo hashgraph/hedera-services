@@ -25,11 +25,14 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -304,8 +307,9 @@ public class DecodingFacade {
 			final Bytes input,
 			final TokenID token,
 			final boolean isFungible,
-			final UnaryOperator<byte[]> aliasResolver
-	) {
+			final UnaryOperator<byte[]> aliasResolver,
+			final WorldLedgers ledgers,
+			final EntityId operatorId) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
 		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
@@ -318,8 +322,13 @@ public class DecodingFacade {
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
-			final var serialNumber = (BigInteger) decodedArguments.get(2);
-			nonFungibleTransfers.add(SyntheticTxnFactory.NftExchange.fromApproval(serialNumber.longValue(), token, from, to));
+			final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
+			final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
+			if (operatorId.equals(ownerId)) {
+				nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNo, token, from, to));
+			} else {
+				nonFungibleTransfers.add(SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
+			}
 			return Collections.singletonList(new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
 		}
 	}
