@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.26.0-SNAPSHOT</version>
+	<version>0.26.0-alpha.2-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -114,6 +114,14 @@
 			<id>besu</id>
 			<name>Hyperledger Besu</name>
 			<url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
+		</repository>
+                <repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>proto-staging</id>
+			<name>0.26.x protobufs</name>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1443</url>
 		</repository>
 		<repository>
 			<id>ossrh-snapshots</id>
@@ -225,7 +233,7 @@
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.1-jre</guava.version>
-		<hapi-proto.version>0.26.0-SNAPSHOT</hapi-proto.version>
+		<hapi-proto.version>0.26.0-alpha.1</hapi-proto.version>
 		<headlong.version>6.1.1</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>
@@ -257,7 +265,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-04-02T00:14:21Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-05-13T22:04:40Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>
