@@ -26,10 +26,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -126,6 +128,8 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
+	private AccountsCommitInterceptor accountsCommitInterceptor;
+	@Mock
 	private ContractCustomizer customizer;
 	@Mock
 	private EntityAccess entityAccess;
@@ -154,7 +158,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void isPossibleToWrapStaticLedgers() {
 		final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 		subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
-		assertDoesNotThrow(()-> subject.wrappedTrackingLedgers(sideEffectsTracker));
+		assertDoesNotThrow(() -> subject.wrappedTrackingLedgers(sideEffectsTracker));
 	}
 
 	@Test
@@ -315,9 +319,9 @@ class AbstractLedgerWorldUpdaterTest {
 		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 		final var aAccountMock = mock(MerkleAccount.class);
-		final var aAccountMockState = mock(MerkleAccountState.class);
-		given(aAccountMock.state()).willReturn(aAccountMockState);
-		given(aAccountMockState.number()).willReturn((int) aAccount.getAccountNum());
+		final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+		backingAccounts.put(aAccount, aAccountMock);
+		wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
 
 		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
 		wrappedAccounts.create(aAccount);
@@ -542,7 +546,8 @@ class AbstractLedgerWorldUpdaterTest {
 		nftsLedger.begin();
 		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, ()-> networkCtx, () -> stakingInfo, dynamicProperties);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx,
+				() -> stakingInfo, dynamicProperties);
 	}
 
 	private void setupWellKnownAccounts() {
