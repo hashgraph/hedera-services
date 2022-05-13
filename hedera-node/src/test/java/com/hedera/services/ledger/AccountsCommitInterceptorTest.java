@@ -65,8 +65,6 @@ class AccountsCommitInterceptorTest {
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
-	private MerkleStakingInfo merkleStakingInfo;
-	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private AddressBook addressBook;
@@ -143,9 +141,9 @@ class AccountsCommitInterceptorTest {
 		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
 				dynamicProperties);
 
-        // rewardsSumHistory is not cleared
-		assertEquals(stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0], 5);
-		assertEquals(stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0], 5);
+		// rewardsSumHistory is not cleared
+		assertEquals(5, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(5, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
 
 		subject.preview(changes);
 
@@ -155,11 +153,32 @@ class AccountsCommitInterceptorTest {
 		verify(networkCtx).setStakingRewards(true);
 
 		// rewardsSumHistory is cleared
-		assertEquals(stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0], 0);
-		assertEquals(stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0], 0);
+		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(0, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
 	}
 
-	MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
+	@Test
+	void returnsIfRewardsShouldBeActivated() {
+		setupMockInterceptor();
+
+		subject.setRewardsActivated(true);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setNewRewardBalance(10L);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setRewardsActivated(false);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setRewardBalanceChanged(true);
+		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setNewRewardBalance(20L);
+		assertTrue(subject.shouldActivateStakingRewards());
+	}
+
+	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
 		given(addressBook.getAddress(0)).willReturn(address1);
 		given(address1.getMemo()).willReturn("0.0.3");

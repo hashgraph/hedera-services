@@ -79,6 +79,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		// if the rewards are activated previously they will not be activated again
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
 		rewardBalanceChanged = false;
 
@@ -96,7 +97,13 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		}
 	}
 
-	private boolean shouldActivateStakingRewards() {
+	/**
+	 * If the balance on 0.0.800 changed in the current transaction and the balance reached above the specified
+	 * threshold activates staking rewards
+	 *
+	 * @return true if rewards should be activated, false otherwise
+	 */
+	public boolean shouldActivateStakingRewards() {
 		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
 	}
 
@@ -120,5 +127,30 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
 			throw new IllegalStateException("Invalid balance changes");
 		}
+	}
+
+	/* only used for unit tests */
+	public boolean isRewardsActivated() {
+		return rewardsActivated;
+	}
+
+	public void setRewardsActivated(final boolean rewardsActivated) {
+		this.rewardsActivated = rewardsActivated;
+	}
+
+	public boolean isRewardBalanceChanged() {
+		return rewardBalanceChanged;
+	}
+
+	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
+		this.rewardBalanceChanged = rewardBalanceChanged;
+	}
+
+	public long getNewRewardBalance() {
+		return newRewardBalance;
+	}
+
+	public void setNewRewardBalance(final long newRewardBalance) {
+		this.newRewardBalance = newRewardBalance;
 	}
 }
