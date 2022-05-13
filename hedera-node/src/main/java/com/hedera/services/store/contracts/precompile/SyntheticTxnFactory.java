@@ -70,6 +70,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
@@ -235,9 +236,9 @@ public class SyntheticTxnFactory {
 							.addSerialNumbers(approveWrapper.serialNumber().longValue());
 			if (ownerId != null) {
 				op.setOwner(ownerId.toGrpcAccountId());
-			}
-			if (operatorId != null) {
-				op.setDelegatingSpender(operatorId.toGrpcAccountId());
+				if (!ownerId.equals(operatorId)) {
+					op.setDelegatingSpender(Objects.requireNonNull(operatorId).toGrpcAccountId());
+				}
 			}
 			builder.addNftAllowances(op.build());
 		}

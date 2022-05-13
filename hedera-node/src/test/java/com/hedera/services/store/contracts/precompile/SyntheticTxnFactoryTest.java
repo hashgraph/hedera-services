@@ -390,6 +390,7 @@ class SyntheticTxnFactoryTest {
 		assertEquals(token, allowance.getTokenId());
 		assertEquals(receiver, allowance.getSpender());
 		assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
+		assertEquals(AccountID.getDefaultInstance(), allowance.getDelegatingSpender());
 		assertEquals(1L, allowance.getSerialNumbers(0));
 	}
 
