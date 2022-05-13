@@ -371,7 +371,8 @@ class MerkleNetworkContextTest {
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
 				"  Throttle usage snapshots are               :: <N/A>\n" +
-				"  Congestion level start times are           :: <N/A>";
+				"  Congestion level start times are           :: <N/A>\n" +
+				"  Staking Rewards Activated                  ::false";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -404,7 +405,8 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Staking Rewards Activated                  ::false";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -422,7 +424,8 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Staking Rewards Activated                  ::false";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -440,7 +443,8 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Staking Rewards Activated                  ::false";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -484,7 +488,8 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Staking Rewards Activated                  ::false";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -502,7 +507,8 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Staking Rewards Activated                  ::false";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));

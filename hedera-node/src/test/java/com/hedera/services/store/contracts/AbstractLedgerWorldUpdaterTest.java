@@ -39,6 +39,7 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -86,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -312,10 +314,15 @@ class AbstractLedgerWorldUpdaterTest {
 		/* Get the wrapped accounts for the updater */
 		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
+		final var aAccountMock = mock(MerkleAccount.class);
+		final var aAccountMockState = mock(MerkleAccountState.class);
+		given(aAccountMock.state()).willReturn(aAccountMockState);
+		given(aAccountMockState.number()).willReturn((int) aAccount.getAccountNum());
 
 		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
 		wrappedAccounts.create(aAccount);
 		wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+		wrappedAccounts.put(aAccount, aAccountMock);
 
 		/* Verify we cannot commit the illegal change */
 		assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
