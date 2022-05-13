@@ -67,6 +67,7 @@ public class BlockSuite extends HapiApiSuite {
                                 .nonce(0)
                                 .maxFeePerGas(50L)
                                 .gasLimit(1_000_000L)
+                                .delayBy(3_000)
                                 .via(firstBlock)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
 
