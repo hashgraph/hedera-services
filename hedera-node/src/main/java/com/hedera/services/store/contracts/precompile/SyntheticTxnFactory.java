@@ -418,7 +418,7 @@ public class SyntheticTxnFactory {
 			this(serialNo, tokenType, sender, receiver, false);
 		}
 
-		public NftExchange fromApproval(
+		public static NftExchange fromApproval(
 				final long serialNo,
 				final TokenID tokenType,
 				final AccountID sender,

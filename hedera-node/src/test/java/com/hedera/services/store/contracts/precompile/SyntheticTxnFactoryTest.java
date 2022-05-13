@@ -551,9 +551,17 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
+	void canCreateApprovedNftExchanges() {
+		final var approvedExchange = SyntheticTxnFactory.NftExchange.fromApproval(
+				1L, nonFungible, a, b);
+		assertTrue(approvedExchange.isApproval());
+	}
+
+	@Test
 	void mergesRepeatedTokenIds() {
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 		final var nonFungibleTransfer = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
+		assertFalse(nonFungibleTransfer.isApproval());
 
 		final var result = subject.createCryptoTransfer(
 				List.of(
