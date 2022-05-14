@@ -67,7 +67,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final AliasManager aliasManager,
 			final StorageExpiry storageExpiry,
 			final BlockManager blockManager
-			) {
+	) {
 		super(
 				livePricesSource,
 				dynamicProperties,

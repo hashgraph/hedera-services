@@ -37,7 +37,6 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.MutabilityException;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,13 +44,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -88,7 +105,7 @@ class MerkleNetworkContextTest {
 
 	@BeforeEach
 	void setup() {
-		congestionStarts = new Instant[]{
+		congestionStarts = new Instant[] {
 				Instant.ofEpochSecond(1_234_567L, 54321L),
 				Instant.ofEpochSecond(1_234_789L, 12345L)
 		};
@@ -105,7 +122,7 @@ class MerkleNetworkContextTest {
 				1, 14, 1_234_567L,
 				1, 15, 2_345_678L);
 		midnightRateSetCopy = midnightRateSet.copy();
-		usageSnapshots = new DeterministicThrottle.UsageSnapshot[]{
+		usageSnapshots = new DeterministicThrottle.UsageSnapshot[] {
 				new DeterministicThrottle.UsageSnapshot(
 						123L, consensusTimeOfLastHandledTxn),
 				new DeterministicThrottle.UsageSnapshot(
@@ -221,7 +238,7 @@ class MerkleNetworkContextTest {
 		final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
 		someThrottle.allow(1);
 		final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
-		final var syncedStarts = new Instant[]{someStart};
+		final var syncedStarts = new Instant[] { someStart };
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
 
@@ -371,7 +388,9 @@ class MerkleNetworkContextTest {
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
 				"  Throttle usage snapshots are               :: <N/A>\n" +
-				"  Congestion level start times are           :: <N/A>";
+				"  Congestion level start times are           :: <N/A>\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -404,7 +423,9 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -422,7 +443,9 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -440,7 +463,9 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -484,7 +509,9 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -502,7 +529,9 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
@@ -641,7 +670,7 @@ class MerkleNetworkContextTest {
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
 		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshotA, subjectSnapshotC});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -668,7 +697,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 		// and:
 		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
 
@@ -694,7 +723,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 
 		var desired = "Saved gas throttle usage snapshot was not compatible with the corresponding " +
 				"active throttle (Cannot use -1 units in a bucket of capacity 1234!); not performing a reset!";
@@ -721,7 +750,7 @@ class MerkleNetworkContextTest {
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
 		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// given:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -774,8 +803,8 @@ class MerkleNetworkContextTest {
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
-	long[] used = new long[]{100L, 200L, 300L};
-	Instant[] lastUseds = new Instant[]{
+	long[] used = new long[] { 100L, 200L, 300L };
+	Instant[] lastUseds = new Instant[] {
 			Instant.ofEpochSecond(1L, 100),
 			Instant.ofEpochSecond(2L, 200),
 			Instant.ofEpochSecond(3L, 300)

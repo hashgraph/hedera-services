@@ -266,9 +266,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public long finishBlock(final org.hyperledger.besu.datatypes.Hash ethHash, final Instant firstConsTimeOfNewBlock) {
 		if (blocksToLog > 0) {
 			log.info("""
-					--- BLOCK UPDATE ---
-					  Finished: #{} @ {} with hash {}
-					  Starting: #{} @ {}""",
+							--- BLOCK UPDATE ---
+							  Finished: #{} @ {} with hash {}
+							  Starting: #{} @ {}""",
 					blockNo, firstConsTimeOfCurrentBlock, ethHash, blockNo + 1, firstConsTimeOfNewBlock);
 			blocksToLog--;
 		}
@@ -443,7 +443,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				"\n  Throttle usage snapshots are               ::" +
 				usageSnapshotsDesc() +
 				"\n  Congestion level start times are           ::" +
-				congestionStartsDesc();
+				congestionStartsDesc() +
+				"\n  Block number is                            :: " +
+				blockNo +
+				"\n  Block timestamp is                         :: " +
+				reprOf(firstConsTimeOfCurrentBlock);
 	}
 
 	public long getAlignmentBlockNo() {
@@ -459,10 +463,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public Instant firstConsTimeOfCurrentBlock() {
 		return (firstConsTimeOfCurrentBlock == null) ? Instant.EPOCH : firstConsTimeOfCurrentBlock;
-	}
-
-	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
-		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
 	}
 
 	private String usageSnapshotsDesc() {
@@ -724,6 +724,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Used for tests --- */
+	@VisibleForTesting
+	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
+		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
+	}
+
 	@VisibleForTesting
 	public Map<Long, org.hyperledger.besu.datatypes.Hash> getBlockHashCache() {
 		return blockHashes;
