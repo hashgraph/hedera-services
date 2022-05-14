@@ -37,7 +37,7 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 		if (nominalBlockNo < 0) {
 			var nominalTimestamp = networkCtx.firstConsTimeOfCurrentBlock();
 			// This is exceedingly unlikely in practice, as it requires a ContractCallLocal query to run
-			// as exactly the first network interaction immediately the 0.26 upgrade---since there's impact
+			// as exactly the first network interaction immediately the 0.26 upgrade; as there's no impact
 			// on consensus state, falling back to Instant.now() is acceptable
 			if (nominalTimestamp == null) {
 				nominalTimestamp = Instant.now();
