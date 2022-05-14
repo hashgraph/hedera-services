@@ -24,7 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -96,7 +95,7 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 	@Mock
-	private BlockManager blockManager;
+	private BlockMetaSource blockMetaSource;
 	@Mock
 	private HederaBlockValues hederaBlockValues;
 
@@ -113,14 +112,16 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, blockManager);
+				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
+		callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
 	}
 
 	@Test
 	void assertSuccessExecutе() {
 		givenValidMock();
+		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -227,7 +228,5 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
-
-		given(blockManager.computeBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 }

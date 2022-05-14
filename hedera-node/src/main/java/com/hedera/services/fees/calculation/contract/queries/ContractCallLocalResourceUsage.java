@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.execution.StaticBlockMetaSource;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -118,6 +119,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
 				evmTxProcessor.setWorldState(worldState);
+				evmTxProcessor.setBlockMetaSource(StaticBlockMetaSource.from(view));
 
 				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
 				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);

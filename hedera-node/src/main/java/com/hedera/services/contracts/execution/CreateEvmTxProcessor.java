@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -64,7 +63,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final StorageExpiry storageExpiry,
-			final BlockManager blockManager
+			final InHandleBlockMetaSource blockMetaSource
 	) {
 		super(
 				worldState,
@@ -73,7 +72,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				blockManager);
+				blockMetaSource);
 		this.codeCache = codeCache;
 		this.storageExpiry = storageExpiry;
 	}

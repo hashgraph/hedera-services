@@ -25,6 +25,7 @@ import com.hedera.services.state.logic.BlockManager;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
@@ -32,6 +33,7 @@ public class InHandleBlockMetaSource implements BlockMetaSource {
 	private final BlockManager blockManager;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public InHandleBlockMetaSource(final BlockManager blockManager, final TransactionContext txnCtx) {
 		this.blockManager = blockManager;
 		this.txnCtx = txnCtx;
@@ -39,11 +41,11 @@ public class InHandleBlockMetaSource implements BlockMetaSource {
 
 	@Override
 	public Hash getBlockHash(final long blockNo) {
-		return null;
+		return blockManager.getBlockHash(blockNo);
 	}
 
 	@Override
 	public BlockValues computeBlockValues(final long gasLimit) {
-		return null;
+		return blockManager.computeBlockValues(txnCtx.consensusTime(), gasLimit);
 	}
 }

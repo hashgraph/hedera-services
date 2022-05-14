@@ -24,7 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -83,8 +82,8 @@ abstract class EvmTxProcessor {
 	public static final String SBH_CONTEXT_KEY = "sbh";
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
+	private BlockMetaSource blockMetaSource;
 	private HederaMutableWorldState worldState;
-	private BlockManager blockManager;
 
 	private final GasCalculator gasCalculator;
 	private final LivePricesSource livePricesSource;
@@ -97,8 +96,7 @@ abstract class EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockManager blockManager
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
 		this(
 				null,
@@ -107,10 +105,14 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				blockManager);
+				null);
 	}
 
-	protected void setWorldState(HederaMutableWorldState worldState) {
+	protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
+		this.blockMetaSource = blockMetaSource;
+	}
+
+	protected void setWorldState(final HederaMutableWorldState worldState) {
 		this.worldState = worldState;
 	}
 
@@ -121,7 +123,7 @@ abstract class EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockManager blockManager
+			final BlockMetaSource blockMetaSource
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
@@ -140,7 +142,7 @@ abstract class EvmTxProcessor {
 				evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator, evm, true, VALIDATION_RULES, 1);
-		this.blockManager = blockManager;
+		this.blockMetaSource = blockMetaSource;
 	}
 
 	/**
@@ -241,11 +243,9 @@ abstract class EvmTxProcessor {
 			}
 		}
 
-		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-
-		final var blockValues = blockManager.computeBlockValues(consensusTime, gasLimit);
-
-		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
+		final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+		final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
+		final var gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 		final var valueAsWei = Wei.of(value);
@@ -268,7 +268,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(blockManager::getBlockHash)
+						.blockHashLookup(blockMetaSource::getBlockHash)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),

@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -96,7 +95,7 @@ class CreateEvmTxProcessorTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 	@Mock
-	private BlockManager blockManager;
+	private InHandleBlockMetaSource blockMetaSource;
 	@Mock
 	private HederaBlockValues hederaBlockValues;
 
@@ -118,7 +117,7 @@ class CreateEvmTxProcessorTest {
 		createEvmTxProcessor = new CreateEvmTxProcessor(
 				worldState,
 				livePricesSource, codeCache, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, storageExpiry, blockManager);
+				gasCalculator, operations, precompiledContractMap, storageExpiry, blockMetaSource);
 	}
 
 	@Test
@@ -325,7 +324,7 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(blockManager.computeBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenValidMockEth(boolean expectedSuccess) {
@@ -360,7 +359,7 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(blockManager.computeBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenExtantSender() {
