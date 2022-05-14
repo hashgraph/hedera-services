@@ -65,7 +65,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final StorageExpiry storageExpiry,
 			final BlockManager blockManager
-			) {
+	) {
 		super(
 				worldState,
 				livePricesSource,

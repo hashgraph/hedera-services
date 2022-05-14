@@ -67,7 +67,7 @@ class BlockManagerTest {
 
 	@Test
 	void requiresProvisionalValuesToBeComputedBeforeReturningHash() {
-		assertThrows(IllegalStateException.class, () -> subject.getProvisionalBlockHash(1));
+		assertThrows(IllegalStateException.class, () -> subject.getBlockHash(1));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class BlockManagerTest {
 		subject.updateAndGetAlignmentBlockNumber(someTime);
 		subject.reset();
 
-		assertThrows(IllegalStateException.class, () -> subject.getProvisionalBlockHash(1));
+		assertThrows(IllegalStateException.class, () -> subject.getBlockHash(1));
 	}
 
 	@Test
@@ -144,8 +144,8 @@ class BlockManagerTest {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
 		given(networkContext.getAlignmentBlockNo()).willReturn(Long.MIN_VALUE);
 
-		final var firstValues = subject.computeProvisionalBlockValues(someTime, gasLimit);
-		final var secondValues = subject.computeProvisionalBlockValues(someTime, gasLimit);
+		final var firstValues = subject.computeBlockValues(someTime, gasLimit);
+		final var secondValues = subject.computeBlockValues(someTime, gasLimit);
 
 		assertEquals(gasLimit, firstValues.getGasLimit());
 		assertEquals(someTime.getEpochSecond(), firstValues.getNumber());
@@ -164,7 +164,7 @@ class BlockManagerTest {
 		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-		final var values = subject.computeProvisionalBlockValues(anotherTime, gasLimit);
+		final var values = subject.computeBlockValues(anotherTime, gasLimit);
 
 		assertEquals(gasLimit, values.getGasLimit());
 		assertEquals(someBlockNo + 1, values.getNumber());
@@ -176,7 +176,7 @@ class BlockManagerTest {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-		final var values = subject.computeProvisionalBlockValues(someTime, gasLimit);
+		final var values = subject.computeBlockValues(someTime, gasLimit);
 
 		assertEquals(gasLimit, values.getGasLimit());
 		assertEquals(someBlockNo, values.getNumber());
@@ -190,7 +190,7 @@ class BlockManagerTest {
 		given(networkContext.getBlockHashByNumber(someBlockNo)).willReturn(aSuffixHash);
 
 		subject.ensureProvisionalBlockMeta(someTime);
-		final var hash = subject.getProvisionalBlockHash(someBlockNo);
+		final var hash = subject.getBlockHash(someBlockNo);
 
 		assertSame(aSuffixHash, hash);
 	}
@@ -203,7 +203,7 @@ class BlockManagerTest {
 		given(networkContext.getBlockHashByNumber(someBlockNo + 1)).willReturn(aSuffixHash);
 
 		subject.ensureProvisionalBlockMeta(anotherTime);
-		final var hash = subject.getProvisionalBlockHash(someBlockNo + 1);
+		final var hash = subject.getBlockHash(someBlockNo + 1);
 
 		assertSame(aSuffixHash, hash);
 	}
@@ -215,7 +215,7 @@ class BlockManagerTest {
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
 		subject.ensureProvisionalBlockMeta(anotherTime);
-		final var hash = subject.getProvisionalBlockHash(someBlockNo);
+		final var hash = subject.getBlockHash(someBlockNo);
 
 		assertArrayEquals(aSuffixHash.toArrayUnsafe(), hash.toArrayUnsafe());
 		assertNotSame(aSuffixHash, hash);

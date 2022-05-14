@@ -84,12 +84,13 @@ abstract class EvmTxProcessor {
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
 	private HederaMutableWorldState worldState;
+	private BlockManager blockManager;
+
 	private final GasCalculator gasCalculator;
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 	protected final GlobalDynamicProperties dynamicProperties;
-	private final BlockManager blockManager;
 
 	protected EvmTxProcessor(
 			final LivePricesSource livePricesSource,
@@ -131,9 +132,8 @@ abstract class EvmTxProcessor {
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
 		hederaOperations.forEach(operationRegistry::put);
 
-		var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
-
-		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
+		final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+		final var precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
 		this.messageCallProcessor = new HederaMessageCallProcessor(
@@ -164,7 +164,7 @@ abstract class EvmTxProcessor {
 	 * @param consensusTime
 	 * 		Current consensus time
 	 * @param isStatic
-	 * 		Whether or not the execution is static
+	 * 		Whether the execution is static
 	 * @param expiryOracle
 	 * 		the oracle to use when determining the expiry of newly allocated storage
 	 * @param mirrorReceiver
@@ -243,7 +243,7 @@ abstract class EvmTxProcessor {
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 
-		final var blockValues = blockManager.computeProvisionalBlockValues(consensusTime, gasLimit);
+		final var blockValues = blockManager.computeBlockValues(consensusTime, gasLimit);
 
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -268,7 +268,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(blockManager::getProvisionalBlockHash)
+						.blockHashLookup(blockManager::getBlockHash)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),

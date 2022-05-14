@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -31,9 +32,7 @@ import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -73,8 +72,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
-	public static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
-			ethHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
@@ -456,9 +453,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long reqBlockNo) {
 		if (reqBlockNo < 0) {
-			return UNAVAILABLE_BLOCK_HASH;
+			return BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 		}
-		return blockHashes.getOrDefault(reqBlockNo, UNAVAILABLE_BLOCK_HASH);
+		return blockHashes.getOrDefault(reqBlockNo, BlockMetaSource.UNAVAILABLE_BLOCK_HASH);
 	}
 
 	public Instant firstConsTimeOfCurrentBlock() {
