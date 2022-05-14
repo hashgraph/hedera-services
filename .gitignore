@@ -125,8 +125,11 @@ test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
 test-clients/devops-utils/validation-scenarios/files/*-application.properties
 test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
-.gradle
+# Maven
 target
+
+# Gradle
+.gradle
 build
 
 # Mac system
