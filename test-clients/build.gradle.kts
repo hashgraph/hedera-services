@@ -24,6 +24,28 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+sourceSets {
+    // Needed because "resource" directory is misnamed. See https://github.com/hashgraph/hedera-services/issues/3361
+    main {
+        resources {
+            srcDir("src/main/resource")
+        }
+    }
+
+    create("eet") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+        // TODO link to issue of reorganizing things, at which point we can get rid of the java srcDir override
+        java {
+            srcDir("src/test/java")
+        }
+    }
+}
+
+val eetImplementation by configurations.getting {
+    extendsFrom(configurations.implementation.get())
+}
+
 dependencies {
     implementation(project(":hapi-utils"))
     implementation(project(":hapi-fees"))
@@ -52,7 +74,7 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
-    testImplementation(testLibs.bundles.testing)
+    eetImplementation(testLibs.bundles.testing)
 }
 
 /**
@@ -65,13 +87,17 @@ tasks.test {
     maxHeapSize = "1G"
 }
 
-/**
- * Needed because "resource" directory is misnamed. See https://github.com/hashgraph/hedera-services/issues/3361
- */
-sourceSets {
-    main {
-        resources {
-            srcDir("src/main/resource")
-        }
+val eet = tasks.register<Test>("eet") {
+    description = "Runs end-to-end tests"
+    group = "verification"
+
+    testClassesDirs = sourceSets["eet"].output.classesDirs
+    classpath = sourceSets["eet"].runtimeClasspath
+    shouldRunAfter("test")
+
+    useJUnitPlatform {
+        includeEngines("junit-jupiter")
     }
 }
+
+tasks.check { dependsOn(eet) }
