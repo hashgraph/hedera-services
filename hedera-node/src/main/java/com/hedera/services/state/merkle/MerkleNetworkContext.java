@@ -666,9 +666,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		final var firstAvailable = blockNo - blockHashes.size();
 		final var hashIter = blockHashes.iterator();
 		for (int i = 0; hashIter.hasNext(); i++) {
-			final var blockNo = firstAvailable + i;
+			final var nextBlockNo = firstAvailable + i;
 			final var blockHash = hashIter.next().getData();
-			jsonSb.append("{\"num\": ").append(blockNo).append(", ")
+			jsonSb.append("{\"num\": ").append(nextBlockNo).append(", ")
 					.append("\"hash\": \"").append(CommonUtils.hex(blockHash)).append("\"}")
 					.append(hashIter.hasNext() ? ", " : "");
 		}
