@@ -562,10 +562,6 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public MerkleNetworkContext networkCtx() {
-		return stateChildren.networkCtx();
-	}
-
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return stateChildren == null ? emptyMm() : stateChildren.topics();
 	}

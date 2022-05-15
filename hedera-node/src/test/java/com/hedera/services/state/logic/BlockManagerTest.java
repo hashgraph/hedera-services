@@ -103,7 +103,7 @@ class BlockManagerTest {
 	@Test
 	void finishesBlockIfUnknownFirstConsTime() throws InterruptedException {
 		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
-		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 
 		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
 
@@ -114,7 +114,7 @@ class BlockManagerTest {
 	void finishesBlockIfNotInSamePeriod() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
 		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
-		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 
 		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
 
@@ -124,7 +124,7 @@ class BlockManagerTest {
 	@Test
 	void returnsCurrentBlockNoIfSomehowInterrupted() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(runningHashLeaf.getLatestBlockHash()).willThrow(InterruptedException.class);
+		given(runningHashLeaf.currentRunningHash()).willThrow(InterruptedException.class);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
 		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
@@ -161,7 +161,7 @@ class BlockManagerTest {
 	@Test
 	void knowsIfNewBlockNowIsTheTimestampAndNumberIncrements() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
 		final var values = subject.computeBlockValues(anotherTime, gasLimit);
@@ -198,7 +198,7 @@ class BlockManagerTest {
 	@Test
 	void stillDelegatesHashLookupInNewBlockIfNotPrevBlockNo() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 		given(networkContext.getBlockHashByNumber(someBlockNo + 1)).willReturn(aSuffixHash);
 
@@ -211,7 +211,7 @@ class BlockManagerTest {
 	@Test
 	void answersHashLookupProvisionallyInNewBlockIfPrevBlockNo() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
 		subject.ensureProvisionalBlockMeta(anotherTime);

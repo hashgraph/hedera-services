@@ -174,7 +174,7 @@ public class BlockManager {
 		provisionalBlockIsNew = willCreateNewBlock(now);
 		if (provisionalBlockIsNew) {
 			try {
-				provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().getLatestBlockHash());
+				provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().currentRunningHash());
 			} catch (InterruptedException e) {
 				provisionalBlockIsNew = false;
 				// This is almost certainly fatal, hence the ERROR log level
