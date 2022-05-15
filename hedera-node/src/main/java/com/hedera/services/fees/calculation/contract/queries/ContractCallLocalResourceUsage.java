@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
@@ -51,7 +50,6 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -117,19 +115,22 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		try {
 			final var op = query.getContractCallLocal();
 
-			Optional<BlockMetaSource> blockMetaSource;
 			ContractCallLocalResponse response;
-			if (null == queryCtx || (blockMetaSource = blockMetaProvider.getSource()).isEmpty()) {
+			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
-				final var codeCache = new CodeCache(nodeProperties, entityAccess);
-				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
-				evmTxProcessor.setWorldState(worldState);
-				evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
-
-				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
-				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
+				final var blockMetaSource = blockMetaProvider.getSource();
+				if (blockMetaSource.isEmpty()) {
+					response = dummyResponse(op.getContractID());
+				} else {
+					final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
+					final var codeCache = new CodeCache(nodeProperties, entityAccess);
+					final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
+					evmTxProcessor.setWorldState(worldState);
+					evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
+					response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
+					queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
+				}
 			}
 			final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
 					op.getFunctionParameters().size(),
