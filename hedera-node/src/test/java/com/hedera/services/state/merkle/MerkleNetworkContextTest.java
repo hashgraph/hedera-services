@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -37,30 +38,37 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.DualStateImpl;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -148,13 +156,32 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void isSelfHashing() {
+		assertTrue(subject.isSelfHashing());
+		assertNotNull(subject.getHash());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void logsAtErrorIfSomehowHashComputationFails() {
+		final FCQueue<BytesElement> mockHashes = (FCQueue<BytesElement>) mock(FCQueue.class);
+
+		subject.setBlockHashes(mockHashes);
+		given(mockHashes.getHash()).willThrow(UncheckedIOException.class);
+		final var hash = subject.getHash();
+		assertSame(EMPTY_HASH, hash);
+
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Hash computation failed")));
+	}
+
+	@Test
 	void updatesExpectedFieldsWhenFinishingBlock() {
 		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
 		subject.setBlockNo(aBlockNo);
 
 		final var newBlockNo = subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
-		assertEquals(Map.of(aBlockNo, aEthHash), subject.getBlockHashCache());
+		assertEquals(aEthHash, subject.getBlockHashByNumber(aBlockNo));
 		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
 		assertEquals(aBlockNo + 1, newBlockNo);
 	}
@@ -162,15 +189,15 @@ class MerkleNetworkContextTest {
 	@Test
 	void doesntKeepMoreThanExpectedBlockHashes() {
 		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
-		subject.setBlockNo(aBlockNo);
 		for (int i = 0; i < 256; i++) {
-			subject.getBlockHashCache().put((long) i, aEthHash);
+			subject.finishBlock(bEthHash, newFirstConsTime.minusNanos(i + 1));
 		}
 
+		subject.setBlockNo(aBlockNo);
 		subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
 
-		assertFalse(subject.getBlockHashCache().containsKey(0L));
-		assertEquals(aEthHash, subject.getBlockHashCache().get(aBlockNo));
+		assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(0L));
+		assertEquals(aEthHash, subject.getBlockHashByNumber(aBlockNo));
 		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
 	}
 
@@ -215,8 +242,8 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
-		assertEquals(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
-		assertNotSame(subject.getBlockHashCache(), subjectCopy.getBlockHashCache());
+		assertEquals(subjectCopy.getBlockHashes(), subject.getBlockHashes());
+		assertNotSame(subject.getBlockHashes(), subjectCopy.getBlockHashes());
 		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
@@ -226,6 +253,13 @@ class MerkleNetworkContextTest {
 		assertNull(subject.getMultiplierSource());
 		assertNull(subjectCopy.getThrottling());
 		assertNull(subjectCopy.getMultiplierSource());
+		// and:
+		assertEquals(subject.getHash(), subjectCopy.getHash());
+		subjectCopy.setBlockNo(subject.getAlignmentBlockNo() + 1L);
+		assertNotEquals(subject.getHash(), subjectCopy.getHash());
+		subjectCopy.setBlockNo(subject.getAlignmentBlockNo());
+		subjectCopy.finishBlock(aEthHash, firstConsTimeOfCurrentBlock.plusSeconds(2));
+		assertNotEquals(subject.getHash(), subjectCopy.getHash());
 	}
 
 	@Test
@@ -294,6 +328,9 @@ class MerkleNetworkContextTest {
 		assertEquals(a.getPreparedUpdateFileNum(), b.getPreparedUpdateFileNum());
 		assertArrayEquals(a.getPreparedUpdateFileHash(), b.getPreparedUpdateFileHash());
 		assertEquals(a.areMigrationRecordsStreamed(), b.areMigrationRecordsStreamed());
+		assertEquals(a.getAlignmentBlockNo(), b.getAlignmentBlockNo());
+		assertEquals(a.firstConsTimeOfCurrentBlock(), b.firstConsTimeOfCurrentBlock());
+		assertEquals(a.getBlockHashes(), b.getBlockHashes());
 	}
 
 	@Test
@@ -314,6 +351,8 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
 		assertThrows(MutabilityException.class, () -> subject.recordPreparedUpgrade(null));
 		assertThrows(MutabilityException.class, () -> subject.discardPreparedUpgradeMeta());
+		assertThrows(MutabilityException.class, () -> subject.finishBlock(null, null));
+		assertThrows(MutabilityException.class, () -> subject.renumberBlocksToMatch(MISSING_BLOCK_VALUES));
 	}
 
 	@Test
@@ -390,7 +429,40 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               :: <N/A>\n" +
 				"  Congestion level start times are           :: <N/A>\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
+
+		assertEquals(desired, subject.summarized());
+	}
+
+	@Test
+	void summarizesHashesAsExpected() {
+		subject.setCongestionLevelStarts(new Instant[0]);
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
+		final var aFixedHash = org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(
+				"abcdabcdabcdabcdabcdabcdabcdabcd".getBytes()));
+		final var bFixedHash = org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(
+				"ffcdffcdffcdffcdffcdffcdffcdffcd".getBytes()));
+		subject.finishBlock(aFixedHash, firstConsTimeOfCurrentBlock.plusSeconds(2));
+		subject.finishBlock(bFixedHash, firstConsTimeOfCurrentBlock.plusSeconds(4));
+
+		final var desired = "The network context (state version 13) is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               :: <N/A>\n" +
+				"  Congestion level start times are           :: <N/A>\n" +
+				"  Block number is                            :: 2\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:11.000013579Z\n" +
+				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
+				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
+				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -425,7 +497,8 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -445,7 +518,8 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -465,7 +539,8 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -511,7 +586,8 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -531,7 +607,8 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
-				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z";
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
@@ -842,5 +919,7 @@ class MerkleNetworkContextTest {
 
 	private static final long aBlockNo = 123_456L;
 	private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final Hash bFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
 	private static final org.hyperledger.besu.datatypes.Hash aEthHash = ethHashFrom(aFullBlockHash);
+	private static final org.hyperledger.besu.datatypes.Hash bEthHash = ethHashFrom(bFullBlockHash);
 }

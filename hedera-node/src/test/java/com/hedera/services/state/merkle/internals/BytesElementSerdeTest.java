@@ -23,14 +23,14 @@ package com.hedera.services.state.merkle.internals;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
-public class FilePartSerdeTest extends SelfSerializableDataTest<FilePart> {
+public class BytesElementSerdeTest extends SelfSerializableDataTest<BytesElement> {
 	@Override
-	protected Class<FilePart> getType() {
-		return FilePart.class;
+	protected Class<BytesElement> getType() {
+		return BytesElement.class;
 	}
 
 	@Override
-	protected FilePart getExpectedObject(final SeededPropertySource propertySource) {
+	protected BytesElement getExpectedObject(final SeededPropertySource propertySource) {
 		return propertySource.nextFilePart();
 	}
 }
