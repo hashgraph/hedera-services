@@ -27,6 +27,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,6 +41,8 @@ import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueL
 import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 public class UniqueTokensLinkManager {
+	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
+
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
@@ -87,11 +91,10 @@ public class UniqueTokensLinkManager {
 		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
-			// Outside a contract operation, this would be an invariant failure (if a non-treasury account
-			// is being wiped, it must certainly own at least the wiped NFT); but a contract can transfer a
-			// NFT back to the treasury and burn it in the same transaction
 			if (rootKey != null) {
 				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
+			} else {
+				log.error("Invariant failure: {} owns NFT {}, but has no root link", from, nftId);
 			}
 			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
 			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
@@ -106,6 +109,8 @@ public class UniqueTokensLinkManager {
 			if (nft != null) {
 				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
 			} else {
+				// This is "non-treasury mint" done via a multi-stage contract op; we need to
+				// create a NFT whose link pointers we can update, since it doesn't exist yet
 				insertedNft = new MerkleUniqueToken();
 				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
 			}

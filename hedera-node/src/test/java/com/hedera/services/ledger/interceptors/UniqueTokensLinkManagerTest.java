@@ -26,25 +26,49 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.merkle.map.MerkleMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+@ExtendWith(LogCaptureExtension.class)
 class UniqueTokensLinkManagerTest {
 	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
 
+	@LoggingTarget
+	private LogCaptor logCaptor;
+	@LoggingSubject
 	private UniqueTokensLinkManager subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new UniqueTokensLinkManager(() -> accounts, () -> tokens, () -> uniqueTokens);
+	}
+
+	@Test
+	void logsAtErrorIfOwnerHasNoHeadLink() {
+		setUpEntities();
+		setUpMaps();
+		oldOwnerAccount.setHeadNftId(0);
+		oldOwnerAccount.setHeadNftSerialNum(0);
+
+		subject.updateLinks(oldOwner, newOwner, nftKey1);
+
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Invariant failure")));
 	}
 
 	@Test
