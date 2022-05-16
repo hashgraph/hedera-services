@@ -60,6 +60,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
@@ -365,12 +366,11 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
-	void createsExpectedAdjustAllowance() {
+	void createsExpectedFungibleApproveAllowance() {
 		final var amount = BigInteger.ONE;
-		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, BigInteger.ZERO, true);
-		allowances = allowances.withAdjustment(BigInteger.ONE);
+		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
 
-		final var result = subject.createApproveAllowance(allowances);
+		final var result = subject.createFungibleApproval(allowances);
 		final var txnBody = result.build();
 
 		assertEquals(amount.longValue(), txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
@@ -379,15 +379,51 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
-	void createsExpectedAdjustAllowanceNFT() {
-		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+	void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var ownerId = new EntityId(0, 0, 666);
 
-		final var result = subject.createApproveAllowance(allowances);
+		final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
 		final var txnBody = result.build();
 
-		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
-		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
-		assertEquals(1L, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSerialNumbers(0));
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
+		assertEquals(AccountID.getDefaultInstance(), allowance.getDelegatingSpender());
+		assertEquals(1L, allowance.getSerialNumbers(0));
+	}
+
+	@Test
+	void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var ownerId = new EntityId(0, 0, 666);
+		final var operatorId = new EntityId(0, 0, 777);
+
+		final var result = subject.createNonfungibleApproval(allowances, ownerId, operatorId);
+		final var txnBody = result.build();
+
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
+		assertEquals(operatorId.toGrpcAccountId(), allowance.getDelegatingSpender());
+		assertEquals(1L, allowance.getSerialNumbers(0));
+	}
+
+	@Test
+	void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+		final var operatorId = new EntityId(0, 0, 666);
+
+		final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
+		final var txnBody = result.build();
+
+		final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
+		assertEquals(token, allowance.getTokenId());
+		assertEquals(receiver, allowance.getSpender());
+		assertEquals(AccountID.getDefaultInstance(), allowance.getOwner());
+		assertEquals(1L, allowance.getSerialNumbers(0));
 	}
 
 	@Test
@@ -404,9 +440,9 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsDeleteAllowance() {
-		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
-		final var result = subject.createDeleteAllowance(allowances, EntityId.fromGrpcAccountId(sender));
+		final var result = subject.createDeleteAllowance(allowances, senderId);
 		final var txnBody = result.build();
 
 		assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
@@ -529,7 +565,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransfer() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(
 				List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
@@ -552,9 +588,17 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
+	void canCreateApprovedNftExchanges() {
+		final var approvedExchange = SyntheticTxnFactory.NftExchange.fromApproval(
+				1L, nonFungible, a, b);
+		assertTrue(approvedExchange.isApproval());
+	}
+
+	@Test
 	void mergesRepeatedTokenIds() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 		final var nonFungibleTransfer = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
+		assertFalse(nonFungibleTransfer.isApproval());
 
 		final var result = subject.createCryptoTransfer(
 				List.of(
@@ -593,7 +637,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransferForFungibleTransfer() {
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				Collections.emptyList(),
@@ -612,7 +656,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedCryptoTransfersForMultipleTransferWrappers() {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount,false,  fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(
 				List.of(
@@ -642,12 +686,12 @@ class SyntheticTxnFactoryTest {
 		final var source = new TokenTransferWrapper(
 				Collections.emptyList(),
 				List.of(
-						new SyntheticTxnFactory.FungibleTokenTransfer(1, fungible, a, b)
+						new SyntheticTxnFactory.FungibleTokenTransfer(1, false, fungible, a, b)
 				)).asGrpcBuilder();
 		final var target = new TokenTransferWrapper(
 				Collections.emptyList(),
 				List.of(
-						new SyntheticTxnFactory.FungibleTokenTransfer(2, fungible, b, c)
+						new SyntheticTxnFactory.FungibleTokenTransfer(2, false, fungible, b, c)
 				)).asGrpcBuilder();
 
 		SyntheticTxnFactory.mergeTokenTransfers(target, source);

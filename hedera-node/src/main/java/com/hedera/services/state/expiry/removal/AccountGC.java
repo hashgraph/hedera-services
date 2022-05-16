@@ -69,7 +69,7 @@ public class AccountGC {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	private RemovalFacilitation removalFacilitation = MapValueListUtils::inPlaceRemoveFromMapValueList;
+	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeInPlaceFromMapValueList;
 
 	@Inject
 	public AccountGC(

@@ -158,8 +158,12 @@ public class QueryVerbs {
 		return new HapiGetAccountBalance(account);
 	}
 
-	public static HapiGetAccountBalance getAliasedAccountBalance(final String sourceKey) {
+	public static HapiGetAccountBalance getAutoCreatedAccountBalance(final String sourceKey) {
 		return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+	}
+
+	public static HapiGetAccountBalance getAliasedContractBalance(final String hexedAlias) {
+		return new HapiGetAccountBalance(hexedAlias, ReferenceType.HEXED_CONTRACT_ALIAS);
 	}
 
 	public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

@@ -61,6 +61,7 @@ public abstract class HapiApiSuite {
 	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 	public static final long ONE_HBAR = 100_000_000L;
+	public static final long TINY_PARTS_PER_WHOLE = 100_000_000L;
 	public static final long FIVE_HBARS = 5 * ONE_HBAR;
 	public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
 	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;

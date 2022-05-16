@@ -583,7 +583,8 @@ commands:
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
               -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
-              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
+              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
+              --slack-api-token="${SLACK_API_TOKEN}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -1601,12 +1602,23 @@ jobs:
           name: Checkout swirlds-platform repos and build
           command: |
             sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
-            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            
+            # Git Clone for Platform
+            cd /
+            export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
-            cd /swirlds-platform;
-            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
-            mvn --no-transfer-progress clean install -DskipTests;
+            
+            # Git Clone JRS Separately
+            mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            
+            # Build Platform
+            cd /swirlds-platform
+            ./mvnw clean install -DskipTests;
+            
+            # Build JRS
+            cd /swirlds-platform/regression
+            ./mvnw clean install
 
       - run:
           name: Save PEM file to keys folder
