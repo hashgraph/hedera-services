@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -461,7 +462,39 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		info.setStakingInfo(stakingInfo(account));
+
 		return Optional.of(info.build());
+	}
+
+	/**
+	 * Builds {@link StakingInfo} object for the {@link com.hederahashgraph.api.proto.java.CryptoGetInfo} and
+	 * {@link com.hederahashgraph.api.proto.java.ContractGetInfo}
+	 *
+	 * @param account
+	 * 		given account for which info is queried
+	 * @return staking info
+	 */
+	public StakingInfo stakingInfo(final MerkleAccount account) {
+		// will be updated with pending_reward in future PR
+		final var stakingInfo = StakingInfo.newBuilder()
+				.setDeclineReward(account.isDeclinedReward())
+				.setStakedToMe(account.getStakedToMe());
+
+		final var stakedNum = account.getStakedId();
+		if (stakedNum <= 0) {
+			// since we store the staking node id as (-nodeId -1), the node id account is staking to will be
+			// -stakedNum -1
+			stakingInfo.setStakedNodeId(-stakedNum - 1);
+		} else if (stakedNum > 0) {
+			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
+		}
+
+		if (account.getStakePeriodStart() > 0) {
+			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
+		}
+
+		return stakingInfo.build();
 	}
 
 	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
@@ -552,6 +585,8 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+
+		info.setStakingInfo(stakingInfo(contract));
 
 		try {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());

@@ -171,7 +171,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, dynamicProperties);
+				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
 				callLocalEvmTxProcessor.setWorldState(worldState);

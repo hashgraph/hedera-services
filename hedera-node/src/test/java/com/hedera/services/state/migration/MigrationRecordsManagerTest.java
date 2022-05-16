@@ -71,8 +71,6 @@ class MigrationRecordsManagerTest {
 	private static final Instant now = Instant.ofEpochSecond(1_234_567L);
 	private static final Key EXPECTED_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 	private static final String MEMO = "Release 0.24.1 migration record";
-	private static final String CONTRACT_UPGRADE_MEMO = "Contract {} was renewed during 0.26.0 upgrade. New expiry: {}" +
-			" .";
 	private static final long contract1Expiry = 2000000L;
 	private static final long contract2Expiry = 4000000L;
 	private static final EntityId contract1Id = EntityId.fromIdentityCode(1);
@@ -140,16 +138,22 @@ class MigrationRecordsManagerTest {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor = forClass(ExpirableTxnRecord.Builder.class);
 
-		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry, contract1Id.toGrpcAccountId()).build();
-		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry, contract2Id.toGrpcAccountId()).build();
+		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry,
+				contract1Id.toGrpcAccountId()).build();
+		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry,
+				contract2Id.toGrpcAccountId()).build();
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 		given(merkleAccount.isSmartContract()).willReturn(true);
 		given(merkleAccount.getExpiry()).willReturn(contract1Expiry).willReturn(contract2Expiry);
+		MigrationRecordsManager.setExpiryJustEnabled(true);
 
 		subject.publishMigrationRecords(now);
 
-		verify(recordsHistorian, times(2)).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
+		MigrationRecordsManager.setExpiryJustEnabled(false);
+
+		verify(recordsHistorian, times(2)).trackPrecedingChildRecord(
+				eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
 		verify(networkCtx).markMigrationRecordsStreamed();
 
 		final var bodies = bodyCaptor.getAllValues();
@@ -158,14 +162,25 @@ class MigrationRecordsManagerTest {
 
 		final var records = recordCaptor.getAllValues();
 		//since txnId will be set at late point, will set txnId for comparing
-		assertEquals(expectedContractUpdateRecord(contract1Id, contract1Expiry).build(), records.get(0).setTxnId(new TxnId()).build());
-		assertEquals(expectedContractUpdateRecord(contract2Id, contract2Expiry).build(), records.get(1).setTxnId(new TxnId()).build());
+		assertEquals(expectedContractUpdateRecord(contract1Id, contract1Expiry).build(),
+				records.get(0).setTxnId(new TxnId()).build());
+		assertEquals(expectedContractUpdateRecord(contract2Id, contract2Expiry).build(),
+				records.get(1).setTxnId(new TxnId()).build());
+	}
+
+	@Test
+	void ifExpiryNotJustEnabledThenContractRenewRecordsAreNotStreamed() {
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+
+		subject.publishMigrationRecords(now);
+
+		verifyNoInteractions(recordsHistorian);
 	}
 
 	private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
-		final var receipt =  TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
+		final var receipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 
-		final var memo = String.format(CONTRACT_UPGRADE_MEMO, num.num(), newExpiry);
+		final var memo = String.format(MigrationRecordsManager.AUTO_RENEW_MEMO_TPL, num.num(), newExpiry);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(new TxnId())
 				.setMemo(memo)

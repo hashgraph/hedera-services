@@ -36,8 +36,8 @@ import javax.inject.Inject;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.unlinkFromMapValueLink;
+import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
+import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 public class UniqueTokensLinkManager {
 	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
@@ -69,13 +69,13 @@ public class UniqueTokensLinkManager {
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
-		// Update `from` Account
+		// Update "from" account
 		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 
 			if (rootKey != null) {
-				rootKey = unlinkFromMapValueLink(nftId, rootKey, listMutation);
+				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
 			} else {
 				log.error("Should not be possible : Root of owned nfts list is null, but account : {} owns nft : {}", from, nftId);
 			}
@@ -84,8 +84,7 @@ public class UniqueTokensLinkManager {
 			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
 		}
 
-
-		// update `to` Account
+		// Update "to" account
 		if (isValidAndNotTreasury(to, token)) {
 			final var nft = listMutation.getForModify(nftId);
 			if (nft != null) {
@@ -93,8 +92,7 @@ public class UniqueTokensLinkManager {
 				final var nftNumPair = nftId.asNftNumPair();
 				final var rootKey = rootKeyOf(toAccount);
 
-				inPlaceInsertAtMapValueListHead(
-						nftId, nft, rootKey, null, listMutation, false);
+				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
 				toAccount.setHeadNftId(nftNumPair.tokenNum());
 				toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 			}

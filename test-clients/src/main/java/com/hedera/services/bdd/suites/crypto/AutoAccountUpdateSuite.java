@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -135,7 +135,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer", DEFAULT_PAYER),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-						getAliasedAccountBalance("alias"),
+						getAutoCreatedAccountBalance("alias"),
 
 						/* account is expired but not deleted and validate the transfer succeeds*/
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
@@ -202,7 +202,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer"),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-						getAliasedAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+						getAutoCreatedAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
 
 						// Need to know why its INVALID_ACCOUNT_ID, same reason as Delete
 

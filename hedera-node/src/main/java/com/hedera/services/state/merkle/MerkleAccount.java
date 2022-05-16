@@ -483,33 +483,26 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/**
-	 * Get the num [of shard.realm.num] of node/account this account has staked its Hbar to
-	 * If the returned value is negative it is staked to a node and node num is the absolute value
-	 * If the returned value is positive it is staked to an account.
+	 * Get the num [of shard.realm.num] of node/account this account has staked its hbar to
+	 * If the returned value is negative it is staked to a node and node num is the absolute value of (-stakedNum - 1)
+	 * If the returned value is positive it is staked to an account and the accountNum is stakedNum.
+	 *
 	 * @return num [of shard.realm.num] of node/account
 	 */
-	public long getStakedNum() {
+	public long getStakedId() {
 		return state().getStakedNum();
 	}
 
 	/**
-	 * Set the node to which this account is staking its Hbar to
-	 * @param nodeNum
+	 * Sets the id of account or node to which this account is staking its hbar to. If stakedId &lt; 0 it will be a node
+	 * id and if stakedId &gt; 0 it is an account number.
+	 *
+	 * @param stakedId
 	 * 		The node num of the node
 	 */
-	public void setStakedNodeId(long nodeNum) {
-		throwIfImmutable("Cannot change this account's staked nodeId if it's immutable");
-		state().setStakedNum(-nodeNum);
-	}
-
-	/**
-	 * Set the account to which this accout is staking its Hbar to
-	 * @param accountNum
-	 * 		The account num of the account.
-	 */
-	public void setStakedAccount(long accountNum) {
-		throwIfImmutable("Cannot change this account's staked account if it's immutable");
-		state().setStakedNum(accountNum);
+	public void setStakedId(long stakedId) {
+		throwIfImmutable("Cannot change this account's staked id if it's immutable");
+		state().setStakedNum(stakedId);
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {

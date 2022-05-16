@@ -21,14 +21,17 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -68,6 +71,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
 	private Optional<String> bytecode = Optional.empty();
+	private Optional<AccountID> newStakedAccountId = Optional.empty();
+	private Optional<Long> newStakedNodeId = Optional.empty();
+	private boolean newDeclinedReward = false;
+	private Optional<String> newProxy = Optional.empty();
 	private Optional<String> newAutoRenewAccount = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 
@@ -90,8 +97,15 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		return this;
 	}
 
+
 	public HapiContractUpdate newExpiryTime(long t) {
 		newExpiryTime = OptionalLong.of(t);
+		return this;
+	}
+
+
+	public HapiContractUpdate newProxy(String proxy) {
+		newProxy = Optional.of(proxy);
 		return this;
 	}
 
@@ -115,6 +129,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		return this;
 	}
 
+
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
@@ -137,6 +152,21 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 
 	public HapiContractUpdate bytecode(String bytecode) {
 		this.bytecode = Optional.of(bytecode);
+		return this;
+	}
+
+	public HapiContractUpdate newStakedAccountId(String idLit) {
+		newStakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		return this;
+	}
+
+	public HapiContractUpdate newStakedNodeId(long idLit) {
+		newStakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiContractUpdate newDeclinedReward(boolean isDeclined) {
+		newDeclinedReward = isDeclined;
 		return this;
 	}
 
@@ -166,6 +196,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							} else {
 								b.setContractID(TxnUtils.asContractId(contract, spec));
 							}
+							newProxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {
@@ -190,6 +221,13 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							newAutoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
+
+							if (newStakedAccountId.isPresent()) {
+								b.setStakedAccountId(newStakedAccountId.get());
+							} else if (newStakedNodeId.isPresent()) {
+								b.setStakedNodeId(newStakedNodeId.get());
+							}
+							b.setDeclineReward(BoolValue.of(newDeclinedReward));
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

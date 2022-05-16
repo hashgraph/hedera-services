@@ -110,6 +110,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	// starts staking to a node.
 	private long stakePeriodStart = -1;
 	// if -ve we are staking to a node, if +ve we are staking to an account and 0 if not staking to anyone.
+	// When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
 	private long stakedNum;
 	private boolean declineReward;
 

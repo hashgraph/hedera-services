@@ -56,7 +56,7 @@ class MerkleNetworkContextBlockSyncTest {
 			swirldHashes[i] = new byte[48];
 			blockHashes[i] = new byte[32];
 			r.nextBytes(swirldHashes[i]);
-			System.arraycopy(swirldHashes[i], 16, blockHashes[i], 0, 32);
+			System.arraycopy(swirldHashes[i], 0, blockHashes[i], 0, 32);
 		}
 		r.nextBytes(unmatchedHash);
 	}
