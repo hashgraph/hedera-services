@@ -58,8 +58,11 @@ class VirtualMapFactoryTest {
 		assertThat(map.isEmpty()).isTrue();
 
 		map.put(new UniqueTokenKey(123L, 456L),
-				new UniqueTokenValue(789L, RichInstant.MISSING_INSTANT, "hello world".getBytes())
-		);
+				new UniqueTokenValue(
+						789L,
+						123L,
+						"hello world".getBytes(),
+						RichInstant.MISSING_INSTANT));
 
 		assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
 		var value = map.get(new UniqueTokenKey(123L, 456L));

@@ -21,6 +21,8 @@ package com.hedera.services.state.virtual;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -48,6 +50,16 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	 *  - (variable, 0 to 8 bytes) the non-leading zero-bytes representing the serial number.
 	 */
 	public static final int ESTIMATED_SIZE_BYTES = Long.BYTES + Long.BYTES + 1;
+
+	/**
+	 * Constructs a UniqueTokenKey from an NftId instance.
+	 *
+	 * @param nftId the NftId to create a UniqueTokenKey from.
+	 * @return a new instance of a UniqueTokenKey corresponding to NftId.
+	 */
+	public static UniqueTokenKey fromNftId(NftId nftId) {
+		return new UniqueTokenKey(nftId.num(), nftId.serialNo());
+	}
 
 	/** The entity number of the token.*/
 	private long entityNum;
@@ -238,5 +250,13 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 				.add("entityNum", entityNum)
 				.add("tokenSerial", tokenSerial)
 				.toString();
+	}
+
+	/**
+	 * Convenience function to construct a corresponding {@link EntityNumPair} from this instance.
+	 * @return
+	 */
+	public EntityNumPair toEntityNumPair() {
+		return EntityNumPair.fromLongs(entityNum, tokenSerial);
 	}
 }
