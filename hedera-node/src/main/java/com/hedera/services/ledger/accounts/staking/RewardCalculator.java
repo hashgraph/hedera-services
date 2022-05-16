@@ -27,7 +27,7 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 
 public class RewardCalculator {
-	private static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
+	public static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleNetworkContext> networkContext;
 	private final TransactionContext txnContext;
@@ -57,29 +57,18 @@ public class RewardCalculator {
 		this.stakingInfo = stakingInfo;
 	}
 
-	// all the adjustments here will have accounts that are staked to node
-	final void computeAndApply(List<StakeAdjustment> adjustments) {
-		if (!networkContext.get().areRewardsActivated()) {
-			return;
-		}
-		computeAndApplyRewards(adjustments);
-	}
-
-	final long computeAndApplyRewards(final List<StakeAdjustment> adjustments) {
+	public final long computeAndApplyRewards(final EntityNum accountNum) {
 		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
-		for (var adjustment : adjustments) {
-			final var account = accounts.get().getForModify(adjustment.account());
-			final var stakePeriodStart = account.getStakePeriodStart();
-			if (!noRewardToBeEarned(stakePeriodStart, todayNumber) && stakePeriodStart > -1) {
-				if (stakePeriodStart < todayNumber - 365) {
-					account.setStakePeriodStart(todayNumber - 365);
-				}
-				if (stakePeriodStart < todayNumber - 1) {
-					final long reward = computeReward(account, account.getStakedId(), todayNumber);
-					transferReward(account, reward);
-					account.setStakePeriodStart(todayNumber - 1);
-					return reward;
-				}
+		final var account = accounts.get().getForModify(accountNum);
+		final var stakePeriodStart = account.getStakePeriodStart();
+		if (!noRewardToBeEarned(stakePeriodStart, todayNumber) && stakePeriodStart > -1) {
+			if (stakePeriodStart < todayNumber - 365) {
+				account.setStakePeriodStart(todayNumber - 365);
+			}
+			if (stakePeriodStart < todayNumber - 1) {
+				final long reward = computeReward(account, account.getStakedId(), todayNumber);
+				account.setStakePeriodStart(todayNumber - 1);
+				return reward;
 			}
 		}
 		return 0;
@@ -93,33 +82,6 @@ public class RewardCalculator {
 		// since today is not finished yet.
 		return account.isDeclinedReward() ? 0 :
 				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (todayNumber - 1 - (stakePeriodStart - 1))]);
-	}
-
-	private void transferReward(final MerkleAccount account, final long reward) {
-		final var synthBody = synthStakingFundTransfer(reward, account);
-		final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsFactory, MEMO);
-		recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
-		log.info("Transferred reward for staking from 0.0.800 to 0.0.{}", stakingFundAccount);
-	}
-
-	private TransactionBody.Builder synthStakingFundTransfer(final long reward, final MerkleAccount account) {
-		final var transferList = TransferList.newBuilder()
-				.addAccountAmounts(
-						AccountAmount.newBuilder()
-								.setAccountID(stakingFundAccount.toGrpcAccountId())
-								.setAmount(-reward)
-								.build()
-				)
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(EntityNum.fromLong(account.state().number()).toGrpcAccountId())
-						.setAmount(-reward)
-						.build()
-				)
-				.build();
-		final var txnBody = CryptoTransferTransactionBody.newBuilder()
-				.setTransfers(transferList)
-				.build();
-		return TransactionBody.newBuilder().setCryptoTransfer(txnBody);
 	}
 
 	private boolean noRewardToBeEarned(final long stakePeriodStart, final long todayNumber) {

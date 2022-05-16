@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -37,9 +38,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.stakingFundAccount;
 import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
@@ -56,6 +59,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final RewardCalculator rewardCalculator;
 	private boolean rewardsActivated;
 	private boolean rewardBalanceChanged;
 	private long newRewardBalance;
@@ -68,13 +72,15 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.networkCtx = networkCtx;
 		this.dynamicProperties = dynamicProperties;
 		this.stakingInfo = stakingInfo;
 		this.accounts = accounts;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	/**
@@ -131,9 +137,26 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 				rewardBalanceChanged = true;
 				newRewardBalance = newBalance;
 			}
+
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
-			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+			if (merkleAccount != null && merkleAccount.getStakedId() < 0 && stakingActivated()) {
+				final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
+
+				if (reward > 0) {
+					final var stakingFundBalance = accounts.get().get(stakingFundAccount).getBalance();
+					sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
+					sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), stakingFundBalance - reward);
+				} else {
+					sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+				}
+			} else {
+				sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+			}
 		}
+	}
+
+	private boolean stakingActivated() {
+		return !networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {
