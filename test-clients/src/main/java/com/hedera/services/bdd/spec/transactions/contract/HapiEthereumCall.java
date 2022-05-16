@@ -90,7 +90,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
-    private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Consumer<Object[]> resultObserver = null;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean createCallDataFile;
@@ -146,6 +145,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.retryLimits = contractCall.getRetryLimits();
         this.resultObserver = contractCall.getResultObserver();
         this.explicitHexedParams = contractCall.getExplicitHexedParams();
+        this.privateKeyRef = contractCall.getPrivateKeyRef();
         if (contractCall.getValueSent().isPresent()) {
             this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
         }
@@ -308,7 +308,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
         if (useSpecNonce) {
-            nonce = spec.getNonce();
+            nonce = spec.getNonce(privateKeyRef);
         }
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, maxFeePerGasBytes, gas.orElse(100_000L),
@@ -345,7 +345,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     @Override
     protected void updateStateOf(final HapiApiSpec spec) throws Throwable {
         if (actualPrecheck == OK) {
-            spec.incrementNonce();
+            spec.incrementNonce(privateKeyRef);
         }
         if (gasObserver.isPresent()) {
             doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);

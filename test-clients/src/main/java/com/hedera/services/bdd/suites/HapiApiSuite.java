@@ -71,6 +71,7 @@ public abstract class HapiApiSuite {
 	public static final String RELAYER = "RELAYER";
 	public static final KeyShape SECP_256K1_SHAPE = KeyShape.SECP256K1;
 	public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
+	public static final String SECP_256K1_RECEIVER_SOURCE_KEY = "secp256k1ReceiverAlias";
 	public static final String TOKEN_TREASURY = "treasury";
 	public static final String NONSENSE_KEY = "Jabberwocky!";
 	public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
@@ -82,6 +83,7 @@ public abstract class HapiApiSuite {
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
 	public static final String DEFAULT_PAYER = HapiSpecSetup.getDefaultInstance().defaultPayerName();
 	public static final String DEFAULT_CONTRACT_SENDER = "DEFAULT_CONTRACT_SENDER";
+	public static final String DEFAULT_CONTRACT_RECEIVER = "DEFAULT_CONTRACT_RECEIVER";
 	public static final String ADDRESS_BOOK_CONTROL = HapiSpecSetup.getDefaultInstance().addressBookControlName();
 	public static final String FEE_SCHEDULE_CONTROL = HapiSpecSetup.getDefaultInstance().feeScheduleControlName();
 	public static final String EXCHANGE_RATE_CONTROL = HapiSpecSetup.getDefaultInstance().exchangeRatesControlName();
@@ -110,8 +112,8 @@ public abstract class HapiApiSuite {
 		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
-//		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
-		return simpleName;
+		return suiteRunnerCounter == 1 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+//		return simpleName;
 	}
 
 	public List<HapiApiSpec> getFinalSpecs() {
