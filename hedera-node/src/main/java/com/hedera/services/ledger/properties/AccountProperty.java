@@ -238,7 +238,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getFungibleTokenAllowancesUnsafe;
 		}
 	},
-	APPROVE_FOR_ALL_NFTS_ALLOWANCES  {
+	APPROVE_FOR_ALL_NFTS_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> a.setApproveForAllNfts((Set<FcTokenAllowanceId>) t);
@@ -359,7 +359,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getStakedToMe;
 		}
 	},
-	STAKE_START_PERIOD {
+	STAKE_PERIOD_START {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, t) -> a.setStakePeriodStart((long) t);
@@ -370,26 +370,18 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getStakePeriodStart;
 		}
 	},
-	STAKED_NODE_ID {
+	STAKED_ID {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setStakedNodeId((long) t);
+			return (a, t) -> {
+				final var val = (long) t;
+				a.setStakedId(val);
+			};
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getStakedNum;
-		}
-	},
-	STAKED_ACCOUNT {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setStakedAccount((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getStakedNum;
+			return MerkleAccount::getStakedId;
 		}
 	}
 }

@@ -29,7 +29,16 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,6 +83,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
 	private Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
+	private Optional<AccountID> stakedAccountId = Optional.empty();
+	private Optional<Long> stakedNodeId = Optional.empty();
+	private boolean isDeclinedReward = false;
 
 
 	@Override
@@ -180,6 +192,22 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		return this;
 	}
 
+	public HapiCryptoCreate stakedAccountId(String idLit) {
+		stakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		return this;
+	}
+
+	public HapiCryptoCreate stakedNodeId(long idLit) {
+		stakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiCryptoCreate declinedReward(boolean isDeclined) {
+		isDeclinedReward = isDeclined;
+		return this;
+	}
+
+
 	@Override
 	protected HapiCryptoCreate self() {
 		return this;
@@ -218,6 +246,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 							autoRenewDurationSecs.ifPresent(
 									s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
+
+							if (stakedAccountId.isPresent()) {
+								b.setStakedAccountId(stakedAccountId.get());
+							} else if (stakedNodeId.isPresent()) {
+								b.setStakedNodeId(stakedNodeId.get());
+							}
+							b.setDeclineReward(isDeclinedReward);
 						});
 		return b -> b.setCryptoCreateAccount(opBody);
 	}

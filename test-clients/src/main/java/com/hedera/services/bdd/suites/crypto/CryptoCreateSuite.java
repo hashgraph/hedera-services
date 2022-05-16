@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -243,7 +244,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -258,7 +259,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -292,19 +293,19 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.keyShape(thresholdShape)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount2")
 								.key("regKey1")
 								.balance(initialBalance)
 								.logged()
 								.signedBy(GENESIS)
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount3")
 								.key("regKey2")
 								.balance(initialBalance)
 								.logged()
 								.signedBy(GENESIS)
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -326,11 +327,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape0).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("noKeys")
 								.keyShape(shape4).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -346,12 +347,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.keyShape(thresholdShape0)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount2")
 								.keyShape(thresholdShape4)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -371,7 +372,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.balance(initialBalance)
 								.signedBy(GENESIS)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("emptyKey")
 								.key("emptyKey")
 								.balance(initialBalance)

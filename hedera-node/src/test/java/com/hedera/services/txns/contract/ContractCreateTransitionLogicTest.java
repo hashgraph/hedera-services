@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
@@ -31,6 +32,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -38,6 +40,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,6 +53,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,15 +76,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -131,6 +139,10 @@ class ContractCreateTransitionLogicTest {
 	SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private Account autoRenewModel;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private NodeInfo nodeInfo;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -143,7 +155,7 @@ class ContractCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, validator, worldState, entityCreator,
-				recordsHistorian, recordServices, evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory);
+				recordsHistorian, recordServices, evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory, () -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -167,6 +179,50 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void failsForInvalidStakingId() {
+		givenValidTxnCtxWithStaking();
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void failsForProxyId() {
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L))
+				.setGas(gas);
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
+
+		op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setProxyAccountID(AccountID.getDefaultInstance())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L))
+				.setGas(gas);
+		txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
@@ -178,7 +234,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false, false, false);
+		givenValidTxnCtx(false, false, false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -272,7 +328,6 @@ class ContractCreateTransitionLogicTest {
 				.setGas(gas)
 				.setAdminKey(IMMUTABILITY_SENTINEL_KEY)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -331,7 +386,6 @@ class ContractCreateTransitionLogicTest {
 				.setInitialBalance(balance)
 				.setGas(gas)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -396,7 +450,6 @@ class ContractCreateTransitionLogicTest {
 				.setInitialBalance(balance)
 				.setGas(gas)
 				.setConstructorParameters(copyFromUtf8("test"))
-				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
@@ -654,8 +707,7 @@ class ContractCreateTransitionLogicTest {
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
-				.setAdminKey(key)
-				.setProxyAccountID(proxy);
+				.setAdminKey(key);
 
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -685,20 +737,24 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false, false);
+		givenValidTxnCtx(true, false, false, false);
 	}
 
 	private void givenValidTxnCtxWithAutoRenew() {
-		givenValidTxnCtx(true, true, false);
+		givenValidTxnCtx(true, true, false, false);
 	}
 
+	private void givenValidTxnCtxWithStaking() {
+		givenValidTxnCtx(true, true, false, true);
+	}
+
+
 	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount,
-			boolean useMaxAutoAssociations) {
+			boolean useMaxAutoAssociations, boolean stakingEnabled) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
-				.setGas(gas)
-				.setProxyAccountID(proxy);
+				.setGas(gas);
 		if (rememberAutoRenew) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
 		}
@@ -708,6 +764,10 @@ class ContractCreateTransitionLogicTest {
 		if (useMaxAutoAssociations) {
 			op.setMaxAutomaticTokenAssociations(maxAutoAssociations);
 		}
+		if (stakingEnabled) {
+			op.setStakedNodeId(10L);
+			op.setDeclineReward(true);
+		}
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
@@ -715,7 +775,7 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
-		givenValidTxnCtx(true, true, true);
+		givenValidTxnCtx(true, true, true, false);
 	}
 
 	private TransactionID ourTxnId() {

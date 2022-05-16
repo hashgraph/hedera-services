@@ -31,6 +31,7 @@ import java.util.EnumMap;
 
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
@@ -39,6 +40,9 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_TO_ME;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKE_PERIOD_START;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
@@ -235,6 +239,59 @@ class AccountCustomizerTest {
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_RECEIVER_SIG_REQUIRED)::equals),
 				argThat(isSigRequired::equals));
 	}
+
+	@Test
+	void changesExpectedIsDeclineRewardProperty() {
+		setupWithMockChangeManager();
+		final Boolean isDeclineReward = Boolean.TRUE;
+
+		subject.isDeclinedReward(isDeclineReward.booleanValue());
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(DECLINE_REWARD)::equals),
+				argThat(isDeclineReward::equals));
+	}
+
+	@Test
+	void changesExpectedStakedIdProperty() {
+		setupWithMockChangeManager();
+		final Long stakedId = EntityId.fromIdentityCode(2).num();
+
+		subject.stakedId(stakedId);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKED_ID)::equals),
+				argThat(stakedId::equals));
+	}
+
+	@Test
+	void changesExpectedStakePeriodStartProperty() {
+		setupWithMockChangeManager();
+		final Long stakePeriodStart = 1000L;
+
+		subject.stakePeriodStart(stakePeriodStart);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKE_PERIOD_START)::equals),
+				argThat(stakePeriodStart::equals));
+	}
+
+	@Test
+	void changesExpectedStakedToMeProperty() {
+		setupWithMockChangeManager();
+		final Long stakeToMe = 1000L;
+
+		subject.stakedToMe(stakeToMe);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKED_TO_ME)::equals),
+				argThat(stakeToMe::equals));
+	}
+
 
 	@Test
 	void changesAutoAssociationFieldsAsExpected() {
