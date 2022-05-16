@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class UniqueTokensLinkManagerTest {
 	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
@@ -112,6 +113,27 @@ class UniqueTokensLinkManagerTest {
 		assertEquals(nftNumPair3, uniqueTokens.get(nftKey1).getNext());
 		assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
 		assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
+	}
+
+	@Test
+	void multiStageNonTreasuryMintAlsoCreatesLinks() {
+		nftToken.setTreasury(treasury.toEntityId());
+		tokens.put(token, nftToken);
+		accounts.put(newOwner, newOwnerAccount);
+		newOwnerAccount.setHeadNftId(tokenNum);
+		newOwnerAccount.setHeadNftSerialNum(serialNum1);
+		uniqueTokens.put(nftKey1, nft1);
+
+		final var mintedNft = subject.updateLinks(null, newOwner, nftKey2);
+
+		final var updatedNft1 = uniqueTokens.get(nftKey1);
+		assertEquals(nftNumPair2, updatedNft1.getPrev());
+		final var updatedNft2 = uniqueTokens.get(nftKey2);
+		assertSame(updatedNft2, mintedNft);
+		assertEquals(nftNumPair1, updatedNft2.getNext());
+		final var updatedOwner = accounts.get(newOwner);
+		assertEquals(tokenNum, updatedOwner.getHeadNftId());
+		assertEquals(serialNum2, updatedOwner.getHeadNftSerialNum());
 	}
 
 	void setUpEntities() {

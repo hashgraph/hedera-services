@@ -27,8 +27,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -36,12 +34,11 @@ import javax.inject.Inject;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 public class UniqueTokensLinkManager {
-	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
-
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
@@ -57,8 +54,24 @@ public class UniqueTokensLinkManager {
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	public void updateLinks(
-			@Nonnull final EntityNum from,
+	/**
+	 * Given the previous owner and new owner of the NFT with some id, updates the link fields of the
+	 * {@code accounts} and {@code uniqueTokens} maps.
+	 *
+	 * <p>If the new owner is null, the call implies a burn.
+	 *
+	 * <p>If the previous owner is null, the call implies a "non-treasury" mint  via a multi-stage
+	 * contract operation. In this case, there is no existing NFT to in the {@code uniqueTokens} map,
+	 * and the {@code linksManager} must insert one itself.
+	 *
+	 * @param from the previous owner of the NFT, if any
+	 * @param to the new owner of the NFT, if any
+	 * @param nftId the id of the NFT changing owners
+	 * @return the newly minted NFT, if one needed to be inserted
+	 */
+	@Nullable
+	public MerkleUniqueToken updateLinks(
+			@Nullable final EntityNum from,
 			@Nullable final EntityNum to,
 			@Nonnull final EntityNumPair nftId
 	) {
@@ -69,6 +82,7 @@ public class UniqueTokensLinkManager {
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
+		MerkleUniqueToken insertedNft = null;
 		// Update "from" account
 		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
@@ -85,17 +99,21 @@ public class UniqueTokensLinkManager {
 
 		// Update "to" account
 		if (isValidAndNotTreasury(to, token)) {
-			final var nft = listMutation.getForModify(nftId);
+			final var toAccount = curAccounts.getForModify(to);
+			final var nftNumPair = nftId.asNftNumPair();
+			var nft = listMutation.getForModify(nftId);
+			var rootKey = rootKeyOf(toAccount);
 			if (nft != null) {
-				final var toAccount = curAccounts.getForModify(to);
-				final var nftNumPair = nftId.asNftNumPair();
-				final var rootKey = rootKeyOf(toAccount);
-
 				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
-				toAccount.setHeadNftId(nftNumPair.tokenNum());
-				toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
+			} else {
+				insertedNft = new MerkleUniqueToken();
+				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
 			}
+			toAccount.setHeadNftId(nftNumPair.tokenNum());
+			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 		}
+
+		return insertedNft;
 	}
 
 	private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
