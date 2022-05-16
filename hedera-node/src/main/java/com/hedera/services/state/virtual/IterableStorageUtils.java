@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static com.hedera.services.utils.MapValueListUtils.overwritingRemoveFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.removeFromMapValueList;
 
 public class IterableStorageUtils {
 	private static final String NO_ITERABLE_STORAGE = "[]";
@@ -142,7 +142,7 @@ public class IterableStorageUtils {
 			@NotNull final ContractKey root,
 			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		return overwritingRemoveFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
+		return removeFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
 	}
 
 	private static ContractKey internalUpsertMapping(

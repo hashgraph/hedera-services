@@ -61,7 +61,7 @@ import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
 import static com.hedera.services.pricing.BaseOperationUsage.CANONICAL_CONTRACT_BYTECODE_SIZE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
@@ -248,7 +248,7 @@ class AutoRenewCalcsTest {
 				.setCurrentMaxAutomaticAssociations(expiredEntity.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredEntity))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredEntity))
-				.setCurrentApproveForAllNftAllowances(getNftAllowancesList(expiredEntity))
+				.setCurrentApproveForAllNftAllowances(getNftApprovedForAll(expiredEntity))
 				.build();
 
 		// expect:

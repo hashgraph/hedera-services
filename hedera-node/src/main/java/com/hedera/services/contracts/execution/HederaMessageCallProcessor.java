@@ -79,8 +79,9 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		final Bytes output;
 		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
 			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-			if (frame.getState() == REVERT)
+			if (frame.getState() == REVERT) {
 				return;
+			}
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {
