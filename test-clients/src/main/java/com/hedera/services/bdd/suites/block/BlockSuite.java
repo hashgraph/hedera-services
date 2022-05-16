@@ -39,9 +39,69 @@ public class BlockSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                BLCK_001_002_003_004_returnsCorrectBlockProperties()
-
+                BLCK_001_002_003_004_returnsCorrectBlockProperties(),
+                BLCK_003_returnsTimestampOfTheBlock()
         );
+    }
+
+    private HapiApiSpec BLCK_003_returnsTimestampOfTheBlock() {
+        final var contract = "EmitBlockTimestamp";
+        final var firstCall = "firstCall";
+        final var secondCall = "secondCall";
+
+        return defaultHapiSpec("returnsTimestampOfTheBlock")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                ).when(
+                        ethereumCall(contract, "logNow")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .gasLimit(1_000_000L)
+                                .via(firstCall)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+
+                        ethereumCall(contract, "logNow")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(1)
+                                .maxFeePerGas(50L)
+                                .gasLimit(1_000_000L)
+                                .via(secondCall)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS)
+                ).then(
+                        withOpContext((spec, opLog) -> {
+                            final var firstBlockOp = getTxnRecord(firstCall);
+                            final var recordOp = getTxnRecord(secondCall);
+                            allRunFor(spec, firstBlockOp, recordOp);
+
+                            final var firstCallRecord = firstBlockOp.getResponseRecord();
+                            final var firstCallLogs = firstCallRecord.getContractCallResult().getLogInfoList();
+                            final var firstCallTimeLogData = firstCallLogs.get(0).getData().toByteArray();
+                            final var firstCallTimestamp = Longs.fromByteArray(
+                                    Arrays.copyOfRange(firstCallTimeLogData, 24, 32));
+
+                            final var secondCallRecord = recordOp.getResponseRecord();
+                            final var secondCallLogs = secondCallRecord.getContractCallResult().getLogInfoList();
+                            final var secondCallTimeLogData = secondCallLogs.get(0).getData().toByteArray();
+                            final var secondCallTimestamp = Longs.fromByteArray(
+                                    Arrays.copyOfRange(secondCallTimeLogData, 24, 32));
+
+                            assertEquals(firstCallTimestamp, secondCallTimestamp,
+                                    "Block timestamps should be equal");
+
+                        })
+                );
     }
 
     private HapiApiSpec BLCK_001_002_003_004_returnsCorrectBlockProperties() {
@@ -126,7 +186,6 @@ public class BlockSuite extends HapiApiSuite {
                             assertEquals(Bytes32.ZERO, secondBlockHash);
                         })
                 );
-
     }
 
 
