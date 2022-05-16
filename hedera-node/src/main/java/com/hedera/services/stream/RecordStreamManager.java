@@ -23,16 +23,11 @@ package com.hedera.services.stream;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.stream.HashCalculatorForStream;
-import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThreadObjectStream;
-import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
-import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.stream.TimestampStreamFileWriter;
+import com.swirlds.common.stream.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +38,7 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import static com.swirlds.common.Units.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 /**
  * This class is used for generating record stream files when record streaming is enabled,

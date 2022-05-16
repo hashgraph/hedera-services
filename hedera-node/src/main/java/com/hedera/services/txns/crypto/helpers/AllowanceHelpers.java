@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto.helpers;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -29,15 +28,11 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.usage.crypto.AllowanceId;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
 import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,11 +55,10 @@ public class AllowanceHelpers {
 	}
 
 	/**
-	 * Since each serial number in an NFTAllowance is considered as an allowance, to get total allowance
-	 * from an NFTAllowance the size of serial numbers should be added.
+	 * Each serial number in an {@code NftAllowance} is considered as an allowance.
 	 *
-	 * @param nftAllowances
-	 * @return
+	 * @param nftAllowances a list of NFT individual allowances
+	 * @return the number of mentioned serial numbers
 	 */
 	public static int aggregateNftAllowances(List<NftAllowance> nftAllowances) {
 		int nftAllowancesTotal = 0;
@@ -87,7 +81,7 @@ public class AllowanceHelpers {
 		return totalSerials;
 	}
 
-	public static Set<AllowanceId> getNftAllowancesList(final MerkleAccount account) {
+	public static Set<AllowanceId> getNftApprovedForAll(final MerkleAccount account) {
 		if (!account.getApproveForAllNfts().isEmpty()) {
 			Set<AllowanceId> nftAllowances = new HashSet<>();
 			for (var a : account.getApproveForAllNfts()) {
@@ -137,10 +131,12 @@ public class AllowanceHelpers {
 	 * 		map of all entities that are changed
 	 * @return owner account
 	 */
-	public static Account fetchOwnerAccount(final AccountID owner,
+	public static Account fetchOwnerAccount(
+			final AccountID owner,
 			final Account payerAccount,
 			final AccountStore accountStore,
-			final Map<Long, Account> entitiesChanged) {
+			final Map<Long, Account> entitiesChanged
+	) {
 		final var ownerId = Id.fromGrpcAccount(owner);
 		if (owner.equals(AccountID.getDefaultInstance()) || owner.equals(payerAccount.getId().asGrpcAccount())) {
 			return payerAccount;
@@ -151,21 +147,12 @@ public class AllowanceHelpers {
 		}
 	}
 
-	public static Account fetchOwnerAccount(final AccountID owner,
+	public static Account fetchOwnerAccount(
+			final AccountID owner,
 			final Account payerAccount,
-			final AccountStore accountStore) {
+			final AccountStore accountStore
+	) {
 		return fetchOwnerAccount(owner, payerAccount, accountStore, Collections.emptyMap());
-	}
-
-	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender, final EntityNum payer) {
-		return EntityNumPair.fromLongs(owner == null ? payer.longValue() : owner.getAccountNum(),
-				spender.getAccountNum());
-	}
-
-	public static Pair<EntityNum, FcTokenAllowanceId> buildTokenAllowanceKey
-			(AccountID owner, TokenID token, AccountID spender) {
-		return Pair.of(EntityNum.fromAccountId(owner), FcTokenAllowanceId.from(EntityNum.fromTokenId(token),
-				EntityNum.fromAccountId(spender)));
 	}
 
 	/**
@@ -188,7 +175,8 @@ public class AllowanceHelpers {
 			final Id ownerId,
 			final Id spenderId,
 			final Id tokenId,
-			final List<Long> serialNums) {
+			final List<Long> serialNums
+	) {
 		if (serialNums.isEmpty()) {
 			return Collections.emptyList();
 		}

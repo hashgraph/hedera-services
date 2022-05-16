@@ -24,10 +24,10 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import org.apache.commons.codec.DecoderException;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -346,7 +346,7 @@ public abstract class JKey {
 		try {
 			var buf = serialize();
 			try (var bs = new ByteArrayInputStream(buf)) {
-				try (var is = new DataInputStream(bs)) {
+				try (var is = new SerializableDataInputStream(bs)) {
 					return JKeySerializer.deserialize(is);
 				}
 			}

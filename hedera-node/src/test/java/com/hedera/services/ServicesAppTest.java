@@ -48,18 +48,13 @@ import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.JvmSystemExits;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,21 +77,9 @@ class ServicesAppTest {
 	private final NodeId selfNodeId = new NodeId(false, selfId);
 
 	@Mock
-	private Hash hash;
-	@Mock
 	private Platform platform;
 	@Mock
-	private RunningHash runningHash;
-	@Mock
-	private Address address;
-	@Mock
-	private AddressBook addressBook;
-	@Mock
 	private Cryptography cryptography;
-	@Mock
-	private ServicesState initialState;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private PropertySource overridingProps;
 

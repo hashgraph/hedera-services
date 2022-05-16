@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -113,7 +112,6 @@ public class HederaLedger {
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final RecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
@@ -133,7 +131,6 @@ public class HederaLedger {
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final RecordsHistorian historian,
-			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic,
 			final AutoCreationLogic autoCreationLogic
@@ -143,7 +140,6 @@ public class HederaLedger {
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
-		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.transferLogic = transferLogic;
 		this.autoCreationLogic = autoCreationLogic;
@@ -420,16 +416,7 @@ public class HederaLedger {
 	}
 
 	public boolean isDetached(final AccountID id) {
-		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
-			return false;
-		}
-		final var shouldAutoRenewThisType = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
-				? dynamicProperties.shouldAutoRenewContracts() : dynamicProperties.shouldAutoRenewAccounts();
-		if (!shouldAutoRenewThisType) {
-			return false;
-		}
-		return (long) accountsLedger.get(id, BALANCE) == 0L
-				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+		return validator.expiryStatusGiven(accountsLedger, id) != OK;
 	}
 
 	public JKey key(AccountID id) {

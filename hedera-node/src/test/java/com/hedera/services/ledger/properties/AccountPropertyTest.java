@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,6 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,7 +54,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
@@ -100,6 +104,7 @@ class AccountPropertyTest {
 		final boolean origIsReceiverSigReq = false;
 		final boolean origIsContract = false;
 		final long origBalance = 1L;
+		final long origEthereumNonce = 1L;
 		final long origAutoRenew = 1L;
 		final long origNumNfts = 123L;
 		final long origExpiry = 1L;
@@ -119,6 +124,7 @@ class AccountPropertyTest {
 		final boolean newIsReceiverSigReq = true;
 		final boolean newIsContract = true;
 		final long newBalance = 2L;
+		final long newEthereumNonce = 2L;
 		final long newAutoRenew = 2L;
 		final long newExpiry = 2L;
 		final long newNumNfts = 321L;
@@ -157,6 +163,12 @@ class AccountPropertyTest {
 			add(fungibleAllowanceId);
 			add(nftAllowanceId);
 		}};
+		final UInt256 oldFirstKey =
+				UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+		final int[] explicitOldFirstKey = ContractKey.asPackedInts(oldFirstKey);
+		final UInt256 newFirstKey =
+				UInt256.fromHexString("0x1111fe0432ce31138ecf09aa3e8a410004bbe204ef84efe01ee160febbe22060");
+		final int[] explicitNewFirstKey = ContractKey.asPackedInts(newFirstKey);
 
 		final var account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
@@ -169,12 +181,14 @@ class AccountPropertyTest {
 				.isSmartContract(origIsContract)
 				.isReceiverSigRequired(origIsReceiverSigReq)
 				.customizing(new MerkleAccount());
+		account.setFirstUint256StorageKey(explicitOldFirstKey);
 		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
 		account.setHeadTokenId(origLastAssociatedTokenNum);
 		account.setNumPositiveBalances(origNumPositiveBalances);
 		account.setNumAssociations(origAssociationCount);
 		account.setBalance(origBalance);
+		account.setEthereumNonce(origEthereumNonce);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
@@ -211,10 +225,12 @@ class AccountPropertyTest {
 		NUM_CONTRACT_KV_PAIRS.setter().accept(account, newNumKvPairs);
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
+		FIRST_CONTRACT_STORAGE_KEY.setter().accept(account, explicitNewFirstKey);
 		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
 		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
+		ETHEREUM_NONCE.setter().accept(account, newEthereumNonce);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -232,10 +248,12 @@ class AccountPropertyTest {
 		assertEquals(newNumKvPairs, NUM_CONTRACT_KV_PAIRS.getter().apply(account));
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
+		assertEquals(explicitNewFirstKey, FIRST_CONTRACT_STORAGE_KEY.getter().apply(account));
 		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
 		assertEquals(newAssociationCount, NUM_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
 		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
+		assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

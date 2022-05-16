@@ -22,10 +22,16 @@ package com.hedera.services.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -105,6 +111,21 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		curAliases().put(alias, num);
 	}
 
+	public boolean maybeLinkEvmAddress(final JKey key, final EntityNum num) {
+		if (key != null && key.hasECDSAsecp256k1Key()) {
+			// Only compressed keys are stored at the moment
+			byte[] rawCompressedKey = key.getECDSASecp256k1Key();
+			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+				var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+				if (evmAddress != null) {
+					link(ByteString.copyFrom(evmAddress), num);
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void unlink(final ByteString alias) {
 		curAliases().remove(alias);
 	}
@@ -118,6 +139,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var numCreate2Aliases = new AtomicInteger();
+		final var numEOAliases = new AtomicInteger();
 		final var workingAliases = curAliases();
 		workingAliases.clear();
 		forEach(accounts, (k, v) -> {
@@ -126,10 +148,19 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				if (v.isSmartContract()) {
 					numCreate2Aliases.getAndIncrement();
 				}
+				try {
+					Key key = Key.parseFrom(v.getAlias());
+					JKey jKey = JKey.mapKey(key);
+					if (maybeLinkEvmAddress(jKey, v.getKey())) {
+						numEOAliases.incrementAndGet();
+					}
+				} catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException e) {
+					// any expected exception means no eth mapping
+				}
 			}
 		});
-		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2)",
-				workingAliases::size, numCreate2Aliases::get);
+		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned accounts)",
+				workingAliases::size, numCreate2Aliases::get, numEOAliases::get);
 	}
 
 	/**
@@ -145,15 +176,24 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		return curAliases().remove(alias) != null;
 	}
 
-	/**
-	 * Returns if there is an account linked the given alias.
-	 *
-	 * @param alias
-	 * 		the alias of interest
-	 * @return whether there is a linked account
-	 */
-	public boolean contains(final ByteString alias) {
-		return curAliases().containsKey(alias);
+	public void forgetEvmAddress(final ByteString alias) {
+		try {
+			var key = Key.parseFrom(alias);
+			var jKey = JKey.mapKey(key);
+			if (jKey.hasECDSAsecp256k1Key()) {
+				// ecdsa keys from alias are currently only stored in compressed form.
+				byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
+				// trust, but verify
+				if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+					var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+					if (evmAddress != null) {
+						curAliases().remove(ByteString.copyFrom(evmAddress));
+					}
+				}
+			}
+		} catch (InvalidProtocolBufferException | DecoderException internal) {
+			// any parse error means it's not a evm address
+		}
 	}
 
 	/**

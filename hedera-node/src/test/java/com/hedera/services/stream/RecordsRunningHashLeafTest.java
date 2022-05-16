@@ -26,8 +26,8 @@ import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -95,7 +95,7 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	void setRunningHashTest() {
+	void setRunningHashTest() throws InterruptedException {
 		// initializes a leaf without setting RunningHash
 		final var leafForTestingRunningHash = new RecordsRunningHashLeaf();
 		assertNull(leafForTestingRunningHash.getRunningHash());
@@ -112,6 +112,7 @@ class RecordsRunningHashLeafTest {
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
+		assertEquals(hash, leafForTestingRunningHash.getLatestBlockHash());
 	}
 
 	@Test

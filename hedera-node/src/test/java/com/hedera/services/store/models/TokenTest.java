@@ -638,7 +638,7 @@ class TokenTest {
 		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, treasury=Account{id=0.0.0, " +
 				"expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0," +
 				" alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, " +
-				"numAssociations=2, numPositiveBalances=1}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
+				"numAssociations=2, numPositiveBalances=1, ethereumNonce=0, headNftId=0, headNftSerialNum=0}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
 				"frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());

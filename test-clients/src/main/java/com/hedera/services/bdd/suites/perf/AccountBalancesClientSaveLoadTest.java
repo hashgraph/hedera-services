@@ -135,7 +135,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 										String.format("%d",settings.getBalancesExportPeriodSecs()) ))
 								.erasingProps(Set.of("accountBalanceExportPeriodMinutes"))),
 						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
+								.payingWith(GENESIS)
 								.contents(throttlesForJRS.toByteArray())
 				).when(
 

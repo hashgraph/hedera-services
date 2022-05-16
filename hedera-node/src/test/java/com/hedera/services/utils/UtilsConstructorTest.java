@@ -31,6 +31,7 @@ import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.services.fees.calculation.contract.ContractFeesModule;
 import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
+import com.hedera.services.fees.calculation.ethereum.EthereumFeesModule;
 import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
@@ -54,10 +55,12 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
-import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.serdes.IoUtils;
+import com.hedera.services.state.virtual.IterableStorageUtils;
+import com.hedera.services.state.virtual.KeyPackingUtils;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
@@ -68,6 +71,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
@@ -115,7 +119,7 @@ class UtilsConstructorTest {
 			MerkleAccount.ChildIndices.class,
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
-			ReleaseTwentyFourMigration.class,
+			ReleaseTwentySixMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,
@@ -137,6 +141,7 @@ class UtilsConstructorTest {
 			SubmissionModule.class,
 			ConsensusFeesModule.class,
 			ContractFeesModule.class,
+			EthereumFeesModule.class,
 			CryptoFeesModule.class,
 			FileFeesModule.class,
 			ScheduleFeesModule.class,
@@ -156,7 +161,10 @@ class UtilsConstructorTest {
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
-			SerializationUtils.class
+			SerializationUtils.class,
+			KeyPackingUtils.class,
+			IterableStorageUtils.class,
+			EthereumLogicModule.class
 	));
 
 	@Test

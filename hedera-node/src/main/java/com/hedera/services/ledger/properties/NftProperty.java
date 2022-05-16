@@ -22,6 +22,7 @@ package com.hedera.services.ledger.properties;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.NftNumPair;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -69,6 +70,28 @@ public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
 		@Override
 		public Function<MerkleUniqueToken, Object> getter() {
 			return MerkleUniqueToken::getSpender;
+		}
+	},
+	PREV {
+		@Override
+		public BiConsumer<MerkleUniqueToken, Object> setter() {
+			return (t, o) -> t.setPrev((NftNumPair) o);
+		}
+
+		@Override
+		public Function<MerkleUniqueToken, Object> getter() {
+			return MerkleUniqueToken::getPrev;
+		}
+	},
+	NEXT {
+		@Override
+		public BiConsumer<MerkleUniqueToken, Object> setter() {
+			return (t, o) -> t.setNext((NftNumPair) o);
+		}
+
+		@Override
+		public Function<MerkleUniqueToken, Object> getter() {
+			return MerkleUniqueToken::getNext;
 		}
 	}
 }
