@@ -73,13 +73,12 @@ public class UniqueTokensLinkManager {
 		if (isValidAndNotTreasury(from, token)) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
-
+			// Outside a contract operation, this would be an invariant failure (if a non-treasury account
+			// is being wiped, it must certainly own at least the wiped NFT); but a contract can easily transfer
+			// can a NFT back to the treasury and burn it in the same transaction
 			if (rootKey != null) {
 				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
-			} else {
-				log.error("Should not be possible : Root of owned nfts list is null, but account : {} owns nft : {}", from, nftId);
 			}
-
 			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
 			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
 		}
