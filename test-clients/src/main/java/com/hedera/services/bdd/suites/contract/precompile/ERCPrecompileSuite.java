@@ -166,7 +166,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				erc721TransferFromWithApproveForAll(),
 				someERC721GetApprovedScenariosPass(),
 				someERC721BalanceOfScenariosPass(),
-				someERC721OwnerOfScenariosPass()
+				someERC721OwnerOfScenariosPass(),
+				someERC721IsApprovedForAllScenariosPass(),
+				getErc721IsApprovedForAll()
 		});
 	}
 
@@ -2529,6 +2531,217 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 
+				);
+	}
+
+	private HapiApiSpec someERC721IsApprovedForAllScenariosPass() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
+		final var nfToken = "nfToken";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var someERC721Scenarios = "someERC721Scenarios";
+
+		return defaultHapiSpec("someERC721IsApprovedForAllScenariosPass")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(someERC721Scenarios),
+						contractCreate(someERC721Scenarios)
+								.adminKey(multiKey),
+						tokenCreate(nfToken)
+								.supplyKey(multiKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(someERC721Scenarios)
+								.initialSupply(0)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						mintToken(nfToken, List.of(
+								// 1
+								ByteString.copyFromUtf8("A"),
+								// 2
+								ByteString.copyFromUtf8("B")
+						)),
+						tokenAssociate(aCivilian, nfToken),
+						cryptoTransfer(movingUnique(nfToken, 1L, 2L).between(someERC721Scenarios, aCivilian))
+				).when(
+						withOpContext((spec, opLog) -> {
+							zCivilianMirrorAddr.set(asHexedSolidityAddress(
+									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+							zTokenMirrorAddr.set(asHexedSolidityAddress(
+									TokenID.newBuilder().setTokenNum(666_666L).build()));
+							contractMirrorAddr.set(asHexedSolidityAddress(
+									spec.registry().getAccountID(someERC721Scenarios)));
+						}),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), contractMirrorAddr.get()
+						)
+								.via("OWNER_DOES_NOT_EXISTS").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), zCivilianMirrorAddr.get()
+						)
+								.via("OPERATOR_DOES_NOT_EXISTS").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
+						)
+								.via("OPERATOR_IS_NOT_APPROVED").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						cryptoApproveAllowance()
+								.payingWith(aCivilian)
+								.addNftAllowance(aCivilian, nfToken, someERC721Scenarios, true, List.of())
+								.signedBy(DEFAULT_PAYER, aCivilian)
+								.fee(ONE_HBAR),
+						getAccountDetails(aCivilian)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(0)
+										.nftApprovedAllowancesContaining(nfToken, someERC721Scenarios)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
+						)
+								.via("OPERATOR_IS_APPROVED_FOR_ALL").gas(4_000_000).hasKnownStatus(SUCCESS))
+
+				).then(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												childRecordsCheck("OPERATOR_DOES_NOT_EXISTS", SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(
+																								HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																						.withIsApprovedForAll(false)
+																				)
+																)
+												),
+												childRecordsCheck("OPERATOR_IS_NOT_APPROVED", SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(
+																								HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																						.withIsApprovedForAll(false)
+																				)
+																)
+												),
+												childRecordsCheck("OPERATOR_IS_APPROVED_FOR_ALL", SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(
+																								HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																						.withIsApprovedForAll(true)
+																				)
+																)
+												)
+										)
+						)
+
+				);
+	}
+
+	private HapiApiSpec getErc721IsApprovedForAll() {
+		final var notApprovedTxn = "notApprovedTxn";
+		final var approvedForAllTxn = "approvedForAllTxn";
+
+		return defaultHapiSpec("getErc721IsApprovedForAll")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("A"),ByteString.copyFromUtf8("B"))),
+						uploadInitCode(ERC_721_CONTRACT),
+						contractCreate(ERC_721_CONTRACT),
+						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)),
+						cryptoApproveAllowance()
+								.payingWith(OWNER)
+								.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, RECIPIENT, true, List.of(1L, 2L))
+								.signedBy(DEFAULT_PAYER, OWNER)
+								.fee(ONE_HBAR),
+						getAccountDetails(OWNER)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(0)
+										.nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, RECIPIENT)
+								),
+						getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(RECIPIENT),
+						getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(RECIPIENT)
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_721_CONTRACT, "isApprovedForAll",
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT))
+												)
+														.payingWith(OWNER)
+														.via(approvedForAllTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER),
+												contractCall(ERC_721_CONTRACT, "isApprovedForAll",
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(ACCOUNT))
+												)
+														.payingWith(OWNER)
+														.via(notApprovedTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
+						)
+				).then(
+						childRecordsCheck(approvedForAllTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																.withIsApprovedForAll(true)
+														)
+										)
+						),
+						childRecordsCheck(notApprovedTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																.withIsApprovedForAll(false)
+														)
+										)
+						)
 				);
 	}
 

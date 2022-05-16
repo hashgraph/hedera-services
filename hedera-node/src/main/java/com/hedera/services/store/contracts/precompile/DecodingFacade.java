@@ -213,7 +213,7 @@ public class DecodingFacade {
 	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function IS_APPROVED_FOR_ALL =
-			new Function("isApprovedForAll(address,address)");
+			new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 

@@ -50,4 +50,12 @@ contract SomeERC721Scenarios {
     ) external view {
         IERC721(token).ownerOf(serialNo);
     }
+
+    function isApprovedForAll(
+        address token,
+        address owner,
+        address operator
+    ) external view {
+        IERC721(token).isApprovedForAll(owner, operator);
+    }
 }
