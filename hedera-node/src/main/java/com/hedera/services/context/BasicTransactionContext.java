@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -292,8 +293,8 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void updateFromEvmCallContext(final EvmFnResult.EvmFnCallContext callContext) {
-		this.evmFnResult.updateFromEvmCallContext(callContext);
+	public void updateForEvmCall(final EthTxData callContext, EntityId senderId) {
+		this.evmFnResult.updateForEvmCall(callContext, senderId);
 		var wrappedRecordConfig = recordConfig;
 		recordConfig = expiringRecord -> {
 			wrappedRecordConfig.accept(expiringRecord);

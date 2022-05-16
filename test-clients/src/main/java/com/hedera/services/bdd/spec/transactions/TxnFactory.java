@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
@@ -296,6 +297,11 @@ public class TxnFactory {
 	public Consumer<ContractCallTransactionBody.Builder> defaultDef_ContractCallTransactionBody() {
 		return builder -> builder
 				.setGas(setup.defaultCallGas());
+	}
+
+	public Consumer<EthereumTransactionBody.Builder> defaultDef_EthereumTransactionBody() {
+		return builder -> builder
+				.setMaxGasAllowance(setup.defaultCallGas());
 	}
 
 	public Consumer<ContractCreateTransactionBody.Builder> defaultDef_ContractCreateTransactionBody() {

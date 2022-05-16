@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.bdd.spec.utilops.UtilStateChange;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -129,6 +130,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
+	public ContractFnResultAsserts approxGasUsed(final long expected, final double allowedPercentDeviation) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			final var actual = result.getGasUsed();
+			final var epsilon = allowedPercentDeviation * actual / 100.0;
+			Assertions.assertEquals(
+					expected, (double) result.getGasUsed(), epsilon,
+					"Wrong amount of gas used");
+		});
+		return this;
+	}
+
 	public ContractFnResultAsserts gasUsed(long gasUsed) {
 		registerProvider((spec, o) -> {
 			ContractFunctionResult result = (ContractFunctionResult) o;
@@ -186,6 +199,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					ByteString.copyFrom(functionParameters.toArray()), result.getFunctionParameters(),
 					"Wrong function parameters!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts senderId(AccountID senderId) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					senderId, result.getSenderId(),
+					"Wrong senderID!");
 		});
 		return this;
 	}

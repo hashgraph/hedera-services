@@ -34,16 +34,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.logic.BlockManager.BLOCK_PERIOD_MS;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BlockManagerTest {
+	private static final long blockPeriodSecs = 2L;
+
 	@Mock
 	private BootstrapProperties bootstrapProperties;
 	@Mock
@@ -55,44 +61,28 @@ class BlockManagerTest {
 
 	@BeforeEach
 	void setUp() {
+		given(bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(blockPeriodSecs);
 		subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
 	}
 
 	@Test
-	void initializesBlockConceptAsExpected() {
-		final var lastKnownNo = 1234L;
-		final var knownStartTime = Instant.parse("2022-04-01T00:00:00Z");
-		final var effCurBlockStart = Instant.parse("2022-04-18T12:27:58Z");
-		given(bootstrapProperties.getInstantProperty("bootstrap.lastKnownBlockStartTime"))
-				.willReturn(knownStartTime);
-		given(bootstrapProperties.getLongProperty("bootstrap.lastKnownBlockNumber"))
-				.willReturn(lastKnownNo);
-
-		final var periodOfKnownBlock = getPeriod(knownStartTime, BLOCK_PERIOD_MS);
-		final var periodOfCurrentBlock = getPeriod(effCurBlockStart, BLOCK_PERIOD_MS);
-		final var blockNoDelta = periodOfCurrentBlock - periodOfKnownBlock;
-		final var expectedCurBlockNo = lastKnownNo + blockNoDelta;
-
-		final var newBlockNo = subject.getManagedBlockNumberAt(effCurBlockStart);
-
-		verify(networkContext).setBlockNo(expectedCurBlockNo);
-		verify(networkContext).setFirstConsTimeOfCurrentBlock(effCurBlockStart);
-		assertEquals(expectedCurBlockNo, newBlockNo);
+	void requiresProvisionalValuesToBeComputedBeforeReturningHash() {
+		assertThrows(IllegalStateException.class, () -> subject.getProvisionalBlockHash(1));
 	}
 
 	@Test
-	void delegatesCurrentBlockNumberToContext() {
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+	void delegatesCurrentBlockNumberToContextIfNot() {
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-		assertEquals(someBlockNo, subject.getCurrentBlockNumber());
+		assertEquals(someBlockNo, subject.getAlignmentBlockNumber());
 	}
 
 	@Test
 	void continuesWithCurrentBlockIfInSamePeriod() {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-		final var newBlockNo = subject.getManagedBlockNumberAt(someTime);
+		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(someTime);
 
 		assertEquals(someBlockNo, newBlockNo);
 		verify(networkContext, never()).setFirstConsTimeOfCurrentBlock(any());
@@ -100,12 +90,33 @@ class BlockManagerTest {
 	}
 
 	@Test
-	void finishesBlockIfNotInSamePeriod() throws InterruptedException {
+	void resetClearsBlockNo() {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(networkContext.finishBlock(aFullBlockHash, anotherTime)).willReturn(someBlockNo);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+
+		subject.updateAndGetAlignmentBlockNumber(someTime);
+		subject.reset();
+
+		assertThrows(IllegalStateException.class, () -> subject.getProvisionalBlockHash(1));
+	}
+
+	@Test
+	void finishesBlockIfUnknownFirstConsTime() throws InterruptedException {
+		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
 		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
 
-		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);
+		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
+
+		assertEquals(someBlockNo, newBlockNo);
+	}
+
+	@Test
+	void finishesBlockIfNotInSamePeriod() throws InterruptedException {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(networkContext.finishBlock(ethHashFrom(aFullBlockHash), anotherTime)).willReturn(someBlockNo);
+		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+
+		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
 
 		assertEquals(someBlockNo, newBlockNo);
 	}
@@ -114,9 +125,9 @@ class BlockManagerTest {
 	void returnsCurrentBlockNoIfSomehowInterrupted() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
 		given(runningHashLeaf.getLatestBlockHash()).willThrow(InterruptedException.class);
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);
+		final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
 
 		assertEquals(someBlockNo, newBlockNo);
 	}
@@ -128,9 +139,93 @@ class BlockManagerTest {
 		verify(runningHashLeaf).setRunningHash(someHash);
 	}
 
+	@Test
+	void keeps025BehaviorIfManagedBlockNumberStillNegative() {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(networkContext.getAlignmentBlockNo()).willReturn(Long.MIN_VALUE);
+
+		final var firstValues = subject.computeProvisionalBlockValues(someTime, gasLimit);
+		final var secondValues = subject.computeProvisionalBlockValues(someTime, gasLimit);
+
+		assertEquals(gasLimit, firstValues.getGasLimit());
+		assertEquals(someTime.getEpochSecond(), firstValues.getNumber());
+		assertEquals(someTime.getEpochSecond(), firstValues.getTimestamp());
+		// and:
+		assertEquals(gasLimit, secondValues.getGasLimit());
+		assertEquals(someTime.getEpochSecond(), secondValues.getNumber());
+		assertEquals(someTime.getEpochSecond(), secondValues.getTimestamp());
+		// and:
+		verify(networkContext, times(1)).getAlignmentBlockNo();
+	}
+
+	@Test
+	void knowsIfNewBlockNowIsTheTimestampAndNumberIncrements() throws InterruptedException {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+
+		final var values = subject.computeProvisionalBlockValues(anotherTime, gasLimit);
+
+		assertEquals(gasLimit, values.getGasLimit());
+		assertEquals(someBlockNo + 1, values.getNumber());
+		assertEquals(anotherTime.getEpochSecond(), values.getTimestamp());
+	}
+
+	@Test
+	void knowsIfBlockIsSameThenNetworkCtxApplies() {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+
+		final var values = subject.computeProvisionalBlockValues(someTime, gasLimit);
+
+		assertEquals(gasLimit, values.getGasLimit());
+		assertEquals(someBlockNo, values.getNumber());
+		assertEquals(aTime.getEpochSecond(), values.getTimestamp());
+	}
+
+	@Test
+	void alwaysDelegatesHashLookupIfNotNewBlock() {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getBlockHashByNumber(someBlockNo)).willReturn(aSuffixHash);
+
+		subject.ensureProvisionalBlockMeta(someTime);
+		final var hash = subject.getProvisionalBlockHash(someBlockNo);
+
+		assertSame(aSuffixHash, hash);
+	}
+
+	@Test
+	void stillDelegatesHashLookupInNewBlockIfNotPrevBlockNo() throws InterruptedException {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getBlockHashByNumber(someBlockNo + 1)).willReturn(aSuffixHash);
+
+		subject.ensureProvisionalBlockMeta(anotherTime);
+		final var hash = subject.getProvisionalBlockHash(someBlockNo + 1);
+
+		assertSame(aSuffixHash, hash);
+	}
+
+	@Test
+	void answersHashLookupProvisionallyInNewBlockIfPrevBlockNo() throws InterruptedException {
+		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+		given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+
+		subject.ensureProvisionalBlockMeta(anotherTime);
+		final var hash = subject.getProvisionalBlockHash(someBlockNo);
+
+		assertArrayEquals(aSuffixHash.toArrayUnsafe(), hash.toArrayUnsafe());
+		assertNotSame(aSuffixHash, hash);
+	}
+
+	private static final long gasLimit = 1000;
 	private static final long someBlockNo = 123_456;
 	private static final Instant aTime = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final Instant someTime = Instant.ofEpochSecond(1_234_567L, 890_000);
 	private static final Instant anotherTime = Instant.ofEpochSecond(1_234_568L, 890);
 	private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final org.hyperledger.besu.datatypes.Hash aSuffixHash = ethHashFrom(aFullBlockHash);
 }

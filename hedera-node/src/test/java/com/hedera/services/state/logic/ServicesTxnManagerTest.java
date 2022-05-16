@@ -82,6 +82,8 @@ class ServicesTxnManagerTest {
 	private MigrationRecordsManager migrationRecordsManager;
 	@Mock
 	private RecordStreaming recordStreaming;
+	@Mock
+	private BlockManager blockManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -92,7 +94,7 @@ class ServicesTxnManagerTest {
 	void setup() {
 		subject = new ServicesTxnManager(
 				processLogic, triggeredProcessLogic, recordCache, ledger,
-				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming);
+				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager);
 	}
 
 	@Test

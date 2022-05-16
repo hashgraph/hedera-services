@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -62,6 +63,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -240,7 +242,8 @@ public final class MiscUtils {
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
 			ContractCallLocal,
 			ContractCall,
-			ContractCreate
+			ContractCreate,
+			EthereumTransaction
 	);
 
 	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
@@ -874,9 +877,15 @@ public final class MiscUtils {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 
-	public static long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function) {
-		return function == ContractCreate ? txn.getContractCreateInstance().getGas() :
-				txn.getContractCall().getGas();
+	public static long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function,
+			@Nullable Supplier<EthTxData> getEthData) {
+		return switch (function) {
+			case ContractCreate -> txn.getContractCreateInstance().getGas();
+			case ContractCall -> txn.getContractCall().getGas();
+			case EthereumTransaction -> getEthData != null ? getEthData.get().gasLimit() :
+					EthTxData.populateEthTxData(txn.getEthereumTransaction().getEthereumData().toByteArray()).gasLimit();
+			default -> 0L;
+		};
 	}
 
 	/**

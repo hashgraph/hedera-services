@@ -78,6 +78,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -261,6 +263,7 @@ class DeleteAllowanceChecksTest {
 	void happyPath() {
 		setUpForTest();
 		getValidTxnCtx();
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
@@ -359,7 +362,6 @@ class DeleteAllowanceChecksTest {
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
 		given(ownerMerkleAccount.getNumAssociations()).willReturn(1);
 		given(ownerMerkleAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerMerkleAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
 		given(tokens.getImmutableRef(nftToken)).willReturn(merkleToken);

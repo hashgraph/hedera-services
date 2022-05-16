@@ -54,9 +54,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -89,7 +87,7 @@ class RenewalRecordsHelperTest {
 
 	@Test
 	void mustBeInCycleToStream() {
-		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false));
+		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false, expiredNum));
 	}
 
 	@Test
@@ -132,7 +130,7 @@ class RenewalRecordsHelperTest {
 		given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
 		subject.beginRenewalCycle();
-		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
 		// then:
 		verify(consensusTimeTracker).nextStandaloneRecordTime();
@@ -148,11 +146,11 @@ class RenewalRecordsHelperTest {
 		final var rso = expectedRso(
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, true),
 				0);
-		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry, expiredNum.toGrpcAccountId())).willReturn(mockBody);
 		given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
 		subject.beginRenewalCycle();
-		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
 		// then:
 		verify(consensusTimeTracker).nextStandaloneRecordTime();

@@ -21,11 +21,16 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -39,7 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
+@ExtendWith(MockitoExtension.class)
 class DecodingFacadeTest {
 	private final DecodingFacade subject = new DecodingFacade();
 
@@ -114,6 +122,21 @@ class DecodingFacadeTest {
 					"0x7812a04b000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000003f400000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d79546f6b656e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000034d544b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d656d6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000008000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003f400000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 			);
 
+	private static final Bytes GET_APPROVED_INPUT = Bytes.fromHexString("0x081812fc0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes ALLOWANCE_INPUT = Bytes.fromHexString("0xdd62ed3e00000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
+
+	public static final Bytes SET_APPROVAL_FOR_ALL_INPUT = Bytes.fromHexString("0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes IS_APPROVED_FOR_ALL_INPUT = Bytes.fromHexString("0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+
+	private static final Bytes APPROVE_NFT_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes APPROVE_TOKEN_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
+
+	@Mock
+	private WorldLedgers ledgers;
+
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
@@ -170,6 +193,54 @@ class DecodingFacadeTest {
 	}
 
 	@Test
+	void decodeGetApprovedInput() {
+		final var decodedInput = subject.decodeGetApproved(GET_APPROVED_INPUT);
+
+		assertEquals(1, decodedInput.serialNo());
+	}
+
+	@Test
+	void decodeAllowanceInput() {
+		final var decodedInput = subject.decodeTokenAllowance(ALLOWANCE_INPUT, a -> a);
+
+		assertTrue(decodedInput.owner().getAccountNum() > 0);
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+	}
+
+	@Test
+	void decodeSetApprovalForAll() {
+		final var decodedInput = subject.decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT, a -> a);
+
+		assertTrue(decodedInput.to().getAccountNum() > 0);
+		assertTrue(decodedInput.approved());
+	}
+
+	@Test
+	void decodeIsApprovedForAll() {
+		final var decodedInput = subject.decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT, a -> a);
+
+		assertTrue(decodedInput.owner().getAccountNum() > 0);
+		assertTrue(decodedInput.operator().getAccountNum() > 0);
+	}
+
+	@Test
+	void decodeApproveForNFT() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_NFT_INPUT, TokenID.getDefaultInstance(),false, a -> a);
+
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(BigInteger.ONE, decodedInput.serialNumber());
+	}
+
+	@Test
+	void decodeApproveForToken() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(BigInteger.TEN, decodedInput.amount());
+	}
+
+
+	@Test
 	void decodeBalanceInput() {
 		final var decodedInput = subject.decodeBalanceOf(BALANCE_INPUT, a -> a);
 
@@ -178,7 +249,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferInput() {
-		final var decodedInput = subject.decodeErcTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
+		final var decodedInput = subject.decodeERCTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
@@ -187,7 +258,9 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferFromFungibleInput() {
-		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+		final var notOwner = new EntityId(0, 0, 1002);
+		final var decodedInput = subject.decodeERCTransferFrom(
+				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, notOwner);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
 		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
@@ -196,14 +269,31 @@ class DecodingFacadeTest {
 	}
 
 	@Test
-	void decodeTransferFromNonFungibleInput() {
-		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_NON_FUNGIBLE_INPUT,
-				TokenID.getDefaultInstance(),false, a -> a);
+	void decodeTransferFromNonFungibleInputUsingApprovalIfNotOwner() {
+		final var notOwner = new EntityId(0, 0, 1002);
+		final var decodedInput = subject.decodeERCTransferFrom(
+				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),false, a -> a, ledgers, notOwner);
 		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
 
 		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
 		assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
 		assertEquals(1, nftTransfer.getSerialNumber());
+		assertTrue(nftTransfer.getIsApproval());
+	}
+
+	@Test
+	void decodeTransferFromNonFungibleInputIfOwner() {
+		final var callerId = new EntityId(0, 0, 1001);
+		given(ledgers.ownerIfPresent(any())).willReturn(callerId);
+
+		final var decodedInput = subject.decodeERCTransferFrom(
+				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),false, a -> a, ledgers, callerId);
+		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
+
+		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
+		assertEquals(1, nftTransfer.getSerialNumber());
+		assertFalse(nftTransfer.getIsApproval());
 	}
 
 	@Test

@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -170,7 +171,7 @@ class BasicTransactionContextTest {
 	@Mock
 	private EvmFnResult result;
 	@Mock
-	private EvmFnResult.EvmFnCallContext evmFnCallContext;
+	private EthTxData evmFnCallContext;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -365,20 +366,20 @@ class BasicTransactionContextTest {
 	@Test
 	void configuresEthereumHash() {
 		var ethHash = new byte[] {2};
+		var senderId = EntityId.fromIdentityCode(42);
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
 		given(evmFnCallContext.getEthereumHash()).willReturn(ethHash);
-		
 
 		// when:
 		subject.setCallResult(result);
-		subject.updateFromEvmCallContext(evmFnCallContext);
+		subject.updateForEvmCall(evmFnCallContext, senderId);
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
 
 		// then:
-		verify(result).updateFromEvmCallContext(evmFnCallContext);
+		verify(result).updateForEvmCall(evmFnCallContext, senderId);
 		assertArrayEquals(ethHash, record.getEthereumHash());
 	}
 

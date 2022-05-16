@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -223,7 +224,7 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		if (txn.hasContractCreateInstance()) {
-			return contractCreate(txn.getContractCreateInstance(), factory);
+			return contractCreate(txn.getContractCreateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractUpdateInstance()) {
 			return contractUpdate(txn.getContractUpdateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractDeleteInstance()) {
@@ -407,10 +408,18 @@ public class SigRequirements {
 			required = mutable(required);
 			required.add(result.metadata().key());
 		}
-		if (hasNondeprecatedAdminKey(op)) {
+		if (hasNonDeprecatedAdminKey(op)) {
 			var candidate = asUsableFcKey(op.getAdminKey());
 			required = mutable(required);
 			candidate.ifPresent(required::add);
+		}
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
 		}
 
 		return factory.forValidOrder(required);
@@ -418,29 +427,51 @@ public class SigRequirements {
 
 	private boolean needsCurrentAdminSig(final ContractUpdateTransactionBody op) {
 		return !op.hasExpirationTime()
-				|| hasNondeprecatedAdminKey(op)
+				|| hasNonDeprecatedAdminKey(op)
 				|| op.hasProxyAccountID()
 				|| op.hasAutoRenewPeriod()
 				|| op.hasFileID()
 				|| op.getMemo().length() > 0;
 	}
 
-	private boolean hasNondeprecatedAdminKey(final ContractUpdateTransactionBody op) {
+	private boolean hasNonDeprecatedAdminKey(final ContractUpdateTransactionBody op) {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID();
 	}
 
 	private <T> SigningOrderResult<T> contractCreate(
 			final ContractCreateTransactionBody op,
-			final SigningOrderResultFactory<T> factory
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs
 	) {
+		List<JKey> required = EMPTY_LIST;
+
 		var key = op.getAdminKey();
-		if (key.hasContractID()) {
-			return SigningOrderResult.noKnownKeys();
+		if (!key.hasContractID()) {
+			var candidate = asUsableFcKey(key);
+			if (candidate.isPresent()) {
+				required = mutable(required);
+				required.add(candidate.get());
+			}
 		}
-		var candidate = asUsableFcKey(key);
-		return candidate.isPresent()
-				? factory.forValidOrder(List.of(candidate.get()))
-				: SigningOrderResult.noKnownKeys();
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
+		}
+		return !required.isEmpty() ? factory.forValidOrder(required) : SigningOrderResult.noKnownKeys();
+	}
+
+	private boolean hasAutoRenewId(final ContractCreateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
+	}
+
+	private boolean hasAutoRenewId(final ContractUpdateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
 	}
 
 	private <T> SigningOrderResult<T> fileDelete(
@@ -523,30 +554,33 @@ public class SigRequirements {
 			final List<TokenAllowance> tokenAllowancesList,
 			final List<NftAllowance> nftAllowancesList,
 			final SigningOrderResultFactory<T> factory,
-			final @Nullable LinkedRefs linkedRefs) {
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		List<JKey> requiredKeys = new ArrayList<>();
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : tokenAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : nftAllowancesList) {
-			final var owner = allowance.getOwner();
-			var delegatingEntity = allowance.hasDelegatingSpender() ?
-					allowance.getDelegatingSpender() : owner;
-			// ApproveForAll allowance grant can only be granted by the owner.
-			delegatingEntity = allowance.getApprovedForAll().getValue() ? owner : delegatingEntity;
-
-			if ((includeOwnerIfNecessary(payer, delegatingEntity, requiredKeys, linkedRefs)) != NONE) {
-				if (delegatingEntity == owner) {
+			final var ownerId = allowance.getOwner();
+			var operatorId = allowance.hasDelegatingSpender()
+					? allowance.getDelegatingSpender()
+					: ownerId;
+			// Only the owner can grant approveForAll
+			if (allowance.getApprovedForAll().getValue()) {
+				operatorId = ownerId;
+			}
+			if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != NONE) {
+				if (operatorId == ownerId) {
 					return factory.forInvalidAllowanceOwner();
 				} else {
 					return factory.forInvalidDelegatingSpender();
@@ -565,7 +599,7 @@ public class SigRequirements {
 		List<JKey> requiredKeys = new ArrayList<>();
 		for (final var allowance : nftAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
@@ -1172,7 +1206,8 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID owner,
 			final List<JKey> required,
-			final LinkedRefs linkedRefs) {
+			final LinkedRefs linkedRefs
+	) {
 		if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
 			var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
 			if (!ownerResult.succeeded()) {

@@ -34,6 +34,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -105,7 +107,9 @@ public class PrecompilePricingUtils {
 		BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
 		BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
-		DISSOCIATE(TokenDissociateFromAccount, DEFAULT);
+		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
+		APPROVE(CryptoApproveAllowance, DEFAULT),
+		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;

@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.exceptions.MutabilityException;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,12 +39,11 @@ import java.util.Collections;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -81,6 +81,7 @@ class MerkleAccountStateTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final EntityId autoRenewAccountId = new EntityId(4L, 5L, 6L);
 	private static final int otherNumber = 456;
 	private static final int kvPairs = 123;
 	private static final int otherKvPairs = 456;
@@ -98,6 +99,8 @@ class MerkleAccountStateTest {
 	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
 	private static final EntityNum tokenForAllowance = EntityNum.fromLong(2000L);
 	private static final long headTokenNum = tokenForAllowance.longValue();
+	private static final long headNftId = 4000L;
+	private static final long headNftSerialNum = 1L;
 	private static final Long cryptoAllowance = 10L;
 	private static final Long tokenAllowanceVal = 1L;
 
@@ -143,42 +146,41 @@ class MerkleAccountStateTest {
 				numPositiveBalances,
 				headTokenNum,
 				numTreasuryTitles,
-				ethereumNonce);
+				ethereumNonce,
+				autoRenewAccountId,
+				headNftId,
+				headNftSerialNum);
 	}
 
 	@Test
 	void toStringWorks() {
-		final var desired = "MerkleAccountState{number=123 <-> 0.0.123, key=ed25519: " +
-				"\"abcdefghijklmnopqrstuvwxyz012345\"\n" +
-				", expiry=1234567, balance=555555, autoRenewSecs=234567, memo=A memo, deleted=true, smartContract=true," +
-				" numContractKvPairs=123, receiverSigRequired=true, proxy=EntityId{shard=1, realm=2, num=3}, " +
-				"nftsOwned=150, alreadyUsedAutoAssociations=1233, maxAutoAssociations=1234, " +
-				"alias=bbbbbbbbbbbbbbbbbbbbb, cryptoAllowances={EntityNum{value=1000}=10}, " +
-				"fungibleTokenAllowances={FcTokenAllowanceId{tokenNum=2000, spenderNum=1000}=1}, " +
-				"approveForAllNfts=[FcTokenAllowanceId{tokenNum=2000, spenderNum=3000}], " +
-				"firstContractStorageKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060, " +
-				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23, ethereumNonce=0}";
-		assertEquals(desired, subject.toString());
-	}
-
-	@Test
-	void getterWorksForNullStorageKey() {
-		subject.setFirstUint256Key(null);
-		assertNull(subject.getFirstContractStorageKey());
-		assertEquals(0, subject.getFirstUint256KeyNonZeroBytes());
-	}
-
-	@Test
-	void getterWorksForTypedStorageKey() {
-		final var expected = new ContractKey(numFromCode(number), explicitFirstKey);
-		final var actual = subject.getFirstContractStorageKey();
-		assertEquals(expected, actual);
-	}
-
-	@Test
-	void settingFirstKeyUpdatesNonZeroBytes() {
-		subject.setFirstUint256Key(otherExplicitFirstKey);
-		assertEquals(otherNumNonZeroBytesInFirst, subject.getFirstUint256KeyNonZeroBytes());
+		assertEquals("MerkleAccountState{number=123 <-> 0.0.123, " +
+						"key=" + MiscUtils.describe(key) + ", " +
+						"expiry=" + expiry + ", " +
+						"balance=" + balance + ", " +
+						"autoRenewSecs=" + autoRenewSecs + ", " +
+						"memo=" + memo + ", " +
+						"deleted=" + deleted + ", " +
+						"smartContract=" + smartContract + ", " +
+						"numContractKvPairs=" + kvPairs + ", " +
+						"receiverSigRequired=" + receiverSigRequired + ", " +
+						"proxy=" + proxy + ", nftsOwned=" + nftsOwned + ", " +
+						"alreadyUsedAutoAssociations=" + usedAutoAssociations + ", " +
+						"maxAutoAssociations=" + maxAutoAssociations + ", " +
+						"alias=" + alias.toStringUtf8() + ", " +
+						"cryptoAllowances=" + cryptoAllowances + ", " +
+						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
+						"approveForAllNfts=" + approveForAllNfts + ", " +
+						"firstContractStorageKey=" + readableContractStorageKey(explicitFirstKey) + ", " +
+						"numAssociations=" + associatedTokensCount + ", " +
+						"numPositiveBalances=" + numPositiveBalances + ", " +
+						"headTokenId=" + headTokenNum + ", " +
+						"numTreasuryTitles=" + numTreasuryTitles + ", " +
+						"ethereumNonce=" + ethereumNonce + ", " +
+						"autoRenewAccount=" + autoRenewAccountId + ", " +
+						"headNftId=" + headNftId + ", " +
+						"headNftSerialNum=" + headNftSerialNum + "}",
+				subject.toString());
 	}
 
 	@Test
@@ -208,6 +210,12 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(nftsOwned));
 		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
+		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
+		assertThrows(MutabilityException.class, () -> subject.setNumAssociations(5));
+		assertThrows(MutabilityException.class, () -> subject.setNumPositiveBalances(5));
+		assertThrows(MutabilityException.class, () -> subject.setHeadTokenId(5L));
+		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(nftsOwned));
+		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 	}
 
 	@Test
@@ -434,6 +442,14 @@ class MerkleAccountStateTest {
 		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
 		assertEquals(fungibleTokenAllowances, subject.getFungibleTokenAllowances());
 		assertEquals(approveForAllNfts, subject.getApproveForAllNfts());
+	}
+
+	@Test
+	void gettersAndSettersForAutoRenewAccountWorks() {
+		var subject = new MerkleAccountState();
+		final var account = EntityId.fromIdentityCode(10);
+		subject.setAutoRenewAccount(account);
+		assertEquals(account, subject.getAutoRenewAccount());
 	}
 
 }

@@ -23,6 +23,8 @@ package com.hedera.services.utils;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
@@ -38,7 +40,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -57,9 +58,7 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
@@ -141,6 +140,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
@@ -208,10 +208,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
@@ -231,7 +229,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountD
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -859,7 +856,7 @@ class MiscUtilsTest {
 				.setContractCreateInstance(op)
 				.build();
 
-		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn)));
+		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
 	}
 
 	@Test
@@ -872,7 +869,58 @@ class MiscUtilsTest {
 				.build();
 
 
-		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn)));
+		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+	}
+	@Test
+	void getGasLimitWorksForEthTxn() throws UnknownHederaFunctionality {
+		final var gasLimit = 1234L;
+		final var unsignedTx = new EthTxData(
+				null,
+				EthTxData.EthTransactionType.EIP1559,
+				new byte[0],
+				1,
+				null,
+				new byte[0],
+				new byte[0],
+				gasLimit,
+				new byte[0],
+				BigInteger.ZERO,
+				new byte[0],
+				null,
+				0,
+				null,
+				null,
+				null
+		);
+		final var ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+		final var op = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()))
+				.build();
+		final var txn = TransactionBody.newBuilder()
+				.setEthereumTransaction(op)
+				.build();
+
+
+		assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+
+		assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn),
+				() -> ethTxData));
+	}
+
+	@Test
+	void getGasLimitReturnsZeroByDefault() throws UnknownHederaFunctionality {
+		final var op = TokenCreateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
+				.setTokenCreation(op)
+				.build();
+
+
+		assertEquals(0L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+	}
+
+	@Test
+	void ethereumTxnIsConsensusThrottled() {
+		assertTrue(isGasThrottled(EthereumTransaction));
 	}
 
 	@SuppressWarnings("unchecked")

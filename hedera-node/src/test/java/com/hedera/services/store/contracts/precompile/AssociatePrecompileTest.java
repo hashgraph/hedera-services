@@ -48,6 +48,8 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -184,6 +186,10 @@ class AssociatePrecompileTest {
 	private CreateChecks createChecks;
 	@Mock
 	private EntityIdSource entityIdSource;
+	@Mock
+	private ApproveAllowanceChecks allowanceChecks;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -192,13 +198,15 @@ class AssociatePrecompileTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+				deleteAllowanceChecks);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test
@@ -291,7 +299,7 @@ class AssociatePrecompileTest {
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -337,7 +345,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(true, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -376,7 +384,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -420,7 +428,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
@@ -464,7 +472,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false,
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+		given(accountStoreFactory.newAccountStore(validator, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);

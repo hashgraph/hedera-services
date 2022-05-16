@@ -48,11 +48,11 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testNftsFromSignedStateV24() throws IOException {
-		loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
+	void testNftsFromSignedStateV24() {
+		Assertions.assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh"));
 	}
 
-	private static SignedState loadSignedState(String path) throws IOException {
+	private static SignedState loadSignedState(final String path) throws IOException {
 		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.getRight());

@@ -56,6 +56,8 @@ import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -91,6 +93,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
@@ -115,7 +119,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -199,6 +202,10 @@ class CreatePrecompileTest {
 	private AccountStore accountStore;
 	@Mock
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	@Mock
+	private ApproveAllowanceChecks allowanceChecks;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -219,11 +226,13 @@ class CreatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				entityIdSource, allowanceChecks, deleteAllowanceChecks);
 		subject.setCreateLogicFactory(createLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test
@@ -344,6 +353,8 @@ class CreatePrecompileTest {
 		);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
 		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
 
 		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
@@ -386,8 +397,10 @@ class CreatePrecompileTest {
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
 		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
 		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-		given(accounts.get(any(), any()))
+		given(accounts.get(any(), eq(KEY)))
 				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
 
 		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
@@ -656,7 +669,6 @@ class CreatePrecompileTest {
 	void createReturnsNullAndSetsRevertReasonWhenSenderKeyCannotBeDecoded() throws DecoderException {
 		// test-specific preparations
 		final var tokenCreateWrapper = Mockito.mock(TokenCreateWrapper.class);
-		doThrow(DecoderException.class).when(tokenCreateWrapper).setAllInheritedKeysTo(any(JKey.class));
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		final var keyMock = Mockito.mock(JKey.class);
 		given(accounts.get(any(), any())).willReturn(keyMock);
@@ -749,7 +761,7 @@ class CreatePrecompileTest {
 		final var tokenCreateValidator = Mockito.mock(Function.class);
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(typedTokenStore);
 		given(createLogicFactory.newTokenCreateLogic(
@@ -757,7 +769,6 @@ class CreatePrecompileTest {
 				typedTokenStore,
 				dynamicProperties,
 				sigImpactHistorian,
-				sideEffects,
 				entityIdSource,
 				validator
 		)).willReturn(createLogic);

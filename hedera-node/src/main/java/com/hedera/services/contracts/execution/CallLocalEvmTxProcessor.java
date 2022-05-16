@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -42,7 +42,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -67,9 +66,15 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
 			final StorageExpiry storageExpiry,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
-	) {
-		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap, merkleNetworkContextSupplier);
+			final BlockManager blockManager
+			) {
+		super(
+				livePricesSource,
+				dynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap,
+				blockManager);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;
@@ -106,15 +111,18 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				true,
 				storageExpiry.hapiStaticCallOracle(),
-				aliasManager.resolveForEvm(receiver));
+				aliasManager.resolveForEvm(receiver),
+				null,
+				0,
+				null);
 	}
 
 	@Override
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's
 		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,

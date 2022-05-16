@@ -33,12 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -98,17 +97,19 @@ class BootstrapPropertiesTest {
 			entry("contracts.allowCreate2", true),
 			entry("contracts.defaultLifetime", 7890000L),
 			entry("contracts.localCall.estRetBytes", 32),
-			entry("contracts.maxGas", 300000),
+			entry("contracts.maxGas", 8000000),
 			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
 			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
-			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
+			entry("contracts.frontendThrottleMaxGasLimit", 8000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
 			entry("contracts.scheduleThrottleMaxGasLimit", 50000L),
 			entry("contracts.redirectTokenCalls", true),
+			entry("contracts.precompile.exchangeRateGasCost", 100L),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("contracts.precompile.exportRecordResults", true),
 			entry("contracts.precompile.htsEnableTokenCreate", true),
@@ -157,6 +158,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
 			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
+			entry("autoRemove.maxReturnedNftsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
@@ -220,9 +222,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", false),
-			entry("bootstrap.lastKnownBlockStartTime", Instant.parse("2022-04-01T00:00:00Z")),
-			entry("bootstrap.lastKnownBlockNumber", 1L)
+			entry("entities.limitTokenAssociations", false)
 	);
 
 	@Test

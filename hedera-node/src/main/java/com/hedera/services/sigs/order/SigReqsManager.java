@@ -81,12 +81,14 @@ public class SigReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigReqsManager(final FileNumbers fileNumbers,
+	public SigReqsManager(
+			final FileNumbers fileNumbers,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
 			final MutableStateChildren workingState,
 			final GlobalDynamicProperties dynamicProperties,
-			final SignedStateViewFactory stateViewFactory) {
+			final SignedStateViewFactory stateViewFactory
+	) {
 		this.fileNumbers = fileNumbers;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;

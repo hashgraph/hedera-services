@@ -65,6 +65,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -90,6 +91,9 @@ public class HapiSpecRegistry {
 		saveKey(setup.genesisAccountName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultPayerName(), setup.defaultPayer());
 		saveKey(setup.defaultPayerName(), asKeyList(genesisKey));
+		// The default contract sender is the default payer unless using Ethereum transactions
+		saveAccountId(DEFAULT_CONTRACT_SENDER, setup.defaultPayer());
+		saveKey(DEFAULT_CONTRACT_SENDER, asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());

@@ -20,111 +20,144 @@ package com.hedera.services.txns.ethereum;
  * ‍
  */
 
-import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.files.HederaFs;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.bouncycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
+@Singleton
 public class EthereumTransitionLogic implements PreFetchableTransition {
+	private static final TransactionBody INVALID_SYNTH_BODY = TransactionBody.getDefaultInstance();
 
-	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-
+	private final AliasManager aliasManager;
+	private final SpanMapManager spanMapManager;
 	private final TransactionContext txnCtx;
+	private final SyntheticTxnFactory syntheticTxnFactory;
+	private final SynthCreationCustomizer creationCustomizer;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final TransactionRecordService recordService;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 	private final ContractCallTransitionLogic contractCallTransitionLogic;
 	private final ContractCreateTransitionLogic contractCreateTransitionLogic;
-	private final TransactionRecordService recordService;
-	private final AliasManager aliasManager;
-	private final HederaFs hfs;
-	private final byte[] chainId;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	@Inject
 	public EthereumTransitionLogic(
 			final TransactionContext txnCtx,
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final SynthCreationCustomizer creationCustomizer,
 			final ExpandHandleSpanMapAccessor spanMapAccessor,
 			final ContractCallTransitionLogic contractCallTransitionLogic,
 			final ContractCreateTransitionLogic contractCreateTransitionLogic,
 			final TransactionRecordService recordService,
-			final HederaFs hfs,
-			GlobalDynamicProperties globalDynamicProperties,
-			AliasManager aliasManager,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+			final GlobalDynamicProperties dynamicProperties,
+			final AliasManager aliasManager,
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final SpanMapManager spanMapManager
+	) {
 		this.txnCtx = txnCtx;
+		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.creationCustomizer = creationCustomizer;
 		this.spanMapAccessor = spanMapAccessor;
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
 		this.contractCreateTransitionLogic = contractCreateTransitionLogic;
 		this.recordService = recordService;
-		this.hfs = hfs;
-		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
 		this.aliasManager = aliasManager;
 		this.accountsLedger = accountsLedger;
+		this.dynamicProperties = dynamicProperties;
+		this.spanMapManager = spanMapManager;
 	}
 
 	@Override
 	public void doStateTransition() {
-		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
-		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
-		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
+		// Collect everything from the context
+		final var accessor = txnCtx.accessor();
+		final var callerNum = validatedCallerOf(accessor);
+		final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
+		final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		// we don't support 2930 transactions, even though we parse them.
+		validateFalse(ethTxData.type() == EthTxData.EthTransactionType.EIP2930, INVALID_ETHEREUM_TRANSACTION);
+		final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
+		final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
+		final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
 
-		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
-
-		if (syntheticTxBody.hasContractCall()) {
-			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
-		} else if (syntheticTxBody.hasContractCreateInstance()) {
-			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
+		// Revoke the relayer's key for Ethereum operations
+		txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
+		if (synthTxn.hasContractCall()) {
+			delegateToCallTransition(
+					callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+		} else {
+			delegateToCreateTransition(
+					callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
 		}
-		recordService.updateFromEvmCallContext(ethTxData);
+
+		recordService.updateForEvmCall(spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
 	}
 
-	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
-		var txBody = spanMapAccessor.getEthTxBodyMeta(txnCtx);
-		if (txBody == null) {
-			txBody = createSyntheticTransactionBody(spanMapAccessor.getEthTxDataMeta(txnCtx));
-			spanMapAccessor.setEthTxBodyMeta(txnCtx, txBody);
+	@Override
+	public ResponseCodeEnum validateSemantics(final TxnAccessor accessor) {
+		if (accessor.getTxn().getEthereumTransaction().getMaxGasAllowance() < 0) {
+			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
-		return txBody;
-	}
+		final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		if (ethTxData == null) {
+			return INVALID_ETHEREUM_TRANSACTION;
+		}
+		if (!ethTxData.matchesChainId(dynamicProperties.chainIdBytes())) {
+			return WRONG_CHAIN_ID;
+		}
+		// This is always set inside handleTransaction
+		final var ethTxExpansion = spanMapAccessor.getEthTxExpansion(accessor);
+		final var isPrecheck = ethTxExpansion == null;
 
-	private EthTxSigs getOrCreateEthSigs(final TxnAccessor txnCtx, EthTxData ethTxData) {
-		var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(txnCtx);
-		if (ethTxSigs == null) {
-			ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
-			spanMapAccessor.setEthTxSigsMeta(txnCtx, ethTxSigs);
+		var txn = spanMapAccessor.getEthTxBodyMeta(accessor);
+		if (txn == null) {
+			txn = isPrecheck ? syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData) : INVALID_SYNTH_BODY;
 		}
-		return ethTxSigs;
+		if (txn.hasContractCall()) {
+			return contractCallTransitionLogic.semanticCheck().apply(txn);
+		} else if (txn.hasContractCreateInstance()) {
+			return contractCreateTransitionLogic.semanticCheck().apply(txn);
+		} else {
+			// Could only happen in handleTransaction, so short-circuit to the pre-computed failure in the expansion
+			return Objects.requireNonNull(ethTxExpansion).result();
+		}
 	}
 
 	@Override
@@ -133,99 +166,55 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-		var txBody = getOrCreateTransactionBody(accessor);
-
-		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
-			return ResponseCodeEnum.WRONG_CHAIN_ID;
-		}
-
-		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
-			// this is not precheck, so do more involved checks
-			maybeUpdateCallData(accessor, ethTxData, accessor.getTxn().getEthereumTransaction());
-			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
-			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
-			if (callingAccount == null) {
-				return ResponseCodeEnum.INVALID_ACCOUNT_ID; 
-			}
-
-			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.ETHEREUM_NONCE);
-			if (ethTxData.nonce() != accountNonce) {
-				return ResponseCodeEnum.WRONG_NONCE;
-			}
-		}
-
-		if (txBody.hasContractCall()) {
-			return contractCallTransitionLogic.semanticCheck().apply(txBody);
-		} else if (txBody.hasContractCreateInstance()) {
-			return contractCreateTransitionLogic.semanticCheck().apply(txBody);
-		} else {
-			// This should only happen when we update the createSyntheticTransactionBody
-			// and then forget to update this code.
-			return ResponseCodeEnum.FAIL_INVALID;
-		}
+	public void preFetch(final TxnAccessor accessor) {
+		spanMapManager.expandEthereumSpan(accessor);
 	}
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		// since we override `validateSemantics` this is to hedge against this accidentally being called
-		// and ensure we always fail if we depend on this overridden path.
-		return ignore -> ResponseCodeEnum.NOT_SUPPORTED;
+		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public void preFetch(final TxnAccessor accessor) {
-		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-
-		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
-		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
-
-		var ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
-		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
-
-		TransactionBody txBody = createSyntheticTransactionBody(ethTxData);
-
-		spanMapAccessor.setEthTxBodyMeta(accessor, txBody);
-		if (txBody.hasContractCall()) {
-			contractCallTransitionLogic.preFetchOperation(txBody.getContractCall());
-		}
+	// --- Internal helpers ---
+	private void delegateToCallTransition(
+			final Id callerId,
+			final TransactionBody synthCall,
+			final Id relayerId,
+			final long maxGasAllowance,
+			final BigInteger offeredGasPrice
+	) {
+		contractCallTransitionLogic.doStateTransitionOperation(
+				synthCall, callerId, relayerId, maxGasAllowance, offeredGasPrice);
 	}
 
-	private EthTxData maybeUpdateCallData(final TxnAccessor accessor, EthTxData ethTxData,
-			final EthereumTransactionBody op) {
-		if ((ethTxData.callData() == null || ethTxData.callData().length == 0) && op.hasCallData()) {
-			var callDataFileId = op.getCallData();
-			validateTrue(hfs.exists(callDataFileId), INVALID_FILE_ID);
-			byte[] callDataFile = Hex.decode(hfs.cat(callDataFileId));
-			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY);
-			ethTxData = ethTxData.replaceCallData(callDataFile);
-			spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
-		}
-		return ethTxData;
+	private void delegateToCreateTransition(
+			final Id callerId,
+			final TransactionBody synthCreate,
+			final Id relayerId,
+			final long maxGasAllowance,
+			final BigInteger offeredGasPrice
+	) {
+		final var customizedCreate = creationCustomizer.customize(synthCreate, callerId.asGrpcAccount());
+		contractCreateTransitionLogic.doStateTransitionOperation(
+				customizedCreate, callerId, true, relayerId, maxGasAllowance, offeredGasPrice);
 	}
 
-	private TransactionBody createSyntheticTransactionBody(EthTxData ethTxData) {
-		// maybe we could short circuit direct calls to tokens and topics?  maybe not
-		if (ethTxData.to() != null && ethTxData.to().length != 0) {
-			var synthOp = ContractCallTransactionBody.newBuilder()
-					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))
-					.setGas(ethTxData.gasLimit())
-					.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();
-			return TransactionBody.newBuilder().setContractCall(synthOp).build();
-		} else {
-			//FIXME we need a better solution.  Something like for precheck it's the default
-			//FIXME but in consensus we get the renewal of the calling account and update the operation?
-			var autoRenewPeriod = Duration.newBuilder().setSeconds(
-					java.time.Duration.ofDays(90).getSeconds()).build();
-			var synthOp = ContractCreateTransactionBody.newBuilder()
-					.setInitcode(ByteString.copyFrom(ethTxData.callData()))
-					.setGas(ethTxData.gasLimit())
-					.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-					.setAutoRenewPeriod(autoRenewPeriod);
-			return TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
-		}
+	private EntityNum validatedCallerOf(final TxnAccessor accessor) {
+		// We take advantage of the validation work done by SpanMapManager, which guaranteed that a
+		// EthTxExpansion exists in the span map; and that if its result is OK, the EthTxData, EthTxSigs,
+		// and synthetic TransactionBody _also_ exist in the span map
+		final var expansion = Objects.requireNonNull(spanMapAccessor.getEthTxExpansion(accessor));
+		validateTrue(expansion.result() == OK, expansion.result());
+
+		final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
+		final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
+		validateTrue(callerNum != MISSING_NUM, INVALID_ACCOUNT_ID);
+
+		final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		final var expectedNonce = (long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE);
+		validateTrue(expectedNonce == ethTxData.nonce(), WRONG_NONCE);
+
+		return callerNum;
 	}
 }
 

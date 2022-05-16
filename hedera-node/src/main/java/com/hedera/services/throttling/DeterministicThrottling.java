@@ -256,7 +256,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			return false;
 		}
 
-		if (isGasExhausted(txn, function, now)) {
+		if (isGasExhausted(txn, function, now, isChild, accessor)) {
 			lastTxnWasGasThrottled = true;
 			return true;
 		}
@@ -428,10 +428,13 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		}
 	}
 
-	private boolean isGasExhausted(final TransactionBody txn, final HederaFunctionality function, final Instant now) {
+	private boolean isGasExhausted(final TransactionBody txn, final HederaFunctionality function,
+			final Instant now, boolean isChild, final TxnAccessor accessor) {
 		return dynamicProperties.shouldThrottleByGas() &&
 				isGasThrottled(function) &&
-				(gasThrottle == null || !gasThrottle.allow(now, MiscUtils.getGasLimitForContractTx(txn, function)));
+				(gasThrottle == null || !gasThrottle.allow(now,
+						isChild ? MiscUtils.getGasLimitForContractTx(txn, function, null)
+								: accessor.getGasLimitForContractTx()));
 	}
 
 	private void reclaimLastAllowedUse() {

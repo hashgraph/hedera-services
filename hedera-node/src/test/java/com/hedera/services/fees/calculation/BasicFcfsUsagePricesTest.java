@@ -157,7 +157,7 @@ class BasicFcfsUsagePricesTest {
 
 	@Test
 	void returnsExpectedPriceSequence() {
-		// given:
+		// 00+00
 		subject.loadPriceSchedules();
 
 		// when:

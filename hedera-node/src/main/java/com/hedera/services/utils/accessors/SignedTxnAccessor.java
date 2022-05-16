@@ -22,11 +22,11 @@ package com.hedera.services.utils.accessors;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
@@ -54,6 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,7 +62,6 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -92,7 +92,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
-	private final Map<String, Object> spanMap = new HashMap<>();
+	private Map<String, Object> spanMap = new HashMap<>();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -380,6 +380,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return spanMap;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		spanMap = Collections.unmodifiableMap(newSpanMap);
+	}
+
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
@@ -387,7 +395,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public long getGasLimitForContractTx() {
-		return MiscUtils.getGasLimitForContractTx(getTxn(), getFunction());
+		return MiscUtils.getGasLimitForContractTx(getTxn(), getFunction(),
+				() -> getSpanMapAccessor().getEthTxDataMeta(this));
 	}
 
 	private void setBaseUsageMeta() {
