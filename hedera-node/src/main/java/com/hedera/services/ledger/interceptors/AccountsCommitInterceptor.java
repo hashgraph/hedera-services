@@ -36,8 +36,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -52,6 +55,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private boolean rewardsActivated;
 	private boolean rewardBalanceChanged;
 	private long newRewardBalance;
@@ -63,12 +67,14 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.networkCtx = networkCtx;
 		this.dynamicProperties = dynamicProperties;
 		this.stakingInfo = stakingInfo;
+		this.accounts = accounts;
 	}
 
 	/**
@@ -93,6 +99,13 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		if (shouldActivateStakingRewards()) {
 			networkCtx.get().setStakingRewards(true);
 			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+
+			long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
+			accounts.get().forEach(((entityNum, account) -> {
+				if (account.getStakedId() < 0) {
+					account.setStakePeriodStart(todayNumber);
+				}
+			}));
 			log.info("Staking rewards is activated and rewardSumHistory is cleared");
 		}
 	}
