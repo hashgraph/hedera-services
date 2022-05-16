@@ -62,7 +62,7 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 					final var toAccount = (EntityId) changes.get(OWNER);
 					uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), entity.getKey());
 				}
-			} else if (changes != null && changes.containsKey(OWNER)) {
+			} else if (changes != null) {
 				final var newOwner = (EntityId) changes.get(OWNER);
 				if (!MISSING_ENTITY_ID.equals(newOwner)) {
 					// Non-treasury-owned NFT minted via a multi-stage contract operation

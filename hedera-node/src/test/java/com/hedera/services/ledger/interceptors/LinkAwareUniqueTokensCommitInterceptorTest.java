@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class LinkAwareUniqueTokensCommitInterceptorTest {
-
 	@Mock
 	private UniqueTokensLinkManager uniqueTokensLinkManager;
 
@@ -83,7 +82,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void triggersUpdateLinksAsExpected() {
+	void nonTreasuryExitTriggersUpdateLinksAsExpected() {
 		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
 		final var nft = mock(MerkleUniqueToken.class);
 		final var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
@@ -103,10 +102,45 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(nft.getOwner()).willReturn(owner.toEntityId());
 		given(nft.getKey()).willReturn(nftKey);
 
-
 		subject.preview(changes);
 
 		verify(uniqueTokensLinkManager).updateLinks(owner, newOwner, nftKey);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void treasuryBurnDoesNotUpdateLinks() {
+		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(MerkleUniqueToken.class);
+		EntityNum owner = EntityNum.MISSING_NUM;
+
+		given(changes.size()).willReturn(1);
+		given(changes.entity(0)).willReturn(nft);
+		given(changes.changes(0)).willReturn(null);
+		given(nft.getOwner()).willReturn(owner.toEntityId());
+
+		subject.preview(changes);
+
+		verifyNoInteractions(uniqueTokensLinkManager);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void nonOwnerUpdateDoesNotUpdateLinks() {
+		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(MerkleUniqueToken.class);
+		EntityNum owner = EntityNum.MISSING_NUM;
+		final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
+		scopedChanges.put(NftProperty.SPENDER, new EntityId(0, 0, 123));
+
+		given(changes.size()).willReturn(1);
+		given(changes.entity(0)).willReturn(nft);
+		given(changes.changes(0)).willReturn(scopedChanges);
+		given(nft.getOwner()).willReturn(owner.toEntityId());
+
+		subject.preview(changes);
+
+		verifyNoInteractions(uniqueTokensLinkManager);
 	}
 
 	@Test
