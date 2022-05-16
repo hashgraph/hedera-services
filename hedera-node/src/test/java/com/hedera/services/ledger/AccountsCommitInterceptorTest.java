@@ -162,19 +162,25 @@ class AccountsCommitInterceptorTest {
 		setupMockInterceptor();
 
 		subject.setRewardsActivated(true);
+		assertTrue(subject.isRewardsActivated());
 		assertFalse(subject.shouldActivateStakingRewards());
 
 		subject.setNewRewardBalance(10L);
 		assertFalse(subject.shouldActivateStakingRewards());
 
 		subject.setRewardsActivated(false);
+		assertFalse(subject.isRewardsActivated());
+		assertFalse(subject.isRewardBalanceChanged());
 		assertFalse(subject.shouldActivateStakingRewards());
 
 		subject.setRewardBalanceChanged(true);
+		assertTrue(subject.isRewardBalanceChanged());
+		assertEquals(10L, subject.getNewRewardBalance());
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
 		assertFalse(subject.shouldActivateStakingRewards());
 
 		subject.setNewRewardBalance(20L);
+		assertEquals(20L, subject.getNewRewardBalance());
 		assertTrue(subject.shouldActivateStakingRewards());
 	}
 
