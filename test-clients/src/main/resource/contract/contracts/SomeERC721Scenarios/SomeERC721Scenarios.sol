@@ -28,5 +28,26 @@ contract SomeERC721Scenarios {
         uint256 serialNo
     ) external {
         IERC721(token).approve(spender, serialNo);
-    } 
+    }
+
+    function getApproved(
+        address token,
+        uint256 serialNo
+    ) external view {
+        IERC721(token).getApproved(serialNo);
+    }
+
+    function getBalanceOf(
+        address token,
+        address owner
+    ) external view {
+        IERC721(token).balanceOf(owner);
+    }
+
+    function getOwnerOf(
+        address token,
+        uint256 serialNo
+    ) external view {
+        IERC721(token).ownerOf(serialNo);
+    }
 }
