@@ -53,8 +53,8 @@ public class ApproveAllowanceLogic {
 
 	@Inject
 	public ApproveAllowanceLogic(final AccountStore accountStore,
-								 final TypedTokenStore tokenStore,
-								 final GlobalDynamicProperties dynamicProperties
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -63,10 +63,12 @@ public class ApproveAllowanceLogic {
 		this.nftsTouched = new HashMap<>();
 	}
 
-	public void approveAllowance(List<CryptoAllowance> cryptoAllowances,
-								 List<TokenAllowance> tokenAllowances,
-								 List<NftAllowance> nftAllowances,
-								 AccountID payer) {
+	public void approveAllowance(
+			final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances,
+			final AccountID payer
+	) {
 		entitiesChanged.clear();
 		nftsTouched.clear();
 
@@ -89,7 +91,8 @@ public class ApproveAllowanceLogic {
 	}
 
 	/**
-	 * Applies all changes needed for Crypto allowances from the transaction. If the spender already has an allowance, the
+	 * Applies all changes needed for Crypto allowances from the transaction. If the spender already has an allowance,
+	 * the
 	 * allowance value will be replaced with values from transaction
 	 *
 	 * @param cryptoAllowances
@@ -121,15 +124,16 @@ public class ApproveAllowanceLogic {
 	}
 
 	private void removeEntity(final Map<EntityNum, Long> cryptoMap,
-							  final Id spender,
-							  final Account accountToApprove) {
+			final Id spender,
+			final Account accountToApprove) {
 		cryptoMap.remove(spender.asEntityNum());
 		accountToApprove.setCryptoAllowances(cryptoMap);
 		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
 
 	/**
-	 * Applies all changes needed for fungible token allowances from the transaction.If the key {token, spender} already has
+	 * Applies all changes needed for fungible token allowances from the transaction.If the key {token, spender} already
+	 * has
 	 * an allowance, the allowance value will be replaced with values from transaction
 	 *
 	 * @param tokenAllowances
@@ -177,36 +181,36 @@ public class ApproveAllowanceLogic {
 		}
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
-			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var approveForAllNfts = accountToApprove.getMutableApprovedForAllNfts();
-
+			final var approvingAccount = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
 			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
 			if (allowance.hasApprovedForAll()) {
+				final var approveForAllNfts = approvingAccount.getMutableApprovedForAllNfts();
 				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
 				if (allowance.getApprovedForAll().getValue()) {
 					approveForAllNfts.add(key);
 				} else {
 					approveForAllNfts.remove(key);
 				}
+				validateAllowanceLimitsOn(approvingAccount, dynamicProperties.maxAllowanceLimitPerAccount());
 			}
 
-			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-
-			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId,
-					allowance.getSerialNumbersList());
-			for (var nft : nfts) {
+			final var nfts = updateSpender(
+					tokenStore, approvingAccount.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
+			for (final var nft : nfts) {
 				nftsTouched.put(nft.getNftId(), nft);
 			}
-			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			entitiesChanged.put(approvingAccount.getId().num(), approvingAccount);
 		}
 	}
 
-	private void removeTokenEntity(final FcTokenAllowanceId key,
-								   final Map<FcTokenAllowanceId, Long> tokensMap,
-								   final Account accountToApprove) {
+	private void removeTokenEntity(
+			final FcTokenAllowanceId key,
+			final Map<FcTokenAllowanceId, Long> tokensMap,
+			final Account accountToApprove
+	) {
 		tokensMap.remove(key);
 		accountToApprove.setFungibleTokenAllowances(tokensMap);
 		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);

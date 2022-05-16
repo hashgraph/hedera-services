@@ -26,9 +26,11 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -59,6 +61,10 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
 	public FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
 		this.tokenNum = tokenNum;
 		this.spenderNum = spenderNum;
+	}
+
+	public static FcTokenAllowanceId from(final TokenID tokenId, final AccountID accountId) {
+		return new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
 	}
 
 	@Override

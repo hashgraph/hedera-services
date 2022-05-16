@@ -29,10 +29,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +42,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
+import static com.swirlds.common.utility.CommonUtils.getNormalisedStringFromBytes;
 
 public class TxnReceipt implements SelfSerializable {
 	private static final int MAX_STATUS_BYTES = 128;

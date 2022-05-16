@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 /**
  * Maps to proto Key of type RSA_3072.

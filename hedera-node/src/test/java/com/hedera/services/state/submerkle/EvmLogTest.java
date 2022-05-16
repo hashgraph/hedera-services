@@ -21,7 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;

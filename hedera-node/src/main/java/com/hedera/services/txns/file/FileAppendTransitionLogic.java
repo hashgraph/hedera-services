@@ -24,6 +24,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -55,6 +56,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final FileNumbers fileNumbers;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
@@ -62,12 +64,14 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 			final HederaFs hfs,
 			final FileNumbers fileNumbers,
 			final TransactionContext txnCtx,
+			final SigImpactHistorian sigImpactHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
 		this.fileNumbers = fileNumbers;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -95,6 +99,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 				return;
 			}
 
+			sigImpactHistorian.markEntityChanged(target.getFileNum());
 			final var result = hfs.append(target, data);
 			final var status = result.outcome();
 			txnCtx.setStatus(status);

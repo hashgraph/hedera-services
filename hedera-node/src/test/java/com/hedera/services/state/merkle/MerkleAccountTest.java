@@ -27,9 +27,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -57,12 +60,14 @@ class MerkleAccountTest {
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
 	private static final long nftsOwned = 150L;
+	private static final long ethereumNonce = 1L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final String memo = "A memo";
 	private static final boolean deleted = true;
 	private static final boolean smartContract = true;
 	private static final boolean receiverSigRequired = true;
 	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
+	private static final EntityId autoRenewAccountId = new EntityId(4L, 5L, 6L);
 	private final int number = 123;
 	private final int maxAutoAssociations = 1234;
 	private final int usedAutoAssociations = 123;
@@ -70,12 +75,18 @@ class MerkleAccountTest {
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final int kvPairs = 123;
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
+	private static final UInt256 firstKey =
+			UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+	private static final int[] explicitFirstKey = ContractKey.asPackedInts(firstKey);
+	private static final byte numNonZeroBytesInFirst = 30;
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
 	private static final long lastAssociatedTokenNum = 456;
+	private static final long lastAssociatedNftNum = 4587;
+	private static final long lastAssociatedNftSerial = 2;
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
@@ -125,14 +136,19 @@ class MerkleAccountTest {
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
+				explicitFirstKey,
+				numNonZeroBytesInFirst,
+				nftsOwned,
 				0,
 				0,
 				lastAssociatedTokenNum,
-				nftsOwned,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				ethereumNonce,
+				autoRenewAccountId,
+				lastAssociatedNftNum,
+				lastAssociatedNftSerial);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
-		subject.setNftsOwned(2L);
 	}
 
 	@Test
@@ -160,6 +176,14 @@ class MerkleAccountTest {
 		given(payerRecords.size()).willReturn(123);
 
 		assertEquals(123, subject.numRecords());
+	}
+
+	@Test
+	void returnsExpectedAutoRenewAccount() {
+		final var account = EntityId.fromIdentityCode(10);
+		subject.setAutoRenewAccount(account);
+		assertEquals(account, subject.getAutoRenewAccount());
+		assertTrue(subject.hasAutoRenewAccount());
 	}
 
 	@Test
@@ -220,13 +244,16 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
-		assertEquals(2L, subject.getNftsOwned());
+		assertEquals(nftsOwned, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
+		final var expected = new ContractKey(numFromCode(number), explicitFirstKey);
+		final var actual = subject.getFirstContractStorageKey();
+		assertEquals(expected, actual);
 		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
 		assertEquals(state.getNumAssociations(), subject.getNumAssociations());
 		assertEquals(state.getNumPositiveBalances(), subject.getNumPositiveBalances());

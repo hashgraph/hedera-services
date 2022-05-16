@@ -29,17 +29,16 @@ import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,7 +60,10 @@ public class SerdeUtils {
 		}
 	}
 
-	public static <T> T deOutcome(ThrowingFunction<DataInputStream, T> deserializer, byte[] repr) throws Exception {
+	public static <T> T deOutcome(
+			ThrowingFunction<SerializableDataInputStream, T> deserializer,
+			byte[] repr
+	) throws Exception {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(repr)) {
 			try (SerializableDataInputStream in = new SerializableDataInputStream(bais)) {
 				return deserializer.apply(in);
@@ -111,7 +113,8 @@ public class SerdeUtils {
 						() -> new TreeMap<>(BytesComparator.INSTANCE))),
 				that.getGas(),
 				that.getAmount(),
-				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray()
+				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray(),
+				that.hasSenderId() ? EntityId.fromGrpcAccountId(that.getSenderId()) : null
 		);
 	}
 

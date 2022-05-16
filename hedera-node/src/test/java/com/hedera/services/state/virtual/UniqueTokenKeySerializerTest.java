@@ -22,8 +22,8 @@ package com.hedera.services.state.virtual;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

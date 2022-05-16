@@ -27,7 +27,7 @@ import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;

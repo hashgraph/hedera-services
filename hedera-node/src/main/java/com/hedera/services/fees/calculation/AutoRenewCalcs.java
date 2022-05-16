@@ -46,7 +46,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
@@ -123,9 +123,10 @@ public class AutoRenewCalcs {
 			final MerkleAccount expiredAccountOrContract,
 			final long reqPeriod,
 			final Instant at,
-			final ExchangeRate rate
+			final ExchangeRate rate,
+			final MerkleAccount payer
 	) {
-		final long balance = expiredAccountOrContract.getBalance();
+		final long balance = payer.getBalance();
 		if (balance == 0L) {
 			return NO_RENEWAL_POSSIBLE;
 		}
@@ -223,7 +224,8 @@ public class AutoRenewCalcs {
 				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-				.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
+				.setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
+				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.build();
 	}
 

@@ -20,14 +20,14 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.security.KeyPair;
 
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;

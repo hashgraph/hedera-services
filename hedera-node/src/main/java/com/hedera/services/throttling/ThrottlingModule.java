@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
-import com.swirlds.common.AddressBook;
+import com.swirlds.common.system.AddressBook;
 import dagger.Module;
 import dagger.Provides;
 

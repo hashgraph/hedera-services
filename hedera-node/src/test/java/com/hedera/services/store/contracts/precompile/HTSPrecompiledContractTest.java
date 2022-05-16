@@ -27,28 +27,32 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.WorldStateAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -109,6 +113,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -176,7 +181,9 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
-	private PureTransferSemanticChecks transferSemanticChecks;
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -197,8 +204,9 @@ class HTSPrecompiledContractTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+				deleteAllowanceChecks);
 	}
 
 	@Test
@@ -243,6 +251,7 @@ class HTSPrecompiledContractTest {
 								.addTokenTransfers(TokenTransferList.newBuilder().build())));
 		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -719,6 +728,29 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
+	void replacesInheritedPropertiesOnCreateNonFungibleToken() {
+		// given
+		final var parentId = EntityIdUtils.accountIdFromEvmAddress(contractAddress);
+
+		final var autoRenewId = EntityId.fromIdentityCode(10);
+		final var tokenCreateWrapper = mock(TokenCreateWrapper.class);
+		given(tokenCreateWrapper.hasAutoRenewAccount()).willReturn(false);
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		given(decoder.decodeNonFungibleCreate(any(), any())).willReturn(tokenCreateWrapper);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AccountProperty.AUTO_RENEW_ACCOUNT_ID))).willReturn(autoRenewId);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		givenFrameContext();
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+
+		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TokenCreatePrecompile);
+		verify(tokenCreateWrapper).inheritAutoRenewAccount(autoRenewId);
+	}
+
+	@Test
 	void computeCallsCorrectImplementationForCreateFungibleTokenWithFees() {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
@@ -744,8 +776,6 @@ class HTSPrecompiledContractTest {
 		// given
 		givenFrameContext();
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
-		given(syntheticTxnFactory.createTokenCreate(any()))
-				.willReturn(TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder()));
 		final var accounts = mock(TransactionalLedger.class);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		final var key = Mockito.mock(JKey.class);
@@ -837,6 +867,7 @@ class HTSPrecompiledContractTest {
 		// given
 		givenFrameContext();
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(false);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

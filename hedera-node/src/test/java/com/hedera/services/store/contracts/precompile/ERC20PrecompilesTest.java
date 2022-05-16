@@ -29,7 +29,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -57,6 +56,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -136,7 +136,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -237,11 +236,11 @@ class ERC20PrecompilesTest {
     @Mock
     private ApproveAllowanceChecks allowanceChecks;
     @Mock
-    private PureTransferSemanticChecks transferSemanticChecks;
-    @Mock
     private AccountStore accountStore;
     @Mock
-    CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    private CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
+    @Mock
+    private DeleteAllowanceChecks deleteAllowanceChecks;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -252,8 +251,9 @@ class ERC20PrecompilesTest {
         subject = new HTSPrecompiledContract(
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
+                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
+                deleteAllowanceChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
@@ -680,8 +680,6 @@ class ERC20PrecompilesTest {
         givenMinimalFrameContext();
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(wrappedLedgers.accounts()).willReturn(accounts);
 
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
@@ -693,22 +691,15 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
-
-        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
-                .willReturn(FAIL_INVALID);
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(accounts.get(any(), any())).willReturn(allowances);
 
         // when:
         subject.prepareFields(frame);
@@ -745,22 +736,21 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
-        given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+        given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 
-        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
-                .willReturn(OK);
+        given(allowanceChecks.allowancesValidation(
+                cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView)).willReturn(OK);
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -845,7 +835,7 @@ class ERC20PrecompilesTest {
         givenLedgers();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
-        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
                 .willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
@@ -883,8 +873,8 @@ class ERC20PrecompilesTest {
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
 
-        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any())).willReturn(
-                Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any(), any(), any()))
+                .willReturn(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -1014,12 +1004,18 @@ class ERC20PrecompilesTest {
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
             new ArrayList<>() {},
-            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, token, null, receiver),
-                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, token, sender, null))
+            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, false, token, null, receiver),
+                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, false, token, sender, null))
+    );
+
+    public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER = new TokenTransferWrapper(
+            new ArrayList<>() {},
+            List.of(new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, true, token, null, receiver),
+                    new SyntheticTxnFactory.FungibleTokenTransfer(-AMOUNT, true, token, sender, null))
     );
 
     private static final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(token), EntityId.fromGrpcAccountId(receiver).asNum());
 
-    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, BigInteger.ONE, true);
+    public static final ApproveWrapper APPROVE_WRAPPER = new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, true);
 }

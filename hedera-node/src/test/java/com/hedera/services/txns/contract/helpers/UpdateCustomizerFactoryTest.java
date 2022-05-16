@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract.helpers;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -60,6 +61,8 @@ class UpdateCustomizerFactoryTest {
 	private AccountID newProxy = IdUtils.asAccount("0.0.4321");
 	private String newMemo = "The commonness of thoughts and images";
 	private Key newAdminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asKey();
+	private AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.12345");
+	private int maxAutoAssociations = 25;
 
 	private UpdateCustomizerFactory subject = new UpdateCustomizerFactory();
 
@@ -83,6 +86,8 @@ class UpdateCustomizerFactoryTest {
 				.setProxyAccountID(newProxy)
 				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
 				.setExpirationTime(newExpiryTime)
+				.setAutoRenewAccountId(newAutoRenewAccount)
+				.setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
 				.build();
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
@@ -98,6 +103,8 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
 		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
+		assertEquals(newAutoRenewAccount, mutableContract.getAutoRenewAccount().toGrpcAccountId());
+		assertEquals(maxAutoAssociations, mutableContract.getMaxAutomaticAssociations());
 	}
 
 	@Test

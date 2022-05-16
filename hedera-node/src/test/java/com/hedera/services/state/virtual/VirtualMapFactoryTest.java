@@ -46,7 +46,7 @@ class VirtualMapFactoryTest {
 	@Test
 	void propagatesUncheckedFromBuilder() {
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
-		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedIterableStorage());
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedUniqueTokenStorage());
 	}
 

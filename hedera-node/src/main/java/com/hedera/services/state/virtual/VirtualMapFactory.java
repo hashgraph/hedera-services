@@ -37,7 +37,7 @@ public class VirtualMapFactory {
 	private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
 
 	private static final String BLOBS_VM_NAME = "fileStore";
-	private static final String STORAGE_VM_NAME = "smartContractKvStore";
+	private static final String ITERABLE_STORAGE_VM_NAME = "smartContractIterableKvStore";
 	private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
 	@FunctionalInterface
@@ -76,9 +76,9 @@ public class VirtualMapFactory {
 		return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
 	}
 
-	public VirtualMap<ContractKey, ContractValue> newVirtualizedStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
 		final var storageKeySerializer = new ContractKeySerializer();
-		final VirtualLeafRecordSerializer<ContractKey, ContractValue> storageLeafRecordSerializer =
+		final VirtualLeafRecordSerializer<ContractKey, IterableContractValue> storageLeafRecordSerializer =
 				new VirtualLeafRecordSerializer<>(
 						CURRENT_SERIALIZATION_VERSION,
 						DigestType.SHA_384,
@@ -86,11 +86,11 @@ public class VirtualMapFactory {
 						storageKeySerializer.getSerializedSize(),
 						new ContractKeySupplier(),
 						CURRENT_SERIALIZATION_VERSION,
-						ContractValue.SERIALIZED_SIZE,
-						new ContractValueSupplier(),
-						true);
+						IterableContractValue.ITERABLE_SERIALIZED_SIZE,
+						new IterableContractValueSupplier(),
+						false);
 
-		final JasperDbBuilder<ContractKey, ContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		final JasperDbBuilder<ContractKey, IterableContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
 		dsBuilder
 				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
@@ -98,7 +98,7 @@ public class VirtualMapFactory {
 				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
-		return new VirtualMap<>(STORAGE_VM_NAME, dsBuilder);
+		return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
 	}
 
 	public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {

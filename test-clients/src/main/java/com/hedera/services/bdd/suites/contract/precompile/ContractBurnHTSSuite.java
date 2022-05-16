@@ -311,7 +311,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
-						cryptoCreate(ALICE).balance(4 * ONE_HBAR),
+						cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
@@ -320,7 +320,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.initialSupply(0L)
 								.treasury(TOKEN_TREASURY)
-								.withCustom(fixedHbarFee(5 * ONE_HBAR, feeCollector)),
+								.withCustom(fixedHbarFee(300 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
 						uploadInitCode(theContract),
@@ -353,9 +353,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(bob)), 0,
 													2L, serialNumbers
 											)
-													.payingWith(ALICE)
-													.alsoSigningWithFullPrefix(ALICE)
-													.alsoSigningWithFullPrefix(SUPPLY_KEY)
+													.alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
 													.gas(GAS_TO_OFFER)
 													.via("contractCallTxn")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
