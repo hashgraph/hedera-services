@@ -171,7 +171,8 @@ public class NetworkCtxManager {
 	 *     <li>The congestion pricing multiplier.</li>
 	 * </ol>
 	 *
-	 * @param op the type of transaction just handled
+	 * @param op
+	 * 		the type of transaction just handled
 	 */
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);

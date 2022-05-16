@@ -38,6 +38,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -121,6 +123,7 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+	static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
@@ -771,5 +774,14 @@ public class StateView {
 	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	/* --- used only in unit tests ---*/
+	public MerkleNetworkContext networkCtx() {
+		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
 	}
 }

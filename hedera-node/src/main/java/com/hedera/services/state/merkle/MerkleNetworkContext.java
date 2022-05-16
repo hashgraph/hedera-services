@@ -79,7 +79,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int RELEASE_0260_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -112,6 +113,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private SortedMap<Long, org.hyperledger.besu.datatypes.Hash> blockHashes = new TreeMap<>();
+	private boolean stakingRewardsActivated;
 
 	public MerkleNetworkContext() {
 		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
@@ -148,6 +150,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = new TreeMap<>(that.blockHashes);
+		this.stakingRewardsActivated = that.stakingRewardsActivated;
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -329,6 +332,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsActivated = in.readBoolean();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -392,6 +398,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
 		out.writeLong(blockNo);
+		out.writeBoolean(stakingRewardsActivated);
 	}
 
 	@Override
@@ -443,7 +450,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				"\n  Throttle usage snapshots are               ::" +
 				usageSnapshotsDesc() +
 				"\n  Congestion level start times are           ::" +
-				congestionStartsDesc();
+				congestionStartsDesc() +
+				"\n  Staking Rewards Activated                  ::" +
+				stakingRewardsActivated;
 	}
 
 	public long getAlignmentBlockNo() {
@@ -553,6 +562,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public boolean areMigrationRecordsStreamed() {
 		return migrationRecordsStreamed;
+	}
+
+	public boolean areRewardsActivated() {
+		return stakingRewardsActivated;
 	}
 
 	/* --- Internal helpers --- */
@@ -707,6 +720,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return gasThrottleUsageSnapshot;
 	}
 
+	public void setStakingRewards(boolean stakingRewardsActivated) {
+		this.stakingRewardsActivated = stakingRewardsActivated;
+	}
+
 	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
 		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
 	}
@@ -718,9 +735,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	/* --- Utility methods --- */
 	public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
 		final byte[] hashBytesToConvert = hash.getValue();
-		final byte[] suffixBytes = new byte[32];
-		System.arraycopy(hashBytesToConvert, 16, suffixBytes, 0, 32);
-		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(suffixBytes));
+		final byte[] prefixBytes = new byte[32];
+		System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
+		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
 	}
 
 	/* --- Used for tests --- */

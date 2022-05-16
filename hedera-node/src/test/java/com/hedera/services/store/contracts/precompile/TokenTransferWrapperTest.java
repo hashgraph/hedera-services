@@ -82,9 +82,9 @@ class TokenTransferWrapperTest {
 
 	private List<SyntheticTxnFactory.FungibleTokenTransfer> wellKnownTransfers() {
 		return List.of(
-				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(aChange), token, anAccount, null),
-				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(bChange), token, null, otherAccount),
-				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(cChange), token, null, anotherAccount));
+				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(aChange), false, token, anAccount, null),
+				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(bChange), false, token, null, otherAccount),
+				new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(cChange), false, token, null, anotherAccount));
 	}
 
 	private final long aSerialNo = 1_234L;
