@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-contract FungibleTokenCreate is FeeHelper {
+contract TokenCreateContract is FeeHelper {
 
     string name = "tokenName";
     string symbol = "tokenSymbol";
@@ -545,6 +545,22 @@ contract FungibleTokenCreate is FeeHelper {
 
     function createTokenWithDefaultKeys() public payable returns (address createdTokenAddress) {
         createdTokenAddress = createToken(super.getDefaultKeys());
+    }
+
+    function createTokenWithDefaultExpiryAndEmptyKeys() public payable returns (address createdTokenAddress) {
+        IHederaTokenService.HederaToken memory token;
+        token.name = name;
+        token.symbol = symbol;
+        token.treasury = address(this);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleToken(token, 200, 8);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
     }
 
     function createTokenWithCustomFees(IHederaTokenService.TokenKey[] memory keys,

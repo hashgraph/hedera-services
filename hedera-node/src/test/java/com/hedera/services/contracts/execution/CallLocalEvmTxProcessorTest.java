@@ -24,6 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -61,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -93,6 +95,10 @@ class CallLocalEvmTxProcessorTest {
 	private StorageExpiry storageExpiry;
 	@Mock
 	private StorageExpiry.Oracle oracle;
+	@Mock
+	private BlockManager blockManager;
+	@Mock
+	private HederaBlockValues hederaBlockValues;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -107,7 +113,7 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry);
+				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, blockManager);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
@@ -186,7 +192,7 @@ class CallLocalEvmTxProcessorTest {
 						.blockHashLookup(h -> null);
 		//when:
 		MessageFrame buildMessageFrame = callLocalEvmTxProcessor.buildInitialFrame(commonInitialFrame,
-				(Address) transaction.getTo().get(), Bytes.EMPTY);
+				(Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
 		//expect:
 		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
@@ -221,5 +227,7 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+
+		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
 	}
 }

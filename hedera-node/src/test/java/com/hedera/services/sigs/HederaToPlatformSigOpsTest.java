@@ -20,7 +20,6 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
@@ -72,7 +71,6 @@ class HederaToPlatformSigOpsTest {
 	private PubKeyToSigBytes allSigBytes;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements keyOrdering;
-	private AliasManager aliasManager;
 
 	@BeforeAll
 	private static void setupAll() throws Throwable {
@@ -87,7 +85,6 @@ class HederaToPlatformSigOpsTest {
 	private void setup() throws Throwable {
 		allSigBytes = mock(PubKeyToSigBytes.class);
 		keyOrdering = mock(SigRequirements.class);
-		aliasManager = mock(AliasManager.class);
 		platformTxn = PlatformTxnAccessor.from(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 	}
 

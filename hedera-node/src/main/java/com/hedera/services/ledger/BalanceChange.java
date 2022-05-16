@@ -108,12 +108,17 @@ public class BalanceChange {
 	}
 
 	public static BalanceChange tokenAdjust(
-			final Id account, final Id token, final long amount, final AccountID payerID, final boolean isApprovedAllowance) {
-		final var tokenChange = new BalanceChange(account, amount, payerID, isApprovedAllowance, INSUFFICIENT_TOKEN_BALANCE);
-		tokenChange.payerID = payerID;
-		tokenChange.token = token;
-		tokenChange.tokenId = token.asGrpcToken();
-		return tokenChange;
+			final Id account,
+			final Id token,
+			final long amount,
+			final AccountID payerID,
+			final boolean isApprovedAllowance
+	) {
+		final var change = new BalanceChange(account, amount, payerID, isApprovedAllowance, INSUFFICIENT_TOKEN_BALANCE);
+		change.payerID = payerID;
+		change.token = token;
+		change.tokenId = token.asGrpcToken();
+		return change;
 	}
 
 	/* ℏ constructor */

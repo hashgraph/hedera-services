@@ -47,6 +47,8 @@ import java.util.function.BiFunction;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
@@ -164,9 +166,9 @@ public class Rationalization {
 
 	private void makeRationalizedMetaAccessible() {
 		if (reqOthersSigs == null) {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerOnly(reqPayerSig, txnSigs));
+			txnAccessor.setSigMeta(forPayerOnly(reqPayerSig, txnSigs, txnAccessor));
 		} else {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs));
+			txnAccessor.setSigMeta(forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
 		}
 	}
 

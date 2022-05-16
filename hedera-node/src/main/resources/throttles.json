@@ -62,8 +62,9 @@
 		  "opsPerSec": 350,
 		  "operations": [
 			"ContractCall",
-			"ContractCreate"
-		  ]
+			"ContractCreate",
+                        "EthereumTransaction"
+                   ]
 		},
 		{
 		  "opsPerSec": 3000,

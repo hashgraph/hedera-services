@@ -30,9 +30,11 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.StaticEntityAccess;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -72,6 +74,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			final AliasManager aliasManager,
 			final AccountStore accountStore,
 			final OptionValidator validator,
+			final EntityAccess entityAccess,
 			final GlobalDynamicProperties dynamicProperties,
 			final NodeLocalProperties nodeProperties,
 			final CallLocalEvmTxProcessor callLocalEvmTxProcessor
@@ -88,8 +91,12 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					} else if (op.getGas() > dynamicProperties.maxGas()) {
 						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
-						final var target = unaliased(op.getContractID(), aliasManager);
-						return validator.queryableContractStatus(target, view.contracts());
+						if (entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(op.getContractID()))) {
+							return OK;
+						} else {
+							final var target = unaliased(op.getContractID(), aliasManager);
+							return validator.queryableContractStatus(target, view.contracts());
+						}
 					}
 				});
 
@@ -164,13 +171,13 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, dynamicProperties);
+				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
 				final var opResponse =
-						CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op, aliasManager);
+						CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op, aliasManager, entityAccess);
 				response.mergeFrom(withCid(opResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));

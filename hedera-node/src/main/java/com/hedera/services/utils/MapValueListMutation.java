@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,8 @@ package com.hedera.services.utils;
  * limitations under the License.
  * ‍
  */
+
+import com.swirlds.common.FastCopyable;
 
 import javax.annotation.Nullable;
 
@@ -32,7 +34,7 @@ import javax.annotation.Nullable;
  * @param <V>
  * 		type of value in the linked-values map
  */
-public interface MapValueListMutation<K, V> {
+public interface MapValueListMutation<K, V extends FastCopyable> {
 	/**
 	 * Gets the value for the specified key.
 	 *
@@ -118,7 +120,7 @@ public interface MapValueListMutation<K, V> {
 	K next(V node);
 
 	/**
-	 * Returns the (map key of) the next node in the linked list containing the given node.
+	 * Returns the (map key of) the prev node in the linked list containing the given node.
 	 *
 	 * @param node
 	 * 		the current node in the list

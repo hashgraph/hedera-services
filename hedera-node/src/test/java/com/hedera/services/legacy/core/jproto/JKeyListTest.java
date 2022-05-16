@@ -25,11 +25,11 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -50,7 +50,7 @@ class JKeyListTest {
 		byte[] repr = JKeySerializer.serialize(StateView.EMPTY_WACL);
 
 		// when:
-		JKey recovered = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(repr)));
+		JKey recovered = JKeySerializer.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(repr)));
 
 		// then:
 		assertTrue(recovered.isEmpty());

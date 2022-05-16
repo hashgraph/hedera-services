@@ -21,8 +21,8 @@ package com.hedera.services.state.virtual;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.jetbrains.annotations.NotNull;
@@ -33,6 +33,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.virtual.KeyPackingUtils.deserializeUint256Key;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytes;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 /**
@@ -46,8 +49,6 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	private static final int[] BIT_SHIFTS = { 0, 8, 16, 24, 32, 40, 48, 56 };
 	/** The estimated average size for a contract key when serialized */
 	public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
-	/** The max size for a contract key when serialized */
-	public static final int MAX_SIZE = 1 + Long.SIZE + 32;
 	/** this is the number part of the contract address */
 	private long contractId;
 	/** number of the least significant bytes in contractId that contain ones. Max is 8 */
@@ -68,13 +69,17 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		return new ContractKey(id.getAccountNum(), key.toArray());
 	}
 
+	public static ContractKey from(final long accountNum, final UInt256 key) {
+		return new ContractKey(accountNum, key.toArray());
+	}
+
 	public ContractKey(long contractId, long key) {
 		setContractId(contractId);
 		setKey(key);
 	}
 
 	public ContractKey(long contractId, byte[] data) {
-		this(contractId, asPackedInts(data));
+		this(contractId, KeyPackingUtils.asPackedInts(data));
 	}
 
 	public ContractKey(long contractId, int[] key) {
@@ -82,20 +87,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		setKey(key);
 	}
 
-	public static int[] asPackedInts(final byte[] data) {
-		if (data == null || data.length != 32) {
-			throw new IllegalArgumentException("Key data must be non-null and 32 bytes long");
-		}
-		return new int[] {
-				data[0] << 24 | (data[1] & 255) << 16 | (data[2] & 255) << 8 | (data[3] & 255),
-				data[4] << 24 | (data[5] & 255) << 16 | (data[6] & 255) << 8 | (data[7] & 255),
-				data[8] << 24 | (data[9] & 255) << 16 | (data[10] & 255) << 8 | (data[11] & 255),
-				data[12] << 24 | (data[13] & 255) << 16 | (data[14] & 255) << 8 | (data[15] & 255),
-				data[16] << 24 | (data[17] & 255) << 16 | (data[18] & 255) << 8 | (data[19] & 255),
-				data[20] << 24 | (data[21] & 255) << 16 | (data[22] & 255) << 8 | (data[23] & 255),
-				data[24] << 24 | (data[25] & 255) << 16 | (data[26] & 255) << 8 | (data[27] & 255),
-				data[28] << 24 | (data[29] & 255) << 16 | (data[30] & 255) << 8 | (data[31] & 255),
-		};
+	public static int[] asPackedInts(final UInt256 evmKey) {
+		return KeyPackingUtils.asPackedInts(evmKey.toArrayUnsafe());
 	}
 
 	public long getContractId() {
@@ -104,7 +97,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
 	public void setContractId(long contractId) {
 		this.contractId = contractId;
-		this.contractIdNonZeroBytes = computeNonZeroBytes(contractId);
+		this.contractIdNonZeroBytes = KeyPackingUtils.computeNonZeroBytes(contractId);
 	}
 
 	public int[] getKey() {
@@ -127,7 +120,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 					"The key cannot be null and the key's packed int array size must be 8");
 		}
 		this.uint256Key = uint256Key;
-		this.uint256KeyNonZeroBytes = computeNonZeroBytes(uint256Key);
+		this.uint256KeyNonZeroBytes = KeyPackingUtils.computeNonZeroBytes(uint256Key);
 	}
 
 	@Override
@@ -172,9 +165,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
 			out.write((byte) (contractId >> (b * 8)));
 		}
-		for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-			out.write(getUint256Byte(b));
-		}
+		serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
 		return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
 	}
 
@@ -184,9 +175,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
 			byteBuffer.put((byte) (contractId >> (b * 8)));
 		}
-		for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-			byteBuffer.put(getUint256Byte(b));
-		}
+		serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, byteBuffer);
 	}
 
 	@Override
@@ -195,7 +184,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
 		this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
 		this.contractId = deserializeContractID(contractIdNonZeroBytes, in, SerializableDataInputStream::readByte);
-		this.uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+		this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
 
 	}
 
@@ -205,7 +194,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
 		this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
 		this.contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
-		this.uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+		this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
 	}
 
 	@Override
@@ -247,7 +236,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	static <D> long deserializeContractID(
 			final byte contractIdNonZeroBytes,
 			final D dataSource,
-			final ByteReaderFunction<D> reader
+			final KeyPackingUtils.ByteReaderFunction<D> reader
 	) throws IOException {
 		long contractId = 0;
 		/* Bytes are encountered in order of significance (big-endian) */
@@ -255,41 +244,6 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 			contractId |= ((long) reader.read(dataSource) & 255) << BIT_SHIFTS[shiftI];
 		}
 		return contractId;
-	}
-
-	/**
-	 * Deserialize uint256 from data source
-	 *
-	 * @param uint256KeyNonZeroBytes
-	 * 		the number of non-zero bytes stored for the uint
-	 * @param dataSource
-	 * 		The data source to read from
-	 * @param reader
-	 * 		function to read a byte from the data source
-	 * @param <D>
-	 * 		type for data source, e.g. ByteBuffer or InputStream
-	 * @return unit256 read as an int[8]
-	 * @throws IOException
-	 * 		If there was a problem reading
-	 */
-	static <D> int[] deserializeUnit256Key(
-			final byte uint256KeyNonZeroBytes,
-			final D dataSource,
-			final ByteReaderFunction<D> reader
-	) throws IOException {
-		final int[] uint256 = new int[8];
-		for (int i = 7; i >= 0; i--) {
-			int integer = 0;
-			if (uint256KeyNonZeroBytes >= (4 + (i * Integer.BYTES)))
-				integer |= ((long) reader.read(dataSource) & 255) << 24;
-			if (uint256KeyNonZeroBytes >= (3 + (i * Integer.BYTES)))
-				integer |= ((long) reader.read(dataSource) & 255) << 16;
-			if (uint256KeyNonZeroBytes >= (2 + (i * Integer.BYTES)))
-				integer |= ((long) reader.read(dataSource) & 255) << 8;
-			if (uint256KeyNonZeroBytes >= (1 + (i * Integer.BYTES))) integer |= ((long) reader.read(dataSource) & 255);
-			uint256[7 - i] = integer;
-		}
-		return uint256;
 	}
 
 	/**
@@ -355,49 +309,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	 * 		significant.
 	 * @return the byte at given index
 	 */
-	byte getUint256Byte(int byteIndex) {
-		int intIndex = byteIndex / Integer.BYTES;
-		return (byte) (uint256Key[uint256Key.length - 1 - intIndex] >> ((byteIndex - (intIndex * Integer.BYTES)) * 8));
-	}
-
-	/**
-	 * Compute number of bytes of non-zero data are there from the least significant side of an int.
-	 *
-	 * @param num
-	 * 		the int to count non-zero bits for
-	 * @return the number of non-zero bytes. Minimum 1, we always write at least 1 byte even for value 0
-	 */
-	static byte computeNonZeroBytes(int[] num) {
-		int count = 0;
-		while (count < 8 && num[count] == 0) count++;
-		if (count == num.length) return 1; // it is all zeros
-		final int mostSignificantNonZeroInt = num[count];
-		final byte bytes = computeNonZeroBytes(mostSignificantNonZeroInt);
-		return (byte) (((num.length - count - 1) * Integer.BYTES) + bytes);
-	}
-
-	/**
-	 * Compute number of bytes of non-zero data are there from the least significant side of an int.
-	 *
-	 * @param num
-	 * 		the int to count non-zero bits for
-	 * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for value 0
-	 */
-	static byte computeNonZeroBytes(int num) {
-		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((Integer.SIZE - Integer.numberOfLeadingZeros(num)) / 8D);
-	}
-
-	/**
-	 * Compute number of bytes of non-zero data are there from the least significant side of a long.
-	 *
-	 * @param num
-	 * 		the long to count non-zero bits for
-	 * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for value 0
-	 */
-	static byte computeNonZeroBytes(long num) {
-		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
+	byte getUint256Byte(final int byteIndex) {
+		return KeyPackingUtils.extractByte(uint256Key, byteIndex);
 	}
 
 	@Override
@@ -415,19 +328,5 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	@Override
 	public int getMinimumSupportedVersion() {
 		return 1;
-	}
-
-	/** Simple interface for a function that takes a object and returns a byte */
-	@FunctionalInterface
-	interface ByteReaderFunction<T> {
-
-		/**
-		 * Applies this function to the given argument.
-		 *
-		 * @param dataSource
-		 * 		the function argument
-		 * @return the function result
-		 */
-		byte read(T dataSource) throws IOException;
 	}
 }
