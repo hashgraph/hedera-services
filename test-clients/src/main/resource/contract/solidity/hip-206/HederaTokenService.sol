@@ -8,6 +8,8 @@ import "./IHederaTokenService.sol";
 abstract contract HederaTokenService is HederaResponseCodes {
 
     address constant precompileAddress = address(0x167);
+    // 90 days in seconds
+    uint32 constant defaultAutoRenewPeriod = 7776000;
 
     uint constant ADMIN_KEY_TYPE = 1;
     uint constant KYC_KEY_TYPE = 2;
@@ -145,9 +147,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function createFungibleToken(
         IHederaTokenService.HederaToken memory token,
         uint initialTotalSupply,
-        uint decimals)
+        uint decimals) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
         (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
             token, initialTotalSupply, decimals));
@@ -170,9 +171,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
         uint initialTotalSupply,
         uint decimals,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.FractionalFee[] memory fractionalFees)
+        IHederaTokenService.FractionalFee[] memory fractionalFees) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
         (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector,
             token, initialTotalSupply, decimals, fixedFees, fractionalFees));
@@ -183,9 +183,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param token the basic properties of the token being created
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return tokenAddress the created token's address
-    function createNonFungibleToken(IHederaTokenService.HederaToken memory token)
+    function createNonFungibleToken(IHederaTokenService.HederaToken memory token) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
         (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createNonFungibleToken.selector, token));
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
@@ -200,9 +199,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function createNonFungibleTokenWithCustomFees(
         IHederaTokenService.HederaToken memory token,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.RoyaltyFee[] memory royaltyFees)
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
         (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createNonFungibleTokenWithCustomFees.selector,
             token, fixedFees, royaltyFees));
@@ -270,6 +268,14 @@ abstract contract HederaTokenService is HederaResponseCodes {
             abi.encodeWithSelector(IHederaTokenService.transferNFT.selector,
             token, sender, receiver, serialNumber));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
+    {
+        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
+            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
+        }
+        _;
     }
 
 }

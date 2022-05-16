@@ -24,7 +24,6 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -64,12 +63,12 @@ import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class StaticEntityAccess implements EntityAccess {
 	private final StateView view;
 	private final ContractAliases aliases;
 	private final OptionValidator validator;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleToken> tokens;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
 	private final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
@@ -80,13 +79,11 @@ public class StaticEntityAccess implements EntityAccess {
 	public StaticEntityAccess(
 			final StateView view,
 			final ContractAliases aliases,
-			final OptionValidator validator,
-			final GlobalDynamicProperties dynamicProperties
+			final OptionValidator validator
 	) {
 		this.view = view;
 		this.aliases = aliases;
 		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 		this.bytecode = view.storage();
 		this.storage = view.contractStorage();
 		this.accounts = view.accounts();
@@ -136,15 +133,9 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public boolean isDetached(AccountID id) {
-		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
-			return false;
-		}
-		final var account = accounts.get(fromAccountId(id));
-		Objects.requireNonNull(account);
-		return !account.isSmartContract()
-				&& account.getBalance() == 0
-				&& !validator.isAfterConsensusSecond(account.getExpiry());
+	public boolean isDetached(final AccountID id) {
+		final var account = Objects.requireNonNull(accounts.get(fromAccountId(id)));
+		return validator.expiryStatusGiven(account.getBalance(), account.getExpiry(), account.isSmartContract()) != OK;
 	}
 
 	@Override

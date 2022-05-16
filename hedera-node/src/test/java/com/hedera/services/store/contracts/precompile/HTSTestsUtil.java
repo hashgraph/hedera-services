@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -50,6 +51,7 @@ public class HTSTestsUtil {
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
+	public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
@@ -160,6 +162,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					receiver
@@ -167,6 +170,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					null
@@ -174,6 +178,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					null,
 					receiver

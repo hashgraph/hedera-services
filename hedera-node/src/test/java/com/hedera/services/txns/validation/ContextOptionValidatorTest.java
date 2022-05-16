@@ -27,6 +27,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -66,9 +68,11 @@ import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -158,7 +162,6 @@ class ContextOptionValidatorTest {
 		NodeInfo nodeInfo = mock(NodeInfo.class);
 		given(nodeInfo.selfAccount()).willReturn(thisNodeAccount);
 
-
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
@@ -174,6 +177,89 @@ class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shortCircuitsLedgerExpiryCheckIfNoExpiryEnabled() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(false);
+		assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shortCircuitsLedgerExpiryCheckIfBalanceIsNonZero() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(1L);
+		assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shortCircuitsIfBalanceIsZeroButExpiryIsFuture() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+		given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
+		given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY)).willReturn(now.getEpochSecond() + 1);
+		assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shortCircuitsIfContractExpiryNotEnabled() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
+		given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY)).willReturn(now.getEpochSecond() - 1);
+		given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
+		assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void usesPreciseExpiryCheckIfBalanceIsZero() {
+		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts = mock(TransactionalLedger.class);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+		given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
+		given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY)).willReturn(now.getEpochSecond() - 1);
+		given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
+		assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expiryStatusGiven(accounts, thisNodeAccount));
+	}
+
+	@Test
+	void alwaysOkExpiryStatusIfNonzeroBalance() {
+		final var status = subject.expiryStatusGiven(1L, 0, true);
+		assertEquals(OK, status);
+	}
+
+	@Test
+	void contractIsExpiredIfZeroBalanceAndPastExpiry() {
+		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+		final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, true);
+		assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, status);
+	}
+
+	@Test
+	void accountIsExpiredIfZeroBalanceAndPastExpiry() {
+		given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
+		final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, false);
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
+	}
+
+	@Test
+	void ifAccountExpiryNotEnabledItsOk() {
+		final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, false);
+		assertEquals(OK, status);
+	}
+
+	@Test
+	void ifContractExpiryNotEnabledItsOk() {
+		final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, true);
+		assertEquals(OK, status);
 	}
 
 	@Test
@@ -212,6 +298,12 @@ class ContextOptionValidatorTest {
 		assertTrue(subject.isAfterConsensusSecond(now.getEpochSecond() + 1));
 		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond()));
 		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond() - 1));
+	}
+
+	@Test
+	void nullConsTimeMeansAlwaysAfter() {
+		given(txnCtx.consensusTime()).willReturn(null);
+		assertTrue(subject.isAfterConsensusSecond(now.getEpochSecond()));
 	}
 
 	@Test

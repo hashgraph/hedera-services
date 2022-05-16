@@ -25,7 +25,6 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.ethereum.util.ByteUtil;
 
 import java.util.Arrays;

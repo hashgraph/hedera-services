@@ -395,7 +395,7 @@ class E2EPackageRunner {
 	@Tag("contract.opcodes.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpcodesEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallOperationSuite::new),
@@ -408,7 +408,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
 				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
 				extractSpecsFromSuiteForEth(SStoreSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
