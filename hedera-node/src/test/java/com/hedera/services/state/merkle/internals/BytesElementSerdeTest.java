@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.state.merkle.internals;
 
 /*-
  * ‌
@@ -20,11 +20,17 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.utils.SeededPropertySource;
 
-import java.math.BigInteger;
+public class BytesElementSerdeTest extends SelfSerializableDataTest<BytesElement> {
+	@Override
+	protected Class<BytesElement> getType() {
+		return BytesElement.class;
+	}
 
-public record ApproveWrapper(
-		TokenID token, AccountID spender, BigInteger amount, BigInteger serialNumber, boolean isFungible) {
+	@Override
+	protected BytesElement getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextFilePart();
+	}
 }

@@ -30,6 +30,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,8 @@ class KvPairIterationMigratorTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
+	@Mock
+	private VirtualRootNode<ContractKey, IterableContractValue> rootNode;
 
 	private KvPairIterationMigrator subject;
 
@@ -70,8 +73,9 @@ class KvPairIterationMigratorTest {
 				tailKey, iterableTailValue, null, null, iterableContractStorage)
 		).willReturn(tailKey);
 		given(storageUpserter.upsertMapping(
-				rootKey, iterableRootValue, tailKey, iterableTailValue, iterableContractStorage)
+				rootKey, iterableRootValue, tailKey, null, iterableContractStorage)
 		).willReturn(rootKey);
+		given(iterableContractStorage.getRight()).willReturn(rootNode);
 
 		subject.accept(Pair.of(tailKey, tailValue));
 		subject.accept(Pair.of(zeroKey, zeroValue));
