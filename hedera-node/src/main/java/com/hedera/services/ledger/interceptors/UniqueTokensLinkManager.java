@@ -88,8 +88,8 @@ public class UniqueTokensLinkManager {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 			// Outside a contract operation, this would be an invariant failure (if a non-treasury account
-			// is being wiped, it must certainly own at least the wiped NFT); but a contract can easily transfer
-			// can a NFT back to the treasury and burn it in the same transaction
+			// is being wiped, it must certainly own at least the wiped NFT); but a contract can transfer a
+			// NFT back to the treasury and burn it in the same transaction
 			if (rootKey != null) {
 				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
 			}
