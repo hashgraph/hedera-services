@@ -371,6 +371,8 @@ class HederaScheduleStoreTest {
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(consensusTime.getSeconds() + scheduledTxExpiryTimeSecs,
 				expected.calculatedExpirationTime().getSeconds());
+		assertTrue(parentTxn.getScheduleCreate().getWaitForExpiry());
+		assertFalse(expected.calculatedWaitForExpiry());
 	}
 
 	@Test
@@ -387,6 +389,8 @@ class HederaScheduleStoreTest {
 		assertEquals(created, subject.pendingId);
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(expectedExpiry, expected.calculatedExpirationTime().getSeconds());
+		assertTrue(parentTxn.getScheduleCreate().getWaitForExpiry());
+		assertTrue(expected.calculatedWaitForExpiry());
 	}
 
 	@Test
@@ -407,6 +411,8 @@ class HederaScheduleStoreTest {
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(consensusTime.getSeconds() + scheduledTxExpiryTimeSecs,
 				expected.calculatedExpirationTime().getSeconds());
+		assertTrue(parentTxn.getScheduleCreate().getWaitForExpiry());
+		assertTrue(expected.calculatedWaitForExpiry());
 	}
 
 	@Test

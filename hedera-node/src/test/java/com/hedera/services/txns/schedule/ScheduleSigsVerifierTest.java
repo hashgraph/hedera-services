@@ -38,10 +38,13 @@ import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -99,7 +102,8 @@ class ScheduleSigsVerifierTest {
 
 	@Test
 	void rejectsOnHasErrorReport() {
-		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(txnBody);
+		subject = spy(subject);
+		doReturn(txnBody).when(subject).getTransactionBody(schedule);
 		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
 		given(keysForOtherParties.hasErrorReport()).willReturn(true);
 
@@ -111,7 +115,8 @@ class ScheduleSigsVerifierTest {
 
 	@Test
 	void passesOnNoRequiredKeys() {
-		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(txnBody);
+		subject = spy(subject);
+		doReturn(txnBody).when(subject).getTransactionBody(schedule);
 		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
 		given(keysForOtherParties.hasErrorReport()).willReturn(false);
 		given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of());
@@ -127,8 +132,44 @@ class ScheduleSigsVerifierTest {
 		verify(schedule, never()).hasValidSignatureFor(any());
 	}
 
+	@Test
+	void rejectsOnGetTransactionBodyFailure() {
+		subject = spy(subject);
+		doReturn(null).when(subject).getTransactionBody(schedule);
+
+		assertFalse(subject.areAllKeysActive(schedule));
+
+		verify(workingSigReqs, never()).keysForOtherParties(any(), any());
+		verify(keysForOtherParties, never()).getOrderedKeys();
+		verify(schedule, never()).hasValidSignatureFor(any());
+	}
+
+	@Test
+	void getTransactionBodyWorksAsExpected() {
+		given(schedule.bodyBytes()).willReturn(TransactionBody.newBuilder().build().toByteArray());
+
+		assertEquals(subject.getTransactionBody(schedule), TransactionBody.newBuilder().build());
+	}
+
+	@Test
+	void getTransactionBodyHandlesInvalidBody() {
+		given(schedule.bodyBytes()).willReturn(new byte[] { 0 });
+
+		assertNull(subject.getTransactionBody(schedule));
+	}
+
+	@Test
+	void getTransactionBodyHandlesNull() {
+		assertNull(subject.getTransactionBody(null));
+
+		given(schedule.bodyBytes()).willReturn(null);
+
+		assertNull(subject.getTransactionBody(schedule));
+	}
+
 	private void setupPositiveTest() {
-		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(txnBody);
+		subject = spy(subject);
+		doReturn(txnBody).when(subject).getTransactionBody(schedule);
 		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
 		given(keysForOtherParties.hasErrorReport()).willReturn(false);
 		given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2));

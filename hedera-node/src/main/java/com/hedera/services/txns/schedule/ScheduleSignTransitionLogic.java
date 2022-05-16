@@ -131,7 +131,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
 			boolean processExecution = Boolean.TRUE.equals(signingOutcome.getRight());
 
-			if (properties.schedulingLongTermEnabled() && updatedSchedule.isWaitForExpiry()) {
+			if (properties.schedulingLongTermEnabled() && updatedSchedule.calculatedWaitForExpiry()) {
 				processExecution = false;
 			}
 

@@ -165,10 +165,13 @@ public class ScheduleVirtualValueTest {
 
 	private void checkSerialize(Callable<ScheduleVirtualValue> check) throws Exception {
 		subject.setCalculatedExpirationTime(null);
+		subject.setCalculatedWaitForExpiry(false);
 		assertNull(subject.calculatedExpirationTime());
 		assertNull(subject.getResolutionTime());
 		assertFalse(subject.isExecuted());
 		assertFalse(subject.isDeleted());
+		assertFalse(subject.calculatedWaitForExpiry());
+		assertTrue(subject.waitForExpiryProvided());
 		assertEquals(0, subject.signatories().size());
 
 		check.call();
@@ -176,6 +179,7 @@ public class ScheduleVirtualValueTest {
 		var origSubject = subject;
 
 		subject.setCalculatedExpirationTime(expiry);
+		subject.setCalculatedWaitForExpiry(true);
 
 		var copy = check.call();
 
@@ -205,6 +209,7 @@ public class ScheduleVirtualValueTest {
 		assertArrayEquals(a.bodyBytes(), b.bodyBytes());
 		assertEquals(a.isDeleted(), b.isDeleted());
 		assertEquals(a.isExecuted(), b.isExecuted());
+		assertEquals(a.calculatedWaitForExpiry(), b.calculatedWaitForExpiry());
 		assertEquals(a.getResolutionTime(), b.getResolutionTime());
 		final var aSigs = a.signatories();
 		final var bSigs = b.signatories();
@@ -232,6 +237,8 @@ public class ScheduleVirtualValueTest {
 		assertFalse(subject.isExecuted());
 		assertEquals(payer, subject.payer());
 		assertEquals(expiry, subject.calculatedExpirationTime());
+		assertEquals(waitForExpiry, subject.calculatedWaitForExpiry());
+		assertEquals(waitForExpiry, subject.waitForExpiryProvided());
 		assertEquals(providedExpiry, subject.expirationTimeProvided());
 		assertEquals(schedulingAccount, subject.schedulingAccount());
 		assertEquals(entityMemo, subject.memo().get());
@@ -395,12 +402,16 @@ public class ScheduleVirtualValueTest {
 	}
 
 	@Test
-	void differentExpirationTimeNotIdentical() {
+	void differentProvidedExpirationTimeNotIdentical() {
 		final var bodyBytesDiffMemo = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setExpirationTime(RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)).toGrpc()))
 				.build().toByteArray();
-		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
+		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo,
+				RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
+
+		assertEquals(subject.calculatedExpirationTime(), subject.expirationTimeProvided());
+		assertEquals(other.expirationTimeProvided(), other.expirationTimeProvided());
 
 		assertNotEquals(subject, other);
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -409,17 +420,57 @@ public class ScheduleVirtualValueTest {
 	}
 
 	@Test
-	void differentWaitForExpiryNotIdentical() {
+	void differentCalculatedExpirationTimeIdentical() {
+		final var bodyBytesDiffMemo = parentTxn.toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+						.setExpirationTime(providedExpiry.toGrpc()))
+				.build().toByteArray();
+		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo,
+				RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
+
+		assertEquals(other.expirationTimeProvided(), subject.expirationTimeProvided());
+
+		assertNotEquals(other.calculatedExpirationTime(), subject.calculatedExpirationTime());
+		assertEquals(subject, other);
+		assertEquals(subject.hashCode(), other.hashCode());
+		assertEquals(subject.equalityCheckKey(), other.equalityCheckKey());
+		assertEquals(subject.equalityCheckValue(), other.equalityCheckValue());
+	}
+
+	@Test
+	void differentProvidedWaitForExpiryNotIdentical() {
 		final var bodyBytesDiffMemo = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setWaitForExpiry(!waitForExpiry))
 				.build().toByteArray();
 		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
 
+		assertEquals(subject.calculatedWaitForExpiry(), subject.waitForExpiryProvided());
+		assertEquals(other.calculatedWaitForExpiry(), other.waitForExpiryProvided());
+
+		assertNotEquals(other.waitForExpiryProvided(), subject.waitForExpiryProvided());
 		assertNotEquals(subject, other);
 		assertNotEquals(subject.hashCode(), other.hashCode());
 		assertNotEquals(subject.equalityCheckKey(), other.equalityCheckKey());
 		assertNotEquals(subject.equalityCheckValue(), other.equalityCheckValue());
+	}
+
+	@Test
+	void differentCalculatedWaitForExpiryIdentical() {
+		final var bodyBytesDiffMemo = parentTxn.toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+						.setWaitForExpiry(waitForExpiry))
+				.build().toByteArray();
+		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
+
+		other.setCalculatedWaitForExpiry(!subject.calculatedWaitForExpiry());
+		assertEquals(other.waitForExpiryProvided(), subject.waitForExpiryProvided());
+
+		assertNotEquals(other.calculatedWaitForExpiry(), subject.calculatedWaitForExpiry());
+		assertEquals(subject, other);
+		assertEquals(subject.hashCode(), other.hashCode());
+		assertEquals(subject.equalityCheckKey(), other.equalityCheckKey());
+		assertEquals(subject.equalityCheckValue(), other.equalityCheckValue());
 	}
 
 	@Test
@@ -434,7 +485,8 @@ public class ScheduleVirtualValueTest {
 				+ "expirationTimeProvided=" + providedExpiry + ", "
 				+ "calculatedExpirationTime=" + expiry + ", "
 				+ "executed=" + false + ", "
-				+ "waitForExpiry=" + waitForExpiry + ", "
+				+ "waitForExpiryProvided=" + waitForExpiry + ", "
+				+ "calculatedWaitForExpiry=" + waitForExpiry + ", "
 				+ "deleted=" + true + ", "
 				+ "memo=" + entityMemo + ", "
 				+ "payer=" + payer.toAbbrevString() + ", "
@@ -483,7 +535,8 @@ public class ScheduleVirtualValueTest {
 		assertEquals(grpcResolutionTime, copySubject.deletionTime());
 		assertEquals(payer, copySubject.payer());
 		assertEquals(expiry, copySubject.calculatedExpirationTime());
-		assertEquals(waitForExpiry, copySubject.isWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.calculatedWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.waitForExpiryProvided());
 		assertEquals(schedulingAccount, copySubject.schedulingAccount());
 		assertEquals(entityMemo, copySubject.memo().get());
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
@@ -513,7 +566,8 @@ public class ScheduleVirtualValueTest {
 		assertEquals(grpcResolutionTime, copySubject.deletionTime());
 		assertEquals(payer, copySubject.payer());
 		assertEquals(expiry, copySubject.calculatedExpirationTime());
-		assertEquals(waitForExpiry, copySubject.isWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.calculatedWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.waitForExpiryProvided());
 		assertEquals(schedulingAccount, copySubject.schedulingAccount());
 		assertEquals(entityMemo, copySubject.memo().get());
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
@@ -543,7 +597,8 @@ public class ScheduleVirtualValueTest {
 		assertEquals(grpcResolutionTime, copySubject.deletionTime());
 		assertEquals(payer, copySubject.payer());
 		assertEquals(expiry, copySubject.calculatedExpirationTime());
-		assertEquals(waitForExpiry, copySubject.isWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.calculatedWaitForExpiry());
+		assertEquals(waitForExpiry, copySubject.waitForExpiryProvided());
 		assertEquals(schedulingAccount, copySubject.schedulingAccount());
 		assertEquals(entityMemo, copySubject.memo().get());
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());

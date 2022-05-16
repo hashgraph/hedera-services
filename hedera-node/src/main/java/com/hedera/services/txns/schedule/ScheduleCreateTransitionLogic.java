@@ -149,7 +149,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 		boolean processExecution = Boolean.TRUE.equals(signingOutcome.getRight());
 
-		if (properties.schedulingLongTermEnabled() && schedule.isWaitForExpiry()) {
+		if (properties.schedulingLongTermEnabled() && schedule.calculatedWaitForExpiry()) {
 			processExecution = false;
 		}
 

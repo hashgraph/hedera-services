@@ -387,7 +387,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		}
 
 		// only check deeply if the schedule could immediately execute
-		if (scheduleValue.isWaitForExpiry()) {
+		if (scheduleValue.calculatedWaitForExpiry()) {
 			return false;
 		}
 

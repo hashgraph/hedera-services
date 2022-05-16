@@ -79,7 +79,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 	private String memo;
 	private boolean deleted = false;
 	private boolean executed = false;
-	private boolean waitForExpiry = false;
+	private boolean calculatedWaitForExpiry = false;
+	private boolean waitForExpiryProvided = false;
 	@Nullable
 	private EntityId payer = null;
 	private EntityId schedulingAccount;
@@ -108,7 +109,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 		this.grpcAdminKey = toCopy.grpcAdminKey;
 		this.adminKey = toCopy.adminKey;
 		this.memo = toCopy.memo;
-		this.waitForExpiry = toCopy.waitForExpiry;
+		this.calculatedWaitForExpiry = toCopy.calculatedWaitForExpiry;
+		this.waitForExpiryProvided = toCopy.waitForExpiryProvided;
 		this.deleted = toCopy.deleted;
 		this.executed = toCopy.executed;
 		this.payer = toCopy.payer;
@@ -145,15 +147,18 @@ public class ScheduleVirtualValue implements VirtualValue {
 		to.calculatedExpirationTime = new RichInstant(consensusExpiry, 0);
 		to.bodyBytes = bodyBytes;
 		to.initFromBodyBytes();
+		to.calculatedWaitForExpiry = to.waitForExpiryProvided;
 
 		return to;
 	}
 
-	public static ScheduleVirtualValue from(byte[] bodyBytes, RichInstant consensusExpiry) {
+	@VisibleForTesting
+	static ScheduleVirtualValue from(byte[] bodyBytes, RichInstant consensusExpiry) {
 		var to = new ScheduleVirtualValue();
 		to.calculatedExpirationTime = consensusExpiry;
 		to.bodyBytes = bodyBytes;
 		to.initFromBodyBytes();
+		to.calculatedWaitForExpiry = to.waitForExpiryProvided;
 
 		return to;
 	}
@@ -224,12 +229,12 @@ public class ScheduleVirtualValue implements VirtualValue {
 				Objects.equals(this.scheduledTxn, that.scheduledTxn) &&
 				Objects.equals(this.grpcAdminKey, that.grpcAdminKey) &&
 				Objects.equals(this.expirationTimeProvided, that.expirationTimeProvided) &&
-				Objects.equals(this.waitForExpiry, that.waitForExpiry);
+				Objects.equals(this.waitForExpiryProvided, that.waitForExpiryProvided);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(memo, grpcAdminKey, scheduledTxn, expirationTimeProvided, waitForExpiry);
+		return Objects.hash(memo, grpcAdminKey, scheduledTxn, expirationTimeProvided, waitForExpiryProvided);
 	}
 
 	public long equalityCheckKey() {
@@ -247,7 +252,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 				grpcAdminKey != null ? grpcAdminKey.toByteArray() : new byte[] {},
 				scheduledTxn.toByteArray(),
 				expirationTimeProvided != null ? expirationTimeProvided.toGrpc().toByteArray() : new byte[] {},
-				waitForExpiry ? new byte[] {1} : new byte[] {0});
+				waitForExpiryProvided ? new byte[] {1} : new byte[] {0});
 	}
 
 	@Override
@@ -257,7 +262,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 				.add("expirationTimeProvided", expirationTimeProvided)
 				.add("calculatedExpirationTime", calculatedExpirationTime)
 				.add("executed", executed)
-				.add("waitForExpiry", waitForExpiry)
+				.add("waitForExpiryProvided", waitForExpiryProvided)
+				.add("calculatedWaitForExpiry", calculatedWaitForExpiry)
 				.add("deleted", deleted)
 				.add("memo", memo)
 				.add("payer", readablePayer())
@@ -283,6 +289,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		} else {
 			calculatedExpirationTime = null;
 		}
+		calculatedWaitForExpiry = in.readByte() == 1;
 		executed = in.readByte() == 1;
 		deleted = in.readByte() == 1;
 		if (in.readByte() == 1) {
@@ -312,6 +319,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 			out.writeLong(calculatedExpirationTime.getSeconds());
 			out.writeInt(calculatedExpirationTime.getNanos());
 		}
+		out.writeByte((byte) (calculatedWaitForExpiry ? 1 : 0));
 		out.writeByte((byte) (executed ? 1 : 0));
 		out.writeByte((byte) (deleted ? 1 : 0));
 		if (resolutionTime == null) {
@@ -338,6 +346,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		} else {
 			calculatedExpirationTime = null;
 		}
+		calculatedWaitForExpiry = in.get() == 1;
 		executed = in.get() == 1;
 		deleted = in.get() == 1;
 		if (in.get() == 1) {
@@ -367,6 +376,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 			out.putLong(calculatedExpirationTime.getSeconds());
 			out.putInt(calculatedExpirationTime.getNanos());
 		}
+		out.put((byte) (calculatedWaitForExpiry ? 1 : 0));
 		out.put((byte) (executed ? 1 : 0));
 		out.put((byte) (deleted ? 1 : 0));
 		if (resolutionTime == null) {
@@ -397,8 +407,16 @@ public class ScheduleVirtualValue implements VirtualValue {
 		return Optional.ofNullable(this.memo);
 	}
 
-	public boolean isWaitForExpiry() {
-		return this.waitForExpiry;
+	public boolean waitForExpiryProvided() {
+		return this.waitForExpiryProvided;
+	}
+
+	public boolean calculatedWaitForExpiry() {
+		return this.calculatedWaitForExpiry;
+	}
+
+	public void setCalculatedWaitForExpiry(final boolean calculatedWaitForExpiry) {
+		this.calculatedWaitForExpiry = calculatedWaitForExpiry;
 	}
 
 	public boolean hasAdminKey() {
@@ -535,7 +553,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 				memo = creationOp.getMemo();
 			}
 			expirationTimeProvided = creationOp.hasExpirationTime() ? RichInstant.fromGrpc(creationOp.getExpirationTime()) : null;
-			waitForExpiry = creationOp.getWaitForExpiry();
+			waitForExpiryProvided = creationOp.getWaitForExpiry();
 			if (creationOp.hasPayerAccountID()) {
 				payer = EntityId.fromGrpcAccountId(creationOp.getPayerAccountID());
 			}

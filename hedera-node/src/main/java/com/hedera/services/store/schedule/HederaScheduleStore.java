@@ -161,6 +161,12 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 					new RichInstant(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs(), 0));
 		}
 
+		if (!properties.schedulingLongTermEnabled()) {
+			schedule.setCalculatedWaitForExpiry(false);
+		} else {
+			schedule.setCalculatedWaitForExpiry(schedule.waitForExpiryProvided());
+		}
+
 		var validity = OK;
 		if (schedule.hasExplicitPayer()) {
 			validity = usableOrElse(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);

@@ -183,7 +183,8 @@ import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
-import com.hedera.services.bdd.suites.schedule.ScheduleLongTermSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleLongTermSignSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RunTransfers;
@@ -621,7 +622,8 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ScheduleExecutionSpecStateful::new),
 				extractSpecsFromSuite(ScheduleRecordSpecs::new),
 				extractSpecsFromSuite(ScheduleSignSpecs::new),
-				extractSpecsFromSuite(ScheduleLongTermSpecs::new)
+				extractSpecsFromSuite(ScheduleLongTermExecutionSpecs::new),
+				extractSpecsFromSuite(ScheduleLongTermSignSpecs::new)
 		);
 	}
 

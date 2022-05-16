@@ -20,6 +20,7 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.InHandleActivationHelper;
@@ -28,7 +29,11 @@ import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,6 +48,7 @@ import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_R
  */
 @Singleton
 public class ScheduleSigsVerifier {
+	private static final Logger log = LogManager.getLogger(ScheduleSigsVerifier.class);
 
 	private final SigRequirements workingSigReqs;
 	private final CharacteristicsFactory characteristics;
@@ -59,7 +65,11 @@ public class ScheduleSigsVerifier {
 	}
 
 	public boolean areAllKeysActive(final ScheduleVirtualValue schedule) {
-		final var scheduledTxn = schedule.ordinaryViewOfScheduledTxn();
+		final TransactionBody scheduledTxn = getTransactionBody(schedule);
+
+		if (scheduledTxn == null) {
+			return false;
+		}
 
 		final var reqsResult = workingSigReqs.keysForOtherParties(
 			scheduledTxn,
@@ -84,6 +94,22 @@ public class ScheduleSigsVerifier {
 		}
 
 		return true;
+	}
+
+	@Nullable
+	@VisibleForTesting
+	TransactionBody getTransactionBody(final ScheduleVirtualValue schedule) {
+		if (schedule == null || schedule.bodyBytes() == null) {
+			return null;
+		}
+		final TransactionBody scheduledTxn;
+		try {
+			scheduledTxn = TransactionBody.parseFrom(schedule.bodyBytes());
+		} catch (final InvalidProtocolBufferException e) {
+			log.error("Could not parse schedule bodyBytes {}", schedule, e);
+			return null;
+		}
+		return scheduledTxn;
 	}
 
 }

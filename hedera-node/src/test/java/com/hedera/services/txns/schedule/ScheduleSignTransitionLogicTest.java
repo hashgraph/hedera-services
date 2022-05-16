@@ -284,7 +284,7 @@ class ScheduleSignTransitionLogicTest {
 		given(store.get(scheduleId)).willReturn(schedule);
 		given(store.getNoError(scheduleId)).willReturn(schedule);
 		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(schedule.isWaitForExpiry()).willReturn(true);
+		given(schedule.calculatedWaitForExpiry()).willReturn(true);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
 
 		// when:

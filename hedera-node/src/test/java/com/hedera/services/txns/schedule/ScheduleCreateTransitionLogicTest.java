@@ -213,7 +213,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
-		given(scheduleValue.isWaitForExpiry()).willReturn(true);
+		given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
 
 		subject.doStateTransition();

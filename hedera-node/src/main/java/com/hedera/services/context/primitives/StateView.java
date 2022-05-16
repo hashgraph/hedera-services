@@ -308,7 +308,7 @@ public class StateView {
 					.setExpirationTime(Timestamp.newBuilder()
 							.setSeconds(schedule.calculatedExpirationTime().getSeconds())
 							.setNanos(schedule.calculatedExpirationTime().getNanos()))
-					.setWaitForExpiry(schedule.isWaitForExpiry());
+					.setWaitForExpiry(schedule.calculatedWaitForExpiry());
 			schedule.memo().ifPresent(info::setMemo);
 			if (schedule.isDeleted()) {
 				info.setDeletionTime(schedule.deletionTime());
