@@ -161,7 +161,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721TokenURIFromErc20TokenFails(),
 				getErc721OwnerOfFromErc20TokenFails(),
 				directCallsWorkForERC721(),
-				someERC721RemoveScenariosPass(),
+				someERC721ApproveAndRemoveScenariosPass(),
+				someERC721NegativeTransferFromScenariosPass(),
 				erc721TransferFromWithApproval(),
 				erc721TransferFromWithApproveForAll(),
 				someERC721GetApprovedScenariosPass(),
@@ -1940,7 +1941,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec someERC721RemoveScenariosPass() {
+	private HapiApiSpec someERC721NegativeTransferFromScenariosPass() {
 		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
@@ -1951,7 +1952,55 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var bCivilian = "bCivilian";
 		final var someERC721Scenarios = "someERC721Scenarios";
 
-		return defaultHapiSpec("SomeERC721RemoveScenariosPass")
+		return defaultHapiSpec("SomeERC721NegativeTransferFromScenariosPass")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(bCivilian).exposingCreatedIdTo(id ->
+								bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(someERC721Scenarios),
+						contractCreate(someERC721Scenarios)
+								.adminKey(multiKey),
+						tokenCreate(nfToken)
+								.supplyKey(multiKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(someERC721Scenarios)
+								.initialSupply(0)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						mintToken(nfToken, List.of(ByteString.copyFromUtf8("I"))),
+						tokenAssociate(aCivilian, nfToken),
+						tokenAssociate(bCivilian, nfToken)
+				).when(
+						withOpContext((spec, opLog) -> {
+							zCivilianMirrorAddr.set(asHexedSolidityAddress(
+									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+						}),
+						// --- Negative cases for transfer ---
+						// * Can't transfer a non-existent serial number
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "iMustOwnAfterReceiving",
+								tokenMirrorAddr.get(), 5L
+						)
+								.payingWith(bCivilian).via("D").hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+				).then(
+				);
+	}
+
+	private HapiApiSpec someERC721ApproveAndRemoveScenariosPass() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+		final var nfToken = "nfToken";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var bCivilian = "bCivilian";
+		final var someERC721Scenarios = "someERC721Scenarios";
+
+		return defaultHapiSpec("SomeERC721ApproveAndRemoveScenariosPass")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
@@ -2296,56 +2345,63 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 1L
 						)
 								.gas(4_000_000)),
-						sourcing(() -> contractCall(
-								someERC721Scenarios, "getApproved",
-								tokenMirrorAddr.get(), 55L
-						)
-								.via("MISSING_SERIAL").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-						getTokenNftInfo(nfToken, 1L).logged(),
-						sourcing(() -> contractCall(
-								someERC721Scenarios, "getApproved",
-								tokenMirrorAddr.get(), 2L
-						)
-								.via("MISSING_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS)),
+//						sourcing(() -> contractCall(
+//								someERC721Scenarios, "getApproved",
+//								tokenMirrorAddr.get(), 55L
+//						)
+//								.via("MISSING_SERIAL").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+//						getTokenNftInfo(nfToken, 1L).logged(),
+//						sourcing(() -> contractCall(
+//								someERC721Scenarios, "getApproved",
+//								tokenMirrorAddr.get(), 2L
+//						)
+//								.via("MISSING_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "getApproved",
 								tokenMirrorAddr.get(), 1L
 						)
 								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
-
+//
 				).then(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												childRecordsCheck("MISSING_SPENDER", SUCCESS,
-														recordWith()
-																.status(SUCCESS)
-																.contractCallResult(
-																		resultWith()
-																				.contractCallResult(htsPrecompileResult()
-																						.forFunction(
-																								HTSPrecompileResult.FunctionType.GET_APPROVED)
-																						.withApproved(new byte[0])
-																				)
-																)
-												),
-												childRecordsCheck("WITH_SPENDER", SUCCESS,
-														recordWith()
-																.status(SUCCESS)
-																.contractCallResult(
-																		resultWith()
-																				.contractCallResult(htsPrecompileResult()
-																						.forFunction(
-																								HTSPrecompileResult.FunctionType.GET_APPROVED)
-																						.withApproved(asAddress(
-																								spec.registry().getAccountID(
-																										aCivilian)))
-																				)
-																)
-												)
-										)
-						)
+//						withOpContext(
+//								(spec, opLog) ->
+//										allRunFor(
+//												spec,
+//												childRecordsCheck("MISSING_SPENDER", SUCCESS,
+//														recordWith()
+//																.status(SUCCESS)
+//																.contractCallResult(
+//																		resultWith()
+//																				.contractCallResult
+//																				(htsPrecompileResult()
+//																						.forFunction(
+//																								HTSPrecompileResult
+//																								.FunctionType
+//																								.GET_APPROVED)
+//																						.withApproved(new byte[0])
+//																				)
+//																)
+//												),
+//												childRecordsCheck("WITH_SPENDER", SUCCESS,
+//														recordWith()
+//																.status(SUCCESS)
+//																.contractCallResult(
+//																		resultWith()
+//																				.contractCallResult
+//																				(htsPrecompileResult()
+//																						.forFunction(
+//																								HTSPrecompileResult
+//																								.FunctionType
+//																								.GET_APPROVED)
+//																						.withApproved(asAddress(
+//																								spec.registry()
+//																								.getAccountID(
+//																										aCivilian)))
+//																				)
+//																)
+//												)
+//										)
+//						)
 
 				);
 	}
@@ -2675,7 +2731,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
-						mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("A"),ByteString.copyFromUtf8("B"))),
+						mintToken(NON_FUNGIBLE_TOKEN,
+								List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("B"))),
 						uploadInitCode(ERC_721_CONTRACT),
 						contractCreate(ERC_721_CONTRACT),
 						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
@@ -2726,7 +2783,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.forFunction(HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
 																.withIsApprovedForAll(true)
 														)
 										)
@@ -2737,7 +2795,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.forFunction(HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.IS_APPROVED_FOR_ALL)
 																.withIsApprovedForAll(false)
 														)
 										)
@@ -3158,7 +3217,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
 						tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
-						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY,
+						cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY,
 								OWNER))
 				).when(withOpContext(
 								(spec, opLog) ->
@@ -3167,7 +3226,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												cryptoApproveAllowance()
 														.payingWith(DEFAULT_PAYER)
 														.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ERC_721_CONTRACT,
-false,
+																false,
 																List.of(1L))
 														.via("baseApproveTxn")
 														.logged()
@@ -3217,7 +3276,7 @@ false,
 						tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
 						cryptoTransfer(
-								TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER))
+								movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
