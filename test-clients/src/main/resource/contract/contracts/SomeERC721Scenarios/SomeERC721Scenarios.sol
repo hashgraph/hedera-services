@@ -58,4 +58,12 @@ contract SomeERC721Scenarios {
     ) external view {
         IERC721(token).isApprovedForAll(owner, operator);
     }
+
+    function setApprovalForAll(
+        address token,
+        address operator,
+        bool approved
+    ) external {
+        IERC721(token).setApprovalForAll(operator, approved);
+    }
 }
