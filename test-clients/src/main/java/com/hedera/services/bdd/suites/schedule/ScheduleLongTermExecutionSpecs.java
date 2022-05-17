@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.nAscii;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -58,7 +59,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
@@ -94,6 +98,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionTriggersWithWeirdlyRepeatedKey(),
 
 			executionNoSigTxnRequiredWorks(),
+
+			failsWithExpiryInPast(),
+			failsWithExpiryInFarFuture(),
 
 			disableLongTermScheduledTransactions(),
 
@@ -1040,6 +1047,36 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 
 						getAccountBalance("receiver").hasTinyBars(0L)
 				);
+	}
+
+	private HapiApiSpec failsWithExpiryInPast() {
+		return defaultHapiSpec("FailsWithExpiryInPast")
+				.given(
+						cryptoCreate("sender").via("senderTxn")
+				).when(
+						scheduleCreate("validSchedule",
+								cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 1))
+						)
+								.withRelativeExpiry("senderTxn", -1)
+								.hasKnownStatus(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME)
+				)
+				.then();
+	}
+
+	private HapiApiSpec failsWithExpiryInFarFuture() {
+		return defaultHapiSpec("FailsWithExpiryInFarFuture")
+				.given(
+						cryptoCreate("sender").via("senderTxn")
+				).when(
+						scheduleCreate("validSchedule",
+								cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 1))
+						)
+								.withRelativeExpiry("senderTxn",
+										Long.parseLong(HapiSpecSetup.getDefaultNodeProps().
+												get("scheduling.maxExpirationFutureSeconds")) + 10)
+								.hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE)
+				)
+				.then();
 	}
 
 
