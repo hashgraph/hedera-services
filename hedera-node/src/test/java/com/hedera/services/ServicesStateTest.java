@@ -819,11 +819,6 @@ class ServicesStateTest {
 		assertSame(specialFiles, copy.specialFiles());
 	}
 
-	@Test
-	void migrationWorksAsExpected() {
-		subject.migrate();
-	}
-
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
