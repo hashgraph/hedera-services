@@ -157,6 +157,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -556,7 +557,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
-							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> dynamicProperties.isHTSPrecompileCreateEnabled() ? new TokenCreatePrecompile() : null;
+							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
+							dynamicProperties.isHTSPrecompileCreateEnabled() ? new TokenCreatePrecompile() : null;
 					default -> null;
 				};
 		if (precompile != null) {
@@ -1457,11 +1459,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			return null;
-		}
-
-		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
 		}
@@ -1489,8 +1486,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER ->
-						decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
 				case ABI_ID_ERC_TRANSFER_FROM -> {
 					final var operatorId = EntityId.fromGrpcAccountId(callerId);
 					yield decoder.decodeERCTransferFrom(
@@ -1505,6 +1501,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(final MessageFrame frame) {
+			if (!isFungible) {
+				final var nftExchange = transferOp.get(0).nftExchanges().get(0);
+				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
+				validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+			}
 			super.run(frame);
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer());
@@ -1648,6 +1649,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final var nftsLedger = ledgers.nfts();
+			validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			final var owner = ledgers.ownerOf(nftId);
 			final var priorityAddress = ledgers.canonicalAddress(owner);
 			return encoder.encodeOwner(priorityAddress);
@@ -1907,6 +1910,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var nftsLedger = ledgers.nfts();
 			final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
+			validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
 			return encoder.encodeGetApproved(spender.toEvmAddress());
 		}
@@ -1929,9 +1933,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		@SuppressWarnings("unchecked")
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
+			final var accountsLedger = ledgers.accounts();
+			final var ownerId = isApproveForAllWrapper.owner();
+			validateTrueOrRevert(accountsLedger.contains(ownerId), INVALID_ALLOWANCE_OWNER_ID);
 			final var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(
-					isApproveForAllWrapper.owner(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+					ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
 			final var allowanceId = FcTokenAllowanceId.from(tokenId, isApproveForAllWrapper.operator());
 			final var answer = allowances.contains(allowanceId);
 			return encoder.encodeIsApprovedForAll(answer);
