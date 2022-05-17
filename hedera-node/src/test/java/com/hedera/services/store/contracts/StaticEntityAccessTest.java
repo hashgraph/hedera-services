@@ -30,10 +30,11 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -97,7 +98,7 @@ class StaticEntityAccessTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts;
 
 	private StaticEntityAccess subject;
 
@@ -315,9 +316,11 @@ class StaticEntityAccessTest {
 	}
 
 	private static final NftId nft = new NftId(0, 0, 123, 456);
-	private static final EntityNumPair nftKey = EntityNumPair.fromNftId(nft);
-	private static final MerkleUniqueToken treasuryOwned = new MerkleUniqueToken(
-			MISSING_ENTITY_ID, "There, the eyes are".getBytes(StandardCharsets.UTF_8),
+	private static final UniqueTokenKey nftKey = UniqueTokenKey.from(nft);
+	private static final UniqueTokenValue treasuryOwned = new UniqueTokenValue(
+			MISSING_ENTITY_ID.num(),
+			MISSING_ENTITY_ID.num(),
+			"There, the eyes are".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(1, 2));
 	private static final int decimals = 666666;
 	private static final long someExpiry = 1_234_567L;
@@ -329,8 +332,10 @@ class StaticEntityAccessTest {
 	private static final EntityNum tokenNum = EntityNum.fromLong(666);
 	private static final EntityNum accountNum = EntityNum.fromLong(888);
 	private static final EntityNum treasuryNum = EntityNum.fromLong(999);
-	private static final MerkleUniqueToken accountOwned = new MerkleUniqueToken(
-			accountNum.toEntityId(), "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
+	private static final UniqueTokenValue accountOwned = new UniqueTokenValue(
+			accountNum.longValue(),
+			MISSING_ENTITY_ID.num(),
+			"There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(2, 3));
 	private static final Address treasuryAddress = treasuryNum.toEvmAddress();
 	private static final TokenID tokenId = tokenNum.toGrpcTokenId();

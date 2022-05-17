@@ -35,9 +35,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -117,7 +117,7 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private MerkleAccount ownerAccount;
 	@Mock
-	private MerkleUniqueToken merkleUniqueToken;
+	private UniqueTokenValue uniqueTokenValue;
 	@Mock
 	private UniqueToken uniqueToken;
 	@Mock
@@ -184,7 +184,7 @@ class ApproveAllowanceChecksTest {
 
 		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
 		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
-		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		final BackingStore<NftId, UniqueTokenValue> nfts = mock(BackingNfts.class);
 		BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels = mock(BackingTokenRels.class);
 		given(view.asReadOnlyAccountStore()).willReturn(store);
 		given(view.asReadOnlyTokenStore()).willReturn(tokens);
@@ -196,16 +196,16 @@ class ApproveAllowanceChecksTest {
 		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
 		given(tokens.getImmutableRef(token2)).willReturn(merkleTokenNFT);
-		given(nfts.getImmutableRef(token2Nft1)).willReturn(merkleUniqueToken);
-		given(nfts.getImmutableRef(token2Nft2)).willReturn(merkleUniqueToken);
+		given(nfts.getImmutableRef(token2Nft1)).willReturn(uniqueTokenValue);
+		given(nfts.getImmutableRef(token2Nft2)).willReturn(uniqueTokenValue);
 		given(rels.contains(Pair.of(ownerId1, token1))).willReturn(true);
 		given(rels.contains(Pair.of(ownerId1, token2))).willReturn(true);
 
 		given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
-		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-		given(merkleUniqueToken.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));
+		given(uniqueTokenValue.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(uniqueTokenValue.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));
 	}
 
 	@Test
@@ -388,7 +388,7 @@ class ApproveAllowanceChecksTest {
 
 		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
 		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
-		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		final BackingStore<NftId, UniqueTokenValue> nfts = mock(BackingNfts.class);
 		given(view.asReadOnlyAccountStore()).willReturn(store);
 		given(view.asReadOnlyTokenStore()).willReturn(tokens);
 		given(view.asReadOnlyNftStore()).willReturn(nfts);

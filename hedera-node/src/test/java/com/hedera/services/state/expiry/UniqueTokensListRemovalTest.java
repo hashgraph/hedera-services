@@ -20,11 +20,11 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class UniqueTokensListRemovalTest {
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
 	private UniqueTokensListRemoval subject;
 
@@ -141,20 +141,17 @@ class UniqueTokensListRemovalTest {
 	private final int ownerNum = 1_235;
 	private final long rootNum = 2L;
 	private final long nextNum = 8L;
-	private final long targetNum = 4L;
 	private final long seconds = 1_234_567L;
 	private final int nanos = 890;
 	private final NftNumPair rootPair = NftNumPair.fromLongs(tokenNum, rootNum);
 	private final NftNumPair nextPair = NftNumPair.fromLongs(tokenNum, nextNum);
-	private final NftNumPair targetPair = NftNumPair.fromLongs(tokenNum, targetNum);
-	private final long packedTime = BitPackUtils.packedTime(seconds, nanos);
-	private final EntityNumPair rootNftKey = EntityNumPair.fromLongs(tokenNum, rootNum);
-	private final EntityNumPair nextNftKey = EntityNumPair.fromLongs(tokenNum, nextNum);
-	private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(tokenNum, targetNum);
-	private final MerkleUniqueToken rootNft = new MerkleUniqueToken(
-			ownerNum, "aa".getBytes(StandardCharsets.UTF_8), packedTime, rootNum);
-	private final MerkleUniqueToken nextNft = new MerkleUniqueToken(
-			ownerNum, "bb".getBytes(StandardCharsets.UTF_8), packedTime, nextNum);
-	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(
-			ownerNum, "cc".getBytes(StandardCharsets.UTF_8), packedTime, targetNum);
+	private final RichInstant creationTime = new RichInstant(seconds, nanos);
+	private final UniqueTokenKey rootNftKey = new UniqueTokenKey(tokenNum, rootNum);
+	private final UniqueTokenKey nextNftKey = new UniqueTokenKey(tokenNum, nextNum);
+	private final UniqueTokenValue rootNft = new UniqueTokenValue(
+			ownerNum, 0, "aa".getBytes(StandardCharsets.UTF_8), creationTime);
+	private final UniqueTokenValue nextNft = new UniqueTokenValue(
+			ownerNum, 0, "bb".getBytes(StandardCharsets.UTF_8), creationTime);
+	private final UniqueTokenValue targetNft = new UniqueTokenValue(
+			ownerNum, 0, "cc".getBytes(StandardCharsets.UTF_8), creationTime);
 }

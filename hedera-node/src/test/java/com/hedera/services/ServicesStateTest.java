@@ -31,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -39,6 +38,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
@@ -755,7 +756,7 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+			VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts,
 			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {

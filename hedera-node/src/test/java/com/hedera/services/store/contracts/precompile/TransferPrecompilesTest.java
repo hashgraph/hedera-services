@@ -44,9 +44,9 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
@@ -181,7 +181,7 @@ class TransferPrecompilesTest {
 	@Mock
 	private WorldLedgers wrappedLedgers;
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nfts;
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 	@Mock

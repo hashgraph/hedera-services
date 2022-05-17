@@ -84,11 +84,11 @@ class UniqueTokensMigratorTest {
 		VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
 		assertThat(result.size()).isEqualTo(3);
 
-		UniqueTokenValue token1 = result.get(UniqueTokenKey.fromNftId(
+		UniqueTokenValue token1 = result.get(UniqueTokenKey.from(
 				NftId.withDefaultShardRealm(0xFFFF_FFFFL, 0xFFFF_FFFFL - 1)));
-		UniqueTokenValue token2 = result.get(UniqueTokenKey.fromNftId(
+		UniqueTokenValue token2 = result.get(UniqueTokenKey.from(
 				NftId.withDefaultShardRealm(0xFFFF_FFFFL - 3, 0xFFFF_FFFFL - 4)));
-		UniqueTokenValue token3 = result.get(UniqueTokenKey.fromNftId(
+		UniqueTokenValue token3 = result.get(UniqueTokenKey.from(
 				NftId.withDefaultShardRealm(0xFFFF_FFFFL - 5, 0xFFFF_FFFFL - 6)));
 
 		// Verify token owners

@@ -28,9 +28,9 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -80,7 +80,7 @@ class TypedTokenStoreTest {
 	@Mock
 	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
-	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+	private BackingStore<NftId, UniqueTokenValue> uniqueTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
@@ -278,7 +278,8 @@ class TypedTokenStoreTest {
 		// and:
 		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
 		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
-		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
+		final var expectedNewUniqToken = new UniqueTokenValue(MISSING_ENTITY_ID.num(), MISSING_ENTITY_ID.num(), nftMeta,
+				creationTime);
 		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
 		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
@@ -378,8 +379,8 @@ class TypedTokenStoreTest {
 		nft2.setCreationTime(MISSING_INSTANT);
 		nft2.setSpender(autoRenewId);
 
-		final var mut1 = new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT);
-		final var mut2 = new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT);
+		final var mut1 = new UniqueTokenValue(treasuryId.num(), MISSING_ENTITY_ID.num(), meta1, MISSING_INSTANT);
+		final var mut2 = new UniqueTokenValue(miscId.num(), MISSING_ENTITY_ID.num(), meta2, MISSING_INSTANT);
 		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
 		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 

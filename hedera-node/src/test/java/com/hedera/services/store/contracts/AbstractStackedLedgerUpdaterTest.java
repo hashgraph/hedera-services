@@ -36,7 +36,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -221,7 +221,7 @@ class AbstractStackedLedgerUpdaterTest {
 				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 		final var tokensLedger = new TransactionalLedger<>(
@@ -242,8 +242,6 @@ class AbstractStackedLedgerUpdaterTest {
 	private static final Address bAddress = EntityNum.fromLong(54321).toEvmAddress();
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
-	private static final long aExpiry = 1_234_567L;
-	private static final long aAutoRenew = 7776000L;
 	private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");

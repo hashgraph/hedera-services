@@ -23,9 +23,9 @@ package com.hedera.services.ledger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -64,7 +64,7 @@ class MerkleAccountScopedCheckTest {
 	@Mock
 	private BalanceChange balanceChange;
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	@Mock
 	private MerkleAccount account;
 	@Mock

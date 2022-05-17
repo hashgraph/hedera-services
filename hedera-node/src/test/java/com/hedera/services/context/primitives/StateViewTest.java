@@ -40,11 +40,12 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -182,7 +183,7 @@ class StateViewTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
@@ -313,7 +314,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		uniqueTokens = new MerkleMap<>();
+		uniqueTokens = new VirtualMap<>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -986,7 +987,7 @@ class StateViewTest {
 
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
-		given(tokens.get(targetNftKey.getHiOrderAsNum())).willReturn(token);
+		given(tokens.get(EntityNum.fromLong(targetNftKey.getNum()))).willReturn(token);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
@@ -1065,11 +1066,16 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("0.0.9"))
 			.setSerialNumber(5L)
 			.build();
-	private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
-	private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
-	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
+	private final UniqueTokenKey targetNftKey = new UniqueTokenKey(3, 4);
+	private final UniqueTokenKey treasuryNftKey = new UniqueTokenKey(3, 5);
+	private final UniqueTokenValue targetNft = new UniqueTokenValue(
+			nftOwnerId.getAccountNum(),
+			MISSING_ENTITY_ID.num(),
+			nftMeta,
 			fromJava(nftCreation));
-	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),
+	private final UniqueTokenValue treasuryNft = new UniqueTokenValue(
+			treasuryOwnerId.getAccountNum(),
+			MISSING_ENTITY_ID.num(),
 			nftMeta,
 			fromJava(nftCreation));
 

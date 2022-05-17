@@ -40,9 +40,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -114,7 +114,7 @@ class WorldLedgersTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	@Mock
@@ -343,7 +343,7 @@ class WorldLedgersTest {
 				new ChangeSummaryManager<>());
 		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 		final var liveTokens = new TransactionalLedger<>(
@@ -399,7 +399,7 @@ class WorldLedgersTest {
 				new ChangeSummaryManager<>());
 		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 		final var liveTokens = new TransactionalLedger<>(

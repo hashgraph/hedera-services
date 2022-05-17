@@ -22,7 +22,8 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -54,7 +55,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 	@Test
 	void noChangesAreNoOp() {
-		final var changes = new EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>();
+		final var changes = new EntityChangeSet<NftId, UniqueTokenValue, NftProperty>();
 
 		subject.preview(changes);
 
@@ -63,8 +64,8 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 	@Test
 	void resultsInNoOpForNoOwnershipChanges() {
-		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
-		var nft = mock(MerkleUniqueToken.class);
+		var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
+		var nft = mock(UniqueTokenValue.class);
 		var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
 
 		given(changes.size()).willReturn(1);
@@ -79,8 +80,8 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 	@Test
 	void triggersUpdateLinksAsExpected() {
-		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
-		final var nft = mock(MerkleUniqueToken.class);
+		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(UniqueTokenValue.class);
 		final var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
 		final long ownerNum = 1111L;
 		final long newOwnerNum = 1234L;
@@ -88,7 +89,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		final long serialNum = 2L;
 		EntityNum owner = EntityNum.fromLong(ownerNum);
 		EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
-		EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
+		UniqueTokenKey nftKey = new UniqueTokenKey(tokenNum, serialNum);
 
 
 		given(changes.size()).willReturn(1);
@@ -97,8 +98,6 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(change.containsKey(NftProperty.OWNER)).willReturn(true);
 		given(change.get(NftProperty.OWNER)).willReturn(newOwner.toEntityId());
 		given(nft.getOwner()).willReturn(owner.toEntityId());
-		given(nft.getKey()).willReturn(nftKey);
-
 
 		subject.preview(changes);
 
@@ -107,21 +106,18 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
 	@Test
 	void triggersUpdateLinksOnWipeAsExpected() {
-		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
-		final var nft = mock(MerkleUniqueToken.class);
+		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(UniqueTokenValue.class);
 		final long ownerNum = 1111L;
 		final long tokenNum = 2222L;
 		final long serialNum = 2L;
 		EntityNum owner = EntityNum.fromLong(ownerNum);
-		EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
-
+		UniqueTokenKey nftKey = new UniqueTokenKey(tokenNum, serialNum);
 
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(null);
 		given(nft.getOwner()).willReturn(owner.toEntityId());
-		given(nft.getKey()).willReturn(nftKey);
-
 
 		subject.preview(changes);
 
