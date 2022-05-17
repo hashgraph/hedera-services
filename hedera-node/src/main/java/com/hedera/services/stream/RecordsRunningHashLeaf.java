@@ -141,7 +141,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		this.invalidateHash();
 	}
 
-	public Hash getLatestBlockHash() throws InterruptedException {
+	public Hash currentRunningHash() throws InterruptedException {
 		return runningHash.getFutureHash().get();
 	}
 }
