@@ -200,6 +200,15 @@ public class HederaLedger {
 		}
 	}
 
+	/**
+	 * Commits the pending change sets in the four {@link TransactionalLedger} implementations.
+	 *
+	 * <p><b>Important: </b> The <i>order</i> of these {@code commit()} calls matters, because the
+	 * {@code tokenRelsLedger} and {@code nftsLedger} both have interceptors that update properties in the
+	 * accounts {@code MerkleMap}. If either of them were committed before the {@code accountsLedger} at
+	 * the end of a contract operation, their changes would be overwritten, since in a contract operation,
+	 * <i>all</i> {@link AccountProperty} values appear in an account's change set.
+	 */
 	public void commit() {
 		// The ledger interceptors track side effects, hence must be committed before saving a record
 		accountsLedger.commit();

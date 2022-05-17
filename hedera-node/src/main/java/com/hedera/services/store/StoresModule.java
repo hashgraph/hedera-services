@@ -41,6 +41,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -52,6 +53,7 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -68,7 +70,8 @@ public interface StoresModule {
 
 	@Binds
 	@Singleton
-	BackingStore<NftId, UniqueTokenValue> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, UniqueTokenValue> bindBackingNfts(
+			TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger);
 
 	@Binds
 	@Singleton
@@ -77,14 +80,13 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, UniqueTokenValue> provideNftsLedger(
-			final BackingStore<NftId, UniqueTokenValue> backingNfts,
-			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokensLinkManager uniqueTokensLinkManager
+			final UniqueTokensLinkManager uniqueTokensLinkManager,
+			final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens
 	) {
 		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
 				UniqueTokenValue::new,
-				backingNfts,
+				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
 		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
