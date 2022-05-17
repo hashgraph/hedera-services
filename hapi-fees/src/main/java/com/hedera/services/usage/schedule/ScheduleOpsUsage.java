@@ -20,6 +20,7 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
@@ -48,8 +49,10 @@ public class ScheduleOpsUsage {
 	/* Scheduled transaction ids have the scheduled=true flag set */
 	private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
 
-	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
-	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+	@VisibleForTesting
+	EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+	@VisibleForTesting
+	Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
 	@Inject
 	public ScheduleOpsUsage() {

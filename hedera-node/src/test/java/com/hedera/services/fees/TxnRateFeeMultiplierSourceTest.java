@@ -128,8 +128,8 @@ class TxnRateFeeMultiplierSourceTest {
 	) {
 		final var aThrottle = DeterministicThrottle.withTps(firstTps);
 		final var bThrottle = DeterministicThrottle.withTps(secondTps);
-		aThrottle.allow(firstUsed);
-		bThrottle.allow(secondUsed);
+		aThrottle.allow(firstUsed, Instant.now());
+		bThrottle.allow(secondUsed, Instant.now());
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
 		subject.resetExpectations();
@@ -155,7 +155,7 @@ class TxnRateFeeMultiplierSourceTest {
 	@Test
 	void adaptsToChangedProperties() {
 		final var aThrottle = DeterministicThrottle.withTps(100);
-		aThrottle.allow(96);
+		aThrottle.allow(96, Instant.now());
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
 
 		subject.resetExpectations();
@@ -244,7 +244,7 @@ class TxnRateFeeMultiplierSourceTest {
 	@Test
 	void disabledWhenCongestionExempt() {
 		final var aThrottle = DeterministicThrottle.withTps(100);
-		aThrottle.allow(96);
+		aThrottle.allow(96, Instant.now());
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
 
 		subject.resetExpectations();

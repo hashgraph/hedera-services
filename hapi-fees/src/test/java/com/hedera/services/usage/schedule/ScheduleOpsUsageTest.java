@@ -108,8 +108,8 @@ class ScheduleOpsUsageTest {
 		queryEstimatorFactory = mock(Function.class);
 		given(queryEstimatorFactory.apply(ANSWER_STATE_PROOF)).willReturn(queryBase);
 
-		ScheduleOpsUsage.txnEstimateFactory = factory;
-		ScheduleOpsUsage.queryEstimateFactory = queryEstimatorFactory;
+		subject.txnEstimateFactory = factory;
+		subject.queryEstimateFactory = queryEstimatorFactory;
 	}
 
 	@Test

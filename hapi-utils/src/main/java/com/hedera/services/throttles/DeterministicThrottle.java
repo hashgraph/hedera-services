@@ -111,10 +111,6 @@ public class DeterministicThrottle {
 		return nTransactions * BucketThrottle.capacityUnitsPerTxn();
 	}
 
-	public boolean allow(final int n) {
-		return allow(n, Instant.now());
-	}
-
 	public boolean allow(final int n, final Instant now) {
 		long elapsedNanos = 0L;
 		if (lastDecisionTime != NEVER) {
