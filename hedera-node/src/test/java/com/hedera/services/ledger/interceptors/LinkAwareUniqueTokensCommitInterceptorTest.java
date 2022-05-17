@@ -64,6 +64,18 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	}
 
 	@Test
+	void zombieCommitIsNoOp() {
+		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		given(changes.size()).willReturn(1);
+		given(changes.entity(0)).willReturn(null);
+		given(changes.changes(0)).willReturn(null);
+
+		subject.preview(changes);
+
+		verifyNoInteractions(uniqueTokensLinkManager);
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void resultsInNoOpForNoOwnershipChanges() {
 		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
