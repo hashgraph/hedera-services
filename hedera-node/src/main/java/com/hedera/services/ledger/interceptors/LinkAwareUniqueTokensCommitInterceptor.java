@@ -23,8 +23,9 @@ package com.hedera.services.ledger.interceptors;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
@@ -33,7 +34,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 /**
  * Placeholder for upcoming work.
  */
-public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
+public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor<NftId, UniqueTokenValue, NftProperty> {
 	private final UniqueTokensLinkManager uniqueTokensLinkManager;
 
 	public LinkAwareUniqueTokensCommitInterceptor(final UniqueTokensLinkManager uniqueTokensLinkManager) {
@@ -44,7 +45,7 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void preview(final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges) {
+	public void preview(final EntityChangeSet<NftId, UniqueTokenValue, NftProperty> pendingChanges) {
 		final var n = pendingChanges.size();
 		if (n == 0) {
 			return;
@@ -52,19 +53,21 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 		for (int i = 0; i < n; i++) {
 			final var entity = pendingChanges.entity(i);
 			final var change = pendingChanges.changes(i);
+			final var nftId = UniqueTokenKey.from(pendingChanges.id(i));
+
 			if (entity != null) {
 				final var fromAccount = entity.getOwner();
 				if (change == null && !entity.getOwner().equals(MISSING_ENTITY_ID)) {
 					uniqueTokensLinkManager.updateLinks(
 							fromAccount.asNum(),
 							null,
-							entity.getKey());
+							nftId);
 				} else if (change != null && change.containsKey(OWNER)) {
 					final var toAccount = (EntityId) change.get(OWNER);
 					uniqueTokensLinkManager.updateLinks(
 							fromAccount.asNum(),
 							toAccount.asNum(),
-							entity.getKey());
+							nftId);
 				}
 			}
 		}

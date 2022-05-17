@@ -53,12 +53,12 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
@@ -720,7 +720,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface TransferLogicFactory {
 		TransferLogic newLogic(
 				TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+				TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 				HederaTokenStore tokenStore,
 				SideEffectsTracker sideEffectsTracker,
@@ -742,7 +742,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		TypedTokenStore newTokenStore(
 				AccountStore accountStore,
 				BackingStore<TokenID, MerkleToken> tokens,
-				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+				BackingStore<NftId, UniqueTokenValue> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
 				SideEffectsTracker sideEffectsTracker);
 	}
@@ -755,7 +755,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				SideEffectsTracker sideEffectsTracker,
 				GlobalDynamicProperties properties,
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+				TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
 				BackingStore<TokenID, MerkleToken> backingTokens);
 	}
 

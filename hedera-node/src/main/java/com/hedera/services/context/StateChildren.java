@@ -28,9 +28,10 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -66,7 +67,7 @@ public interface StateChildren {
 
 	MerkleSpecialFiles specialFiles();
 
-	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
+	VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens();
 
 	RecordsRunningHashLeaf runningHashLeaf();
 

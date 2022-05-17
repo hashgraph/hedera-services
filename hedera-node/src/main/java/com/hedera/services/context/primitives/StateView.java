@@ -41,11 +41,12 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -137,7 +138,7 @@ public class StateView {
 
 	private BackingStore<TokenID, MerkleToken> backingTokens = null;
 	private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
-	private BackingStore<NftId, MerkleUniqueToken> backingNfts = null;
+	private BackingStore<NftId, UniqueTokenValue> backingNfts = null;
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
 	public StateView(
@@ -337,7 +338,7 @@ public class StateView {
 	public Optional<TokenNftInfo> infoForNft(final NftID target) {
 		final var currentNfts = uniqueTokens();
 		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-		final var targetKey = EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
+		final var targetKey = new UniqueTokenKey(tokenId.longValue(), target.getSerialNumber());
 		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
@@ -367,7 +368,7 @@ public class StateView {
 
 	public boolean nftExists(final NftID id) {
 		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
-		final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
+		final var key = new UniqueTokenKey(tokenNum.longValue(), id.getSerialNumber());
 		return uniqueTokens().containsKey(key);
 	}
 
@@ -576,8 +577,8 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
 	}
 
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		return stateChildren == null ? emptyMm() : stateChildren.uniqueTokens();
+	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
+		return stateChildren == null ? emptyVm() : stateChildren.uniqueTokens();
 	}
 
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -606,7 +607,7 @@ public class StateView {
 		return backingAccounts;
 	}
 
-	public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
+	public BackingStore<NftId, UniqueTokenValue> asReadOnlyNftStore() {
 		if (backingNfts == null) {
 			backingNfts = new BackingNfts(stateChildren::uniqueTokens);
 		}

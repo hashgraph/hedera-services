@@ -23,6 +23,7 @@ package com.hedera.services.state.virtual;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -57,8 +58,12 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	 * @param nftId the NftId to create a UniqueTokenKey from.
 	 * @return a new instance of a UniqueTokenKey corresponding to NftId.
 	 */
-	public static UniqueTokenKey fromNftId(NftId nftId) {
+	public static UniqueTokenKey from(final NftId nftId) {
 		return new UniqueTokenKey(nftId.num(), nftId.serialNo());
+	}
+
+	public static UniqueTokenKey from(final NftNumPair nftNumPair) {
+		return new UniqueTokenKey(nftNumPair.tokenNum(), nftNumPair.serialNum());
 	}
 
 	/** The entity number of the token.*/
@@ -253,10 +258,16 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	}
 
 	/**
-	 * Convenience function to construct a corresponding {@link EntityNumPair} from this instance.
-	 * @return
+	 * @return a corresponding {@link EntityNumPair} from this instance.
 	 */
 	public EntityNumPair toEntityNumPair() {
 		return EntityNumPair.fromLongs(entityNum, tokenSerial);
+	}
+
+	/**
+	 * @return a corresponding {@link NftNumPair} from this instance.
+	 */
+	public NftNumPair toNftNumPair() {
+		return NftNumPair.fromLongs(entityNum, tokenSerial);
 	}
 }

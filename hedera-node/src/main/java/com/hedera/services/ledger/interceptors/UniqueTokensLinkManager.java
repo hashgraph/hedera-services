@@ -23,10 +23,12 @@ package com.hedera.services.ledger.interceptors;
 import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,13 +46,13 @@ public class UniqueTokensLinkManager {
 
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens;
 
 	@Inject
 	public UniqueTokensLinkManager(
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
+			final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens
 	) {
 		this.accounts = accounts;
 		this.tokens = tokens;
@@ -60,13 +62,13 @@ public class UniqueTokensLinkManager {
 	public void updateLinks(
 			@Nonnull final EntityNum from,
 			@Nullable final EntityNum to,
-			@Nonnull final EntityNumPair nftId
+			@Nonnull final UniqueTokenKey nftId
 	) {
 		final var curAccounts = accounts.get();
 		final var curTokens = tokens.get();
 		final var curUniqueTokens = uniqueTokens.get();
 
-		final var token = curTokens.get(nftId.getHiOrderAsNum());
+		final var token = curTokens.get(nftId.toEntityNumPair().getHiOrderAsNum());
 		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
 		// Update "from" account
@@ -80,8 +82,8 @@ public class UniqueTokensLinkManager {
 				log.error("Should not be possible : Root of owned nfts list is null, but account : {} owns nft : {}", from, nftId);
 			}
 
-			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
-			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
+			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getNum());
+			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getTokenSerial());
 		}
 
 		// Update "to" account
@@ -89,7 +91,7 @@ public class UniqueTokensLinkManager {
 			final var nft = listMutation.getForModify(nftId);
 			if (nft != null) {
 				final var toAccount = curAccounts.getForModify(to);
-				final var nftNumPair = nftId.asNftNumPair();
+				final var nftNumPair = nftId.toNftNumPair();
 				final var rootKey = rootKeyOf(toAccount);
 
 				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
@@ -104,9 +106,9 @@ public class UniqueTokensLinkManager {
 	}
 
 	@Nullable
-	private EntityNumPair rootKeyOf(final MerkleAccount account) {
+	private UniqueTokenKey rootKeyOf(final MerkleAccount account) {
 		final var headNum = account.getHeadNftId();
 		final var headSerialNum = account.getHeadNftSerialNum();
-		return headNum == 0 ? null : EntityNumPair.fromLongs(headNum, headSerialNum);
+		return headNum == 0 ? null : new UniqueTokenKey(headNum, headSerialNum);
 	}
 }

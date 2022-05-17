@@ -28,14 +28,16 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,7 +68,7 @@ public class AccountGC {
 	private final TreasuryReturnHelper treasuryReturnHelper;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
-	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeInPlaceFromMapValueList;
@@ -78,7 +80,7 @@ public class AccountGC {
 			final TreasuryReturnHelper treasuryReturnHelper,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
+			final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.tokenRels = tokenRels;
@@ -139,9 +141,9 @@ public class AccountGC {
 			final long nftsOwned,
 			final long headNftNum,
 			final long headSerialNum,
-			final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens
+			final VirtualMap<UniqueTokenKey, UniqueTokenValue> currUniqueTokens
 	) {
-		var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
+		var nftKey = new UniqueTokenKey(headNftNum, headSerialNum);
 		var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
 		while (nftKey != null && i-- > 0) {
 			nftKey = treasuryReturnHelper.updateNftReturns(nftKey, currUniqueTokens);

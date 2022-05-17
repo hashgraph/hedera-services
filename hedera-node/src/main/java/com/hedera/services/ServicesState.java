@@ -41,6 +41,8 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -169,7 +171,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
-			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
+			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), legacyUniqueTokens());
 
 			// When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the autoRenewalMigrator
 			if (expiryJustEnabled) {
@@ -272,7 +274,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		tokens().archive();
 		accounts().archive();
 		scheduleTxs().archive();
-		uniqueTokens().archive();
 		tokenAssociations().archive();
 	}
 
@@ -360,7 +361,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens() {
+		return getChild(StateChildIndices.UNIQUE_TOKENS);
+	}
+
+	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
