@@ -149,7 +149,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				transferErc20TokenSenderAccount(),
 				transferErc20TokenAliasedSender(),
 				directCallsWorkForERC20(),
-				erc20TransferFrom()
+				erc20TransferFrom(),
+				erc20TransferFromSelf(),
 		});
 	}
 
@@ -1994,27 +1995,29 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), 5L
 						)
 								.payingWith(bCivilian).via("D").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						// * Can't transfer with missing "from"
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "transferFrom",
 								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
 						)
-								.payingWith(GENESIS).via("MISSING_FROM").hasKnownStatus(SUCCESS)),
+								.payingWith(GENESIS).via("MISSING_FROM").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "transferFrom",
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), zCivilianMirrorAddr.get(), 1L
 						)
-								.payingWith(GENESIS).via("MISSING_TO").hasKnownStatus(SUCCESS)),
+								.payingWith(GENESIS).via("MISSING_TO").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "transferFrom",
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
 						)
-								.payingWith(GENESIS).via("MSG_SENDER_IS_THE_SAME_AS_FROM").hasKnownStatus(SUCCESS)),
+								.payingWith(GENESIS).via("MSG_SENDER_IS_THE_SAME_AS_FROM")),
 						cryptoTransfer(movingUnique(nfToken, 1L).between(bCivilian, aCivilian)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "transferFrom",
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
 						)
-								.payingWith(GENESIS).via("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM").hasKnownStatus(SUCCESS)),
+								.payingWith(GENESIS).via("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						cryptoApproveAllowance()
 								.payingWith(aCivilian)
 								.addNftAllowance(aCivilian, nfToken, someERC721Scenarios, false, List.of(1L))
@@ -2024,18 +2027,19 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "transferFrom",
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
 						)
-								.payingWith(GENESIS).via("SERIAL_NOT_OWNED_BY_FROM").hasKnownStatus(SUCCESS))
+								.payingWith(GENESIS).via("SERIAL_NOT_OWNED_BY_FROM")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				).then(
-						childRecordsCheck("MISSING_FROM", SUCCESS, recordWith()
-								.status(INVALID_ACCOUNT_ID)),
-						childRecordsCheck("MISSING_TO", SUCCESS, recordWith()
-								.status(INVALID_ACCOUNT_ID)),
-						childRecordsCheck("SERIAL_NOT_OWNED_BY_FROM", SUCCESS, recordWith()
-								.status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)),
-						childRecordsCheck("MSG_SENDER_IS_THE_SAME_AS_FROM", SUCCESS, recordWith()
-								.status(SUCCESS)),
-						childRecordsCheck("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM", SUCCESS, recordWith()
-								.status(SPENDER_DOES_NOT_HAVE_ALLOWANCE))
+						childRecordsCheck("MISSING_FROM", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("MISSING_TO", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("SERIAL_NOT_OWNED_BY_FROM", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)),
+						childRecordsCheck("MSG_SENDER_IS_THE_SAME_AS_FROM", SUCCESS,
+								recordWith().status(SUCCESS)),
+						childRecordsCheck("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE))
 				);
 	}
 
@@ -2395,64 +2399,62 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 1L
 						)
 								.gas(4_000_000)),
-//						sourcing(() -> contractCall(
-//								someERC721Scenarios, "getApproved",
-//								tokenMirrorAddr.get(), 55L
-//						)
-//								.via("MISSING_SERIAL").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-//						getTokenNftInfo(nfToken, 1L).logged(),
-//						sourcing(() -> contractCall(
-//								someERC721Scenarios, "getApproved",
-//								tokenMirrorAddr.get(), 2L
-//						)
-//								.via("MISSING_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "getApproved",
+								tokenMirrorAddr.get(), 55L
+						)
+								.via("MISSING_SERIAL").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						getTokenNftInfo(nfToken, 1L).logged(),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "getApproved",
+								tokenMirrorAddr.get(), 2L
+						)
+								.via("MISSING_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "getApproved",
 								tokenMirrorAddr.get(), 1L
 						)
 								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
-//
 				).then(
-//						withOpContext(
-//								(spec, opLog) ->
-//										allRunFor(
-//												spec,
-//												childRecordsCheck("MISSING_SPENDER", SUCCESS,
-//														recordWith()
-//																.status(SUCCESS)
-//																.contractCallResult(
-//																		resultWith()
-//																				.contractCallResult
-//																				(htsPrecompileResult()
-//																						.forFunction(
-//																								HTSPrecompileResult
-//																								.FunctionType
-//																								.GET_APPROVED)
-//																						.withApproved(new byte[0])
-//																				)
-//																)
-//												),
-//												childRecordsCheck("WITH_SPENDER", SUCCESS,
-//														recordWith()
-//																.status(SUCCESS)
-//																.contractCallResult(
-//																		resultWith()
-//																				.contractCallResult
-//																				(htsPrecompileResult()
-//																						.forFunction(
-//																								HTSPrecompileResult
-//																								.FunctionType
-//																								.GET_APPROVED)
-//																						.withApproved(asAddress(
-//																								spec.registry()
-//																								.getAccountID(
-//																										aCivilian)))
-//																				)
-//																)
-//												)
-//										)
-//						)
-
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												childRecordsCheck("MISSING_SPENDER", SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult
+																				(htsPrecompileResult()
+																						.forFunction(
+																								HTSPrecompileResult
+																								.FunctionType
+																								.GET_APPROVED)
+																						.withApproved(new byte[0])
+																				)
+																)
+												),
+												childRecordsCheck("WITH_SPENDER", SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult
+																				(htsPrecompileResult()
+																						.forFunction(
+																								HTSPrecompileResult
+																								.FunctionType
+																								.GET_APPROVED)
+																						.withApproved(asAddress(
+																								spec.registry()
+																								.getAccountID(
+																										aCivilian)))
+																				)
+																)
+												)
+										)
+						)
 				);
 	}
 
@@ -2688,7 +2690,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "isApprovedForAll",
 								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), contractMirrorAddr.get()
 						)
-								.via("OWNER_DOES_NOT_EXISTS").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+								.via("OWNER_DOES_NOT_EXISTS").gas(4_000_000)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "isApprovedForAll",
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), zCivilianMirrorAddr.get()
@@ -2811,7 +2813,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "setApprovalForAll",
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), true
 						)
-								.via("OPERATOR_SAME_AS_MSG_SENDER").gas(4_000_000).hasKnownStatus(SUCCESS)),
+								.via("OPERATOR_SAME_AS_MSG_SENDER").gas(4_000_000)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						sourcing(() -> contractCall(
 								someERC721Scenarios, "setApprovalForAll",
 								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), true
@@ -2837,14 +2840,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), aCivilianMirrorAddr.get()
 						)
 								.via("SUCCESSFULLY_REVOKED_CHECK_TXN").gas(4_000_000).hasKnownStatus(SUCCESS))
-
 				).then(
-						childRecordsCheck("OPERATOR_SAME_AS_MSG_SENDER", SUCCESS, recordWith()
-								.status(SPENDER_ACCOUNT_SAME_AS_OWNER)),
-						childRecordsCheck("OPERATOR_DOES_NOT_EXISTS", SUCCESS, recordWith()
-								.status(INVALID_ALLOWANCE_SPENDER_ID)),
-						childRecordsCheck("OPERATOR_EXISTS", SUCCESS, recordWith()
-								.status(SUCCESS)),
+						childRecordsCheck("OPERATOR_SAME_AS_MSG_SENDER", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(SPENDER_ACCOUNT_SAME_AS_OWNER)),
+						childRecordsCheck("OPERATOR_DOES_NOT_EXISTS", SUCCESS,
+								recordWith().status(INVALID_ALLOWANCE_SPENDER_ID)),
+						childRecordsCheck("OPERATOR_EXISTS", SUCCESS,
+								recordWith().status(SUCCESS)),
 						childRecordsCheck("OPERATOR_EXISTS_REVOKE_APPROVE_FOR_ALL", SUCCESS, recordWith()
 								.status(SUCCESS)),
 						withOpContext(
@@ -3357,6 +3359,47 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						)
+				);
+	}
+
+	private HapiApiSpec erc20TransferFromSelf() {
+		final var transferFromAccountTxn = "transferFromAccountTxn";
+
+		return defaultHapiSpec("Erc20TransferFromSelf")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(RECIPIENT),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(FUNGIBLE_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.initialSupply(10L)
+								.maxSupply(1000L)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						uploadInitCode(ERC_20_CONTRACT),
+						contractCreate(ERC_20_CONTRACT),
+						tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+						cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												// ERC_20_CONTRACT should be able to transfer its own tokens
+												contractCall(ERC_20_CONTRACT, "transferFrom",
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ERC_20_CONTRACT)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)),
+														2)
+														.gas(500_000L)
+														.via(transferFromAccountTxn)
+														.hasKnownStatus(SUCCESS)
+										)
+						)
+				).then(
+						getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2)
 				);
 	}
 

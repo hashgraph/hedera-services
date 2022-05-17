@@ -355,7 +355,7 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
-	void isApprovedForAll() {
+	void isApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
 		Set<FcTokenAllowanceId> allowances = new TreeSet<>();
 		FcTokenAllowanceId fcTokenAllowanceId = FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()),
 				EntityNum.fromLong(receiver.getAccountNum()));
@@ -365,6 +365,7 @@ class ERC721PrecompilesTest {
 		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_IS_APPROVED_FOR_ALL);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
+		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.operator())).willReturn(true);
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -384,6 +385,43 @@ class ERC721PrecompilesTest {
 				IS_APPROVE_FOR_ALL_WRAPPER);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(accounts.get(any(), any())).willReturn(allowances);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void isApprovedForAllWorksWithOperatorMissing() {
+		givenMinimalFrameContext();
+		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_IS_APPROVED_FOR_ALL);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
+		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getNodeFee())
+				.willReturn(1L);
+		given(mockFeeObject.getNetworkFee())
+				.willReturn(1L);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+
+		given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
+		given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), any())).willReturn(
+				IS_APPROVE_FOR_ALL_WRAPPER);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
 		// when:
 		subject.prepareFields(frame);

@@ -157,7 +157,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -1506,7 +1505,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
 				validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			}
-			super.run(frame);
+			try {
+				super.run(frame);
+			} catch (InvalidTransactionException e) {
+				throw InvalidTransactionException.fromReverting(e.getResponseCode());
+			}
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer());
 			} else {
@@ -1863,7 +1866,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 					payerAccount,
 					currentView);
-			validateTrue(status == OK, status);
+			validateTrueOrRevert(status == OK, status);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
@@ -1934,12 +1937,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@SuppressWarnings("unchecked")
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var accountsLedger = ledgers.accounts();
+			var answer = true;
 			final var ownerId = isApproveForAllWrapper.owner();
-			validateTrueOrRevert(accountsLedger.contains(ownerId), INVALID_ALLOWANCE_OWNER_ID);
-			final var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(
-					ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-			final var allowanceId = FcTokenAllowanceId.from(tokenId, isApproveForAllWrapper.operator());
-			final var answer = allowances.contains(allowanceId);
+			answer &= accountsLedger.contains(ownerId);
+			final var operatorId = isApproveForAllWrapper.operator();
+			answer &= accountsLedger.contains(operatorId);
+			if (answer) {
+				final var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(
+						ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+				final var allowanceId = FcTokenAllowanceId.from(tokenId, operatorId);
+				answer &= allowances.contains(allowanceId);
+			}
 			return encoder.encodeIsApprovedForAll(answer);
 		}
 	}
