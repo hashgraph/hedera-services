@@ -23,7 +23,9 @@ package com.hedera.services.ledger.backing;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,8 +71,7 @@ class BackingNftsTest {
 
 	@BeforeEach
 	void setUp() {
-		delegate = new VirtualMap<>();
-
+		delegate = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 		delegate.put(aKey, theToken);
 		delegate.put(bKey, notTheToken);
 
@@ -77,13 +79,9 @@ class BackingNftsTest {
 	}
 
 	@Test
-	void doSupportGettingIdSet() {
-		// when:
-		subject = new BackingNfts(() -> delegate);
-
+	void noSupportGettingIdSet() {
 		// expect:
-		assertNotNull(subject.idSet());
-		assertEquals(2, subject.size());
+		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 
 	@Test

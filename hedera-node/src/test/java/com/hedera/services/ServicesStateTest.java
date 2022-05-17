@@ -378,7 +378,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(6)).archive();
+		verify(mockMm, times(5)).archive();
 	}
 
 	@Test

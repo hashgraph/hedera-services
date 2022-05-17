@@ -48,6 +48,7 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -76,6 +77,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.codec.DecoderException;
@@ -314,7 +316,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		uniqueTokens = new VirtualMap<>();
+		uniqueTokens = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -1024,7 +1026,7 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_MM, subject.tokens());
 		assertSame(StateView.EMPTY_VM, subject.storage());
 		assertSame(StateView.EMPTY_VM, subject.contractStorage());
-		assertSame(StateView.EMPTY_MM, subject.uniqueTokens());
+		assertSame(StateView.EMPTY_VM, subject.uniqueTokens());
 		assertSame(StateView.EMPTY_MM, subject.tokenAssociations());
 		assertSame(StateView.EMPTY_MM, subject.contracts());
 		assertSame(StateView.EMPTY_MM, subject.accounts());

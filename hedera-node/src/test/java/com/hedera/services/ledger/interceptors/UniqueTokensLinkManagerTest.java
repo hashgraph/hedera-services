@@ -24,8 +24,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NftNumPair;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class UniqueTokensLinkManagerTest {
 	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-	private final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens = new VirtualMap<>();
+	private final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens =
+			new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 
 	private UniqueTokensLinkManager subject;
 

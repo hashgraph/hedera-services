@@ -477,13 +477,25 @@ class LedgerBalanceChangesTest {
 
 		backingNfts.put(
 				aaNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(aModel).num(),
+						0,
+						"aa".getBytes(),
+						MISSING_INSTANT));
 		backingNfts.put(
 				baNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(bModel).num(),
+						0,
+						"ba".getBytes(),
+						MISSING_INSTANT));
 		backingNfts.put(
 				bbNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(cModel).num(),
+						0,
+						"bb".getBytes(),
+						MISSING_INSTANT));
 
 		backingRels.rebuildFromSources();
 	}

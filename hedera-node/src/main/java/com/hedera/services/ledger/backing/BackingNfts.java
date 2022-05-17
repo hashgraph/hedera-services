@@ -24,7 +24,6 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.commons.lang3.NotImplementedException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -79,7 +78,7 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
 	@Override
 	public Set<NftId> idSet() {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

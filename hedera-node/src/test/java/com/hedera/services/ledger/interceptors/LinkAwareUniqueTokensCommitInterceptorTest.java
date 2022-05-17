@@ -26,7 +26,6 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +70,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(change);
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(0, 0));
 		given(change.containsKey(NftProperty.OWNER)).willReturn(false);
 
 		subject.preview(changes);
@@ -95,6 +95,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(change);
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(tokenNum, serialNum));
 		given(change.containsKey(NftProperty.OWNER)).willReturn(true);
 		given(change.get(NftProperty.OWNER)).willReturn(newOwner.toEntityId());
 		given(nft.getOwner()).willReturn(owner.toEntityId());
@@ -117,6 +118,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(null);
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(tokenNum, serialNum));
 		given(nft.getOwner()).willReturn(owner.toEntityId());
 
 		subject.preview(changes);
