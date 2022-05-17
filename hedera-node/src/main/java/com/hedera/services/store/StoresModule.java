@@ -26,6 +26,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -85,7 +86,7 @@ public interface StoresModule {
 			final SideEffectsTracker sideEffectsTracker,
 			final UniqueTokensLinkManager uniqueTokensLinkManager
 	) {
-		final var uniqueTokensLedger =  new TransactionalLedger<>(
+		final var uniqueTokensLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
@@ -139,14 +140,17 @@ public interface StoresModule {
 			final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx, stakingInfo, dynamicProperties);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx, stakingInfo,
+				dynamicProperties, accounts, rewardCalculator);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

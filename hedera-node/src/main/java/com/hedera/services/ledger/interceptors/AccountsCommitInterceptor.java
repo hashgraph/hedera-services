@@ -38,7 +38,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -139,20 +138,29 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 			}
 
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
-			if (merkleAccount != null && merkleAccount.getStakedId() < 0 && stakingActivated()) {
-				final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
-
-				if (reward > 0) {
-					final var stakingFundBalance = accounts.get().get(stakingFundAccount).getBalance();
-					sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
-					sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), stakingFundBalance - reward);
-				} else {
-					sideEffectsTracker.trackHbarChange(accountNum, adjustment);
-				}
+			if (shouldCalculateReward(merkleAccount)) {
+				calculateReward(accountNum, adjustment);
+				// this step will be done for changes to all staking fields in future PR
 			} else {
 				sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 			}
 		}
+	}
+
+	private void calculateReward(final long accountNum, final long adjustment) {
+		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
+
+		if (reward > 0) {
+			final var stakingFundBalance = accounts.get().get(stakingFundAccount).getBalance();
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
+			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), stakingFundBalance - reward);
+		} else {
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+		}
+	}
+
+	private boolean shouldCalculateReward(final MerkleAccount account) {
+		return account != null && account.getStakedId() < 0 && stakingActivated();
 	}
 
 	private boolean stakingActivated() {

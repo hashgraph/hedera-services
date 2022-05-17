@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -47,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
@@ -72,6 +72,10 @@ class AccountsCommitInterceptorTest {
 	private Address address1 = mock(Address.class);
 	@Mock
 	private Address address2 = mock(Address.class);
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private AccountsCommitInterceptor subject;
 
@@ -139,7 +143,7 @@ class AccountsCommitInterceptorTest {
 
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
-				dynamicProperties);
+				dynamicProperties, () -> accounts, rewardCalculator);
 
 		// rewardsSumHistory is not cleared
 		assertEquals(5, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
@@ -196,12 +200,12 @@ class AccountsCommitInterceptorTest {
 
 	private void setupMockInterceptor() {
 		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
-				dynamicProperties);
+				dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	private void setupLiveInterceptor() {
 		subject = new AccountsCommitInterceptor(new SideEffectsTracker(), () -> networkCtx, () -> stakingInfo,
-				dynamicProperties);
+				dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	private Map<AccountProperty, Object> randomAndBalanceChanges(final long newBalance) {

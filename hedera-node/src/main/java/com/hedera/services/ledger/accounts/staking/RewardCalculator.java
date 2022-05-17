@@ -29,31 +29,14 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 public class RewardCalculator {
 	public static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final Supplier<MerkleNetworkContext> networkContext;
-	private final TransactionContext txnContext;
-	private final EntityCreator creator;
-	private final SideEffectsTracker sideEffectsFactory;
-	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 
 	public static final ZoneId zoneUTC = ZoneId.of("UTC");
-	private static final String MEMO = "Staking reward transfer";
-	private static final Logger log = LogManager.getLogger(RewardCalculator.class);
 
 	@Inject
 	public RewardCalculator(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleNetworkContext> networkContext,
-			final TransactionContext txnContext,
-			final SideEffectsTracker sideEffectsFactory,
-			final EntityCreator creator,
-			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
 		this.accounts = accounts;
-		this.networkContext = networkContext;
-		this.txnContext = txnContext;
-		this.sideEffectsFactory = sideEffectsFactory;
-		this.creator = creator;
-		this.recordsHistorian = recordsHistorian;
 		this.stakingInfo = stakingInfo;
 	}
 
@@ -61,11 +44,14 @@ public class RewardCalculator {
 		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
 		final var account = accounts.get().getForModify(accountNum);
 		final var stakePeriodStart = account.getStakePeriodStart();
-		if (!noRewardToBeEarned(stakePeriodStart, todayNumber) && stakePeriodStart > -1) {
+
+		if (stakePeriodStart > -1 && !noRewardToBeEarned(stakePeriodStart, todayNumber)) {
 			if (stakePeriodStart < todayNumber - 365) {
 				account.setStakePeriodStart(todayNumber - 365);
 			}
-			if (stakePeriodStart < todayNumber - 1) {
+
+			final var newStakePeriodStart = account.getStakePeriodStart();
+			if (newStakePeriodStart < todayNumber - 1) {
 				final long reward = computeReward(account, account.getStakedId(), todayNumber);
 				account.setStakePeriodStart(todayNumber - 1);
 				return reward;
@@ -91,6 +77,6 @@ public class RewardCalculator {
 		// throughout today.  If it equals todayNumber-1, that means it either started yesterday or has already been
 		// rewarded for yesterday. Either way, it might be rewarded for today after today ends, but shouldn't yet be
 		// rewarded for today, because today hasn't finished yet.
-		return stakePeriodStart == -1 || (stakePeriodStart == todayNumber - 365) || (stakePeriodStart == todayNumber - 1);
+		return (stakePeriodStart == todayNumber - 365) || (stakePeriodStart == todayNumber - 1);
 	}
 }

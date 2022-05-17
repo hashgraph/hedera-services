@@ -25,6 +25,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -107,6 +108,10 @@ class TransactionalLedgerTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
@@ -788,7 +793,7 @@ class TransactionalLedgerTest {
 
 
 		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker(), () -> networkCtx,
-				() -> stakingInfo, dynamicProperties);
+				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}
 
