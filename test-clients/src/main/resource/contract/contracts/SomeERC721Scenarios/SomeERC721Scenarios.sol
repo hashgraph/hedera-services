@@ -66,4 +66,13 @@ contract SomeERC721Scenarios {
     ) external {
         IERC721(token).setApprovalForAll(operator, approved);
     }
+
+    function transferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 serialNo
+    ) external {
+        IERC721(token).transferFrom(from, to, serialNo);
+    }
 }

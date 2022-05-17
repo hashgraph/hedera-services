@@ -93,7 +93,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -1947,6 +1949,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec someERC721NegativeTransferFromScenariosPass() {
 		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
@@ -1981,6 +1984,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							zCivilianMirrorAddr.set(asHexedSolidityAddress(
 									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+							contractMirrorAddr.set(asHexedSolidityAddress(
+									spec.registry().getAccountID(someERC721Scenarios)));
 						}),
 						// --- Negative cases for transfer ---
 						// * Can't transfer a non-existent serial number
@@ -1988,8 +1993,49 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "iMustOwnAfterReceiving",
 								tokenMirrorAddr.get(), 5L
 						)
-								.payingWith(bCivilian).via("D").hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+								.payingWith(bCivilian).via("D").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "transferFrom",
+								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MISSING_FROM").hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "transferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), zCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MISSING_TO").hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "transferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MSG_SENDER_IS_THE_SAME_AS_FROM").hasKnownStatus(SUCCESS)),
+						cryptoTransfer(movingUnique(nfToken, 1L).between(bCivilian, aCivilian)),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "transferFrom",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM").hasKnownStatus(SUCCESS)),
+						cryptoApproveAllowance()
+								.payingWith(aCivilian)
+								.addNftAllowance(aCivilian, nfToken, someERC721Scenarios, false, List.of(1L))
+								.signedBy(DEFAULT_PAYER, aCivilian)
+								.fee(ONE_HBAR),
+						sourcing(() -> contractCall(
+								someERC721Scenarios, "transferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("SERIAL_NOT_OWNED_BY_FROM").hasKnownStatus(SUCCESS))
 				).then(
+						childRecordsCheck("MISSING_FROM", SUCCESS, recordWith()
+								.status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("MISSING_TO", SUCCESS, recordWith()
+								.status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("SERIAL_NOT_OWNED_BY_FROM", SUCCESS, recordWith()
+								.status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)),
+						childRecordsCheck("MSG_SENDER_IS_THE_SAME_AS_FROM", SUCCESS, recordWith()
+								.status(SUCCESS)),
+						childRecordsCheck("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM", SUCCESS, recordWith()
+								.status(SPENDER_DOES_NOT_HAVE_ALLOWANCE))
 				);
 	}
 
