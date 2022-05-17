@@ -476,7 +476,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
-		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+		setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
 		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
 		setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
