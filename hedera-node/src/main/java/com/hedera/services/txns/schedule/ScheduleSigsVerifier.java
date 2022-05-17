@@ -87,8 +87,10 @@ public class ScheduleSigsVerifier {
 					schedule.hasValidSignatureFor(key.primitiveKeyIfPresent());
 
 			for (final var reqKey : reqsResult.getOrderedKeys()) {
-				if (!activation.test(reqKey, ignoredSigsFn, activationTest, activeCharacter)) {
-					return false;
+				if (reqKey.isForScheduledTxn()) {
+					if (!activation.test(reqKey, ignoredSigsFn, activationTest, activeCharacter)) {
+						return false;
+					}
 				}
 			}
 		}

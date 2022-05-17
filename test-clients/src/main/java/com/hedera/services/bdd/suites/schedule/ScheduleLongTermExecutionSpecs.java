@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -82,6 +83,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithDefaultPayerWorks(),
 			executionWithCustomPayerWorks(),
 			executionWithCustomPayerThatNeverSignsFails(),
+			executionWithCustomPayerAndAdminKeyWorks(),
 			executionWithDefaultPayerButNoFundsFails(),
 			executionWithCustomPayerButNoFundsFails(),
 			executionWithDefaultPayerButAccountDeletedFails(),
@@ -118,6 +120,92 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								)
 						)
 								.designatingPayer("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("senderTxn", 8)
+								.recordingScheduledTxn()
+								.via("createTx"),
+						scheduleSign("basicXfer")
+								.alsoSigningWith("sender", "payingAccount")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getScheduleInfo("basicXfer")
+								.hasScheduleId("basicXfer")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("senderTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("basicXfer")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord("createTx");
+							var signTx = getTxnRecord("signTx");
+							var triggeringTx = getTxnRecord("triggeringTxn");
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							Instant triggerTime = Instant.ofEpochSecond(
+									triggeringTx.getResponseRecord().getConsensusTimestamp().getSeconds(),
+									triggeringTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Instant triggeredTime = Instant.ofEpochSecond(
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getSeconds(),
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assertions.assertTrue(
+									triggerTime.isBefore(triggeredTime),
+									"Wrong consensus timestamp!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
+
+							Assertions.assertTrue(
+									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
+											asId("payingAccount", spec), 1L),
+									"Wrong transfer list!");
+						})
+				);
+	}
+
+	private HapiApiSpec executionWithCustomPayerAndAdminKeyWorks() {
+		return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerAndAdminKeyWorks")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("payingAccount"),
+						cryptoCreate("receiver"),
+						cryptoCreate("sender").via("senderTxn")
+				).when(
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								)
+						)
+								.designatingPayer("payingAccount")
+								.adminKey("adminKey")
 								.waitForExpiry()
 								.withRelativeExpiry("senderTxn", 8)
 								.recordingScheduledTxn()
