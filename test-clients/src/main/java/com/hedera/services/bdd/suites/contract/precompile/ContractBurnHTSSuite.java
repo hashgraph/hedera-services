@@ -424,7 +424,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-//																.forFunction(HTSPrecompileResult.FunctionType.FAILED)
+																.forFunction(HTSPrecompileResult.FunctionType.FAILED)
 																.withStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
 														)
 										)
