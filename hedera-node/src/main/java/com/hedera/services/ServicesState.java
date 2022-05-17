@@ -36,6 +36,7 @@ import com.hedera.services.state.migration.KvPairIterationMigrator;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.UniqueTokensMigrator;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -72,6 +73,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,6 +104,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private int deserializedVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
+	/* Any post-migration tasks that needs to be done. */
+	private final List<Runnable> postMigrationTasks = new ArrayList<>();
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -182,6 +186,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);
 		}
+
+		if (deserializedVersionFromState < UniqueTokensMigrator.TARGET_RELEASE) {
+			UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
+		}
+		runPostMigrationTasks();
 	}
 
 	/* --- SwirldState --- */
@@ -192,7 +201,30 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
-		internalInit(platform, new BootstrapProperties(), dualState);
+		Runnable initTask = () -> internalInit(platform, new BootstrapProperties(), dualState);
+
+		if (deserializedVersion < UniqueTokensMigrator.TARGET_RELEASE) {
+			// Because state saved with MerkleMap cannot be properly loaded, need to defer remaining initialization
+			// until post migration.
+			addPostMigrationTask(initTask);
+		} else {
+			initTask.run();
+		}
+	}
+
+	private void addPostMigrationTask(Runnable runnable) {
+		postMigrationTasks.add(runnable);
+	}
+
+	private void runPostMigrationTasks() {
+		if (postMigrationTasks == null) {
+			// This can happen if mocked.
+			return;
+		}
+		for (Runnable task : postMigrationTasks) {
+			task.run();
+		}
+		postMigrationTasks.clear();
 	}
 
 	@Override

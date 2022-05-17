@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -168,6 +169,8 @@ class ServicesStateTest {
 	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
 	@Mock
 	private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyNftStorage;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -188,7 +191,7 @@ class ServicesStateTest {
 		subject = mock(ServicesState.class);
 
 		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -209,6 +212,7 @@ class ServicesStateTest {
 		given(subject.accounts()).willReturn(accounts);
 		given(subject.tokenAssociations()).willReturn(tokenAssociations);
 		given(subject.getMetadata()).willReturn(metadata);
+		given(subject.getChild(StateChildIndices.UNIQUE_TOKENS)).willReturn(legacyNftStorage);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
@@ -248,6 +252,7 @@ class ServicesStateTest {
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
 		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+		given(subject.getChild(StateChildIndices.UNIQUE_TOKENS)).willReturn(legacyNftStorage);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);
