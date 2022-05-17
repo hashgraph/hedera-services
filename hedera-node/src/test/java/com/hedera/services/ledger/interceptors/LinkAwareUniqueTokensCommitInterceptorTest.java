@@ -22,7 +22,6 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
@@ -70,6 +69,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(null);
 		given(changes.changes(0)).willReturn(null);
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(0, 0));
 
 		subject.preview(changes);
 
@@ -124,14 +124,15 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void treasuryBurnDoesNotUpdateLinks() {
-		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
-		final var nft = mock(MerkleUniqueToken.class);
+		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(UniqueTokenValue.class);
 		EntityNum owner = EntityNum.MISSING_NUM;
 
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(null);
 		given(nft.getOwner()).willReturn(owner.toEntityId());
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(0, 0));
 
 		subject.preview(changes);
 
@@ -141,8 +142,8 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void nonOwnerUpdateDoesNotUpdateLinks() {
-		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
-		final var nft = mock(MerkleUniqueToken.class);
+		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
+		final var nft = mock(UniqueTokenValue.class);
 		EntityNum owner = EntityNum.MISSING_NUM;
 		final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
 		scopedChanges.put(NftProperty.SPENDER, new EntityId(0, 0, 123));
@@ -151,6 +152,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(changes.entity(0)).willReturn(nft);
 		given(changes.changes(0)).willReturn(scopedChanges);
 		given(nft.getOwner()).willReturn(owner.toEntityId());
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(0, 0));
 
 		subject.preview(changes);
 
@@ -182,17 +184,17 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void triggersUpdateLinksOnMultiStageMintAndTransferAsExpected() {
-		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
 		final long ownerNum = 1111L;
 		final long tokenNum = 2222L;
 		final long serialNum = 2L;
 		final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
 		EntityNum owner = EntityNum.fromLong(ownerNum);
-		EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
-		final var mintedNft = new MerkleUniqueToken();
+		final var nftKey = new UniqueTokenKey(tokenNum, serialNum);
+		final var mintedNft = new UniqueTokenValue();
 
 		given(changes.size()).willReturn(1);
-		given(changes.id(0)).willReturn(nftKey.asNftNumPair().nftId());
+		given(changes.id(0)).willReturn(nftKey.toNftNumPair().nftId());
 		given(changes.entity(0)).willReturn(null);
 		given(changes.changes(0)).willReturn(scopedChanges);
 		scopedChanges.put(NftProperty.OWNER, owner.toEntityId());
@@ -208,13 +210,12 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	@SuppressWarnings("unchecked")
 	void doesntTriggerUpdateLinkOnNormalTreasuryMint() {
 		final var changes = (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
-		final long tokenNum = 2222L;
-		final long serialNum = 2L;
 		final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
 
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(null);
 		given(changes.changes(0)).willReturn(scopedChanges);
+		given(changes.id(0)).willReturn(NftId.withDefaultShardRealm(0, 0));
 		scopedChanges.put(NftProperty.OWNER, EntityId.MISSING_ENTITY_ID);
 
 		subject.preview(changes);

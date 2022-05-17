@@ -157,7 +157,7 @@ class UniqueTokensLinkManagerTest {
 		final var updatedNft1 = uniqueTokens.get(nftKey1);
 		assertEquals(nftNumPair2, updatedNft1.getPrev());
 		final var updatedNft2 = uniqueTokens.get(nftKey2);
-		assertSame(updatedNft2, mintedNft);
+		assertEquals(updatedNft2, mintedNft);
 		assertEquals(nftNumPair1, updatedNft2.getNext());
 		final var updatedOwner = accounts.get(newOwner);
 		assertEquals(tokenNum, updatedOwner.getHeadNftId());
