@@ -35,7 +35,7 @@ import java.time.Instant;
 import java.util.SplittableRandom;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
