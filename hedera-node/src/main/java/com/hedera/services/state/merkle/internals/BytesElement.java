@@ -29,14 +29,14 @@ import com.swirlds.fcqueue.FCQueueElement;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class FilePart implements FCQueueElement {
+public class BytesElement implements FCQueueElement {
 	private static final int CURRENT_VERSION = 1;
 	private static final long CLASS_ID = 0xd1b1fc6b87447a02L;
 
 	private Hash hash;
 	private byte[] data;
 
-	public FilePart() {
+	public BytesElement() {
 		/* RuntimeConstructable */
 	}
 
@@ -44,12 +44,12 @@ public class FilePart implements FCQueueElement {
 		return data;
 	}
 
-	public FilePart(byte[] data) {
+	public BytesElement(byte[] data) {
 		this.data = data;
 	}
 
 	@Override
-	public FilePart copy() {
+	public BytesElement copy() {
 		return this;
 	}
 
@@ -93,17 +93,17 @@ public class FilePart implements FCQueueElement {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || FilePart.class != obj.getClass()) {
+		if (obj == null || BytesElement.class != obj.getClass()) {
 			return false;
 		}
 
-		var that = (FilePart) obj;
+		var that = (BytesElement) obj;
 		return Arrays.equals(this.data, that.data);
 	}
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(FilePart.class)
+		return MoreObjects.toStringHelper(BytesElement.class)
 				.add("data", Arrays.toString(this.data))
 				.toString();
 	}

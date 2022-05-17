@@ -22,6 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
@@ -126,7 +127,7 @@ public class StateView {
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
-	public static final StateView EMPTY_VIEW = new StateView(null, null, null);
+	public static final StateView EMPTY_VIEW = new StateView(null, new MutableStateChildren(), null);
 
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
@@ -143,7 +144,7 @@ public class StateView {
 
 	public StateView(
 			@Nullable final ScheduleStore scheduleStore,
-			@Nullable final StateChildren stateChildren,
+			final StateChildren stateChildren,
 			final NetworkInfo networkInfo
 	) {
 		this.scheduleStore = scheduleStore;
