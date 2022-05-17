@@ -24,7 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -71,7 +70,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation. Provides a base
- * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address)}
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address, BigInteger, long, Account)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
@@ -83,21 +82,21 @@ abstract class EvmTxProcessor {
 	public static final String SBH_CONTEXT_KEY = "sbh";
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
+	private BlockMetaSource blockMetaSource;
 	private HederaMutableWorldState worldState;
+
 	private final GasCalculator gasCalculator;
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 	protected final GlobalDynamicProperties dynamicProperties;
-	private final BlockManager blockManager;
 
 	protected EvmTxProcessor(
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockManager blockManager
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
 		this(
 				null,
@@ -106,10 +105,14 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				blockManager);
+				null);
 	}
 
-	protected void setWorldState(HederaMutableWorldState worldState) {
+	protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
+		this.blockMetaSource = blockMetaSource;
+	}
+
+	protected void setWorldState(final HederaMutableWorldState worldState) {
 		this.worldState = worldState;
 	}
 
@@ -120,7 +123,7 @@ abstract class EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockManager blockManager
+			final BlockMetaSource blockMetaSource
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
@@ -131,16 +134,15 @@ abstract class EvmTxProcessor {
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
 		hederaOperations.forEach(operationRegistry::put);
 
-		var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
-
-		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
+		final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+		final var precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
 		this.messageCallProcessor = new HederaMessageCallProcessor(
 				evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator, evm, true, VALIDATION_RULES, 1);
-		this.blockManager = blockManager;
+		this.blockMetaSource = blockMetaSource;
 	}
 
 	/**
@@ -164,7 +166,7 @@ abstract class EvmTxProcessor {
 	 * @param consensusTime
 	 * 		Current consensus time
 	 * @param isStatic
-	 * 		Whether or not the execution is static
+	 * 		Whether the execution is static
 	 * @param expiryOracle
 	 * 		the oracle to use when determining the expiry of newly allocated storage
 	 * @param mirrorReceiver
@@ -241,11 +243,9 @@ abstract class EvmTxProcessor {
 			}
 		}
 
-		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-
-		final var blockValues = blockManager.computeProvisionalBlockValues(consensusTime, gasLimit);
-
-		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
+		final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+		final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
+		final var gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 		final var valueAsWei = Wei.of(value);
@@ -268,7 +268,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(blockManager::getProvisionalBlockHash)
+						.blockHashLookup(blockMetaSource::getBlockHash)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),

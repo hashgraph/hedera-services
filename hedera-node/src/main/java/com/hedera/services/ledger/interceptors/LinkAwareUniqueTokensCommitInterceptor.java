@@ -51,20 +51,24 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 		}
 		for (int i = 0; i < n; i++) {
 			final var entity = pendingChanges.entity(i);
-			final var change = pendingChanges.changes(i);
+			final var changes = pendingChanges.changes(i);
 			if (entity != null) {
 				final var fromAccount = entity.getOwner();
-				if (change == null && !entity.getOwner().equals(MISSING_ENTITY_ID)) {
-					uniqueTokensLinkManager.updateLinks(
-							fromAccount.asNum(),
-							null,
-							entity.getKey());
-				} else if (change != null && change.containsKey(OWNER)) {
-					final var toAccount = (EntityId) change.get(OWNER);
-					uniqueTokensLinkManager.updateLinks(
-							fromAccount.asNum(),
-							toAccount.asNum(),
-							entity.getKey());
+				if (changes == null && !entity.getOwner().equals(MISSING_ENTITY_ID)) {
+					// Non-treasury-owned NFT wiped (or burned via a multi-stage contract operation)
+					uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, entity.getKey());
+				} else if (changes != null && changes.containsKey(OWNER)) {
+					// NFT owner changed (could be a treasury exit or return)
+					final var toAccount = (EntityId) changes.get(OWNER);
+					uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), entity.getKey());
+				}
+			} else if (changes != null) {
+				final var newOwner = (EntityId) changes.get(OWNER);
+				if (!MISSING_ENTITY_ID.equals(newOwner)) {
+					// Non-treasury-owned NFT minted via a multi-stage contract operation
+					final var nftKey = pendingChanges.id(i).asEntityNumPair();
+					final var mintedNft = uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
+					pendingChanges.cacheEntity(i, mintedNft);
 				}
 			}
 		}

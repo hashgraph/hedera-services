@@ -22,7 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.exceptions.MutabilityException;
@@ -166,10 +166,10 @@ class MerkleSpecialFilesTest {
 		subject.append(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
 		subject.append(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
 
-		final var fcq = new FCQueue<FilePart>();
-		fcq.add(new FilePart(subject.get(fid)));
-		final var secondFcq = new FCQueue<FilePart>();
-		secondFcq.add(new FilePart(subject.get(secondFid)));
+		final var fcq = new FCQueue<BytesElement>();
+		fcq.add(new BytesElement(subject.get(fid)));
+		final var secondFcq = new FCQueue<BytesElement>();
+		secondFcq.add(new BytesElement(subject.get(secondFid)));
 
 		final var baos = new ByteArrayOutputStream();
 		baos.write(Longs.toByteArray(fid.getFileNum()));
@@ -240,7 +240,7 @@ class MerkleSpecialFilesTest {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCQueue.class, FCQueue::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FilePart.class, FilePart::new));
+				new ClassConstructorPair(BytesElement.class, BytesElement::new));
 
 		subject.update(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
 		subject.update(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
