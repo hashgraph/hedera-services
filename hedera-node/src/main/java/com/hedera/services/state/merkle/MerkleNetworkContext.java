@@ -80,7 +80,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int RELEASE_0260_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -113,6 +114,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
+	private long totalStakedRewardStart;
+	private long totalStakedStart;
 
 	public MerkleNetworkContext() {
 		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
@@ -149,6 +152,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = that.blockHashes.copy();
+		this.totalStakedRewardStart = that.totalStakedRewardStart;
+		this.totalStakedStart = that.totalStakedStart;
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -277,6 +282,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockNo;
 	}
 
+	public void setTotalStakedRewardStart(final long totalStakedRewardStart) {
+		throwIfImmutable("Cannot update Total StakedRewardStart on an immutable context");
+		this.totalStakedRewardStart = totalStakedRewardStart;
+	}
+
+	public void setTotalStakedStart(final long totalStakedStart) {
+		throwIfImmutable("Cannot update Total StakedStart on an immutable context");
+		this.totalStakedStart = totalStakedStart;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public MerkleNetworkContext copy() {
@@ -325,6 +340,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			blockHashes.clear();
 			in.readSerializable(true, () -> blockHashes);
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			totalStakedRewardStart = in.readLong();
+			totalStakedStart = in.readLong();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -364,6 +383,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		serializeNonHashData(out);
 		out.writeSerializable(blockHashes, true);
+		out.writeLong(totalStakedRewardStart);
+		out.writeLong(totalStakedStart);
 	}
 
 	@Override
@@ -387,6 +408,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		try (final var out = new SerializableDataOutputStream(baos)) {
 			serializeNonHashData(out);
 			out.write(blockHashes.getHash().getValue());
+			out.writeLong(totalStakedRewardStart);
+			out.writeLong(totalStakedStart);
 		} catch (IOException | UncheckedIOException e) {
 			log.error("Hash computation failed", e);
 			return EMPTY_HASH;
@@ -439,7 +462,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				"\n  Block timestamp is                         :: " +
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
-				stringifiedBlockHashes();
+				stringifiedBlockHashes() +
+				"\n Total StakedRewardStart is 					:: " +
+				totalStakedRewardStart +
+				"\n Total StakedStart is 						:: " +
+				totalStakedStart;
 	}
 
 	public long getAlignmentBlockNo() {
@@ -558,6 +585,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public boolean areMigrationRecordsStreamed() {
 		return migrationRecordsStreamed;
+	}
+
+	public long getTotalStakedRewardStart() {
+		return totalStakedRewardStart;
+	}
+
+	public long getTotalStakedStart() {
+		return totalStakedStart;
 	}
 
 	/* --- Internal helpers --- */

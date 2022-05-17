@@ -330,7 +330,7 @@ class NetworkCtxManagerTest {
 				1, 120, 1_234_567L,
 				1, 150, 2_345_678L);
 		// and:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(mockDynamicProps.ratesMidnightCheckInterval());
 
 		given(shouldUpdateMidnightRates.test(lastBoundaryCheck, sometimeNextDay)).willReturn(true);
@@ -351,7 +351,7 @@ class NetworkCtxManagerTest {
 	@Test
 	void doesntUpdateRatesIfTestDoesntSayTooButDoesUpdateLastMidnightCheck() {
 		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.lastMidnightBoundaryCheck())
 				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval())));
@@ -368,7 +368,7 @@ class NetworkCtxManagerTest {
 	@Test
 	void doesntPerformMidnightCheckIfNotInInterval() {
 		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.lastMidnightBoundaryCheck())
 				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval() - 1)));
@@ -386,7 +386,7 @@ class NetworkCtxManagerTest {
 	@Test
 	void justUpdatesLastBoundaryCheckWhenItIsNull() {
 		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(null);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
@@ -468,7 +468,7 @@ class NetworkCtxManagerTest {
 		final var thenNextDay = Instant.parse("2021-06-08T00:00:00.00000Z");
 
 		// given:
-		final var updateTest = subject.getShouldUpdateMidnightRates();
+		final var updateTest = subject.getIsNextDay();
 
 		// then:
 		assertFalse(updateTest.test(now, thenSameDay));

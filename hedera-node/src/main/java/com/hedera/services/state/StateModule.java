@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -276,6 +277,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::uniqueTokens;
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideStakingInfo(
+			final MutableStateChildren workingState
+	) {
+		return workingState::stakingInfo;
 	}
 
 	@Provides

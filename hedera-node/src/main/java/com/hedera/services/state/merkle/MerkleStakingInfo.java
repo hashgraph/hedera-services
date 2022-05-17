@@ -23,16 +23,29 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.state.merkle.internals.ByteUtils.getBytes;
+
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
+	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
+	// TODO: get this max history from the props.
 	static final int MAX_REWARD_HISTORY = 366;
 	static final long[] EMPTY_REWARD_HISTORY = new long[MAX_REWARD_HISTORY];
 
@@ -48,6 +61,8 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	private long stakeRewardStart;
 	private long stake;
 	private long[] rewardSumHistory = EMPTY_REWARD_HISTORY;
+	@Nullable
+	Hash historyHash;
 
 	public MerkleStakingInfo() {}
 
@@ -81,7 +96,9 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	@Override
 	public MerkleStakingInfo copy() {
 		setImmutable(true);
-		return new MerkleStakingInfo(this);
+		final var copy = new MerkleStakingInfo(this);
+		copy.historyHash = this.historyHash;
+		return copy;
 	}
 
 	@Override
@@ -98,13 +115,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	@Override
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		out.writeInt(number);
-		out.writeLong(minStake);
-		out.writeLong(maxStake);
-		out.writeLong(stakeToReward);
-		out.writeLong(stakeToNotReward);
-		out.writeLong(stakeRewardStart);
-		out.writeLong(stake);
+		serializeNonHistoryData(out);
 		out.writeLongArray(rewardSumHistory);
 	}
 
@@ -172,6 +183,41 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				.add("stake", stake)
 				.add("rewardSumHistory", rewardSumHistory)
 				.toString();
+	}
+
+	@Override
+	public boolean isSelfHashing() {
+		return true;
+	}
+
+	@Override
+	public Hash getHash() {
+		ensureHistoryHashIsKnown();
+		final var baos = new ByteArrayOutputStream();
+		try (final var out = new SerializableDataOutputStream(baos)) {
+			serializeNonHistoryData(out);
+			out.write(historyHash.getValue());
+		} catch (IOException | UncheckedIOException e) {
+			log.error(String.format("Hash computation failed on node %d", number), e);
+			return EMPTY_HASH;
+		}
+		return new Hash(noThrowSha384HashOf(baos.toByteArray()), DigestType.SHA_384);
+	}
+
+	private void serializeNonHistoryData(final SerializableDataOutputStream out) throws IOException {
+		out.writeInt(number);
+		out.writeLong(minStake);
+		out.writeLong(maxStake);
+		out.writeLong(stakeToReward);
+		out.writeLong(stakeToNotReward);
+		out.writeLong(stakeRewardStart);
+		out.writeLong(stake);
+	}
+
+	private void ensureHistoryHashIsKnown() {
+		if (historyHash == null) {
+			historyHash = new Hash(getBytes(rewardSumHistory));
+		}
 	}
 
 	public long getMinStake() {
