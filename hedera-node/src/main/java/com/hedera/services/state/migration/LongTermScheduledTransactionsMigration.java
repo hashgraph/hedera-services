@@ -21,6 +21,7 @@ package com.hedera.services.state.migration;
  */
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,9 @@ public class LongTermScheduledTransactionsMigration {
 					schedule.expiry(), k -> new ArrayList<>());
 			list.add(Pair.of(key, schedule));
 		});
+
+		// sort by entity id secondarily so we have deterministic ordering
+		legacyOrdered.values().forEach(v -> v.sort(Comparator.comparingLong(a -> a.getKey().longValue())));
 
 		final Map<Character, AtomicInteger> counts = new HashMap<>();
 		legacyOrdered.values().forEach(list -> list.forEach(value -> {

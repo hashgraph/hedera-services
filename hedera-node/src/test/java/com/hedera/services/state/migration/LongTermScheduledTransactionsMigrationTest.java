@@ -161,6 +161,9 @@ class LongTermScheduledTransactionsMigrationTest {
 			assertTrue(newSchedule2ByExpiration.getIds().values().stream().findFirst().get()
 							.containsAll(schedule2.getKey().longValue(), schedule3.getKey().longValue()));
 
+			assertTrue(newSchedule2ByExpiration.getIds().values().stream().findFirst().get().get(0)
+					< newSchedule2ByExpiration.getIds().values().stream().findFirst().get().get(1));
+
 			assertEquals(2,
 					newSchedule3ByExpiration.getIds().values().stream().findFirst().get().size());
 			assertTrue(newSchedule3ByExpiration.getIds().values().stream().findFirst().get()
