@@ -61,8 +61,6 @@ class ReleaseTwentySixMigrationTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
