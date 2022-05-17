@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,13 +58,15 @@ public final class ResetThrottleSuite extends HapiApiSuite {
 				).when(
 						// only allow the first client to update throttle file with the first node
 						withOpContext((spec, opLog) -> {
+							HapiSpecOperation subOp;
 							if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
-								fileUpdate(THROTTLE_DEFS)
+								subOp = fileUpdate(THROTTLE_DEFS)
 										.payingWith(GENESIS)
 										.contents(devThrottles.toByteArray());
 							} else {
-								sleepFor(20000);
+								subOp = sleepFor(20000);
 							}
+							allRunFor(spec, subOp);
 						})
 				).then(
 				);
