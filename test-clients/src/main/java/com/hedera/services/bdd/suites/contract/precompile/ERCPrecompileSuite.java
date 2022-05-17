@@ -1141,12 +1141,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(theSpender)), 10)
 														.payingWith(OWNER)
-														.gas(500_000L)
+														.gas(4_000_000L)
 														.via(approveTxn)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
 				).then(
+						childRecordsCheck(approveTxn, SUCCESS, recordWith()
+								.status(SUCCESS)),
 						getTxnRecord(approveTxn).andAllChildRecords().logged()
 				);
 	}
