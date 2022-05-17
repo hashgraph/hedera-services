@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -261,23 +260,25 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			return true;
 		}
 
+		ThrottleReqsManager manager;
+
+		if ((manager = functionReqs.get(function)) == null) {
+			return true;
+		}
+
 		if (function == ScheduleCreate) {
 			if (isChild) {
 				throw new IllegalStateException("ScheduleCreate cannot be a child!");
 			}
-			return shouldThrottleScheduleCreate(accessor, txn, now);
+			return shouldThrottleScheduleCreate(manager, accessor, txn, now);
 		} else if (function == ScheduleSign) {
 			if (isChild) {
 				throw new IllegalStateException("ScheduleSign cannot be a child!");
 			}
-			return shouldThrottleScheduleSign(accessor, txn, now);
+			return shouldThrottleScheduleSign(manager, accessor, txn, now);
 		} else {
 
-			ThrottleReqsManager manager;
-
-			if ((manager = functionReqs.get(function)) == null) {
-				return true;
-			} else if (function == TokenMint) {
+			if (function == TokenMint) {
 				return shouldThrottleMint(manager, txn.getTokenMint(), now);
 			} else if (function == CryptoTransfer) {
 				if (dynamicProperties.isAutoCreationEnabled()) {
@@ -308,11 +309,11 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	private boolean shouldThrottleScheduleCreate(
+			final ThrottleReqsManager manager,
 			final TxnAccessor accessor,
 			final TransactionBody txn,
 			final Instant now
 	) {
-
 		final var scheduleCreate = txn.getScheduleCreate();
 		final var scheduled = scheduleCreate.getScheduledTransactionBody();
 
@@ -325,8 +326,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			log.error("ScheduleCreate was associated with an invalid txn.", ex);
 			return true;
 		}
-
-		var manager = functionReqs.get(ScheduleCreate);
 
 		// maintain legacy behaviour
 		if (!dynamicProperties.schedulingLongTermEnabled()) {
@@ -357,13 +356,11 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	private boolean shouldThrottleScheduleSign(
+			final ThrottleReqsManager manager,
 			final TxnAccessor accessor,
 			final TransactionBody txn,
 			final Instant now
 	) {
-
-		var manager = functionReqs.get(ScheduleSign);
-
 		if (!manager.allReqsMetAt(now)) {
 			return true;
 		}
@@ -478,7 +475,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		activeDefs = defs;
 	}
 
-	@NotNull
 	private void calculateScheduleThrottles(final ThrottleDefinitions defs) {
 
 		// copy the throttles
@@ -508,7 +504,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			groups.put(grp, null);
 		}
 
-		// filter out throttle groups we no longer need, set burst periods to 1, and rename
+		// filter out throttle groups we no longer need and set burst periods to 1
 		for (var bucket : defsCopy.getBuckets()) {
 			bucket.setThrottleGroups(bucket.getThrottleGroups().stream().filter(g -> {
 				if (groups.containsKey(g)) {
