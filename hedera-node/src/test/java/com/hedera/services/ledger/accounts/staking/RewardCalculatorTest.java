@@ -129,7 +129,7 @@ public class RewardCalculatorTest {
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
-		assertEquals(19128L, merkleAccount.getStakePeriodStart());
+		assertEquals(19129L, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);
 	}
 }

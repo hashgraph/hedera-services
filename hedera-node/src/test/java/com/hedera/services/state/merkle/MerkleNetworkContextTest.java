@@ -431,7 +431,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -463,7 +465,10 @@ class MerkleNetworkContextTest {
 				"  Block timestamp is                         :: 1970-01-15T06:56:11.000013579Z\n" +
 				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
 				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
-				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]";
+				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]\n" +
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";;
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -500,7 +505,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -522,7 +529,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -544,7 +553,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -592,7 +603,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -614,7 +627,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  ::false\n" +
+				"  Total StakedRewardStart is 					:: 0\n" +
+				"  Total StakedStart is 						:: 0";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));

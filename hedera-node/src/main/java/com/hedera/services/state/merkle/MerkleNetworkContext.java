@@ -343,11 +343,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			in.readSerializable(true, () -> blockHashes);
 		}
 		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsActivated = in.readBoolean();
 			totalStakedRewardStart = in.readLong();
 			totalStakedStart = in.readLong();
-		}
-		if (version >= RELEASE_0270_VERSION) {
-			stakingRewardsActivated = in.readBoolean();
 		}
 	}
 
@@ -471,9 +469,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				stringifiedBlockHashes() +
 				"\n  Staking Rewards Activated                  ::" +
 				stakingRewardsActivated +
-				"\n Total StakedRewardStart is 					:: " +
+				"\n  Total StakedRewardStart is 					:: " +
 				totalStakedRewardStart +
-				"\n Total StakedStart is 						:: " +
+				"\n  Total StakedStart is 						:: " +
 				totalStakedStart;
 	}
 
@@ -802,7 +800,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return gasThrottleUsageSnapshot;
 	}
 
-	public void setStakingRewards(boolean stakingRewardsActivated) {
+	public void setStakingRewardsActivated(boolean stakingRewardsActivated) {
 		this.stakingRewardsActivated = stakingRewardsActivated;
 	}
 
