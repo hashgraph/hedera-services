@@ -188,10 +188,7 @@ class ServicesStateTest {
 	void doesNoMigrationsFromCurrentVersion() {
 		mockMigrators();
 
-		subject = mock(ServicesState.class);
-
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -205,20 +202,17 @@ class ServicesStateTest {
 		mockMigrators();
 		final var inOrder = inOrder(
 				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
-
-		subject = mock(ServicesState.class);
-
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
-		given(subject.getChild(StateChildIndices.UNIQUE_TOKENS)).willReturn(legacyNftStorage);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyNftStorage);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-
+		ServicesState.setExpiryJustEnabled(false);
 		subject.migrate();
 
 		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
@@ -239,20 +233,19 @@ class ServicesStateTest {
 				autoRenewalMigrator, titleCountsMigrator,
 				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
-
 		ServicesState.setExpiryJustEnabled(true);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setMetadata(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
-		given(subject.getChild(StateChildIndices.UNIQUE_TOKENS)).willReturn(legacyNftStorage);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		networkContext.setConsensusTimeOfLastHandledTxn(consensusTime);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyNftStorage);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);
