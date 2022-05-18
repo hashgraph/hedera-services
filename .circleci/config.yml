@@ -1610,7 +1610,7 @@ jobs:
             
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
-            git clone -b my-branch ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            git clone -b 02421-long-term-scheduled-txn-tests ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
             
             # Build Platform
             cd /swirlds-platform
