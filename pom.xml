@@ -233,7 +233,7 @@
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
 		<swirlds.version>0.26.2</swirlds.version>
-		<tuweni.version>2.1.0</tuweni.version>
+		<tuweni.version>2.2.0</tuweni.version>
 
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
