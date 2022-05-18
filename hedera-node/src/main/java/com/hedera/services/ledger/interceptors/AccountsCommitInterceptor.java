@@ -147,7 +147,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		}
 	}
 
-	private void calculateReward(final long accountNum, final long adjustment) {
+	void calculateReward(final long accountNum, final long adjustment) {
 		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
 
 		if (reward > 0) {
@@ -158,12 +158,8 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		}
 	}
 
-	private boolean shouldCalculateReward(final MerkleAccount account) {
-		return account != null && account.getStakedId() < 0 && stakingActivated();
-	}
-
-	private boolean stakingActivated() {
-		return networkCtx.get().areRewardsActivated();
+	boolean shouldCalculateReward(final MerkleAccount account) {
+		return account != null && account.getStakedId() < 0 && networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {

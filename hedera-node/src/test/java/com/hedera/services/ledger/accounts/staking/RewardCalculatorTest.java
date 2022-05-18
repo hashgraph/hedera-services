@@ -43,7 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class RewardCalculatorTest {
+class RewardCalculatorTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
@@ -66,19 +66,19 @@ public class RewardCalculatorTest {
 	@Test
 	void calculatesIfRewardShouldBeEarned() {
 		var stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 2;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = -1;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 365;
-		assertTrue(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 1;
-		assertTrue(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 2;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 	}
 
 	@Test
@@ -103,7 +103,7 @@ public class RewardCalculatorTest {
 	void doesntComputeReturnsZeroReward() {
 		final var accountNum = EntityNum.fromLong(2000L);
 		given(accounts.getForModify(accountNum)).willReturn(account);
-		given(account.getStakePeriodStart()).willReturn(todayNumber - 365);
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
@@ -117,7 +117,7 @@ public class RewardCalculatorTest {
 	@Test
 	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		final var accountNum = EntityNum.fromLong(2000L);
-		final var today = 18763L;
+		final var today = LocalDate.now(zoneUTC).toEpochDay();
 
 		final var merkleAccount = new MerkleAccount();
 		merkleAccount.setStakePeriodStart(today - 500);
@@ -129,7 +129,7 @@ public class RewardCalculatorTest {
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
-		assertEquals(19128L, merkleAccount.getStakePeriodStart());
+		assertEquals(today - 1, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);
 	}
 }
