@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.internals;
+package com.hedera.services.contracts.execution;
 
 /*-
  * ‌
@@ -20,17 +20,23 @@ package com.hedera.services.state.merkle.internals;
  * ‍
  */
 
-import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.utils.SeededPropertySource;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 
-public class FilePartSerdeTest extends SelfSerializableDataTest<FilePart> {
-	@Override
-	protected Class<FilePart> getType() {
-		return FilePart.class;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Optional;
+
+@Singleton
+public class StaticBlockMetaProvider {
+	private final SignedStateViewFactory stateViewFactory;
+
+	@Inject
+	public StaticBlockMetaProvider(final SignedStateViewFactory stateViewFactory) {
+		this.stateViewFactory = stateViewFactory;
 	}
 
-	@Override
-	protected FilePart getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextFilePart();
+	public Optional<BlockMetaSource> getSource() {
+		return stateViewFactory.childrenOfLatestSignedState()
+				.map(children -> StaticBlockMetaSource.from(children.networkCtx()));
 	}
 }

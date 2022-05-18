@@ -24,7 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -65,24 +64,27 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
-			final BlockManager blockManager
-			) {
+			final StorageExpiry storageExpiry
+	) {
 		super(
 				livePricesSource,
 				dynamicProperties,
 				gasCalculator,
 				hederaOperations,
-				precompiledContractMap,
-				blockManager);
+				precompiledContractMap);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;
 	}
 
 	@Override
-	public void setWorldState(HederaMutableWorldState worldState) {
+	public void setWorldState(final HederaMutableWorldState worldState) {
 		super.setWorldState(worldState);
+	}
+
+	@Override
+	public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
+		super.setBlockMetaSource(blockMetaSource);
 	}
 
 	@Override
@@ -122,7 +124,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final MessageFrame.Builder baseInitialFrame,
 			final Address to,
 			final Bytes payload,
-			final long value) {
+			final long value
+	) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's
 		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,

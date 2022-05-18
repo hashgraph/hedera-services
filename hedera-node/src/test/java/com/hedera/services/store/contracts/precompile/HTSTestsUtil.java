@@ -73,6 +73,7 @@ public class HTSTestsUtil {
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	public static final Bytes missingNftResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	public static final TokenID fungible = IdUtils.asToken("0.0.888");
@@ -92,7 +93,6 @@ public class HTSTestsUtil {
 	public static final MintWrapper fungibleMintMaxAmount =
 			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final Long serialNumber = 1L;
-	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
 
 	public static final Association multiAssociateOp =
