@@ -257,7 +257,7 @@ class DecodingFacadeTest {
 	}
 
 	@Test
-	void decodeTransferFromFungibleInput() {
+	void decodeTransferFromFungibleInputUsingApprovalIfNotOwner() {
 		final var notOwner = new EntityId(0, 0, 1002);
 		final var decodedInput = subject.decodeERCTransferFrom(
 				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, notOwner);
@@ -265,6 +265,20 @@ class DecodingFacadeTest {
 
 		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
 		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.get(1).isApproval);
+		assertEquals(5, fungibleTransfer.get(0).amount);
+	}
+
+	@Test
+	void decodeTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
+		final var fromOp = new EntityId(0, 0, 1450);
+		final var decodedInput = subject.decodeERCTransferFrom(
+				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, fromOp);
+		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
+
+		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
+		assertFalse(fungibleTransfer.get(1).isApproval);
 		assertEquals(5, fungibleTransfer.get(0).amount);
 	}
 

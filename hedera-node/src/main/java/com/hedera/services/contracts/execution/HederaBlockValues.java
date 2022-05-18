@@ -33,7 +33,6 @@ import java.util.Optional;
  * Hedera adapted {@link BlockValues}
  */
 public class HederaBlockValues implements BlockValues {
-
 	protected final long gasLimit;
 	protected final long blockNo;
 	protected final Instant consTimestamp;
