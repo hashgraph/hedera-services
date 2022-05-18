@@ -101,6 +101,10 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
+		checkAndActivateRewardsOnlyOnce();
+	}
+
+	private void checkAndActivateRewardsOnlyOnce() {
 		if (shouldActivateStakingRewards()) {
 			networkCtx.get().setStakingRewards(true);
 			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
