@@ -220,7 +220,8 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 								.sigControl(forKey(newSenderKey, firstSigThree)),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						cryptoUpdate(sender).key(newSenderKey),
-						scheduleSign(schedule),
+						scheduleSign(schedule)
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L)
 				)
 				.then(
@@ -828,7 +829,8 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 						getAccountBalance("sender").hasTinyBars(667L),
 						cryptoUpdate("sender").key("a")
 				).then(
-						scheduleSign("deferredFall").alsoSigningWith(),
+						scheduleSign("deferredFall").alsoSigningWith()
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance("sender").hasTinyBars(667L),
 						getScheduleInfo("deferredFall")
 								.hasScheduleId("deferredFall")

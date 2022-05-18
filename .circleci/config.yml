@@ -764,11 +764,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 5 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -817,11 +817,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 5 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -869,11 +869,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 6 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -892,11 +892,11 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "0 3 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -915,11 +915,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "15 3 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -938,11 +938,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 3 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -961,11 +961,11 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "45 3 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -984,11 +984,11 @@ workflows:
   GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
     triggers:
       - schedule:
-          cron: "0 4 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1007,11 +1007,11 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1030,11 +1030,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "45 22 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1053,11 +1053,11 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "15 22 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1076,11 +1076,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "15 23 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1099,11 +1099,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "30 23 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1122,11 +1122,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1146,11 +1146,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 5 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1170,11 +1170,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "40 7 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1193,7 +1193,7 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 5 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
@@ -1216,11 +1216,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "55 6 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1239,7 +1239,7 @@ workflows:
   GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "0 6 * * 2"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
@@ -1262,11 +1262,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 7 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1285,11 +1285,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
-          cron: "40 4 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1309,11 +1309,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "30 4 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1332,11 +1332,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1355,11 +1355,11 @@ workflows:
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 7 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1378,11 +1378,11 @@ workflows:
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 8 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1401,11 +1401,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "25 8 * * *"
+          cron: "00 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - long-term-scheduled-transactions
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1610,7 +1610,7 @@ jobs:
             
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
-            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            git clone -b my-branch ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
             
             # Build Platform
             cd /swirlds-platform
