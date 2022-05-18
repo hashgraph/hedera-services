@@ -150,12 +150,12 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	void calculateReward(final long accountNum, final long adjustment) {
 		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
 
+		sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		if (reward > 0) {
-			sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
+			sideEffectsTracker.trackHbarChange(accountNum, reward);
 			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
-		} else {
-			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
+
 		sideEffectsTracker.trackRewardPayment(accountNum, reward);
 	}
 

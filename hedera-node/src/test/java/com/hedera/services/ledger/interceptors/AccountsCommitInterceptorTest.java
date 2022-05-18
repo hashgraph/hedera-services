@@ -25,7 +25,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -43,7 +42,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
-import java.util.Set;
 
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,12 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -217,12 +215,13 @@ class AccountsCommitInterceptorTest {
 		subject.preview(changes);
 
 		verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
-		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount + 1);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 1);
 		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -1);
 	}
 
 	@Test
-	void calculatesReward(){
+	void calculatesReward() {
 		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(0L);
 		subject.calculateReward(counterpartyId.getAccountNum(), 2L);
 
@@ -233,13 +232,13 @@ class AccountsCommitInterceptorTest {
 		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(5L);
 		subject.calculateReward(counterpartyId.getAccountNum(), 2L);
 
-		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 7L);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 5L);
+		verify(sideEffectsTracker, times(2)).trackHbarChange(counterpartyId.getAccountNum(), 2L);
 		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -5L);
-		verify(sideEffectsTracker).trackRewardPayment(counterpartyId.getAccountNum(), 5L);
 	}
 
 	@Test
-	void checksConditionToCalculateReward(){
+	void checksConditionToCalculateReward() {
 		assertFalse(subject.shouldCalculateReward(null));
 
 		given(networkCtx.areRewardsActivated()).willReturn(false);
