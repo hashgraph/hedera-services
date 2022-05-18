@@ -85,13 +85,13 @@ public class UniqueTokensListRemoval implements MapValueListMutation<UniqueToken
 	@Override
 	public UniqueTokenKey next(final UniqueTokenValue node) {
 		final var nextKey = node.getNext();
-		return nextKey == MISSING_NFT_NUM_PAIR ? null : UniqueTokenKey.from(nextKey);
+		return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(nextKey);
 	}
 
 	@Nullable
 	@Override
 	public UniqueTokenKey prev(final UniqueTokenValue node) {
 		final var prevKey = node.getPrev();
-		return prevKey == MISSING_NFT_NUM_PAIR ? null : UniqueTokenKey.from(prevKey);
+		return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(prevKey);
 	}
 }
