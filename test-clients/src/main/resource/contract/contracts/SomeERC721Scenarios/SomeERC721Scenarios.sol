@@ -29,6 +29,52 @@ contract SomeERC721Scenarios is HederaTokenService {
         uint256 serialNo
     ) external {
         IERC721(token).approve(spender, serialNo);
+    }
+
+    function getApproved(
+        address token,
+        uint256 serialNo
+    ) external view {
+        IERC721(token).getApproved(serialNo);
+    }
+
+    function getBalanceOf(
+        address token,
+        address owner
+    ) external view {
+        IERC721(token).balanceOf(owner);
+    }
+
+    function getOwnerOf(
+        address token,
+        uint256 serialNo
+    ) external view {
+        IERC721(token).ownerOf(serialNo);
+    }
+
+    function isApprovedForAll(
+        address token,
+        address owner,
+        address operator
+    ) external view {
+        IERC721(token).isApprovedForAll(owner, operator);
+    }
+
+    function setApprovalForAll(
+        address token,
+        address operator,
+        bool approved
+    ) external {
+        IERC721(token).setApprovalForAll(operator, approved);
+    }
+
+    function transferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 serialNo
+    ) external {
+        IERC721(token).transferFrom(from, to, serialNo);
     } 
 
     function nonSequiturMintAndTransfer(
