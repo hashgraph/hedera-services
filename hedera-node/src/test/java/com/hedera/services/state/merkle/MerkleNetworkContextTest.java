@@ -464,7 +464,8 @@ class MerkleNetworkContextTest {
 				"  Block timestamp is                         :: 1970-01-15T06:56:11.000013579Z\n" +
 				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
 				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
-				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]";
+				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]\n" +
+				"  Staking Rewards Activated                  ::false";
 
 		assertEquals(desired, subject.summarized());
 	}
