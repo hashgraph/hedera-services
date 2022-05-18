@@ -583,7 +583,8 @@ commands:
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
               -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
-              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
+              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
+              --slack-api-token="${SLACK_API_TOKEN}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -1601,12 +1602,23 @@ jobs:
           name: Checkout swirlds-platform repos and build
           command: |
             sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
-            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            
+            # Git Clone for Platform
+            cd /
+            export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
-            cd /swirlds-platform;
-            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
-            mvn --no-transfer-progress clean install -DskipTests;
+            
+            # Git Clone JRS Separately
+            mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            
+            # Build Platform
+            cd /swirlds-platform
+            ./mvnw clean install -DskipTests;
+            
+            # Build JRS
+            cd /swirlds-platform/regression
+            ./mvnw clean install
 
       - run:
           name: Save PEM file to keys folder
@@ -1743,14 +1755,14 @@ jobs:
             set -x;
             set +e;
             cd /swirlds-platform/regression
-            CI_RESULTS_LOG=$(find results/4N_1C -name hapi-client-combined.log)
+            CI_RESULTS_LOG=$(find assets/results/4N_1C -name hapi-client-combined.log)
             grep $CI_RESULTS_LOG -e 'status=ERROR' -e 'status=FAILED'
             if [ "$?" -eq "0" ]; then
               exit 1
             else
               exit 0
             fi
-            SAMPLE_NODE_LOG=$(find results/4N_1C -name hgcaa.log | head -1)
+            SAMPLE_NODE_LOG=$(find assets/results/4N_1C -name hgcaa.log | head -1)
             grep $SAMPLE_NODE_LOG -e 'IssListener - In round'
             if [ "$?" -eq "0" ]; then
               exit 1

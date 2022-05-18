@@ -213,7 +213,7 @@ public class DecodingFacade {
 	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function IS_APPROVED_FOR_ALL =
-			new Function("isApprovedForAll(address,address)");
+			new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
@@ -309,7 +309,8 @@ public class DecodingFacade {
 			final boolean isFungible,
 			final UnaryOperator<byte[]> aliasResolver,
 			final WorldLedgers ledgers,
-			final EntityId operatorId) {
+			final EntityId operatorId
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
 		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
@@ -318,7 +319,11 @@ public class DecodingFacade {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);
 			addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
-			addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			if (from.equals(operatorId.toGrpcAccountId())) {
+				addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			} else {
+				addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			}
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();

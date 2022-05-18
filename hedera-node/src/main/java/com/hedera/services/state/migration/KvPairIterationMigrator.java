@@ -49,7 +49,6 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 	private final SortedSet<EntityNum> presentContractNums = new TreeSet<>();
 	private final Map<EntityNum, ContractKey> rootKeys = new HashMap<>();
 	private final Map<EntityNum, Integer> numNonZeroKvPairs = new HashMap<>();
-	private final Map<EntityNum, IterableContractValue> rootValues = new HashMap<>();
 	private final MerkleMap<EntityNum, MerkleAccount> contracts;
 	private final SizeLimitedStorage.IterableStorageUpserter storageUpserter;
 
@@ -79,16 +78,16 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 		}
 		numNonZeroKvPairs.merge(contractNum, 1, Integer::sum);
 		var rootKey = rootKeys.get(contractNum);
-		final var rootValue = rootValues.get(contractNum);
 		final var iterableValue = IterableContractValue.from(nonIterableValue.asUInt256());
-		rootKey = storageUpserter.upsertMapping(key, iterableValue, rootKey, rootValue, iterableContractStorage);
+		rootKey = storageUpserter.upsertMapping(key, iterableValue, rootKey, null, iterableContractStorage);
 		numInsertions++;
 		if (numInsertions % insertionsPerCopy == 0) {
 			final var copy = iterableContractStorage.copy();
+			log.info("After {} insertions, the iterable storage map had root hash {}",
+					numInsertions, iterableContractStorage.getRight().getHash());
 			iterableContractStorage.release();
 			iterableContractStorage = copy;
 		}
-		rootValues.put(contractNum, iterableValue);
 		rootKeys.put(contractNum, rootKey);
 	}
 
