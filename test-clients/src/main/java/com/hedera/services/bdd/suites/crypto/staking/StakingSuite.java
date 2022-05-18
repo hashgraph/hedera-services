@@ -25,13 +25,12 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 
 public class StakingSuite extends HapiApiSuite {
@@ -65,6 +64,7 @@ public class StakingSuite extends HapiApiSuite {
 				.given(
 						overriding("staking.startThreshold", "" + 10 * ONE_HBAR)
 				).when(
+						cryptoCreate("account").stakedNodeId(0L),
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, stakingAccount, ONE_HBAR)
 						).via("transferTxn"),
@@ -74,7 +74,10 @@ public class StakingSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, stakingAccount, ONE_HBAR)
 						).via("shouldTriggerStaking"),
-						freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10))
+//						freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10))
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, "account", ONE_HBAR)
+						).via("shouldSendRewards")
 						// for now testing with the logs, once RewardCalculator is implemented this test will be complete.
 						// tested
 						// 1. Only on the last cryptoTransfer the following log is written `Staking rewards is activated and rewardSumHistory is cleared`

@@ -188,6 +188,27 @@ class AccountsCommitInterceptorTest {
 		assertTrue(subject.shouldActivateStakingRewards());
 	}
 
+	@Test
+	void calculatesRewardIfNeeded() {
+		final var amount = 5L;
+
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
+		changes.include(counterpartyId, counterparty, randomAndBalanceChanges(counterpartyBalance - amount));
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(rewardCalculator.computeAndApplyRewards(EntityNum.fromAccountId(counterpartyId))).willReturn(1L);
+
+		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
+				dynamicProperties, () -> accounts, rewardCalculator);
+
+		subject.preview(changes);
+
+		verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount + 1);
+		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -1);
+	}
+
 	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
 		given(addressBook.getAddress(0)).willReturn(address1);
@@ -225,6 +246,7 @@ class AccountsCommitInterceptorTest {
 			.balance(partyBalance)
 			.get();
 	private static final MerkleAccount counterparty = MerkleAccountFactory.newAccount()
+			.stakedId(-1)
 			.number(EntityNum.fromAccountId(counterpartyId))
 			.balance(counterpartyBalance)
 			.get();

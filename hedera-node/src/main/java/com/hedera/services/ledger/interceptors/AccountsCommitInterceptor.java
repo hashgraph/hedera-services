@@ -151,9 +151,8 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
 
 		if (reward > 0) {
-			final var stakingFundBalance = accounts.get().get(stakingFundAccount).getBalance();
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
-			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), stakingFundBalance - reward);
+			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
 		} else {
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
@@ -164,7 +163,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	}
 
 	private boolean stakingActivated() {
-		return !networkCtx.get().areRewardsActivated();
+		return networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {
