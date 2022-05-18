@@ -107,7 +107,7 @@ public class BlockSuite extends HapiApiSuite {
     private HapiApiSpec BLCK_001_002_003_004_returnsCorrectBlockProperties() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
-        final var timeLoggingTxn = "timeLoggingTxn";
+        final var secondBlock = "secondBlock";
 
         return defaultHapiSpec("returnsCorrectBlockProperties")
                 .given(
@@ -140,12 +140,12 @@ public class BlockSuite extends HapiApiSuite {
                                 .nonce(1)
                                 .maxFeePerGas(50L)
                                 .gasLimit(1_000_000L)
-                                .via(timeLoggingTxn)
+                                .via(secondBlock)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                 ).then(
                         withOpContext((spec, opLog) -> {
                             final var firstBlockOp = getTxnRecord(firstBlock);
-                            final var recordOp = getTxnRecord(timeLoggingTxn);
+                            final var recordOp = getTxnRecord(secondBlock);
                             allRunFor(spec, firstBlockOp, recordOp);
 
                             //First block info
