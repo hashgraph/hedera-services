@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
@@ -70,6 +71,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -92,6 +94,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -152,7 +155,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						gasLimitOverMaxGasLimitFailsPrecheck(),
 						vanillaSuccess(),
 						propagatesNestedCreations(),
-//						blockTimestampIsConsensusTime(),
+						blockTimestampChangesWithinFewSeconds(),
 						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo()
 				}
@@ -746,7 +749,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec blockTimestampIsConsensusTime() {
+	HapiApiSpec blockTimestampChangesWithinFewSeconds() {
 		final var contract = "EmitBlockTimestamp";
 		final var firstBlock = "firstBlock";
 		final var timeLoggingTxn = "timeLoggingTxn";
@@ -757,8 +760,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 						contractCall(contract, "logNow")
-								.via(firstBlock).delayBy(3_000),
+								.via(firstBlock),
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
+						sleepFor(3_000),
 						contractCall(contract, "logNow")
 								.via(timeLoggingTxn)
 				).then(
@@ -767,7 +771,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var recordOp = getTxnRecord(timeLoggingTxn);
 							allRunFor(spec, firstBlockOp, recordOp);
 
-							//First block info
+							// First block info
 							final var firstBlockRecord = firstBlockOp.getResponseRecord();
 							final var firstBlockLogs = firstBlockRecord.getContractCallResult().getLogInfoList();
 							final var firstBlockTimeLogData = firstBlockLogs.get(0).getData().toByteArray();
@@ -780,7 +784,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 									Arrays.copyOfRange(firstBlockHashLogData, 32, 64));
 							assertEquals(Bytes32.ZERO, firstBlockHash);
 
-							//Second block info
+							// Second block info
 							final var secondBlockRecord = recordOp.getResponseRecord();
 							final var secondBlockLogs = secondBlockRecord.getContractCallResult().getLogInfoList();
 							assertEquals(2, secondBlockLogs.size());
@@ -793,13 +797,16 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
 							final var secondBlockNumber = Longs.fromByteArray(
 									Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
-							assertEquals(firstBlockNumber + 1, secondBlockNumber,
+							assertNotEquals(firstBlockNumber, secondBlockNumber,
 									"Wrong previous block number");
 							final var secondBlockHash = Bytes32.wrap(
 									Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
 
 							assertEquals(Bytes32.ZERO, secondBlockHash);
-						})
+						}),
+						contractCallLocal(contract, "getLastBlockHash")
+								.exposingTypedResultsTo(results ->
+										log.info("Results were {}", CommonUtils.hex((byte[]) results[0])))
 				);
 	}
 

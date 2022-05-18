@@ -112,7 +112,7 @@ class RecordsRunningHashLeafTest {
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
-		assertEquals(hash, leafForTestingRunningHash.getLatestBlockHash());
+		assertEquals(hash, leafForTestingRunningHash.currentRunningHash());
 	}
 
 	@Test

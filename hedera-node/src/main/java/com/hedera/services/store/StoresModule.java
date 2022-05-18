@@ -72,7 +72,8 @@ public interface StoresModule {
 
 	@Binds
 	@Singleton
-	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
 
 	@Binds
 	@Singleton
@@ -81,14 +82,13 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokensLinkManager uniqueTokensLinkManager
+			final UniqueTokensLinkManager uniqueTokensLinkManager,
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
 	) {
 		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
-				backingNfts,
+				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
 		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
