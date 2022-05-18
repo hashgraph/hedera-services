@@ -27,6 +27,7 @@ import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.ledger.interceptors.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -90,6 +91,8 @@ class NetworkCtxManagerTest {
 	private SignedTxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
+	@Mock
+	private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
 
 	private NetworkCtxManager subject;
 
@@ -108,7 +111,8 @@ class NetworkCtxManagerTest {
 				handleThrottling,
 				() -> networkCtx,
 				txnCtx,
-				runningAvgs);
+				runningAvgs,
+				endOfStakingPeriodCalculator);
 	}
 
 	@Test

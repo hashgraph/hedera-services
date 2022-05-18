@@ -233,6 +233,14 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
+	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+			final MutableStateChildren workingState
+	) {
+		return workingState::stakingInfo;
+	}
+
+	@Provides
+	@Singleton
 	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
 			final MutableStateChildren workingState
 	) {
@@ -277,14 +285,6 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::uniqueTokens;
-	}
-
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideStakingInfo(
-			final MutableStateChildren workingState
-	) {
-		return workingState::stakingInfo;
 	}
 
 	@Provides

@@ -114,6 +114,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
+	private boolean stakingRewardsActivated;
 	private long totalStakedRewardStart;
 	private long totalStakedStart;
 
@@ -152,6 +153,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = that.blockHashes.copy();
+		this.stakingRewardsActivated = that.stakingRewardsActivated;
 		this.totalStakedRewardStart = that.totalStakedRewardStart;
 		this.totalStakedStart = that.totalStakedStart;
 	}
@@ -344,6 +346,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			totalStakedRewardStart = in.readLong();
 			totalStakedStart = in.readLong();
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsActivated = in.readBoolean();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -383,6 +388,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		serializeNonHashData(out);
 		out.writeSerializable(blockHashes, true);
+		out.writeBoolean(stakingRewardsActivated);
 		out.writeLong(totalStakedRewardStart);
 		out.writeLong(totalStakedStart);
 	}
@@ -463,6 +469,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
 				stringifiedBlockHashes() +
+				"\n  Staking Rewards Activated                  ::" +
+				stakingRewardsActivated +
 				"\n Total StakedRewardStart is 					:: " +
 				totalStakedRewardStart +
 				"\n Total StakedStart is 						:: " +
@@ -593,6 +601,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public long getTotalStakedStart() {
 		return totalStakedStart;
+	}
+
+	public boolean areRewardsActivated() {
+		return stakingRewardsActivated;
 	}
 
 	/* --- Internal helpers --- */
@@ -788,6 +800,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
 		return gasThrottleUsageSnapshot;
+	}
+
+	public void setStakingRewards(boolean stakingRewardsActivated) {
+		this.stakingRewardsActivated = stakingRewardsActivated;
 	}
 
 	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {

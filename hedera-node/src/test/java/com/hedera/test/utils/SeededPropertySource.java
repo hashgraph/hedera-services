@@ -357,7 +357,7 @@ public class SeededPropertySource {
 				0,
 				0,
 				0,
-				0,
+				-1,
 				0,
 				false);
 		misorderedState.setNftsOwned(nextUnsignedLong());

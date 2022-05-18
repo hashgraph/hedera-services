@@ -9,9 +9,9 @@ package com.hedera.services.ledger.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,15 +21,28 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.stakingFundAccount;
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -41,9 +54,32 @@ import java.util.Map;
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final RewardCalculator rewardCalculator;
+	private boolean rewardsActivated;
+	private boolean rewardBalanceChanged;
+	private long newRewardBalance;
 
-	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
+
+	private static final Logger log = LogManager.getLogger(AccountsCommitInterceptor.class);
+
+	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
+	) {
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.networkCtx = networkCtx;
+		this.dynamicProperties = dynamicProperties;
+		this.stakingInfo = stakingInfo;
+		this.accounts = accounts;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	/**
@@ -54,6 +90,10 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		// if the rewards are activated previously they will not be activated again
+		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
+		rewardBalanceChanged = false;
+
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			trackBalanceChangeIfAny(
 					pendingChanges.id(i).getAccountNum(),
@@ -61,6 +101,28 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
+		if (shouldActivateStakingRewards()) {
+			networkCtx.get().setStakingRewards(true);
+			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+
+			long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
+			accounts.get().forEach(((entityNum, account) -> {
+				if (account.getStakedId() < 0) {
+					account.setStakePeriodStart(todayNumber);
+				}
+			}));
+			log.info("Staking rewards is activated and rewardSumHistory is cleared");
+		}
+	}
+
+	/**
+	 * If the balance on 0.0.800 changed in the current transaction and the balance reached above the specified
+	 * threshold activates staking rewards
+	 *
+	 * @return true if rewards should be activated, false otherwise
+	 */
+	public boolean shouldActivateStakingRewards() {
+		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
 	}
 
 	private void trackBalanceChangeIfAny(
@@ -70,14 +132,68 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+			if (merkleAccount != null && (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER)) {
+				rewardBalanceChanged = true;
+				newRewardBalance = newBalance;
+			}
+
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+			if (shouldCalculateReward(merkleAccount)) {
+				calculateReward(accountNum, adjustment);
+				// this step will be done for changes to all staking fields in future PR
+			} else {
+				sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+			}
+		}
+	}
+
+	private void calculateReward(final long accountNum, final long adjustment) {
+		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
+
+		if (reward > 0) {
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
+			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
+		} else {
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
+	}
+
+	private boolean shouldCalculateReward(final MerkleAccount account) {
+		return account != null && account.getStakedId() < 0 && stakingActivated();
+	}
+
+	private boolean stakingActivated() {
+		return networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
 			throw new IllegalStateException("Invalid balance changes");
 		}
+	}
+
+	/* only used for unit tests */
+	public boolean isRewardsActivated() {
+		return rewardsActivated;
+	}
+
+	public void setRewardsActivated(final boolean rewardsActivated) {
+		this.rewardsActivated = rewardsActivated;
+	}
+
+	public boolean isRewardBalanceChanged() {
+		return rewardBalanceChanged;
+	}
+
+	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
+		this.rewardBalanceChanged = rewardBalanceChanged;
+	}
+
+	public long getNewRewardBalance() {
+		return newRewardBalance;
+	}
+
+	public void setNewRewardBalance(final long newRewardBalance) {
+		this.newRewardBalance = newRewardBalance;
 	}
 }

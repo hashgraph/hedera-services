@@ -133,7 +133,7 @@ public class NetworkCtxManager {
 				* and perform end of staking period calculations */
 				if (isNextDay.test(lastMidnightBoundaryCheck, consensusTime)) {
 					networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
-					endOfStakingPeriodCalculator.updateNodes();
+					endOfStakingPeriodCalculator.updateNodes(consensusTime);
 				}
 				/* And mark this as the last time we checked the midnight boundary */
 				networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
@@ -177,7 +177,8 @@ public class NetworkCtxManager {
 	 *     <li>The congestion pricing multiplier.</li>
 	 * </ol>
 	 *
-	 * @param op the type of transaction just handled
+	 * @param op
+	 * 		the type of transaction just handled
 	 */
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);

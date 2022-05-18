@@ -66,6 +66,8 @@ public class MerkleAccountFactory {
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
 	private TreeSet<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
 	private int[] firstUint256Key;
+	private long stakedId = 0;
+	private long stakePeriodStart = -1;
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -93,6 +95,8 @@ public class MerkleAccountFactory {
 		value.setNumAssociations(associatedTokensCount.orElse(0));
 		value.setNumPositiveBalances(numPositiveBalances.orElse(0));
 		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
+		value.setStakedId(stakedId);
+		value.setStakePeriodStart(stakePeriodStart);
 		autoRenewAccount.ifPresent(p -> value.setAutoRenewAccount(EntityId.fromGrpcAccountId(p)));
 		if (firstUint256Key != null) {
 			value.setFirstUint256StorageKey(firstUint256Key);
@@ -121,6 +125,16 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory number(final EntityNum num) {
 		this.num = num;
+		return this;
+	}
+
+	public MerkleAccountFactory stakedId(final long stakedId) {
+		this.stakedId = stakedId;
+		return this;
+	}
+
+	public MerkleAccountFactory stakePeriodStart(final long stakePeriodStart) {
+		this.stakePeriodStart = stakePeriodStart;
 		return this;
 	}
 

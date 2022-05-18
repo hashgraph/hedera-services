@@ -22,11 +22,13 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -34,14 +36,18 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,6 +56,7 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -83,6 +90,11 @@ public class WorldLedgers {
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final RewardCalculator rewardCalculator;
 
 	public static WorldLedgers staticLedgersWith(
 			final ContractAliases aliases,
@@ -96,13 +108,23 @@ public class WorldLedgers {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.accountsLedger = accountsLedger;
 		this.tokensLedger = tokensLedger;
 		this.nftsLedger = nftsLedger;
 		this.aliases = aliases;
+		this.networkCtx = networkCtx;
+		this.stakingInfo = stakingInfo;
+		this.dynamicProperties = dynamicProperties;
+		this.rewardCalculator = rewardCalculator;
+		this.accounts = accounts;
 
 		staticEntityAccess = null;
 	}
@@ -112,6 +134,11 @@ public class WorldLedgers {
 		accountsLedger = null;
 		tokensLedger = null;
 		nftsLedger = null;
+		networkCtx = null;
+		stakingInfo = null;
+		dynamicProperties = null;
+		rewardCalculator = null;
+		accounts = null;
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
@@ -297,7 +324,8 @@ public class WorldLedgers {
 		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
 		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
 		if (sideEffectsTracker != null) {
-			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx,
+					stakingInfo, dynamicProperties, accounts, rewardCalculator);
 			wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		}
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
@@ -307,7 +335,13 @@ public class WorldLedgers {
 				wrappedTokenRelsLedger,
 				wrappedAccountsLedger,
 				wrappedNftsLedger,
-				wrappedTokensLedger);
+				wrappedTokensLedger,
+				networkCtx,
+				stakingInfo,
+				dynamicProperties,
+				accounts,
+				rewardCalculator
+		);
 	}
 
 	public ContractAliases aliases() {
