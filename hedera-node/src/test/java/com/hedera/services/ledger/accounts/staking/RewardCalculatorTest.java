@@ -39,8 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class RewardCalculatorTest {
@@ -117,19 +120,26 @@ public class RewardCalculatorTest {
 	@Test
 	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		final var accountNum = EntityNum.fromLong(2000L);
-		final var today = 18763L;
+		final var expectedStakePeriodStart = 19365L;
 
 		final var merkleAccount = new MerkleAccount();
-		merkleAccount.setStakePeriodStart(today - 500);
+		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
 		merkleAccount.setStakedId(3L);
 		merkleAccount.setBalance(100L);
+
+		final var mockLocalDate = mock(LocalDate.class);
+		final var mockedStatic = mockStatic(LocalDate.class);
+		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
+		when(mockLocalDate.toEpochDay()).thenReturn(expectedStakePeriodStart);
+
 		given(accounts.getForModify(accountNum)).willReturn(merkleAccount);
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
-		assertEquals(19129L, merkleAccount.getStakePeriodStart());
+		assertEquals(expectedStakePeriodStart-1, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);
+		mockedStatic.close();
 	}
 }
