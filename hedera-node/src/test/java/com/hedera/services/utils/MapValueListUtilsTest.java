@@ -84,7 +84,7 @@ class MapValueListUtilsTest {
 
 		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+		final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval, true);
 		assertSame(aRelKey, newRoot);
 		final var unlinkedValue = tokenRels.get(bRelKey);
 		assertEquals(0, unlinkedValue.prevKey());

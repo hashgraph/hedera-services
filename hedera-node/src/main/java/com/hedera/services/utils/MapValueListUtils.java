@@ -53,9 +53,11 @@ public class MapValueListUtils {
 			@NotNull final V value,
 			@Nullable final K rootKey,
 			@Nullable final V rootValue,
-			@NotNull final MapValueListMutation<K, V> listMutation
+			@NotNull final MapValueListMutation<K, V> listMutation,
+			final boolean useGetForModify
 	) {
-		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, true);
+		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, true,
+				useGetForModify);
 	}
 
 	/**
@@ -83,9 +85,11 @@ public class MapValueListUtils {
 			@NotNull final V value,
 			@Nullable final K rootKey,
 			@Nullable final V rootValue,
-			@NotNull final MapValueListMutation<K, V> listMutation
+			@NotNull final MapValueListMutation<K, V> listMutation,
+			final boolean useGetForModify
 	) {
-		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, false);
+		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, false,
+				useGetForModify);
 	}
 
 	/**
@@ -150,9 +154,10 @@ public class MapValueListUtils {
 	<K, V extends FastCopyable> K unlinkInPlaceFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
-			@NotNull final MapValueListMutation<K, V> listRemoval
+			@NotNull final MapValueListMutation<K, V> listRemoval,
+			final boolean useGetForModify
 	) {
-		return internalDetachFromMapValueList(key, root, listRemoval, true, false, true);
+		return internalDetachFromMapValueList(key, root, listRemoval, useGetForModify, false, true);
 	}
 
 	@VisibleForTesting
@@ -227,7 +232,8 @@ public class MapValueListUtils {
 			@Nullable final K rootKey,
 			@Nullable final V rootValue,
 			@NotNull final MapValueListMutation<K, V> listMutation,
-			final boolean insertIntoMap
+			final boolean insertIntoMap,
+			final boolean skipReinsert
 	) {
 		if (insertIntoMap) {
 			listMutation.put(key, value);
@@ -236,6 +242,10 @@ public class MapValueListUtils {
 			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
 			listMutation.updateNext(value, rootKey);
 			listMutation.updatePrev(nextValue, key);
+			if (!skipReinsert) {
+				listMutation.put(key, value);
+				listMutation.put(rootKey, nextValue);
+			}
 		}
 		return key;
 	}

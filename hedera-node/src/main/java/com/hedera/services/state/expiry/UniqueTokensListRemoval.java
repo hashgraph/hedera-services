@@ -47,7 +47,8 @@ public class UniqueTokensListRemoval implements MapValueListMutation<UniqueToken
 	@Nullable
 	@Override
 	public UniqueTokenValue getForModify(final UniqueTokenKey key) {
-		return uniqueTokens.getForModify(key);
+		final var result = uniqueTokens.get(key);
+		return result == null ? null : new UniqueTokenValue(result);
 	}
 
 	@Override

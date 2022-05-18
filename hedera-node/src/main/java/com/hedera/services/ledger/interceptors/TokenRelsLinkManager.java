@@ -85,7 +85,7 @@ public class TokenRelsLinkManager {
 			for (final var newRel : newTokenRels) {
 				final var literalTokenNum = newRel.getRelatedTokenNum();
 				final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
-				rootKey = insertInPlaceAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
+				rootKey = insertInPlaceAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation, true);
 				rootRel = newRel;
 			}
 		}

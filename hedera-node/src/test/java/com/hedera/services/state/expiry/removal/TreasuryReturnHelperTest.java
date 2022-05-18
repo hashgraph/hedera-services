@@ -75,7 +75,10 @@ class TreasuryReturnHelperTest {
 	void returnsNullIfMissingEntity() {
 		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
 		final var token = mock(MerkleToken.class);
+		final var nft = new UniqueTokenValue();
+
 		given(tokens.get(missingTokenNum)).willReturn(null);
+		given(uniqueTokens.get(key)).willReturn(nft);
 
 		assertNull(subject.updateNftReturns(key, uniqueTokens));
 
@@ -86,7 +89,7 @@ class TreasuryReturnHelperTest {
 
 		given(tokens.get(missingTokenNum)).willReturn(token);
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(uniqueTokens.getForModify(key)).willReturn(null);
+		given(uniqueTokens.get(key)).willReturn(null);
 
 		assertNull(subject.updateNftReturns(key, uniqueTokens));
 	}
@@ -95,14 +98,14 @@ class TreasuryReturnHelperTest {
 	void removesNftIfTokenIsDeleted() {
 		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
 		final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
-		final var nft  = mock(UniqueTokenValue.class);
+		final var nft  = new UniqueTokenValue();
 		final var token = mock(MerkleToken.class);
 
 		given(tokens.get(missingTokenNum)).willReturn(token);
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(token.isDeleted()).willReturn(true);
-		given(uniqueTokens.getForModify(key)).willReturn(nft);
-		given(nft.getNext()).willReturn(nextKey.toNftNumPair());
+		given(uniqueTokens.get(key)).willReturn(nft);
+		nft.setNext(nextKey.toNftNumPair());
 
 		assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
 		verify(uniqueTokens).remove(key);
@@ -112,17 +115,17 @@ class TreasuryReturnHelperTest {
 	void changesNftOwnerToTreasuryIfTokenIsNotDeleted() {
 		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
 		final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
-		final var nft  = mock(UniqueTokenValue.class);
+		final var nft = new UniqueTokenValue();
 		final var token = mock(MerkleToken.class);
 
 		given(tokens.get(missingTokenNum)).willReturn(token);
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(token.isDeleted()).willReturn(false);
-		given(uniqueTokens.getForModify(key)).willReturn(nft);
-		given(nft.getNext()).willReturn(nextKey.toNftNumPair());
+		given(uniqueTokens.get(key)).willReturn(nft);
+		nft.setNext(nextKey.toNftNumPair());
 
 		assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
-		verify(nft).setOwner(EntityId.MISSING_ENTITY_ID);
+		assertEquals(EntityId.MISSING_ENTITY_ID, nft.getOwner());
 	}
 
 	@Test

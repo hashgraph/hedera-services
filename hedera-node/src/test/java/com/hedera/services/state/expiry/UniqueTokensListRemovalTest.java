@@ -61,9 +61,9 @@ class UniqueTokensListRemovalTest {
 
 	@Test
 	void delegatesGet4M() {
-		given(uniqueTokens.getForModify(rootNftKey)).willReturn(rootNft);
+		given(uniqueTokens.get(rootNftKey)).willReturn(rootNft);
 
-		assertSame(rootNft, subject.getForModify(rootNftKey));
+		assertEquals(rootNft, subject.getForModify(rootNftKey));
 	}
 
 	@Test

@@ -94,7 +94,7 @@ public class UniqueTokensLinkManager {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 			if (rootKey != null) {
-				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
+				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation, false);
 			} else {
 				log.error("Invariant failure: {} owns NFT {}, but has no root link", from, nftId);
 			}
@@ -109,12 +109,12 @@ public class UniqueTokensLinkManager {
 			var nft = listMutation.getForModify(nftId);
 			var rootKey = rootKeyOf(toAccount);
 			if (nft != null) {
-				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
+				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation, false);
 			} else {
 				// This is "non-treasury mint" done via a multi-stage contract op; we need to
 				// create a NFT whose link pointers we can update, since it doesn't exist yet
 				insertedNft = new UniqueTokenValue();
-				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
+				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation, false);
 			}
 			toAccount.setHeadNftId(nftNumPair.tokenNum());
 			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());

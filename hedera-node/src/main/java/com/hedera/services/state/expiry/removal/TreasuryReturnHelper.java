@@ -86,12 +86,14 @@ public class TreasuryReturnHelper {
 		final var curTokens = tokens.get();
 		final var tokenNum = nftKey.toEntityNumPair().getHiOrderAsNum();
 		final var token = curTokens.get(tokenNum);
-		final var uniqueToken = currUniqueTokens.getForModify(nftKey);
+		var uniqueToken = currUniqueTokens.get(nftKey);
 		if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE && uniqueToken != null) {
 			if (token.isDeleted()) {
 				currUniqueTokens.remove(nftKey);
 			} else {
+				uniqueToken = new UniqueTokenValue(uniqueToken);   // make a mutable copy
 				uniqueToken.setOwner(MISSING_ENTITY_ID);
+				currUniqueTokens.put(nftKey, uniqueToken);
 			}
 			final var nextKey = uniqueToken.getNext();
 			return nextKey == MISSING_NFT_NUM_PAIR ? null : UniqueTokenKey.from(nextKey);
