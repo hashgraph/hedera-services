@@ -217,8 +217,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private void runPostMigrationTasks() {
-		if (postMigrationTasks == null) {
-			// This can happen if mocked.
+		if (postMigrationTasks == null) {  // NOSONAR: This can happen if mocked.
 			return;
 		}
 		for (Runnable task : postMigrationTasks) {

@@ -32,7 +32,6 @@ import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -89,10 +88,10 @@ public class UniqueTokenValue implements VirtualValue {
 	}
 
 	public UniqueTokenValue(UniqueTokenValue other) {
-		ownerAccountNum = other.ownerAccountNum;
-		spenderAccountNum = other.spenderAccountNum;
-		metadata = other.metadata;
-		packedCreationTime = other.packedCreationTime;
+		this.ownerAccountNum = other.ownerAccountNum;
+		this.spenderAccountNum = other.spenderAccountNum;
+		this.metadata = other.metadata;
+		this.packedCreationTime = other.packedCreationTime;
 		this.prev = other.prev;
 		this.next = other.next;
 		// Do not copy over the isImmutable field.
