@@ -77,12 +77,12 @@ public class ServicesStateE2ETest {
 
 	@Test
 	void testMigrationFromSignedStateV24() throws IOException {
-		SignedState signedState = loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
-		AddressBook addressBook = signedState.getAddressBook();
-		SwirldDualState swirldDualState = signedState.getState().getSwirldDualState();
+		final var signedState = loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
+		final var addressBook = signedState.getAddressBook();
+		final var swirldDualState = signedState.getState().getSwirldDualState();
 
-		Platform platform = createMockPlatform();
-		ServicesState servicesState = (ServicesState) signedState.getSwirldState();
+		final var platform = createMockPlatform();
+		final var servicesState = (ServicesState) signedState.getSwirldState();
 		servicesState.init(platform, addressBook, swirldDualState);
 		servicesState.setMetadata(new StateMetadata(createMockApp(), new FCHashMap<>()));
 		servicesState.migrate();
@@ -90,41 +90,40 @@ public class ServicesStateE2ETest {
 
 	@Test
 	void testGenesisState() {
-		SwirldDualState swirldDualState = new DualStateImpl();
-		ServicesState servicesState = new ServicesState();
-		RecordsRunningHashLeaf recordsRunningHashLeaf = new RecordsRunningHashLeaf();
+		final var swirldDualState = new DualStateImpl();
+		final var servicesState = new ServicesState();
+		final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
 		recordsRunningHashLeaf.setRunningHash(new RunningHash(new Hash()));
 		servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-		Platform platform = createMockPlatform();
-		long nodeId = platform.getSelfId().getId();
-		Address address;
-		address = new Address(
+		final var platform = createMockPlatform();
+		final var nodeId = platform.getSelfId().getId();
+		final var address = new Address(
 				nodeId, "", "", 1L, false, null, -1, null, -1, null, -1, null, -1,
 				null, null, (SerializablePublicKey)null, "");
-		AddressBook addressBook = new AddressBook(List.of(address));
-		ServicesApp mockApp = createMockApp();
+		final var addressBook = new AddressBook(List.of(address));
+		final var mockApp = createMockApp();
 
 		APPS.save(platform.getSelfId().getId(), mockApp);
 		assertDoesNotThrow(() -> servicesState.genesisInit(platform, addressBook, swirldDualState));
 	}
 
-
 	private static ServicesApp createMockApp() {
-		ServicesApp mockApp = mock(ServicesApp.class);
+		final var mockApp = mock(ServicesApp.class);
 		when(mockApp.dualStateAccessor()).thenReturn(new DualStateAccessor());
 		when(mockApp.initializationFlow()).thenReturn(mock(ServicesInitFlow.class));
 		when(mockApp.hashLogger()).thenReturn(new HashLogger());
 		when(mockApp.workingState()).thenReturn(new MutableStateChildren());
 		return mockApp;
 	}
+
 	private static Platform createMockPlatform() {
-		Platform platform = mock(Platform.class);
+		final var platform = mock(Platform.class);
 		when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
 		return platform;
 	}
 
 	private static SignedState loadSignedState(final String path) throws IOException {
-		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
+		final var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.getRight());
 		return signedPair.getRight();
