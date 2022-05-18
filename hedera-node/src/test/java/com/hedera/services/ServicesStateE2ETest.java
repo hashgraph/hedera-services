@@ -48,8 +48,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,15 +79,7 @@ public class ServicesStateE2ETest {
 
 	@Test
 	void testMigrationFromSignedStateV24() throws IOException {
-		final var signedState = loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
-		final var addressBook = signedState.getAddressBook();
-		final var swirldDualState = signedState.getState().getSwirldDualState();
-
-		final var platform = createMockPlatform();
-		final var servicesState = (ServicesState) signedState.getSwirldState();
-		servicesState.init(platform, addressBook, swirldDualState);
-		servicesState.setMetadata(new StateMetadata(createMockApp(), new FCHashMap<>()));
-		servicesState.migrate();
+		assertDoesNotThrow(() -> migrate(signedStateDir + "v0.24.2-nfts/SignedState.swh"));
 	}
 
 	@Test
@@ -93,7 +87,7 @@ public class ServicesStateE2ETest {
 		final var swirldDualState = new DualStateImpl();
 		final var servicesState = new ServicesState();
 		final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
-		recordsRunningHashLeaf.setRunningHash(new RunningHash(new Hash()));
+		recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
 		servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
 		final var platform = createMockPlatform();
 		final var nodeId = platform.getSelfId().getId();
@@ -105,6 +99,19 @@ public class ServicesStateE2ETest {
 
 		APPS.save(platform.getSelfId().getId(), mockApp);
 		assertDoesNotThrow(() -> servicesState.genesisInit(platform, addressBook, swirldDualState));
+	}
+
+	private static Hash migrate(String dataPath) throws IOException, InterruptedException {
+		final var signedState = loadSignedState(dataPath);
+		final var addressBook = signedState.getAddressBook();
+		final var swirldDualState = signedState.getState().getSwirldDualState();
+
+		final var platform = createMockPlatform();
+		final var servicesState = (ServicesState) signedState.getSwirldState();
+		servicesState.init(platform, addressBook, swirldDualState);
+		servicesState.setMetadata(new StateMetadata(createMockApp(), new FCHashMap<>()));
+		servicesState.migrate();
+		return servicesState.runningHashLeaf().currentRunningHash();
 	}
 
 	private static ServicesApp createMockApp() {
