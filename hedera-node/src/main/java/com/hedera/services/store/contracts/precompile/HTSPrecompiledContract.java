@@ -556,7 +556,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
-							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> dynamicProperties.isHTSPrecompileCreateEnabled() ? new TokenCreatePrecompile() : null;
+							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
+							dynamicProperties.isHTSPrecompileCreateEnabled() ? new TokenCreatePrecompile() : null;
 					default -> null;
 				};
 		if (precompile != null) {
@@ -1457,11 +1458,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			return null;
-		}
-
-		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
 		}
@@ -1489,8 +1485,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER ->
-						decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenId, callerId, aliasResolver);
 				case ABI_ID_ERC_TRANSFER_FROM -> {
 					final var operatorId = EntityId.fromGrpcAccountId(callerId);
 					yield decoder.decodeERCTransferFrom(
@@ -1505,7 +1500,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(final MessageFrame frame) {
-			super.run(frame);
+			if (!isFungible) {
+				final var nftExchange = transferOp.get(0).nftExchanges().get(0);
+				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
+				validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+			}
+			try {
+				super.run(frame);
+			} catch (InvalidTransactionException e) {
+				throw InvalidTransactionException.fromReverting(e.getResponseCode());
+			}
 			if (isFungible) {
 				frame.addLog(getLogForFungibleTransfer());
 			} else {
@@ -1648,6 +1652,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final var nftsLedger = ledgers.nfts();
+			validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			final var owner = ledgers.ownerOf(nftId);
 			final var priorityAddress = ledgers.canonicalAddress(owner);
 			return encoder.encodeOwner(priorityAddress);
@@ -1860,7 +1866,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 					payerAccount,
 					currentView);
-			validateTrue(status == OK, status);
+			validateTrueOrRevert(status == OK, status);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
@@ -1907,6 +1913,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var nftsLedger = ledgers.nfts();
 			final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
+			validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
 			return encoder.encodeGetApproved(spender.toEvmAddress());
 		}
@@ -1929,11 +1936,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		@SuppressWarnings("unchecked")
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			final var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(
-					isApproveForAllWrapper.owner(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-			final var allowanceId = FcTokenAllowanceId.from(tokenId, isApproveForAllWrapper.operator());
-			final var answer = allowances.contains(allowanceId);
+			final var accountsLedger = ledgers.accounts();
+			var answer = true;
+			final var ownerId = isApproveForAllWrapper.owner();
+			answer &= accountsLedger.contains(ownerId);
+			final var operatorId = isApproveForAllWrapper.operator();
+			answer &= accountsLedger.contains(operatorId);
+			if (answer) {
+				final var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(
+						ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+				final var allowanceId = FcTokenAllowanceId.from(tokenId, operatorId);
+				answer &= allowances.contains(allowanceId);
+			}
 			return encoder.encodeIsApprovedForAll(answer);
 		}
 	}
