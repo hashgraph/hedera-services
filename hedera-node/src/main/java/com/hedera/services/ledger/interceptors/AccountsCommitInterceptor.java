@@ -138,24 +138,21 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 			}
 
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+
 			if (shouldCalculateReward(merkleAccount)) {
-				calculateReward(accountNum, adjustment);
+				calculateReward(accountNum);
 				// this step will be done for changes to all staking fields in future PR
-			} else {
-				sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 			}
 		}
 	}
 
-	void calculateReward(final long accountNum, final long adjustment) {
+	void calculateReward(final long accountNum) {
 		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
-
-		sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		if (reward > 0) {
 			sideEffectsTracker.trackHbarChange(accountNum, reward);
 			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
 		}
-
 		sideEffectsTracker.trackRewardPayment(accountNum, reward);
 	}
 

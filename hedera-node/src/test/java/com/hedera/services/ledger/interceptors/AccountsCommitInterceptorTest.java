@@ -223,17 +223,15 @@ class AccountsCommitInterceptorTest {
 	@Test
 	void calculatesReward() {
 		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(0L);
-		subject.calculateReward(counterpartyId.getAccountNum(), 2L);
+		subject.calculateReward(counterpartyId.getAccountNum());
 
-		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 2L);
 		verify(sideEffectsTracker, never()).trackHbarChange(stakingFundId.getAccountNum(), -5L);
 		verify(sideEffectsTracker).trackRewardPayment(counterpartyId.getAccountNum(), 0L);
 
 		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(5L);
-		subject.calculateReward(counterpartyId.getAccountNum(), 2L);
+		subject.calculateReward(counterpartyId.getAccountNum());
 
 		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 5L);
-		verify(sideEffectsTracker, times(2)).trackHbarChange(counterpartyId.getAccountNum(), 2L);
 		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -5L);
 	}
 
