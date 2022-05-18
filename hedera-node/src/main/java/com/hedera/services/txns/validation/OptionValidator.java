@@ -22,6 +22,8 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -60,6 +62,12 @@ public interface OptionValidator {
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
 
 	JKey attemptDecodeOrThrow(Key k);
+
+	ResponseCodeEnum expiryStatusGiven(long balance, long expiry, boolean isContract);
+	// This variant is to avoid unnecessary TransactionalLedger.get() calls
+	ResponseCodeEnum expiryStatusGiven(
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+			AccountID id);
 
 	ResponseCodeEnum memoCheck(String cand);
 

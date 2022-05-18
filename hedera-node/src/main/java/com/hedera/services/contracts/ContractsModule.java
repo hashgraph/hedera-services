@@ -21,6 +21,7 @@ package com.hedera.services.contracts;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
@@ -41,7 +42,11 @@ import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.IterableStorageUtils;
@@ -53,8 +58,11 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
+import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -77,6 +85,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 
 @Module(includes = {
@@ -127,9 +136,15 @@ public interface ContractsModule {
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
-		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
+		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode, networkCtx, stakingInfo, dynamicProperties,
+				accounts, rewardCalculator);
 	}
 
 	@Provides
@@ -243,6 +258,11 @@ public interface ContractsModule {
 	@StringKey(HTS_PRECOMPILED_CONTRACT_ADDRESS)
 	PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
 
+	@Binds
+	@Singleton
+	@IntoMap
+	@StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
+	PrecompiledContract bindExchangeRatePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
 
 	@Provides
 	@Singleton

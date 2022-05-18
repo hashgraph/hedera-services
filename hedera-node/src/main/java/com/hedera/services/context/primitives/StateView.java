@@ -22,6 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
@@ -38,6 +39,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -121,12 +124,13 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+	static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
-	public static final StateView EMPTY_VIEW = new StateView(null, null, null);
+	public static final StateView EMPTY_VIEW = new StateView(null, new MutableStateChildren(), null);
 
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
@@ -143,7 +147,7 @@ public class StateView {
 
 	public StateView(
 			@Nullable final ScheduleStore scheduleStore,
-			@Nullable final StateChildren stateChildren,
+			final StateChildren stateChildren,
 			final NetworkInfo networkInfo
 	) {
 		this.scheduleStore = scheduleStore;
@@ -771,5 +775,14 @@ public class StateView {
 	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	/* --- used only in unit tests ---*/
+	public MerkleNetworkContext networkCtx() {
+		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
 	}
 }

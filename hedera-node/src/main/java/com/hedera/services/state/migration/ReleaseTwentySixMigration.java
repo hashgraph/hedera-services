@@ -52,7 +52,7 @@ public class ReleaseTwentySixMigration {
 	private static final Logger log = LogManager.getLogger(ReleaseTwentySixMigration.class);
 
 	public static final int THREAD_COUNT = 32;
-	public static final int INSERTIONS_PER_COPY = 100;
+	public static final int INSERTIONS_PER_COPY = 10_000;
 	public static final int SEVEN_DAYS_IN_SECONDS = 604800;
 	private static final RandomExtended random = new RandomExtended(8682588012L);
 
@@ -84,6 +84,7 @@ public class ReleaseTwentySixMigration {
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
 	) {
+
 		log.info("Migrating {} NFTs into iterable form", uniqueTokens.size());
 		final var watch = StopWatch.createStarted();
 		for (final var nftId : uniqueTokens.keySet()) {

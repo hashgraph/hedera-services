@@ -40,27 +40,27 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FilePartTest {
+class BytesElementTest {
 	private static final byte[] SOME_DATA = "abcdefgh".getBytes(StandardCharsets.UTF_8);
 
-	private FilePart subject;
+	private BytesElement subject;
 
 	@Test
 	void metaAsExpected() {
-		subject = new FilePart();
+		subject = new BytesElement();
 		assertEquals(1, subject.getVersion());
 		assertEquals(0xd1b1fc6b87447a02L, subject.getClassId());
 	}
 
 	@Test
 	void copyReturnsSelf() {
-		subject = new FilePart(SOME_DATA);
+		subject = new BytesElement(SOME_DATA);
 		assertSame(subject, subject.copy());
 	}
 
 	@Test
 	void canManageHash() {
-		subject = new FilePart(SOME_DATA);
+		subject = new BytesElement(SOME_DATA);
 
 		final var literal = CommonUtils.noThrowSha384HashOf(SOME_DATA);
 		final var hash = new Hash(literal, DigestType.SHA_384);
@@ -75,7 +75,7 @@ class FilePartTest {
 		final var baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
 
-		subject = new FilePart(SOME_DATA);
+		subject = new BytesElement(SOME_DATA);
 
 		subject.serialize(dos);
 		dos.flush();
@@ -83,7 +83,7 @@ class FilePartTest {
 		final var bais = new ByteArrayInputStream(bytes);
 		final var din = new SerializableDataInputStream(bais);
 
-		final var newSubject = new FilePart();
+		final var newSubject = new BytesElement();
 		newSubject.deserialize(din, 1);
 
 		assertArrayEquals(subject.getData(), newSubject.getData());
@@ -92,29 +92,29 @@ class FilePartTest {
 	@Test
 	@SuppressWarnings("java:S3415")
 	void checkEqualityComparisonWorks() {
-		subject = new FilePart(SOME_DATA);
+		subject = new BytesElement(SOME_DATA);
 		assertEquals(subject, subject);
 		// Note: suppressed warning here because check needs to cover null code-path of equals method.
 		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
-		assertEquals(subject, new FilePart(SOME_DATA));
-		assertNotEquals(subject, new FilePart("DIFFERENT DATA".getBytes()));
+		assertEquals(subject, new BytesElement(SOME_DATA));
+		assertNotEquals(subject, new BytesElement("DIFFERENT DATA".getBytes()));
 	}
 
 	@Test
 	void checkHashCodeDiverse() {
 		Set<Integer> hashCodes = new HashSet<>();
-		hashCodes.add(new FilePart("DATA1".getBytes()).hashCode());
-		hashCodes.add(new FilePart("DATA2".getBytes()).hashCode());
-		hashCodes.add(new FilePart("dATA1".getBytes()).hashCode());
-		hashCodes.add(new FilePart(new byte[] {}).hashCode());
+		hashCodes.add(new BytesElement("DATA1".getBytes()).hashCode());
+		hashCodes.add(new BytesElement("DATA2".getBytes()).hashCode());
+		hashCodes.add(new BytesElement("dATA1".getBytes()).hashCode());
+		hashCodes.add(new BytesElement(new byte[] {}).hashCode());
 		assertTrue(hashCodes.size() >= 3);
 	}
 
 	@Test
 	void stringContainsBytes() {
-		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("10"));
-		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("20"));
-		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("30"));
+		assertTrue(new BytesElement(new byte[] {10, 20, 30}).toString().contains("10"));
+		assertTrue(new BytesElement(new byte[] {10, 20, 30}).toString().contains("20"));
+		assertTrue(new BytesElement(new byte[] {10, 20, 30}).toString().contains("30"));
 	}
 }

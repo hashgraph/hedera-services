@@ -29,6 +29,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.hyperledger.besu.evm.Gas;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -120,6 +121,11 @@ public class GlobalDynamicProperties {
 	private int maxPurgedKvPairsPerTouch;
 	private KnownBlockValues knownBlockValues;
 	private int maxReturnedNftsPerTouch;
+	private Gas exchangeRateGasReq;
+	private double stakingRewardRate;
+	private long stakingStartThreshold;
+	private int nodeRewardPercent;
+	private int stakingRewardPercent;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -217,6 +223,11 @@ public class GlobalDynamicProperties {
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+		exchangeRateGasReq = Gas.of(properties.getLongProperty("contracts.precompile.exchangeRateGasCost"));
+		stakingRewardRate = properties.getDoubleProperty("staking.rewardRate");
+		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
+		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
+		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
 	}
 
 	public int maxTokensPerAccount() {
@@ -529,5 +540,25 @@ public class GlobalDynamicProperties {
 
 	public int getMaxReturnedNftsPerTouch() {
 		return maxReturnedNftsPerTouch;
+	}
+
+	public Gas exchangeRateGasReq() {
+		return exchangeRateGasReq;
+	}
+
+	public double getStakingRewardRate() {
+		return stakingRewardRate;
+	}
+
+	public long getStakingStartThreshold() {
+		return stakingStartThreshold;
+	}
+
+	public int getNodeRewardPercent() {
+		return nodeRewardPercent;
+	}
+
+	public int getStakingRewardPercent() {
+		return stakingRewardPercent;
 	}
 }

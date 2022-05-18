@@ -91,8 +91,6 @@ public class Account {
 	private int numPositiveBalances;
 	private int numTreasuryTitles;
 	private long ethereumNonce;
-	private long headNftId;
-	private long headNftSerialNum;
 
 	public Account(Id id) {
 		this.id = id;
@@ -332,8 +330,6 @@ public class Account {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("ethereumNonce", ethereumNonce)
-				.add("headNftId", headNftId)
-				.add("headNftSerialNum", headNftSerialNum)
 				.toString();
 	}
 
@@ -409,22 +405,6 @@ public class Account {
 		this.alias = alias;
 	}
 
-	public long getHeadNftId() {
-		return headNftId;
-	}
-
-	public void setHeadNftId(final long headNftId) {
-		this.headNftId = headNftId;
-	}
-
-	public long getHeadNftSerialNum() {
-		return headNftSerialNum;
-	}
-
-	public void setHeadNftSerialNum(final long headNftSerialNum) {
-		this.headNftSerialNum = headNftSerialNum;
-	}
-
 	public Map<EntityNum, Long> getCryptoAllowances() {
 		return cryptoAllowances == null ? Collections.emptyMap() : cryptoAllowances;
 	}
@@ -472,8 +452,6 @@ public class Account {
 	}
 
 	public int getTotalAllowances() {
-		return cryptoAllowances.size() +
-				fungibleTokenAllowances.size() +
-				approveForAllNfts.size();
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
 	}
 }

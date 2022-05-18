@@ -9,9 +9,9 @@ package com.hedera.services.ledger.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,15 +21,28 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.stakingFundAccount;
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -41,9 +54,21 @@ import java.util.Map;
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final RewardCalculator rewardCalculator;
+	private boolean rewardsActivated;
+	private boolean rewardBalanceChanged;
+	private long newRewardBalance;
 
-	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
+
+	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final RewardCalculator rewardCalculator
+	) {
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.networkCtx = networkCtx;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	/**
@@ -70,9 +95,29 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+			if (merkleAccount != null && (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER)) {
+				rewardBalanceChanged = true;
+				newRewardBalance = newBalance;
+			}
+
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
+	}
+
+	void calculateReward(final long accountNum) {
+		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
+
+		if (reward > 0) {
+			sideEffectsTracker.trackHbarChange(accountNum, reward);
+			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
+		}
+
+		sideEffectsTracker.trackRewardPayment(accountNum, reward);
+	}
+
+	boolean shouldCalculateReward(final MerkleAccount account) {
+		return account != null && account.getStakedId() < 0 && networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {

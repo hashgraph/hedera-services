@@ -27,7 +27,6 @@ import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -111,11 +110,11 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 	@Mock
-	private BlockManager blockManager;
+	private HederaBlockValues hederaBlockValues;
 	@Mock
 	private BlockValues blockValues;
 	@Mock
-	private HederaBlockValues hederaBlockValues;
+	private InHandleBlockMetaSource blockMetaSource;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -136,7 +135,7 @@ class CallEvmTxProcessorTest {
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource,
 				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, blockManager);
+				operations, precompiledContractMap, aliasManager, storageExpiry, blockMetaSource);
 	}
 
 	@Test
@@ -788,7 +787,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
 
-		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenValidMockEth() {
@@ -816,7 +815,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
-		given(blockManager.computeProvisionalBlockValues(any(), anyLong())).willReturn(hederaBlockValues);
+		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
 
 	private void givenSenderWithBalance(final long amount) {

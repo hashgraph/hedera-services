@@ -213,4 +213,9 @@ public class MutableStateChildren implements StateChildren {
 		aliases = new WeakReference<>(state.aliases());
 		stakingInfo = new WeakReference<>(state.stakingInfo());
 	}
+
+	/* --- used only in unit tests ---*/
+	public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
+		this.networkCtx = new WeakReference<>(networkCtx);
+	}
 }

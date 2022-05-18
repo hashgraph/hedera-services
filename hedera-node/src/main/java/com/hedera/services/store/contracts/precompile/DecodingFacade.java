@@ -25,11 +25,14 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -60,7 +63,8 @@ public class DecodingFacade {
 	public static final String UINT256_RAW_TYPE = "(uint256)";
 
 	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
-	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
+	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS =
+			Collections.emptyList();
 
 	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function(
 			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT_OUTPUT);
@@ -209,7 +213,7 @@ public class DecodingFacade {
 	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function IS_APPROVED_FOR_ALL =
-			new Function("isApprovedForAll(address,address)");
+			new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
@@ -236,7 +240,7 @@ public class DecodingFacade {
 
 		for (final var tuple : decodedTuples) {
 			for (final var tupleNested : (Tuple[]) tuple) {
-				final var tokenType = convertAddressBytesToTokenID((byte[]) tupleNested.get(0));
+				final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
 				var nftExchanges = NO_NFT_EXCHANGES;
 				var fungibleTransfers = NO_FUNGIBLE_TRANSFERS;
@@ -260,7 +264,7 @@ public class DecodingFacade {
 	public BurnWrapper decodeBurn(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var serialNumbers = (long[]) decodedArguments.get(2);
 
@@ -281,37 +285,55 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeERCTransfer(final Bytes input, final TokenID token,
-														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
+	public List<TokenTransferWrapper> decodeERCTransfer(
+			final Bytes input,
+			final TokenID token,
+			final AccountID caller,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
-		final var recipient = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var recipient = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
 		final var amount = (BigInteger) decodedArguments.get(1);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-		addAdjustmentAsTransfer(fungibleTransfers, token, recipient, amount.longValue());
-		addAdjustmentAsTransfer(fungibleTransfers, token, caller, -amount.longValue());
+		addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValue());
+		addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValue());
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 	}
 
-	public List<TokenTransferWrapper> decodeERCTransferFrom(final Bytes input,
-															final TokenID token, final boolean isFungible,
-															final UnaryOperator<byte[]> aliasResolver) {
+	public List<TokenTransferWrapper> decodeERCTransferFrom(
+			final Bytes input,
+			final TokenID token,
+			final boolean isFungible,
+			final UnaryOperator<byte[]> aliasResolver,
+			final WorldLedgers ledgers,
+			final EntityId operatorId
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
 		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
 		final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-		if(isFungible) {
+		if (isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);
-			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue());
-			addAdjustmentAsTransfer(fungibleTransfers, token, from, -amount.longValue());
+			addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
+			if (from.equals(operatorId.toGrpcAccountId())) {
+				addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			} else {
+				addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			}
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
-			final var serialNumber = (BigInteger) decodedArguments.get(2);
-			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber.longValue(), token, from, to));
+			final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
+			final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
+			if (operatorId.equals(ownerId)) {
+				nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNo, token, from, to));
+			} else {
+				nonFungibleTransfers.add(SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
+			}
 			return Collections.singletonList(new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
 		}
 	}
@@ -333,40 +355,44 @@ public class DecodingFacade {
 	}
 
 	public GetApprovedWrapper decodeGetApproved(final Bytes input) {
-		final Tuple decodedArguments = decodeFunctionCall(input, GET_APPROVED_FUNCTION_SELECTOR, GET_APPROVED_FUNCTION_DECODER);
-
-		final var tokenId = (BigInteger) decodedArguments.get(0);
-
-		return new GetApprovedWrapper(tokenId.longValue());
+		final Tuple decodedArguments = decodeFunctionCall(
+				input, GET_APPROVED_FUNCTION_SELECTOR, GET_APPROVED_FUNCTION_DECODER);
+		final var serialNo = (BigInteger) decodedArguments.get(0);
+		return new GetApprovedWrapper(serialNo.longValue());
 	}
 
 	public TokenAllowanceWrapper decodeTokenAllowance(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_ALLOWANCE_SELECTOR, TOKEN_ALLOWANCE_DECODER);
 
-		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+		final var owner = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var spender = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 
 		return new TokenAllowanceWrapper(owner, spender);
 	}
 
-	public ApproveWrapper decodeTokenApprove(final Bytes input, final TokenID token, final boolean isFungible, final UnaryOperator<byte[]> aliasResolver) {
+	public ApproveWrapper decodeTokenApprove(
+			final Bytes input,
+			final TokenID token,
+			final boolean isFungible,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_APPROVE_SELECTOR, TOKEN_APPROVE_DECODER);
-
-		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-
+		final var spender = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
 		if (isFungible) {
 			final var amount = (BigInteger) decodedArguments.get(1);
-			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, BigInteger.ZERO, isFungible);
+			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
 		} else {
 			final var serialNumber = (BigInteger) decodedArguments.get(1);
-			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, BigInteger.ZERO, isFungible);
+			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, isFungible);
 		}
 	}
 
-	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments = decodeFunctionCall(input, SET_APPROVAL_FOR_ALL_SELECTOR, SET_APPROVAL_FOR_ALL_DECODER);
+	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, SET_APPROVAL_FOR_ALL_SELECTOR,
+				SET_APPROVAL_FOR_ALL_DECODER);
 
-		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
 		final var approved = (boolean) decodedArguments.get(1);
 
 		return new SetApprovalForAllWrapper(to, approved);
@@ -375,7 +401,7 @@ public class DecodingFacade {
 	public MintWrapper decodeMint(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var metadataList = (byte[][]) decodedArguments.get(2);
 		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
@@ -388,23 +414,25 @@ public class DecodingFacade {
 		}
 	}
 
-	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var sender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
-		final var receiver = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(2), aliasResolver);
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var sender = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		final var receiver = convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
 		final var amount = (long) decodedArguments.get(3);
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES,
-				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenID, sender, receiver))));
+				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, false, tokenID, sender, receiver))));
 	}
 
 	public IsApproveForAllWrapper decodeIsApprovedForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments = decodeFunctionCall(input, IS_APPROVED_FOR_ALL_SELECTOR, IS_APPROVED_FOR_ALL_DECODER);
+		final Tuple decodedArguments = decodeFunctionCall(input, IS_APPROVED_FOR_ALL_SELECTOR,
+				IS_APPROVED_FOR_ALL_DECODER);
 
-		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var operator = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+		final var owner = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var operator = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 
 		return new IsApproveForAllWrapper(owner, operator);
 	}
@@ -415,8 +443,8 @@ public class DecodingFacade {
 	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
 
-		final var tokenType = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var accountIDs = decodeAccountIds((byte[][]) decodedArguments.get(1), aliasResolver);
+		final var tokenType = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var accountIDs = decodeAccountIds(decodedArguments.get(1), aliasResolver);
 		final var amounts = (long[]) decodedArguments.get(2);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -424,7 +452,7 @@ public class DecodingFacade {
 			final var accountID = accountIDs.get(i);
 			final var amount = amounts[i];
 
-			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
+			addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
 		}
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -433,9 +461,9 @@ public class DecodingFacade {
 	public List<TokenTransferWrapper> decodeTransferNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var sender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
-		final var receiver = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(2), aliasResolver);
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var sender = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		final var receiver = convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
 		final var serialNumber = (long) decodedArguments.get(3);
 
 		return Collections.singletonList(
@@ -447,9 +475,9 @@ public class DecodingFacade {
 	public List<TokenTransferWrapper> decodeTransferNFTs(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var senders = decodeAccountIds((byte[][]) decodedArguments.get(1), aliasResolver);
-		final var receivers = decodeAccountIds((byte[][]) decodedArguments.get(2), aliasResolver);
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var senders = decodeAccountIds(decodedArguments.get(1), aliasResolver);
+		final var receivers = decodeAccountIds(decodedArguments.get(2), aliasResolver);
 		final var serialNumbers = ((long[]) decodedArguments.get(3));
 
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
@@ -465,8 +493,8 @@ public class DecodingFacade {
 	public Association decodeAssociation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 
-		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(1));
 
 		return Association.singleAssociation(
 				accountID, tokenID);
@@ -475,8 +503,8 @@ public class DecodingFacade {
 	public Association decodeMultipleAssociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 
-		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
 		return Association.multiAssociation(accountID, tokenIDs);
 	}
@@ -484,8 +512,8 @@ public class DecodingFacade {
 	public Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 
-		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(1));
 
 		return Dissociation.singleDissociation(accountID, tokenID);
 	}
@@ -493,8 +521,8 @@ public class DecodingFacade {
 	public Dissociation decodeMultipleDissociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
-		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
 		return Dissociation.multiDissociation(accountID, tokenIDs);
 	}
@@ -559,7 +587,7 @@ public class DecodingFacade {
 	) {
 		final var tokenName = (String) tokenCreateStruct.get(0);
 		final var tokenSymbol = (String) tokenCreateStruct.get(1);
-		final var tokenTreasury = convertLeftPaddedAddressToAccountId((byte[]) tokenCreateStruct.get(2),
+		final var tokenTreasury = convertLeftPaddedAddressToAccountId(tokenCreateStruct.get(2),
 				aliasResolver);
 		final var memo = (String) tokenCreateStruct.get(3);
 		final var isSupplyTypeFinite = (Boolean) tokenCreateStruct.get(4);
@@ -569,7 +597,7 @@ public class DecodingFacade {
 		final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), aliasResolver);
 
 		return new TokenCreateWrapper(isFungible, tokenName, tokenSymbol, tokenTreasury.getAccountNum() != 0 ?
-				tokenTreasury : null, memo,	isSupplyTypeFinite, initSupply, decimals, maxSupply, isFreezeDefault,
+				tokenTreasury : null, memo, isSupplyTypeFinite, initSupply, decimals, maxSupply, isFreezeDefault,
 				tokenKeys, tokenExpiry);
 	}
 
@@ -578,16 +606,16 @@ public class DecodingFacade {
 			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
-		for (final var tokenKeyTuple: tokenKeysTuples) {
+		for (final var tokenKeyTuple : tokenKeysTuples) {
 			final var keyType = (int) tokenKeyTuple.get(0);
 			final Tuple keyValueTuple = tokenKeyTuple.get(1);
 			final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
 			final var contractId = EntityIdUtils.asContract(
-					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(1), aliasResolver));
+					convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
 			final var ed25519 = (byte[]) keyValueTuple.get(2);
 			final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
 			final var delegatableContractId = EntityIdUtils.asContract(
-					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(4), aliasResolver));
+					convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
 			tokenKeys.add(new TokenKeyWrapper(keyType, new KeyValueWrapper(inheritAccountKey,
 					contractId.getContractNum() != 0 ? contractId : null, ed25519,
 					ecdsaSecp256K1, delegatableContractId.getContractNum() != 0 ? delegatableContractId : null)));
@@ -597,7 +625,7 @@ public class DecodingFacade {
 
 	private TokenExpiryWrapper decodeTokenExpiry(final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
 		final var second = (long) expiryTuple.get(0);
-		final var autoRenewAccount = convertLeftPaddedAddressToAccountId((byte[]) expiryTuple.get(1), aliasResolver);
+		final var autoRenewAccount = convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
 		final var autoRenewPeriod = (long) expiryTuple.get(2);
 		return new TokenExpiryWrapper(second, autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount,
 				autoRenewPeriod);
@@ -610,10 +638,10 @@ public class DecodingFacade {
 		final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
 		for (final var fixedFeeTuple : fixedFeesTuples) {
 			final var amount = (long) fixedFeeTuple.get(0);
-			final var tokenId = convertAddressBytesToTokenID((byte[]) fixedFeeTuple.get(1));
+			final var tokenId = convertAddressBytesToTokenID(fixedFeeTuple.get(1));
 			final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
 			final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
-			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(4), aliasResolver);
+			final var feeCollector = convertLeftPaddedAddressToAccountId(fixedFeeTuple.get(4), aliasResolver);
 			fixedFees.add(new FixedFeeWrapper(amount, tokenId.getTokenNum() != 0 ? tokenId : null, useHbarsForPayment,
 					useCurrentTokenForPayment, feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
@@ -625,14 +653,14 @@ public class DecodingFacade {
 			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<FractionalFeeWrapper> fractionalFees = new ArrayList<>(fractionalFeesTuples.length);
-		for (final var fractionalFeeTuple: fractionalFeesTuples) {
+		for (final var fractionalFeeTuple : fractionalFeesTuples) {
 			final var numerator = (long) fractionalFeeTuple.get(0);
 			final var denominator = (long) fractionalFeeTuple.get(1);
 			final var minimumAmount = (long) fractionalFeeTuple.get(2);
 			final var maximumAmount = (long) fractionalFeeTuple.get(3);
 			final var netOfTransfers = (Boolean) fractionalFeeTuple.get(4);
 			final var feeCollector = convertLeftPaddedAddressToAccountId(
-					(byte[]) fractionalFeeTuple.get(5), aliasResolver);
+					fractionalFeeTuple.get(5), aliasResolver);
 			fractionalFees.add(new FractionalFeeWrapper(numerator, denominator, minimumAmount, maximumAmount,
 					netOfTransfers, feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
@@ -652,7 +680,7 @@ public class DecodingFacade {
 			// we treat it as though the user has tried to specify a fallbackFixedFee
 			final var fixedFeeAmount = (long) royaltyFeeTuple.get(2);
 			final var fixedFeeTokenId =
-					convertAddressBytesToTokenID((byte[]) royaltyFeeTuple.get(3));
+					convertAddressBytesToTokenID(royaltyFeeTuple.get(3));
 			final var fixedFeeUseHbars = (Boolean) royaltyFeeTuple.get(4);
 			FixedFeeWrapper fixedFee = null;
 			if (fixedFeeAmount != 0 || fixedFeeTokenId.getTokenNum() != 0 || Boolean.TRUE.equals(fixedFeeUseHbars)) {
@@ -665,7 +693,7 @@ public class DecodingFacade {
 			}
 
 			final var feeCollector =
-					convertLeftPaddedAddressToAccountId((byte[]) royaltyFeeTuple.get(5), aliasResolver);
+					convertLeftPaddedAddressToAccountId(royaltyFeeTuple.get(5), aliasResolver);
 			decodedRoyaltyFees.add(new RoyaltyFeeWrapper(numerator, denominator, fixedFee,
 					feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
@@ -721,8 +749,8 @@ public class DecodingFacade {
 	) {
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
 		for (final var exchange : abiExchanges) {
-			final var sender = convertLeftPaddedAddressToAccountId((byte[]) exchange.get(0), aliasResolver);
-			final var receiver = convertLeftPaddedAddressToAccountId((byte[]) exchange.get(1), aliasResolver);
+			final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
+			final var receiver = convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
 			final var serialNo = (long) exchange.get(2);
 			nftExchanges.add(new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
 		}
@@ -736,24 +764,35 @@ public class DecodingFacade {
 	) {
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 		for (final var transfer : abiTransfers) {
-			final AccountID accountID = convertLeftPaddedAddressToAccountId((byte[]) transfer.get(0), aliasResolver);
-			final long amount = (long) transfer.get(1);
-
-			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
+			final AccountID accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+			final long amount = transfer.get(1);
+			addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
 		}
 		return fungibleTransfers;
 	}
 
-	private void addAdjustmentAsTransfer(
+	private void addApprovedAdjustment(
+			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
+			final TokenID tokenId,
+			final AccountID accountId,
+			final long amount
+	) {
+		fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(
+				-amount, true, tokenId, accountId, null));
+	}
+
+	private void addSignedAdjustment(
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
 			final TokenID tokenType,
 			final AccountID accountID,
 			final long amount
 	) {
 		if (amount > 0) {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, null, accountID));
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(
+					amount, false, tokenType, null, accountID));
 		} else {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(-amount, tokenType, accountID, null));
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(
+					-amount, false, tokenType, accountID, null));
 		}
 	}
 }

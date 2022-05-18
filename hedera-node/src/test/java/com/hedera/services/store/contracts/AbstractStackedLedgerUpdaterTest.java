@@ -21,9 +21,11 @@ package com.hedera.services.store.contracts;
  */
 
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -34,6 +36,8 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -41,6 +45,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -75,6 +80,17 @@ class AbstractStackedLedgerUpdaterTest {
 	private HederaWorldState worldState;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private MerkleNetworkContext networkCtx;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
@@ -234,7 +250,8 @@ class AbstractStackedLedgerUpdaterTest {
 		accountsLedger.begin();
 		nftsLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");

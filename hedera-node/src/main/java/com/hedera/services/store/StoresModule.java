@@ -23,8 +23,10 @@ package com.hedera.services.store;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -40,6 +42,8 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -49,6 +53,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -69,7 +74,8 @@ public interface StoresModule {
 
 	@Binds
 	@Singleton
-	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
 
 	@Binds
 	@Singleton
@@ -78,14 +84,13 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokensLinkManager uniqueTokensLinkManager
+			final UniqueTokensLinkManager uniqueTokensLinkManager,
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
 	) {
-		final var uniqueTokensLedger =  new TransactionalLedger<>(
+		final var uniqueTokensLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
-				backingNfts,
+				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
 		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
@@ -134,6 +139,11 @@ public interface StoresModule {
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final SideEffectsTracker sideEffectsTracker,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator,
 			final StakedAccountsAdjustmentsManager manager
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
@@ -141,7 +151,8 @@ public interface StoresModule {
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, manager);
+		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, networkCtx,
+				stakingInfo,dynamicProperties, accounts, rewardCalculator, manager);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}
