@@ -184,7 +184,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			// Give the MutableStateChildren up-to-date WeakReferences
 			final var app = getMetadata().app();
-			app.workingState().updatePrimitiveChildrenFrom(this);
+			postMigrationTasks.add(() -> app.workingState().updatePrimitiveChildrenFrom(this));
 		}
 
 		if (deserializedVersionFromState < UniqueTokensMigrator.TARGET_RELEASE) {
