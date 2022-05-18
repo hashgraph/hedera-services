@@ -156,6 +156,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		} else {
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
+		sideEffectsTracker.trackRewardPayment(accountNum, reward);
 	}
 
 	boolean shouldCalculateReward(final MerkleAccount account) {
