@@ -400,6 +400,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("ExtraSigsDontMatterAtExpiry")
 				.given(
 						newKeyNamed(senderKey).shape(senderShape),
+						newKeyNamed("extraKey"),
 						cryptoCreate(sender).key(senderKey).via("senderTxn"),
 						cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
 						scheduleCreate(schedule, cryptoTransfer(
@@ -423,8 +424,31 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 								.sigControl(forKey(senderKey, sigTwo)),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.alsoSigningWith("extraKey")
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(forKey(senderKey, sigTwo))
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						scheduleSign(schedule)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigThree)),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(forKey(senderKey, sigTwo))
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						scheduleSign(schedule)
+								.alsoSigningWith("extraKey")
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(forKey(senderKey, sigOne))
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L)
 				)
 				.then(
@@ -449,7 +473,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 		var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
 		String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
 
-		return defaultHapiSpec("receiverSigRequiredNotConfusedByMultiSigSenderAtExpiry")
+		return defaultHapiSpec("ReceiverSigRequiredNotConfusedByMultiSigSenderAtExpiry")
 				.given(
 						newKeyNamed(senderKey).shape(senderShape),
 						cryptoCreate(sender).key(senderKey).via("senderTxn"),

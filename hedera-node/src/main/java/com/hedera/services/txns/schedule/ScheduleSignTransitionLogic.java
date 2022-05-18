@@ -122,20 +122,16 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store,
+				validScheduleKeys, activationHelper,
+				properties.schedulingLongTermEnabled() && origSchedule.calculatedWaitForExpiry());
 
 		var outcome = signingOutcome.getLeft();
 		if (outcome == OK) {
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
 
-			boolean processExecution = Boolean.TRUE.equals(signingOutcome.getRight());
-
-			if (properties.schedulingLongTermEnabled() && updatedSchedule.calculatedWaitForExpiry()) {
-				processExecution = false;
-			}
-
-			if (processExecution) {
+			if (Boolean.TRUE.equals(signingOutcome.getRight())) {
 				outcome = executor.processImmediateExecution(scheduleId, store, txnCtx);
 			}
 		}

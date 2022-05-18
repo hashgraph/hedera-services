@@ -142,7 +142,7 @@ class ScheduleCreateTransitionLogicTest {
 
 		classifier = mock(SigMapScheduleClassifier.class);
 
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(OK, true));
 
 		given(executor.processImmediateExecution(any(), any(), any())).willReturn(OK);
@@ -178,7 +178,7 @@ class ScheduleCreateTransitionLogicTest {
 
 		verify(store).lookupSchedule(bodyBytes);
 		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
 		verify(store).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -194,7 +194,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
 
 		subject.doStateTransition();
@@ -207,7 +207,7 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	void doesNotExecuteWhenWaitForExpiry() throws InvalidProtocolBufferException {
+	void doesNotExecuteWhenLongTermEnabledWaitForExpiry() throws InvalidProtocolBufferException {
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
 		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
@@ -215,12 +215,15 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, true))
+				.willReturn(Pair.of(OK, false));
 
 		subject.doStateTransition();
 
 		verify(store).lookupSchedule(bodyBytes);
 		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, true);
+		verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(false));
 		verify(store).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -242,7 +245,8 @@ class ScheduleCreateTransitionLogicTest {
 
 		verify(store).lookupSchedule(bodyBytes);
 		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
+		verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(true));
 		verify(store).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -272,7 +276,7 @@ class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
 		subject.doStateTransition();

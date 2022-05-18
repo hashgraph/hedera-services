@@ -108,6 +108,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 			nestedSigningReqsWorkAsExpected(),
 			changeInNestedSigningReqsRespected(),
 			reductionInSigningReqsAllowsTxnToGoThrough(),
+			reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey(),
 			signingDeletedSchedulesHasNoEffect(),
 			suiteCleanup()
 		));
@@ -245,6 +246,48 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						getAccountBalance(receiver).hasTinyBars(0L),
 						cryptoUpdate(sender).key(newSenderKey),
 						scheduleSign(schedule),
+						getAccountBalance(receiver).hasTinyBars(1L)
+				)
+				.then(
+						scheduleSign(schedule)
+								.alsoSigningWith(newSenderKey)
+								.sigControl(forKey(newSenderKey, sigTwo))
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						getAccountBalance(receiver).hasTinyBars(1L)
+				);
+	}
+
+	private HapiApiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
+		var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
+		var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
+		var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
+		var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
+		String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey", newSenderKey = "newSKey";
+
+		return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughWithRandomKey")
+				.given(
+						newKeyNamed("randomKey"),
+						cryptoCreate("random").key("randomKey"),
+						newKeyNamed(senderKey).shape(senderShape),
+						keyFromMutation(newSenderKey, senderKey)
+								.changing(this::lowerThirdNestedThresholdSigningReq),
+						cryptoCreate(sender).key(senderKey),
+						cryptoCreate(receiver).balance(0L),
+						scheduleCreate(schedule, cryptoTransfer(
+								tinyBarsFromTo(sender, receiver, 1))
+						)
+								.payingWith(DEFAULT_PAYER)
+								.alsoSigningWith(sender)
+								.sigControl(ControlForKey.forKey(senderKey, sigOne)),
+						getAccountBalance(receiver).hasTinyBars(0L)
+				)
+				.when(
+						scheduleSign(schedule)
+								.alsoSigningWith(newSenderKey)
+								.sigControl(forKey(newSenderKey, firstSigThree)),
+						getAccountBalance(receiver).hasTinyBars(0L),
+						cryptoUpdate(sender).key(newSenderKey),
+						scheduleSign(schedule).signedBy("randomKey").payingWith("random"),
 						getAccountBalance(receiver).hasTinyBars(1L)
 				)
 				.then(

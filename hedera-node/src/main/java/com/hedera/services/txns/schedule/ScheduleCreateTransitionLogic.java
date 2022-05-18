@@ -137,7 +137,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
 		final var signingOutcome =
-				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper,
+						properties.schedulingLongTermEnabled() && schedule.calculatedWaitForExpiry());
+
 		if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 			abortWith(signingOutcome.getLeft());
 			return;
@@ -147,14 +149,8 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			store.commitCreation();
 		}
 
-		boolean processExecution = Boolean.TRUE.equals(signingOutcome.getRight());
-
-		if (properties.schedulingLongTermEnabled() && schedule.calculatedWaitForExpiry()) {
-			processExecution = false;
-		}
-
 		var finalOutcome = OK;
-		if (processExecution) {
+		if (Boolean.TRUE.equals(signingOutcome.getRight())) {
 			finalOutcome = executor.processImmediateExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);

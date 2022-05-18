@@ -106,7 +106,7 @@ class ScheduleSignTransitionLogicTest {
 		scheduleProcessing = mock(ScheduleProcessing.class);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(OK, true));
 		given(executor.processImmediateExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
@@ -279,13 +279,15 @@ class ScheduleSignTransitionLogicTest {
 	}
 
 	@Test
-	void doesNotProcessIfWaitForExpiry() throws InvalidProtocolBufferException {
+	void doesNotProcessIfLongTermEnabledAndWaitForExpiry() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(store.get(scheduleId)).willReturn(schedule);
 		given(store.getNoError(scheduleId)).willReturn(schedule);
 		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(schedule.calculatedWaitForExpiry()).willReturn(true);
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, true))
+				.willReturn(Pair.of(OK, false));
 
 		// when:
 		subject.doStateTransition();
@@ -293,6 +295,24 @@ class ScheduleSignTransitionLogicTest {
 		// and:
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(false));
+	}
+
+	@Test
+	void followsHappyPathIfLongTermDisabledAndWaitForExpiry() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(store.getNoError(scheduleId)).willReturn(schedule);
+		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(schedule.calculatedWaitForExpiry()).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(executor).processImmediateExecution(scheduleId, store, txnCtx);
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -316,7 +336,7 @@ class ScheduleSignTransitionLogicTest {
 		givenValidTxnCtx();
 		given(store.get(scheduleId)).willReturn(schedule);
 		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(OK, false));
 
 		// when:
@@ -332,7 +352,7 @@ class ScheduleSignTransitionLogicTest {
 	void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(store.get(scheduleId)).willReturn(schedule);
-		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
 		// when:

@@ -93,7 +93,7 @@ class SignatoryUtilsTest {
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(NO_NEW_VALID_SIGNATURES, false), outcome);
@@ -106,7 +106,7 @@ class SignatoryUtilsTest {
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
@@ -117,7 +117,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToPresumedInvalidCorrectly() {
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, Optional.empty(), activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, Optional.empty(), activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(SOME_SIGNATURES_WERE_INVALID, false), outcome);
@@ -137,7 +137,7 @@ class SignatoryUtilsTest {
 		}).given(store).apply(eq(id), any());
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(NO_NEW_VALID_SIGNATURES, false), outcome);
@@ -157,7 +157,7 @@ class SignatoryUtilsTest {
 		}).given(store).apply(eq(id), any());
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
@@ -177,7 +177,7 @@ class SignatoryUtilsTest {
 		}).given(store).apply(eq(id), any());
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
@@ -197,7 +197,7 @@ class SignatoryUtilsTest {
 		}).given(store).apply(eq(id), any());
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, goodSecp256k1Valid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodSecp256k1Valid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
@@ -217,9 +217,51 @@ class SignatoryUtilsTest {
 		}).given(store).apply(eq(id), any());
 
 		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, doublingValidNoInvalid, activationHelper);
+		var outcome = SignatoryUtils.witnessScoped(id, store, doublingValidNoInvalid, activationHelper, false);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
+	}
+
+	@Test
+	void doesNotCheckReadyWhenNoExecute() {
+		given(store.get(id)).willReturn(schedule);
+		// and:
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(true);
+		willAnswer(inv -> {
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
+			action.accept(schedule);
+			return null;
+		}).given(store).apply(eq(id), any());
+
+		// when:
+		var outcome = SignatoryUtils.witnessScoped(id, store, doublingValidNoInvalid, activationHelper, true);
+
+		// then:
+		assertEquals(Pair.of(OK, false), outcome);
+
+		verify(activationHelper, never()).areScheduledPartiesActive(any(), any());
+		verify(schedule, never()).ordinaryViewOfScheduledTxn();
+	}
+
+	@Test
+	void respondsToRepeatedCorrectlyIfActiveAndNoExecute() {
+		given(store.get(id)).willReturn(schedule);
+		// and:
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(false);
+		willAnswer(inv -> {
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
+			action.accept(schedule);
+			return null;
+		}).given(store).apply(eq(id), any());
+
+		// when:
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper, true);
+
+		// then:
+		assertEquals(Pair.of(NO_NEW_VALID_SIGNATURES, false), outcome);
+
+		verify(activationHelper, never()).areScheduledPartiesActive(any(), any());
+		verify(schedule, never()).ordinaryViewOfScheduledTxn();
 	}
 }

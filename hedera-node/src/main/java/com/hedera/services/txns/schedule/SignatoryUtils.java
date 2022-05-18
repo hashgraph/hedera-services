@@ -49,7 +49,8 @@ public class SignatoryUtils {
 				ScheduleID id,
 				ScheduleStore store,
 				Optional<List<JKey>> validScheduleKeys,
-				InHandleActivationHelper activationHelper);
+				InHandleActivationHelper activationHelper,
+				boolean noExecute);
 	}
 
 	/**
@@ -68,23 +69,31 @@ public class SignatoryUtils {
 	 * 		transaction (if absent, a linked primitive key was expanded to an invalid signature)
 	 * @param activationHelper
 	 * 		an information source on primitive keys prerequisite to the relevant schedule
+	 * @param noExecute
+	 * 		true if we do not want to execute the transaction, just add signatures.
 	 * @return a pair whose left element is the status result, right element is the ready-to-execute flag
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessScoped(
-			ScheduleID id,
-			ScheduleStore store,
-			Optional<List<JKey>> validScheduleKeys,
-			InHandleActivationHelper activationHelper
+			final ScheduleID id,
+			final ScheduleStore store,
+			final Optional<List<JKey>> validScheduleKeys,
+			final InHandleActivationHelper activationHelper,
+			final boolean noExecute
 	) {
 		if (validScheduleKeys.isEmpty()) {
 			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
 		}
 		var status = witnessNonTriviallyScoped(validScheduleKeys.get(), id, store);
 		var updatedSchedule = store.get(id);
-		var isReadyToExecute = isReady(updatedSchedule, activationHelper);
-		if (isReadyToExecute) {
-			status = OK;
+
+		var isReadyToExecute = false;
+		if (!noExecute) {
+			isReadyToExecute = isReady(updatedSchedule, activationHelper);
+			if (isReadyToExecute) {
+				status = OK;
+			}
 		}
+
 		return Pair.of(status, isReadyToExecute);
 	}
 
