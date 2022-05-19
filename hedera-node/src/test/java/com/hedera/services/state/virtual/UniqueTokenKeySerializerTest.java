@@ -32,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.IllegalFormatException;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -60,7 +61,7 @@ class UniqueTokenKeySerializerTest {
 		UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
 		ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
 		Assertions.assertThrows(
-				AssertionError.class,
+				UnsupportedOperationException.class,
 				() -> serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION + 1)
 		);
 	}
@@ -117,7 +118,7 @@ class UniqueTokenKeySerializerTest {
 		UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
 		UniqueTokenKey key = new UniqueTokenKey();
 		Assertions.assertThrows(
-				AssertionError.class,
+				UnsupportedOperationException.class,
 				() -> serializer.equals(buffer, UniqueTokenKey.CURRENT_VERSION + 1, key)
 		);
 	}
