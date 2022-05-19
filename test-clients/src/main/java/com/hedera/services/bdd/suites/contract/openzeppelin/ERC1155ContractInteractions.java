@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
@@ -72,8 +73,8 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 				.when()
 				.then(
 						contractCreate(CONTRACT).via("contractCreate").payingWith(DEFAULT_CONTRACT_SENDER),
-						getTxnRecord("contractCreate").logged(), // 121618 gas
-						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(), // started with 1M hbars
+						getTxnRecord("contractCreate").logged(),
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
 						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER + "Info"),
 						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
 						withOpContext((spec, log) -> {
@@ -84,7 +85,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 
 							/* approve for other accounts */
 							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
-									accountOneAddress, true
+									unhex(accountOneAddress), true
 							)
 									.via("acc1ApproveCall")
 									.payingWith(DEFAULT_CONTRACT_SENDER)
@@ -93,7 +94,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 
 							/* mint to the contract owner */
 							final var mintCall = contractCall(CONTRACT, "mintToken",
-									0, 10, operationsPayerAddress
+									0, 10, unhex(operationsPayerAddress)
 							)
 									.via("contractMintCall")
 									.payingWith(DEFAULT_CONTRACT_SENDER)

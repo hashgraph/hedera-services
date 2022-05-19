@@ -89,6 +89,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -471,7 +472,7 @@ public class StateView {
 			final byte[] rawCompressedKey = key.getECDSASecp256k1Key();
 			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 				final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
-				return ByteString.copyFrom(evmAddress!=null ? evmAddress : new byte[]{}).toString();
+				return Bytes.wrap(evmAddress!=null ? evmAddress : new byte[]{}).toUnprefixedHexString();
 			} else {
 				return contractAccountId;
 			}
