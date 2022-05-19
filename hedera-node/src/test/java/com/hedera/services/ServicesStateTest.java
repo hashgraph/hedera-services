@@ -36,6 +36,7 @@ import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.UniqueTokensMigrator;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -749,6 +750,59 @@ class ServicesStateTest {
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
 		assertSame(specialFiles, copy.specialFiles());
+	}
+
+	@Test
+	void verifyPostTasksRunImmediatelyIfVmConversionNotNeeded() {
+		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(initFlow).runWith(subject);
+	}
+
+	@Test
+	void verifyPostTasksRunDelayedIfVmConversionNotNeeded() {
+		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE - 1);
+
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verifyNoInteractions(app);
+	}
+
+	@Test
+	void uniqueTokensGetterValid() {
+		final VirtualMap<UniqueTokenKey, UniqueTokenValue> fakeVm = new VirtualMap<>();
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, fakeVm);
+		assertSame(fakeVm, subject.uniqueTokens());
+	}
+
+	@Test
+	void initializeDoesNotCrash() {
+		assertDoesNotThrow(subject::initialize);
 	}
 
 	private List<MerkleNode> legacyChildrenWith(
