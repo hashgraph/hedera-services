@@ -206,7 +206,11 @@ public class UniqueTokenValue implements VirtualValue {
 			final CheckedConsumer<byte[]> readBytesFn,
 			int dataVersion) throws IOException {
 		throwIfImmutable();
-		assert dataVersion == CURRENT_VERSION : "dataVersion=" + dataVersion + " != getVersion()=" + CURRENT_VERSION;
+
+		if (dataVersion != CURRENT_VERSION) {
+			throw new UnsupportedOperationException("Data version " + dataVersion + " unsupported. Expected: "
+					+ CURRENT_VERSION);
+		}
 
 		ownerAccountNum = readLongFn.get();
 		spenderAccountNum = readLongFn.get();
@@ -296,36 +300,17 @@ public class UniqueTokenValue implements VirtualValue {
 		return this.ownerAccountNum;
 	}
 
-	public void setOwner(final EntityId owner) {
-		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
-		this.ownerAccountNum = owner.num();
-	}
 
 	public EntityId getSpender() {
 		return EntityId.fromNum(this.spenderAccountNum);
-	}
-
-	public void setSpender(final EntityId spender) {
-		throwIfImmutable("Cannot change this unique token's spender if it's immutable.");
-		this.spenderAccountNum = spender.num();
 	}
 
 	public NftNumPair getPrev() {
 		return prev;
 	}
 
-	public void setPrev(final NftNumPair prev) {
-		throwIfImmutable("Cannot change this unique token's prev if it's immutable.");
-		this.prev = prev;
-	}
-
 	public NftNumPair getNext() {
 		return next;
-	}
-
-	public void setNext(final NftNumPair next) {
-		throwIfImmutable("Cannot change this unique token's next if it's immutable.");
-		this.next = next;
 	}
 
 	public RichInstant getCreationTime() {
@@ -336,17 +321,36 @@ public class UniqueTokenValue implements VirtualValue {
 		return packedCreationTime;
 	}
 
-	public void setPackedCreationTime(final long packedCreationTime) {
-		throwIfImmutable("Cannot change this unique token's next timestamp if it's immutable.");
-		this.packedCreationTime = packedCreationTime;
-	}
-
 	public byte[] getMetadata() {
 		return metadata;
 	}
 
+	public void setOwner(final EntityId owner) {
+		throwIfImmutable("Cannot set owner since immutable.");
+		this.ownerAccountNum = owner.num();
+	}
+	public void setSpender(final EntityId spender) {
+		throwIfImmutable("Cannot set spender since immutable.");
+		this.spenderAccountNum = spender.num();
+	}
+
+	public void setPrev(final NftNumPair prev) {
+		throwIfImmutable("Cannot set prev since immutable.");
+		this.prev = prev;
+	}
+
+	public void setNext(final NftNumPair next) {
+		throwIfImmutable("Cannot set next since immutable.");
+		this.next = next;
+	}
+
+	public void setPackedCreationTime(final long packedCreationTime) {
+		throwIfImmutable("Cannot set creation time since immutable.");
+		this.packedCreationTime = packedCreationTime;
+	}
+
 	public void setMetadata(final byte[] metadata) {
-		throwIfImmutable("Cannot change this unique token's metadata if it's immutable.");
+		throwIfImmutable("Cannot set metadata since immutable.");
 		this.metadata = metadata;
 	}
 }

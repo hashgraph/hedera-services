@@ -200,7 +200,10 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	}
 
 	private void deserializeFrom(ByteSupplier input, int dataVersion) throws IOException {
-		assert dataVersion == CURRENT_VERSION : "dataVersion=" + dataVersion + " != getVersion()=" + CURRENT_VERSION;
+		if (dataVersion != CURRENT_VERSION) {
+			throw new UnsupportedOperationException("Data version " + dataVersion + " unsupported. Expected: "
+					+ CURRENT_VERSION);
+		}
 		byte packedLengths = input.get();
 		int numEntityBytes = unpackUpperLength(packedLengths);
 		int numSerialBytes = unpackLowerLength(packedLengths);

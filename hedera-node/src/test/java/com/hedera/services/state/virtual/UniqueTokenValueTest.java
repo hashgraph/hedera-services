@@ -22,13 +22,14 @@ package com.hedera.services.state.virtual;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +43,7 @@ import java.util.List;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.utils.subjects.UniqueTokenValueSubject.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UniqueTokenValueTest {
 
@@ -300,7 +302,7 @@ class UniqueTokenValueTest {
 				new RichInstant(456, 789));
 
 		UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
-		Assertions.assertThrows(MutabilityException.class,
+		assertThrows(MutabilityException.class,
 				() -> readOnlyCopy.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION));
 	}
 
@@ -309,7 +311,7 @@ class UniqueTokenValueTest {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 		UniqueTokenValue value = new UniqueTokenValue();
-		Assertions.assertThrows(AssertionError.class,
+		assertThrows(UnsupportedOperationException.class,
 				() -> value.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION + 1));
 	}
 
@@ -320,7 +322,7 @@ class UniqueTokenValueTest {
 		SerializableDataInputStream stream = new SerializableDataInputStream(
 				new ByteArrayInputStream(encodedEmpty.array()));
 		UniqueTokenValue value = new UniqueTokenValue();
-		Assertions.assertThrows(AssertionError.class,
+		assertThrows(UnsupportedOperationException.class,
 				() -> value.deserialize(stream, UniqueTokenValue.CURRENT_VERSION + 1));
 	}
 
@@ -410,12 +412,16 @@ class UniqueTokenValueTest {
 				5678L,
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
+		value1.setPrev(NftNumPair.fromLongs(1, 2));
+		value1.setNext(NftNumPair.fromLongs(3, 4));
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
 				5678L,
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
+		value2.setPrev(NftNumPair.fromLongs(1, 2));
+		value2.setNext(NftNumPair.fromLongs(3, 4));
 
 		assertThat(value1).isEqualTo(value1);
 		assertThat(value1).isEqualTo(value1.copy());
@@ -464,11 +470,42 @@ class UniqueTokenValueTest {
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
 
+		UniqueTokenValue value7 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value7.setPrev(NftNumPair.fromLongs(1, 2));
+
+		UniqueTokenValue value8 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value8.setPrev(NftNumPair.fromLongs(3, 4));
+
+		UniqueTokenValue value9 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value9.setNext(NftNumPair.fromLongs(1, 2));
+
+		UniqueTokenValue value10 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value10.setNext(NftNumPair.fromLongs(3, 4));
+
 		assertThat(value1.equals(value2)).isFalse();
 		assertThat(value1.equals(value3)).isFalse();
 		assertThat(value1.equals(value4)).isFalse();
 		assertThat(value1.equals(value5)).isFalse();
 		assertThat(value1.equals(value6)).isFalse();
+		assertThat(value7.equals(value8)).isFalse();
+		assertThat(value7.equals(value9)).isFalse();
+		assertThat(value9.equals(value10)).isFalse();
 	}
 
 	@Test
@@ -505,5 +542,69 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value = new UniqueTokenValue();
 		// Make sure the class id isn't accidentally changed.
 		assertThat(value.getClassId()).isEqualTo(0xefa8762aa03ce697L);
+	}
+
+	@Test
+	void constructorWithMerkleToken_createsAssociatedToken() {
+		MerkleUniqueToken legacyToken = new MerkleUniqueToken();
+		legacyToken.setNext(NftNumPair.fromLongs(1, 2));
+		legacyToken.setPrev(NftNumPair.fromLongs(3, 4));
+		legacyToken.setOwner(EntityId.fromNum(5));
+		legacyToken.setPackedCreationTime(6L);
+		legacyToken.setSpender(EntityId.fromNum(7L));
+		legacyToken.setMetadata(new byte[] {8, 9, 10});
+		UniqueTokenValue token = UniqueTokenValue.from(legacyToken);
+		assertThat(token).hasNext(1, 2);
+		assertThat(token).hasPrev(3, 4);
+		assertThat(token).hasOwner(5);
+		assertThat(token).hasPackedCreationTime(6);
+		assertThat(token).hasSpender(7);
+		assertThat(token).hasMetadata(new byte[] {8, 9, 10});
+	}
+
+	@Test
+	void setGetOwner_whenMutable_worksAsExpected() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		assertThat(value).hasOwner(EntityId.MISSING_ENTITY_ID);
+		value.setOwner(EntityId.fromNum(4));
+		assertThat(value.getOwner()).isEqualTo(EntityId.fromNum(4));
+		value.setOwner(EntityId.fromNum(5));
+		assertThat(value.getOwner()).isEqualTo(EntityId.fromNum(5));
+	}
+
+	@Test
+	void setGetSpender_whenMutable_worksAsExpected() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		assertThat(value).hasSpender(EntityId.MISSING_ENTITY_ID);
+		value.setSpender(EntityId.fromNum(4));
+		assertThat(value.getSpender()).isEqualTo(EntityId.fromNum(4));
+		value.setSpender(EntityId.fromNum(5));
+		assertThat(value.getSpender()).isEqualTo(EntityId.fromNum(5));
+	}
+
+	@Test
+	void setGetMetadata_whenMutable_worksAsExpected() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		value.setMetadata("hello".getBytes());
+		assertThat(value.getMetadata()).isEqualTo("hello".getBytes());
+	}
+
+	@Test
+	void setGetPackedCreationTime_whenMutable_worksAsExpected() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		value.setPackedCreationTime(123);
+		assertThat(value.getPackedCreationTime()).isEqualTo(123);
+	}
+
+	@Test
+	void mutations_whenImmutable_throwsException() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		value.copy(); // make value immutable
+		assertThrows(MutabilityException.class, () -> value.setOwner(EntityId.fromNum(1)));
+		assertThrows(MutabilityException.class, () -> value.setSpender(EntityId.fromNum(1)));
+		assertThrows(MutabilityException.class, () -> value.setMetadata(new byte[] {0, 1}));
+		assertThrows(MutabilityException.class, () -> value.setPackedCreationTime(1));
+		assertThrows(MutabilityException.class, () -> value.setPrev(NftNumPair.fromLongs(1, 2)));
+		assertThrows(MutabilityException.class, () -> value.setNext(NftNumPair.fromLongs(1, 2)));
 	}
 }
