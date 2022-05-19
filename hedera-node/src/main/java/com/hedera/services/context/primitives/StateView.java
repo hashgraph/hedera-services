@@ -25,6 +25,7 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
@@ -35,6 +36,7 @@ import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
@@ -448,7 +450,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asHexedEvmAddress(accountID))
+				.setContractAccountID(getContractAccountId(account.getAccountKey(), accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
 				.setEthereumNonce(account.getEthereumNonce());
@@ -460,6 +462,22 @@ public class StateView {
 			info.addAllTokenRelationships(tokenRels);
 		}
 		return Optional.of(info.build());
+	}
+
+	private String getContractAccountId(final JKey key, final AccountID accountID) {
+		final var contractAccountId = asHexedEvmAddress(accountID);
+		if (key != null && key.hasECDSAsecp256k1Key()) {
+			// Only compressed keys are stored at the moment
+			final byte[] rawCompressedKey = key.getECDSASecp256k1Key();
+			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+				final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+				return ByteString.copyFrom(evmAddress!=null ? evmAddress : new byte[]{}).toString();
+			} else {
+				return contractAccountId;
+			}
+		} else {
+			return contractAccountId;
+		}
 	}
 
 	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
