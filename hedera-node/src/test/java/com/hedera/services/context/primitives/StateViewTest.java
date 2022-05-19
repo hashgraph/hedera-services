@@ -23,6 +23,7 @@ package com.hedera.services.context.primitives;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
@@ -78,6 +79,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.codec.DecoderException;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -676,7 +678,7 @@ class StateViewTest {
 	}
 
 	@Test
-	void infoForAccount() {
+	void infoForRegularAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
 		mockedStatic = mockStatic(StateView.class);
@@ -701,6 +703,42 @@ class StateViewTest {
 				.build();
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+
+		assertEquals(expectedResponse, actualResponse.get());
+		mockedStatic.close();
+	}
+
+	@Test
+	void infoForExternallyOperatedAccount() {
+		final byte[] ecdsaKey = Hex.decode(
+				"033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		tokenAccount.setAccountKey(new JECDSASecp256k1Key(ecdsaKey));
+		final var expectedAddress = CommonUtils.hex(EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+				.thenReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(ledgerId)
+				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+				.setAccountID(tokenAccountId)
+				.setAlias(tokenAccount.getAlias())
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountID(expectedAddress)
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.build();
+
+		final var actualResponse =
+				subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
 
 		assertEquals(expectedResponse, actualResponse.get());
 		mockedStatic.close();
