@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -43,8 +44,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
-//	private static final String OPERATIONS_PAYER = "payer";
-//	private static final String ACCOUNT1 = "acc1";
+	private static final String ACCOUNT1 = "acc1";
 	private static final String CONTRACT = "GameItems";
 
 	public static void main(String... args) {
@@ -59,15 +59,9 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 	}
 
 	private HapiApiSpec erc1155() {
-//		final var PAYER_KEY = "payerKey";
-//		final var FILE_KEY_LIST = "fileKeyList";
-
 		return defaultHapiSpec("ERC-1155")
 				.given(
-//						newKeyNamed(PAYER_KEY),
-//						newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
-//						cryptoCreate(ACCOUNT1),
-//						cryptoCreate(OPERATIONS_PAYER).balance(ONE_MILLION_HBARS).key(PAYER_KEY),
+						cryptoCreate(ACCOUNT1),
 						uploadInitCode(CONTRACT)
 				)
 				.when()
@@ -75,11 +69,11 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 						contractCreate(CONTRACT).via("contractCreate").payingWith(DEFAULT_CONTRACT_SENDER),
 						getTxnRecord("contractCreate").logged(),
 						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
-						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER + "Info"),
+						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
 						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
 						withOpContext((spec, log) -> {
-							final var accountOneAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER + "Info").getContractAccountID();
-							final var operationsPayerAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID();
+							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
+							final var senderAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID();
 
 							final var ops = new ArrayList<HapiSpecOperation>();
 
@@ -94,7 +88,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 
 							/* mint to the contract owner */
 							final var mintCall = contractCall(CONTRACT, "mintToken",
-									0, 10, unhex(operationsPayerAddress)
+									0, 10, unhex(senderAddress)
 							)
 									.via("contractMintCall")
 									.payingWith(DEFAULT_CONTRACT_SENDER)
@@ -103,18 +97,18 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 
 							/* transfer from - account to account */
 							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
-									operationsPayerAddress, accountOneAddress,
+									senderAddress, accountOneAddress,
 									0, // token id 
 									1, // amount 
 									"0x0"
-							).via("contractTransferFromCall").payingWith(DEFAULT_CONTRACT_RECEIVER)
+							).via("contractTransferFromCall").payingWith(ACCOUNT1)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(transferCall);
 							allRunFor(spec, ops);
-						})
-//						getTxnRecord("contractMintCall").logged(),
-//						getTxnRecord("acc1ApproveCall").logged()
-//						getTxnRecord("contractTransferFromCall").logged()
+						}),
+						getTxnRecord("contractMintCall").logged(),
+						getTxnRecord("acc1ApproveCall").logged(),
+						getTxnRecord("contractTransferFromCall").logged()
 				);
 	}
 
