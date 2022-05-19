@@ -36,7 +36,6 @@ import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
@@ -99,6 +98,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -466,18 +466,12 @@ public class StateView {
 	}
 
 	private String getContractAccountId(final JKey key, final AccountID accountID) {
-		final var contractAccountId = asHexedEvmAddress(accountID);
-		if (key != null && key.hasECDSAsecp256k1Key()) {
-			// Only compressed keys are stored at the moment
-			final byte[] rawCompressedKey = key.getECDSASecp256k1Key();
-			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-				final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
-				return Bytes.wrap(evmAddress!=null ? evmAddress : new byte[]{}).toUnprefixedHexString();
-			} else {
-				return contractAccountId;
-			}
+		// If we can recover an Ethereum EOA address from the account key, we should return that
+		final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+		if (evmAddress != null)	 {
+			return Bytes.wrap(evmAddress).toUnprefixedHexString();
 		} else {
-			return contractAccountId;
+			return asHexedEvmAddress(accountID);
 		}
 	}
 
