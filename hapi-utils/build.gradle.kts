@@ -32,5 +32,9 @@ dependencies {
     implementation(libs.swirlds.common)
     implementation(libs.javax.inject)
     implementation(libs.bundles.bouncycastle)
+    implementation(libs.jetbrains.annotation)
+    implementation(libs.headlong)
+    implementation(libs.besu.secp256k1)
+
     testImplementation(testLibs.bundles.testing)
 }
