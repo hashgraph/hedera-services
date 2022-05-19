@@ -33,7 +33,7 @@ import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.StakeAwareAccountsCommitsInterceptor;
-import com.hedera.services.ledger.interceptors.StakedAccountsAdjustmentsManager;
+import com.hedera.services.ledger.interceptors.StakeChangeManager;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -144,7 +144,7 @@ public interface StoresModule {
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final RewardCalculator rewardCalculator,
-			final StakedAccountsAdjustmentsManager manager
+			final StakeChangeManager manager
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,

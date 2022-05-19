@@ -21,9 +21,13 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -41,15 +45,24 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-
-	private StakedAccountsAdjustmentsManager stakedAdjustmentsManager = new StakedAccountsAdjustmentsManager(
-			() -> accounts);
+	@Mock
+	private MerkleNetworkContext networkContext;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private StakeChangeManager manager;
 
 	private StakeAwareAccountsCommitsInterceptor subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, stakedAdjustmentsManager);
+		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkContext, () -> stakingInfo,
+				dynamicProperties, () -> accounts,
+				rewardCalculator, manager);
 	}
 
 	@Test
