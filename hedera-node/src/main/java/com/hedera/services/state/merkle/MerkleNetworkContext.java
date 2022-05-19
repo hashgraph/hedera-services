@@ -67,7 +67,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final String LINE_WRAP = "\n    ";
 	private static final String NOT_EXTANT = "<NONE>";
 	private static final String NOT_AVAILABLE = "<N/A>";
-	private static final String NOT_AVAILABLE_SUFFIX = " <N/A>";
+	private static final String NOT_AVAILABLE_SUFFIX = "<N/A>";
 
 	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
@@ -457,9 +457,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				entitiesScannedThisSecond +
 				"\n  Entities touched last consensus second     :: " +
 				entitiesTouchedThisSecond +
-				"\n  Throttle usage snapshots are               ::" +
+				"\n  Throttle usage snapshots are               :: " +
 				usageSnapshotsDesc() +
-				"\n  Congestion level start times are           ::" +
+				"\n  Congestion level start times are           :: " +
 				congestionStartsDesc() +
 				"\n  Block number is                            :: " +
 				blockNo +
@@ -467,11 +467,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
 				stringifiedBlockHashes() +
-				"\n  Staking Rewards Activated                  ::" +
+				"\n  Staking Rewards Activated                  :: " +
 				stakingRewardsActivated +
-				"\n  Total StakedRewardStart is 					:: " +
+				"\n  Total StakedRewardStart is                 :: " +
 				totalStakedRewardStart +
-				"\n  Total StakedStart is 						:: " +
+				"\n  Total StakedStart is                       :: " +
 				totalStakedStart;
 	}
 

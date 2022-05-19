@@ -53,6 +53,7 @@ import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
@@ -166,7 +167,8 @@ class UtilsConstructorTest {
 			KeyPackingUtils.class,
 			IterableStorageUtils.class,
 			EthereumLogicModule.class,
-			ReleaseTwentySevenMigration.class
+			ReleaseTwentySevenMigration.class,
+			ByteUtils.class
 	));
 
 	@Test

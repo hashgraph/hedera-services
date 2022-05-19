@@ -41,11 +41,11 @@ import java.util.Objects;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.state.merkle.internals.ByteUtils.getBytes;
+import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
-	// TODO: get this max history from the props.
+	// get this max history from the props.
 	static final int MAX_REWARD_HISTORY = 366;
 	static final long[] EMPTY_REWARD_HISTORY = new long[MAX_REWARD_HISTORY];
 
@@ -62,7 +62,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	private long stake;
 	private long[] rewardSumHistory = EMPTY_REWARD_HISTORY;
 	@Nullable
-	Hash historyHash;
+	byte[] historyHash;
 
 	public MerkleStakingInfo() {}
 
@@ -196,7 +196,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		final var baos = new ByteArrayOutputStream();
 		try (final var out = new SerializableDataOutputStream(baos)) {
 			serializeNonHistoryData(out);
-			out.write(historyHash.getValue());
+			out.write(historyHash);
 		} catch (IOException | UncheckedIOException e) {
 			log.error(String.format("Hash computation failed on node %d", number), e);
 			return EMPTY_HASH;
@@ -216,7 +216,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	private void ensureHistoryHashIsKnown() {
 		if (historyHash == null) {
-			historyHash = new Hash(getBytes(rewardSumHistory));
+			historyHash = getHashBytes(rewardSumHistory);
 		}
 	}
 
@@ -278,5 +278,20 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void clearRewardSumHistory() {
 		Arrays.fill(rewardSumHistory, 0);
+	}
+
+	public void updateRewardSumHistory(final double rewardRate, final long totalStakedRewardStart) {
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		for (int i = rewardSumHistory.length-1; i > 0; i--) {
+			rewardSumHistory[i] = rewardSumHistory[i - 1];
+		}
+			/*
+				if this node was "active", then it should give rewards for this staking period
+				if (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold)
+			 */
+		rewardSumHistory[0] = totalStakedRewardStart == 0 ? 0 :
+				(long) (rewardRate * stakeRewardStart / totalStakedRewardStart / 100_000_000);
+		// reset the historyHash
+		historyHash = null;
 	}
 }

@@ -24,9 +24,12 @@ import com.hedera.services.utils.EntityNum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MerkleStakingInfoTest {
@@ -39,7 +42,7 @@ class MerkleStakingInfoTest {
 	private final long stakeToNotReward = 155L;
 	private final long stakeRewardStart = 1234L;
 	private final long stake = 500L;
-	private final long[] rewardSumHistory = new long[] { 1, 2 };
+	private final long[] rewardSumHistory = new long[] {1L, 2L};
 
 	@BeforeEach
 	void setUp() {
@@ -89,6 +92,7 @@ class MerkleStakingInfoTest {
 
 		assertNotEquals(subject.hashCode(), subject2.hashCode());
 		assertEquals(subject.hashCode(), identical.hashCode());
+		assertTrue(subject.isSelfHashing());
 	}
 
 	@Test
@@ -130,7 +134,27 @@ class MerkleStakingInfoTest {
 		var copy = subject.copy();
 
 		assertTrue(subject.isImmutable());
-		assertEquals(copy, subject);
+		assertEquals(subject, copy);
+		assertEquals(subject.getHash(), copy.getHash());
+	}
+
+	@Test
+	void updatesRewardsSumHistoryAsExpected() {
+		final var rewardRate = 1_000_000_000.0;
+		final var totalStakedRewardStart = 1_000L;
+
+		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+
+		assertArrayEquals(new long[]{12L, 1L}, subject.getRewardSumHistory());
+	}
+
+	@Test
+	void hashSummarizesAsExpected() {
+		final var baos = new ByteArrayOutputStream();
+//		baos.write();
+
+		assertArrayEquals(new byte[0], subject.getHash().getValue());
+		assertNotNull(subject.historyHash);
 	}
 
 }

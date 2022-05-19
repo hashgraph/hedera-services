@@ -20,25 +20,23 @@ package com.hedera.services.state.merkle.internals;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.swirlds.common.crypto.DigestType;
+import org.junit.jupiter.api.Test;
 
-public final class ByteUtils {
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-	ByteUtils() {
-		throw new UnsupportedOperationException("Utility Class");
-	}
+class ByteUtilsTest {
 
-	public static byte[] getHashBytes(long[] data) {
-		if (data == null) return new byte[0];
-		// ----------
-		byte[] byts = new byte[data.length * Long.BYTES];
-		for (int i = 0; i < data.length; i++)
-			System.arraycopy(getHashBytes(data[i]), 0, byts, i * Long.BYTES, Long.BYTES);
-		return CommonUtils.noThrowSha384HashOf(byts);
-	}
+	@Test
+	void buildsByteArrayAsExpected() {
+		final var expected = new byte[]{0,0,0,0,0,0,48,57};
+		final var expectedHashBytes = CommonUtils.noThrowSha384HashOf(expected);
+		final var actualLong = 12_345L;
 
-	private static byte[] getHashBytes(long num) {
-		return Longs.toByteArray(num);
+		assertArrayEquals(expectedHashBytes, ByteUtils.getHashBytes(new long[]{actualLong}));
+		assertEquals(0, ByteUtils.getHashBytes(null).length);
+		assertEquals(DigestType.SHA_384.digestLength(), ByteUtils.getHashBytes(new long[0]).length);
 	}
 }

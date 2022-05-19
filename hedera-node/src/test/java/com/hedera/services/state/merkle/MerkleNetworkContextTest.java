@@ -431,9 +431,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -466,9 +466,9 @@ class MerkleNetworkContextTest {
 				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
 				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
 				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";;
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -494,20 +494,20 @@ class MerkleNetworkContextTest {
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -518,20 +518,20 @@ class MerkleNetworkContextTest {
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -542,20 +542,20 @@ class MerkleNetworkContextTest {
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -593,19 +593,19 @@ class MerkleNetworkContextTest {
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -617,19 +617,19 @@ class MerkleNetworkContextTest {
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false\n" +
-				"  Total StakedRewardStart is 					:: 0\n" +
-				"  Total StakedStart is 						:: 0";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
