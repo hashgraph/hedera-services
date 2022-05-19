@@ -598,13 +598,17 @@ class UniqueTokenValueTest {
 
 	@Test
 	void mutations_whenImmutable_throwsException() {
-		UniqueTokenValue value = new UniqueTokenValue();
+		final var value = new UniqueTokenValue();
+		final var entityId = EntityId.fromNum(1);
+		final var nftNumPair = NftNumPair.fromLongs(1, 1);
+		final var bytes = new byte[] {0, 1};
+
 		value.copy(); // make value immutable
-		assertThrows(MutabilityException.class, () -> value.setOwner(EntityId.fromNum(1)));
-		assertThrows(MutabilityException.class, () -> value.setSpender(EntityId.fromNum(1)));
-		assertThrows(MutabilityException.class, () -> value.setMetadata(new byte[] {0, 1}));
+		assertThrows(MutabilityException.class, () -> value.setOwner(entityId));
+		assertThrows(MutabilityException.class, () -> value.setSpender(entityId));
+		assertThrows(MutabilityException.class, () -> value.setMetadata(bytes));
 		assertThrows(MutabilityException.class, () -> value.setPackedCreationTime(1));
-		assertThrows(MutabilityException.class, () -> value.setPrev(NftNumPair.fromLongs(1, 2)));
-		assertThrows(MutabilityException.class, () -> value.setNext(NftNumPair.fromLongs(1, 2)));
+		assertThrows(MutabilityException.class, () -> value.setPrev(nftNumPair));
+		assertThrows(MutabilityException.class, () -> value.setNext(nftNumPair));
 	}
 }
