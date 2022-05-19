@@ -30,7 +30,6 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -413,12 +412,16 @@ class UniqueTokenValueTest {
 				5678L,
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
+		value1.setPrev(NftNumPair.fromLongs(1, 2));
+		value1.setNext(NftNumPair.fromLongs(3, 4));
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
 				5678L,
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
+		value2.setPrev(NftNumPair.fromLongs(1, 2));
+		value2.setNext(NftNumPair.fromLongs(3, 4));
 
 		assertThat(value1).isEqualTo(value1);
 		assertThat(value1).isEqualTo(value1.copy());
@@ -467,11 +470,42 @@ class UniqueTokenValueTest {
 				"hello world".getBytes(),
 				new RichInstant(456, 789));
 
+		UniqueTokenValue value7 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value7.setPrev(NftNumPair.fromLongs(1, 2));
+
+		UniqueTokenValue value8 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value8.setPrev(NftNumPair.fromLongs(3, 4));
+
+		UniqueTokenValue value9 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value9.setNext(NftNumPair.fromLongs(1, 2));
+
+		UniqueTokenValue value10 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				"hello world".getBytes(),
+				new RichInstant(456, 789));
+		value10.setNext(NftNumPair.fromLongs(3, 4));
+
 		assertThat(value1.equals(value2)).isFalse();
 		assertThat(value1.equals(value3)).isFalse();
 		assertThat(value1.equals(value4)).isFalse();
 		assertThat(value1.equals(value5)).isFalse();
 		assertThat(value1.equals(value6)).isFalse();
+		assertThat(value7.equals(value8)).isFalse();
+		assertThat(value7.equals(value9)).isFalse();
+		assertThat(value9.equals(value10)).isFalse();
 	}
 
 	@Test

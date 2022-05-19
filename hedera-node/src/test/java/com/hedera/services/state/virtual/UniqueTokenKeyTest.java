@@ -20,6 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
@@ -223,5 +224,19 @@ class UniqueTokenKeyTest {
 		assertThat(new UniqueTokenKey(123L, 789L).toString()).contains("789");
 		assertThat(new UniqueTokenKey(456L, 789L).toString()).contains("456");
 		assertThat(new UniqueTokenKey(456L, 789L).toString()).contains("789");
+	}
+
+	@Test
+	void toEntityNumPair_isExpected() {
+		final var subject = new UniqueTokenKey(1, 2).toEntityNumPair();
+		assertThat(subject.getHiOrderAsLong()).isEqualTo(1);
+		assertThat(subject.getLowOrderAsLong()).isEqualTo(2);
+	}
+
+	@Test
+	void fromNftId_isExpected() {
+		final var subject = UniqueTokenKey.fromNftId(new NftId(0, 1, 2, 3));
+		assertThat(subject.getNum()).isEqualTo(2);
+		assertThat(subject.getTokenSerial()).isEqualTo(3);
 	}
 }
