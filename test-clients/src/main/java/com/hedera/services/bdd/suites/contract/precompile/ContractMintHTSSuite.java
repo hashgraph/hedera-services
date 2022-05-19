@@ -696,7 +696,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.via(baselineMintWithEnoughGas)
 								.payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(48_000L),
+								.gas(64_000L),
 						withOpContext((spec, opLog) -> {
 							final var expectedPrecompileGas = expectedPrecompileGasFor(
 									spec, TokenMint, TOKEN_FUNGIBLE_COMMON);
