@@ -2,6 +2,7 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
@@ -60,6 +61,8 @@ class EndOfStakingPeriodCalculatorTest {
 	@Mock
 	RecordsHistorian recordsHistorian;
 	@Mock
+	EntityCreator creator;
+	@Mock
 	PropertySource properties;
 
 	private EndOfStakingPeriodCalculator subject;
@@ -72,6 +75,7 @@ class EndOfStakingPeriodCalculatorTest {
 				() -> merkleNetworkContext,
 				syntheticTxnFactory,
 				recordsHistorian,
+				creator,
 				properties
 		);
 	}

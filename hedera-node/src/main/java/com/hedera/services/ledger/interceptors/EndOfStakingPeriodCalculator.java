@@ -20,13 +20,14 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
@@ -41,14 +42,18 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 
 @Singleton
 public class EndOfStakingPeriodCalculator {
+	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
+
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfoSupplier;
 	private final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final RecordsHistorian recordsHistorian;
+	private final EntityCreator creator;
 	private final PropertySource properties;
 
 	@Inject
@@ -58,6 +63,7 @@ public class EndOfStakingPeriodCalculator {
 			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final RecordsHistorian recordsHistorian,
+			final EntityCreator creator,
 			@CompositeProps PropertySource properties
 	) {
 		this.accounts = accounts;
@@ -65,6 +71,7 @@ public class EndOfStakingPeriodCalculator {
 		this.merkleNetworkContextSupplier = merkleNetworkContextSupplier;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.recordsHistorian = recordsHistorian;
+		this.creator = creator;
 		this.properties = properties;
 	}
 
@@ -122,6 +129,10 @@ public class EndOfStakingPeriodCalculator {
 						nodeStakingInfos);
 
 		recordsHistorian.trackFollowingChildRecord(
-				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn, ExpirableTxnRecord.newBuilder());
+				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn,
+				creator.createSuccessfulSyntheticRecord(
+						NO_CUSTOM_FEES,
+						new SideEffectsTracker(),
+						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
 	}
 }
