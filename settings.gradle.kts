@@ -45,7 +45,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.25.1")
+            version("hapi-version", "0.26.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
@@ -54,12 +54,12 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.25.0")
+            version("swirlds-version", "0.26.0")
             version("tuweni-version", "2.1.0")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
-            bundle("besu", listOf("besu-bls12-381", "besu-evm", "besu-datatypes", "tuweni-units"))
+            bundle("besu", listOf("besu-bls12-381", "besu-evm", "besu-datatypes", "besu-secp256k1", "tuweni-units"))
             // Use when you need to use bouncy castle
             bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on"))
             // Use when you need to make use of dependency injection.
@@ -74,6 +74,7 @@ dependencyResolutionManagement {
 
             // Define the individual libraries
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
+            library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
             library("besu-datatypes", "org.hyperledger.besu", "besu-datatypes").versionRef("besu-version")
             library("bouncycastle-bcprov-jdk15on", "org.bouncycastle", "bcprov-jdk15on").versionRef("bouncycastle-version")

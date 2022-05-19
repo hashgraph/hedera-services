@@ -26,6 +26,7 @@ plugins {
 
 group = "com.hedera.hashgraph"
 
+// Specify the JDK Version and vendor that we will support
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
@@ -34,6 +35,7 @@ java {
     }
 }
 
+// Define the repositories from which we will pull dependencies
 repositories {
     mavenLocal()
     maven {
