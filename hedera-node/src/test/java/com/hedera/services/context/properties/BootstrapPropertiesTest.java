@@ -209,6 +209,7 @@ class BootstrapPropertiesTest {
 			entry("staking.startThreshold", 100_000_000L),
 			entry("staking.fees.nodeRewardPercentage", 10),
 			entry("staking.fees.stakingRewardPercentage", 10),
+			entry("staking.activeThreshold", 1000),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
