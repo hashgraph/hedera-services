@@ -27,3 +27,7 @@ repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
 }
+
+dependencies {
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.6.1")
+}

@@ -22,6 +22,7 @@ plugins {
     `java-library`
     `maven-publish`
     jacoco
+    id("com.diffplug.spotless")     
 }
 
 group = "com.hedera.hashgraph"
@@ -61,5 +62,13 @@ tasks.withType<JavaCompile> {
 tasks.test {
     useJUnitPlatform {
         includeEngines("junit-jupiter")
+    }
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+        indentWithTabs(2)
+        indentWithSpaces(4)
     }
 }
