@@ -194,9 +194,9 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	@Override
 	public Hash getHash() {
-		ensureHistoryHashIsKnown();
 		final var baos = new ByteArrayOutputStream();
 		try (final var out = new SerializableDataOutputStream(baos)) {
+			ensureHistoryHashIsKnown();
 			serializeNonHistoryData(out);
 			out.write(historyHash);
 		} catch (IOException | UncheckedIOException e) {

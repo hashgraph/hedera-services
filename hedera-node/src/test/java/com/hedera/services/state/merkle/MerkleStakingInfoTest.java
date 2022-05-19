@@ -21,22 +21,39 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
+@ExtendWith(LogCaptureExtension.class)
 class MerkleStakingInfoTest {
+	@LoggingTarget
+	private LogCaptor logCaptor;
+	@LoggingSubject
 	private MerkleStakingInfo subject;
 
 	private final int number = 34;
@@ -160,6 +177,20 @@ class MerkleStakingInfoTest {
 		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
 		assertArrayEquals(new long[]{12L, 1L}, subject.getRewardSumHistory());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void logsAtErrorIfSomehowHashComputationFails() {
+		final var mockedStatic = mockStatic(ByteUtils.class);
+		mockedStatic.when(() -> ByteUtils.getHashBytes(rewardSumHistory)).thenThrow(UncheckedIOException.class);
+
+
+		final var hash = subject.getHash();
+		assertSame(EMPTY_HASH, hash);
+
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Hash computation failed")));
+		mockedStatic.close();
 	}
 
 	@Test

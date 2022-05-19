@@ -7,7 +7,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.NodeStake;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,11 +15,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /*-
@@ -73,51 +77,69 @@ class EndOfStakingPeriodCalculatorTest {
 	}
 
 	@Test
+	void skipsEndOfStakingPeriodCalcsIfRewardsAreNotActivated() {
+		final var consensusTime = Instant.now();
+		given(merkleNetworkContext.areRewardsActivated()).willReturn(false);
+
+		subject.updateNodes(consensusTime);
+
+		verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
+		verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
+		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
+	}
+
+	@Test
 	void calculatesNewTotalStakesAsExpected() {
 		final var consensusTime = Instant.now();
-		final var historyMax = 2;
 		final var balance_800 = 100_000_000_000L;
 		final var account_800 = mock(MerkleAccount.class);
-		final var nodeNum1 = EntityNum.fromInt(0);
-		final var nodeNum2 = EntityNum.fromInt(1);
-		final var stakingInfo1 = mock(MerkleStakingInfo.class);
-		final var stakingInfo2 = mock(MerkleStakingInfo.class);
-		final var nodeStakingInfos = List.of(
-				NodeStake.newBuilder()
-						.setStake(750L)
-						.setStakeRewarded(300L)
-						.build(),
-				NodeStake.newBuilder()
-						.setStake(2000L)
-						.setStakeRewarded(700L)
-						.build()
-		);
 
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
-		given(properties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(historyMax);
 		given(properties.getDoubleProperty("staking.rewardRate")).willReturn(10_000_000_000.0);
 		given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
 		given(account_800.getBalance()).willReturn(balance_800);
-		given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2));
+		given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2, nodeNum3));
 		given(stakingInfos.getForModify(nodeNum1)).willReturn(stakingInfo1);
 		given(stakingInfos.getForModify(nodeNum2)).willReturn(stakingInfo2);
-		given(stakingInfo1.getStakeToNotReward()).willReturn(300L);
-		given(stakingInfo1.getStakeToReward()).willReturn(700L);
-		given(stakingInfo1.getMinStake()).willReturn(100L);
-		given(stakingInfo1.getMaxStake()).willReturn(800L);
-		given(stakingInfo1.getStake()).willReturn(2_000L);
-		given(stakingInfo2.getStakeToNotReward()).willReturn(200L);
-		given(stakingInfo2.getStakeToReward()).willReturn(300L);
-		given(stakingInfo2.getMinStake()).willReturn(100L);
-		given(stakingInfo2.getMaxStake()).willReturn(800L);
-		given(stakingInfo2.getStake()).willReturn(750L);
+		given(stakingInfos.getForModify(nodeNum3)).willReturn(stakingInfo3);
 		given(merkleNetworkContext.getTotalStakedRewardStart()).willReturn(10_000L);
 
 		subject.updateNodes(consensusTime);
 
 		verify(merkleNetworkContext).setTotalStakedRewardStart(1000L);
-		verify(merkleNetworkContext).setTotalStakedStart(2750L);
-		verify(stakingInfo1).setStake(800L);
-		verify(stakingInfo2).setStake(500L);
+		verify(merkleNetworkContext).setTotalStakedStart(1300L);
+		assertEquals(800L, stakingInfo1.getStake());
+		assertEquals(500L, stakingInfo2.getStake());
+		assertEquals(0L, stakingInfo3.getStake());
+		assertArrayEquals(new long[]{10,8,7}, stakingInfo1.getRewardSumHistory());
+		assertArrayEquals(new long[]{7,5,5}, stakingInfo2.getRewardSumHistory());
+		assertArrayEquals(new long[]{100,1,2}, stakingInfo3.getRewardSumHistory());
 	}
+
+	final long minStake = 100L;
+	final long maxStake = 800L;
+	final long stakeToReward1 = 700L;
+	final long stakeToReward2 = 300L;
+	final long stakeToReward3 = 30L;
+	final long stakeToNotReward1 = 300L;
+	final long stakeToNotReward2 = 200L;
+	final long stakeToNotReward3 = 20L;
+	final long stakedRewardStart1 = 1_000L;
+	final long stakedRewardStart2 = 700L;
+	final long stakedRewardStart3 = 10_000L;
+	final long stake1 = 2_000L;
+	final long stake2 = 750L;
+	final long stake3 = 75L;
+	final long[] rewardSumHistory1 = new long[]{8,7,2};
+	final long[] rewardSumHistory2 = new long[]{5,5,4};
+	final long[] rewardSumHistory3 = new long[]{1,2,1};
+	final EntityNum nodeNum1 = EntityNum.fromInt(0);
+	final EntityNum nodeNum2 = EntityNum.fromInt(1);
+	final EntityNum nodeNum3 = EntityNum.fromInt(2);
+	final MerkleStakingInfo stakingInfo1 = new MerkleStakingInfo(
+			minStake, maxStake, stakeToReward1, stakeToNotReward1, stakedRewardStart1, stake1, rewardSumHistory1);
+	final MerkleStakingInfo stakingInfo2 = new MerkleStakingInfo(
+			minStake, maxStake, stakeToReward2, stakeToNotReward2, stakedRewardStart2, stake2, rewardSumHistory2);
+	final MerkleStakingInfo stakingInfo3 = new MerkleStakingInfo(
+			minStake, maxStake, stakeToReward3, stakeToNotReward3, stakedRewardStart3, stake3, rewardSumHistory3);
 }

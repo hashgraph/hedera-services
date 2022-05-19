@@ -246,6 +246,9 @@ class MerkleNetworkContextTest {
 		assertNotSame(subject.getBlockHashes(), subjectCopy.getBlockHashes());
 		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
+		assertEquals(subjectCopy.areRewardsActivated(), subject.areRewardsActivated());
+		assertEquals(subjectCopy.getTotalStakedRewardStart(), subject.getTotalStakedRewardStart());
+		assertEquals(subjectCopy.getTotalStakedStart(), subject.getTotalStakedStart());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());

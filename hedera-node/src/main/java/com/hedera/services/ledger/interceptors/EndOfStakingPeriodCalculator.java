@@ -77,7 +77,6 @@ public class EndOfStakingPeriodCalculator {
 			return;
 		}
 
-		final var maxHistory = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
 		final var rewardRate = Math.min(accounts.get().get(EntityNum.fromInt(800)).getBalance(),
 				properties.getDoubleProperty("staking.rewardRate"));
 
