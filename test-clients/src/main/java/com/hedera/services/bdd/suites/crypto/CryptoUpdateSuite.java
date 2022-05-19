@@ -22,8 +22,8 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static javax.management.timer.Timer.ONE_DAY;
 
 public class CryptoUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
@@ -124,7 +123,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateMaxAutoAssociationsWorks()
+						updateMaxAutoAssociationsWorks(),
 						updateStakingFieldsWorks()
 				}
 		);
