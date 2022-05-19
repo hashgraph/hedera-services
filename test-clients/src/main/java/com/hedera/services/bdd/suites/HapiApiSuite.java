@@ -112,8 +112,8 @@ public abstract class HapiApiSuite {
 		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
-		return suiteRunnerCounter == 1 ? simpleName.concat(ETH_SUFFIX) : simpleName;
-//		return simpleName;
+//		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+		return simpleName;
 	}
 
 	public List<HapiApiSpec> getFinalSpecs() {
