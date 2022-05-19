@@ -235,7 +235,7 @@ class UniqueTokenKeyTest {
 
 	@Test
 	void fromNftId_isExpected() {
-		final var subject = UniqueTokenKey.fromNftId(new NftId(0, 1, 2, 3));
+		final var subject = UniqueTokenKey.from(new NftId(0, 1, 2, 3));
 		assertThat(subject.getNum()).isEqualTo(2);
 		assertThat(subject.getTokenSerial()).isEqualTo(3);
 	}
