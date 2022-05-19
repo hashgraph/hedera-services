@@ -137,6 +137,14 @@ class UniqueTokensListRemovalTest {
 		assertNull(ans);
 	}
 
+	@Test
+	void nextAndPrevReturnsNullForCopies() {
+		targetNft.setNext(NftNumPair.fromLongs(0, 0));
+		targetNft.setPrev(NftNumPair.fromLongs(0, 0));
+		assertNull(subject.next(targetNft));
+		assertNull(subject.prev(targetNft));
+	}
+
 	private final long tokenNum = 1_234L;
 	private final int ownerNum = 1_235;
 	private final long rootNum = 2L;
