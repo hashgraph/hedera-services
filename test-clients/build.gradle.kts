@@ -24,6 +24,36 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+// Add the EET task for executing end-to-end tests
+testing {
+    suites {
+        @Suppress("UnstableApiUsage", "UNUSED_VARIABLE")
+        val eet by registering(JvmTestSuite::class) {
+            testType.set("end-to-end-test")
+            dependencies {
+                implementation(project)
+            }
+
+            // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
+            // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(tasks.test)
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.test {
+    // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
+    // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
+    // (https://github.com/hashgraph/hedera-services/issues/3412).
+    exclude("**/*")
+}
+
 sourceSets {
     // Needed because "resource" directory is misnamed. See https://github.com/hashgraph/hedera-services/issues/3361
     main {
@@ -32,18 +62,12 @@ sourceSets {
         }
     }
 
-    create("eet") {
-        compileClasspath += sourceSets.main.get().output
-        runtimeClasspath += sourceSets.main.get().output
-        // TODO link to issue of reorganizing things, at which point we can get rid of the java srcDir override
+    // This can be removed after fixing #3412 (https://github.com/hashgraph/hedera-services/issues/3412)
+    getByName("eet") {
         java {
             srcDir("src/test/java")
         }
     }
-}
-
-val eetImplementation by configurations.getting {
-    extendsFrom(configurations.implementation.get())
 }
 
 dependencies {
@@ -74,30 +98,4 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
-    eetImplementation(testLibs.bundles.testing)
 }
-
-/**
- * Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
- * from src/test into src/eet, so it can be part of an eet test task instead. See issue #3371
- * (https://github.com/hashgraph/hedera-services/issues/3371).
- */
-tasks.test {
-    exclude("**/*")
-    maxHeapSize = "1G"
-}
-
-val eet = tasks.register<Test>("eet") {
-    description = "Runs end-to-end tests"
-    group = "verification"
-
-    testClassesDirs = sourceSets["eet"].output.classesDirs
-    classpath = sourceSets["eet"].runtimeClasspath
-    shouldRunAfter("test")
-
-    useJUnitPlatform {
-        includeEngines("junit-jupiter")
-    }
-}
-
-tasks.check { dependsOn(eet) }
