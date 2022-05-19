@@ -84,13 +84,13 @@ public class UniqueTokensListRemoval implements MapValueListMutation<EntityNumPa
 	@Override
 	public EntityNumPair next(final MerkleUniqueToken node) {
 		final var nextKey = node.getNext();
-		return nextKey == MISSING_NFT_NUM_PAIR ? null : nextKey.asEntityNumPair();
+		return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : nextKey.asEntityNumPair();
 	}
 
 	@Nullable
 	@Override
 	public EntityNumPair prev(final MerkleUniqueToken node) {
 		final var prevKey = node.getPrev();
-		return prevKey == MISSING_NFT_NUM_PAIR ? null : prevKey.asEntityNumPair();
+		return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : prevKey.asEntityNumPair();
 	}
 }
