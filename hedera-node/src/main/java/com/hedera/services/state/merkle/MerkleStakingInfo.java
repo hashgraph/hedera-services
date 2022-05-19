@@ -84,6 +84,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public MerkleStakingInfo(MerkleStakingInfo that) {
+		this.number = that.number;
 		this.minStake = that.minStake;
 		this.maxStake = that.maxStake;
 		this.stakeToReward = that.stakeToReward;
@@ -149,7 +150,8 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 
 		var that = (MerkleStakingInfo) o;
-		return this.minStake == that.minStake &&
+		return this.number == that.number &&
+				this.minStake == that.minStake &&
 				this.maxStake == that.maxStake &&
 				this.stakeToReward == that.stakeToReward &&
 				this.stakeToNotReward == that.stakeToNotReward &&

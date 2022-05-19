@@ -20,12 +20,16 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
+import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -43,12 +47,13 @@ class MerkleStakingInfoTest {
 	private final long stakeRewardStart = 1234L;
 	private final long stake = 500L;
 	private final long[] rewardSumHistory = new long[] {1L, 2L};
+	private final EntityNum key = EntityNum.fromInt(number);
 
 	@BeforeEach
 	void setUp() {
 		subject = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake,
 				rewardSumHistory);
-		subject.setKey(EntityNum.fromInt(number));
+		subject.setKey(key);
 	}
 
 	@Test
@@ -62,22 +67,30 @@ class MerkleStakingInfoTest {
 		final long[] otherRewardSumHistory = new long[] { 3L, 2L };
 		final var subject2 = new MerkleStakingInfo(otherMinStake, maxStake, stakeToReward, stakeToNotReward,
 				stakeRewardStart, stake, rewardSumHistory);
+		subject2.setKey(key);
 		final var subject3 = new MerkleStakingInfo(minStake, otherMaxStake, stakeToReward, stakeToNotReward,
 				stakeRewardStart, stake, rewardSumHistory);
+		subject3.setKey(key);
 		final var subject4 = new MerkleStakingInfo(minStake, maxStake, otherStakeToReward, stakeToNotReward,
 				stakeRewardStart, stake, rewardSumHistory);
+		subject4.setKey(key);
 		final var subject5 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, otherStakeToNotReward,
 				stakeRewardStart, stake, rewardSumHistory);
+		subject5.setKey(key);
 		final var subject6 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
 				otherStakeRewardStart, stake, rewardSumHistory);
+		subject6.setKey(key);
 		final var subject7 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart,
-				otherStake, rewardSumHistory);
+				stakeRewardStart, otherStake, rewardSumHistory);
+		subject7.setKey(key);
 		final var subject8 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart,
-				stake, otherRewardSumHistory);
+				stakeRewardStart, stake, otherRewardSumHistory);
+		subject8.setKey(key);
+		final var subject9 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
+				stakeRewardStart, stake, rewardSumHistory);
 		final var identical = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
 				stakeRewardStart, stake, rewardSumHistory);
+		identical.setKey(key);
 
 		assertNotEquals(subject, new Object());
 		assertNotEquals(subject, subject2);
@@ -87,6 +100,7 @@ class MerkleStakingInfoTest {
 		assertNotEquals(subject, subject6);
 		assertNotEquals(subject, subject7);
 		assertNotEquals(subject, subject8);
+		assertNotEquals(subject, subject9);
 		assertEquals(subject, identical);
 		assertEquals(subject, subject);
 
@@ -107,7 +121,7 @@ class MerkleStakingInfoTest {
 	void gettersAndSettersWork() {
 		var subject = new MerkleStakingInfo();
 
-		subject.setKey(EntityNum.fromInt(number));
+		subject.setKey(key);
 		subject.setMinStake(minStake);
 		subject.setMaxStake(maxStake);
 		subject.setStakeToReward(stakeToReward);
@@ -149,12 +163,26 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
-	void hashSummarizesAsExpected() {
+	void hashSummarizesAsExpected() throws IOException {
 		final var baos = new ByteArrayOutputStream();
-//		baos.write();
+		final var out = new SerializableDataOutputStream(baos);
+		final var rewardSumHistoryHash = getHashBytes(rewardSumHistory);
+		out.writeInt(number);
+		out.writeLong(minStake);
+		out.writeLong(maxStake);
+		out.writeLong(stakeToReward);
+		out.writeLong(stakeToNotReward);
+		out.writeLong(stakeRewardStart);
+		out.writeLong(stake);
+		out.write(rewardSumHistoryHash);
 
-		assertArrayEquals(new byte[0], subject.getHash().getValue());
+		final var expected = CommonUtils.noThrowSha384HashOf(baos.toByteArray());
+		final var actual = subject.getHash();
+
 		assertNotNull(subject.historyHash);
+		assertArrayEquals(rewardSumHistoryHash, subject.historyHash);
+		assertArrayEquals(expected, actual.getValue());
+
 	}
 
 }
