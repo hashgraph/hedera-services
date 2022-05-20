@@ -1186,111 +1186,86 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec smartContractFailFirst() {
+		final var civilian = "civilian";
 		return defaultHapiSpec("smartContractFailFirst")
 				.given(
-						uploadInitCode(SIMPLE_STORAGE_CONTRACT)
+						uploadInitCode(SIMPLE_STORAGE_CONTRACT),
+						cryptoCreate(civilian).balance(ONE_MILLION_HBARS).payingWith(GENESIS)
 				).when(
 						withOpContext((spec, ignore) -> {
-							final var subop1 = balanceSnapshot("balanceBefore0", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore0", civilian);
 							final var subop2 =
 									contractCreate(SIMPLE_STORAGE_CONTRACT)
 											.balance(0)
-											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.payingWith(civilian)
 											.gas(1)
 											.hasKnownStatus(INSUFFICIENT_GAS)
 											.via("failInsufficientGas");
-
 							final var subop3 = getTxnRecord("failInsufficientGas");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore0", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore1", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore1", civilian);
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(100_000_000_000L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(250_000L)
 									.via("failInvalidInitialBalance")
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
 							final var subop3 = getTxnRecord("failInvalidInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore1", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore2", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore2", civilian);
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(0L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(250_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("successWithZeroInitialBalance");
-
 							final var subop3 = getTxnRecord("successWithZeroInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore2", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore3", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore3", civilian);
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("setValue");
-
 							final var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore3", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore4", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore4", civilian);
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("getValue");
-
 							final var subop3 = getTxnRecord("getValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore4", -delta));
 							allRunFor(spec, subop4);
-
 						})
 				).then(
 						getTxnRecord("failInsufficientGas"),

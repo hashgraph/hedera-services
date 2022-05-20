@@ -76,6 +76,7 @@ class AbstractStackedLedgerUpdaterTest {
 	@Mock
 	private ContractCustomizer customizer;
 
+
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
 

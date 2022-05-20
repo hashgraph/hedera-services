@@ -20,10 +20,12 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -52,6 +54,10 @@ import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneU
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
+	private boolean rewardsActivated;
+	private long newRewardBalance;
+
+	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
 
 
 
@@ -80,7 +86,6 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		}
 		assertZeroSum();
 	}
-
 
 	private void trackBalanceChangeIfAny(
 			final long accountNum,

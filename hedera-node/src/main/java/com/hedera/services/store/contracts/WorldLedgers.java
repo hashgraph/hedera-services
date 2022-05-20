@@ -307,7 +307,8 @@ public class WorldLedgers {
 				wrappedTokenRelsLedger,
 				wrappedAccountsLedger,
 				wrappedNftsLedger,
-				wrappedTokensLedger);
+				wrappedTokensLedger
+		);
 	}
 
 	public ContractAliases aliases() {
