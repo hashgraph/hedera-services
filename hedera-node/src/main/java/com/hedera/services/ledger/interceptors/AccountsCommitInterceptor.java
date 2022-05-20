@@ -36,8 +36,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -52,6 +55,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	protected boolean rewardsActivated;
 	protected boolean rewardBalanceChanged;
@@ -64,12 +68,14 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.networkCtx = networkCtx;
 		this.dynamicProperties = dynamicProperties;
 		this.stakingInfo = stakingInfo;
+		this.accounts = accounts;
 	}
 
 	/**
@@ -91,11 +97,23 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
-		if (shouldActivateStakingRewards()) {
-			networkCtx.get().setStakingRewards(true);
-			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
-			log.info("Staking rewards is activated and rewardSumHistory is cleared");
+		activateRewardsIfValid();
+	}
+
+	private void activateRewardsIfValid() {
+		if (!shouldActivateStakingRewards()) {
+			return;
 		}
+		networkCtx.get().setStakingRewards(true);
+		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+
+		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
+		accounts.get().forEach(((entityNum, account) -> {
+			if (account.getStakedId() < 0) {
+				account.setStakePeriodStart(todayNumber);
+			}
+		}));
+		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}
 
 	/**
@@ -128,5 +146,30 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
 			throw new IllegalStateException("Invalid balance changes");
 		}
+	}
+
+	/* only used for unit tests */
+	public boolean isRewardsActivated() {
+		return rewardsActivated;
+	}
+
+	public void setRewardsActivated(final boolean rewardsActivated) {
+		this.rewardsActivated = rewardsActivated;
+	}
+
+	public boolean isRewardBalanceChanged() {
+		return rewardBalanceChanged;
+	}
+
+	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
+		this.rewardBalanceChanged = rewardBalanceChanged;
+	}
+
+	public long getNewRewardBalance() {
+		return newRewardBalance;
+	}
+
+	public void setNewRewardBalance(final long newRewardBalance) {
+		this.newRewardBalance = newRewardBalance;
 	}
 }

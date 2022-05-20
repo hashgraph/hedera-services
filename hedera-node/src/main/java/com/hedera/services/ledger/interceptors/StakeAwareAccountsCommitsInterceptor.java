@@ -46,7 +46,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager manager) {
-		super(sideEffectsTracker, networkCtx, stakingInfo, dynamicProperties);
+		super(sideEffectsTracker, networkCtx, stakingInfo, dynamicProperties, accounts);
 		stakeChangeManager = manager;
 		this.networkCtx = networkCtx;
 		this.stakingInfo = stakingInfo;

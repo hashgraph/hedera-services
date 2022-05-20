@@ -40,8 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RewardCalculatorTest {
@@ -84,8 +87,6 @@ class RewardCalculatorTest {
 
 	@Test
 	void computesAndAppliesRewards() {
-		final var accountNum = EntityNum.fromLong(2000L);
-
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
@@ -93,43 +94,47 @@ class RewardCalculatorTest {
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100L);
 
-		final var reward = subject.computeRewards(account);
+		final var result = subject.computeRewards(account);
 
-		verify(account).setStakePeriodStart(todayNumber - 1);
-		assertEquals(500, reward);
+		assertEquals(todayNumber - 1, result.getRight());
+		assertEquals(500, result.getLeft());
 	}
 
 	@Test
 	void doesntComputeReturnsZeroReward() {
-		final var accountNum = EntityNum.fromLong(2000L);
-
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
-		final var reward = subject.computeRewards(account);
+		final var result = subject.computeRewards(account);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
-		assertEquals(0, reward);
+		assertEquals(0, result.getLeft());
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-		assertEquals(0, subject.computeRewards(account));
+		assertEquals(0, subject.computeRewards(account).getLeft());
+		assertEquals(todayNumber - 1, subject.computeRewards(account).getRight());
 	}
 
 	@Test
 	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
-		final var accountNum = EntityNum.fromLong(2000L);
-		final var today = LocalDate.now(zoneUTC).toEpochDay();
+		final var expectedStakePeriodStart = 19365L;
 
 		final var merkleAccount = new MerkleAccount();
-		merkleAccount.setStakePeriodStart(today - 500);
+		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
 		merkleAccount.setStakedId(3L);
 		merkleAccount.setBalance(100L);
+
+		final var mockLocalDate = mock(LocalDate.class);
+		final var mockedStatic = mockStatic(LocalDate.class);
+		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
+		when(mockLocalDate.toEpochDay()).thenReturn(expectedStakePeriodStart);
 
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 
-		final var reward = subject.computeRewards(account);
+		final var result = subject.computeRewards(merkleAccount);
 
-		assertEquals(today - 1, merkleAccount.getStakePeriodStart());
-		assertEquals(500, reward);
+		assertEquals(expectedStakePeriodStart - 1, result.getRight());
+		assertEquals(500, result.getLeft());
+		mockedStatic.close();
 	}
 }
