@@ -419,7 +419,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 65);
 		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 66);
 		given(properties.getIntProperty("staking.activeThreshold")).willReturn(i + 67);
-		given(properties.getDoubleProperty("staking.rewardRate")).willReturn(i + 68.0);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 68L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
