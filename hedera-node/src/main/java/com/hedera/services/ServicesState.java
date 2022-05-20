@@ -201,7 +201,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
-		internalInit(platform, new BootstrapProperties(), dualState);
+		internalInit(platform, new BootstrapProperties(), dualState, false);
 	}
 
 	private void addPostMigrationTask(Runnable runnable) {
@@ -224,7 +224,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
 		createGenesisChildren(addressBook, seqStart);
 
-		internalInit(platform, bootstrapProps, dualState);
+		internalInit(platform, bootstrapProps, dualState, true);
 	}
 
 	@Override
@@ -396,7 +396,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private void internalInit(
 			final Platform platform,
 			final BootstrapProperties bootstrapProps,
-			SwirldDualState dualState
+			SwirldDualState dualState,
+			boolean fromGenesis
 	) {
 		final var selfId = platform.getSelfId().getId();
 
@@ -444,23 +445,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
-			// This updates the working state accessor with our children
-			app.initializationFlow().runWith(this);
+			final Runnable initTask = () -> {
+				// This updates the working state accessor with our children
+				app.initializationFlow().runWith(this);
 
-			// Ensure the prefetch queue is created and thread pool is active instead of waiting
-			// for lazy-initialization to take place.
-			app.prefetchProcessor();
-			log.info("Created prefetch processor");
+				// Ensure the prefetch queue is created and thread pool is active instead of waiting
+				// for lazy-initialization to take place.
+				app.prefetchProcessor();
+				log.info("Created prefetch processor");
 
-			// Do not log summary until after migration. Migration includes possibly changing the child types which
-			// means access to getChild(...) as a specific type must be delayed until after migration.
-			if (stateVersion < CURRENT_VERSION) {
-				log.info("Delaying summary log");
-				addPostMigrationTask(this::logSummary);
-			} else {
+				// Do not log summary until after migration. Migration includes possibly changing the child types which
+				// means access to getChild(...) as a specific type must be delayed until after migration.
 				logSummary();
+				log.info("  --> Context initialized accordingly on Services node {}", selfId);
+			};
+
+			if (!fromGenesis && stateVersion < CURRENT_VERSION) {
+				log.info("Delaying init tasks due to migration");
+				addPostMigrationTask(initTask);
+			} else {
+				initTask.run();
 			}
-			log.info("  --> Context initialized accordingly on Services node {}", selfId);
 		}
 	}
 

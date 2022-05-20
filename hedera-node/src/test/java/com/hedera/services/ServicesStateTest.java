@@ -65,7 +65,6 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.checkerframework.checker.units.qual.A;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -516,7 +515,6 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
-		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -541,6 +539,7 @@ class ServicesStateTest {
 		// and:
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.hashLogger()).willReturn(hashLogger);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -661,7 +660,6 @@ class ServicesStateTest {
 		given(dualState.getLastFrozenTime()).willReturn(when);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
 
-		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -780,7 +778,6 @@ class ServicesStateTest {
 		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE - 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
-		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		APPS.save(selfId.getId(), app);
 
