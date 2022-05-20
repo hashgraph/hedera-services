@@ -147,6 +147,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 			executionWithDefaultPayerWorks(),
 			executionWithCustomPayerWorks(),
 			executionWithCustomPayerWorksWithLastSigBeingCustomPayer(),
+			executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
 			executionWithCustomPayerAndAdminKeyWorks(),
 			executionWithDefaultPayerButNoFundsFails(),
 			executionWithCustomPayerButNoFundsFails(),
@@ -2026,6 +2027,70 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				).when(
 						scheduleSign("basicXfer")
 								.alsoSigningWith("sender", "payingAccount")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord("createTx");
+							var signTx = getTxnRecord("signTx");
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							Assertions.assertEquals(
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + normalTriggeredTxnTimestampOffset,
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
+
+							Assertions.assertTrue(
+									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
+											asId("payingAccount", spec), transferAmount),
+									"Wrong transfer list!");
+						})
+				);
+	}
+
+	public HapiApiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+		long transferAmount = 1;
+		return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
+				.given(
+						cryptoCreate("payingAccount"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver"),
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", transferAmount)
+								)
+						)
+								.payingWith("payingAccount")
+								.designatingPayer("payingAccount")
+								.via("createTx")
+				).when(
+						scheduleSign("basicXfer")
+								.alsoSigningWith("sender")
 								.via("signTx")
 								.hasKnownStatus(SUCCESS)
 				).then(

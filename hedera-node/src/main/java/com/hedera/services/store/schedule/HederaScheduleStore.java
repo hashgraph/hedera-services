@@ -376,18 +376,18 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	@Override
 	public List<ScheduleID> nextSchedulesToExpire(Instant consensusTime) {
 
-		long curSecond = schedules.get().getCurrentMinSecond();
+		final long curSecond = schedules.get().getCurrentMinSecond();
 
 		if (!shouldProcessSecond(consensusTime, curSecond)) {
 			return Collections.emptyList();
 		}
 
-		var bySecondKey = new SecondSinceEpocVirtualKey(curSecond);
+		final var bySecondKey = new SecondSinceEpocVirtualKey(curSecond);
 
 		var bySecond = schedules.get().byExpirationSecond().get(bySecondKey);
 
 		final List<ScheduleID> list = new ArrayList<>();
-		List<Pair<RichInstant, Long>> toRemove = new ArrayList<>();
+		final List<Pair<RichInstant, Long>> toRemove = new ArrayList<>();
 
 		if (bySecond != null) {
 			outer: for (var entry : bySecond.getIds().entrySet()) {
@@ -444,13 +444,13 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	@Nullable
 	public ScheduleID nextScheduleToEvaluate(Instant consensusTime) {
 
-		long curSecond = schedules.get().getCurrentMinSecond();
+		final long curSecond = schedules.get().getCurrentMinSecond();
 
 		if (!shouldProcessSecond(consensusTime, curSecond)) {
 			return null;
 		}
 
-		var bySecond = schedules.get().byExpirationSecond().get(
+		final var bySecond = schedules.get().byExpirationSecond().get(
 				new SecondSinceEpocVirtualKey(curSecond));
 
 		if (bySecond != null) {

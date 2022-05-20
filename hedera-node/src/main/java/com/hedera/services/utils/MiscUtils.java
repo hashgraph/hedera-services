@@ -29,6 +29,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -41,6 +42,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
@@ -495,6 +497,13 @@ public final class MiscUtils {
 				.build();
 	}
 
+	public static Timestamp asTimestamp(final RichInstant when) {
+		return Timestamp.newBuilder()
+				.setSeconds(when.getSeconds())
+				.setNanos(when.getNanos())
+				.build();
+	}
+
 	public static Instant timestampToInstant(final Timestamp timestamp) {
 		return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
@@ -729,10 +738,15 @@ public final class MiscUtils {
 				.collect(toSet());
 	}
 
-	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn) {
+	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn,
+			final TransactionID scheduledTxnTransactionId) {
 		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
-				.setMemo(scheduledTxn.getMemo());
+				.setMemo(scheduledTxn.getMemo())
+				.setTransactionID(TransactionID.newBuilder()
+						.mergeFrom(scheduledTxnTransactionId)
+						.setScheduled(true)
+						.build());
 		if (scheduledTxn.hasContractCall()) {
 			ordinary.setContractCall(scheduledTxn.getContractCall());
 		} else if (scheduledTxn.hasContractCreateInstance()) {

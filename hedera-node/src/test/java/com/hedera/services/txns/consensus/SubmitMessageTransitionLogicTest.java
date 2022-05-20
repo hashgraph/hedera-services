@@ -247,6 +247,7 @@ class SubmitMessageTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(transactionContext.accessor()).willReturn(accessor);
+		given(transactionContext.activePayer()).willReturn(payer);
 	}
 
 	private void givenValidTransactionContext() {

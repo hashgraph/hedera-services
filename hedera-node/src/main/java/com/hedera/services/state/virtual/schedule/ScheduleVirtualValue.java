@@ -179,12 +179,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(
 						SignedTransaction.newBuilder()
-								.setBodyBytes(
-										TransactionBody.newBuilder()
-												.mergeFrom(ordinaryScheduledTxn)
-												.setTransactionID(scheduledTransactionId())
-												.build()
-												.toByteString())
+								.setBodyBytes(ordinaryScheduledTxn.toByteString())
 								.build()
 								.toByteString())
 				.build();
@@ -196,7 +191,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		}
 		return TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
-				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+				.setTransactionValidStart(asTimestamp(schedulingTXValidStart))
 				.setScheduled(true)
 				.build();
 	}
@@ -565,8 +560,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 			}
 			scheduledTxn = creationOp.getScheduledTransactionBody();
 			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
-			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
+			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, scheduledTransactionId());
 		} catch (InvalidProtocolBufferException e) {
 			throw new IllegalArgumentException(String.format(
 					"Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));

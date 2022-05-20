@@ -155,6 +155,11 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(MISC_ACCOUNT_KT).get()
 				).withAccount(
+						CUSTOM_PAYER_ACCOUNT_ID,
+						newAccount()
+								.balance(DEFAULT_BALANCE)
+								.accountKeys(CUSTOM_PAYER_ACCOUNT_KT).get()
+				).withAccount(
 						OWNER_ACCOUNT_ID,
 						newAccount()
 								.balance(DEFAULT_BALANCE)
@@ -385,6 +390,15 @@ public interface TxnHandlingScenario {
 					return entity;
 				});
 
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF))
+				.willReturn(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF))
+				.willAnswer(inv -> {
+					var entity = ScheduleVirtualValue.from(extantSchedulingBodyBytes(), 1801L);
+					entity.setPayer(EntityId.fromGrpcAccountId(DEFAULT_PAYER));
+					return entity;
+				});
+
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
 				.willReturn(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
@@ -418,6 +432,10 @@ public interface TxnHandlingScenario {
 	String MISC_ACCOUNT_ID = "0.0.1339";
 	AccountID MISC_ACCOUNT = asAccount(MISC_ACCOUNT_ID);
 	KeyTree MISC_ACCOUNT_KT = withRoot(ed25519());
+
+	String CUSTOM_PAYER_ACCOUNT_ID = "0.0.1216";
+	AccountID CUSTOM_PAYER_ACCOUNT = asAccount(CUSTOM_PAYER_ACCOUNT_ID);
+	KeyTree CUSTOM_PAYER_ACCOUNT_KT = withRoot(ed25519());
 
 	String OWNER_ACCOUNT_ID = "0.0.1439";
 	AccountID OWNER_ACCOUNT = asAccount(OWNER_ACCOUNT_ID);
@@ -575,6 +593,9 @@ public interface TxnHandlingScenario {
 	String KNOWN_SCHEDULE_WITH_PAYER_ID = "0.0.456456";
 	ScheduleID KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_PAYER_ID);
 
+	String KNOWN_SCHEDULE_WITH_PAYER_SELF_ID = "0.0.416125";
+	ScheduleID KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF = asSchedule(KNOWN_SCHEDULE_WITH_PAYER_SELF_ID);
+
 	String KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID = "0.0.654654";
 	ScheduleID KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID);
 
@@ -590,6 +611,11 @@ public interface TxnHandlingScenario {
 	List<CryptoAllowance> cryptoAllowanceList = List.of(CryptoAllowance.newBuilder()
 			.setOwner(OWNER_ACCOUNT)
 			.setSpender(DEFAULT_PAYER)
+			.setAmount(500L).build());
+
+	List<CryptoAllowance> cryptoSelfOwnerAllowanceList = List.of(CryptoAllowance.newBuilder()
+			.setOwner(DEFAULT_PAYER)
+			.setSpender(OWNER_ACCOUNT)
 			.setAmount(500L).build());
 
 	List<CryptoAllowance> cryptoAllowanceMissingOwnerList = List.of(CryptoAllowance.newBuilder()
@@ -613,6 +639,13 @@ public interface TxnHandlingScenario {
 			.setAmount(10_000L)
 			.build());
 
+	List<TokenAllowance> tokenSelfOwnerAllowanceList = List.of(TokenAllowance.newBuilder()
+			.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+			.setOwner(DEFAULT_PAYER)
+			.setSpender(OWNER_ACCOUNT)
+			.setAmount(10_000L)
+			.build());
+
 	List<TokenAllowance> tokenAllowanceMissingOwnerList = List.of(TokenAllowance.newBuilder()
 			.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 			.setOwner(MISSING_ACCOUNT)
@@ -632,6 +665,13 @@ public interface TxnHandlingScenario {
 			.setApprovedForAll(BoolValue.of(true))
 			.build());
 
+	List<NftAllowance> nftSelfOwnerAllowanceList = List.of(NftAllowance.newBuilder()
+			.setOwner(DEFAULT_PAYER)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(OWNER_ACCOUNT)
+			.setApprovedForAll(BoolValue.of(true))
+			.build());
+
 	List<NftAllowance> nftAllowanceMissingOwnerList = List.of(NftAllowance.newBuilder()
 			.setOwner(MISSING_ACCOUNT)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
@@ -641,6 +681,12 @@ public interface TxnHandlingScenario {
 
 	List<NftRemoveAllowance> nftDeleteAllowanceList = List.of(NftRemoveAllowance.newBuilder()
 			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.addAllSerialNumbers(List.of(1L))
+			.build());
+
+	List<NftRemoveAllowance> nftDeleteAllowanceListSelf = List.of(NftRemoveAllowance.newBuilder()
+			.setOwner(DEFAULT_PAYER)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
 			.addAllSerialNumbers(List.of(1L))
 			.build());

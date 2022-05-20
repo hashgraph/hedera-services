@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -103,6 +104,7 @@ class TriggeredTransitionTest {
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
 		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		verify(requestedTransition).finishFor(accessor);
+		verify(txnCtx, never()).payerSigIsKnownActive();
 	}
 
 	@Test
@@ -120,6 +122,7 @@ class TriggeredTransitionTest {
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
 		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		verify(requestedTransition, never()).finishFor(any());
+		verify(txnCtx, never()).payerSigIsKnownActive();
 	}
 
 	@Test
@@ -137,6 +140,7 @@ class TriggeredTransitionTest {
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
 		verify(txnCtx).setStatus(INSUFFICIENT_TX_FEE);
 		verify(requestedTransition, never()).finishFor(any());
+		verify(txnCtx, never()).payerSigIsKnownActive();
 	}
 
 	@Test
@@ -145,7 +149,7 @@ class TriggeredTransitionTest {
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(txnCtx.activePayerKey()).willReturn(activePayerKey);
 		given(accessor.isTriggeredTxn()).willReturn(true);
-		given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+		given(fees.computeFee(accessor, EMPTY_KEY, currentView, consensusNow)).willReturn(fee);
 		given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
 		given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
 		given(accessor.getScheduleRef()).willReturn(scheduleId);
@@ -156,6 +160,7 @@ class TriggeredTransitionTest {
 
 		// then:
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
+		verify(txnCtx).payerSigIsKnownActive();
 		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		verify(requestedTransition).finishFor(accessor);
 		verify(scheduleStore).markAsExecuted(scheduleId, consensusNow);
@@ -177,6 +182,7 @@ class TriggeredTransitionTest {
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
 		verify(scheduleStore).markAsExecuted(scheduleId, consensusNow);
 		verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
+		verify(txnCtx, never()).payerSigIsKnownActive();
 		verify(networkUtilization, never()).trackUserTxn(any(), any());
 		verify(requestedTransition, never()).finishFor(any());
 		verify(sigImpactHistorian, never()).markEntityChanged(anyLong());
@@ -201,6 +207,7 @@ class TriggeredTransitionTest {
 		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		verify(requestedTransition).finishFor(accessor);
 		verify(scheduleStore, never()).markAsExecuted(any(), any());
+		verify(txnCtx, never()).payerSigIsKnownActive();
 		verify(sigImpactHistorian, never()).markEntityChanged(anyLong());
 	}
 }

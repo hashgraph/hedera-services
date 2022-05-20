@@ -39,6 +39,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -504,11 +505,21 @@ class MiscUtilsTest {
 				.setTransactionFee(fee)
 				.setMemo(memo)
 				.build();
+		final var account = AccountID.newBuilder().setAccountNum(1).build();
+		final var start = Timestamp.newBuilder().setSeconds(1).setNanos(2).build();
 
-		final var ordinaryTxn = asOrdinary(scheduledTxn);
+		final var ordinaryTxn = asOrdinary(scheduledTxn, TransactionID.newBuilder()
+				.setAccountID(account)
+				.setTransactionValidStart(start)
+				.setNonce(2)
+				.build());
 
 		assertEquals(memo, ordinaryTxn.getMemo());
 		assertEquals(fee, ordinaryTxn.getTransactionFee());
+		assertEquals(account, ordinaryTxn.getTransactionID().getAccountID());
+		assertEquals(start, ordinaryTxn.getTransactionID().getTransactionValidStart());
+		assertEquals(2, ordinaryTxn.getTransactionID().getNonce());
+		assertTrue(ordinaryTxn.getTransactionID().getScheduled());
 	}
 
 	@Test
@@ -554,7 +565,7 @@ class MiscUtilsTest {
 		setters.forEach((bodyType, setter) -> {
 			final var txn = SchedulableTransactionBody.newBuilder();
 			setter.setDefaultInstanceFor(txn);
-			final var ordinary = asOrdinary(txn.build());
+			final var ordinary = asOrdinary(txn.build(), TransactionID.getDefaultInstance());
 			assertTrue(txnBodyHas(ordinary, bodyType), ordinary + " doesn't have " + bodyType + " as expected!");
 		});
 	}
@@ -787,7 +798,14 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void asTimestampTest() {
+	void asTimestampRichInstantTest() {
+		final var instant = RichInstant.fromJava(Instant.now());
+		final var timestamp = MiscUtils.asTimestamp(instant);
+		assertEquals(instant.toJava(), MiscUtils.timestampToInstant(timestamp));
+	}
+
+	@Test
+	void asTimestampJavaTest() {
 		final var instant = Instant.now();
 		final var timestamp = MiscUtils.asTimestamp(instant);
 		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));

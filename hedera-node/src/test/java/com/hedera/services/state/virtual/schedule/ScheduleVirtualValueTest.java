@@ -618,6 +618,11 @@ public class ScheduleVirtualValueTest {
 
 	private static final long fee = 123L;
 	private static final String scheduledTxnMemo = "Wait for me!";
+
+	private static final TransactionID parentTxnId = TransactionID.newBuilder()
+					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
+					.setAccountID(schedulingAccount.toGrpcAccountId())
+					.build();
 	private static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
 			.setTransactionFee(fee)
 			.setMemo(scheduledTxnMemo)
@@ -626,7 +631,7 @@ public class ScheduleVirtualValueTest {
 					.setTransferAccountID(IdUtils.asAccount("0.0.75231")))
 			.build();
 
-	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
+	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, parentTxnId);
 
 	private static final ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
 			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
@@ -637,10 +642,7 @@ public class ScheduleVirtualValueTest {
 			.setScheduledTransactionBody(scheduledTxn)
 			.build();
 	private static final TransactionBody parentTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
-					.setAccountID(schedulingAccount.toGrpcAccountId())
-					.build())
+			.setTransactionID(parentTxnId)
 			.setScheduleCreate(creation)
 			.build();
 	private static final byte[] bodyBytes = parentTxn.toByteArray();
@@ -655,7 +657,7 @@ public class ScheduleVirtualValueTest {
 						SignedTransaction.newBuilder()
 								.setBodyBytes(
 										TransactionBody.newBuilder()
-												.mergeFrom(MiscUtils.asOrdinary(scheduledTxn))
+												.mergeFrom(MiscUtils.asOrdinary(scheduledTxn, parentTxnId))
 												.setTransactionID(expectedId)
 												.build().toByteString())
 								.build().toByteString())

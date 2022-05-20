@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -38,13 +39,15 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.nAscii;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -59,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
@@ -87,6 +89,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithDefaultPayerWorks(),
 			executionWithCustomPayerWorks(),
 			executionWithCustomPayerThatNeverSignsFails(),
+			executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
 			executionWithCustomPayerAndAdminKeyWorks(),
 			executionWithDefaultPayerButNoFundsFails(),
 			executionWithCustomPayerButNoFundsFails(),
@@ -96,6 +99,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithCryptoInsufficientAccountBalanceFails(),
 			executionWithCryptoSenderDeletedFails(),
 			executionTriggersWithWeirdlyRepeatedKey(),
+
+			executionWithContractCallWorksAtExpiry(),
+			executionWithContractCreateWorksAtExpiry(),
 
 			executionNoSigTxnRequiredWorks(),
 
@@ -282,6 +288,90 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						})
 				);
 	}
+	private HapiApiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+		return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWhoSignsAtCreationAsPayerWorks")
+				.given(
+						cryptoCreate("payingAccount"),
+						cryptoCreate("receiver"),
+						cryptoCreate("sender").via("senderTxn")
+				).when(
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								)
+						)
+								.payingWith("payingAccount")
+								.designatingPayer("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("senderTxn", 8)
+								.recordingScheduledTxn()
+								.via("createTx"),
+						scheduleSign("basicXfer")
+								.alsoSigningWith("sender")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getScheduleInfo("basicXfer")
+								.hasScheduleId("basicXfer")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("senderTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("basicXfer")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord("createTx");
+							var signTx = getTxnRecord("signTx");
+							var triggeringTx = getTxnRecord("triggeringTxn");
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							Instant triggerTime = Instant.ofEpochSecond(
+									triggeringTx.getResponseRecord().getConsensusTimestamp().getSeconds(),
+									triggeringTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Instant triggeredTime = Instant.ofEpochSecond(
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getSeconds(),
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assertions.assertTrue(
+									triggerTime.isBefore(triggeredTime),
+									"Wrong consensus timestamp!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
+
+							Assertions.assertEquals(
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
+
+							Assertions.assertTrue(
+									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
+											asId("payingAccount", spec), 1L),
+									"Wrong transfer list!");
+						})
+				);
+	}
 
 	public HapiApiSpec executionWithDefaultPayerWorks() {
 		long transferAmount = 1;
@@ -363,6 +453,111 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
 											asId("payingAccount", spec), transferAmount),
 									"Wrong transfer list!");
+						})
+				);
+	}
+
+	public HapiApiSpec executionWithContractCallWorksAtExpiry() {
+		return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
+				.given(
+						overriding("scheduling.whitelist", "ContractCall"),
+						overriding("contracts.scheduleThrottleMaxGasLimit", "500000"),
+						uploadInitCode("SimpleUpdate"),
+						contractCreate("SimpleUpdate").gas(500_000L),
+						cryptoCreate("payingAccount").balance(1000000000000L).via("payingAccountTxn")
+				).when(
+						scheduleCreate(
+								"basicXfer",
+								contractCall("SimpleUpdate", "set", 5, 42)
+										.gas(300000L)
+						)
+								.waitForExpiry()
+								.withRelativeExpiry("payingAccountTxn", 8)
+								.designatingPayer("payingAccount")
+								.alsoSigningWith("payingAccount")
+								.recordingScheduledTxn()
+								.via("createTx")
+				).then(
+						getScheduleInfo("basicXfer")
+								.hasScheduleId("basicXfer")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payingAccountTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("basicXfer")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						overriding("contracts.scheduleThrottleMaxGasLimit",
+								HapiSpecSetup.getDefaultNodeProps().get("contracts.scheduleThrottleMaxGasLimit")),
+						getAccountBalance("payingAccount").hasTinyBars(spec -> bal ->
+										bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord()
+											.getContractCallResult().getContractCallResult().size() >= 0);
+						})
+				);
+	}
+	public HapiApiSpec executionWithContractCreateWorksAtExpiry() {
+		return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
+				.given(
+						overriding("scheduling.whitelist", "ContractCreate"),
+						overriding("contracts.scheduleThrottleMaxGasLimit", "1000000"),
+						uploadInitCode("SimpleUpdate"),
+						cryptoCreate("payingAccount").balance(1000000000000L).via("payingAccountTxn")
+				).when(
+						scheduleCreate(
+								"basicXfer",
+								contractCreate("SimpleUpdate").gas(500_000L)
+										.adminKey("payingAccount")
+						)
+								.waitForExpiry()
+								.withRelativeExpiry("payingAccountTxn", 8)
+								.designatingPayer("payingAccount")
+								.alsoSigningWith("payingAccount")
+								.recordingScheduledTxn()
+								.via("createTx")
+				).then(
+						getScheduleInfo("basicXfer")
+								.hasScheduleId("basicXfer")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payingAccountTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("basicXfer")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						overriding("contracts.scheduleThrottleMaxGasLimit",
+								HapiSpecSetup.getDefaultNodeProps().get("contracts.scheduleThrottleMaxGasLimit")),
+						getAccountBalance("payingAccount").hasTinyBars(spec -> bal ->
+										bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getReceipt().hasContractID());
+
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord()
+											.getContractCreateResult().getContractCallResult().size() >= 0);
 						})
 				);
 	}

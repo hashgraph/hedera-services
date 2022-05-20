@@ -59,6 +59,9 @@ class ScheduleSigsVerifierTest {
 	private JKey key3;
 	private final byte[] key3Bytes = new byte[] { 1, 1, 1 };
 	@Mock
+	private JKey key4;
+	private final byte[] key4Bytes = new byte[] { 1, 1, 1, 1 };
+	@Mock
 	private CharacteristicsFactory characteristics;
 	@Mock
 	private SigRequirements workingSigReqs;
@@ -80,22 +83,65 @@ class ScheduleSigsVerifierTest {
 
 	@Test
 	void happyPathWorks() {
-		setupPositiveTest();
+		subject = spy(subject);
+		doReturn(txnBody).when(subject).getTransactionBody(schedule);
+		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
+		given(keysForOtherParties.hasErrorReport()).willReturn(false);
+		given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2, key3, key4));
+		given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
+		given(key1.isForScheduledTxn()).willReturn(true);
+		given(key2.isForScheduledTxn()).willReturn(false);
+		given(key3.isForScheduledTxn()).willReturn(true);
+		given(key4.isForScheduledTxn()).willReturn(true);
+		given(key1.primitiveKeyIfPresent()).willReturn(key1Bytes);
+		given(key3.primitiveKeyIfPresent()).willReturn(key3Bytes);
+		given(key4.primitiveKeyIfPresent()).willReturn(key4Bytes);
+		given(schedule.hasValidSignatureFor(key1Bytes)).willReturn(true);
+		given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(true);
+		given(schedule.hasValidSignatureFor(key4Bytes)).willReturn(true);
+
+		subject.activation = (key, sigsFn, tests, characteristics) -> {
+			assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
+			assertEquals(characteristics, inferredCharacteristics);
+			assertTrue(key == key1 || key == key2 || key == key3 || key == key4);
+			return tests.test(key, null);
+		};
 
 		assertTrue(subject.areAllKeysActive(schedule));
 
 		verify(keysForOtherParties).getOrderedKeys();
 		verify(schedule).hasValidSignatureFor(key1Bytes);
 		verify(schedule).hasValidSignatureFor(key3Bytes);
+		verify(schedule).hasValidSignatureFor(key4Bytes);
 
 		verify(key1).primitiveKeyIfPresent();
 		verify(key2, never()).primitiveKeyIfPresent();
 		verify(key3).primitiveKeyIfPresent();
+		verify(key4).primitiveKeyIfPresent();
 	}
 
 	@Test
 	void rejectsOnOneMissingKey() {
-		setupPositiveTest();
+		subject = spy(subject);
+		doReturn(txnBody).when(subject).getTransactionBody(schedule);
+		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
+		given(keysForOtherParties.hasErrorReport()).willReturn(false);
+		given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2, key3, key4));
+		given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
+		given(key1.isForScheduledTxn()).willReturn(true);
+		given(key2.isForScheduledTxn()).willReturn(false);
+		given(key3.isForScheduledTxn()).willReturn(true);
+		given(key1.primitiveKeyIfPresent()).willReturn(key1Bytes);
+		given(key3.primitiveKeyIfPresent()).willReturn(key3Bytes);
+		given(schedule.hasValidSignatureFor(key1Bytes)).willReturn(true);
+		given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(true);
+
+		subject.activation = (key, sigsFn, tests, characteristics) -> {
+			assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
+			assertEquals(characteristics, inferredCharacteristics);
+			assertTrue(key == key1 || key == key2 || key == key3);
+			return tests.test(key, null);
+		};
 
 		given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(false);
 
@@ -104,10 +150,12 @@ class ScheduleSigsVerifierTest {
 		verify(keysForOtherParties).getOrderedKeys();
 		verify(schedule).hasValidSignatureFor(key1Bytes);
 		verify(schedule).hasValidSignatureFor(key3Bytes);
+		verify(schedule, never()).hasValidSignatureFor(key4Bytes);
 
 		verify(key1).primitiveKeyIfPresent();
 		verify(key2, never()).primitiveKeyIfPresent();
 		verify(key3).primitiveKeyIfPresent();
+		verify(key4, never()).primitiveKeyIfPresent();
 	}
 
 	@Test
@@ -175,29 +223,6 @@ class ScheduleSigsVerifierTest {
 		given(schedule.bodyBytes()).willReturn(null);
 
 		assertNull(subject.getTransactionBody(schedule));
-	}
-
-	private void setupPositiveTest() {
-		subject = spy(subject);
-		doReturn(txnBody).when(subject).getTransactionBody(schedule);
-		given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(keysForOtherParties);
-		given(keysForOtherParties.hasErrorReport()).willReturn(false);
-		given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2, key3));
-		given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
-		given(key1.isForScheduledTxn()).willReturn(true);
-		given(key2.isForScheduledTxn()).willReturn(false);
-		given(key3.isForScheduledTxn()).willReturn(true);
-		given(key1.primitiveKeyIfPresent()).willReturn(key1Bytes);
-		given(key3.primitiveKeyIfPresent()).willReturn(key3Bytes);
-		given(schedule.hasValidSignatureFor(key1Bytes)).willReturn(true);
-		given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(true);
-
-		subject.activation = (key, sigsFn, tests, characteristics) -> {
-			assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
-			assertEquals(characteristics, inferredCharacteristics);
-			assertTrue(key == key1 || key == key2 || key == key3);
-			return tests.test(key, null);
-		};
 	}
 
 }

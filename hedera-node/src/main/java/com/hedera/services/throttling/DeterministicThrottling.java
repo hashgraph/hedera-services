@@ -317,7 +317,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		final var scheduleCreate = txn.getScheduleCreate();
 		final var scheduled = scheduleCreate.getScheduledTransactionBody();
 
-		final var normalTxn = MiscUtils.asOrdinary(scheduled);
+		final var normalTxn = MiscUtils.asOrdinary(scheduled, txn.getTransactionID());
 
 		HederaFunctionality scheduledFunction;
 		try {
