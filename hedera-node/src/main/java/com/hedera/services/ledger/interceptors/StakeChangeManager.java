@@ -104,7 +104,7 @@ public class StakeChangeManager {
 		} else {
 			mutableChanges.put(STAKED_TO_ME, stakedToMeDelta);
 		}
-		pendingChanges.updateChange(stakeeI, STAKED_TO_ME, mutableChanges);
+		pendingChanges.updateChange(stakeeI, mutableChanges);
 	}
 
 	public void updateBalance(
@@ -118,7 +118,7 @@ public class StakeChangeManager {
 		} else {
 			mutableChanges.put(BALANCE, stakedToMeDelta);
 		}
-		pendingChanges.updateChange(rewardAccountI, BALANCE, mutableChanges);
+		pendingChanges.updateChange(rewardAccountI, mutableChanges);
 	}
 
 	static boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
@@ -129,5 +129,4 @@ public class StakeChangeManager {
 		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) ||
 				changes.containsKey(STAKED_ID) || changes.containsKey(STAKED_TO_ME);
 	}
-
 }
