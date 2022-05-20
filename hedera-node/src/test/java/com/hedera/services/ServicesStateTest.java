@@ -65,6 +65,7 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.checkerframework.checker.units.qual.A;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -95,7 +96,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -516,7 +516,6 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
-		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
@@ -540,7 +539,6 @@ class ServicesStateTest {
 		given(appBuilder.selfId(1L)).willReturn(appBuilder);
 		given(appBuilder.build()).willReturn(app);
 		// and:
-		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
@@ -589,6 +587,8 @@ class ServicesStateTest {
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+
 		// and:
 		APPS.save(selfId.getId(), app);
 
@@ -661,7 +661,6 @@ class ServicesStateTest {
 		given(dualState.getLastFrozenTime()).willReturn(when);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
 
-		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
@@ -753,7 +752,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void verifyPostTasksRunImmediatelyIfVmConversionNotNeeded() {
+	void verifyHashSummaryLogIfNoMigrationNeeded() {
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
@@ -766,17 +765,14 @@ class ServicesStateTest {
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
-		// and:
 		APPS.save(selfId.getId(), app);
-
-		// when:
 		subject.init(platform, addressBook, dualState);
 
-		verify(initFlow).runWith(subject);
+		verify(hashLogger).logHashesFor(subject);
 	}
 
 	@Test
-	void verifyPostTasksRunDelayedIfVmConversionNotNeeded() {
+	void verifyPostTasksRunDelayedIfVmConversionNeeded() {
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
@@ -784,13 +780,12 @@ class ServicesStateTest {
 		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE - 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
-		// and:
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		APPS.save(selfId.getId(), app);
 
-		// when:
 		subject.init(platform, addressBook, dualState);
-
-		verifyNoInteractions(app);
+		verify(app, never()).hashLogger();
 	}
 
 	@Test

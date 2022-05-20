@@ -201,15 +201,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
-		Runnable initTask = () -> internalInit(platform, new BootstrapProperties(), dualState);
-
-		if (deserializedVersion < UniqueTokensMigrator.TARGET_RELEASE) {
-			// Because state saved with MerkleMap cannot be properly loaded, need to defer remaining initialization
-			// until post migration.
-			addPostMigrationTask(initTask);
-		} else {
-			initTask.run();
-		}
+		internalInit(platform, new BootstrapProperties(), dualState);
 	}
 
 	private void addPostMigrationTask(Runnable runnable) {
@@ -460,7 +452,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			app.prefetchProcessor();
 			log.info("Created prefetch processor");
 
-			logSummary();
+			// Do not log summary until after migration. Migration includes possibly changing the child types which
+			// means access to getChild(...) as a specific type must be delayed until after migration.
+			if (stateVersion < CURRENT_VERSION) {
+				log.info("Delaying summary log");
+				addPostMigrationTask(this::logSummary);
+			} else {
+				logSummary();
+			}
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);
 		}
 	}
