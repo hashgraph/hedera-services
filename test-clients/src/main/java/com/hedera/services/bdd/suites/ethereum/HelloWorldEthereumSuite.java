@@ -87,16 +87,16 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				ethereumCalls(),
-                ethereumCreates()
+				ethereumCreates()
 		);
 	}
 
 	List<HapiApiSpec> ethereumCalls() {
 		return List.of(new HapiApiSpec[] {
 				relayerFeeAsExpectedIfSenderCoversGas(),
-                depositSuccess(),
-                badRelayClient(),
-                ethereumCallWithCalldataBiggerThanMaxSucceeds()
+				depositSuccess(),
+				badRelayClient(),
+				ethereumCallWithCalldataBiggerThanMaxSucceeds()
 		});
 	}
 
