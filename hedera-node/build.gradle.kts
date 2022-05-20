@@ -90,3 +90,24 @@ tasks.register<JavaExec>("run") {
     dependsOn(tasks.findByName("copyApp"), tasks.findByName("copyLib"))
     classpath("data/apps/HederaNode.jar")
 }
+
+val cleanRun = tasks.register("cleanRun") {
+    project.delete(File(project.projectDir, "database"))
+    project.delete(File(project.projectDir, "output"))
+    project.delete(File(project.projectDir, "settingsUsed.txt"))
+    project.delete(File(project.projectDir, "swirlds.jar"))
+    project.projectDir.list { file, fileName -> fileName.startsWith("MainNetStats") }.forEach { file ->
+        project.delete(file)
+    }
+
+    val dataDir = File(project.projectDir, "data")
+    project.delete(File(dataDir, "accountBalances"))
+    project.delete(File(dataDir, "apps"))
+    project.delete(File(dataDir, "lib"))
+    project.delete(File(dataDir, "recordstreams"))
+    project.delete(File(dataDir, "saved"))
+}
+
+tasks.clean {
+    dependsOn(cleanRun)
+}

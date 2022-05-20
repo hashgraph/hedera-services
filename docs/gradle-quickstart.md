@@ -61,7 +61,8 @@ Finally, end-to-end tests (defined in `test-clients`) can be run with `./gradlew
 instance. You can start one in one terminal with `./gradlew run` and then execute the tests from a second terminal with
 `./gradlew eet`. Or you can use JRS to start an instance, or use some existing environment like previewnet.
 
-Finally, you can use `./gradlew run` to run the project. It will compile (but not test) if needed.
+Finally, you can use `./gradlew run` to run the project. It will compile (but not test) if needed. Running the project
+produces various files within `hedera-node`. To clean these, you can use `./gradlew cleanRun`.
 
 There is also `./gradlew clean` to clean everything up. This will also clean out any temp stuff created for the sake of
 running (logs, etc.).
