@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.TreeMap;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,13 +75,11 @@ class HederaOperationUtilTest {
 	@Mock
 	private EvmSigsVerifier sigsVerifier;
 	@Mock
-	private Supplier<Long> gasSupplier;
+	private LongSupplier gasSupplier;
 	@Mock
 	private Supplier<Operation.OperationResult> executionSupplier;
 	@Mock
 	private Map<String, PrecompiledContract> precompiledContractMap;
-	@Mock
-	private ContractAliases aliases;
 	@Mock
 	private WorldLedgers ledgers;
 
@@ -110,7 +109,7 @@ class HederaOperationUtilTest {
 	void throwsUnderflowExceptionWhenGettingAddress() {
 		// given:
 		given(messageFrame.getStackItem(0)).willThrow(new FixedStack.UnderflowException());
-		given(gasSupplier.get()).willReturn(expectedHaltGas);
+		given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressCheckExecution(
@@ -126,7 +125,7 @@ class HederaOperationUtilTest {
 		// and:
 		verify(messageFrame).getStackItem(0);
 		verify(messageFrame, never()).getWorldUpdater();
-		verify(gasSupplier).get();
+		verify(gasSupplier).getAsLong();
 		verify(executionSupplier, never()).get();
 	}
 
@@ -134,7 +133,7 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSolidityAddressWhenAccountCheckExecution() {
 		// given:
 		given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-		given(gasSupplier.get()).willReturn(expectedHaltGas);
+		given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressCheckExecution(
@@ -149,7 +148,7 @@ class HederaOperationUtilTest {
 		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getStackItem(0);
-		verify(gasSupplier).get();
+		verify(gasSupplier).getAsLong();
 		verify(executionSupplier, never()).get();
 	}
 
@@ -173,7 +172,7 @@ class HederaOperationUtilTest {
 		assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getStackItem(0);
-		verify(gasSupplier, never()).get();
+		verify(gasSupplier, never()).getAsLong();
 		verify(executionSupplier).get();
 	}
 
@@ -181,7 +180,7 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
 		// given:
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(gasSupplier.get()).willReturn(expectedHaltGas);
+		given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -198,7 +197,7 @@ class HederaOperationUtilTest {
 		// and:
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
-		verify(gasSupplier).get();
+		verify(gasSupplier).getAsLong();
 		verify(executionSupplier, never()).get();
 	}
 
@@ -215,7 +214,7 @@ class HederaOperationUtilTest {
 				.hasActiveKeyOrNoReceiverSigReq(true,
 						mockTarget, Address.ALTBN128_ADD, ledgers))
 				.willReturn(false);
-		given(gasSupplier.get()).willReturn(expectedHaltGas);
+		given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
@@ -236,7 +235,7 @@ class HederaOperationUtilTest {
 		verify(worldStateAccount).getAddress();
 		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
 				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
-		verify(gasSupplier).get();
+		verify(gasSupplier).getAsLong();
 		verify(executionSupplier, never()).get();
 	}
 
@@ -253,7 +252,7 @@ class HederaOperationUtilTest {
 				.hasActiveKeyOrNoReceiverSigReq(false,
 						mockTarget, Address.ALTBN128_MUL, ledgers))
 				.willReturn(false);
-		given(gasSupplier.get()).willReturn(expectedHaltGas);
+		given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
@@ -274,7 +273,7 @@ class HederaOperationUtilTest {
 		verify(worldStateAccount).getAddress();
 		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(false,
 				mockTarget, PRETEND_CONTRACT_ADDR, ledgers);
-		verify(gasSupplier).get();
+		verify(gasSupplier).getAsLong();
 		verify(executionSupplier, never()).get();
 	}
 
@@ -312,7 +311,7 @@ class HederaOperationUtilTest {
 		verify(worldStateAccount).getAddress();
 		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
 				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
-		verify(gasSupplier, never()).get();
+		verify(gasSupplier, never()).getAsLong();
 		verify(executionSupplier).get();
 	}
 

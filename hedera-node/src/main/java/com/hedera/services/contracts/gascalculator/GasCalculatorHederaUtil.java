@@ -89,12 +89,11 @@ public final class GasCalculatorHederaUtil {
 		long timestamp = frame.getBlockValues().getTimestamp();
 		long logStorageTotalSize = GasCalculatorHederaUtil.calculateLogSize(numTopics, dataLength);
 		HederaFunctionality functionType = GasCalculatorHederaUtil.getFunctionType(frame);
-		long gasCost = GasCalculatorHederaUtil.calculateStorageGasNeeded(
+
+		return GasCalculatorHederaUtil.calculateStorageGasNeeded(
 				logStorageTotalSize,
 				storageDuration,
 				GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
 				gasPrice);
-
-		return gasCost;
 	}
 }
