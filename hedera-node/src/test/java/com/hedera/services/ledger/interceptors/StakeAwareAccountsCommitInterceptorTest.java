@@ -52,10 +52,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StakeAwareAccountsCommitInterceptorTest {
@@ -88,7 +92,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
 				dynamicProperties, () -> accounts,
 				rewardCalculator, manager);
-		buildsStakingInfoMap();
+		stakingInfo = buildsStakingInfoMap();
 	}
 
 	@Test
@@ -111,7 +115,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.updateRewardChanges(counterparty, changes.changes(1))).willReturn(1L);
-		given(rewardCalculator.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart -1);
+		given(rewardCalculator.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
 
 		subject.preview(changes);
 
@@ -185,6 +189,53 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(20L, subject.getNewRewardBalance());
 		assertTrue(subject.shouldActivateStakingRewards());
 	}
+
+	@Test
+	void activatesStakingRewardsAndClearsRewardSumHistoryAsExpected() {
+		final long stakingFee = 2L;
+		final var inorder = inOrder(sideEffectsTracker);
+		given(dynamicProperties.getStakingStartThreshold()).willReturn(1L);
+
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, randomStakeFieldChanges(partyBalance + amount));
+		changes.include(counterpartyId, counterparty,
+				randomStakeFieldChanges(counterpartyBalance - amount - stakingFee));
+		changes.include(stakingFundId, stakingFund, randomStakeFieldChanges(stakingFee));
+		willCallRealMethod().given(networkCtx).areRewardsActivated();
+		willCallRealMethod().given(networkCtx).setStakingRewards(true);
+		willCallRealMethod().given(accounts).forEach(any());
+		given(accounts.entrySet()).willReturn(Map.of(
+				EntityNum.fromAccountId(counterpartyId), counterparty,
+				EntityNum.fromAccountId(partyId), party,
+				EntityNum.fromAccountId(stakingFundId), stakingFund).entrySet());
+
+		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
+
+		final var mockLocalDate = mock(LocalDate.class);
+		final var mockedStatic = mockStatic(LocalDate.class);
+		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
+		when(mockLocalDate.toEpochDay()).thenReturn(19131L);
+
+		// rewardsSumHistory is not cleared
+		assertEquals(5, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(5, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(-1, counterparty.getStakePeriodStart());
+		assertEquals(-1, party.getStakePeriodStart());
+
+		subject.preview(changes);
+
+		inorder.verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
+		inorder.verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount - stakingFee);
+		inorder.verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), 1L);
+		verify(networkCtx).setStakingRewards(true);
+
+		// rewardsSumHistory is cleared
+		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(0, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(19131, counterparty.getStakePeriodStart());
+		assertEquals(-1, party.getStakePeriodStart());
+	}
+
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);

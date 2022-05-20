@@ -35,31 +35,21 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.Address;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.util.Map;
 
-import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -67,27 +57,16 @@ class AccountsCommitInterceptorTest {
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
-	private MerkleNetworkContext networkCtx;
-
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
 	private AddressBook addressBook;
 	@Mock
 	private Address address1 = mock(Address.class);
 	@Mock
 	private Address address2 = mock(Address.class);
-	@Mock
-	private RewardCalculator rewardCalculator;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private AccountsCommitInterceptor subject;
 
 	@BeforeEach
 	public void setUp() {
-		stakingInfo = buildsStakingInfoMap();
 		subject = new AccountsCommitInterceptor(sideEffectsTracker);
 	}
 
@@ -134,53 +113,6 @@ class AccountsCommitInterceptorTest {
 		verify(sideEffectsTracker).getNetHbarChange();
 		verifyNoMoreInteractions(sideEffectsTracker);
 	}
-
-	@Test
-	void activatesStakingRewardsAndClearsRewardSumHistoryAsExpected() {
-		final long stakingFee = 2L;
-		final var inorder = inOrder(sideEffectsTracker);
-		given(dynamicProperties.getStakingStartThreshold()).willReturn(1L);
-
-		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
-		changes.include(counterpartyId, counterparty,
-				randomAndBalanceChanges(counterpartyBalance - amount - stakingFee));
-		changes.include(stakingFundId, stakingFund, randomAndBalanceChanges(stakingFee));
-		willCallRealMethod().given(networkCtx).areRewardsActivated();
-		willCallRealMethod().given(networkCtx).setStakingRewards(true);
-		willCallRealMethod().given(accounts).forEach(any());
-		given(accounts.entrySet()).willReturn(Map.of(
-				EntityNum.fromAccountId(counterpartyId), counterparty,
-				EntityNum.fromAccountId(partyId), party,
-				EntityNum.fromAccountId(stakingFundId), stakingFund).entrySet());
-
-		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
-
-		final var mockLocalDate = mock(LocalDate.class);
-		final var mockedStatic = mockStatic(LocalDate.class);
-		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
-		when(mockLocalDate.toEpochDay()).thenReturn(19131L);
-
-		// rewardsSumHistory is not cleared
-		assertEquals(5, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
-		assertEquals(5, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
-		assertEquals(-1, counterparty.getStakePeriodStart());
-		assertEquals(-1, party.getStakePeriodStart());
-
-		subject.preview(changes);
-
-		inorder.verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
-		inorder.verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount - stakingFee);
-		inorder.verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), 1L);
-		verify(networkCtx).setStakingRewards(true);
-
-		// rewardsSumHistory is cleared
-		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
-		assertEquals(0, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
-		assertEquals(19131, counterparty.getStakePeriodStart());
-		assertEquals(-1, party.getStakePeriodStart());
-	}
-
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
