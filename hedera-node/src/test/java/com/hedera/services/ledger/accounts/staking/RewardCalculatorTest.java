@@ -22,6 +22,7 @@ package com.hedera.services.ledger.accounts.staking;
 
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class RewardCalculatorTest {
 	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleNetworkContext networkContext;
 	@Mock
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
@@ -59,7 +60,7 @@ class RewardCalculatorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RewardCalculator(() -> accounts, () -> stakingInfo);
+		subject = new RewardCalculator(() -> stakingInfo, () -> networkContext);
 		rewardHistory[0] = 5;
 	}
 
@@ -85,7 +86,6 @@ class RewardCalculatorTest {
 	void computesAndAppliesRewards() {
 		final var accountNum = EntityNum.fromLong(2000L);
 
-		given(accounts.getForModify(accountNum)).willReturn(account);
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
@@ -93,7 +93,7 @@ class RewardCalculatorTest {
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100L);
 
-		final var reward = subject.computeAndApplyRewards(accountNum);
+		final var reward = subject.computeAndApplyRewards(account);
 
 		verify(account).setStakePeriodStart(todayNumber - 1);
 		assertEquals(500, reward);
@@ -102,16 +102,16 @@ class RewardCalculatorTest {
 	@Test
 	void doesntComputeReturnsZeroReward() {
 		final var accountNum = EntityNum.fromLong(2000L);
-		given(accounts.getForModify(accountNum)).willReturn(account);
+
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
-		final var reward = subject.computeAndApplyRewards(accountNum);
+		final var reward = subject.computeAndApplyRewards(account);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, reward);
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-		assertEquals(0, subject.computeAndApplyRewards(accountNum));
+		assertEquals(0, subject.computeAndApplyRewards(account));
 	}
 
 	@Test
@@ -123,11 +123,11 @@ class RewardCalculatorTest {
 		merkleAccount.setStakePeriodStart(today - 500);
 		merkleAccount.setStakedId(3L);
 		merkleAccount.setBalance(100L);
-		given(accounts.getForModify(accountNum)).willReturn(merkleAccount);
+
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 
-		final var reward = subject.computeAndApplyRewards(accountNum);
+		final var reward = subject.computeAndApplyRewards(account);
 
 		assertEquals(today - 1, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);

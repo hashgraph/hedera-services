@@ -30,61 +30,21 @@ public class StakeChangeManager {
 		this.stakeChanges = new ArrayList<>();
 	}
 
-	public void aggregateAndCommitStakeAdjustments(CurrencyAdjustments changes) {
-		Map<EntityNum, Long> aggregateStakes = new TreeMap<>();
-		for (final var change : stakeChanges) {
-			if (aggregateStakes.containsKey(change.stakedAccount())) {
-				final var newAdjustment = aggregateStakes.get(change.stakedAccount()) + change.adjustment();
-				aggregateStakes.put(change.stakedAccount(), newAdjustment);
-			} else {
-				aggregateStakes.put(change.stakedAccount(), change.adjustment());
-			}
-		}
-		commitChanges(aggregateStakes, changes.asAccountAmountsList());
-	}
-
-	private void commitChanges(
-			final Map<EntityNum, Long> stakedIdChanges,
-			final List<AccountAmount> stakedBalanceChanges) {
-		for (final var entry : stakedIdChanges.entrySet()) {
-			final var mutableAccount = accounts.get().getForModify(entry.getKey());
-			final var currentStake = mutableAccount.getStakedToMe();
-			final var newStake = currentStake + entry.getValue();
-			mutableAccount.setStakedToMe(newStake);
-		}
-		for (var aa : stakedBalanceChanges) {
-			final var mutableAccount = accounts.get().getForModify(EntityNum.fromAccountId(aa.getAccountID()));
-			final var stakedId = mutableAccount.getStakedId();
-			if (stakedId == 0) {
-				return;
-			} else if (stakedId < 0) {
-				final var mutableStakingInfo = stakingInfo.get().getForModify(EntityNum.fromLong(stakedId));
-				if (mutableAccount.isDeclinedReward()) {
-					mutableStakingInfo.setStakeToNotReward(mutableStakingInfo.getStakeToNotReward() + aa.getAmount());
-				} else {
-					mutableStakingInfo.setStakeToNotReward(mutableStakingInfo.getStakeToReward() + aa.getAmount());
-				}
-			} else {
-				final var mutableStakedAccount = accounts.get().getForModify(EntityNum.fromLong(stakedId));
-				mutableStakedAccount.setStakedToMe(mutableStakedAccount.getStakedToMe() + aa.getAmount());
-			}
+	public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
+		final var node = stakingInfo.get().getForModify(EntityNum.fromLong(curNodeId));
+		if (declinedReward) {
+			node.setStakeToNotReward(node.getStakeToNotReward() - amount);
+		} else {
+			node.setStakeToReward(node.getStakeToNotReward() - amount);
 		}
 	}
 
-	public void recordStakeChanges(final MerkleAccount entity, final long newStakedIdNum) {
-		final long newStake = entity.getBalance();
-		final var newStakedId = EntityNum.fromLong(newStakedIdNum);
-		if (newStakedIdNum > 0) {
-			stakeChanges.add(new StakeChange(newStakedId, newStake, false));
-		} else if (newStakedIdNum < 0) {
-			stakeChanges.add(new StakeChange(newStakedId, newStake, true));
-		}
-
-		final var oldStakedId = EntityNum.fromLong(entity.getStakedId());
-		if (oldStakedId.longValue() > 0) {
-			stakeChanges.add(new StakeChange(oldStakedId, -newStake, false));
-		} else if (oldStakedId.longValue() < 0) {
-			stakeChanges.add(new StakeChange(oldStakedId, -newStake, true));
+	public void awardStake(final long newNodeId, final long amount, final boolean declinedReward) {
+		final var node = stakingInfo.get().getForModify(EntityNum.fromLong(newNodeId));
+		if (declinedReward) {
+			node.setStakeToNotReward(node.getStakeToNotReward() + amount);
+		} else {
+			node.setStakeToReward(node.getStakeToNotReward() + amount);
 		}
 	}
 }

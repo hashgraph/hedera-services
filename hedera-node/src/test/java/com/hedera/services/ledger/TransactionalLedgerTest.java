@@ -793,7 +793,7 @@ class TransactionalLedgerTest {
 
 
 		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker(), () -> networkCtx,
-				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+				() -> stakingInfo, dynamicProperties);
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}
 

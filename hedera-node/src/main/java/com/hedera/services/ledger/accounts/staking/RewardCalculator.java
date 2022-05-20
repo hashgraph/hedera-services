@@ -20,46 +20,51 @@ package com.hedera.services.ledger.accounts.staking;
  * ‍
  */
 
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
+
 public class RewardCalculator {
-	public static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	public static final ZoneId zoneUTC = ZoneId.of("UTC");
 
 	@Inject
-	public RewardCalculator(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
-		this.accounts = accounts;
+	public RewardCalculator(
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final Supplier<MerkleNetworkContext> networkCtx) {
 		this.stakingInfo = stakingInfo;
+		this.networkCtx = networkCtx;
 	}
 
-	public final long computeAndApplyRewards(final EntityNum accountNum) {
+	public final Pair<Long, Long> computeAndApplyRewards(final MerkleAccount account) {
 		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
-		final var account = accounts.get().getForModify(accountNum);
 		var stakePeriodStart = account.getStakePeriodStart();
 
 		if (stakePeriodStart > -1 && stakePeriodStart < todayNumber - 365) {
-			account.setStakePeriodStart(todayNumber - 365);
+			stakePeriodStart = todayNumber - 365;
 		}
 
-		stakePeriodStart = account.getStakePeriodStart();
 		if (isWithinRange(stakePeriodStart, todayNumber)) {
-			final long reward = computeReward(account, account.getStakedId(), todayNumber);
-			account.setStakePeriodStart(todayNumber - 1);
-			return reward;
+			final long reward = computeReward(account, account.getStakedId(), todayNumber, stakePeriodStart);
+			stakePeriodStart = todayNumber - 1;
+			return Pair.of(reward, stakePeriodStart);
 		}
-		return 0;
+		return Pair.of(0L, stakePeriodStart);
 	}
 
 	boolean isWithinRange(final long stakePeriodStart, final long todayNumber) {
@@ -73,13 +78,32 @@ public class RewardCalculator {
 		return stakePeriodStart > -1 && stakePeriodStart < todayNumber - 1;
 	}
 
-	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber) {
+	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber,
+			final long stakePeriodStart) {
 		final var stakedNodeAccount = stakingInfo.get().get(EntityNum.fromLong(stakedNode));
 		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
-		final var stakePeriodStart = account.getStakePeriodStart();
+
 		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day todayNumber - 1,
 		// since today is not finished yet.
 		return account.isDeclinedReward() ? 0 :
 				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (todayNumber - 1 - (stakePeriodStart - 1))]);
+	}
+
+	public long latestRewardableStakePeriodStart() {
+		return networkCtx.get().areRewardsActivated() ? LocalDate.now(zoneUTC).toEpochDay() - 1 : Long.MIN_VALUE;
+	}
+
+	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
+		final var pair = computeAndApplyRewards(account);
+		var balance = account.getBalance();
+		final var reward = pair.getLeft();
+		final var stakePeriodStart = pair.getRight();
+
+		if (changes.containsKey(BALANCE)) {
+			final var balanceChange = (long) changes.get(BALANCE);
+			balance = balanceChange + reward;
+		}
+		changes.put(BALANCE, balance);
+		changes.put(STAKE_PERIOD_START, stakePeriodStart);
 	}
 }
