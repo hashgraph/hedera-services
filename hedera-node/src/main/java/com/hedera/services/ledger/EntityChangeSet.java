@@ -21,7 +21,6 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.BeanProperty;
 
 import java.util.ArrayList;

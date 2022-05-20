@@ -2,17 +2,13 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Supplier;
 
 @Singleton
