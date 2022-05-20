@@ -57,6 +57,21 @@ tasks.jar {
     }
 }
 
+// Replace variables in semantic-version.properties with build variables
+tasks.processResources {
+    filesMatching("semantic-version.properties") {
+        filter { line: String ->
+            if (line.contains("hapi-proto.version")) {
+                "hapi.proto.version=" + libs.versions.hapi.version.get()
+            } else if (line.contains("project.version")) {
+                "hedera.services.version=" + project.version
+            } else {
+                line;
+            }
+        }
+    }
+}
+
 // Copy dependencies into `data/lib`
 tasks.register<Copy>("copyLib") {
     from(project.configurations.getByName("runtimeClasspath"))
@@ -70,6 +85,7 @@ tasks.register<Copy>("copyApp") {
     rename { filename: String -> "HederaNode.jar" }
 }
 
+// Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     dependsOn(tasks.findByName("copyApp"), tasks.findByName("copyLib"))
     classpath("data/apps/HederaNode.jar")
