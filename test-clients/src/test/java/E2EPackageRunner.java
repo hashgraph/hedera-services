@@ -343,9 +343,9 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.openzeppelin.eth.failing")
+	@Tag("contract.openzeppelin.eth")
 	@TestFactory
-	Collection<DynamicContainer> contractOpenZeppelinEthFailing() {
+	Collection<DynamicContainer> contractOpenZeppelinEth() {
 		return List.of(
 				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
@@ -433,14 +433,14 @@ class E2EPackageRunner {
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
 				extractSpecsFromSuiteForEth(ContractUpdateSuite::new),
 				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
 				extractSpecsFromSuiteForEth(ContractDeleteSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")

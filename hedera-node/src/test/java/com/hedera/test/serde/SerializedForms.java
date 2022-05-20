@@ -39,7 +39,7 @@ import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -161,7 +161,7 @@ public class SerializedForms {
 					entry(FcTokenAllowanceId.class, SeededPropertySource::nextAllowanceId, MIN_TEST_CASES_PER_VERSION),
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
-					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
+					entry(BytesElement.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
 							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),

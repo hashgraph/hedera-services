@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -82,6 +82,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.time.Instant;
@@ -476,6 +477,11 @@ public class SeededPropertySource {
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
+		final var numBlocks = nextNonZeroInt(16);
+		final var anInstant = nextInstant();
+		for (int i = 0; i < numBlocks; i++) {
+			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
+		}
 		return seeded;
 	}
 
@@ -955,6 +961,10 @@ public class SeededPropertySource {
 				.toByteArray();
 	}
 
+	public org.hyperledger.besu.datatypes.Hash nextEthHash() {
+		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(nextBytes(32)));
+	}
+
 	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
 		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
 	}
@@ -965,8 +975,8 @@ public class SeededPropertySource {
 				Longs.asList(nextLongs(nextNonZeroInt(100))));
 	}
 
-	public FilePart nextFilePart() {
-		return new FilePart(nextBytes(nextNonZeroInt(1000)));
+	public BytesElement nextFilePart() {
+		return new BytesElement(nextBytes(nextNonZeroInt(1000)));
 	}
 
 	public MerkleEntityId nextMerkleEntityId() {

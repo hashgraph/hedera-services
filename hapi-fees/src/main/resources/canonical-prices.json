@@ -127,7 +127,7 @@
 	"DEFAULT": 0.05
   },
   "EthereumTransaction": {
-	"DEFAULT": 0.05
+	"DEFAULT": 0.0001
   },
   "ContractCallLocal": {
 	"DEFAULT": 0.001

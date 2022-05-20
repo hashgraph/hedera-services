@@ -102,7 +102,7 @@ public class HapiApiSpec implements Runnable {
 
 	public enum UTF8Mode {FALSE, TRUE}
 
-	private long nonce = 0;
+	private Map<String, Long> privateKeyToNonce = new HashMap<>();
 	List<Payment> costs = new ArrayList<>();
 	List<Payment> costSnapshot = Collections.EMPTY_LIST;
 	String name;
@@ -260,12 +260,13 @@ public class HapiApiSpec implements Runnable {
 		nullOutInfrastructure();
 	}
 
-	public long getNonce() {
-		return nonce;
+	public long getNonce(final String privateKey) {
+		return privateKeyToNonce.getOrDefault(privateKey, 0L);
 	}
 
-	public void incrementNonce() {
-		nonce++;
+	public void incrementNonce(final String privateKey) {
+		var updatedNonce = (privateKeyToNonce.getOrDefault(privateKey, 0L)) + 1;
+		privateKeyToNonce.put(privateKey, updatedNonce);
 	}
 
 	public boolean isUsingEthCalls() {

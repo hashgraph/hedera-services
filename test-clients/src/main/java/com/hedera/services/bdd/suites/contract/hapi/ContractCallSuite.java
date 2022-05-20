@@ -28,10 +28,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -70,11 +67,11 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -86,14 +83,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.secp256k1Shape;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -124,6 +120,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final String defaultMaxAutoRenewPeriod =
@@ -176,7 +173,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				callingDestructedContractReturnsStatusDeleted(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				imapUserExercise(),
-				workingHoursDemo(),
 				deletedContractsCannotBeUpdated(),
 				sendHbarsToAddressesMultipleTimes(),
 				sendHbarsToDifferentAddresses(),
@@ -193,6 +189,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				whitelistingAliasedContract(),
 				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
 				exchangeRatePrecompileWorks(),
+				canMintAndTransferInSameContractOperation(),
+				workingHoursDemo(),
 		});
 	}
 
@@ -508,7 +506,6 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() ->
 								contractCall(contract, "workTicket", ticketSerialNo.get())
 										.gas(2_000_000)
-//										.payingWith(user)
 										.alsoSigningWithFullPrefix(DEFAULT_CONTRACT_SENDER)
 										.via(ticketWorking)),
 						getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 0L),
@@ -516,6 +513,68 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Review the history */
 						getTxnRecord(ticketTaking).andAllChildRecords().logged(),
 						getTxnRecord(ticketWorking).andAllChildRecords().logged()
+				);
+	}
+
+	private HapiApiSpec canMintAndTransferInSameContractOperation() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final var nfToken = "nfToken";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var treasuryContract = "SomeERC721Scenarios";
+		final var mintAndTransferTxn = "mintAndTransferTxn";
+		final var mintAndTransferAndBurnTxn = "mintAndTransferAndBurnTxn";
+
+		return defaultHapiSpec("CanMintAndTransferInSameContractOperation")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(treasuryContract),
+						contractCreate(treasuryContract)
+								.adminKey(multiKey),
+						tokenCreate(nfToken)
+								.supplyKey(multiKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(treasuryContract)
+								.initialSupply(0)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						mintToken(nfToken, List.of(
+								// 1
+								ByteString.copyFromUtf8("A penny for"),
+								// 2
+								ByteString.copyFromUtf8("the Old Guy")
+						)),
+						tokenAssociate(aCivilian, nfToken),
+						cryptoTransfer(movingUnique(nfToken, 2L).between(treasuryContract, aCivilian))
+				).when(
+						sourcing(() -> contractCall(
+								treasuryContract, "nonSequiturMintAndTransfer",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get()
+						)
+								.via(mintAndTransferTxn)
+								.gas(4_000_000)
+								.alsoSigningWithFullPrefix(multiKey))
+				).then(
+						getTokenInfo(nfToken).hasTotalSupply(4L),
+						getTokenNftInfo(nfToken, 3L)
+								.hasSerialNum(3L)
+								.hasAccountID(aCivilian)
+								.hasMetadata(ByteString.copyFrom(new byte[] { (byte) 0xee })),
+						getTokenNftInfo(nfToken, 4L)
+								.hasSerialNum(4L)
+								.hasAccountID(aCivilian)
+								.hasMetadata(ByteString.copyFrom(new byte[] { (byte) 0xff })),
+						sourcing(() -> contractCall(
+								treasuryContract, "nonSequiturMintAndTransferAndBurn",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get()
+						)
+								.via(mintAndTransferAndBurnTxn)
+								.gas(4_000_000)
+								.alsoSigningWithFullPrefix(multiKey, aCivilian))
 				);
 	}
 
@@ -1127,111 +1186,86 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec smartContractFailFirst() {
+		final var civilian = "civilian";
 		return defaultHapiSpec("smartContractFailFirst")
 				.given(
-						uploadInitCode(SIMPLE_STORAGE_CONTRACT)
+						uploadInitCode(SIMPLE_STORAGE_CONTRACT),
+						cryptoCreate(civilian).balance(ONE_MILLION_HBARS).payingWith(GENESIS)
 				).when(
 						withOpContext((spec, ignore) -> {
-							final var subop1 = balanceSnapshot("balanceBefore0", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore0", civilian);
 							final var subop2 =
 									contractCreate(SIMPLE_STORAGE_CONTRACT)
 											.balance(0)
-											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.payingWith(civilian)
 											.gas(1)
 											.hasKnownStatus(INSUFFICIENT_GAS)
 											.via("failInsufficientGas");
-
 							final var subop3 = getTxnRecord("failInsufficientGas");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore0", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore1", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore1", civilian);
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(100_000_000_000L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(250_000L)
 									.via("failInvalidInitialBalance")
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
 							final var subop3 = getTxnRecord("failInvalidInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore1", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore2", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore2", civilian);
 							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(0L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(250_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("successWithZeroInitialBalance");
-
 							final var subop3 = getTxnRecord("successWithZeroInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore2", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore3", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore3", civilian);
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("setValue");
-
 							final var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore3", -delta));
 							allRunFor(spec, subop4);
-
 						}),
-
 						withOpContext((spec, ignore) -> {
-
-							final var subop1 = balanceSnapshot("balanceBefore4", DEFAULT_CONTRACT_SENDER);
-
+							final var subop1 = balanceSnapshot("balanceBefore4", civilian);
 							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
-									.payingWith(DEFAULT_CONTRACT_SENDER)
+									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("getValue");
-
 							final var subop3 = getTxnRecord("getValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							final var subop4 = getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTinyBars(
+							final var subop4 = getAccountBalance(civilian).hasTinyBars(
 									changeFromSnapshot("balanceBefore4", -delta));
 							allRunFor(spec, subop4);
-
 						})
 				).then(
 						getTxnRecord("failInsufficientGas"),

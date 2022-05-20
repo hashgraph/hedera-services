@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -37,15 +38,16 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
@@ -67,8 +69,6 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 	}
 
 	private HapiApiSpec callsERC20ContractInteractions() {
-		final var OWNER = "owner";
-		final var RECEIVER = "receiver";
 		final var CONTRACT = "GLDToken";
 		final var CREATE_TX = "create";
 		final var APPROVE_TX = "approve";
@@ -81,28 +81,26 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 		return defaultHapiSpec("callsERC20ContractInteractions")
 				.given(
-						cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(RECEIVER),
-						getAccountBalance(OWNER).logged(),
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
 						uploadInitCode(CONTRACT)
 				).when(
-						getAccountBalance(OWNER).logged(),
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
 						contractCreate(CONTRACT, INITIAL_AMOUNT)
-								.payingWith(OWNER)
+								.payingWith(DEFAULT_CONTRACT_SENDER)
 								.hasKnownStatus(SUCCESS)
 								.via(CREATE_TX).scrambleTxnBody(tx -> {
 									System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
 									return tx;
 								}),
-						getAccountBalance(OWNER).logged()
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged()
 				).then(
-						getAccountInfo(OWNER).savingSnapshot(OWNER),
-						getAccountInfo(RECEIVER).savingSnapshot(RECEIVER),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
 
 						withOpContext(
 								(spec, log) -> {
-									final var ownerInfo = spec.registry().getAccountInfo(OWNER);
-									final var receiverInfo = spec.registry().getAccountInfo(RECEIVER);
+									final var ownerInfo = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER);
+									final var receiverInfo = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER);
 									final var ownerContractId = ownerInfo.getContractAccountID();
 									final var receiverContractId = receiverInfo.getContractAccountID();
 
@@ -114,7 +112,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 									final var transfer = contractCall(CONTRACT, "transfer", transferParams
 									)
-											.payingWith(OWNER)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
 											.via(TRANSFER_TX).scrambleTxnBody(tx -> {
 												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
 												return tx;
@@ -122,7 +120,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 									final var notEnoughBalanceTransfer = contractCall(CONTRACT, "transfer", notEnoughBalanceTransferParams
 									)
-											.payingWith(OWNER)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 											.via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
 											.scrambleTxnBody(tx -> {
@@ -132,8 +130,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 									final var approve = contractCall(CONTRACT, "approve", approveParams
 									)
-											.payingWith(OWNER).
-											via(APPROVE_TX)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.via(APPROVE_TX)
 											.scrambleTxnBody(tx -> {
 												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
 												return tx;
@@ -141,7 +139,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 									final var transferFrom = contractCall(CONTRACT, "transferFrom", transferFromParams
 									)
-											.payingWith(RECEIVER)
+											.payingWith(DEFAULT_CONTRACT_RECEIVER)
+											.signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
 											.via(TRANSFER_FROM_TX)
 											.scrambleTxnBody(tx -> {
 												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
@@ -151,7 +150,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 									final var transferMoreThanApprovedFrom = contractCall(CONTRACT,
 											"transferFrom", transferMoreThanApprovedFromParams
 									)
-											.payingWith(RECEIVER)
+											.payingWith(DEFAULT_CONTRACT_RECEIVER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 											.via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
 											.scrambleTxnBody(tx -> {
@@ -169,7 +168,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
 																							parsedToByteString(0),
-																							parsedToByteString(ownerInfo.getAccountID().getAccountNum())
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID())))
 																					)
 																			)
 															)
@@ -186,8 +185,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
-																							parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																							parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
 																					)
 																			)
 															)
@@ -204,8 +203,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Approval(address,address,uint256)"),
-																							parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																							parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
 																					)
 																			)
 															)
@@ -222,8 +221,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
-																							parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																							parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
 																					)
 																			),
 																	logWith()
@@ -231,8 +230,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Approval(address,address,uint256)"),
-																							parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																							parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
 																					)
 																			)
 															)
@@ -248,8 +247,9 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
 
 									allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom,
-											transferFrom, getCreateRecord, getTransferRecord, getApproveRecord,
-											getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
+											transferFrom, getCreateRecord,getTransferRecord, getApproveRecord,
+											getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord
+									);
 								})
 				);
 	}
