@@ -93,7 +93,7 @@ class RewardCalculatorTest {
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100L);
 
-		final var reward = subject.computeAndApplyRewards(account);
+		final var reward = subject.computeRewards(account);
 
 		verify(account).setStakePeriodStart(todayNumber - 1);
 		assertEquals(500, reward);
@@ -105,13 +105,13 @@ class RewardCalculatorTest {
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
-		final var reward = subject.computeAndApplyRewards(account);
+		final var reward = subject.computeRewards(account);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, reward);
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-		assertEquals(0, subject.computeAndApplyRewards(account));
+		assertEquals(0, subject.computeRewards(account));
 	}
 
 	@Test
@@ -127,7 +127,7 @@ class RewardCalculatorTest {
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 
-		final var reward = subject.computeAndApplyRewards(account);
+		final var reward = subject.computeRewards(account);
 
 		assertEquals(today - 1, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);

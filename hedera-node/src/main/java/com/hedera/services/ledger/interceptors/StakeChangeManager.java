@@ -35,7 +35,7 @@ public class StakeChangeManager {
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() - amount);
 		} else {
-			node.setStakeToReward(node.getStakeToNotReward() - amount);
+			node.setStakeToReward(node.getStakeToReward() - amount);
 		}
 	}
 
@@ -44,7 +44,7 @@ public class StakeChangeManager {
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() + amount);
 		} else {
-			node.setStakeToReward(node.getStakeToNotReward() + amount);
+			node.setStakeToReward(node.getStakeToReward() + amount);
 		}
 	}
 }

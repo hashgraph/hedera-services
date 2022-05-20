@@ -27,13 +27,16 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.interceptors.StakeAwareAccountsCommitsInterceptor.finalBalanceGiven;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 
@@ -51,7 +54,7 @@ public class RewardCalculator {
 		this.networkCtx = networkCtx;
 	}
 
-	public final Pair<Long, Long> computeAndApplyRewards(final MerkleAccount account) {
+	public final Pair<Long, Long> computeRewards(final MerkleAccount account) {
 		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
 		var stakePeriodStart = account.getStakePeriodStart();
 
@@ -93,17 +96,15 @@ public class RewardCalculator {
 		return networkCtx.get().areRewardsActivated() ? LocalDate.now(zoneUTC).toEpochDay() - 1 : Long.MIN_VALUE;
 	}
 
-	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
-		final var pair = computeAndApplyRewards(account);
-		var balance = account.getBalance();
-		final var reward = pair.getLeft();
-		final var stakePeriodStart = pair.getRight();
+	public long updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
+		final var result = computeRewards(account);
 
-		if (changes.containsKey(BALANCE)) {
-			final var balanceChange = (long) changes.get(BALANCE);
-			balance = balanceChange + reward;
-		}
-		changes.put(BALANCE, balance);
+		var balance = finalBalanceGiven(account, changes);
+		final var reward = result.getLeft();
+		final var stakePeriodStart = result.getRight();
+
+		changes.put(BALANCE, balance + reward); // should we also add for 800 account ?
 		changes.put(STAKE_PERIOD_START, stakePeriodStart);
+		return reward;
 	}
 }

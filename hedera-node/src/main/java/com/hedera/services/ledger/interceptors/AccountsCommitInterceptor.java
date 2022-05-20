@@ -52,6 +52,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
+
 	protected boolean rewardsActivated;
 	protected boolean rewardBalanceChanged;
 	protected long newRewardBalance;
