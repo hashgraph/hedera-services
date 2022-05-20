@@ -23,6 +23,7 @@ package com.hedera.services.store;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingNfts;
@@ -39,6 +40,8 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -48,6 +51,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -132,14 +136,17 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx, stakingInfo, dynamicProperties);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

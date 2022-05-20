@@ -80,7 +80,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int RELEASE_0260_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -113,6 +114,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
+	private boolean stakingRewardsActivated;
 
 	public MerkleNetworkContext() {
 		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
@@ -149,6 +151,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = that.blockHashes.copy();
+		this.stakingRewardsActivated = that.stakingRewardsActivated;
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -325,6 +328,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			blockHashes.clear();
 			in.readSerializable(true, () -> blockHashes);
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsActivated = in.readBoolean();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -364,6 +370,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		serializeNonHashData(out);
 		out.writeSerializable(blockHashes, true);
+		out.writeBoolean(stakingRewardsActivated);
 	}
 
 	@Override
@@ -439,7 +446,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				"\n  Block timestamp is                         :: " +
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
-				stringifiedBlockHashes();
+				stringifiedBlockHashes() +
+				"\n  Staking Rewards Activated                  ::" +
+				stakingRewardsActivated;
 	}
 
 	public long getAlignmentBlockNo() {
@@ -558,6 +567,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public boolean areMigrationRecordsStreamed() {
 		return migrationRecordsStreamed;
+	}
+
+	public boolean areRewardsActivated() {
+		return stakingRewardsActivated;
 	}
 
 	/* --- Internal helpers --- */
@@ -753,6 +766,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
 		return gasThrottleUsageSnapshot;
+	}
+
+	public void setStakingRewards(boolean stakingRewardsActivated) {
+		this.stakingRewardsActivated = stakingRewardsActivated;
 	}
 
 	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {

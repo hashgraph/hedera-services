@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -212,5 +213,11 @@ public class MutableStateChildren implements StateChildren {
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 		aliases = new WeakReference<>(state.aliases());
 		stakingInfo = new WeakReference<>(state.stakingInfo());
+	}
+
+	/* --- used only in unit tests ---*/
+	@VisibleForTesting
+	public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
+		this.networkCtx = new WeakReference<>(networkCtx);
 	}
 }
