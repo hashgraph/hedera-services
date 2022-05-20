@@ -611,6 +611,7 @@ class ERC20PrecompilesTest {
                 .willReturn(1L);
 
 
+        given(accounts.contains(any())).willReturn(true);
         given(decoder.decodeTokenAllowance(eq(nestedPretendArguments), any())).willReturn(
                 ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(alowances);

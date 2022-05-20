@@ -2238,11 +2238,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(multiKey)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(bCivilian)
-								.initialSupply(0)
+								.initialSupply(10)
 								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
 										asHexedSolidityAddress(
-												HapiPropertySource.asToken(idLit)))),
-						mintToken(token, 10)
+												HapiPropertySource.asToken(idLit))))
 				).when(
 						withOpContext((spec, opLog) -> {
 							zCivilianMirrorAddr.set(asHexedSolidityAddress(
@@ -2357,11 +2356,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(multiKey)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(someERC20Scenarios)
-								.initialSupply(0)
+								.initialSupply(10)
 								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
 										asHexedSolidityAddress(
-												HapiPropertySource.asToken(idLit)))),
-						mintToken(token, 10L)
+												HapiPropertySource.asToken(idLit))))
 				).when(
 						withOpContext((spec, opLog) -> {
 							zCivilianMirrorAddr.set(asHexedSolidityAddress(
@@ -2464,11 +2462,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(multiKey)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(bCivilian)
-								.initialSupply(0)
+								.initialSupply(10)
 								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
 										asHexedSolidityAddress(
 												HapiPropertySource.asToken(idLit)))),
-						mintToken(token, 10),
 						tokenAssociate(someERC20Scenarios, token)
 				).when(
 						withOpContext((spec, opLog) -> {
@@ -2483,8 +2480,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 								.via("APPROVE_AND_GET_ALLOWANCE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS).logged())
 				).then(
-						getTxnRecord("APPROVE_AND_GET_ALLOWANCE_TXN").hasChildRecordCount(2),
-
 						childRecordsCheck("APPROVE_AND_GET_ALLOWANCE_TXN", SUCCESS,
 								recordWith()
 										.status(SUCCESS),
