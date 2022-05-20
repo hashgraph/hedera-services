@@ -20,6 +20,7 @@
 
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
 description = "Hedera Services Node"
