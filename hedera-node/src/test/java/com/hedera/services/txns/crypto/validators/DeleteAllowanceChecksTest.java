@@ -72,6 +72,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -179,6 +180,14 @@ class DeleteAllowanceChecksTest {
 		assertEquals(EMPTY_ALLOWANCES, subject.validateAllowancesCount(op.getNftAllowancesList()));
 	}
 
+	@Test
+	void rejectsMissingToken() {
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken)))
+				.willThrow(InvalidTransactionException.class);
+		nftAllowances.add(nftAllowance2);
+		assertEquals(INVALID_TOKEN_ID,
+				subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
+	}
 
 	@Test
 	void validatesIfOwnerExists() {
