@@ -20,6 +20,7 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
@@ -53,7 +54,6 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
 	private boolean rewardsActivated;
-	private boolean rewardBalanceChanged;
 	private long newRewardBalance;
 
 	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
@@ -81,7 +81,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		// if the rewards are activated previously they will not be activated again
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
-		rewardBalanceChanged = false;
+		newRewardBalance = -1;
 
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			trackBalanceChangeIfAny(
@@ -104,7 +104,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 * @return true if rewards should be activated, false otherwise
 	 */
 	public boolean shouldActivateStakingRewards() {
-		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
+		return !rewardsActivated && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
 	}
 
 	private void trackBalanceChangeIfAny(
@@ -114,8 +114,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
-			if (merkleAccount != null && (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER)) {
-				rewardBalanceChanged = true;
+			if (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER) {
 				newRewardBalance = newBalance;
 			}
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
@@ -130,26 +129,22 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	}
 
 	/* only used for unit tests */
+	@VisibleForTesting
 	public boolean isRewardsActivated() {
 		return rewardsActivated;
 	}
 
+	@VisibleForTesting
 	public void setRewardsActivated(final boolean rewardsActivated) {
 		this.rewardsActivated = rewardsActivated;
 	}
 
-	public boolean isRewardBalanceChanged() {
-		return rewardBalanceChanged;
-	}
-
-	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
-		this.rewardBalanceChanged = rewardBalanceChanged;
-	}
-
+	@VisibleForTesting
 	public long getNewRewardBalance() {
 		return newRewardBalance;
 	}
 
+	@VisibleForTesting
 	public void setNewRewardBalance(final long newRewardBalance) {
 		this.newRewardBalance = newRewardBalance;
 	}

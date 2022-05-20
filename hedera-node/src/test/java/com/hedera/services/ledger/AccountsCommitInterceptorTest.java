@@ -170,11 +170,8 @@ class AccountsCommitInterceptorTest {
 
 		subject.setRewardsActivated(false);
 		assertFalse(subject.isRewardsActivated());
-		assertFalse(subject.isRewardBalanceChanged());
-		assertFalse(subject.shouldActivateStakingRewards());
+		assertTrue(subject.shouldActivateStakingRewards());
 
-		subject.setRewardBalanceChanged(true);
-		assertTrue(subject.isRewardBalanceChanged());
 		assertEquals(10L, subject.getNewRewardBalance());
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
 		assertFalse(subject.shouldActivateStakingRewards());
