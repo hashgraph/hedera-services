@@ -3402,7 +3402,7 @@ class SigRequirementsTest {
 		// then:
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
-		assertEquals(summary.getOrderedKeys().size(), 0);
+		assertEquals(0, summary.getOrderedKeys().size());
 	}
 
 	@Test
@@ -3417,7 +3417,7 @@ class SigRequirementsTest {
 		// then:
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
-		assertEquals(summary.getOrderedKeys().size(), 0);
+		assertEquals(0, summary.getOrderedKeys().size());
 	}
 
 	@Test
