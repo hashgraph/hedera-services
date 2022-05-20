@@ -2109,7 +2109,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 								.via("MISSING_TO").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						childRecordsCheck("MISSING_TO", CONTRACT_REVERT_EXECUTED,
-								recordWith().status(INVALID_ALLOWANCE_SPENDER_ID)),
+								recordWith()
+										.status(INVALID_ALLOWANCE_SPENDER_ID)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
 						// * Can't approve if msg.sender != owner and not an operator
 						cryptoTransfer(movingUnique(nfToken, 1L, 2L).between(someERC721Scenarios, aCivilian)),
 						cryptoTransfer(movingUnique(nfToken, 3L, 4L).between(someERC721Scenarios, bCivilian)),

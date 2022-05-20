@@ -341,9 +341,9 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.openzeppelin.eth.failing")
+	@Tag("contract.openzeppelin.eth")
 	@TestFactory
-	Collection<DynamicContainer> contractOpenZeppelinEthFailing() {
+	Collection<DynamicContainer> contractOpenZeppelinEth() {
 		return List.of(
 				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),

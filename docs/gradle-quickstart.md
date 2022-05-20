@@ -47,8 +47,19 @@ are in the hedera-build subdirectory you can use `../gradlew build`. Gradle is s
 depends on before building your project, but doesn't rebuild anything it doesn't need to.
 
 You can use `./gradlew compile` if you just want to compile and not test, or `./gradlew test` if you want to test (it
-will also compile things if needed). The test task is for unit tests. A new `eet` task will be added later for running
-end to end tests.
+will also compile things if needed). The `test` task is for unit tests. Each subproject also supports integration tests.
+with the `itest` task. An integration test is one that tests several components together but does not require a complete
+end to end environment. You can run all integration tests by `./gradlew itest` or run a specific module's integration
+tests by scoping it like `./gradlew hedera-node:itest`.
+
+Each subproject also supports "hammer" tests. A hammer test is a unit test that "hammers" the code. These usually take
+the form of pseudo-random tests that run for an extended period of time and attempt to use a component in as many ways
+as possible it can be thought of as a type of fuzz test. These can be run for all subprojects with `./gradlew hammer`
+or for a specific subproject.
+
+Finally, end-to-end tests (defined in `test-clients`) can be run with `./gradlew eet`. These tests need a running
+instance. You can start one in one terminal with `./gradlew run` and then execute the tests from a second terminal with
+`./gradlew eet`. Or you can use JRS to start an instance, or use some existing environment like previewnet.
 
 Finally, you can use `./gradlew run` to run the project. It will compile (but not test) if needed.
 
