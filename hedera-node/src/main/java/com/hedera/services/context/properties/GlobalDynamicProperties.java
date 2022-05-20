@@ -122,6 +122,11 @@ public class GlobalDynamicProperties {
 	private KnownBlockValues knownBlockValues;
 	private int maxReturnedNftsPerTouch;
 	private Gas exchangeRateGasReq;
+	private long stakingRewardRate;
+	private long stakingStartThreshold;
+	private int nodeRewardPercent;
+	private int stakingRewardPercent;
+	private int stakingActiveThreshold;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -220,6 +225,11 @@ public class GlobalDynamicProperties {
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 		exchangeRateGasReq = Gas.of(properties.getLongProperty("contracts.precompile.exchangeRateGasCost"));
+		stakingRewardRate = properties.getLongProperty("staking.rewardRate");
+		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
+		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
+		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
+		stakingActiveThreshold = properties.getIntProperty("staking.activeThreshold");
 	}
 
 	public int maxTokensPerAccount() {
@@ -536,5 +546,25 @@ public class GlobalDynamicProperties {
 
 	public Gas exchangeRateGasReq() {
 		return exchangeRateGasReq;
+	}
+
+	public long getStakingRewardRate() {
+		return stakingRewardRate;
+	}
+
+	public long getStakingStartThreshold() {
+		return stakingStartThreshold;
+	}
+
+	public int getNodeRewardPercent() {
+		return nodeRewardPercent;
+	}
+
+	public int getStakingRewardPercent() {
+		return stakingRewardPercent;
+	}
+
+	public int getStakingActiveThreshold() {
+		return stakingActiveThreshold;
 	}
 }

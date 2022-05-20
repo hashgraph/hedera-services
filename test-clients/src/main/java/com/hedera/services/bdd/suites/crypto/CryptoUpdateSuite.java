@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -62,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -121,9 +123,41 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateMaxAutoAssociationsWorks()
+						updateMaxAutoAssociationsWorks(),
+						updateStakingFieldsWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec updateStakingFieldsWorks() {
+		return defaultHapiSpec("updateStakingFieldsWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						cryptoCreate("user")
+								.key(ADMIN_KEY)
+								.stakedAccountId("0.0.20")
+								.declinedReward(true)
+				)
+				.when(
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.stakedAccountId("0.0.20")
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged(),
+
+						cryptoUpdate("user")
+								.newStakedNodeId(0L)
+								.newDeclinedReward(false)
+				)
+				.then(
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.stakedNodeId(0L)
+										.isDeclinedReward(false))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
