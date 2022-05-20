@@ -28,6 +28,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -92,6 +93,8 @@ public class WorldLedgers {
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final RewardCalculator rewardCalculator;
 
 	public static WorldLedgers staticLedgersWith(
 			final ContractAliases aliases,
@@ -108,7 +111,9 @@ public class WorldLedgers {
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.accountsLedger = accountsLedger;
@@ -118,6 +123,8 @@ public class WorldLedgers {
 		this.networkCtx = networkCtx;
 		this.stakingInfo = stakingInfo;
 		this.dynamicProperties = dynamicProperties;
+		this.rewardCalculator = rewardCalculator;
+		this.accounts = accounts;
 
 		staticEntityAccess = null;
 	}
@@ -130,6 +137,8 @@ public class WorldLedgers {
 		networkCtx = null;
 		stakingInfo = null;
 		dynamicProperties = null;
+		rewardCalculator = null;
+		accounts = null;
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
@@ -316,7 +325,7 @@ public class WorldLedgers {
 		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
 		if (sideEffectsTracker != null) {
 			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker, networkCtx,
-					stakingInfo, dynamicProperties);
+					stakingInfo, dynamicProperties, accounts, rewardCalculator);
 			wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		}
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
@@ -329,7 +338,9 @@ public class WorldLedgers {
 				wrappedTokensLedger,
 				networkCtx,
 				stakingInfo,
-				dynamicProperties
+				dynamicProperties,
+				accounts,
+				rewardCalculator
 		);
 	}
 

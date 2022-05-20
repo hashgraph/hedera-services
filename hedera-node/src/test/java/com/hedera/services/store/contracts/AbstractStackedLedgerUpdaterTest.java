@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -85,6 +86,10 @@ class AbstractStackedLedgerUpdaterTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 
 	private WorldLedgers ledgers;
@@ -245,7 +250,8 @@ class AbstractStackedLedgerUpdaterTest {
 		accountsLedger.begin();
 		nftsLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");

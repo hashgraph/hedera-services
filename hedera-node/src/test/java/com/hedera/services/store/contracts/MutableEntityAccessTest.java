@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -105,6 +106,10 @@ class MutableEntityAccessTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private MutableEntityAccess subject;
 
@@ -125,7 +130,8 @@ class MutableEntityAccessTest {
 		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 		given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-		subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode, () -> networkCtx,
+				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	@Test

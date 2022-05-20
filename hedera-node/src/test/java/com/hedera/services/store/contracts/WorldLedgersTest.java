@@ -28,6 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -135,12 +136,17 @@ class WorldLedgersTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private WorldLedgers subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx,
+				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	@Test
@@ -364,12 +370,17 @@ class WorldLedgersTest {
 		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 		final var liveAliases = new AliasManager(() -> aliases);
 
-		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens, () -> networkCtx,
+				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 		assertTrue(source.areMutable());
-		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts,
+				null, () -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 		assertFalse(nullTokenRels.areMutable());
 		assertFalse(nullAccounts.areMutable());
 		assertFalse(nullNfts.areMutable());
@@ -420,12 +431,17 @@ class WorldLedgersTest {
 		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 		final var liveAliases = new AliasManager(() -> aliases);
 
-		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens, () -> networkCtx,
+				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 		assertTrue(source.areMutable());
-		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens, () -> networkCtx, () -> stakingInfo, dynamicProperties);
-		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null, () -> networkCtx, () -> stakingInfo, dynamicProperties);
+		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null,
+				() -> networkCtx, () -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
 		assertFalse(nullTokenRels.areMutable());
 		assertFalse(nullAccounts.areMutable());
 		assertFalse(nullNfts.areMutable());

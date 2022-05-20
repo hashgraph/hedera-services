@@ -29,6 +29,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -75,7 +76,9 @@ public class MutableEntityAccess implements EntityAccess {
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final RewardCalculator rewardCalculator
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -91,7 +94,9 @@ public class MutableEntityAccess implements EntityAccess {
 				tokensLedger,
 				networkCtx,
 				stakingInfo,
-				dynamicProperties
+				dynamicProperties,
+				accounts,
+				rewardCalculator
 		);
 
 		ledger.setMutableEntityAccess(this);
