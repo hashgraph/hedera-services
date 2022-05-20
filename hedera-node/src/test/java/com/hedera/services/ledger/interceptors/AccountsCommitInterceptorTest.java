@@ -41,8 +41,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,6 +55,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -139,6 +142,15 @@ class AccountsCommitInterceptorTest {
 		final var inorder = inOrder(sideEffectsTracker);
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(1L);
 
+		final var dateMock = mock(LocalDate.class);
+		final long expectedStakePeriodStart = 12345;
+
+		final var mockedStatic = mockStatic(LocalDate.class);
+		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(dateMock);
+		given(dateMock.toEpochDay()).willReturn(expectedStakePeriodStart);
+
+		given(dynamicProperties.getStakingStartThreshold()).willReturn(1L);
+
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
 		changes.include(counterpartyId, counterparty,
@@ -170,7 +182,7 @@ class AccountsCommitInterceptorTest {
 		// rewardsSumHistory is cleared
 		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
 		assertEquals(0, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
-		assertEquals(19130, counterparty.getStakePeriodStart());
+		assertEquals(expectedStakePeriodStart, counterparty.getStakePeriodStart());
 		assertEquals(-1, party.getStakePeriodStart());
 	}
 
@@ -187,11 +199,8 @@ class AccountsCommitInterceptorTest {
 
 		subject.setRewardsActivated(false);
 		assertFalse(subject.isRewardsActivated());
-		assertFalse(subject.isRewardBalanceChanged());
-		assertFalse(subject.shouldActivateStakingRewards());
+		assertTrue(subject.shouldActivateStakingRewards());
 
-		subject.setRewardBalanceChanged(true);
-		assertTrue(subject.isRewardBalanceChanged());
 		assertEquals(10L, subject.getNewRewardBalance());
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
 		assertFalse(subject.shouldActivateStakingRewards());
