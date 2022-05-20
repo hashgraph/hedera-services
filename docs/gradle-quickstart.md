@@ -61,6 +61,10 @@ Finally, end-to-end tests (defined in `test-clients`) can be run with `./gradlew
 instance. You can start one in one terminal with `./gradlew run` and then execute the tests from a second terminal with
 `./gradlew eet`. Or you can use JRS to start an instance, or use some existing environment like previewnet.
 
+Micro-benchmarks are implemented using JMH, the Java Micro-benchmarking Harness, which is part of the OpenJDK project.
+You can execute these using `./gradlew jmh`. The full extent of what is possible can be read from the [JMH plugin's
+project page](https://github.com/melix/jmh-gradle-plugin).
+
 Finally, you can use `./gradlew run` to run the project. It will compile (but not test) if needed.
 
 There is also `./gradlew clean` to clean everything up. This will also clean out any temp stuff created for the sake of
