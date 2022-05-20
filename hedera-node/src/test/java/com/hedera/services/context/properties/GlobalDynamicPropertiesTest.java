@@ -276,6 +276,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
 		assertEquals(67, subject.getNodeRewardPercent());
 		assertEquals(68, subject.getStakingRewardPercent());
+		assertEquals(69, subject.getStakingActiveThreshold());
 	}
 
 	@Test
@@ -299,6 +300,15 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
 		assertEquals(66L, subject.getStakingStartThreshold());
+	}
+
+	@Test
+	void reloadsDoubleAsExpected() {
+		givenPropsWithSeed(2);
+
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		assertEquals(70.0, subject.getStakingRewardRate());
 	}
 
 	@Test
@@ -408,6 +418,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 64L);
 		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 65);
 		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 66);
+		given(properties.getIntProperty("staking.activeThreshold")).willReturn(i + 67);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 68L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
