@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -55,7 +54,7 @@ public class HederaStackedWorldStateUpdater
 	private final HederaMutableWorldState worldState;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	private Gas sbhRefund = Gas.ZERO;
+	private long sbhRefund = 0L;
 	private int numAllocatedIds = 0;
 	private ContractID lastAllocatedId = null;
 	private ContractCustomizer pendingCreationCustomizer = null;
@@ -198,13 +197,13 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public Gas getSbhRefund() {
+	public long getSbhRefund() {
 		return sbhRefund;
 	}
 
 	@Override
-	public void addSbhRefund(Gas refund) {
-		sbhRefund = sbhRefund.plus(refund);
+	public void addSbhRefund(long refund) {
+		sbhRefund = sbhRefund + refund;
 	}
 
 	@Override
@@ -217,7 +216,7 @@ public class HederaStackedWorldStateUpdater
 			worldState.reclaimContractId();
 			numAllocatedIds--;
 		}
-		sbhRefund = Gas.ZERO;
+		sbhRefund = 0L;
 	}
 
 	@Override
@@ -226,7 +225,7 @@ public class HederaStackedWorldStateUpdater
 		final var wrappedUpdater = ((HederaWorldUpdater) wrappedWorldView());
 		wrappedUpdater.addSbhRefund(sbhRefund);
 		wrappedUpdater.countIdsAllocatedByStacked(numAllocatedIds);
-		sbhRefund = Gas.ZERO;
+		sbhRefund = 0L;
 	}
 
 	@Override

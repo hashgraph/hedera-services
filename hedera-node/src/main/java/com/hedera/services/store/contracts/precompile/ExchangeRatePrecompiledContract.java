@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
@@ -81,7 +80,7 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
 	}
 
 	@Override
-	public Gas gasRequirement(Bytes bytes) {
+	public long gasRequirement(Bytes bytes) {
 		return dynamicProperties.exchangeRateGasReq();
 	}
 

@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -77,7 +76,7 @@ public final class GasCalculatorHederaUtil {
 	}
 
 	@SuppressWarnings("unused")
-	public static Gas logOperationGasCost(
+	public static long logOperationGasCost(
 			final UsagePricesProvider usagePrices,
 			final HbarCentExchange exchange,
 			final MessageFrame frame,
@@ -96,6 +95,6 @@ public final class GasCalculatorHederaUtil {
 				GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
 				gasPrice);
 
-		return Gas.of(gasCost);
+		return gasCost;
 	}
 }

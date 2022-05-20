@@ -33,7 +33,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
@@ -74,7 +74,7 @@ class HederaOperationUtilTest {
 	@Mock
 	private EvmSigsVerifier sigsVerifier;
 	@Mock
-	private Supplier<Gas> gasSupplier;
+	private Supplier<Long> gasSupplier;
 	@Mock
 	private Supplier<Operation.OperationResult> executionSupplier;
 	@Mock
@@ -84,13 +84,13 @@ class HederaOperationUtilTest {
 	@Mock
 	private WorldLedgers ledgers;
 
-	private final Optional<Gas> expectedHaltGas = Optional.of(Gas.of(10));
-	private final Optional<Gas> expectedSuccessfulGas = Optional.of(Gas.of(100));
+	private final long expectedHaltGas = 10L;
+	private final long expectedSuccessfulGas = 100L;
 
 	@Test
 	void shortCircuitsForPrecompileSigCheck() {
 		final var degenerateResult =
-				new Operation.OperationResult(Optional.empty(), Optional.empty());
+				new Operation.OperationResult(OptionalLong.empty(), Optional.empty());
 		given(precompiledContractMap.containsKey(PRETEND_RECIPIENT_ADDR.toShortHexString())).willReturn(true);
 		given(executionSupplier.get()).willReturn(degenerateResult);
 
@@ -110,7 +110,7 @@ class HederaOperationUtilTest {
 	void throwsUnderflowExceptionWhenGettingAddress() {
 		// given:
 		given(messageFrame.getStackItem(0)).willThrow(new FixedStack.UnderflowException());
-		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(gasSupplier.get()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressCheckExecution(
@@ -122,7 +122,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
-		assertEquals(expectedHaltGas, result.getGasCost());
+		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getStackItem(0);
 		verify(messageFrame, never()).getWorldUpdater();
@@ -134,7 +134,7 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSolidityAddressWhenAccountCheckExecution() {
 		// given:
 		given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(gasSupplier.get()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressCheckExecution(
@@ -146,7 +146,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-		assertEquals(expectedHaltGas, result.getGasCost());
+		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getStackItem(0);
 		verify(gasSupplier).get();
@@ -158,7 +158,7 @@ class HederaOperationUtilTest {
 		// given:
 		given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
 		given(executionSupplier.get())
-				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
+				.willReturn(new Operation.OperationResult(OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
 
 		// when:
 		final var result = HederaOperationUtil.addressCheckExecution(
@@ -170,7 +170,7 @@ class HederaOperationUtilTest {
 
 		// when:
 		assertTrue(result.getHaltReason().isEmpty());
-		assertEquals(expectedSuccessfulGas, result.getGasCost());
+		assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getStackItem(0);
 		verify(gasSupplier, never()).get();
@@ -181,7 +181,7 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
 		// given:
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(gasSupplier.get()).willReturn(expectedHaltGas);
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -194,7 +194,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-		assertEquals(expectedHaltGas, result.getGasCost());
+		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
@@ -215,7 +215,7 @@ class HederaOperationUtilTest {
 				.hasActiveKeyOrNoReceiverSigReq(true,
 						mockTarget, Address.ALTBN128_ADD, ledgers))
 				.willReturn(false);
-		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(gasSupplier.get()).willReturn(expectedHaltGas);
 		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
@@ -229,7 +229,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
-		assertEquals(expectedHaltGas, result.getGasCost());
+		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
@@ -253,7 +253,7 @@ class HederaOperationUtilTest {
 				.hasActiveKeyOrNoReceiverSigReq(false,
 						mockTarget, Address.ALTBN128_MUL, ledgers))
 				.willReturn(false);
-		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(gasSupplier.get()).willReturn(expectedHaltGas);
 		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
@@ -267,7 +267,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
-		assertEquals(expectedHaltGas, result.getGasCost());
+		assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
@@ -292,7 +292,7 @@ class HederaOperationUtilTest {
 						mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
 				.willReturn(true);
 		given(executionSupplier.get())
-				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
+				.willReturn(new Operation.OperationResult(OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -305,7 +305,7 @@ class HederaOperationUtilTest {
 
 		// then:
 		assertTrue(result.getHaltReason().isEmpty());
-		assertEquals(expectedSuccessfulGas, result.getGasCost());
+		assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
 		// and:
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
