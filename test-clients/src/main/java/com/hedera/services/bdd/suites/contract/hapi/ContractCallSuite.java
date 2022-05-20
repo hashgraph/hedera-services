@@ -83,11 +83,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -100,6 +102,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -121,6 +124,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final String defaultMaxAutoRenewPeriod =
@@ -147,50 +152,50 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				deletedContractsCannotBeUpdated(),
-				sendHbarsToAddressesMultipleTimes(),
-				sendHbarsToDifferentAddresses(),
-				sendHbarsFromDifferentAddressessToAddress(),
-				sendHbarsFromAndToDifferentAddressess(),
-				transferNegativeAmountOfHbars(),
-				transferToCaller(),
-				transferZeroHbarsToCaller(),
-				transferZeroHbars(),
-				sendHbarsToOuterContractFromDifferentAddresses(),
-				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses(),
-				contractCreationStoragePriceMatchesFinalExpiry(),
-				whitelistingAliasedContract(),
-				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
-				exchangeRatePrecompileWorks(),
-				canMintAndTransferInSameContractOperation(),
-				workingHoursDemo(),
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst()
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				deletedContractsCannotBeUpdated(),
+//				sendHbarsToAddressesMultipleTimes(),
+//				sendHbarsToDifferentAddresses(),
+//				sendHbarsFromDifferentAddressessToAddress(),
+//				sendHbarsFromAndToDifferentAddressess(),
+//				transferNegativeAmountOfHbars(),
+//				transferToCaller(),
+//				transferZeroHbarsToCaller(),
+//				transferZeroHbars(),
+//				sendHbarsToOuterContractFromDifferentAddresses(),
+//				sendHbarsToCallerFromDifferentAddresses(),
+				bitcarbonTestStillPasses()
+//				contractCreationStoragePriceMatchesFinalExpiry(),
+//				whitelistingAliasedContract(),
+//				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
+//				exchangeRatePrecompileWorks(),
+//				canMintAndTransferInSameContractOperation(),
+//				workingHoursDemo(),
 		});
 	}
 
@@ -377,8 +382,7 @@ public class ContractCallSuite extends HapiApiSuite {
 										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
 				).when(
 						contractCall(minters)
-								.withExplicitParams(
-										() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
+								.withExplicitParams(() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
 						contractCall(jurisdictions)
 								.withExplicitParams(() -> explicitJurisdictionsAddParams)
 								.via(addJurisTxn)
@@ -392,24 +396,24 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(jurisdictions, "isValid", nyJurisCode.get())
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "isValid", jurisdictions),
-												isLiteralResult(new Object[] { Boolean.TRUE })))
+												isLiteralResult(new Object[]{Boolean.TRUE})))
 						),
 						contractCallLocal(minters, "seven")
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "seven", minters),
-												isLiteralResult(new Object[] { BigInteger.valueOf(7L) }))),
+												isLiteralResult(new Object[]{BigInteger.valueOf(7L)}))),
 						sourcing(() -> contractCallLocal(minters, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[] { defaultPayerMirror.get()
+												isLiteralResult(new Object[]{defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCallLocal(jurisdictions, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[] { defaultPayerMirror.get()
+												isLiteralResult(new Object[]{defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCall(
@@ -419,12 +423,10 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {
-		final var adminKey = "admin";
 		final var contract = "SelfDestructCallable";
 
 		return defaultHapiSpec("DeletedContractsCannotBeUpdated")
 				.given(
-						newKeyNamed(adminKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.gas(300_000)
@@ -432,7 +434,9 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(contract, "destroy")
 								.deferStatusResolution()
 				).then(
-						contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID)
+						contractUpdate(contract)
+								.newMemo("Hi there!")
+								.hasKnownStatus(INVALID_CONTRACT_ID)
 				);
 	}
 
@@ -1244,6 +1248,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
+									//ContractCall and EthereumTransaction gas fees differ
+									.refusingEthConversion()
 									.via("setValue");
 							final var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
@@ -1258,6 +1264,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									.payingWith(civilian)
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
+									//ContractCall and EthereumTransaction gas fees differ
+									.refusingEthConversion()
 									.via("getValue");
 							final var subop3 = getTxnRecord("getValue");
 							allRunFor(spec, subop1, subop2, subop3);
