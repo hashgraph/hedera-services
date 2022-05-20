@@ -205,7 +205,7 @@ class BootstrapPropertiesTest {
 			entry("stats.executionTimesToTrack", 0),
 			entry("staking.periodMins", 1440L),
 			entry("staking.rewardHistory.numStoredPeriods", 3),
-			entry("staking.rewardRate", 10_000_000.0),
+			entry("staking.rewardRate", 10_000_000L),
 			entry("staking.startThreshold", 100_000_000L),
 			entry("staking.fees.nodeRewardPercentage", 10),
 			entry("staking.fees.stakingRewardPercentage", 10),

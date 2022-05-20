@@ -89,7 +89,7 @@ class EndOfStakingPeriodCalculatorTest {
 
 		verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
 		verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
-		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
+		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyLong(), anyList());
 	}
 
 	@Test
@@ -99,7 +99,7 @@ class EndOfStakingPeriodCalculatorTest {
 		final var account_800 = mock(MerkleAccount.class);
 
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
-		given(properties.getDoubleProperty("staking.rewardRate")).willReturn(10_000_000_000.0);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(10_000_000_000L);
 		given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
 		given(account_800.getBalance()).willReturn(balance_800);
 		given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2, nodeNum3));

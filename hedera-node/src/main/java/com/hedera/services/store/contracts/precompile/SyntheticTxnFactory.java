@@ -379,9 +379,11 @@ public class SyntheticTxnFactory {
 
 	public TransactionBody.Builder nodeStakeUpdate(
 			final Timestamp stakingPeriodEnd,
+			final long rewardRate,
 			final List<NodeStake> nodeStakes) {
 		final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
 				.setEndOfStakingPeriod(stakingPeriodEnd)
+				.setRewardRate(rewardRate)
 				.addAllNodeStake(nodeStakes)
 				.build();
 

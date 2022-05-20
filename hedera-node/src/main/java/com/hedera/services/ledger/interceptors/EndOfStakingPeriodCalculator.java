@@ -84,8 +84,8 @@ public class EndOfStakingPeriodCalculator {
 			return;
 		}
 
-		final var rewardRate = Math.min(accounts.get().get(EntityNum.fromInt(800)).getBalance(),
-				properties.getDoubleProperty("staking.rewardRate"));
+		final var rewardRate = Math.min(stakingRewardsAccountBalance(),
+				properties.getLongProperty("staking.rewardRate"));
 
 		long updatedTotalStakedRewardStart = 0L;
 		long updatedTotalStakedStart = 0L;
@@ -126,6 +126,7 @@ public class EndOfStakingPeriodCalculator {
 								.setSeconds(consensusTime.getEpochSecond())
 								.setNanos(consensusTime.getNano())
 								.build(),
+						rewardRate,
 						nodeStakingInfos);
 
 		recordsHistorian.trackFollowingChildRecord(
@@ -134,5 +135,9 @@ public class EndOfStakingPeriodCalculator {
 						NO_CUSTOM_FEES,
 						new SideEffectsTracker(),
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
+	}
+
+	private long stakingRewardsAccountBalance() {
+		return accounts.get().get(EntityNum.fromInt(800)).getBalance();
 	}
 }

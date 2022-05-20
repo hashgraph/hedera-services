@@ -423,7 +423,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
 			entry("staking.periodMins", AS_LONG),
 			entry("staking.rewardHistory.numStoredPeriods", AS_INT),
-			entry("staking.rewardRate", AS_DOUBLE),
+			entry("staking.rewardRate", AS_LONG),
 			entry("staking.startThreshold", AS_LONG),
 			entry("staking.fees.nodeRewardPercentage", AS_INT),
 			entry("staking.fees.stakingRewardPercentage", AS_INT),

@@ -313,6 +313,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedNodeStakeUpdate() {
 		final var now = Instant.now();
+		final var rewardRate = 10_000_000L;
 		final var timestamp = Timestamp.newBuilder()
 				.setSeconds(now.getEpochSecond())
 				.setNanos(now.getNano())
@@ -328,7 +329,7 @@ class SyntheticTxnFactoryTest {
 						.build()
 		);
 
-		final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
+		final var txnBody = subject.nodeStakeUpdate(timestamp, rewardRate, nodeStakes);
 
 		assertTrue(txnBody.hasNodeStakeUpdate());
 		assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
