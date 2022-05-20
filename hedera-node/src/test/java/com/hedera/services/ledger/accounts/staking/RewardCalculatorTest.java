@@ -39,11 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RewardCalculatorTest {
@@ -69,19 +66,19 @@ class RewardCalculatorTest {
 	@Test
 	void calculatesIfRewardShouldBeEarned() {
 		var stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 2;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = -1;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 365;
-		assertTrue(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 1;
-		assertTrue(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 2;
-		assertFalse(subject.noRewardToBeEarned(stakePeriodStart, todayNumber));
+		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
 	}
 
 	@Test
@@ -106,7 +103,7 @@ class RewardCalculatorTest {
 	void doesntComputeReturnsZeroReward() {
 		final var accountNum = EntityNum.fromLong(2000L);
 		given(accounts.getForModify(accountNum)).willReturn(account);
-		given(account.getStakePeriodStart()).willReturn(todayNumber - 365);
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
@@ -120,26 +117,19 @@ class RewardCalculatorTest {
 	@Test
 	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		final var accountNum = EntityNum.fromLong(2000L);
-		final var expectedStakePeriodStart = 19365L;
+		final var today = LocalDate.now(zoneUTC).toEpochDay();
 
 		final var merkleAccount = new MerkleAccount();
-		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
+		merkleAccount.setStakePeriodStart(today - 500);
 		merkleAccount.setStakedId(3L);
 		merkleAccount.setBalance(100L);
-
-		final var mockLocalDate = mock(LocalDate.class);
-		final var mockedStatic = mockStatic(LocalDate.class);
-		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
-		when(mockLocalDate.toEpochDay()).thenReturn(expectedStakePeriodStart);
-
 		given(accounts.getForModify(accountNum)).willReturn(merkleAccount);
 		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 
 		final var reward = subject.computeAndApplyRewards(accountNum);
 
-		assertEquals(expectedStakePeriodStart-1, merkleAccount.getStakePeriodStart());
+		assertEquals(today - 1, merkleAccount.getStakePeriodStart());
 		assertEquals(500, reward);
-		mockedStatic.close();
 	}
 }

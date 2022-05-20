@@ -101,6 +101,10 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
+		checkAndActivateRewardsOnlyOnce();
+	}
+
+	private void checkAndActivateRewardsOnlyOnce() {
 		if (shouldActivateStakingRewards()) {
 			networkCtx.get().setStakingRewardsActivated(true);
 			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
@@ -138,32 +142,26 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 			}
 
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
+
 			if (shouldCalculateReward(merkleAccount)) {
-				calculateReward(accountNum, adjustment);
+				calculateReward(accountNum);
 				// this step will be done for changes to all staking fields in future PR
-			} else {
-				sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 			}
 		}
 	}
 
-	private void calculateReward(final long accountNum, final long adjustment) {
+	void calculateReward(final long accountNum) {
 		final long reward = rewardCalculator.computeAndApplyRewards(EntityNum.fromLong(accountNum));
-
 		if (reward > 0) {
-			sideEffectsTracker.trackHbarChange(accountNum, adjustment + reward);
+			sideEffectsTracker.trackHbarChange(accountNum, reward);
 			sideEffectsTracker.trackHbarChange(stakingFundAccount.longValue(), -reward);
-		} else {
-			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
+		sideEffectsTracker.trackRewardPayment(accountNum, reward);
 	}
 
-	private boolean shouldCalculateReward(final MerkleAccount account) {
-		return account != null && account.getStakedId() < 0 && stakingActivated();
-	}
-
-	private boolean stakingActivated() {
-		return networkCtx.get().areRewardsActivated();
+	boolean shouldCalculateReward(final MerkleAccount account) {
+		return account != null && account.getStakedId() < 0 && networkCtx.get().areRewardsActivated();
 	}
 
 	private void assertZeroSum() {

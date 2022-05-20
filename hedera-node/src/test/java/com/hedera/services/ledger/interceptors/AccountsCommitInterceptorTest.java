@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -23,8 +23,8 @@ package com.hedera.services.ledger;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -41,17 +41,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -82,6 +87,8 @@ class AccountsCommitInterceptorTest {
 	@BeforeEach
 	public void setUp() {
 		stakingInfo = buildsStakingInfoMap();
+		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
+				dynamicProperties, () -> accounts, rewardCalculator);
 	}
 
 	@Test
@@ -129,10 +136,16 @@ class AccountsCommitInterceptorTest {
 	}
 
 	@Test
-	void activatesStakingRewardsAndClearesRewardSumHistoryAsExpected() {
+	void activatesStakingRewardsAndClearsRewardSumHistoryAsExpected() {
 		final long stakingFee = 2L;
+		final long expectedStakePeriodStart = 12345;
+		final var dateMock = mock(LocalDate.class);
+		final var mockedStatic = mockStatic(LocalDate.class);
+		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(dateMock);
+		given(dateMock.toEpochDay()).willReturn(expectedStakePeriodStart);
 		final var inorder = inOrder(sideEffectsTracker);
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(1L);
+
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
 		changes.include(counterpartyId, counterparty,
@@ -140,14 +153,19 @@ class AccountsCommitInterceptorTest {
 		changes.include(stakingFundId, stakingFund, randomAndBalanceChanges(stakingFee));
 		willCallRealMethod().given(networkCtx).areRewardsActivated();
 		willCallRealMethod().given(networkCtx).setStakingRewardsActivated(true);
+		willCallRealMethod().given(accounts).forEach(any());
+		given(accounts.entrySet()).willReturn(Map.of(
+				EntityNum.fromAccountId(counterpartyId), counterparty,
+				EntityNum.fromAccountId(partyId), party,
+				EntityNum.fromAccountId(stakingFundId), stakingFund).entrySet());
 
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
-		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
-				dynamicProperties, () -> accounts, rewardCalculator);
 
 		// rewardsSumHistory is not cleared
 		assertEquals(5, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
 		assertEquals(5, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(-1, counterparty.getStakePeriodStart());
+		assertEquals(-1, party.getStakePeriodStart());
 
 		subject.preview(changes);
 
@@ -159,6 +177,9 @@ class AccountsCommitInterceptorTest {
 		// rewardsSumHistory is cleared
 		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
 		assertEquals(0, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(expectedStakePeriodStart, counterparty.getStakePeriodStart());
+		assertEquals(-1, party.getStakePeriodStart());
+		mockedStatic.close();
 	}
 
 	@Test
@@ -199,14 +220,39 @@ class AccountsCommitInterceptorTest {
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.computeAndApplyRewards(EntityNum.fromAccountId(counterpartyId))).willReturn(1L);
 
-		subject = new AccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, () -> stakingInfo,
-				dynamicProperties, () -> accounts, rewardCalculator);
-
 		subject.preview(changes);
 
 		verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
-		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount + 1);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 1);
 		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -1);
+	}
+
+	@Test
+	void calculatesReward() {
+		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(0L);
+		subject.calculateReward(counterpartyId.getAccountNum());
+
+		verify(sideEffectsTracker, never()).trackHbarChange(stakingFundId.getAccountNum(), -5L);
+		verify(sideEffectsTracker).trackRewardPayment(counterpartyId.getAccountNum(), 0L);
+
+		given(rewardCalculator.computeAndApplyRewards(any())).willReturn(5L);
+		subject.calculateReward(counterpartyId.getAccountNum());
+
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), 5L);
+		verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), -5L);
+	}
+
+	@Test
+	void checksConditionToCalculateReward() {
+		assertFalse(subject.shouldCalculateReward(null));
+
+		given(networkCtx.areRewardsActivated()).willReturn(false);
+		assertFalse(subject.shouldCalculateReward(counterparty));
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		assertTrue(subject.shouldCalculateReward(counterparty));
+		assertFalse(subject.shouldCalculateReward(party));
 	}
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
