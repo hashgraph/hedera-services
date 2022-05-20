@@ -71,6 +71,11 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 	public void accept(final Pair<ContractKey, ContractValue> kvPair) throws InterruptedException {
 		final var key = kvPair.getKey();
 		final var contractNum = EntityNum.fromLong(key.getContractId());
+		if (!contracts.containsKey(contractNum)) {
+			log.warn("Skipping K/V pair ({}, {}) for missing contract 0.0.{}",
+					kvPair.getKey(), kvPair.getValue(), contractNum.longValue());
+			return;
+		}
 		presentContractNums.add(contractNum);
 		final var nonIterableValue = kvPair.getValue();
 		if (ZERO_VALUE.equals(nonIterableValue)) {
