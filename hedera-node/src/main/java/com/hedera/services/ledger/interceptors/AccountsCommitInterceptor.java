@@ -86,6 +86,9 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		if (pendingChanges.size() == 0) {
+			return;
+		}
 		// if the rewards are activated previously they will not be activated again
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
 		rewardBalanceChanged = false;

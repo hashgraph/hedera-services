@@ -55,9 +55,4 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	default boolean completesPendingRemovals() {
 		return false;
 	}
-
-	/**
-	 * Resolves second-order reward situations and commit aggregate changes to affected stakedAccounts.
-	 */
-	default void finalizeSideEffects(){ }
 }

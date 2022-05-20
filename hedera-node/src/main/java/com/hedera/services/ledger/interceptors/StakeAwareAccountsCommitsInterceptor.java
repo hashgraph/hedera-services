@@ -1,5 +1,25 @@
 package com.hedera.services.ledger.interceptors;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -17,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -125,7 +146,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (exStakeeI == changesSize) {
 				changesSize++;
 			}
-			updateStakedToMe(-account.getBalance(), pendingChanges.changes(exStakeeI));
+			updateStakedToMe(-account.getBalance(), exStakeeI, pendingChanges);
 		}
 		if (newStakeeNum != 0) {
 			// Add pending balance to new stakee
@@ -133,10 +154,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (newStakeeI == changesSize) {
 				changesSize++;
 			}
-			updateStakedToMe(finalBalanceGiven(account, changes), pendingChanges.changes(newStakeeI));
+			updateStakedToMe(finalBalanceGiven(account, changes), newStakeeI, pendingChanges);
 		}
 	}
-
 
 	private long getAccountStakeeNum(final Map<AccountProperty, Object> changes) {
 		final var entityId = (long) changes.getOrDefault(STAKED_ID, 0L);
@@ -174,13 +194,16 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	private void updateStakedToMe(
 			final long stakedToMeDelta,
-			@NotNull final Map<AccountProperty, Object> changes
+			@NotNull final int stakeeI,
+			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		if (changes.containsKey(STAKED_TO_ME)) {
-			changes.put(STAKED_TO_ME, (long) changes.get(STAKED_TO_ME) + stakedToMeDelta);
+		final var mutableChanges = new HashMap<>(pendingChanges.changes(stakeeI));
+		if (mutableChanges.containsKey(STAKED_TO_ME)) {
+			mutableChanges.put(STAKED_TO_ME, (long) mutableChanges.get(STAKED_TO_ME) + stakedToMeDelta);
 		} else {
-			changes.put(STAKED_TO_ME, stakedToMeDelta);
+			mutableChanges.put(STAKED_TO_ME, stakedToMeDelta);
 		}
+		pendingChanges.updateChange(stakeeI, STAKED_TO_ME, mutableChanges);
 	}
 
 	private int findOrAdd(
@@ -201,7 +224,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		return n;
 	}
 
-	private boolean isRewardable(
+	boolean isRewardable(
 			@Nullable final MerkleAccount account,
 			@NotNull final Map<AccountProperty, Object> changes,
 			final long latestRewardableStakePeriodStart
@@ -216,16 +239,16 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				&& (!account.isDeclinedReward() || Boolean.FALSE.equals(changedDecline));
 	}
 
-	private boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
+	boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
 		return stakePeriodStart > -1 && stakePeriodStart < latestRewardableStakePeriodStart;
 	}
 
-	private boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
+	boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
 		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) ||
 				changes.containsKey(STAKED_ID) || changes.containsKey(STAKED_TO_ME);
 	}
 
-	private void checkRewardActivation() {
+	void checkRewardActivation() {
 		if (shouldActivateStakingRewards()) {
 			networkCtx.get().setStakingRewards(true);
 			stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());

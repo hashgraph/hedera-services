@@ -21,9 +21,11 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.BeanProperty;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +63,12 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 
 	public Map<P, Object> changes(final int i) {
 		return changes.get(i);
+	}
+
+	public void updateChange(final int num, final P property, final Object value) {
+		final var mutableChange = new HashMap<>(changes.get(num));
+		mutableChange.put(property, value);
+		changes.set(num, mutableChange);
 	}
 
 	public void clear() {
