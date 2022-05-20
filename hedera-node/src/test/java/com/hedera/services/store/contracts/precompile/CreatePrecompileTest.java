@@ -348,7 +348,7 @@ class CreatePrecompileTest {
 				new TokenCreateWrapper.TokenKeyWrapper(
 						1,
 						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
-								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
+								new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH], null)
 				))
 		);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);

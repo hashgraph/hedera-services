@@ -112,7 +112,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum expiryStatusGiven(final long balance, final long expiry, final boolean isContract) {
-		if (balance > 0 || expiry > txnCtx.consensusTime().getEpochSecond()) {
+		if (balance > 0 || isAfterConsensusSecond(expiry)) {
 			return OK;
 		}
 		return expiryStatusForNominallyDetached(isContract);

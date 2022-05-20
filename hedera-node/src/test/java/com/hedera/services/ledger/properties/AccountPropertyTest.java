@@ -51,6 +51,7 @@ import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
@@ -73,7 +74,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
@@ -96,6 +99,13 @@ class AccountPropertyTest {
 		final var account = new MerkleAccount();
 		final var balanceSetter = BALANCE.setter();
 		assertThrows(IllegalArgumentException.class, () -> balanceSetter.accept(account, "NotNumeric"));
+	}
+
+	@Test
+	void canGetAndSetNullAutoRenewAccountId() {
+		final var account = new MerkleAccount();
+		assertNull(AUTO_RENEW_ACCOUNT_ID.getter().apply(account));
+		assertDoesNotThrow(() -> AUTO_RENEW_ACCOUNT_ID.setter().accept(account, null));
 	}
 
 	@Test
@@ -139,7 +149,6 @@ class AccountPropertyTest {
 		final int newNumKvPairs = 123;
 		final long initialAllowance = 100L;
 		final long origLastAssociatedTokenNum = 123L;
-		final long newLastAssociatedTokenNum = 234L;
 		final int origAssociationCount = 10;
 		final int newAssociationCount = 12;
 		final int origNumPositiveBalances = 4;
