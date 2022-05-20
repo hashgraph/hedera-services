@@ -131,23 +131,17 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
 		assertFalse(subject.shouldActivateStakingRewards());
 
-		subject.checkRewardActivation();
+		subject.activateRewardsIfValid();
 		verify(networkCtx, never()).setStakingRewards(true);
 
 		subject.setNewRewardBalance(20L);
 		assertEquals(20L, subject.getNewRewardBalance());
 		assertTrue(subject.shouldActivateStakingRewards());
 
-		subject.checkRewardActivation();
+		subject.activateRewardsIfValid();
 		verify(networkCtx).setStakingRewards(true);
 		verify(accounts).forEach(any());
 		verify(stakingInfo).forEach(any());
-	}
-
-	@Test
-	void validatesIfAnyStakedFieldChanges() {
-		assertTrue(subject.hasStakeFieldChanges(randomStakeFieldChanges(100L)));
-		assertFalse(subject.hasStakeFieldChanges(randomNotStakeFieldChanges(100L)));
 	}
 
 	@Test
@@ -167,6 +161,30 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertFalse(subject.isRewardable(counterparty, randomStakeFieldChanges(100L), stakePeriodStart));
 	}
 
+	@Test
+	void returnsIfRewardsShouldBeActivated() {
+		subject.setRewardsActivated(true);
+		assertTrue(subject.isRewardsActivated());
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setNewRewardBalance(10L);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setRewardsActivated(false);
+		assertFalse(subject.isRewardsActivated());
+		assertFalse(subject.isRewardBalanceChanged());
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setRewardBalanceChanged(true);
+		assertTrue(subject.isRewardBalanceChanged());
+		assertEquals(10L, subject.getNewRewardBalance());
+		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
+		assertFalse(subject.shouldActivateStakingRewards());
+
+		subject.setNewRewardBalance(20L);
+		assertEquals(20L, subject.getNewRewardBalance());
+		assertTrue(subject.shouldActivateStakingRewards());
+	}
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);

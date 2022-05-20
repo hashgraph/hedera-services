@@ -33,8 +33,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static com.hedera.services.ledger.interceptors.StakeAwareAccountsCommitsInterceptor.finalBalanceGiven;
+;
+import static com.hedera.services.ledger.interceptors.StakeChangeManager.finalBalanceGiven;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 

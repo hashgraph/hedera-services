@@ -52,30 +52,13 @@ import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneU
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
-	private final Supplier<MerkleNetworkContext> networkCtx;
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
-	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	protected boolean rewardsActivated;
-	protected boolean rewardBalanceChanged;
-	protected long newRewardBalance;
 
-	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
 
 	private static final Logger log = LogManager.getLogger(AccountsCommitInterceptor.class);
 
-	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker,
-			final Supplier<MerkleNetworkContext> networkCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
+	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.networkCtx = networkCtx;
-		this.dynamicProperties = dynamicProperties;
-		this.stakingInfo = stakingInfo;
-		this.accounts = accounts;
 	}
 
 	/**
@@ -89,10 +72,6 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		if (pendingChanges.size() == 0) {
 			return;
 		}
-		// if the rewards are activated previously they will not be activated again
-		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
-		rewardBalanceChanged = false;
-
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			trackBalanceChangeIfAny(
 					pendingChanges.id(i).getAccountNum(),
@@ -100,34 +79,8 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 					pendingChanges.changes(i));
 		}
 		assertZeroSum();
-		activateRewardsIfValid();
 	}
 
-	private void activateRewardsIfValid() {
-		if (!shouldActivateStakingRewards()) {
-			return;
-		}
-		networkCtx.get().setStakingRewards(true);
-		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
-
-		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
-		accounts.get().forEach(((entityNum, account) -> {
-			if (account.getStakedId() < 0) {
-				account.setStakePeriodStart(todayNumber);
-			}
-		}));
-		log.info("Staking rewards is activated and rewardSumHistory is cleared");
-	}
-
-	/**
-	 * If the balance on 0.0.800 changed in the current transaction and the balance reached above the specified
-	 * threshold activates staking rewards
-	 *
-	 * @return true if rewards should be activated, false otherwise
-	 */
-	protected boolean shouldActivateStakingRewards() {
-		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
-	}
 
 	private void trackBalanceChangeIfAny(
 			final long accountNum,
@@ -136,10 +89,6 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
-			if (merkleAccount != null && (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER)) {
-				rewardBalanceChanged = true;
-				newRewardBalance = newBalance;
-			}
 			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
 			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
@@ -149,30 +98,5 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
 			throw new IllegalStateException("Invalid balance changes");
 		}
-	}
-
-	/* only used for unit tests */
-	public boolean isRewardsActivated() {
-		return rewardsActivated;
-	}
-
-	public void setRewardsActivated(final boolean rewardsActivated) {
-		this.rewardsActivated = rewardsActivated;
-	}
-
-	public boolean isRewardBalanceChanged() {
-		return rewardBalanceChanged;
-	}
-
-	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
-		this.rewardBalanceChanged = rewardBalanceChanged;
-	}
-
-	public long getNewRewardBalance() {
-		return newRewardBalance;
-	}
-
-	public void setNewRewardBalance(final long newRewardBalance) {
-		this.newRewardBalance = newRewardBalance;
 	}
 }
