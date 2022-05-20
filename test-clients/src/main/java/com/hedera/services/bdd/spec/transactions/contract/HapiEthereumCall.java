@@ -67,7 +67,6 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -318,7 +317,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
-        System.out.println("Size = " + callData.length + " vs " + MAX_CALL_DATA_SIZE);
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
             final var callDataBytesString = ByteString.copyFrom(Hex.encode(callData));
             final var createFile = new HapiFileCreate(callDataFileName);
