@@ -64,5 +64,4 @@ instance. You can start one in one terminal with `./gradlew run` and then execut
 Finally, you can use `./gradlew run` to run the project. It will compile (but not test) if needed. Running the project
 produces various files within `hedera-node`. To clean these, you can use `./gradlew cleanRun`.
 
-There is also `./gradlew clean` to clean everything up. This will also clean out any temp stuff created for the sake of
-running (logs, etc.).
+There is also `./gradlew clean` to clean everything up.

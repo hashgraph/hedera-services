@@ -107,7 +107,3 @@ val cleanRun = tasks.register("cleanRun") {
     project.delete(File(dataDir, "recordstreams"))
     project.delete(File(dataDir, "saved"))
 }
-
-tasks.clean {
-    dependsOn(cleanRun)
-}
