@@ -28,3 +28,7 @@ repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
 }
+
+dependencies {
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3")
+}
