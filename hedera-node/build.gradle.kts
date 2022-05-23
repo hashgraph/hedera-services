@@ -52,8 +52,7 @@ tasks.jar {
         attributes(
             "Main-Class" to "com.hedera.services.ServicesMain",
             "Class-Path" to configurations.getByName("runtimeClasspath")
-                .map { it -> "../lib/" + it.name }
-                .joinToString(separator=" ")
+                .joinToString(separator = " ") { "../lib/" + it.name }
         )
     }
 }
@@ -67,7 +66,7 @@ tasks.processResources {
             } else if (line.contains("project.version")) {
                 "hedera.services.version=" + project.version
             } else {
-                line;
+                line
             }
         }
     }
@@ -83,7 +82,7 @@ tasks.register<Copy>("copyLib") {
 tasks.register<Copy>("copyApp") {
     from(tasks.jar)
     into("data/apps")
-    rename { filename: String -> "HederaNode.jar" }
+    rename { "HederaNode.jar" }
 }
 
 // Create the "run" task for running a Hedera consensus node
