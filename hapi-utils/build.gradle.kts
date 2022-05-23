@@ -1,17 +1,15 @@
-package com.hedera.services.state.merkle.internals;
-
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +18,23 @@ package com.hedera.services.state.merkle.internals;
  * ‍
  */
 
-import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.utils.SeededPropertySource;
+plugins {
+    id("com.hedera.hashgraph.hedera-conventions")
+}
 
-public class FilePartSerdeTest extends SelfSerializableDataTest<FilePart> {
-	@Override
-	protected Class<FilePart> getType() {
-		return FilePart.class;
-	}
+description = "Hedera Services API Utilities"
 
-	@Override
-	protected FilePart getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextFilePart();
-	}
+dependencies {
+    implementation(libs.bundles.logging)
+    implementation(libs.protobuf.java)
+    implementation(libs.hapi)
+    implementation(libs.jackson)
+    implementation(libs.swirlds.common)
+    implementation(libs.javax.inject)
+    implementation(libs.bundles.bouncycastle)
+    implementation(libs.jetbrains.annotation)
+    implementation(libs.headlong)
+    implementation(libs.besu.secp256k1)
+
+    testImplementation(testLibs.bundles.testing)
 }
