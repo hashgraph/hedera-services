@@ -31,7 +31,6 @@ import java.util.Objects;
 
 public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     static final long CLASS_ID = 0xb3c94b6cf62aa6c4L;
-    private final UniqueTokenKey scratch = new UniqueTokenKey();
 
     @Override
     public boolean isVariableSize() {
@@ -75,8 +74,9 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
 
     @Override
     public boolean equals(ByteBuffer byteBuffer, int dataVersion, UniqueTokenKey uniqueTokenKey) throws IOException {
-        scratch.deserialize(byteBuffer, dataVersion);
-        return scratch.equals(uniqueTokenKey);
+        final var key = new UniqueTokenKey();
+        key.deserialize(byteBuffer, dataVersion);
+        return key.equals(uniqueTokenKey);
     }
 
     @Override
