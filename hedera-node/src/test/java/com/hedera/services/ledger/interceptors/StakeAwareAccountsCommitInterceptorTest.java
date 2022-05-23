@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.Address;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +68,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleNetworkContext networkCtx;
-	@Mock
+
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
@@ -127,6 +126,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 	@Test
 	void checksIfRewardsToBeActivatedEveryHandle() {
+		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		subject.setRewardsActivated(false);
 		subject.setRewardBalanceChanged(true);
 		subject.setNewRewardBalance(10L);
@@ -142,10 +142,18 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(20L, subject.getNewRewardBalance());
 		assertTrue(subject.shouldActivateStakingRewards());
 
+		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[1]);
+		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[1]);
+
 		subject.activateRewardsIfValid();
 		verify(networkCtx).setStakingRewards(true);
 		verify(accounts).forEach(any());
-		verify(stakingInfo).forEach(any());
+		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
+		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
+		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[1]);
+		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[1]);
 	}
 
 	@Test
@@ -208,6 +216,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 				EntityNum.fromAccountId(counterpartyId), counterparty,
 				EntityNum.fromAccountId(partyId), party,
 				EntityNum.fromAccountId(stakingFundId), stakingFund).entrySet());
+		counterparty.setStakePeriodStart(-1L);
 
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 

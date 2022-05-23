@@ -99,7 +99,10 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		Set<Long> hasBeenRewarded = new HashSet<>();
 
 		// Iterate through the change set, maintaining two invariants:
-		//   1. At the beginning of iteration i,
+		//   1. At the beginning of iteration i, any account that is rewardable due to change in balance or
+		//      stakedAccountId or stakedNodeId or declineRewards fields. Also checks the balance of funding account
+		//      0.0.800 if it has reached the ONE TIME threshold to activate staking.
+		//      NOTE that this activation happens only once.
 		//   2. Any account whose stakedToMe balance is affected by a change in the [0, i) range has
 		//      been, if not already present, added to the pendingChanges; and its changes include its
 		//      new STAKED_TO_ME change

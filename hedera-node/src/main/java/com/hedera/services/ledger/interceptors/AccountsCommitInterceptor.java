@@ -54,14 +54,6 @@ import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneU
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 	private final SideEffectsTracker sideEffectsTracker;
-	private boolean rewardsActivated;
-	private long newRewardBalance;
-
-	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
-
-
-
-	private static final Logger log = LogManager.getLogger(AccountsCommitInterceptor.class);
 
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
