@@ -118,7 +118,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				payReward(account, changes, accountNum, hasBeenRewarded);
 			}
 			// Update any STAKED_TO_ME side effects of this change
-			n = updateStakedToMeSideEffects(account, changes, pendingChanges, n, hasBeenRewarded, latestEligibleStart);
+			n = updateStakedToMeSideEffects(i, pendingChanges, hasBeenRewarded, latestEligibleStart);
 		}
 
 		// Now iterate through the change set again to update node stakes; we do this is in a
@@ -173,13 +173,14 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 	}
 
-	private int updateStakedToMeSideEffects(
-			final MerkleAccount account,
-			final Map<AccountProperty, Object> changes,
+	int updateStakedToMeSideEffects(
+			final int num,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
-			int changesSize,
 			final Set<Long> hasBeenRewarded,
 			final long latestEligibleStart) {
+		int changesSize = pendingChanges.size();
+		final var account = pendingChanges.entity(num);
+		final var changes = pendingChanges.changes(num);
 
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = manager.getAccountStakeeNum(changes);
@@ -192,6 +193,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(curStakeeNum)) {
 				payRewardIfRewardable(pendingChanges, exStakeeI, hasBeenRewarded, latestEligibleStart);
+				// do we need this ?? since stakedToMe is only for account stakes
 			}
 		}
 		if (newStakeeNum > 0) {
@@ -202,6 +204,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(newStakeeNum)) {
 				payRewardIfRewardable(pendingChanges, newStakeeI, hasBeenRewarded, latestEligibleStart);
+				// do we need this ?? since stakedToMe is only for account stakes
 			}
 		}
 		return changesSize;
@@ -209,12 +212,12 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	void payRewardIfRewardable(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
-			final int newStakeeI,
+			final int stakeeI,
 			final Set<Long> hasBeenRewarded,
 			final long latestEligibleStart) {
-		final var account = pendingChanges.entity(newStakeeI);
-		final var changes = pendingChanges.changes(newStakeeI);
-		final var accountNum = pendingChanges.id(newStakeeI).getAccountNum();
+		final var account = pendingChanges.entity(stakeeI);
+		final var changes = pendingChanges.changes(stakeeI);
+		final var accountNum = pendingChanges.id(stakeeI).getAccountNum();
 		if (isRewardable(account, changes, latestEligibleStart)) {
 			payReward(account, changes, accountNum, hasBeenRewarded);
 		}
@@ -236,7 +239,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var n = pendingChanges.size();
 		for (int i = 0; i < n; i++) {
 			if (pendingChanges.id(i).getAccountNum() == accountNum) {
-				return (int) accountNum;
+				return i;
 			}
 		}
 		// This account wasn't in the current change set

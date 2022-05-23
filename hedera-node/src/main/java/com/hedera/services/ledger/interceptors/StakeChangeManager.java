@@ -98,7 +98,7 @@ public class StakeChangeManager {
 		if (changes.containsKey(DECLINE_REWARD)) {
 			return (Boolean) changes.get(DECLINE_REWARD);
 		} else {
-			return (account == null) ? false : account.isDeclinedReward();
+			return account != null && account.isDeclinedReward();
 		}
 	}
 

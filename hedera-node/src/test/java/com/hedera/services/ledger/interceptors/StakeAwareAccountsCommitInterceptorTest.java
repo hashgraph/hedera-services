@@ -343,6 +343,55 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderM.verify(manager, never()).awardStake(2L, 2100, false);
 	}
 
+	@Test
+	void updatesStakedToMeSideEffects() {
+		counterparty.setStakedId(1L);
+		final var pendingChanges = buildPendingAccountStakeChanges();
+		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		given(rewardCalculator.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(rewardCalculator.updateRewardChanges(counterparty, pendingChanges.changes(0))).willReturn(10l);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		willCallRealMethod().given(manager).getNodeStakeeNum(any());
+		willCallRealMethod().given(manager).getAccountStakeeNum(any());
+		willCallRealMethod().given(manager).finalDeclineRewardGiven(any(), any());
+
+		final var hasBeenRewarded = new HashSet<Long>();
+		hasBeenRewarded.add(1L);
+		hasBeenRewarded.add(2L);
+
+		assertEquals(4, subject.updateStakedToMeSideEffects(0, pendingChanges, hasBeenRewarded,
+				stakePeriodStart - 1));
+	}
+
+//	@Test
+//	void checksRewardPaymentsWhileUpdatingStakedToMeSideEffects() {
+//		counterparty.setStakedId(123L);
+//		final var pendingChanges = buildPendingAccountStakeChanges();
+//		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+//		given(rewardCalculator.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+//		given(rewardCalculator.updateRewardChanges(counterparty, pendingChanges.changes(0))).willReturn(10l);
+//		given(networkCtx.areRewardsActivated()).willReturn(true);
+//		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+//		pendingChanges.include(partyId, party, stakingFundChanges);
+//		stakingFund.setStakePeriodStart(-1);
+//		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+//
+//		willCallRealMethod().given(manager).getNodeStakeeNum(any());
+//		willCallRealMethod().given(manager).getAccountStakeeNum(any());
+//		willCallRealMethod().given(manager).finalDeclineRewardGiven(any(), any());
+//
+//		final var hasBeenRewarded = new HashSet<Long>();
+//		hasBeenRewarded.add(1L);
+//		hasBeenRewarded.add(2L);
+//
+//		assertEquals(2, subject.updateStakedToMeSideEffects(0, pendingChanges, hasBeenRewarded,
+//				stakePeriodStart - 1));
+//	}
+
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
 		var changes = randomStakedNodeChanges(100L);
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
