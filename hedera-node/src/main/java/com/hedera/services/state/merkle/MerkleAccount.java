@@ -37,6 +37,7 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.List;
@@ -518,9 +519,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public boolean hasAutoRenewAccount() {
-		return !getAutoRenewAccount().equals(EntityId.MISSING_ENTITY_ID);
+		return state().hasAutoRenewAccount();
 	}
 
+	@Nullable
 	public EntityId getAutoRenewAccount() {
 		return state().getAutoRenewAccount();
 	}
