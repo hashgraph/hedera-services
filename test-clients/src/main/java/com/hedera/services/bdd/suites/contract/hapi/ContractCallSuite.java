@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -90,6 +91,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -152,50 +155,50 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				resultSizeAffectsFees(),
-//				payableSuccess(),
-//				depositSuccess(),
-//				depositDeleteSuccess(),
-//				multipleDepositSuccess(),
-//				payTestSelfDestructCall(),
-//				multipleSelfDestructsAreSafe(),
-//				smartContractInlineAssemblyCheck(),
-//				ocToken(),
-//				contractTransferToSigReqAccountWithKeySucceeds(),
-//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//				minChargeIsTXGasUsedByContractCall(),
-//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-//				HSCS_EVM_006_ContractHBarTransferToAccount(),
-//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-//				HSCS_EVM_010_MultiSignatureAccounts(),
-//				HSCS_EVM_010_ReceiverMustSignContractTx(),
-//				insufficientGas(),
-//				insufficientFee(),
-//				nonPayable(),
-//				invalidContract(),
-//				smartContractFailFirst(),
-//				contractTransferToSigReqAccountWithoutKeyFails(),
-//				callingDestructedContractReturnsStatusDeleted(),
-//				gasLimitOverMaxGasLimitFailsPrecheck(),
-//				imapUserExercise(),
-//				deletedContractsCannotBeUpdated(),
-//				sendHbarsToAddressesMultipleTimes(),
-//				sendHbarsToDifferentAddresses(),
-//				sendHbarsFromDifferentAddressessToAddress(),
-//				sendHbarsFromAndToDifferentAddressess(),
-//				transferNegativeAmountOfHbars(),
-//				transferToCaller(),
-//				transferZeroHbarsToCaller(),
-//				transferZeroHbars(),
-//				sendHbarsToOuterContractFromDifferentAddresses(),
-//				sendHbarsToCallerFromDifferentAddresses(),
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
+				smartContractInlineAssemblyCheck(),
+				ocToken(),
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCall(),
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
+				invalidContract(),
+				smartContractFailFirst(),
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				imapUserExercise(),
+				deletedContractsCannotBeUpdated(),
+				sendHbarsToAddressesMultipleTimes(),
+				sendHbarsToDifferentAddresses(),
+				sendHbarsFromDifferentAddressessToAddress(),
+				sendHbarsFromAndToDifferentAddressess(),
+				transferNegativeAmountOfHbars(),
+				transferToCaller(),
+				transferZeroHbarsToCaller(),
+				transferZeroHbars(),
+				sendHbarsToOuterContractFromDifferentAddresses(),
+				sendHbarsToCallerFromDifferentAddresses(),
 				bitcarbonTestStillPasses(),
-//				contractCreationStoragePriceMatchesFinalExpiry(),
-//				whitelistingAliasedContract(),
-//				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
-//				exchangeRatePrecompileWorks(),
-//				canMintAndTransferInSameContractOperation(),
-//				workingHoursDemo(),
+				contractCreationStoragePriceMatchesFinalExpiry(),
+				whitelistingAliasedContract(),
+				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
+				exchangeRatePrecompileWorks(),
+				canMintAndTransferInSameContractOperation(),
+				workingHoursDemo(),
 		});
 	}
 
@@ -363,23 +366,26 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("BitcarbonTestStillPasses")
 				.given(
-						withOpContext((spec, opLog) -> defaultPayerMirror.set(
-								asSolidityAddress(spec.registry().getAccountID(DEFAULT_PAYER)))),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+						withOpContext((spec, opLog) -> defaultPayerMirror.set((unhex(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID())))),
 						uploadInitCode(addressBook, jurisdictions),
 						contractCreate(addressBook)
 								.exposingNumTo(num -> addressBookMirror.set(
-										asHexedSolidityAddress(0, 0, num))),
+										asHexedSolidityAddress(0, 0, num)))
+								.payingWith(DEFAULT_CONTRACT_SENDER),
 						contractCreate(jurisdictions)
 								.exposingNumTo(num -> jurisdictionMirror.set(
 										asHexedSolidityAddress(0, 0, num)))
-								.withExplicitParams(() -> explicitJurisdictionConsParams),
-						sourcing(() -> createLargeFile(DEFAULT_PAYER, minters,
+								.withExplicitParams(() -> explicitJurisdictionConsParams)
+								.payingWith(DEFAULT_CONTRACT_SENDER),
+						sourcing(() -> createLargeFile(DEFAULT_CONTRACT_SENDER, minters,
 								bookInterpolated(
 										literalInitcodeFor(minters).toByteArray(),
 										addressBookMirror.get()))),
 						contractCreate(minters)
 								.withExplicitParams(() -> String.format(
 										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
+								.payingWith(DEFAULT_CONTRACT_SENDER)
 				).when(
 						contractCall(minters)
 								.withExplicitParams(() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
@@ -1842,17 +1848,20 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec sendHbarsToCallerFromDifferentAddresses() {
-//		final var ACCOUNT = "account";
 		final var NESTED_TRANSFERRING_CONTRACT = "NestedTransferringContract";
 		final var NESTED_CONTRACT = "NestedTransferContract";
 		final var transferTxn = "transferTxn";
 		return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
 				.given(
-//						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(DEFAULT_CONTRACT_SENDER),
-						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(DEFAULT_CONTRACT_SENDER),
-						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot("accountInfo").payingWith(GENESIS)
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L),
+						cryptoTransfer(TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER)),
+						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfo").payingWith(GENESIS)
 				)
 				.when(
 						withOpContext((spec, log) -> {
@@ -1864,10 +1873,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									contractCall(
 											NESTED_TRANSFERRING_CONTRACT,
 											"transferToCallerFromDifferentAddresses", 100L)
-											.payingWith(DEFAULT_CONTRACT_SENDER).via(transferTxn).logged(),
+											.payingWith(DEFAULT_CONTRACT_RECEIVER)
+											.signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
+											.via(transferTxn).logged(),
 
 									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn").payingWith(GENESIS),
-									getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
+									getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
 						})
 				)
 				.then(

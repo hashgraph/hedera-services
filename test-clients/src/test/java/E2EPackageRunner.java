@@ -299,7 +299,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
 				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-//				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
 		});
 	}
 
@@ -433,21 +433,13 @@ class E2EPackageRunner {
 	Collection<DynamicContainer> contractHapiEth() {
 		return List.of(
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+				extractSpecsFromSuiteForEth(ContractCallSuite::new),
+				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+				extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
-				extractSpecsFromSuiteForEth(ContractUpdateSuite::new),
-				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
-				extractSpecsFromSuiteForEth(ContractDeleteSuite::new)
-		);
-	}
-
-	@Tag("contract")
-	@Tag("contract.hapi.eth.failing")
-	@TestFactory
-	Collection<DynamicContainer> contractHapiEthFailing() {
-		return List.of(
-				extractSpecsFromSuiteForEth(ContractCallSuite::new),
-				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new)
+				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
+				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
 		);
 	}
 

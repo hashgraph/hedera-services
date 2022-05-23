@@ -95,7 +95,7 @@ public class HapiSpecRegistry {
 		// The default contract sender is the default payer unless using Ethereum transactions
 		saveAccountId(DEFAULT_CONTRACT_SENDER, setup.defaultPayer());
 		saveKey(DEFAULT_CONTRACT_SENDER, asKeyList(genesisKey));
-		saveAccountId(DEFAULT_CONTRACT_RECEIVER, setup.fundingAccount());
+		saveAccountId(DEFAULT_CONTRACT_RECEIVER, setup.strongControlAccount());
 		saveKey(DEFAULT_CONTRACT_RECEIVER, asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
