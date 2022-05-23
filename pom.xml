@@ -210,7 +210,7 @@
 		<maven-compiler.version>3.10.1</maven-compiler.version>
 		<maven-surefire.version>3.0.0-M5</maven-surefire.version>
 		<maven-dependency.version>3.3.0</maven-dependency.version>
-		<maven-versions.version>2.9.0</maven-versions.version>
+		<maven-versions.version>2.11.0</maven-versions.version>
 		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
@@ -265,7 +265,6 @@
 		<module>hapi-fees</module>
 		<module>hedera-node</module>
 		<module>test-clients</module>
-		<module>benchmarks</module>
 	</modules>
 
 	<build>
