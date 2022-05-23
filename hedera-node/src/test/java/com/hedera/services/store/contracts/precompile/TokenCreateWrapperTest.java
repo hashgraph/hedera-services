@@ -221,7 +221,7 @@ class TokenCreateWrapperTest {
 	void keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
 		final var wrapper =
 				new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
-						new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1], null);
+						new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1], null);
 
 		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
 	}
