@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -63,6 +65,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZAB
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.TBD_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
@@ -238,10 +241,34 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("dissociateZeroBalanceFrozenTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("dissociateZeroBalanceUnfrozenTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("dissociateNonZeroBalanceFrozenTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("dissociateNonZeroBalanceUnfrozenTxn", SUCCESS, recordWith().status(SUCCESS)),
+						childRecordsCheck("dissociateZeroBalanceFrozenTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
+						childRecordsCheck("dissociateZeroBalanceUnfrozenTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
+						childRecordsCheck("dissociateNonZeroBalanceFrozenTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
+						childRecordsCheck("dissociateNonZeroBalanceUnfrozenTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
 						getAccountInfo(zeroBalanceFrozen).hasNoTokenRelationship(TBD_TOKEN),
 						getAccountInfo(zeroBalanceUnfrozen).hasNoTokenRelationship(TBD_TOKEN),
 						getAccountInfo(nonZeroBalanceFrozen).hasNoTokenRelationship(TBD_TOKEN),
@@ -292,10 +319,19 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("nestedDissociateTxn", SUCCESS,
-								recordWith().status(SUCCESS),
-								recordWith().status(SUCCESS)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
-				);
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))),
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
 	}
 
 	/* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
@@ -347,10 +383,15 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("multipleDissociationTxn", SUCCESS, recordWith().status(SUCCESS)),
+						childRecordsCheck("multipleDissociationTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT),
-						getAccountInfo(ACCOUNT).hasNoTokenRelationship(KNOWABLE_TOKEN)
-				);
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(KNOWABLE_TOKEN));
 	}
 
 	@Override

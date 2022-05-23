@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -60,7 +61,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -221,7 +226,17 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						emptyChildRecordsCheck("notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
-						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+						),
+
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
@@ -268,8 +283,25 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED,
-								recordWith().status(INVALID_TOKEN_ID)),
-						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+								recordWith()
+										.status(INVALID_TOKEN_ID)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_TOKEN_ID))
+										)),
+
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))
+										)
+						),
+
+
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
@@ -335,7 +367,16 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("MultipleTokensAssociationsTxn", SUCCESS, recordWith().status(SUCCESS)),
+						childRecordsCheck("MultipleTokensAssociationsTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))
+										)
+						),
+
 						getAccountInfo(ACCOUNT)
 								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
 								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
@@ -379,8 +420,20 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("nestedAssociateTxn", SUCCESS,
-								recordWith().status(SUCCESS),
-								recordWith().status(SUCCESS)
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))
+										),
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))
+										)
 						),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
@@ -432,9 +485,26 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("secondVanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)),
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))
+										)
+						),
+
+						childRecordsCheck("secondVanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED))
+										)
+						),
+
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
 						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")

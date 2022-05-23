@@ -23,8 +23,10 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -152,6 +155,15 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
 						childRecordsCheck("burn", SUCCESS, recordWith()
 								.status(SUCCESS)
+								.contractCallResult(
+										resultWith()
+												.contractCallResult(htsPrecompileResult()
+														.forFunction(HTSPrecompileResult.FunctionType.BURN)
+														.withStatus(SUCCESS)
+														.withTotalSupply(49)
+												)
+								)
+								.newTotalSupply(49)
 								.tokenTransfers(
 										changingFungibleBalances()
 												.including(TOKEN, TOKEN_TREASURY, -1)
@@ -166,13 +178,23 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						)
 								.via("burn with contract key")
 								.gas(GAS_TO_OFFER),
-						childRecordsCheck("burn with contract key", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										changingFungibleBalances()
-												.including(TOKEN, TOKEN_TREASURY, -1)
-								)
-								.newTotalSupply(48)
+
+						childRecordsCheck("burn with contract key", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BURN)
+																.withStatus(SUCCESS)
+																.withTotalSupply(48)
+														)
+										)
+										.newTotalSupply(48)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(TOKEN, TOKEN_TREASURY, -1)
+										)
 						)
 				)
 				.then(
@@ -223,9 +245,19 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 									);
 								}
 						),
-						childRecordsCheck("burn", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.newTotalSupply(1)
+
+						childRecordsCheck("burn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BURN)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1)
+														)
+										)
+										.newTotalSupply(1)
 						)
 				)
 				.then(
@@ -283,6 +315,15 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						),
 						childRecordsCheck("burnAfterNestedMint", SUCCESS, recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(51)
+																.withSerialNumbers()
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(TOKEN, TOKEN_TREASURY, 1)
@@ -290,6 +331,14 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 										.newTotalSupply(51),
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BURN)
+																.withStatus(SUCCESS)
+																.withTotalSupply(50)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(TOKEN, TOKEN_TREASURY, -1)
@@ -359,10 +408,25 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								}),
 
-						childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-										.status(REVERTED_SUCCESS),
+						childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BURN)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1)
+														)
+										),
 								recordWith()
 										.status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+														)
+										)
 						)
 				)
 				.then(
