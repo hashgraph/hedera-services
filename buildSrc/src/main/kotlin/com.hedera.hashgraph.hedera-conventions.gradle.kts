@@ -22,6 +22,7 @@ plugins {
     `java-library`
     `maven-publish`
     jacoco
+    id("org.sonarqube")
 }
 
 group = "com.hedera.hashgraph"
