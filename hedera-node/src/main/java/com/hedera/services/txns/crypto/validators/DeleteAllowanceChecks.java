@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -72,7 +73,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	public ResponseCodeEnum deleteAllowancesValidation(
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
-			final StateView view) {
+			final StateView view
+	) {
 		// feature flag for allowances
 		if (!isEnabled()) {
 			return NOT_SUPPORTED;
@@ -116,7 +118,12 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		for (final var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var serialNums = allowance.getSerialNumbersList();
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
+			final Token token;
+			try {
+				token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
+			} catch (InvalidTransactionException e) {
+				return e.getResponseCode();
+			}
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}

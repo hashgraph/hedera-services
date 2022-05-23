@@ -476,8 +476,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 															.contractCallResult(
 																	resultWith()
 																			.contractCallResult(htsPrecompileResult()
-																					.forFunction(
-																							HTSPrecompileResult.FunctionType.SUCCESS)
 																					.withStatus(SUCCESS)
 																			)
 															)
@@ -614,7 +612,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.forFunction(HTSPrecompileResult.FunctionType.FAILED)
 																.withStatus(INVALID_TOKEN_ID)
 														)
 										)

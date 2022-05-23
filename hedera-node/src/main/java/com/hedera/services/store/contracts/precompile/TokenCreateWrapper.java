@@ -271,7 +271,7 @@ final class TokenCreateWrapper {
 		}
 
 		private boolean isEcdsaSecp256k1KeySet() {
-			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 		}
 
 		private void setInheritedKey(final Key key) {

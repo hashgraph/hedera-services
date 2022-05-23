@@ -87,7 +87,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
 								.receiverSigReq(false)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5))
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10))
 				).then(
 						/* change receiverSigRequired to false and validate */
 						cryptoUpdateAliased("testAlias").receiverSigRequired(true).signedBy(
@@ -95,7 +95,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
 								.receiverSigReq(true)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5)),
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10)),
 
 						/* transfer without receiver sig fails */
 						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
@@ -110,7 +110,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn3").andAllChildRecords().hasChildRecordCount(0),
 						getAliasedAccountInfo("testAlias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
+										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10))
 				);
 	}
 
@@ -129,7 +129,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAliasedAccountInfo("alias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 1, 10))
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10))
 				).then(
 						/* update auto renew period */
 						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
@@ -143,7 +143,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0),
 						getAliasedAccountInfo("alias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 1, 10)),
+										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10)),
 
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -169,7 +169,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAliasedAccountInfo("alias").has(accountWith()
-								.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
+								.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 10)
 								.alias("alias"))
 				).then(
 						/* validate the key on account can be updated to complex key, and has no relation to alias*/
@@ -179,7 +179,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.signedBy("alias", "complexKey", "payer", DEFAULT_PAYER),
 						getAliasedAccountInfo("alias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.1)
+										.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10)
 										.key("complexKey")));
 	}
 
