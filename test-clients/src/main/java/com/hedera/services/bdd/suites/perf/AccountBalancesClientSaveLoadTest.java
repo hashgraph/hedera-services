@@ -74,7 +74,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -136,7 +135,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 										String.format("%d",settings.getBalancesExportPeriodSecs()) ))
 								.erasingProps(Set.of("accountBalanceExportPeriodMinutes"))),
 						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
+								.payingWith(GENESIS)
 								.contents(throttlesForJRS.toByteArray())
 				).when(
 
@@ -281,8 +280,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.treasury(payingTreasury)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
-						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-								TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
 						.suppressStats(true)
 						.noLogging()
 						;
@@ -315,7 +313,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,INVALID_SIGNATURE,
-								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+								TRANSACTION_EXPIRED)
 						.fee(ONE_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)

@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,6 +44,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -66,12 +68,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -92,6 +95,7 @@ public class SigRequirements {
 	/* The current architecture does not support a triggered transaction itself triggering a transaction. So
 	 * no matter what is in the scheduling.whitelist property, we have to abort any attempt to schedule these. */
 	private static final Set<HederaFunctionality> IMPOSSIBLE_TO_SCHEDULE = EnumSet.of(ScheduleCreate, ScheduleSign);
+	private static final Set<KeyOrderingFailure> INVALID_ACCOUNT_CODES = EnumSet.of(MISSING_ACCOUNT, IMMUTABLE_ACCOUNT);
 
 	private final SignatureWaivers signatureWaivers;
 	private final SigMetadataLookup sigMetaLookup;
@@ -212,7 +216,7 @@ public class SigRequirements {
 		if (result.succeeded()) {
 			return factory.forValidOrder(List.of(result.metadata().key()));
 		} else {
-			if (result.failureIfAny() == MISSING_ACCOUNT) {
+			if (INVALID_ACCOUNT_CODES.contains(result.failureIfAny())) {
 				return factory.forInvalidAccount();
 			} else {
 				return factory.forGeneralPayerError();
@@ -226,7 +230,7 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		if (txn.hasContractCreateInstance()) {
-			return contractCreate(txn.getContractCreateInstance(), factory);
+			return contractCreate(txn.getContractCreateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractUpdateInstance()) {
 			return contractUpdate(txn.getContractUpdateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractDeleteInstance()) {
@@ -252,12 +256,12 @@ public class SigRequirements {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
 		} else if (txn.hasCryptoApproveAllowance()) {
 			final var approveTxn = txn.getCryptoApproveAllowance();
-			return cryptoAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+			return cryptoApproveAllowance(payer, approveTxn.getCryptoAllowancesList(),
+					approveTxn.getTokenAllowancesList(),
 					approveTxn.getNftAllowancesList(), factory, linkedRefs);
-		} else if (txn.hasCryptoAdjustAllowance()) {
-			final var adjustTxn = txn.getCryptoAdjustAllowance();
-			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
-					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
+		} else if (txn.hasCryptoDeleteAllowance()) {
+			final var deleteAllowanceTxn = txn.getCryptoDeleteAllowance();
+			return cryptoDeleteAllowance(payer, deleteAllowanceTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else {
 			return null;
 		}
@@ -410,10 +414,18 @@ public class SigRequirements {
 			required = mutable(required);
 			required.add(result.metadata().key());
 		}
-		if (hasNondeprecatedAdminKey(op)) {
+		if (hasNonDeprecatedAdminKey(op)) {
 			var candidate = asUsableFcKey(op.getAdminKey());
 			required = mutable(required);
 			candidate.ifPresent(required::add);
+		}
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
 		}
 
 		return factory.forValidOrder(required);
@@ -421,29 +433,51 @@ public class SigRequirements {
 
 	private boolean needsCurrentAdminSig(final ContractUpdateTransactionBody op) {
 		return !op.hasExpirationTime()
-				|| hasNondeprecatedAdminKey(op)
+				|| hasNonDeprecatedAdminKey(op)
 				|| op.hasProxyAccountID()
 				|| op.hasAutoRenewPeriod()
 				|| op.hasFileID()
 				|| op.getMemo().length() > 0;
 	}
 
-	private boolean hasNondeprecatedAdminKey(final ContractUpdateTransactionBody op) {
+	private boolean hasNonDeprecatedAdminKey(final ContractUpdateTransactionBody op) {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID();
 	}
 
 	private <T> SigningOrderResult<T> contractCreate(
 			final ContractCreateTransactionBody op,
-			final SigningOrderResultFactory<T> factory
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs
 	) {
+		List<JKey> required = EMPTY_LIST;
+
 		var key = op.getAdminKey();
-		if (key.hasContractID()) {
-			return SigningOrderResult.noKnownKeys();
+		if (!key.hasContractID()) {
+			var candidate = asUsableFcKey(key);
+			if (candidate.isPresent()) {
+				required = mutable(required);
+				required.add(candidate.get());
+			}
 		}
-		var candidate = asUsableFcKey(key);
-		return candidate.isPresent()
-				? factory.forValidOrder(List.of(candidate.get()))
-				: SigningOrderResult.noKnownKeys();
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
+		}
+		return !required.isEmpty() ? factory.forValidOrder(required) : SigningOrderResult.noKnownKeys();
+	}
+
+	private boolean hasAutoRenewId(final ContractCreateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
+	}
+
+	private boolean hasAutoRenewId(final ContractUpdateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
 	}
 
 	private <T> SigningOrderResult<T> fileDelete(
@@ -520,30 +554,58 @@ public class SigRequirements {
 				: SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> cryptoAllowance(
+	private <T> SigningOrderResult<T> cryptoApproveAllowance(
 			final AccountID payer,
 			final List<CryptoAllowance> cryptoAllowancesList,
 			final List<TokenAllowance> tokenAllowancesList,
 			final List<NftAllowance> nftAllowancesList,
 			final SigningOrderResultFactory<T> factory,
-			final @Nullable LinkedRefs linkedRefs) {
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		List<JKey> requiredKeys = new ArrayList<>();
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : tokenAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : nftAllowancesList) {
+			final var ownerId = allowance.getOwner();
+			var operatorId = allowance.hasDelegatingSpender()
+					? allowance.getDelegatingSpender()
+					: ownerId;
+			// Only the owner can grant approveForAll
+			if (allowance.getApprovedForAll().getValue()) {
+				operatorId = ownerId;
+			}
+			if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != NONE) {
+				if (operatorId == ownerId) {
+					return factory.forInvalidAllowanceOwner();
+				} else {
+					return factory.forInvalidDelegatingSpender();
+				}
+			}
+		}
+
+		return factory.forValidOrder(requiredKeys);
+	}
+
+	private <T> SigningOrderResult<T> cryptoDeleteAllowance(
+			final AccountID payer,
+			final List<NftRemoveAllowance> nftAllowancesList,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs) {
+		List<JKey> requiredKeys = new ArrayList<>();
+		for (final var allowance : nftAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+			if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
@@ -662,12 +724,12 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> accountFailure(KeyOrderingFailure type, SigningOrderResultFactory<T> factory) {
-		if (type == INVALID_ACCOUNT) {
+		if (type == INVALID_ACCOUNT || type == IMMUTABLE_ACCOUNT) {
 			return factory.forInvalidAccount();
 		} else if (type == MISSING_ACCOUNT) {
 			return factory.forMissingAccount();
-		} else if (type == MISSING_AUTORENEW_ACCOUNT) {
-			return factory.forMissingAutoRenewAccount();
+		} else if (type == INVALID_AUTORENEW_ACCOUNT) {
+			return factory.forInvalidAutoRenewAccount();
 		} else {
 			return factory.forGeneralError();
 		}
@@ -712,14 +774,14 @@ public class SigRequirements {
 				ConsensusCreateTopicTransactionBody::hasAdminKey,
 				ConsensusCreateTopicTransactionBody::getAdminKey,
 				required);
-		if (!addAccount(
+		if (addAccount(
 				payer,
 				op,
 				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
 				required,
-				linkedRefs)) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+				linkedRefs) != NONE) {
+			return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 		}
 
 		return factory.forValidOrder(required);
@@ -733,15 +795,15 @@ public class SigRequirements {
 	) {
 		final List<JKey> required = new ArrayList<>();
 
-		final var couldAddTreasury = addAccount(
+		final var failure = addAccount(
 				payer,
 				op,
 				TokenCreateTransactionBody::hasTreasury,
 				TokenCreateTransactionBody::getTreasury,
 				required,
 				linkedRefs);
-		if (!couldAddTreasury) {
-			return accountFailure(MISSING_ACCOUNT, factory);
+		if (failure != NONE) {
+			return accountFailure(failure, factory);
 		}
 		final var couldAddAutoRenew = addAccount(
 				payer,
@@ -749,9 +811,9 @@ public class SigRequirements {
 				TokenCreateTransactionBody::hasAutoRenewAccount,
 				TokenCreateTransactionBody::getAutoRenewAccount,
 				required,
-				linkedRefs);
+				linkedRefs) == NONE;
 		if (!couldAddAutoRenew) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+			return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -768,9 +830,9 @@ public class SigRequirements {
 				final var fixedFee = customFee.getFixedFee();
 				final var alwaysAdd = fixedFee.hasDenominatingTokenId()
 						&& fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-				couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs);
+				couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
 			} else if (customFee.hasFractionalFee()) {
-				couldAddCollector = addAccount(payer, collector, required, true, linkedRefs);
+				couldAddCollector = addAccount(payer, collector, required, true, linkedRefs) == NONE;
 			} else {
 				final var royaltyFee = customFee.getRoyaltyFee();
 				var alwaysAdd = false;
@@ -778,10 +840,10 @@ public class SigRequirements {
 					final var fFee = royaltyFee.getFallbackFee();
 					alwaysAdd = fFee.hasDenominatingTokenId() && fFee.getDenominatingTokenId().getTokenNum() == 0;
 				}
-				couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs);
+				couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
 			}
 			if (!couldAddCollector) {
-				return factory.forMissingFeeCollector();
+				return factory.forInvalidFeeCollector();
 			}
 		}
 
@@ -843,10 +905,10 @@ public class SigRequirements {
 				required.add(feeScheduleKey.get());
 				for (var customFee : op.getCustomFeesList()) {
 					final var collector = customFee.getFeeCollectorAccountId();
-					final var couldAddCollector = addAccountIfReceiverSigRequired(payer, collector, required,
-							linkedRefs);
+					final var couldAddCollector =
+							addAccountIfReceiverSigRequired(payer, collector, required, linkedRefs) == NONE;
 					if (!couldAddCollector) {
-						return factory.forMissingFeeCollector();
+						return factory.forInvalidFeeCollector();
 					}
 				}
 				return factory.forValidOrder(required);
@@ -872,23 +934,24 @@ public class SigRequirements {
 		}
 
 		var required = basic.getOrderedKeys();
-		if (!addAccount(
+		if (addAccount(
 				payer,
 				op,
 				TokenUpdateTransactionBody::hasAutoRenewAccount,
 				TokenUpdateTransactionBody::getAutoRenewAccount,
 				required,
-				linkedRefs)) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+				linkedRefs) != NONE) {
+			return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 		}
-		if (!addAccount(
+		KeyOrderingFailure failure;
+		if ((failure = addAccount(
 				payer,
 				op,
 				TokenUpdateTransactionBody::hasTreasury,
 				TokenUpdateTransactionBody::getTreasury,
 				required,
-				linkedRefs)) {
-			return accountFailure(MISSING_ACCOUNT, factory);
+				linkedRefs)) != NONE) {
+			return accountFailure(failure, factory);
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -898,7 +961,7 @@ public class SigRequirements {
 		return basic;
 	}
 
-	private boolean addAccountIfReceiverSigRequired(
+	private KeyOrderingFailure addAccountIfReceiverSigRequired(
 			final AccountID payer,
 			final AccountID id,
 			final List<JKey> reqs,
@@ -907,7 +970,7 @@ public class SigRequirements {
 		return addAccount(payer, id, reqs, false, linkedRefs);
 	}
 
-	private <T> boolean addAccount(
+	private <T> KeyOrderingFailure addAccount(
 			final AccountID payer,
 			final T op,
 			final Predicate<T> isPresent,
@@ -918,10 +981,10 @@ public class SigRequirements {
 		if (isPresent.test(op)) {
 			return addAccount(payer, getter.apply(op), reqs, true, linkedRefs);
 		}
-		return true;
+		return NONE;
 	}
 
-	private boolean addAccount(
+	private KeyOrderingFailure addAccount(
 			final AccountID payer,
 			final AccountID id,
 			final List<JKey> reqs,
@@ -936,10 +999,10 @@ public class SigRequirements {
 					reqs.add(metadata.key());
 				}
 			} else {
-				return false;
+				return result.failureIfAny();
 			}
 		}
-		return true;
+		return NONE;
 	}
 
 	private <T> SigningOrderResult<T> tokenMutates(
@@ -1028,15 +1091,15 @@ public class SigRequirements {
 				required);
 
 		int before = required.size();
-		var couldAddPayer = addAccount(
+		var failure = addAccount(
 				payer,
 				op,
 				ScheduleCreateTransactionBody::hasPayerAccountID,
 				ScheduleCreateTransactionBody::getPayerAccountID,
 				required,
 				linkedRefs);
-		if (!couldAddPayer) {
-			return accountFailure(INVALID_ACCOUNT, factory);
+		if (failure != NONE) {
+			return accountFailure(failure, factory);
 		}
 		int after = required.size();
 		if (after > before) {
@@ -1065,7 +1128,7 @@ public class SigRequirements {
 		if (optionalPayer.isPresent()) {
 			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get(), linkedRefs);
 			if (!payerResult.succeeded()) {
-				return accountFailure(INVALID_ACCOUNT, factory);
+				return accountFailure(payerResult.failureIfAny(), factory);
 			} else {
 				var dupKey = payerResult.metadata().key().duplicate();
 				dupKey.setForScheduledTxn(true);
@@ -1138,7 +1201,7 @@ public class SigRequirements {
 				required = mutable(required);
 				required.add(meta.key());
 			} else {
-				return factory.forMissingAccount();
+				return factory.forInvalidAccount();
 			}
 		}
 
@@ -1149,7 +1212,8 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID owner,
 			final List<JKey> required,
-			final LinkedRefs linkedRefs) {
+			final LinkedRefs linkedRefs
+	) {
 		if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
 			var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
 			if (!ownerResult.succeeded()) {
@@ -1180,13 +1244,14 @@ public class SigRequirements {
 				}
 			} else {
 				final var reason = result.failureIfAny();
-				if (autoCreationAllowed && reason == MISSING_ACCOUNT && adjust.getAmount() > 0L && isAlias(account)) {
+				final var isCredit = adjust.getAmount() > 0L;
+				if (reason == IMMUTABLE_ACCOUNT && isCredit) {
+					return NONE;
+				} else if (reason == MISSING_ACCOUNT && autoCreationAllowed && isCredit && isAlias(account)) {
 					return NONE;
 				} else {
-					/* MISSING_ACCOUNT is not a "terminal" signature status, because in several transaction types
-					 * we want a downstream components to choose a more specific failure response. But missing
-					 * accounts in a transfer list can be safely given the terminal INVALID_ACCOUNT_ID status. */
-					return (reason == MISSING_ACCOUNT) ? INVALID_ACCOUNT : reason;
+					// These response codes can be refined in a future release
+					return INVALID_ACCOUNT_CODES.contains(reason) ? INVALID_ACCOUNT : reason;
 				}
 			}
 		}
@@ -1317,7 +1382,7 @@ public class SigRequirements {
 					required = mutable(required);
 					required.add(autoRenewResult.metadata().key());
 				} else {
-					return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+					return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 				}
 			}
 		}

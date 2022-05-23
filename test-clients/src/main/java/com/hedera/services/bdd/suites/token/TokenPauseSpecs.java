@@ -69,12 +69,16 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -87,6 +91,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public final class TokenPauseSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPauseSpecs.class);
 
+	private static final String associationsLimitProperty = "entities.limitTokenAssociations";
+	private static final String defaultAssociationsLimit =
+			HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 	static final String defaultMinAutoRenewPeriod =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
 
@@ -120,8 +127,78 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 				pausedTokenInCustomFeeCaseStudy(),
 				cannotAddPauseKeyViaTokenUpdate(),
 				canDissociateFromMultipleExpiredTokens(),
+				cannotAssociateMoreThanTheLimit(),
 		});
 	}
+
+	private HapiApiSpec cannotAssociateMoreThanTheLimit() {
+		final String treasury1 = "treasury1";
+		final String treasury2 = "treasury2";
+		final String user1 = "user1";
+		final String user2 = "user2";
+		final String key = "key";
+		final String token1 = "token1";
+		final String token2 = "token2";
+		final String token3 = "token3";
+		return defaultHapiSpec("CannotAssociateMoreThanTheLimit")
+				.given(
+						newKeyNamed(key),
+						cryptoCreate(treasury1),
+						cryptoCreate(treasury2),
+						tokenCreate(token1)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(treasury1)
+								.maxSupply(500)
+								.kycKey(key)
+								.initialSupply(100),
+						tokenCreate(token2)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(treasury2)
+								.maxSupply(500)
+								.kycKey(key)
+								.initialSupply(100),
+						overridingTwo(
+								associationsLimitProperty, "true",
+								"tokens.maxPerAccount", "0")
+				)
+				.when(
+						tokenCreate(token3)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(treasury2)
+								.maxSupply(500)
+								.kycKey(key)
+								.initialSupply(100)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						cryptoCreate(user1)
+								.maxAutomaticTokenAssociations(1)
+								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+						cryptoCreate(user1),
+						tokenAssociate(user1, token1)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						tokenAssociate(treasury1, token2)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+				)
+				.then(
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						tokenCreate(token3)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(treasury2)
+								.maxSupply(500)
+								.kycKey(key)
+								.initialSupply(100),
+						cryptoCreate(user2)
+								.maxAutomaticTokenAssociations(10_000),
+						tokenAssociate(user1, token1),
+						tokenAssociate(treasury1, token2),
+						// Restore default
+						overriding("tokens.maxPerAccount", "1000")
+				);
+	}
+
 
 	private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
 		final String token1 = "primary";
@@ -558,16 +635,16 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate(civilian).balance(0L),
 						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
-								tokenCreate(tokenNameFn.apply(i))
-										.autoRenewAccount(DEFAULT_PAYER)
-										.autoRenewPeriod(1L)
-										.initialSupply(initialSupply)
-										.treasury(TOKEN_TREASURY))
+										tokenCreate(tokenNameFn.apply(i))
+												.autoRenewAccount(DEFAULT_PAYER)
+												.autoRenewPeriod(1L)
+												.initialSupply(initialSupply)
+												.treasury(TOKEN_TREASURY))
 								.toArray(HapiSpecOperation[]::new)),
 						tokenAssociate(civilian, List.of(assocOrder)),
 						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
-								cryptoTransfer(moving(nonZeroXfer, tokenNameFn.apply(i))
-										.between(TOKEN_TREASURY, civilian)))
+										cryptoTransfer(moving(nonZeroXfer, tokenNameFn.apply(i))
+												.between(TOKEN_TREASURY, civilian)))
 								.toArray(HapiSpecOperation[]::new))
 				).when(
 						sleepFor(1_000L),
@@ -599,7 +676,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 				try {
 					assertEquals(expectedTokenIds.length, tokenTransfers.size(), "Wrong # of token ids");
 					var nextI = 0;
-					for (final var expected : expectedTokenIds)	{
+					for (final var expected : expectedTokenIds) {
 						final var expectedId = registry.getTokenID(expected);
 						final var actualId = tokenTransfers.get(nextI++).getToken();
 						assertEquals(expectedId, actualId, "Wrong token at index " + (nextI - 1));

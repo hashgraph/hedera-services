@@ -20,11 +20,9 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobKey.Type;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +31,6 @@ import org.mockito.ArgumentCaptor;
 import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -85,27 +82,12 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	void delegatesPutUsingGetForModifyIfExtantBlob() {
-		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
-		given(pathedBlobs.getForModify(pathAKey)).willReturn(blobA);
-
-		final var oldBytes = subject.put(dataPath, aData);
-
-		verify(pathedBlobs).containsKey(pathAKey);
-		verify(pathedBlobs).getForModify(pathAKey);
-
-		assertNull(oldBytes);
-	}
-
-	@Test
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
 		final var keyCaptor = ArgumentCaptor.forClass(VirtualBlobKey.class);
 		final var valueCaptor = ArgumentCaptor.forClass(VirtualBlobValue.class);
-		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
 		final var oldBytes = subject.put(dataPath, aData);
 
-		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 
 		assertEquals(pathAKey, keyCaptor.getValue());
@@ -156,27 +138,6 @@ class FcBlobsBytesStoreTest {
 		blobA = mock(VirtualBlobValue.class);
 
 		given(blobA.getData()).willReturn(aData);
-	}
-
-	@Test
-	void putDeletesReplacedValueIfNoCopyIsHeld() {
-		final MerkleMap<String, MerkleOptionalBlob> blobs = new MerkleMap<>();
-		blobs.put("path", new MerkleOptionalBlob("FIRST".getBytes()));
-
-		final var replaced = blobs.put("path", new MerkleOptionalBlob("SECOND".getBytes()));
-
-		assertTrue(replaced.getDelegate().isReleased());
-	}
-
-	@Test
-	void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
-		final MerkleMap<String, MerkleOptionalBlob> blobs = new MerkleMap<>();
-		blobs.put("path", new MerkleOptionalBlob("FIRST".getBytes()));
-
-		final var copy = blobs.copy();
-		final var replaced = copy.put("path", new MerkleOptionalBlob("SECOND".getBytes()));
-
-		assertFalse(replaced.getDelegate().isReleased());
 	}
 
 	@Test

@@ -20,11 +20,19 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -32,12 +40,15 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart, reconnect.
@@ -48,12 +59,13 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
+	private static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN = EthTxSigs::recoverAddressFromPubKey;
 
-	private Map<ByteString, EntityNum> aliases;
+	private final Supplier<Map<ByteString, EntityNum>> aliases;
 
 	@Inject
-	public AliasManager() {
-		this.aliases = new HashMap<>();
+	public AliasManager(final Supplier<Map<ByteString, EntityNum>> aliases) {
+		this.aliases = aliases;
 	}
 
 	@Override
@@ -87,7 +99,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 			return addressOrAlias;
 		}
 		final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
-		final var contractNum = aliases.get(aliasKey);
+		final var contractNum = curAliases().get(aliasKey);
 		// If we cannot resolve to a mirror address, we return the missing alias and let a
 		// downstream component fail the transaction by returning null from its get() method.
 		// Cf. the address validator provided by ContractsModule#provideAddressValidator().
@@ -96,59 +108,120 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	@Override
 	public boolean isInUse(final Address address) {
-		return aliases.containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
+		return curAliases().containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {
-		aliases.put(alias, num);
+		curAliases().put(alias, num);
+	}
+
+	public boolean maybeLinkEvmAddress(@Nullable final JKey key, final EntityNum num) {
+		return maybeLinkEvmAddress(key, num, ADDRESS_RECOVERY_FN);
+	}
+
+	boolean maybeLinkEvmAddress(
+			@Nullable final JKey key,
+			final EntityNum num,
+			final UnaryOperator<byte[]> addressRecovery
+	) {
+		final var evmAddress = tryAddressRecovery(key, addressRecovery);
+		if (evmAddress != null) {
+			link(ByteStringUtils.wrapUnsafely(evmAddress), num);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Nullable
+	public static byte[] tryAddressRecovery(@Nullable final JKey key, final UnaryOperator<byte[]> addressRecovery) {
+		if (key != null && key.hasECDSAsecp256k1Key()) {
+			// Only compressed keys are stored at the moment
+			final var keyBytes = key.getECDSASecp256k1Key();
+			if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+				var evmAddress = addressRecovery.apply(keyBytes);
+				if (evmAddress != null) {
+					return evmAddress;
+				} else {
+					// Not ever expected, since above checks should imply a valid input to the LibSecp256k1 library
+					log.warn("Unable to recover EVM address from {}", () -> hex(keyBytes));
+				}
+			}
+		}
+		return null;
 	}
 
 	public void unlink(final ByteString alias) {
-		aliases.remove(alias);
+		curAliases().remove(alias);
 	}
 
 	/**
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		aliases.clear();
+		final var numCreate2Aliases = new AtomicInteger();
+		final var numEOAliases = new AtomicInteger();
+		final var workingAliases = curAliases();
+		workingAliases.clear();
 		forEach(accounts, (k, v) -> {
-			if (!v.getAlias().isEmpty()) {
-				aliases.put(v.getAlias(), k);
+			final var alias = v.getAlias();
+			if (!alias.isEmpty()) {
+				workingAliases.put(alias, k);
+				if (v.isSmartContract()) {
+					numCreate2Aliases.getAndIncrement();
+				}
+				if (alias.size() > EVM_ADDRESS_LEN) {
+					try {
+						final Key key = Key.parseFrom(v.getAlias());
+						final JKey jKey = JKey.mapKey(key);
+						if (maybeLinkEvmAddress(jKey, v.getKey())) {
+							numEOAliases.incrementAndGet();
+						}
+					} catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException e) {
+						// any expected exception means no eth mapping
+					}
+				}
 			}
 		});
-		log.info("Rebuild complete : No.of accounts with aliases {} ", aliases.size());
+		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned accounts)",
+				workingAliases::size, numCreate2Aliases::get, numEOAliases::get);
 	}
 
 	/**
-	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
+	 * Ensures an alias is no longer in use, returning whether it previously was.
 	 *
-	 * @param expiredId
-	 * 		entity id that is expired
-	 * @param accounts
-	 * 		current accounts map
-	 * @return whether the alias was forgotten
+	 * @param alias the alias to forget
+	 * @return whether it was present
 	 */
-	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		final var alias = accounts.get(expiredId).getAlias();
-		if (!alias.isEmpty()) {
-			aliases.remove(alias);
-			return true;
+	public boolean forgetAlias(final ByteString alias) {
+		if (alias.isEmpty()) {
+			return false;
 		}
-		return false;
+		return curAliases().remove(alias) != null;
 	}
 
-	/**
-	 * Returns if there is an account linked the given alias.
-	 *
-	 * @param alias the alias of interest
-	 * @return whether there is a linked account
-	 */
-	public boolean contains(final ByteString alias) {
-		return aliases.containsKey(alias);
+	public void forgetEvmAddress(final ByteString alias) {
+		try {
+			var key = Key.parseFrom(alias);
+			var jKey = JKey.mapKey(key);
+			if (jKey.hasECDSAsecp256k1Key()) {
+				// ecdsa keys from alias are currently only stored in compressed form.
+				byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
+				// trust, but verify
+				if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+					var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+					if (evmAddress != null) {
+						curAliases().remove(ByteString.copyFrom(evmAddress));
+					}
+				}
+			}
+		} catch (InvalidProtocolBufferException | DecoderException internal) {
+			// any parse error means it's not a evm address
+		}
 	}
 
 	/**
@@ -159,15 +232,15 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * @return EntityNum mapped to the given alias.
 	 */
 	public EntityNum lookupIdBy(final ByteString alias) {
-		return aliases.getOrDefault(alias, MISSING_NUM);
+		return curAliases().getOrDefault(alias, MISSING_NUM);
 	}
 
-	/* --- Only used by unit tests --- */
-	void setAliases(final Map<ByteString, EntityNum> aliases) {
-		this.aliases = aliases;
+	private Map<ByteString, EntityNum> curAliases() {
+		return aliases.get();
 	}
 
+	@VisibleForTesting
 	Map<ByteString, EntityNum> getAliases() {
-		return aliases;
+		return curAliases();
 	}
 }

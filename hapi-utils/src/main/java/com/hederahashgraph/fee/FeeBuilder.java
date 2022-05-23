@@ -69,6 +69,8 @@ public class FeeBuilder {
 	public static final int NFT_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + BOOL_SIZE; // owner, tokenNum,
 	// spender num, approvedForAll
 
+	public static final int NFT_DELETE_ALLOWANCE_SIZE = 2 * BASIC_ENTITY_ID_SIZE; // owner, tokenID
+
 	/**
 	 * Fields included: status, exchangeRate.
 	 */
@@ -312,14 +314,14 @@ public class FeeBuilder {
 	 * @return tinyHbars
 	 */
 	public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
-		BigInteger hbarMultiplier = BigInteger.valueOf(exchangeRate.getHbarEquiv());
-		BigInteger centsDivisor = BigInteger.valueOf(exchangeRate.getCentEquiv());
-		BigInteger feeInBigInt = BigInteger.valueOf(tinyCentsFee);
-		feeInBigInt = feeInBigInt.multiply(hbarMultiplier);
-		feeInBigInt = feeInBigInt.divide(centsDivisor);
-		return feeInBigInt.longValue();
+		return getAFromB(tinyCentsFee, exchangeRate.getHbarEquiv(), exchangeRate.getCentEquiv());
 	}
 
+	private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+		final var aMultiplier = BigInteger.valueOf(aEquiv);
+		final var bDivisor = BigInteger.valueOf(bEquiv);
+		return BigInteger.valueOf(bAmount).multiply(aMultiplier).divide(bDivisor).longValueExact();
+	}
 
 	public static FeeData getFeeDataMatrices(FeeComponents feeComponents, int payerVpt, long rbsNetwork) {
 

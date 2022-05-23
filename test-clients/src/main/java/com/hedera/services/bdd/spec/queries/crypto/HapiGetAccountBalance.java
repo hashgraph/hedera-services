@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -28,6 +29,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -35,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +60,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
@@ -70,7 +74,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
 	private String repr;
 
+	private AccountID expectedId = null;
 	private String aliasKeySource = null;
+	private String literalHexedAlias = null;
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 	private boolean assertAccountIDIsNotAlias = false;
 
@@ -85,6 +91,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		if (type == ReferenceType.ALIAS_KEY_NAME) {
 			aliasKeySource = reference;
 			repr = "KeyAlias(" + aliasKeySource + ")";
+		} else if (type == ReferenceType.HEXED_CONTRACT_ALIAS) {
+			literalHexedAlias = reference;
+			repr = "0.0." + reference;
 		} else {
 			account = reference;
 			repr = account;
@@ -139,6 +148,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		return this;
 	}
 
+	public HapiGetAccountBalance hasId(final AccountID expectedId) {
+		this.expectedId = expectedId;
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoGetAccountBalance;
@@ -160,7 +174,14 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		if (assertAccountIDIsNotAlias) {
 			final var expectedID = spec.registry().getAccountID(
 					spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8());
-			Assertions.assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
+			assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
+		}
+
+		if (expectedId != null) {
+			assertEquals(
+					expectedId,
+					response.getCryptogetAccountBalance().getAccountID(),
+					"Wrong account id");
 		}
 
 		if (expectedCondition.isPresent()) {
@@ -170,7 +191,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 				Assertions.fail("Bad balance! :: " + failure.get());
 			}
 		} else if (expected.isPresent()) {
-			Assertions.assertEquals(expected.get().longValue(), actual, "Wrong balance!");
+			assertEquals(expected.get().longValue(), actual, "Wrong balance!");
 		}
 
 		Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
@@ -185,13 +206,13 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 				var tokenId = asTokenId(tokenBalance.getKey(), spec);
 				String[] expectedParts = tokenBalance.getValue().split("-");
 				Long expectedBalance = Long.valueOf(expectedParts[0]);
-				Assertions.assertEquals(
+				assertEquals(
 						expectedBalance,
 						actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
 						String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
 				if (!"G".equals(expectedParts[1])) {
 					Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
-					Assertions.assertEquals(
+					assertEquals(
 							expectedDecimals,
 							actualTokenBalances.getOrDefault(tokenId, defaultTb).getRight(),
 							String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
@@ -252,6 +273,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		Consumer<CryptoGetAccountBalanceQuery.Builder> config;
 		if (spec.registry().hasContractId(account)) {
 			config = b -> b.setContractID(spec.registry().getContractId(account));
+		} else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
+			final var cid = ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(literalHexedAlias)))
+					.build();
+			config = b -> b.setContractID(cid);
 		} else {
 			AccountID id;
 			if (referenceType == ReferenceType.REGISTRY_NAME) {

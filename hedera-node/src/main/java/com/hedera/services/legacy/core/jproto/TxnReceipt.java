@@ -22,7 +22,6 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.TxnId;
@@ -30,23 +29,25 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
+import static com.swirlds.common.utility.CommonUtils.getNormalisedStringFromBytes;
 
 public class TxnReceipt implements SelfSerializable {
 	private static final int MAX_STATUS_BYTES = 128;
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
-	private static final int MAX_SERIAL_NUMBERS = 1024; // Is this number enough?
+	private static final int MAX_SERIAL_NUMBERS = 16384;
 
 	public static final String SUCCESS_LITERAL = SUCCESS.name();
 	public static final String REVERTED_SUCCESS_LITERAL = REVERTED_SUCCESS.name();
@@ -58,16 +59,9 @@ public class TxnReceipt implements SelfSerializable {
 	static final long MISSING_RUNNING_HASH_VERSION = 0L;
 	static final long MISSING_NEW_TOTAL_SUPPLY = -1L;
 
-	static final int RELEASE_070_VERSION = 1;
-	static final int RELEASE_090_VERSION = 3;
-	static final int RELEASE_0100_VERSION = 4;
-	static final int RELEASE_0110_VERSION = 5;
-	static final int RELEASE_0120_VERSION = 6;
 	static final int RELEASE_0160_VERSION = 7;
-	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	long runningHashVersion = MISSING_RUNNING_HASH_VERSION;
 	long topicSequenceNumber = MISSING_TOPIC_SEQ_NO;
@@ -118,19 +112,24 @@ public class TxnReceipt implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeNormalisedString(status);
 		out.writeSerializable(exchangeRates, true);
-		serdes.writeNullableSerializable(accountId, out);
-		serdes.writeNullableSerializable(fileId, out);
-		serdes.writeNullableSerializable(contractId, out);
-		serdes.writeNullableSerializable(topicId, out);
-		serdes.writeNullableSerializable(tokenId, out);
-		serdes.writeNullableSerializable(scheduleId, out);
+		writeNullableSerializable(accountId, out);
+		writeNullableSerializable(fileId, out);
+		writeNullableSerializable(contractId, out);
+		writeNullableSerializable(topicId, out);
+		writeNullableSerializable(tokenId, out);
+		writeNullableSerializable(scheduleId, out);
 		if (topicRunningHash == MISSING_RUNNING_HASH) {
 			out.writeBoolean(false);
 		} else {
@@ -140,39 +139,34 @@ public class TxnReceipt implements SelfSerializable {
 			out.writeByteArray(topicRunningHash);
 		}
 		out.writeLong(newTotalSupply);
-		serdes.writeNullableSerializable(scheduledTxnId, out);
+		writeNullableSerializable(scheduledTxnId, out);
 		out.writeLongArray(serialNumbers);
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
 		exchangeRates = in.readSerializable(true, ExchangeRates::new);
-		accountId = serdes.readNullableSerializable(in);
-		fileId = serdes.readNullableSerializable(in);
-		contractId = serdes.readNullableSerializable(in);
-		topicId = serdes.readNullableSerializable(in);
-		if (version > RELEASE_070_VERSION) {
-			tokenId = serdes.readNullableSerializable(in);
-		}
-		if (version >= RELEASE_0110_VERSION) {
-			scheduleId = serdes.readNullableSerializable(in);
-		}
-		var isSubmitMessageReceipt = in.readBoolean();
+		accountId = readNullableSerializable(in);
+		fileId = readNullableSerializable(in);
+		contractId = readNullableSerializable(in);
+		topicId = readNullableSerializable(in);
+		// Added in 0.7
+		tokenId = readNullableSerializable(in);
+		// Added in 0.11
+		scheduleId = readNullableSerializable(in);
+		final var isSubmitMessageReceipt = in.readBoolean();
 		if (isSubmitMessageReceipt) {
 			topicSequenceNumber = in.readLong();
 			runningHashVersion = in.readLong();
 			topicRunningHash = in.readByteArray(MAX_RUNNING_HASH_BYTES);
 		}
-		if (version > RELEASE_090_VERSION) {
-			newTotalSupply = in.readLong();
-		}
-		if (version >= RELEASE_0120_VERSION) {
-			scheduledTxnId = serdes.readNullableSerializable(in);
-		}
-		if (version >= RELEASE_0160_VERSION) {
-			serialNumbers = in.readLongArray(MAX_SERIAL_NUMBERS);
-		}
+		// Added in 0.9
+		newTotalSupply = in.readLong();
+		// Added in 0.12
+		scheduledTxnId = readNullableSerializable(in);
+		// Added in 0.16
+		serialNumbers = in.readLongArray(MAX_SERIAL_NUMBERS);
 	}
 
 	public long getRunningHashVersion() {

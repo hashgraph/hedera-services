@@ -25,20 +25,20 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -55,15 +55,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -92,9 +95,8 @@ class TransferLogicTest {
 	private TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 		put(fungibleAllowanceId, initialAllowance);
 	}};
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, FcTokenAllowance.from(true));
-		put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+	private TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>() {{
+		add(fungibleAllowanceId);
 	}};
 
 	@Mock
@@ -108,9 +110,9 @@ class TransferLogicTest {
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
-	private UniqueTokenViewsManager tokenViewsManager;
+	private RecordsHistorian recordsHistorian;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private AccountsCommitInterceptor accountsCommitInterceptor;
 
 	private TransferLogic subject;
 
@@ -121,7 +123,7 @@ class TransferLogicTest {
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				sideEffectsTracker, dynamicProperties, TEST_VALIDATOR,
 				autoCreationLogic, recordsHistorian);
 	}
 
@@ -133,7 +135,7 @@ class TransferLogicTest {
 
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				sideEffectsTracker, dynamicProperties, TEST_VALIDATOR,
 				null, recordsHistorian);
 
 		final var triggerList = List.of(inappropriateTrigger);
@@ -156,7 +158,7 @@ class TransferLogicTest {
 		assertFailsWith(() -> subject.doZeroSum(List.of(failingTrigger)), INSUFFICIENT_ACCOUNT_BALANCE);
 
 		verify(autoCreationLogic).reclaimPendingAliases();
-		assertTrue(accountsLedger.getCreations().isEmpty());
+		assertTrue(accountsLedger.getCreatedKeys().isEmpty());
 	}
 
 	@Test
@@ -196,7 +198,6 @@ class TransferLogicTest {
 		subject.doZeroSum(changes);
 
 		assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
-		verify(sideEffectsTracker).trackHbarChange(funding, 2 * autoFee);
 		assertEquals(firstAmount - autoFee, (long) accountsLedger.get(firstNewAccount, AccountProperty.BALANCE));
 		assertEquals(secondAmount - autoFee, (long) accountsLedger.get(secondNewAccount, AccountProperty.BALANCE));
 		verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
@@ -233,20 +234,28 @@ class TransferLogicTest {
 	@Test
 	void happyPathNFTAllowance() {
 		setUpAccountWithAllowances();
+		final var nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+		final var nftId2 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
 		final var change1 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 1L), payer);
 		final var change2 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, nftTransfer(owner, revokedSpender, 123L), payer);
+				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 123L), payer);
+		final var change3 = BalanceChange.changingNftOwnership(
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 2L), payer);
 
 		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
 		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
+		given(tokenStore.tryTokenChange(change3)).willReturn(OK);
+		given(nftsLedger.get(nftId1, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
+
 
 		accountsLedger.begin();
-		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
+		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2, change3)));
 
 		updateAllowanceMaps();
-		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
-		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
+		assertTrue(nftAllowances.contains(fungibleAllowanceId));
+		verify(nftsLedger).set(nftId1, SPENDER, MISSING_ENTITY_ID);
+		verify(nftsLedger).set(nftId2, SPENDER, MISSING_ENTITY_ID);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
@@ -264,7 +273,7 @@ class TransferLogicTest {
 				.build();
 	}
 
-	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+	private NftTransfer allowanceNftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
 		return NftTransfer.newBuilder()
 				.setIsApproval(true)
 				.setSenderAccountID(sender)
@@ -273,12 +282,22 @@ class TransferLogicTest {
 				.build();
 	}
 
+	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+		return NftTransfer.newBuilder()
+				.setIsApproval(false)
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(serialNum)
+				.build();
+	}
+
 	private void setUpAccountWithAllowances() {
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		accountsLedger.begin();
 		accountsLedger.create(owner);
 		accountsLedger.set(owner, AccountProperty.CRYPTO_ALLOWANCES, cryptoAllowances);
 		accountsLedger.set(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
-		accountsLedger.set(owner, AccountProperty.NFT_ALLOWANCES, nftAllowances);
+		accountsLedger.set(owner, AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES, nftAllowances);
 		accountsLedger.set(owner, AccountProperty.BALANCE, initialBalance);
 		accountsLedger.commit();
 	}
@@ -288,7 +307,7 @@ class TransferLogicTest {
 				(Map<EntityNum, Long>) accountsLedger.get(owner, AccountProperty.CRYPTO_ALLOWANCES));
 		fungibleAllowances = new TreeMap<>(
 				(Map<FcTokenAllowanceId, Long>) accountsLedger.get(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
-		nftAllowances = new TreeMap<>(
-				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.NFT_ALLOWANCES));
+		nftAllowances = new TreeSet<>(
+				(Set<FcTokenAllowanceId>) accountsLedger.get(owner, AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES));
 	}
 }

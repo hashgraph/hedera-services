@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
@@ -31,7 +32,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -40,12 +40,10 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -57,6 +55,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
+
+	private static final String associationsLimitProperty = "entities.limitTokenAssociations";
+	private static final String defaultAssociationsLimit =
+			HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
 	public static void main(String... args) {
 		new CryptoCreateSuite().runSuiteSync();
@@ -90,29 +92,28 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		final int MONOGAMOUS_NETWORK = 1;
 		final int maxAutoAssociations = 100;
 		final int ADVENTUROUS_NETWORK = 1_000;
-		final String user = "user";
+		final String user1 = "user1";
+
 		return defaultHapiSpec("MaxAutoAssociationSpec")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK))
-				)
-				.when()
-				.then(
-						cryptoCreate(user)
+						overridingTwo(
+								associationsLimitProperty, "true",
+								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
+						)
+				).when().then(
+						cryptoCreate(user1)
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(maxAutoAssociations)
 								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
-								)),
-						cryptoCreate(user)
+						// Default is NOT to limit associations
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
+						cryptoCreate(user1)
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(maxAutoAssociations),
-						getAccountInfo(user)
-								.hasMaxAutomaticAssociations(maxAutoAssociations)
+						getAccountInfo(user1)
+								.hasMaxAutomaticAssociations(maxAutoAssociations),
+						// Restore default
+						overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK)
 				);
 	}
 

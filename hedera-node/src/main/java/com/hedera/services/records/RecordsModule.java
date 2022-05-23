@@ -23,16 +23,13 @@ package com.hedera.services.records;
 import com.google.common.cache.Cache;
 import com.hedera.services.context.annotations.StaticAccountMemo;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
-import com.hedera.services.stream.RecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -42,7 +39,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 @Module
 public interface RecordsModule {
@@ -52,7 +48,7 @@ public interface RecordsModule {
 
 	@Binds
 	@Singleton
-	AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
+	RecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
 
 	@Provides
 	@Singleton
@@ -64,12 +60,6 @@ public interface RecordsModule {
 	@Singleton
 	static Cache<TransactionID, Boolean> provideCache(RecordCacheFactory recordCacheFactory) {
 		return recordCacheFactory.getCache();
-	}
-
-	@Provides
-	@Singleton
-	static Consumer<RunningHash> provideRunningHashUpdate(@WorkingState StateAccessor stateAccessor) {
-		return runningHash -> stateAccessor.runningHashLeaf().setRunningHash(runningHash);
 	}
 
 	@Provides

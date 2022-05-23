@@ -22,7 +22,7 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 public class JDelegatableContractAliasKey extends JContractAliasKey {
 	public JDelegatableContractAliasKey(final ContractID contractID) {

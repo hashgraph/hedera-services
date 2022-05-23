@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 
@@ -46,7 +47,8 @@ public class Dissociation {
 	private boolean modelsAreUpdated = false;
 	private boolean expiredTokenTreasuryReceivedBalance = false;
 
-	public static Dissociation loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId) {
+	public static Dissociation loadFrom(
+			TypedTokenStore tokenStore, Account account, Id tokenId) {
 		final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 		final var dissociatingAccountRel = tokenStore.loadTokenRelationship(token, account);
 		if (token.isBelievedToHaveBeenAutoRemoved()) {
@@ -77,8 +79,16 @@ public class Dissociation {
 		return dissociatingAccountRel.getAccount().getId();
 	}
 
+	public Account dissociatingAccount() {
+		return dissociatingAccountRel.getAccount();
+	}
+
 	public Id dissociatedTokenId() {
 		return dissociatingAccountRel.getToken().getId();
+	}
+
+	public Token dissociatingToken() {
+		return dissociatingAccountRel.getToken();
 	}
 
 	public TokenRelationship dissociatedTokenTreasuryRel() {

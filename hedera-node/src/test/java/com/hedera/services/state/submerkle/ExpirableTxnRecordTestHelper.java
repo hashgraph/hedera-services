@@ -19,8 +19,10 @@ package com.hedera.services.state.submerkle;
  * limitations under the License.
  * ‍
  */
+
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -61,7 +63,7 @@ public class ExpirableTxnRecordTestHelper {
 				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
 				: null;
 		final var newTokenAssociations =
-				 record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
+				record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
 		final var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -69,11 +71,12 @@ public class ExpirableTxnRecordTestHelper {
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
-				.setTransferList(
-						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
+				.setHbarAdjustments(
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(
+								record.getTransferList().getAccountAmountsList()) : null)
+				.setContractCallResult(record.hasContractCallResult() ? SerdeUtils.fromGrpc(
 						record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
+				.setContractCreateResult(record.hasContractCreateResult() ? SerdeUtils.fromGrpc(
 						record.getContractCreateResult()) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
@@ -81,7 +84,8 @@ public class ExpirableTxnRecordTestHelper {
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setAssessedCustomFees(fcAssessedFees)
 				.setNewTokenAssociations(newTokenAssociations)
-				.setAlias(record.getAlias());
+				.setAlias(record.getAlias())
+				.setEthereumHash(record.getEthereumHash().toByteArray());
 		if (record.hasParentConsensusTimestamp()) {
 			builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
 		}

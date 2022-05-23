@@ -44,7 +44,7 @@ class VirtualMapFactoryTest {
 	@Test
 	void propagatesUncheckedFromBuilder() {
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
-		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedIterableStorage());
 	}
 
 	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {

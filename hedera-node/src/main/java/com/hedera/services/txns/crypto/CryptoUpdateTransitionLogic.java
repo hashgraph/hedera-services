@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -148,7 +148,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
 				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 			}
-			if (newMax > dynamicProperties.maxTokensPerAccount()) {
+			if (dynamicProperties.areTokenAssociationsLimited() && newMax > dynamicProperties.maxTokensPerAccount()) {
 				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 			}
 		}

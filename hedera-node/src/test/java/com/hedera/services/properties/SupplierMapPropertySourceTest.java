@@ -20,12 +20,14 @@ package com.hedera.services.properties;
  * ‍
  */
 
+import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.SupplierMapPropertySource;
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,6 +48,7 @@ class SupplierMapPropertySourceTest {
 	private final String MISSING_PROP = "a.missing.prop";
 	private final String BAD_ACCOUNT_PROP = "a.bad.account";
 	private final String GOOD_ACCOUNT_PROP = "a.good.account";
+	private final String ENTITY_TYPES_PROP = "some.types";
 	private final SupplierMapPropertySource subject = new SupplierMapPropertySource(Map.of(
 			INT_PROP, () -> 1,
 			LONG_PROP, () -> 1L,
@@ -54,8 +57,14 @@ class SupplierMapPropertySourceTest {
 			PROFILE_PROP, () -> Profile.DEV,
 			BOOLEAN_PROP, () -> Boolean.TRUE,
 			BAD_ACCOUNT_PROP, () -> "asdf",
-			GOOD_ACCOUNT_PROP, () -> "0.0.2"
+			GOOD_ACCOUNT_PROP, () -> "0.0.2",
+			ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)
 	));
+
+	@Test
+	void getsEntityTypes() {
+		assertEquals(EnumSet.of(EntityType.FILE), subject.getTypesProperty(ENTITY_TYPES_PROP));
+	}
 
 	@Test
 	void testsForPresence() {
@@ -76,7 +85,7 @@ class SupplierMapPropertySourceTest {
 	void allPropertyNames() {
 		assertNotNull(subject.allPropertyNames());
 		var propSet = Set.of("a.double.prop", "a.string.prop", "a.profile.prop", "a.boolean.prop", "a.bad.account",
-				"a.long.prop", "a.good.account", "a.int.prop");
+				"a.long.prop", "a.good.account", "a.int.prop", "some.types");
 		assertEquals(propSet, subject.allPropertyNames());
 	}
 

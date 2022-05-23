@@ -69,5 +69,5 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 		public Function<MerkleTokenRelStatus, Object> getter() {
 			return MerkleTokenRelStatus::isAutomaticAssociation;
 		}
-	}
+	},
 }

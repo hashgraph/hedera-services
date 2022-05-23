@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -33,30 +34,23 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_APPROVE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_BYTECODE_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
-	private static final long GAS_TO_OFFER = 2_000_000;
 
 	public static void main(String[] args) {
 		new ERC20ContractInteractions().runSuiteSync();
@@ -67,17 +61,15 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 		return log;
 	}
 
-    @Override
+	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                callsERC20ContractInteractions()
-        );
-    }
+		return List.of(
+				callsERC20ContractInteractions()
+		);
+	}
 
 	private HapiApiSpec callsERC20ContractInteractions() {
-		final var OWNER = "owner";
-		final var RECEIVER = "receiver";
-		final var CONTRACT_FILE_NAME = "ERC20ContractFile";
+		final var CONTRACT = "GLDToken";
 		final var CREATE_TX = "create";
 		final var APPROVE_TX = "approve";
 		final var TRANSFER_FROM_TX = "transferFrom";
@@ -89,179 +81,176 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
 		return defaultHapiSpec("callsERC20ContractInteractions")
 				.given(
-						cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(RECEIVER),
-						getAccountBalance(OWNER).logged(),
-						fileCreate(CONTRACT_FILE_NAME).payingWith(OWNER),
-						updateLargeFile(OWNER, CONTRACT_FILE_NAME, extractByteCode(ERC20_BYTECODE_PATH))
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+						uploadInitCode(CONTRACT)
 				).when(
-						getAccountBalance(OWNER).logged(),
-						contractCreate("testContract", ERC20_ABI, INITIAL_AMOUNT)
-								.payingWith(OWNER)
-								.bytecode(CONTRACT_FILE_NAME)
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+						contractCreate(CONTRACT, INITIAL_AMOUNT)
+								.payingWith(DEFAULT_CONTRACT_SENDER)
 								.hasKnownStatus(SUCCESS)
 								.via(CREATE_TX).scrambleTxnBody(tx -> {
 									System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
 									return tx;
 								}),
-						getAccountBalance(OWNER).logged()
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged()
 				).then(
-						getAccountInfo(OWNER).savingSnapshot(OWNER),
-						getAccountInfo(RECEIVER).savingSnapshot(RECEIVER),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
 
-						withOpContext((spec, log) -> {
-							final var ownerInfo = spec.registry().getAccountInfo(OWNER);
-							final var receiverInfo = spec.registry().getAccountInfo(RECEIVER);
-							final var ownerContractId = ownerInfo.getContractAccountID();
-							final var receiverContractId = receiverInfo.getContractAccountID();
+						withOpContext(
+								(spec, log) -> {
+									final var ownerInfo = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER);
+									final var receiverInfo = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER);
+									final var ownerContractId = ownerInfo.getContractAccountID();
+									final var receiverContractId = receiverInfo.getContractAccountID();
 
-							final var transferParams = new Object[]{receiverContractId, AMOUNT};
-							final var notEnoughBalanceTransferParams = new Object[]{receiverContractId, INITIAL_AMOUNT - AMOUNT + 1};
-							final var approveParams = new Object[]{receiverContractId, AMOUNT};
-							final var transferFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT};
-							final var transferMoreThanApprovedFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT + 1};
+									final var transferParams = new Object[]{receiverContractId, AMOUNT};
+									final var notEnoughBalanceTransferParams = new Object[]{receiverContractId, INITIAL_AMOUNT - AMOUNT + 1};
+									final var approveParams = new Object[]{receiverContractId, AMOUNT};
+									final var transferFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT};
+									final var transferMoreThanApprovedFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT + 1};
 
-							final var transfer = contractCall("testContract", ERC20_TRANSFER_ABI, transferParams)
-									.payingWith(OWNER)
-									.via(TRANSFER_TX)
-									.gas(GAS_TO_OFFER)
-									.scrambleTxnBody(tx -> {
-										System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
-										return tx;
-									});
-
-							final var notEnoughBalanceTransfer = contractCall("testContract", ERC20_TRANSFER_ABI, notEnoughBalanceTransferParams)
-									.payingWith(OWNER)
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-									.via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
-									.gas(GAS_TO_OFFER)
-									.scrambleTxnBody(tx -> {
-										System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
-										return tx;
-									});
-
-
-							final var approve = contractCall("testContract", ERC20_APPROVE_ABI, approveParams)
-									.payingWith(OWNER)
-									.via(APPROVE_TX)
-									.gas(GAS_TO_OFFER)
-									.scrambleTxnBody(tx -> {
-										System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
-										return tx;
-									});
-
-
-							final var transferFrom = contractCall("testContract", ERC20_TRANSFER_FROM_ABI,
-									transferFromParams)
-									.payingWith(RECEIVER)
-									.via(TRANSFER_FROM_TX)
-									.gas(GAS_TO_OFFER)
-									.scrambleTxnBody(
-											tx -> {
+									final var transfer = contractCall(CONTRACT, "transfer", transferParams
+									)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.via(TRANSFER_TX).scrambleTxnBody(tx -> {
 												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
 												return tx;
 											});
 
+									final var notEnoughBalanceTransfer = contractCall(CONTRACT, "transfer", notEnoughBalanceTransferParams
+									)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+											.via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
+											.scrambleTxnBody(tx -> {
+												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+												return tx;
+											});
 
-							final var transferMoreThanApprovedFrom = contractCall("testContract",
-									ERC20_TRANSFER_FROM_ABI, transferMoreThanApprovedFromParams)
-									.payingWith(RECEIVER)
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-									.gas(GAS_TO_OFFER)
-									.via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
-									.scrambleTxnBody(tx -> {
-										System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
-										return tx;
-									});
+									final var approve = contractCall(CONTRACT, "approve", approveParams
+									)
+											.payingWith(DEFAULT_CONTRACT_SENDER)
+											.via(APPROVE_TX)
+											.scrambleTxnBody(tx -> {
+												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+												return tx;
+											});
 
+									final var transferFrom = contractCall(CONTRACT, "transferFrom", transferFromParams
+									)
+											.payingWith(DEFAULT_CONTRACT_RECEIVER)
+											.signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
+											.via(TRANSFER_FROM_TX)
+											.scrambleTxnBody(tx -> {
+												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+												return tx;
+											});
 
-							final var getCreateRecord = getTxnRecord(CREATE_TX)
-									.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
-									.hasPriority(recordWith().contractCreateResult(
-											resultWith().logs(
-													inOrder(
-															logWith()
-																	.longValue(INITIAL_AMOUNT)
-																	.withTopicsInOrder(
-																			List.of(
-																					eventSignatureOf("Transfer(address,address,uint256)"),
-																					parsedToByteString(0),
-																					parsedToByteString(ownerInfo.getAccountID().getAccountNum())
+									final var transferMoreThanApprovedFrom = contractCall(CONTRACT,
+											"transferFrom", transferMoreThanApprovedFromParams
+									)
+											.payingWith(DEFAULT_CONTRACT_RECEIVER)
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+											.via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
+											.scrambleTxnBody(tx -> {
+												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+												return tx;
+											});
+
+									final var getCreateRecord = getTxnRecord(CREATE_TX)
+											.hasPriority(recordWith().contractCreateResult(
+													resultWith().logs(
+															inOrder(
+																	logWith()
+																			.longValue(INITIAL_AMOUNT)
+																			.withTopicsInOrder(
+																					List.of(
+																							eventSignatureOf("Transfer(address,address,uint256)"),
+																							parsedToByteString(0),
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID())))
+																					)
 																			)
-																	)
+															)
 													)
-											)
-									))
-									.logged();
-							final var getTransferRecord = getTxnRecord(TRANSFER_TX)
-									.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
-									.hasPriority(recordWith().contractCallResult(
-											resultWith().logs(
-													inOrder(
-															logWith()
-																	.longValue(AMOUNT)
-																	.withTopicsInOrder(
-																			List.of(
-																					eventSignatureOf("Transfer(address,address,uint256)"),
-																					parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																					parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+											))
+											.logged();
+									final var getTransferRecord = getTxnRecord(TRANSFER_TX)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
+											.hasPriority(recordWith().contractCallResult(
+													resultWith().logs(
+															inOrder(
+																	logWith()
+																			.longValue(AMOUNT)
+																			.withTopicsInOrder(
+																					List.of(
+																							eventSignatureOf("Transfer(address,address,uint256)"),
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
+																					)
 																			)
-																	)
+															)
 													)
-											)
-									))
-									.logged();
-							final var getApproveRecord = getTxnRecord(APPROVE_TX)
-									.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
-									.hasPriority(recordWith().contractCallResult(
-											resultWith().logs(
-													inOrder(
-															logWith()
-																	.longValue(AMOUNT)
-																	.withTopicsInOrder(
-																			List.of(
-																					eventSignatureOf("Approval(address,address,uint256)"),
-																					parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																					parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+											))
+											.logged();
+									final var getApproveRecord = getTxnRecord(APPROVE_TX)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
+											.hasPriority(recordWith().contractCallResult(
+													resultWith().logs(
+															inOrder(
+																	logWith()
+																			.longValue(AMOUNT)
+																			.withTopicsInOrder(
+																					List.of(
+																							eventSignatureOf("Approval(address,address,uint256)"),
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
+																					)
 																			)
-																	)
+															)
 													)
-											)
-									))
-									.logged();
-							final var getTransferFromRecord = getTxnRecord(TRANSFER_FROM_TX)
-									.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
-									.hasPriority(recordWith().contractCallResult(
-											resultWith().logs(
-													inOrder(
-															logWith()
-																	.longValue(AMOUNT)
-																	.withTopicsInOrder(
-																			List.of(
-																					eventSignatureOf("Transfer(address,address,uint256)"),
-																					parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																					parsedToByteString(receiverInfo.getAccountID().getAccountNum())
+											))
+											.logged();
+									final var getTransferFromRecord = getTxnRecord(TRANSFER_FROM_TX)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
+											.hasPriority(recordWith().contractCallResult(
+													resultWith().logs(
+															inOrder(
+																	logWith()
+																			.longValue(AMOUNT)
+																			.withTopicsInOrder(
+																					List.of(
+																							eventSignatureOf("Transfer(address,address,uint256)"),
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
+																					)
+																			),
+																	logWith()
+																			.longValue(0)
+																			.withTopicsInOrder(
+																					List.of(
+																							eventSignatureOf("Approval(address,address,uint256)"),
+																							ByteString.copyFrom(asAddressInTopic(unhex(ownerInfo.getContractAccountID()))),
+																							ByteString.copyFrom(asAddressInTopic(unhex(receiverInfo.getContractAccountID())))
+																					)
 																			)
-																	),
-															logWith()
-																	.longValue(0)
-																	.withTopicsInOrder(
-																			List.of(
-																					eventSignatureOf("Approval(address,address,uint256)"),
-																					parsedToByteString(ownerInfo.getAccountID().getAccountNum()),
-																					parsedToByteString(receiverInfo.getAccountID().getAccountNum())
-																			)
-																	)
+															)
 													)
-											)
-									))
-									.logged();
+											))
+											.logged();
 
-							final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
-							final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
+									final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX
+									)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
+									final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX
+									)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
 
-							allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom, transferFrom, getCreateRecord, getTransferRecord, getApproveRecord, getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
-						})
+									allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom,
+											transferFrom, getCreateRecord,getTransferRecord, getApproveRecord,
+											getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord
+									);
+								})
 				);
 	}
 }

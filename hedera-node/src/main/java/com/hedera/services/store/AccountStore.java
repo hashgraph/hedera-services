@@ -20,7 +20,6 @@ package com.hedera.services.store;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,25 +36,19 @@ import javax.inject.Singleton;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class AccountStore {
 	private final OptionValidator validator;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final BackingStore<AccountID, MerkleAccount> accounts;
 
 	@Inject
-	public AccountStore(
-			final OptionValidator validator,
-			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> accounts
-	) {
+	public AccountStore(final OptionValidator validator, final BackingStore<AccountID, MerkleAccount> accounts) {
 		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
 	}
 
@@ -111,9 +104,7 @@ public class AccountStore {
 	 * 		if the requested contract is missing, deleted or is not smart contract
 	 */
 	public Account loadContract(Id id) {
-		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
-		validateTrue(account.isSmartContract(), INVALID_CONTRACT_ID);
-		return account;
+		return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
 	}
 
 	/**
@@ -132,19 +123,24 @@ public class AccountStore {
 	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
 	 * @return usable model of the entity if available
 	 */
-	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
-			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
+	private Account loadEntityOrFailWith(
+			final Id id,
+			final @Nullable ResponseCodeEnum explicitResponseCode,
+			final ResponseCodeEnum nonExistingCode,
+			final ResponseCodeEnum deletedCode
+	) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
-
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
-		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
-		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getUsedAutoAssociations());
 		if (merkleAccount.getProxy() != null) {
 			account.setProxy(merkleAccount.getProxy().asId());
 		}
@@ -155,9 +151,13 @@ public class AccountStore {
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
 		account.setAlias(merkleAccount.getAlias());
+		account.setEthereumNonce(merkleAccount.getEthereumNonce());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
+		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
+		account.setNumAssociations(merkleAccount.getNumAssociations());
+		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
+		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
 
 		return account;
 	}
@@ -173,7 +173,6 @@ public class AccountStore {
 		final var grpcId = id.asGrpcAccount();
 		final var mutableAccount = accounts.getRef(grpcId);
 		mapModelToMutable(account, mutableAccount);
-		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(grpcId, mutableAccount);
 	}
 
@@ -185,31 +184,28 @@ public class AccountStore {
 		mutableAccount.setBalanceUnchecked(model.getBalance());
 		mutableAccount.setNftsOwned(model.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
 		mutableAccount.state().setAccountKey(model.getKey());
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
+		mutableAccount.setEthereumNonce(model.getEthereumNonce());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
+		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
+		mutableAccount.setNumAssociations(model.getNumAssociations());
+		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : nonExistingCode);
 		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
-		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()),
-				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
-
-	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
-			return !validator.isAfterConsensusSecond(expiry);
-		} else {
-			return false;
-		}
+		final var expiryStatus = validator.expiryStatusGiven(
+				merkleAccount.getBalance(), merkleAccount.getExpiry(), merkleAccount.isSmartContract());
+		validateTrue(expiryStatus == OK, expiryStatus);
 	}
 
 	public OptionValidator getValidator() {

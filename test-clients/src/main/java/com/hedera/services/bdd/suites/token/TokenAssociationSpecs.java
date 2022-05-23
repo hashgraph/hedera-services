@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -135,7 +136,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				.given(
 						tokenCreate(misc)
 				).when(
-						contractCreate(contract).omitAdminKey()
+						createDefaultContract(contract).omitAdminKey()
 				).then(
 						tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE)
 				);
@@ -149,7 +150,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenCreate("b"),
 						tokenCreate("c"),
 						tokenCreate("tbd").adminKey("simple"),
-						contractCreate("contract")
+						createDefaultContract("contract")
 				).when(
 						tokenAssociate("contract", "a", "b", "c", "tbd"),
 						getContractInfo("contract")
@@ -547,7 +548,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 										relationshipWith(VANILLA_TOKEN)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
-								.logged()
+								.logged(),
+						cryptoCreate("test"),
+						tokenAssociate("test", KNOWABLE_TOKEN),
+						tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+						tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
+						tokenAssociate("test", VANILLA_TOKEN),
+						getAccountInfo("test").logged(),
+						tokenDissociate("test", VANILLA_TOKEN),
+						getAccountInfo("test").logged(),
+						tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
+						getAccountInfo("test").logged()
 				);
 	}
 

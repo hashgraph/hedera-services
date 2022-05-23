@@ -22,9 +22,8 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,13 +47,13 @@ import java.util.function.BiPredicate;
  * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
 public class HederaCallOperation extends CallOperation {
-	private final SoliditySigsVerifier sigsVerifier;
+	private final EvmSigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaCallOperation(
-			final SoliditySigsVerifier sigsVerifier,
+			final EvmSigsVerifier sigsVerifier,
 			final GasCalculator gasCalculator,
 			final BiPredicate<Address, MessageFrame> addressValidator,
 			final Map<String, PrecompiledContract> precompiledContractMap
@@ -63,11 +62,6 @@ public class HederaCallOperation extends CallOperation {
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
 		this.precompiledContractMap = precompiledContractMap;
-	}
-
-	@Override
-	protected Address address(final MessageFrame frame) {
-		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
 	}
 
 	@Override
@@ -80,17 +74,5 @@ public class HederaCallOperation extends CallOperation {
 				() -> super.execute(frame, evm),
 				addressValidator,
 				precompiledContractMap);
-	}
-
-	static Address resolveCanonical(
-			final Address nominal,
-			final MessageFrame frame,
-			final Map<String, PrecompiledContract> precompiledContractMap
-	) {
-		if (precompiledContractMap.containsKey(nominal.toShortHexString())) {
-			return nominal;
-		}
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		return updater.priorityAddress(nominal);
 	}
 }

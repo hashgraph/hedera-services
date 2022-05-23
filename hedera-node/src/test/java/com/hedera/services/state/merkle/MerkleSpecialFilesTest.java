@@ -22,15 +22,15 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.swirlds.common.MutabilityException;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,11 +41,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -163,10 +166,10 @@ class MerkleSpecialFilesTest {
 		subject.append(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
 		subject.append(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
 
-		final var fcq = new FCQueue<FilePart>();
-		fcq.add(new FilePart(subject.get(fid)));
-		final var secondFcq = new FCQueue<FilePart>();
-		secondFcq.add(new FilePart(subject.get(secondFid)));
+		final var fcq = new FCQueue<BytesElement>();
+		fcq.add(new BytesElement(subject.get(fid)));
+		final var secondFcq = new FCQueue<BytesElement>();
+		secondFcq.add(new BytesElement(subject.get(secondFid)));
 
 		final var baos = new ByteArrayOutputStream();
 		baos.write(Longs.toByteArray(fid.getFileNum()));
@@ -237,7 +240,7 @@ class MerkleSpecialFilesTest {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCQueue.class, FCQueue::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FilePart.class, FilePart::new));
+				new ClassConstructorPair(BytesElement.class, BytesElement::new));
 
 		subject.update(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
 		subject.update(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
@@ -274,5 +277,50 @@ class MerkleSpecialFilesTest {
 		newSubject.deserialize(din, MerkleSpecialFiles.CURRENT_VERSION);
 
 		assertTrue(newSubject.getFileContents().isEmpty(), "Deserialized instance should be empty");
+	}
+
+	@Test
+	void checkHashCodesDiverse() {
+		Set<Integer> hashCodes = new HashSet<>();
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(secondFid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, " ".getBytes());
+		hashCodes.add(subject.hashCode());
+		assertTrue(hashCodes.size() >= 3);
+	}
+
+	@Test
+	void checkStringContainsContents() {
+		subject.append(fid, new byte[] {123});
+		assertTrue(subject.toString().contains(String.valueOf(fid.getFileNum())));
+		subject.append(secondFid, new byte[] {111});
+		assertTrue(subject.toString().contains(String.valueOf(secondFid.getFileNum())), subject.toString());
+	}
+
+	@Test
+	@SuppressWarnings("java:S3415")
+	void checkEqualityWorks() {
+		assertEquals(subject, subject);
+		// Note: suppressed warning here because check needs to cover null code-path of equals method.
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
+
+		// Matching initial contents
+		assertEquals(new MerkleSpecialFiles(), new MerkleSpecialFiles());
+		// Matching added contents
+		var msf1 = new MerkleSpecialFiles();
+		var msf2 = new MerkleSpecialFiles();
+		msf1.append(fid, "hello".getBytes());
+		msf2.append(fid, "hello".getBytes());
+		assertEquals(msf2, msf1);
+		assertEquals(msf1, msf2);
+
+		// Mismatching contents
+		msf2.append(fid, " ".getBytes());
+		assertNotEquals(msf2, msf1);
+		assertNotEquals(msf1, msf2);
 	}
 }

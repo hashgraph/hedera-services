@@ -42,9 +42,8 @@ public class NonBlockingHandoff {
 	private final BlockingQueue<RecordStreamObject> queue;
 
 	@Inject
-	public NonBlockingHandoff(RecordStreamManager recordStreamManager, NodeLocalProperties nodeLocalProperties) {
+	public NonBlockingHandoff(final RecordStreamManager recordStreamManager, final NodeLocalProperties nodeLocalProperties) {
 		this.recordStreamManager = recordStreamManager;
-
 		final int capacity = Math.max(MIN_CAPACITY, nodeLocalProperties.recordStreamQueueCapacity());
 		queue = new ArrayBlockingQueue<>(capacity);
 		executor.execute(this::handoff);

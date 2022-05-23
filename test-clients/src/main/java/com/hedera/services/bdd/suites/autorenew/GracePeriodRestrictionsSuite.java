@@ -37,14 +37,14 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
@@ -65,7 +65,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWith;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -109,7 +109,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCallRestrictionsEnforced")
 				.given(
 						fileCreate(bytecode).path(ContractResources.DOUBLE_SEND_BYTECODE_PATH),
-						contractCreate(contract)
+						createDefaultContract(contract)
 								.balance(ONE_HBAR)
 								.bytecode(bytecode),
 						cryptoCreate(civilian)
@@ -124,7 +124,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 							detachedNum.set((int) spec.registry().getAccountID(detachedAccount).getAccountNum());
 							civilianNum.set((int) spec.registry().getAccountID(civilian).getAccountNum());
 						}),
-						sourcing(() -> contractCall(contract, SEND_TO_TWO_ABI, new Object[] {
+						sourcing(() -> explicitContractCall(contract, SEND_TO_TWO_ABI, new Object[] {
 								civilianNum.get(), detachedNum.get()
 						})
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
@@ -133,7 +133,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				).then(
 						cryptoUpdate(detachedAccount)
 								.expiring(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS),
-						sourcing(() -> contractCall(contract, SEND_TO_TWO_ABI, new Object[] {
+						sourcing(() -> explicitContractCall(contract, SEND_TO_TWO_ABI, new Object[] {
 								civilianNum.get(), detachedNum.get()
 						})),
 						getAccountBalance(civilian).hasTinyBars(1L),
@@ -397,7 +397,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		return defaultHapiSpec("CryptoAndContractDeleteRestrictionsEnforced")
 				.given(
 						newKeyNamed(adminKey),
-						contractCreate(tbd).adminKey(adminKey),
+						createDefaultContract(tbd).adminKey(adminKey),
 						cryptoCreate(civilian),
 						cryptoCreate(detachedAccount)
 								.balance(0L)
@@ -445,7 +445,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				.given().when().then(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 3600))
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 3600))
 				);
 	}
 

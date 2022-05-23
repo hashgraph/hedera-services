@@ -35,6 +35,7 @@ import java.util.List;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +73,7 @@ class EncodingFacadeTest {
 	private static final Bytes RETURN_DECIMALS_10 = Bytes.fromHexString(
 			"0x000000000000000000000000000000000000000000000000000000000000000a");
 
-	private static final Bytes RETURN_BALANCE_3 = Bytes.fromHexString(
+	private static final Bytes RETURN_3 = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000003");
 
 	private static final Bytes RETURN_TOKEN_URI_FIRST = Bytes.fromHexString(
@@ -87,14 +88,30 @@ class EncodingFacadeTest {
 			"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000" +
 					"00000000000000000000000014600000000000000000000000000000000000000000000000000000000000000");
 
-	private static final Bytes RETURN_TRANSFER_TRUE = Bytes.fromHexString(
+	private static final Bytes RETURN_TRUE = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000001");
 
-	private static final Bytes RETURN_OWNER = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008");
+	private static final Bytes RETURN_ADDRESS = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008");
 
     private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
+	private static final Bytes RETURN_CREATE_SUCCESS = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000016" +
+					"0000000000000000000000000000000000000000000000000000000000000008");
+
+	private static final Bytes CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME = Bytes.fromHexString(
+			"0x000000000000000000000000000000000000000000000000000000000000002d" +
+					"0000000000000000000000000000000000000000000000000000000000000000");
+
 	final Address logger = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
+
+	@Test
+	void canEncodeEip1014Address() {
+		final var literalEip1014 = "0x8ff8eb31713b9ff374d893d21f3b9eb732a307a5";
+		final var besuAddress = Address.fromHexString(literalEip1014);
+		final var headlongAddress = EncodingFacade.convertBesuAddressToHeadlongAddress(besuAddress);
+		assertEquals(literalEip1014, ("" + headlongAddress).toLowerCase());
+	}
 
 	@Test
 	void decodeReturnResultForFungibleMint() {
@@ -115,6 +132,18 @@ class EncodingFacadeTest {
 	}
 
 	@Test
+	void decodeReturnResultForCreateSuccess() {
+		final var decodedResult = subject.encodeCreateSuccess(senderAddress);
+		assertEquals(RETURN_CREATE_SUCCESS, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForCreateFailure() {
+		final var decodedResult = subject.encodeCreateFailure(INVALID_EXPIRATION_TIME);
+		assertEquals(CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME, decodedResult);
+	}
+
+	@Test
 	void decodeReturnResultForTotalSupply() {
 		final var decodedResult = subject.encodeTotalSupply(50);
 		assertEquals(RETURN_TOTAL_SUPPLY_FOR_50_TOKENS, decodedResult);
@@ -129,7 +158,7 @@ class EncodingFacadeTest {
 	@Test
 	void decodeReturnResultForBalance() {
 		final var decodedResult = subject.encodeBalance(3);
-		assertEquals(RETURN_BALANCE_3, decodedResult);
+		assertEquals(RETURN_3, decodedResult);
 	}
 
 	@Test
@@ -153,13 +182,37 @@ class EncodingFacadeTest {
 	@Test
 	void decodeReturnResultForTransfer() {
 		final var decodedResult = subject.encodeEcFungibleTransfer(true);
-		assertEquals(RETURN_TRANSFER_TRUE, decodedResult);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForApprove() {
+		final var decodedResult = subject.encodeApprove(true);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForIsApprovedForAll() {
+		final var decodedResult = subject.encodeIsApprovedForAll(true);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForAllowance() {
+		final var decodedResult = subject.encodeAllowance(3);
+		assertEquals(RETURN_3, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForGetApproved() {
+		final var decodedResult = subject.encodeGetApproved(senderAddress);
+		assertEquals(RETURN_ADDRESS, decodedResult);
 	}
 
 	@Test
 	void decodeReturnResultForOwner() {
 		final var decodedResult = subject.encodeOwner(senderAddress);
-		assertEquals(RETURN_OWNER, decodedResult);
+		assertEquals(RETURN_ADDRESS, decodedResult);
 	}
 
 	@Test

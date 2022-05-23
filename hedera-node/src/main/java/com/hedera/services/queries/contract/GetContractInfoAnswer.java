@@ -21,10 +21,11 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -38,7 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
-import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -51,11 +52,17 @@ public class GetContractInfoAnswer implements AnswerService {
 
 	private final AliasManager aliasManager;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetContractInfoAnswer(final AliasManager aliasManager, final OptionValidator validator) {
+	public GetContractInfoAnswer(
+			final AliasManager aliasManager,
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.aliasManager = aliasManager;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -151,7 +158,8 @@ public class GetContractInfoAnswer implements AnswerService {
 				response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
 			}
 		} else {
-			var info = view.infoForContract(op.getContractID(), aliasManager);
+			final var info = view.infoForContract(
+					op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
 			if (info.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {

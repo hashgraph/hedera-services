@@ -22,13 +22,19 @@ package com.hedera.services.state.initialization;
 
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 
 public interface SystemAccountsCreator {
-	void createSystemAccounts(MerkleMap<EntityNum, MerkleAccount> accounts, AddressBook addressBook);
-
+	/**
+	 * Called in {@link com.hedera.services.ServicesMain#init(Platform, NodeId)} to ensure the network
+	 * has all expected system accounts, especially when starting from genesis; not really a migration
+	 * path, may be better placed in {@code com.hedera.services.ServicesState#internalInit()}.
+	 *
+	 * @param backingAccounts the ledger accounts
+	 * @param addressBook the current address book
+	 */
 	void ensureSystemAccounts(BackingStore<AccountID, MerkleAccount> backingAccounts, AddressBook addressBook);
 }

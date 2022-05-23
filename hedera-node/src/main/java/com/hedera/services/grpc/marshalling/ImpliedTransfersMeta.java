@@ -27,8 +27,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -114,7 +114,8 @@ public class ImpliedTransfersMeta {
 						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
 						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
 						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled()) &&
-						(validationProps.isAutoCreationEnabled == dynamicProperties.isAutoCreationEnabled());
+						(validationProps.isAutoCreationEnabled == dynamicProperties.isAutoCreationEnabled()) &&
+						(validationProps.areAllowancesEnabled == dynamicProperties.areAllowancesEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
@@ -154,16 +155,18 @@ public class ImpliedTransfersMeta {
 				.add("areNftsEnabled", validationProps.areNftsEnabled)
 				.add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
 				.add("tokenFeeSchedules", customFeeMeta)
+				.add("areAllowancesEnabled", validationProps.areAllowancesEnabled)
 				.toString();
 	}
 
-	public static record ValidationProps(
+	public record ValidationProps(
 			int maxHbarAdjusts,
 			int maxTokenAdjusts,
 			int maxOwnershipChanges,
 			int maxNestedCustomFees,
 			int maxXferBalanceChanges,
 			boolean areNftsEnabled,
-			boolean isAutoCreationEnabled) {
+			boolean isAutoCreationEnabled,
+			boolean areAllowancesEnabled) {
 	}
 }

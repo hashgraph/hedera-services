@@ -26,8 +26,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-import java.util.Map;
-
 /**
  * Provides a stacked Hedera adapted world view. Utilised by {@link org.hyperledger.besu.evm.frame.MessageFrame} in
  * order to provide a layered view for read/writes of the state during EVM transaction execution
@@ -42,25 +40,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * @return newly generated contract {@link Address}
 	 */
 	Address newContractAddress(Address sponsor);
-
-	/**
-	 * Tracks who initiated the creation of a new account/contract/token. The caller becomes the "sponsor" and when
-	 * hedera-specific information is needed for creation (admin key, memo, etc). the value is inherited from the
-	 * sponsor.
-	 *
-	 * @return the sponsor map;
-	 */
-	Map<Address, Address> getSponsorMap();
-
-	/**
-	 * Returns the account with hedera information either from the in-process world state update or from the base world
-	 * state.
-	 *
-	 * @param address
-	 * 		the address of the account
-	 * @return the hedera world state account
-	 */
-	HederaWorldState.WorldStateAccount getHederaAccount(Address address);
 
 	/**
 	 * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first
@@ -78,4 +57,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * 	the amount of Gas to refund;
 	 */
 	void addSbhRefund(Gas refund);
+
+	void countIdsAllocatedByStacked(int n);
 }

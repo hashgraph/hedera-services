@@ -22,7 +22,7 @@ package com.hedera.services.fees;
 
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.txns.auth.SystemOpPolicies;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;

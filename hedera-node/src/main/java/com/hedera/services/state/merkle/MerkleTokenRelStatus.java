@@ -22,22 +22,26 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
-
-	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0250_VERSION = 4;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
@@ -46,9 +50,16 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	private boolean frozen;
 	private boolean kycGranted;
 	private boolean automaticAssociation;
+	// next and previous tokenIds of the account's association linked list
+	private long next;
+	private long prev;
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
+	}
+
+	public MerkleTokenRelStatus(final Pair<AccountID, TokenID> grpcRel) {
+		this.numbers = packedNums(grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
 	}
 
 	public MerkleTokenRelStatus(
@@ -77,6 +88,16 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
+	private MerkleTokenRelStatus(MerkleTokenRelStatus that) {
+		this.balance = that.balance;
+		this.frozen = that.frozen;
+		this.kycGranted = that.kycGranted;
+		this.numbers = that.numbers;
+		this.automaticAssociation = that.automaticAssociation;
+		this.prev = that.prev;
+		this.next = that.next;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
@@ -99,6 +120,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
 		}
+		if (version >= RELEASE_0250_VERSION) {
+			next = in.readLong();
+			prev = in.readLong();
+		}
 	}
 
 	@Override
@@ -108,6 +133,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		out.writeBoolean(kycGranted);
 		out.writeBoolean(automaticAssociation);
 		out.writeLong(numbers);
+		out.writeLong(next);
+		out.writeLong(prev);
 	}
 
 	/* --- Object --- */
@@ -125,7 +152,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				&& this.frozen == that.frozen
 				&& this.kycGranted == that.kycGranted
 				&& this.numbers == that.numbers
-				&& this.automaticAssociation == that.automaticAssociation;
+				&& this.automaticAssociation == that.automaticAssociation
+				&& this.next == that.next
+				&& this.prev == that.prev;
 	}
 
 	@Override
@@ -135,6 +164,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.append(frozen)
 				.append(kycGranted)
 				.append(automaticAssociation)
+				.append(numbers)
+				.append(next)
+				.append(prev)
 				.toHashCode();
 	}
 
@@ -178,11 +210,15 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
+	public long getRelatedTokenNum() {
+		return getKey().getLowOrderAsLong();
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
+		return new MerkleTokenRelStatus(this);
 	}
 
 	@Override
@@ -193,9 +229,12 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.add("hasKycGranted", kycGranted)
 				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
 				.add("isAutomaticAssociation", automaticAssociation)
+				.add("next", next)
+				.add("prev", prev)
 				.toString();
 	}
 
+	/* --- Keyed --- */
 	@Override
 	public EntityNumPair getKey() {
 		return new EntityNumPair(numbers);
@@ -204,5 +243,26 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	@Override
 	public void setKey(EntityNumPair numbers) {
 		this.numbers = numbers.value();
+	}
+
+	public long prevKey() {
+		return prev;
+	}
+
+	public long nextKey() {
+		return next;
+	}
+
+	public void setPrev(final long prev) {
+		this.prev = prev;
+	}
+
+	public void setNext(final long next) {
+		this.next = next;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
 	}
 }

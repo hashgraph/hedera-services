@@ -24,14 +24,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.EntityAccess;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.ResponseCodeUtil;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Singleton;
@@ -67,7 +69,8 @@ public class CallLocalExecutor {
 			final AccountStore accountStore,
 			final CallLocalEvmTxProcessor evmTxProcessor,
 			final ContractCallLocalQuery op,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final EntityAccess entityAccess
 	) {
 		try {
 			final var paymentTxn = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
@@ -77,7 +80,9 @@ public class CallLocalExecutor {
 
 			/* --- Load the model objects --- */
 			final var sender = accountStore.loadAccount(senderId);
-			final var receiver = accountStore.loadContract(contractId);
+			var receiver = entityAccess.isTokenAccount(contractId.asEvmAddress()) ?
+					new Account(contractId) :
+					accountStore.loadContract(contractId);
 			final var callData = !op.getFunctionParameters().isEmpty()
 					? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 

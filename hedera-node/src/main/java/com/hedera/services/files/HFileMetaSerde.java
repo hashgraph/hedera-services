@@ -22,44 +22,32 @@ package com.hedera.services.files;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JKeySerializer.StreamConsumer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.hedera.services.state.serdes.IoUtils;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Function;
+
+import static com.hedera.services.state.serdes.IoUtils.byteStream;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 
 public class HFileMetaSerde {
 	public static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 	public static final long PRE_MEMO_VERSION = 1;
 	public static final long MEMO_VERSION = 2;
 
-	@FunctionalInterface
-	public interface StreamContentDiscovery {
-		byte[] discoverFor(StreamConsumer<DataOutputStream> streamConsumer) throws IOException;
-	}
-
-	public static DomainSerdes serdes = new DomainSerdes();
-	private static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
-	private static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
-	private static Function<OutputStream, SerializableDataOutputStream> serOutFactory =
-			SerializableDataOutputStream::new;
-
 	public static byte[] serialize(HFileMeta meta) throws IOException {
-		return streamContentDiscovery.discoverFor(out -> {
-			var serOut = serOutFactory.apply(out);
+		return byteStream(out -> {
+			final var serOut = new SerializableDataOutputStream(out);
 			serOut.writeLong(MEMO_VERSION);
 			serOut.writeBoolean(meta.isDeleted());
 			serOut.writeLong(meta.getExpiry());
 			serOut.writeNormalisedString(meta.getMemo());
-			serdes.writeNullable(meta.getWacl(), serOut, serdes::serializeKey);
+			writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
 		});
 	}
 
@@ -77,17 +65,17 @@ public class HFileMetaSerde {
 		if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
 			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
 		}
-		/* Unused legacy length information. */
+		// Unused legacy length information.
 		in.readLong();
 		return unpack(in);
 	}
 
 	private static HFileMeta readMemoMeta(DataInputStream in) throws IOException {
-		var serIn = serInFactory.apply(in);
-		var isDeleted = serIn.readBoolean();
-		var expiry = serIn.readLong();
-		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
+		final var serIn = new SerializableDataInputStream(in);
+		final var isDeleted = serIn.readBoolean();
+		final var expiry = serIn.readLong();
+		final var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
+		final JKey wacl = readNullable(serIn, JKeySerializer::deserialize);
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
 	}
 
@@ -95,27 +83,11 @@ public class HFileMetaSerde {
 		boolean deleted = stream.readBoolean();
 		long expirationTime = stream.readLong();
 		byte[] key = stream.readAllBytes();
-		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
+		JKey wacl = JKeySerializer.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(key)));
 		return new HFileMeta(deleted, wacl, expirationTime);
 	}
 
-	/* used for unit tests */
-	public static StreamContentDiscovery getStreamContentDiscovery() {
-		return streamContentDiscovery;
-	}
-
-	public static void setStreamContentDiscovery(
-			final StreamContentDiscovery streamContentDiscovery) {
-		HFileMetaSerde.streamContentDiscovery = streamContentDiscovery;
-	}
-
-	public static void setSerInFactory(
-			final Function<InputStream, SerializableDataInputStream> serInFactory) {
-		HFileMetaSerde.serInFactory = serInFactory;
-	}
-
-	public static void setSerOutFactory(
-			final Function<OutputStream, SerializableDataOutputStream> serOutFactory) {
-		HFileMetaSerde.serOutFactory = serOutFactory;
+	private HFileMetaSerde() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }

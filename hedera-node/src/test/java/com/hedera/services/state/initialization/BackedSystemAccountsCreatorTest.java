@@ -40,22 +40,25 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.system.Address;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
@@ -231,6 +234,26 @@ class BackedSystemAccountsCreatorTest {
 		verify(backingAccounts, never()).put(any(), any());
 		// and:
 		assertThat(logCaptor.infoLogs(), contains(desiredInfo));
+	}
+
+	@Test
+	void createsStakingFundAccounts() {
+		final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
+		final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
+		given(backingAccounts.contains(any())).willReturn(true);
+		given(backingAccounts.contains(funding801)).willReturn(false);
+
+		subject.ensureSystemAccounts(backingAccounts, book);
+
+		verify(backingAccounts).put(eq(funding801), captor.capture());
+		final var new801 = captor.getValue();
+		assertEquals(canonicalFundingAccount(), new801);
+	}
+
+	private MerkleAccount canonicalFundingAccount() {
+		final var account = new MerkleAccount();
+		BackedSystemAccountsCreator.customizeAsStakingFund(account);
+		return account;
 	}
 
 	private void givenMissingSystemAccount() {

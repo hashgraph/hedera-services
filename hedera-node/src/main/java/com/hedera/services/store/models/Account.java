@@ -22,10 +22,11 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -34,14 +35,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -49,7 +51,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.store.contracts.WorldLedgers.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -73,7 +77,6 @@ public class Account {
 	private boolean deleted = false;
 	private boolean isSmartContract = false;
 	private boolean isReceiverSigRequired = false;
-	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private long autoRenewSecs;
 	private ByteString alias = ByteString.EMPTY;
@@ -83,14 +86,14 @@ public class Account {
 	private int autoAssociationMetadata;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
+	private int numAssociations;
+	private int numPositiveBalances;
+	private int numTreasuryTitles;
+	private long ethereumNonce;
 
 	public Account(Id id) {
 		this.id = id;
-	}
-
-	public void setAssociatedTokens(CopyOnWriteIds associatedTokens) {
-		this.associatedTokens = associatedTokens;
 	}
 
 	public void setExpiry(long expiry) {
@@ -99,6 +102,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		this.ethereumNonce = ethereumNonce;
+	}
+
+	public void incrementEthereumNonce() {
+		this.ethereumNonce++;
+	}
+
+	public long getEthereumNonce() {
+		return ethereumNonce;
 	}
 
 	public long getOwnedNfts() {
@@ -117,11 +132,35 @@ public class Account {
 		this.autoAssociationMetadata = autoAssociationMetadata;
 	}
 
+	public int getNumTreasuryTitles() {
+		return numTreasuryTitles;
+	}
+
+	public void setNumTreasuryTitles(int numTreasuryTitles) {
+		this.numTreasuryTitles = numTreasuryTitles;
+	}
+
+	public void incrementNumTreasuryTitles() {
+		numTreasuryTitles++;
+	}
+
+	public void decrementNumTreasuryTitles() {
+		validateTrue(numTreasuryTitles > 0, FAIL_INVALID);
+		numTreasuryTitles--;
+	}
+
 	public Address canonicalAddress() {
 		if (alias.isEmpty()) {
 			return id.asEvmAddress();
 		} else {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			if (alias.size() == EVM_ADDRESS_SIZE) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+				var addressBytes = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				return addressBytes == null ? id.asEvmAddress() : Address.wrap(Bytes.wrap(addressBytes));
+			} else {
+				return id.asEvmAddress();
+			}
 		}
 	}
 
@@ -146,32 +185,81 @@ public class Account {
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
-	public void incrementUsedAutomaticAssocitions() {
+	public void incrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(++count);
 	}
 
-	public void decrementUsedAutomaticAssocitions() {
+	public void decrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
-	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
-		final var alreadyAssociated = associatedTokens.size();
-		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
-		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+	public int getNumAssociations() {
+		return numAssociations;
+	}
 
-		final Set<Id> uniqueIds = new HashSet<>();
-		for (var token : tokens) {
-			final var tokenId = token.getId();
-			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-			if (automaticAssociation) {
-				incrementUsedAutomaticAssocitions();
-			}
-			uniqueIds.add(tokenId);
+	public void setNumAssociations(final int numAssociations) {
+		if (numAssociations < 0) {
+			// not possible
+			this.numAssociations = 0;
+		} else {
+			this.numAssociations = numAssociations;
 		}
+	}
 
-		associatedTokens.addAllIds(uniqueIds);
+	public int getNumPositiveBalances() {
+		return numPositiveBalances;
+	}
+
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		if (numPositiveBalances < 0) {
+			// not possible
+			this.numPositiveBalances = 0;
+		} else {
+			this.numPositiveBalances = numPositiveBalances;
+		}
+	}
+
+	/**
+	 * Associated the given list of Tokens to this account.
+	 *
+	 * @param tokens
+	 * 		List of tokens to be associated to the Account
+	 * @param tokenStore
+	 * 		TypedTokenStore to validate if existing relationship with the tokens to be associated with
+	 * @param isAutomaticAssociation
+	 * 		whether these associations count against the max auto-associations limit
+	 * @param shouldEnableRelationship
+	 * 		whether the new relationships should be enabled unconditionally, no matter KYC and freeze settings
+	 * @param dynamicProperties
+	 * 		GlobalDynamicProperties to fetch the token associations limit and enforce it.
+	 * @return the new token relationships formed by this association
+	 */
+	public List<TokenRelationship> associateWith(
+			final List<Token> tokens,
+			final TypedTokenStore tokenStore,
+			final boolean isAutomaticAssociation,
+			final boolean shouldEnableRelationship,
+			final GlobalDynamicProperties dynamicProperties
+	) {
+		final var proposedTotalAssociations = tokens.size() + numAssociations;
+		validateFalse(
+				exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		final List<TokenRelationship> newModelRels = new ArrayList<>();
+		for (final var token : tokens) {
+			validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			if (isAutomaticAssociation) {
+				incrementUsedAutomaticAssociations();
+			}
+			final var newRel = shouldEnableRelationship ?
+					token.newEnabledRelationship(this) :
+					token.newRelationshipWith(this, false);
+			numAssociations++;
+			newModelRels.add(newRel);
+		}
+		return newModelRels;
 	}
 
 	/**
@@ -179,37 +267,36 @@ public class Account {
 	 * indeed associated to each involved token.
 	 *
 	 * @param dissociations
-	 * 		the dissociations to perform.
+	 * 		the dissociations to perform
 	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * 		validator to check if the dissociating token has expired
 	 */
-	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
-		final Set<Id> dissociatedTokenIds = new HashSet<>();
-		for (var dissociation : dissociations) {
+	public void dissociateUsing(final List<Dissociation> dissociations, final OptionValidator validator) {
+		for (final var dissociation : dissociations) {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
 			dissociation.updateModelRelsSubjectTo(validator);
-			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
-			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
-				decrementUsedAutomaticAssocitions();
+			final var pastRel = dissociation.dissociatingAccountRel();
+			if (pastRel.isAutomaticAssociation()) {
+				decrementUsedAutomaticAssociations();
 			}
+			if (pastRel.getBalanceChange() != 0) {
+				numPositiveBalances--;
+			}
+			numAssociations--;
 		}
-		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}
 
 	public Id getId() {
 		return id;
 	}
 
-	public CopyOnWriteIds getAssociatedTokens() {
-		return associatedTokens;
-	}
-
-	public boolean isAssociatedWith(Id token) {
-		return associatedTokens.contains(token);
-	}
-
 	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
 		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+	}
+
+	private boolean exceedsTokenAssociationLimit(GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+		return dynamicProperties.areTokenAssociationsLimited() &&
+				totalAssociations > dynamicProperties.maxTokensPerAccount();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -228,22 +315,21 @@ public class Account {
 
 	@Override
 	public String toString() {
-		final var assocTokenRepr = Optional.ofNullable(associatedTokens)
-				.map(CopyOnWriteIds::toReadableIdList)
-				.orElse("<N/A>");
 		return MoreObjects.toStringHelper(Account.class)
 				.add("id", id)
 				.add("expiry", expiry)
 				.add("balance", balance)
 				.add("deleted", deleted)
-				.add("tokens", assocTokenRepr)
 				.add("ownedNfts", ownedNfts)
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", getAlias().toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
-				.add("nftAllowances", nftAllowances)
+				.add("approveForAllNfts", approveForAllNfts)
+				.add("numAssociations", numAssociations)
+				.add("numPositiveBalances", numPositiveBalances)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 
@@ -350,25 +436,22 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-		return nftAllowances == null ? Collections.emptyMap() : nftAllowances;
+	public Set<FcTokenAllowanceId> getApprovedForAllNftsAllowances() {
+		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
 	}
 
-	public SortedMap<FcTokenAllowanceId, FcTokenAllowance> getMutableNftAllowances() {
-		if (nftAllowances == null) {
-			nftAllowances = new TreeMap<>();
+	public SortedSet<FcTokenAllowanceId> getMutableApprovedForAllNfts() {
+		if (approveForAllNfts == null) {
+			approveForAllNfts = new TreeSet<>();
 		}
-		return nftAllowances;
+		return approveForAllNfts;
 	}
 
-	public void setNftAllowances(
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		this.nftAllowances = new TreeMap<>(nftAllowances);
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+		this.approveForAllNfts = new TreeSet<>(approveForAllNfts);
 	}
 
 	public int getTotalAllowances() {
-		// each serial number of an NFT is considered as an allowance.
-		// So for Nft allowances aggregated amount is considered for limit calculation.
-		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
 	}
 }

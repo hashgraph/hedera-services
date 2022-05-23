@@ -62,13 +62,13 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 				ensureSystemAccountsHaveSomeFunds(),
 
 				systemUserCannotDeleteSystemAccounts(1, 100, GENESIS),
-				systemUserCannotDeleteSystemAccounts(900, 999, GENESIS),
+				systemUserCannotDeleteSystemAccounts(700, 750, GENESIS),
 				systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_ADMIN),
-				systemUserCannotDeleteSystemAccounts(900, 999, SYSTEM_ADMIN),
+				systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_ADMIN),
 				systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_DELETE_ADMIN),
-				systemUserCannotDeleteSystemAccounts(900, 999, SYSTEM_DELETE_ADMIN),
+				systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_DELETE_ADMIN),
 				normalUserCannotDeleteSystemAccounts(1, 100),
-				normalUserCannotDeleteSystemAccounts(900, 999),
+				normalUserCannotDeleteSystemAccounts(700, 750),
 
 				systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
 				systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
@@ -84,9 +84,9 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	private HapiApiSpec ensureSystemAccountsHaveSomeFunds() {
 		return defaultHapiSpec("EnsureSystemAccountsHaveSomeFunds")
 				.given().when().then(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ONE_HUNDRED_HBARS))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 10 * ONE_HUNDRED_HBARS))
 								.payingWith(GENESIS),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, ONE_HUNDRED_HBARS))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, 10 * ONE_HUNDRED_HBARS))
 								.payingWith(GENESIS)
 				);
 	}

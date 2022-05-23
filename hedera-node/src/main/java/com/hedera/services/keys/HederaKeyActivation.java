@@ -23,7 +23,7 @@ package com.hedera.services.keys;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 
@@ -50,6 +50,7 @@ public final class HederaKeyActivation {
 
 	private static final byte PARITY_MASK = (byte) 0x01;
 
+	public static final TransactionSignature VALID_IMPLICIT_SIG = new ValidSignature();
 	public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
@@ -70,7 +71,7 @@ public final class HederaKeyActivation {
 	 * @return whether the payer's Hedera key is active
 	 */
 	public static boolean payerSigIsActive(
-			final TxnAccessor accessor,
+			final SwirldsTxnAccessor accessor,
 			final BiPredicate<JKey, TransactionSignature> validity
 	) {
 		final var sigMeta = accessor.getSigMeta();
@@ -156,7 +157,7 @@ public final class HederaKeyActivation {
 		};
 	}
 
-	static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
+	public static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
 		if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
 			return Arrays.equals(sourceKey, sigKey);
 		} else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
@@ -186,6 +187,21 @@ public final class HederaKeyActivation {
 		@Override
 		public VerificationStatus getSignatureStatus() {
 			return INVALID;
+		}
+	}
+
+	private static class ValidSignature extends TransactionSignature {
+		private static final byte[] MEANINGLESS_BYTE = new byte[] {
+				(byte) 0xAB
+		};
+
+		private ValidSignature() {
+			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
+		}
+
+		@Override
+		public VerificationStatus getSignatureStatus() {
+			return VALID;
 		}
 	}
 }

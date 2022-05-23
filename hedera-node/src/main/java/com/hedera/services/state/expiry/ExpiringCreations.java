@@ -29,15 +29,16 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
@@ -137,6 +138,10 @@ public class ExpiringCreations implements EntityCreator {
 		if (accessor.isTriggeredTxn()) {
 			expiringRecord.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
 		}
+		if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+			expiringRecord.setEthereumHash(
+					accessor.getSpanMapAccessor().getEthTxDataMeta(accessor).getEthereumHash());
+		}
 
 		return expiringRecord;
 	}
@@ -163,12 +168,9 @@ public class ExpiringCreations implements EntityCreator {
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
-				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
+				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
 				.setAssessedCustomFees(customFeesCharged)
-				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
-				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setNftAllowances(sideEffectsTracker.getNftAllowances())
-				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
+				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
@@ -179,9 +181,9 @@ public class ExpiringCreations implements EntityCreator {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 		if (sideEffectsTracker.hasTrackedContractCreation()) {
-			final var newId = 	EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
+			final var newId = EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
 			receiptBuilder.setContractId(newId);
-			final var createResult = new SolidityFnResult();
+			final var createResult = new EvmFnResult();
 			// A bit redundant, but set this for consistency with top-level records
 			createResult.setContractId(newId);
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());

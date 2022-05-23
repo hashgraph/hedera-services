@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -37,6 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +51,7 @@ public class HTSTestsUtil {
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
+	public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
@@ -68,7 +71,9 @@ public class HTSTestsUtil {
 			Dissociation.singleDissociation(account, nonFungible);
 	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	public static final Bytes missingNftResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	public static final TokenID fungible = IdUtils.asToken("0.0.888");
@@ -79,8 +84,15 @@ public class HTSTestsUtil {
 			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
 			MintWrapper.forFungible(fungible, AMOUNT);
+	public static final BurnWrapper fungibleBurnAmountOversize =
+			BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+	public static final BurnWrapper fungibleBurnMaxAmount =
+			BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
+	public static final MintWrapper fungibleMintAmountOversize =
+			MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+	public static final MintWrapper fungibleMintMaxAmount =
+			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final Long serialNumber = 1L;
-	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
 
 	public static final Association multiAssociateOp =
@@ -92,6 +104,8 @@ public class HTSTestsUtil {
 			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 	public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
 			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
+	public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
+			"0x00000000000000000000000000000000000000000000000000000000000000b70000000000000000000000000000000000000000000000000000000000000000");
 	public static final TxnReceipt.Builder receiptBuilder =
 			TxnReceipt.newBuilder().setNewTotalSupply(49).setStatus(ResponseCodeEnum.SUCCESS.name());
 	public static final ExpirableTxnRecord.Builder expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
@@ -103,6 +117,8 @@ public class HTSTestsUtil {
 			MintWrapper.forNonFungible(nonFungible, newMetadata);
 	public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+	public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
+			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000007fffffffffffffff00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
 	public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 	public static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();
@@ -146,6 +162,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					receiver
@@ -153,6 +170,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					null
@@ -160,6 +178,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					null,
 					receiver
@@ -280,4 +299,47 @@ public class HTSTestsUtil {
 					payer
 			)
 	);
+
+	public static TokenCreateWrapper createTokenCreateWrapperWithKeys(final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+		return new TokenCreateWrapper(
+				true,
+				"token",
+				"symbol",
+				account,
+				"memo",
+				false,
+				BigInteger.valueOf(Long.MAX_VALUE),
+				BigInteger.valueOf(Integer.MAX_VALUE),
+				5054L,
+				false,
+				keys,
+				new TokenExpiryWrapper(442L, payer, 555L)
+		);
+	}
+
+	public static TokenCreateWrapper createNonFungibleTokenCreateWrapperWithKeys(
+			final List<TokenCreateWrapper.TokenKeyWrapper> keys
+	) {
+		return new TokenCreateWrapper(
+				false,
+				"nft",
+				"NFT",
+				account,
+				"nftMemo",
+				true,
+				BigInteger.ZERO,
+				BigInteger.ZERO,
+				5054L,
+				true,
+				keys,
+				new TokenExpiryWrapper(0L, null, 0L)
+		);
+	}
+
+	public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =
+			new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
+	public static final TokenCreateWrapper.FractionalFeeWrapper fractionalFee =
+			new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
+	public static final TokenCreateWrapper.RoyaltyFeeWrapper royaltyFee =
+			new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fixedFee, receiver);
 }

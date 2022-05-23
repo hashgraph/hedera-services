@@ -39,7 +39,6 @@ import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedCryptoKeys;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedTokenKeys;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.getNewSerials;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -101,6 +100,17 @@ public class CryptoOpsUsage {
 		var op = cryptoInfoReq.getCryptoGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		return getUsage(estimate, ctx);
+	}
+
+	public FeeData accountDetailsUsage(Query accountDetailsReq, ExtantCryptoContext ctx) {
+		var op = accountDetailsReq.getAccountDetails();
+
+		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		return getUsage(estimate, ctx);
+	}
+
+	private FeeData getUsage(QueryUsage estimate, ExtantCryptoContext ctx) {
 		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraRb = 0;
 		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
@@ -120,11 +130,13 @@ public class CryptoOpsUsage {
 				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 	}
 
-	public void cryptoUpdateUsage(final SigUsage sigUsage,
+	public void cryptoUpdateUsage(
+			final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
 			final CryptoUpdateMeta cryptoUpdateMeta,
 			final ExtantCryptoContext ctx,
-			final UsageAccumulator accumulator) {
+			final UsageAccumulator accumulator
+	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
@@ -195,44 +207,38 @@ public class CryptoOpsUsage {
 
 		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoApproveMeta.getEffectiveNow(),
 				ctx.currentExpiry());
-		accumulator.addRbs(cryptoApproveMeta.getMsgBytesUsed() * lifeTime);
-	}
-
-	public void cryptoAdjustAllowanceUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final CryptoAdjustAllowanceMeta cryptoAdjustMeta,
-			final ExtantCryptoContext ctx,
-			final UsageAccumulator accumulator) {
-
-		accumulator.resetForTransaction(baseMeta, sigUsage);
-		accumulator.addBpt(cryptoAdjustMeta.getMsgBytesUsed());
-
-		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoAdjustMeta.getEffectiveNow(), ctx.currentExpiry());
-
-		final var adjustedBytes = getAdjustedBytes(cryptoAdjustMeta, ctx);
+		// If the value is being adjusted instead of inserting a new entry , the fee charged will be slightly less than
+		// the base price
+		final var adjustedBytes = getNewBytes(cryptoApproveMeta, ctx);
 		if (adjustedBytes > 0) {
 			accumulator.addRbs(adjustedBytes * lifeTime);
 		}
 	}
 
-	private long getAdjustedBytes(final CryptoAdjustAllowanceMeta cryptoAdjustMeta, final ExtantCryptoContext ctx) {
-		long adjustedBytesCount = 0;
-		final var adjustedCryptoBytes = getChangedCryptoKeys(cryptoAdjustMeta.getCryptoAllowances().keySet(),
+	public void cryptoDeleteAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta,
+			final UsageAccumulator accumulator) {
+
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoDeleteAllowanceMeta.getMsgBytesUsed());
+	}
+
+	private long getNewBytes(final CryptoApproveAllowanceMeta cryptoApproveMeta, final ExtantCryptoContext ctx) {
+		long newTotalBytes = 0;
+		final var newCryptoKeys = getChangedCryptoKeys(cryptoApproveMeta.getCryptoAllowances().keySet(),
 				ctx.currentCryptoAllowances().keySet());
 
-		adjustedBytesCount += adjustedCryptoBytes * CRYPTO_ALLOWANCE_SIZE;
+		newTotalBytes += newCryptoKeys * CRYPTO_ALLOWANCE_SIZE;
 
-		final var adjustedTokenBytes = getChangedTokenKeys(cryptoAdjustMeta.getTokenAllowances().keySet(),
+		final var newTokenKeys = getChangedTokenKeys(cryptoApproveMeta.getTokenAllowances().keySet(),
 				ctx.currentTokenAllowances().keySet());
-		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
+		newTotalBytes += newTokenKeys * TOKEN_ALLOWANCE_SIZE;
 
-		final var adjustedNftBytes = getChangedTokenKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
-				ctx.currentNftAllowances().keySet());
-		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
+		final var newApproveForAllNfts = getChangedTokenKeys(cryptoApproveMeta.getNftAllowances(),
+				ctx.currentNftAllowances());
+		newTotalBytes += newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
 
-		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances(), ctx.currentNftAllowances());
-		adjustedBytesCount += adjustedSerials * LONG_SIZE;
-
-		return adjustedBytesCount;
+		return newTotalBytes;
 	}
 }

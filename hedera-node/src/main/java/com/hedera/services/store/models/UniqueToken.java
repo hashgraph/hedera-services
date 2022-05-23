@@ -20,6 +20,7 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
 
 /**
@@ -33,17 +34,21 @@ public class UniqueToken {
 	private long serialNumber;
 	private RichInstant creationTime;
 	private Id owner;
+	private Id spender;
 	private byte[] metadata;
+	private NftId nftId;
 
 	public UniqueToken(Id tokenId, long serialNumber) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, Id owner) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
 		this.owner = owner;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
@@ -52,12 +57,18 @@ public class UniqueToken {
 		this.creationTime = creationTime;
 		this.owner = owner;
 		this.metadata = metadata;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+	}
+
+	public NftId getNftId() {
+		return nftId;
 	}
 
 	public Id getTokenId() {
 		return tokenId;
 	}
 
+	// only used in unit tests
 	public void setTokenId(Id tokenId) {
 		this.tokenId = tokenId;
 	}
@@ -66,6 +77,7 @@ public class UniqueToken {
 		return serialNumber;
 	}
 
+	// only used in unit tests
 	public void setSerialNumber(long serialNumber) {
 		this.serialNumber = serialNumber;
 	}
@@ -86,11 +98,34 @@ public class UniqueToken {
 		this.owner = owner;
 	}
 
+	public Id getSpender() {
+		return spender;
+	}
+
+	public void setSpender(Id spender) {
+		this.spender = spender;
+	}
+
 	public byte[] getMetadata() {
 		return metadata;
 	}
 
 	public void setMetadata(byte[] metadata) {
 		this.metadata = metadata;
+	}
+
+	public void clearSpender() {
+		this.spender = Id.DEFAULT;
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("tokenID", tokenId)
+				.add("serialNum", serialNumber)
+				.add("metadata", metadata)
+				.add("creationTime", creationTime)
+				.add("owner", owner)
+				.add("spender", spender).toString();
 	}
 }

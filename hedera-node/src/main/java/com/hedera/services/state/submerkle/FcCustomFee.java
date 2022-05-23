@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
@@ -170,7 +170,7 @@ public class FcCustomFee implements SelfSerializable {
 			case FRACTIONAL_FEE:
 				validateTrue(token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 				if (!beingCreated) {
-					validateTrue(collector.isAssociatedWith(token.getId()), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+					validateTrue(tokenStore.hasAssociation(token, collector), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 				}
 				break;
 		}
@@ -419,5 +419,10 @@ public class FcCustomFee implements SelfSerializable {
 	private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {
 		dos.writeLong(fee.getUnitsToCollect());
 		dos.writeSerializable(fee.getTokenDenomination(), true);
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_017X_VERSION;
 	}
 }

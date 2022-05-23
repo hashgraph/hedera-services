@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -29,18 +30,20 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -110,6 +113,15 @@ class EntityIdTest {
 		final var actual = EntityId.fromAddress(typedAddress);
 		assertEquals(expected, actual);
 	}
+
+	@Test
+	void toAddressWorks() {
+		final byte[] in = unhex("000000000000000000000000000000000cdefbbb");
+		final var inter = new EntityId(0, 0, Longs.fromByteArray(Arrays.copyOfRange(in, 12, 20)));
+		final byte[] out = inter.toEvmAddress().toArrayUnsafe();
+		assertArrayEquals(in, out);
+	}
+
 
 	@Test
 	void objectContractWorks() {

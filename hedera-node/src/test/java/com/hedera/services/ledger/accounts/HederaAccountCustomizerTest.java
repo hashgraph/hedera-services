@@ -22,10 +22,8 @@ package com.hedera.services.ledger.accounts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -62,25 +60,27 @@ class HederaAccountCustomizerTest {
 	void customizesSyntheticContractCreation() {
 		final var memo = "Inherited";
 		final var proxy = new EntityId(0, 0, 4);
-		final var adminKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
+		final var autoRenewAccount = new EntityId(0, 0, 5);
 
 		final var customizer = new HederaAccountCustomizer()
-				.key(adminKey)
 				.memo(memo)
 				.proxy(proxy)
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
-				.isSmartContract(true);
+				.isSmartContract(true)
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(10);
 
 		final var op = ContractCreateTransactionBody.newBuilder();
-		customizer.applyToSynthetic(op);
+		customizer.customizeSynthetic(op);
 
-		assertEquals(MiscUtils.asKeyUnchecked(adminKey), op.getAdminKey());
 		assertEquals(memo, op.getMemo());
 		assertEquals(proxy.toGrpcAccountId(), op.getProxyAccountID());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(autoRenewAccount.toGrpcAccountId(), op.getAutoRenewAccountId());
+		assertEquals(10, op.getMaxAutomaticTokenAssociations());
 	}
 
 	@Test
@@ -88,6 +88,6 @@ class HederaAccountCustomizerTest {
 		final var customizer = new HederaAccountCustomizer().isSmartContract(true);
 		final var op = ContractCreateTransactionBody.newBuilder();
 
-		assertDoesNotThrow(() -> customizer.applyToSynthetic(op));
+		assertDoesNotThrow(() -> customizer.customizeSynthetic(op));
 	}
 }

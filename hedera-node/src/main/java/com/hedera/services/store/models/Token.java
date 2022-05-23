@@ -277,6 +277,11 @@ public class Token {
 		final var newTotalSupply = totalSupply - amount;
 		final var newAccBalance = accountRel.getBalance() - amount;
 
+		if (newAccBalance == 0) {
+			final var currentNumPositiveBalances = accountRel.getAccount().getNumPositiveBalances();
+			accountRel.getAccount().setNumPositiveBalances(currentNumPositiveBalances - 1);
+		}
+
 		accountRel.setBalance(newAccBalance);
 		setTotalSupply(newTotalSupply);
 	}
@@ -310,6 +315,11 @@ public class Token {
 		for (long serialNum : serialNumbers) {
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
+		}
+
+		if (newAccountBalance == 0) {
+			final var currentNumPositiveBalances = account.getNumPositiveBalances();
+			account.setNumPositiveBalances(currentNumPositiveBalances - 1);
 		}
 
 		account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
@@ -376,10 +386,16 @@ public class Token {
 			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED,
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
 		}
-
+		final var treasuryAccount = treasuryRel.getAccount();
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
-
+		if (treasuryRel.getBalance() == 0 && amount > 0) {
+			// for mint op
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
+		} else if (newTreasuryBalance == 0 && amount < 0) {
+			// for burn op
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
+		}
 		setTotalSupply(newTotalSupply);
 		treasuryRel.setBalance(newTreasuryBalance);
 	}

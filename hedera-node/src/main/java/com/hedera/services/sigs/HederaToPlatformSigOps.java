@@ -24,18 +24,16 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.Signature;
 
 import java.time.Instant;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link com.swirlds.common.crypto.TransactionSignature}
- * list of a {@link com.swirlds.common.Transaction} whose contents are known to be a valid
+ * list of a {@link com.swirlds.common.system.transaction.SwirldTransaction} whose contents are known to be a valid
  * Hedera gRPC {@link Transaction}.
  *
  * <p>This operation allows Hedera Services to use the Platform to efficiently
@@ -47,8 +45,7 @@ import java.time.Instant;
  * and creates the cryptographic signatures at the bases of the signing hierarchies
  * for these keys. This implicitly requests the Platform to verify these cryptographic
  * signatures, by setting them in the sigs list of the platform txn, <b>before</b>
- * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
- * SwirldDualState)}
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
  * is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {
@@ -81,11 +78,11 @@ public final class HederaToPlatformSigOps {
 	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
 	 */
 	public static void expandIn(
-			final PlatformTxnAccessor txnAccessor,
+			final SwirldsTxnAccessor txnAccessor,
 			final SigRequirements sigReqs,
 			final PubKeyToSigBytes pkToSigFn
 	) {
-		txnAccessor.getPlatformTxn().clear();
+		txnAccessor.getPlatformTxn().clearSignatures();
 		final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
 		new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory).execute();
 	}

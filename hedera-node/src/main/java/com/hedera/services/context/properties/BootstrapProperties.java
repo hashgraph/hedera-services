@@ -183,6 +183,7 @@ public final class BootstrapProperties implements PropertySource {
 			"accounts.systemUndeleteAdmin",
 			"accounts.treasury",
 			"entities.maxLifetime",
+			"entities.systemDeletable",
 			"files.addressBook",
 			"files.networkProperties",
 			"files.exchangeRates",
@@ -191,13 +192,13 @@ public final class BootstrapProperties implements PropertySource {
 			"files.nodeDetails",
 			"files.softwareUpdateRange",
 			"files.throttleDefinitions",
+			"hedera.firstUserEntity",
 			"hedera.numReservedSystemEntities",
 			"hedera.realm",
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat",
-			"ledger.id",
-			"tokens.nfts.areQueriesEnabled"
+			"ledger.id"
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
@@ -209,6 +210,7 @@ public final class BootstrapProperties implements PropertySource {
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultLifetime",
+			"contracts.knownBlockHash",
 			"contracts.localCall.estRetBytes",
 			"contracts.allowCreate2",
 			"contracts.maxGas",
@@ -221,8 +223,10 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.frontendThrottleMaxGasLimit",
 			"contracts.consensusThrottleMaxGasLimit",
 			"contracts.redirectTokenCalls",
+			"contracts.precompile.exchangeRateGasCost",
 			"contracts.precompile.htsDefaultGasCost",
 			"contracts.precompile.exportRecordResults",
+			"contracts.precompile.htsEnableTokenCreate",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
 			"fees.percentCongestionMultipliers",
@@ -231,7 +235,9 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.transaction.maxValidDuration",
 			"hedera.transaction.minValidDuration",
 			"hedera.transaction.minValidityBufferSecs",
-			"autorenew.isEnabled",
+			"autoRemove.maxPurgedKvPairsPerTouch",
+			"autoRemove.maxReturnedNftsPerTouch",
+			"autoRenew.targetTypes",
 			"autorenew.numberOfEntitiesToScan",
 			"autorenew.maxNumberOfEntitiesToRenewOrDelete",
 			"autorenew.gracePeriod",
@@ -251,6 +257,7 @@ public final class BootstrapProperties implements PropertySource {
 			"scheduling.whitelist",
 			"scheduling.triggerTxn.windBackNanos",
 			"sigs.expandFromLastSignedState",
+			"tokens.maxRelsPerInfoQuery",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
@@ -268,7 +275,9 @@ public final class BootstrapProperties implements PropertySource {
 			"consensus.message.maxBytesAllowed",
 			"upgrade.artifacts.path",
 			"hedera.allowances.maxTransactionLimit",
-			"hedera.allowances.maxAccountLimit"
+			"hedera.allowances.maxAccountLimit",
+			"hedera.allowances.isEnabled",
+			"entities.limitTokenAssociations"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -333,6 +342,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("dev.onlyDefaultNodeListens", AS_BOOLEAN),
 			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("entities.maxLifetime", AS_LONG),
+			entry("entities.systemDeletable", AS_ENTITY_TYPES),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),
@@ -344,6 +354,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("grpc.port", AS_INT),
 			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.exportAccountsOnStartup", AS_BOOLEAN),
+			entry("hedera.firstUserEntity", AS_LONG),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
 			entry("hedera.prefetch.queueCapacity", AS_INT),
 			entry("hedera.prefetch.threadPoolSize", AS_INT),
@@ -359,7 +370,9 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.transaction.minValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidityBufferSecs", AS_INT),
 			entry("autoCreation.enabled", AS_BOOLEAN),
-			entry("autorenew.isEnabled", AS_BOOLEAN),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", AS_INT),
+			entry("autoRemove.maxReturnedNftsPerTouch", AS_INT),
+			entry("autoRenew.targetTypes", AS_ENTITY_TYPES),
 			entry("autorenew.numberOfEntitiesToScan", AS_INT),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", AS_INT),
 			entry("autorenew.gracePeriod", AS_LONG),
@@ -401,6 +414,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("netty.prod.maxConnectionIdle", AS_LONG),
 			entry("netty.prod.keepAliveTime", AS_LONG),
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
+			entry("tokens.maxRelsPerInfoQuery", AS_INT),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxCustomFeesAllowed", AS_INT),
 			entry("tokens.maxCustomFeeDepth", AS_INT),
@@ -414,7 +428,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
-			entry("tokens.nfts.areQueriesEnabled", AS_BOOLEAN),
+			entry("contracts.knownBlockHash", AS_KNOWN_BLOCK_VALUES),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.allowCreate2", AS_BOOLEAN),
 			entry("contracts.defaultLifetime", AS_LONG),
@@ -427,8 +441,10 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.frontendThrottleMaxGasLimit", AS_LONG),
 			entry("contracts.consensusThrottleMaxGasLimit", AS_LONG),
 			entry("contracts.redirectTokenCalls", AS_BOOLEAN),
+			entry("contracts.precompile.exchangeRateGasCost", AS_LONG),
 			entry("contracts.precompile.htsDefaultGasCost", AS_LONG),
 			entry("contracts.precompile.exportRecordResults", AS_BOOLEAN),
+			entry("contracts.precompile.htsEnableTokenCreate", AS_BOOLEAN),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
@@ -442,6 +458,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
-			entry("hedera.allowances.maxAccountLimit", AS_INT)
+			entry("hedera.allowances.maxAccountLimit", AS_INT),
+			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
+			entry("entities.limitTokenAssociations", AS_BOOLEAN)
 	);
 }

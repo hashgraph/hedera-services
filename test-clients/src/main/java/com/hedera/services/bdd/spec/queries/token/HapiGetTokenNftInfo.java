@@ -41,9 +41,11 @@ import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenNftInfo.class);
+	public static final String MISSING_SPENDER = "missing";
 
 	String token;
 	long serialNum;
@@ -58,9 +60,20 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	Optional<String> expectedTokenID = Optional.empty();
 	Optional<String> expectedAccountID = Optional.empty();
 	Optional<Boolean> expectedCreationTime = Optional.empty();
+	Optional<String> expectedSpenderID = Optional.empty();
 
 	public HapiGetTokenNftInfo hasAccountID(String name) {
 		expectedAccountID = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenNftInfo hasSpenderID(String name) {
+		expectedSpenderID = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenNftInfo hasNoSpender() {
+		expectedSpenderID = Optional.of(MISSING_SPENDER);
 		return this;
 	}
 
@@ -99,7 +112,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		var actualInfo = response.getTokenGetNftInfo().getNft();
 
 		if (expectedSerialNum.isPresent()) {
-			Assertions.assertEquals(
+			assertEquals(
 					expectedSerialNum.getAsLong(),
 					actualInfo.getNftID().getSerialNumber(),
 					"Wrong serial num!");
@@ -107,25 +120,44 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
 		if (expectedAccountID.isPresent()) {
 			var id = TxnUtils.asId(expectedAccountID.get(), spec);
-			Assertions.assertEquals(
+			assertEquals(
 					id,
 					actualInfo.getAccountID(),
 					"Wrong account ID account!");
 		}
 
-		expectedMetadata.ifPresent(bytes -> Assertions.assertEquals(
+
+		if (expectedSpenderID.isPresent()) {
+			if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
+				Assertions.assertEquals(
+						0,
+						actualInfo.getSpenderId().getAccountNum(),
+						"Wrong account ID account!");
+			} else {
+				var id = TxnUtils.asId(expectedSpenderID.get(), spec);
+				Assertions.assertEquals(
+						id,
+						actualInfo.getSpenderId(),
+						"Wrong spender ID account!");
+			}
+
+		}
+
+		expectedMetadata.ifPresent(bytes -> assertEquals(
 				bytes,
 				actualInfo.getMetadata(),
 				"Wrong metadata!"));
 
 		assertFor(
 				actualInfo.getCreationTime(),
+
 				expectedCreationTime,
 				(n, r) -> r.getCreationTime(token),
 				"Wrong creation time (seconds)!",
 				spec.registry());
 
 		var registry = spec.registry();
+
 		assertFor(
 				actualInfo.getNftID().getTokenID(),
 				expectedTokenID,
@@ -133,7 +165,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 				"Wrong token id!",
 				registry);
 
-		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+		expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
 	}
 
 	private <T, R> void assertFor(
@@ -145,7 +177,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	) {
 		if (possible.isPresent()) {
 			var expected = expectedFn.apply(possible.get(), registry);
-			Assertions.assertEquals(expected, actual, error);
+			assertEquals(expected, actual, error);
 		}
 	}
 

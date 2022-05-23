@@ -20,9 +20,10 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.util.Arrays;
 
@@ -103,5 +104,12 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 		}
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);
+	}
+
+	public String toString(){
+		return MoreObjects.toStringHelper(this)
+				.add("pojoSigMap", pojoSigMap.toString())
+				.add("used", used)
+				.toString();
 	}
 }

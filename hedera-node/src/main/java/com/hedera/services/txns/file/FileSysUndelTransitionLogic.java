@@ -21,6 +21,8 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -37,7 +39,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.context.properties.EntityType.FILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -45,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class FileSysUndelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
+	private final boolean supported;
 	private final HederaFs hfs;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
@@ -55,16 +60,23 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 			final HederaFs hfs,
 			final SigImpactHistorian sigImpactHistorian,
 			final Map<EntityId, Long> expiries,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			@CompositeProps final PropertySource properties
 	) {
 		this.hfs = hfs;
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.supported = properties.getTypesProperty("entities.systemDeletable").contains(FILE);
 	}
 
 	@Override
 	public void doStateTransition() {
+		if (!supported) {
+			txnCtx.setStatus(NOT_SUPPORTED);
+			return;
+		}
+
 		var op = txnCtx.accessor().getTxn().getSystemUndelete();
 		var tbu = op.getFileID();
 		var entity = EntityId.fromGrpcFileId(tbu);

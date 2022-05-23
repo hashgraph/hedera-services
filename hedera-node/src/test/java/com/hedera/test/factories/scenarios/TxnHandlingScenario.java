@@ -32,14 +32,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;
@@ -52,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
@@ -63,7 +63,9 @@ import org.apache.commons.codec.DecoderException;
 import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
@@ -77,6 +79,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -115,6 +118,11 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_PAYER_BALANCE)
 								.accountKeys(DEFAULT_PAYER_KT).get())
 				.withAccount(
+						STAKING_FUND_ID,
+						newAccount()
+								.balance(0)
+								.accountKeys(EMPTY_KEY).get())
+				.withAccount(
 						MASTER_PAYER_ID,
 						newAccount()
 								.balance(DEFAULT_PAYER_BALANCE)
@@ -152,8 +160,16 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.cryptoAllowances(cryptoAllowances)
 								.fungibleTokenAllowances(fungibleTokenAllowances)
-								.nftAllowances(nftTokenAllowances)
+								.explicitNftAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
+				).withAccount(
+						DELEGATING_SPENDER_ID,
+						newAccount()
+								.balance(DEFAULT_BALANCE)
+								.cryptoAllowances(cryptoAllowances)
+								.fungibleTokenAllowances(fungibleTokenAllowances)
+								.explicitNftAllowances(nftTokenAllowances)
+								.accountKeys(DELEGATING_SPENDER_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
 						newAccount()
@@ -345,7 +361,7 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
 				.willAnswer(inv -> {
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
+					entity.setPayer(null);
 					return entity;
 				});
 
@@ -355,7 +371,7 @@ public interface TxnHandlingScenario {
 				.willAnswer(inv -> {
 					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
+					entity.setPayer(null);
 					entity.setAdminKey(adminKey);
 					return entity;
 				});
@@ -406,6 +422,10 @@ public interface TxnHandlingScenario {
 	String OWNER_ACCOUNT_ID = "0.0.1439";
 	AccountID OWNER_ACCOUNT = asAccount(OWNER_ACCOUNT_ID);
 	KeyTree OWNER_ACCOUNT_KT = withRoot(ed25519());
+
+	String DELEGATING_SPENDER_ID = "0.0.1539";
+	AccountID DELEGATING_SPENDER = asAccount(DELEGATING_SPENDER_ID);
+	KeyTree DELEGATING_SPENDER_KT = withRoot(ed25519());
 
 	String SYS_ACCOUNT_ID = "0.0.666";
 
@@ -587,10 +607,10 @@ public interface TxnHandlingScenario {
 	}};
 
 	List<TokenAllowance> tokenAllowanceList = List.of(TokenAllowance.newBuilder()
-					.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-					.setOwner(OWNER_ACCOUNT)
-					.setSpender(DEFAULT_PAYER)
-					.setAmount(10_000L)
+			.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+			.setOwner(OWNER_ACCOUNT)
+			.setSpender(DEFAULT_PAYER)
+			.setAmount(10_000L)
 			.build());
 
 	List<TokenAllowance> tokenAllowanceMissingOwnerList = List.of(TokenAllowance.newBuilder()
@@ -600,17 +620,16 @@ public interface TxnHandlingScenario {
 			.setAmount(10_000L)
 			.build());
 
-	TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new TreeMap<>() {{
-		put(FcTokenAllowanceId.from(
-						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
-				FcTokenAllowance.from(true));
+	TreeSet<FcTokenAllowanceId> nftTokenAllowances = new TreeSet<>() {{
+		add(FcTokenAllowanceId.from(
+				EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)));
 	}};
 
 	List<NftAllowance> nftAllowanceList = List.of(NftAllowance.newBuilder()
-					.setOwner(OWNER_ACCOUNT)
-					.setTokenId(KNOWN_TOKEN_WITH_WIPE)
-					.setSpender(DEFAULT_PAYER)
-					.setApprovedForAll(BoolValue.of(true))
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setApprovedForAll(BoolValue.of(true))
 			.build());
 
 	List<NftAllowance> nftAllowanceMissingOwnerList = List.of(NftAllowance.newBuilder()
@@ -618,5 +637,34 @@ public interface TxnHandlingScenario {
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
 			.setSpender(DEFAULT_PAYER)
 			.setApprovedForAll(BoolValue.of(true))
+			.build());
+
+	List<NftRemoveAllowance> nftDeleteAllowanceList = List.of(NftRemoveAllowance.newBuilder()
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.addAllSerialNumbers(List.of(1L))
+			.build());
+
+	List<NftRemoveAllowance> nftDeleteAllowanceMissingOwnerList = List.of(NftRemoveAllowance.newBuilder()
+			.setOwner(MISSING_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.build());
+
+	List<NftAllowance> delegatingNftAllowanceList = List.of(NftAllowance.newBuilder()
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setDelegatingSpender(DELEGATING_SPENDER)
+			.setApprovedForAll(BoolValue.of(false))
+			.addAllSerialNumbers(List.of(1L))
+			.build());
+
+	List<NftAllowance> delegatingNftAllowanceMissingOwnerList = List.of(NftAllowance.newBuilder()
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setDelegatingSpender(MISSING_ACCOUNT)
+			.setApprovedForAll(BoolValue.of(false))
+			.addAllSerialNumbers(List.of(1L))
 			.build());
 }

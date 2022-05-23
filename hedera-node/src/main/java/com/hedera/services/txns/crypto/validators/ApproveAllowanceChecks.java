@@ -20,88 +20,140 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
-import java.util.function.Supplier;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
-public class ApproveAllowanceChecks implements AllowanceChecks {
-	protected final TypedTokenStore tokenStore;
-	protected final AccountStore accountStore;
-	protected final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap;
-	protected final GlobalDynamicProperties dynamicProperties;
+@Singleton
+public class ApproveAllowanceChecks extends AllowanceChecks {
+	private final OptionValidator validator;
 
 	@Inject
 	public ApproveAllowanceChecks(
-			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap,
-			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
-			final AccountStore accountStore) {
-		this.tokenStore = tokenStore;
-		this.nftsMap = nftsMap;
-		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
+			final OptionValidator validator) {
+		super(dynamicProperties);
+		this.validator = validator;
 	}
 
-	@Override
-	public ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
-			final Account payerAccount) {
-		if (cryptoAllowancesList.isEmpty()) {
-			return OK;
-		}
-		final var cryptoKeysList = cryptoAllowancesList.stream()
-				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
-						payerAccount.getId().asEntityNum()))
-				.toList();
-		if (hasRepeatedSpender(cryptoKeysList)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+	/**
+	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transactions
+	 *
+	 * @param cryptoAllowances
+	 * 		crypto allowances list
+	 * @param tokenAllowances
+	 * 		fungible token allowances list
+	 * @param nftAllowances
+	 * 		nft allowances list
+	 * @param payerAccount
+	 * 		Account of the payer for the allowance approve/adjust txn.
+	 * @param view
+	 * 		working view
+	 * @return response code after validation
+	 */
+	public ResponseCodeEnum allowancesValidation(
+			final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances,
+			final Account payerAccount,
+			final StateView view
+	) {
+		// feature flag for allowances
+		if (!isEnabled()) {
+			return NOT_SUPPORTED;
 		}
 
-		for (final var allowance : cryptoAllowancesList) {
+		var validity = validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances);
+		if (validity != OK) {
+			return validity;
+		}
+
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
+		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
+		if (validity != OK) {
+			return validity;
+		}
+
+		final var tokenStore = new ReadOnlyTokenStore(accountStore,
+				view.asReadOnlyTokenStore(),
+				view.asReadOnlyNftStore(),
+				view.asReadOnlyAssociationStore());
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, tokenStore);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validateNftAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
+		if (validity != OK) {
+			return validity;
+		}
+
+		return OK;
+	}
+
+	/**
+	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+	 * transaction
+	 *
+	 * @param cryptoAllowances
+	 * 		crypto allowances list
+	 * @param payerAccount
+	 * 		Account of the payer for the approveAllowance txn
+	 * @param accountStore
+	 * 		account store
+	 * @return response code after validation
+	 */
+	ResponseCodeEnum validateCryptoAllowances(
+			final List<CryptoAllowance> cryptoAllowances,
+			final Account payerAccount,
+			final AccountStore accountStore) {
+		if (cryptoAllowances.isEmpty()) {
+			return OK;
+		}
+
+		for (final var allowance : cryptoAllowances) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
-			final var amount = allowance.getAmount();
-			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 
-			var validity = validateAmount(amount);
+			var validity = validateAmount(allowance.getAmount());
 			if (validity != OK) {
 				return validity;
 			}
-			validity = validateCryptoAllowanceBasics(owner, spender);
+			validity = validateSpender(ownerAccount.getId(), spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -109,44 +161,49 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		return OK;
 	}
 
-
-	@Override
-	public ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
-			final Account payerAccount) {
-		if (tokenAllowancesList.isEmpty()) {
+	/**
+	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+	 * transaction
+	 *
+	 * @param tokenAllowances
+	 * 		token allowances list
+	 * @param payerAccount
+	 * 		Account of the payer for the approveAllowance txn
+	 * @param accountStore
+	 * 		account store
+	 * @param tokenStore
+	 * 		read only token store
+	 * @return
+	 */
+	ResponseCodeEnum validateFungibleTokenAllowances(
+			final List<TokenAllowance> tokenAllowances,
+			final Account payerAccount,
+			final AccountStore accountStore,
+			final ReadOnlyTokenStore tokenStore) {
+		if (tokenAllowances.isEmpty()) {
 			return OK;
 		}
-		final var tokenKeysList = tokenAllowancesList
-				.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
-				.toList();
-		if (hasRepeatedId(tokenKeysList)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
-		}
 
-		for (final var allowance : tokenAllowancesList) {
-			final var spenderAccountId = allowance.getSpender();
-			final var amount = allowance.getAmount();
-			final var tokenId = allowance.getTokenId();
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
-			var owner = Id.fromGrpcAccount(allowance.getOwner());
+		for (final var allowance : tokenAllowances) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
+
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 			final var ownerAccount = fetchResult.getLeft();
-
 			if (!token.isFungibleCommon()) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
 
-			var validity = validateTokenAmount(amount, token);
+			var validity = validateTokenAmount(allowance.getAmount(), token);
 			if (validity != OK) {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
@@ -154,122 +211,115 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		return OK;
 	}
 
-	@Override
-	public ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
-			final Account payerAccount) {
+	/**
+	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction
+	 *
+	 * @param nftAllowancesList
+	 * 		nft allowances
+	 * @param payerAccount
+	 * 		payer for approveAllowance txn
+	 * @param accountStore
+	 * 		account store
+	 * @param tokenStore
+	 * 		token store
+	 * @return
+	 */
+	ResponseCodeEnum validateNftAllowances(
+			final List<NftAllowance> nftAllowancesList,
+			final Account payerAccount,
+			final AccountStore accountStore,
+			final ReadOnlyTokenStore tokenStore) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}
-		final var nftKeysList = nftAllowancesList
-				.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
-				.toList();
-		if (hasRepeatedId(nftKeysList)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
-		}
 
 		for (final var allowance : nftAllowancesList) {
-			final var spenderAccountId = allowance.getSpender();
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var delegatingSpender = Id.fromGrpcAccount(allowance.getDelegatingSpender());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
-			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
-			if (fetchResult.getRight() != OK) {
-				return fetchResult.getRight();
-			}
-			final var ownerAccount = fetchResult.getLeft();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
+			}
+			final var ownerAccount = fetchResult.getLeft();
+
+			var validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
 
-			if (!approvedForAll) {
-				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
-				// state
-				validity = validateSerialNums(serialNums, ownerAccount, token);
-				if (validity != OK) {
-					return validity;
+			if (approvedForAll && !delegatingSpender.equals(Id.MISSING_ID)) {
+				return DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+			} else if (!delegatingSpender.equals(Id.MISSING_ID)) {
+				final var allowanceKey = FcTokenAllowanceId.from(
+						EntityNum.fromTokenId(tokenId), delegatingSpender.asEntityNum());
+				if (!ownerAccount.getApprovedForAllNftsAllowances().contains(allowanceKey)) {
+					return DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 				}
 			}
-		}
-		return OK;
-	}
 
-	/**
-	 * Validates serial numbers for {@link NftAllowance}
-	 *
-	 * @param serialNums
-	 * 		given serial numbers in the CryptoApproveAllowance operation
-	 * @param ownerAccount
-	 * 		owner account
-	 * @param token
-	 * 		token for which allowance is related to
-	 * @return response code after validation
-	 */
-	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
-			final Account ownerAccount,
-			final Token token) {
-		if (hasRepeatedSerials(serialNums)) {
-			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-		}
-
-		if (serialNums.isEmpty()) {
-			return EMPTY_ALLOWANCES;
-		}
-
-		for (var serial : serialNums) {
-			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
-			if (serial <= 0 || !nftsMap.get().containsKey(EntityNumPair.fromNftId(nftId))) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
-			}
-
-			final var owner = nftsMap.get().get(EntityNumPair.fromNftId(nftId)).getOwner();
-			if (!ownerAccount.getId().asEntityId().equals(owner)) {
-				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+			validity = validateSerialNums(serialNums, token, tokenStore);
+			if (validity != OK) {
+				return validity;
 			}
 		}
-
 		return OK;
 	}
 
-	/**
-	 * Validates if given amount is less than zero
-	 *
-	 * @param amount
-	 * 		given amount
-	 * @return response code after validation
-	 */
-	private ResponseCodeEnum validateAmount(final long amount) {
-		if (amount < 0) {
-			return NEGATIVE_ALLOWANCE_AMOUNT;
-		}
-		return OK;
-	}
-
-	/**
-	 * Validates if the amount given is less tha zero for fungible token or if the amount exceeds token max supply
-	 *
-	 * @param amount
-	 * 		given amount in the operation
-	 * @param fungibleToken
-	 * 		fungible token for which allowance is related to
-	 * @return response code after validation
-	 */
-	private ResponseCodeEnum validateTokenAmount(final long amount, Token fungibleToken) {
+	public ResponseCodeEnum validateTokenAmount(final long amount, final Token token) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (fungibleToken != null && amount > fungibleToken.getMaxSupply()) {
+		if (token.getSupplyType().equals(TokenSupplyType.FINITE) && amount > token.getMaxSupply()) {
 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+		}
+		return OK;
+	}
+
+	public ResponseCodeEnum validateAmount(final long amount) {
+		if (amount < 0) {
+			return NEGATIVE_ALLOWANCE_AMOUNT;
+		}
+		return OK;
+	}
+
+	ResponseCodeEnum validateAllowanceCount(final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances) {
+		// each serial number of an NFT is considered as an allowance.
+		// So for Nft allowances aggregated amount is considered for limit calculation.
+		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size()
+				+ aggregateNftAllowances(nftAllowances);
+		return validateTotalAllowances(totalAllowances);
+	}
+
+	private ResponseCodeEnum validateTokenBasics(
+			final Account ownerAccount,
+			final Id spenderId,
+			final Token token,
+			final ReadOnlyTokenStore tokenStore) {
+		if (ownerAccount.getId().equals(spenderId)) {
+			return SPENDER_ACCOUNT_SAME_AS_OWNER;
+		}
+		if (!tokenStore.hasAssociation(token, ownerAccount)) {
+			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateSpender(final Id ownerId, final Id spender) {
+		if (ownerId.equals(spender)) {
+			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
 		return OK;
 	}

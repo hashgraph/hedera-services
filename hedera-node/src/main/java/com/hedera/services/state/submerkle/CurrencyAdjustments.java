@@ -21,39 +21,38 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
 public class CurrencyAdjustments implements SelfSerializable {
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_0240_VERSION = 1;
+	static final int RELEASE_0240_VERSION = 2;
+	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
 	private static final long[] NO_ADJUSTMENTS = new long[0];
 	static final int MAX_NUM_ADJUSTMENTS = 25;
 
 	long[] hbars = NO_ADJUSTMENTS;
-	List<EntityId> accountIds = Collections.emptyList();
+	long[] accountNums = NO_ADJUSTMENTS;
 
 	public CurrencyAdjustments() {
 		/* For RuntimeConstructable */
 	}
 
-	public CurrencyAdjustments(long[] amounts, List<EntityId> parties) {
+	public CurrencyAdjustments(long[] amounts, long[] parties) {
 		hbars = amounts;
-		accountIds = parties;
+		accountNums = parties;
 	}
 
 	public boolean isEmpty() {
@@ -68,18 +67,24 @@ public class CurrencyAdjustments implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+		if (version < RELEASE_0240_VERSION) {
+			final var accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+			accountNums = accountIds.stream().mapToLong(EntityId::num).toArray();
+		} else {
+			accountNums = in.readLongArray(MAX_NUM_ADJUSTMENTS);
+		}
+
 		hbars = in.readLongArray(MAX_NUM_ADJUSTMENTS);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializableList(accountIds, true, true);
+		out.writeLongArray(accountNums);
 		out.writeLongArray(hbars);
 	}
 
@@ -94,14 +99,14 @@ public class CurrencyAdjustments implements SelfSerializable {
 		}
 
 		CurrencyAdjustments that = (CurrencyAdjustments) o;
-		return accountIds.equals(that.accountIds) && Arrays.equals(hbars, that.hbars);
+		return Arrays.equals(accountNums, that.accountNums) && Arrays.equals(hbars, that.hbars);
 	}
 
 	@Override
 	public int hashCode() {
 		int result = Long.hashCode(RUNTIME_CONSTRUCTABLE_ID);
-		result = result * 31 + Integer.hashCode(MERKLE_VERSION);
-		result = result * 31 + accountIds.hashCode();
+		result = result * 31 + Integer.hashCode(CURRENT_VERSION);
+		result = result * 31 + Arrays.hashCode(accountNums);
 		return result * 31 + Arrays.hashCode(hbars);
 	}
 
@@ -115,16 +120,23 @@ public class CurrencyAdjustments implements SelfSerializable {
 	/* --- Helpers --- */
 	public TransferList toGrpc() {
 		var grpc = TransferList.newBuilder();
-		IntStream.range(0, hbars.length)
-				.mapToObj(i -> AccountAmount.newBuilder()
-						.setAmount(hbars[i])
-						.setAccountID(EntityIdUtils.asAccount(accountIds.get(i))))
-				.forEach(grpc::addAccountAmounts);
+		for (int i = 0; i < hbars.length; i++) {
+			grpc.addAccountAmounts(AccountAmount.newBuilder()
+					.setAmount(hbars[i])
+					.setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
+					.build());
+		}
 		return grpc.build();
 	}
 
-	public static CurrencyAdjustments fromGrpc(TransferList grpc) {
-		return fromGrpc(grpc.getAccountAmountsList());
+	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {
+		final var n = balanceChanges.length;
+		final var m = changedAccounts.length;
+
+		if (n > 0 && m > 0 && n == m) {
+			return new CurrencyAdjustments(balanceChanges, changedAccounts);
+		}
+		return new CurrencyAdjustments();
 	}
 
 	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments) {
@@ -132,15 +144,23 @@ public class CurrencyAdjustments implements SelfSerializable {
 		final int n = adjustments.size();
 		if (n > 0) {
 			final var amounts = new long[n];
-			final List<EntityId> accounts = new ArrayList<>(n);
+			final long[] accounts = new long[n];
 			for (var i = 0; i < n; i++) {
 				final var adjustment = adjustments.get(i);
 				amounts[i] = adjustment.getAmount();
-				accounts.add(EntityId.fromGrpcAccountId(adjustment.getAccountID()));
+				accounts[i] = adjustment.getAccountID().getAccountNum();
 			}
 			pojo.hbars = amounts;
-			pojo.accountIds = accounts;
+			pojo.accountNums = accounts;
 		}
 		return pojo;
+	}
+
+	public long[] getHbars() {
+		return hbars;
+	}
+
+	public long[] getAccountNums() {
+		return accountNums;
 	}
 }

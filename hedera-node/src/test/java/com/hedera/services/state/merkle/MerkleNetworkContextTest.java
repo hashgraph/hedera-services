@@ -23,7 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -34,50 +34,49 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.swirlds.common.MutabilityException;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.DualStateImpl;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_GAS_THROTTLE_SNAPSHOT;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -93,6 +92,7 @@ class MerkleNetworkContextTest {
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
+	private Instant firstConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -100,7 +100,6 @@ class MerkleNetworkContextTest {
 	private Instant[] congestionStarts;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
-	private DomainSerdes serdes;
 	private FunctionalityThrottling throttling;
 	private FeeMultiplierSource feeMultiplierSource;
 
@@ -114,12 +113,13 @@ class MerkleNetworkContextTest {
 
 	@BeforeEach
 	void setup() {
-		congestionStarts = new Instant[]{
+		congestionStarts = new Instant[] {
 				Instant.ofEpochSecond(1_234_567L, 54321L),
 				Instant.ofEpochSecond(1_234_789L, 12345L)
 		};
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
+		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -130,7 +130,7 @@ class MerkleNetworkContextTest {
 				1, 14, 1_234_567L,
 				1, 15, 2_345_678L);
 		midnightRateSetCopy = midnightRateSet.copy();
-		usageSnapshots = new DeterministicThrottle.UsageSnapshot[]{
+		usageSnapshots = new DeterministicThrottle.UsageSnapshot[] {
 				new DeterministicThrottle.UsageSnapshot(
 						123L, consensusTimeOfLastHandledTxn),
 				new DeterministicThrottle.UsageSnapshot(
@@ -139,9 +139,6 @@ class MerkleNetworkContextTest {
 
 		gasLimitDeterministicThrottle = new GasLimitDeterministicThrottle(1234);
 		gasLimitUsageSnapshot = new DeterministicThrottle.UsageSnapshot(1234L, consensusTimeOfLastHandledTxn);
-
-		serdes = mock(DomainSerdes.class, RETURNS_DEEP_STUBS);
-		MerkleNetworkContext.serdes = serdes;
 
 		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, lastScannedEntity, midnightRateSet);
 
@@ -153,11 +150,55 @@ class MerkleNetworkContextTest {
 		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
+		subject.markMigrationRecordsStreamed();
+		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
+		subject.setBlockNo(0L);
 	}
 
-	@AfterEach
-	void cleanup() {
-		MerkleNetworkContext.serdes = new DomainSerdes();
+	@Test
+	void isSelfHashing() {
+		assertTrue(subject.isSelfHashing());
+		assertNotNull(subject.getHash());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void logsAtErrorIfSomehowHashComputationFails() {
+		final FCQueue<BytesElement> mockHashes = (FCQueue<BytesElement>) mock(FCQueue.class);
+
+		subject.setBlockHashes(mockHashes);
+		given(mockHashes.getHash()).willThrow(UncheckedIOException.class);
+		final var hash = subject.getHash();
+		assertSame(EMPTY_HASH, hash);
+
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Hash computation failed")));
+	}
+
+	@Test
+	void updatesExpectedFieldsWhenFinishingBlock() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		subject.setBlockNo(aBlockNo);
+
+		final var newBlockNo = subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
+
+		assertEquals(aEthHash, subject.getBlockHashByNumber(aBlockNo));
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(aBlockNo + 1, newBlockNo);
+	}
+
+	@Test
+	void doesntKeepMoreThanExpectedBlockHashes() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		for (int i = 0; i < 256; i++) {
+			subject.finishBlock(bEthHash, newFirstConsTime.minusNanos(i + 1));
+		}
+
+		subject.setBlockNo(aBlockNo);
+		subject.finishBlock(ethHashFrom(aFullBlockHash), newFirstConsTime);
+
+		assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(0L));
+		assertEquals(aEthHash, subject.getBlockHashByNumber(aBlockNo));
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
 	}
 
 	@Test
@@ -201,6 +242,10 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
+		assertEquals(subjectCopy.getBlockHashes(), subject.getBlockHashes());
+		assertNotSame(subject.getBlockHashes(), subjectCopy.getBlockHashes());
+		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
+		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -208,6 +253,13 @@ class MerkleNetworkContextTest {
 		assertNull(subject.getMultiplierSource());
 		assertNull(subjectCopy.getThrottling());
 		assertNull(subjectCopy.getMultiplierSource());
+		// and:
+		assertEquals(subject.getHash(), subjectCopy.getHash());
+		subjectCopy.setBlockNo(subject.getAlignmentBlockNo() + 1L);
+		assertNotEquals(subject.getHash(), subjectCopy.getHash());
+		subjectCopy.setBlockNo(subject.getAlignmentBlockNo());
+		subjectCopy.finishBlock(aEthHash, firstConsTimeOfCurrentBlock.plusSeconds(2));
+		assertNotEquals(subject.getHash(), subjectCopy.getHash());
 	}
 
 	@Test
@@ -220,7 +272,7 @@ class MerkleNetworkContextTest {
 		final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
 		someThrottle.allow(1);
 		final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
-		final var syncedStarts = new Instant[]{someStart};
+		final var syncedStarts = new Instant[] { someStart };
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
 
@@ -262,6 +314,25 @@ class MerkleNetworkContextTest {
 		assertNull(subjectCopy.getMultiplierSource());
 	}
 
+	public static void assertEqualContexts(final MerkleNetworkContext a, final MerkleNetworkContext b) {
+		assertEquals(a.lastMidnightBoundaryCheck(), b.lastMidnightBoundaryCheck());
+		assertEquals(a.getConsensusTimeOfLastHandledTxn(), b.getConsensusTimeOfLastHandledTxn());
+		assertEquals(a.seqNo().current(), b.seqNo().current());
+		assertEquals(a.lastScannedEntity(), b.lastScannedEntity());
+		assertEquals(a.midnightRates(), b.getMidnightRates());
+		assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
+		assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
+		assertEquals(a.getStateVersion(), b.getStateVersion());
+		assertEquals(a.getEntitiesScannedThisSecond(), b.getEntitiesScannedThisSecond());
+		assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
+		assertEquals(a.getPreparedUpdateFileNum(), b.getPreparedUpdateFileNum());
+		assertArrayEquals(a.getPreparedUpdateFileHash(), b.getPreparedUpdateFileHash());
+		assertEquals(a.areMigrationRecordsStreamed(), b.areMigrationRecordsStreamed());
+		assertEquals(a.getAlignmentBlockNo(), b.getAlignmentBlockNo());
+		assertEquals(a.firstConsTimeOfCurrentBlock(), b.firstConsTimeOfCurrentBlock());
+		assertEquals(a.getBlockHashes(), b.getBlockHashes());
+	}
+
 	@Test
 	void mutatorsThrowOnImmutableCopy() {
 		// when:
@@ -280,6 +351,8 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
 		assertThrows(MutabilityException.class, () -> subject.recordPreparedUpgrade(null));
 		assertThrows(MutabilityException.class, () -> subject.discardPreparedUpgradeMeta());
+		assertThrows(MutabilityException.class, () -> subject.finishBlock(null, null));
+		assertThrows(MutabilityException.class, () -> subject.renumberBlocksToMatch(MISSING_BLOCK_VALUES));
 	}
 
 	@Test
@@ -354,7 +427,42 @@ class MerkleNetworkContextTest {
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
 				"  Throttle usage snapshots are               :: <N/A>\n" +
-				"  Congestion level start times are           :: <N/A>";
+				"  Congestion level start times are           :: <N/A>\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
+
+		assertEquals(desired, subject.summarized());
+	}
+
+	@Test
+	void summarizesHashesAsExpected() {
+		subject.setCongestionLevelStarts(new Instant[0]);
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
+		final var aFixedHash = org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(
+				"abcdabcdabcdabcdabcdabcdabcdabcd".getBytes()));
+		final var bFixedHash = org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(
+				"ffcdffcdffcdffcdffcdffcdffcdffcd".getBytes()));
+		subject.finishBlock(aFixedHash, firstConsTimeOfCurrentBlock.plusSeconds(2));
+		subject.finishBlock(bFixedHash, firstConsTimeOfCurrentBlock.plusSeconds(4));
+
+		final var desired = "The network context (state version 13) is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               :: <N/A>\n" +
+				"  Congestion level start times are           :: <N/A>\n" +
+				"  Block number is                            :: 2\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:11.000013579Z\n" +
+				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
+				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
+				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -387,7 +495,10 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -405,7 +516,10 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
@@ -423,7 +537,10 @@ class MerkleNetworkContextTest {
 				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -467,7 +584,10 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
@@ -485,7 +605,10 @@ class MerkleNetworkContextTest {
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
-				"    1970-01-15T06:59:49.000012345Z";
+				"    1970-01-15T06:59:49.000012345Z\n" +
+				"  Block number is                            :: 0\n" +
+				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
+				"  Trailing block hashes are                  :: []";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
@@ -624,7 +747,7 @@ class MerkleNetworkContextTest {
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
 		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshotA, subjectSnapshotC});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -651,7 +774,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 		// and:
 		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
 
@@ -677,7 +800,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 
 		var desired = "Saved gas throttle usage snapshot was not compatible with the corresponding " +
 				"active throttle (Cannot use -1 units in a bucket of capacity 1234!); not performing a reset!";
@@ -704,7 +827,7 @@ class MerkleNetworkContextTest {
 		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
 		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// given:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{subjectSnapshot});
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -752,345 +875,13 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void deserializeWorksFor0130() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
-		given(serdes.readNullableInstant(in).toJava())
-				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(usageSnapshots[0].lastDecisionTime())
-				.willReturn(usageSnapshots[1].lastDecisionTime())
-				.willReturn(congestionStarts[0])
-				.willReturn(congestionStarts[1]);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);
-
-		// then:
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(MerkleNetworkContext.UNRECORDED_STATE_VERSION, subject.getStateVersion());
-	}
-
-	@Test
-	void deserializeWorksFor0140() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in))
-				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(fromJava(congestionStarts[0]))
-				.willReturn(fromJava(congestionStarts[1]));
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
-
-		// then:
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-	}
-
-	@Test
-	void deserializeWorksFor0150() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in))
-				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(fromJava(congestionStarts[0]))
-				.willReturn(fromJava(congestionStarts[1]))
-				.willReturn(fromJava(lastMidnightBoundaryCheck));
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0150_VERSION);
-
-		// then:
-		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-	}
-
-	@Test
-	void deserializeWorksFor0190() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond)
-				.willReturn(preparedUpdateFileNum);
-		given(serdes.readNullableInstant(in))
-				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(fromJava(congestionStarts[0]))
-				.willReturn(fromJava(congestionStarts[1]))
-				.willReturn(fromJava(lastMidnightBoundaryCheck));
-		given(in.readByteArray(48)).willReturn(preparedUpdateFileHash);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0190_VERSION);
-
-		// then:
-		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
-		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
-	}
-
-	@Test
-	void deserializeWorksFor0200() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond)
-				.willReturn(preparedUpdateFileNum)
-				.willReturn(gasLimitUsageSnapshot.used());
-		given(serdes.readNullableInstant(in))
-				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(fromJava(congestionStarts[0]))
-				.willReturn(fromJava(congestionStarts[1]))
-				.willReturn(fromJava(lastMidnightBoundaryCheck))
-				.willReturn(fromJava(gasLimitUsageSnapshot.lastDecisionTime()));
-		given(in.readByteArray(48)).willReturn(preparedUpdateFileHash);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0200_VERSION);
-
-		// then:
-		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
-		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
-		assertEquals(gasLimitUsageSnapshot, subject.getGasThrottleUsageSnapshot());
-	}
-
-
-	@Test
-	void deserializeWorksForNullInstants() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in)).willReturn(null);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0150_VERSION);
-
-		// then:
-		assertNull(subject.getConsensusTimeOfLastHandledTxn());
-		assertNull(subject.lastMidnightBoundaryCheck());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(new DeterministicThrottle.UsageSnapshot[]{
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[0].used(), null),
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[1].used(), null)
-		}, subject.usageSnapshots());
-		assertArrayEquals(new Instant[]{null, null}, subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		InOrder inOrder = inOrder(out, seqNo, serdes);
-		throttling = mock(FunctionalityThrottling.class);
-		gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
-
-		// and:
-		var active = activeThrottles();
-
-		given(throttling.allActiveThrottles()).willReturn(active);
-		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
-		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
-
-		// when:
-		subject.updateSnapshotsFrom(throttling);
-		// and:
-		subject.serialize(out);
-
-		// expect:
-		inOrder.verify(serdes).writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
-		inOrder.verify(seqNo).serialize(out);
-		inOrder.verify(out).writeSerializable(midnightRateSet, true);
-		// and:
-		inOrder.verify(out).writeInt(3);
-		for (int i = 0; i < 3; i++) {
-			inOrder.verify(out).writeLong(used[i]);
-			inOrder.verify(serdes).writeNullableInstant(fromJava(lastUseds[i]), out);
-		}
-		// and:
-		inOrder.verify(out).writeInt(2);
-		for (int i = 0; i < 2; i++) {
-			inOrder.verify(serdes).writeNullableInstant(fromJava(congestionStarts()[i]), out);
-		}
-		inOrder.verify(out).writeLong(lastScannedEntity);
-		inOrder.verify(out).writeLong(entitiesScannedThisSecond);
-		inOrder.verify(out).writeLong(entitiesTouchedThisSecond);
-		inOrder.verify(out).writeInt(stateVersion);
-		inOrder.verify(serdes).writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
-		inOrder.verify(out).writeLong(preparedUpdateFileNum);
-		inOrder.verify(out).writeByteArray(preparedUpdateFileHash);
-	}
-
-	@Test
-	void canSerializeNullCongestionLevelStarts() {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		feeMultiplierSource = mock(FeeMultiplierSource.class);
-
-		given(feeMultiplierSource.congestionLevelStarts()).willReturn(new Instant[]{null, null});
-
-		// when:
-		subject.updateCongestionStartsFrom(feeMultiplierSource);
-		// and:
-		Assertions.assertDoesNotThrow(() -> subject.serialize(out));
-	}
-
-	@Test
 	void sanityChecks() {
 		assertEquals(CURRENT_VERSION, subject.getVersion());
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
-	long[] used = new long[]{100L, 200L, 300L};
-	Instant[] lastUseds = new Instant[]{
+	long[] used = new long[] { 100L, 200L, 300L };
+	Instant[] lastUseds = new Instant[] {
 			Instant.ofEpochSecond(1L, 100),
 			Instant.ofEpochSecond(2L, 200),
 			Instant.ofEpochSecond(3L, 300)
@@ -1125,4 +916,10 @@ class MerkleNetworkContextTest {
 	private Instant[] congestionStarts() {
 		return congestionStarts;
 	}
+
+	private static final long aBlockNo = 123_456L;
+	private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final Hash bFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final org.hyperledger.besu.datatypes.Hash aEthHash = ethHashFrom(aFullBlockHash);
+	private static final org.hyperledger.besu.datatypes.Hash bEthHash = ethHashFrom(bFullBlockHash);
 }

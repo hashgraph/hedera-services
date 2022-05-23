@@ -26,19 +26,21 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
+import java.time.Instant;
 import java.util.Optional;
 
 /**
  * Hedera adapted {@link BlockValues}
  */
 public class HederaBlockValues implements BlockValues {
-
 	protected final long gasLimit;
-	protected final long timestamp;
+	protected final long blockNo;
+	protected final Instant consTimestamp;
 
-	public HederaBlockValues(long gasLimit, long timestamp) {
+	public HederaBlockValues(final long gasLimit, final long blockNo, final Instant consTimestamp) {
 		this.gasLimit = gasLimit;
-		this.timestamp = timestamp;
+		this.blockNo = blockNo;
+		this.consTimestamp = consTimestamp;
 	}
 
 	@Override
@@ -48,7 +50,7 @@ public class HederaBlockValues implements BlockValues {
 
 	@Override
 	public long getTimestamp() {
-		return timestamp;
+		return consTimestamp.getEpochSecond();
 	}
 
 	@Override
@@ -63,6 +65,6 @@ public class HederaBlockValues implements BlockValues {
 
 	@Override
 	public long getNumber() {
-		return timestamp;
+		return blockNo;
 	}
 }

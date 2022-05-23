@@ -27,7 +27,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -44,12 +43,13 @@ import java.util.function.Predicate;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
+import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 /**
- * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
+ * Provides a {@link RecordsHistorian} using the natural collaborators.
  */
 @Singleton
-public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	public static final int DEFAULT_SOURCE_ID = 0;
 
 	private final RecordCache recordCache;
@@ -64,7 +64,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private int nextSourceId = 1;
 	private EntityCreator creator;
 
-	private ExpirableTxnRecord topLevelRecord;
+	private RecordStreamObject topLevelStreamObj;
 
 	@Inject
 	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
@@ -79,8 +79,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public ExpirableTxnRecord lastCreatedTopLevelRecord() {
-		return topLevelRecord;
+	public RecordStreamObject getTopLevelRecord() {
+		return topLevelStreamObj;
 	}
 
 	@Override
@@ -92,13 +92,14 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	public void saveExpirableTransactionRecords() {
 		final var consensusNow = txnCtx.consensusTime();
 		final var topLevel = txnCtx.recordSoFar();
+		final var accessor = txnCtx.accessor();
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
-		topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
+		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
+		topLevelStreamObj = new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow);
 
 		final var effPayer = txnCtx.effectivePayer();
-		final var accessor = txnCtx.accessor();
 		final var submittingMember = txnCtx.submittingSwirldsMember();
 
 		save(precedingChildStreamObjs, effPayer, submittingMember);
@@ -231,21 +232,18 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
-			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			if (sigNum > 0) {
+				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			} else {
+				// With multiple preceding child records, we add them to the stream in reverse order of
+				// creation so that their consensus timestamps will appear in chronological order
+				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			}
 		}
 	}
 
 	private Transaction synthFrom(final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
 		return synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
-	}
-
-	private Transaction synthFromBody(final TransactionBody txnBody) {
-		final var signedTxn = SignedTransaction.newBuilder()
-				.setBodyBytes(txnBody.toByteString())
-				.build();
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTxn.toByteString())
-				.build();
 	}
 
 	private void save(

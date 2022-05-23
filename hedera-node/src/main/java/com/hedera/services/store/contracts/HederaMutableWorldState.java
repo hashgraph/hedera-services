@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldState;
@@ -61,15 +62,28 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	HederaWorldUpdater updater();
 
 	/**
-	 * Returns the list of ContractIDs created by the current transaction
-	 * Clears the collected list after execution.
+	 * Returns the list of contract ids created by the current transaction.
 	 *
-	 * @return the list of ContractIDs created by this transaction.
+	 * @return the list of ids created by this transaction.
 	 */
-	List<ContractID> persistProvisionalContractCreations();
+	List<ContractID> getCreatedContractIds();
 
 	/**
-	 * Customizes sponsored accounts
+	 * Returns the contract customizations requested by the sender of a top-level HAPI contractCreate.
+	 *
+	 * @return the sender customizations
 	 */
-	void customizeSponsoredAccounts();
+	ContractCustomizer hapiSenderCustomizer();
+
+	/**
+	 * Sets the customizations requested by the sender of a top-level HAPI contractCreate.
+	 *
+	 * @param customizer the sender customizations
+	 */
+	void setHapiSenderCustomizer(ContractCustomizer customizer);
+
+	/**
+	 * Clears the customizations requested by the sender of a top-level HAPI contractCreate.
+	 */
+	void resetHapiSenderCustomizer();
 }

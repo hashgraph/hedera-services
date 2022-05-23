@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
@@ -39,21 +38,15 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -65,10 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 
 public class MerkleScheduleTest {
 	private static final byte[] fpk = "firstPretendKey".getBytes();
@@ -98,14 +87,21 @@ public class MerkleScheduleTest {
 
 		subject = MerkleSchedule.from(bodyBytes, expiry);
 		subject.setKey(EntityNum.fromInt(number));
-
-		serdes = mock(DomainSerdes.class);
-		MerkleSchedule.serdes = serdes;
 	}
 
-	@AfterEach
-	public void cleanup() {
-		MerkleSchedule.serdes = new DomainSerdes();
+	public static void assertEqualSchedules(final MerkleSchedule a, final MerkleSchedule b) {
+		assertEquals(a.expiry(), b.expiry());
+		assertArrayEquals(a.bodyBytes(), b.bodyBytes());
+		assertEquals(a.isDeleted(), b.isDeleted());
+		assertEquals(a.isExecuted(), b.isExecuted());
+		assertEquals(a.getResolutionTime(), b.getResolutionTime());
+		final var aSigs = a.signatories();
+		final var bSigs = b.signatories();
+		assertEquals(aSigs.size(), bSigs.size());
+		for (int i = 0, n = aSigs.size(); i < n; i++) {
+			assertArrayEquals(aSigs.get(i), bSigs.get(i));
+		}
+		assertEquals(a.getKey(), b.getKey());
 	}
 
 	@Test
@@ -206,87 +202,6 @@ public class MerkleScheduleTest {
 		subject.witnessValidSignature(tpk);
 
 		assertTrue(subject.signatories().containsAll(signatories));
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		final var out = mock(SerializableDataOutputStream.class);
-		final var inOrder = inOrder(serdes, out);
-		subject.witnessValidSignature(fpk);
-		subject.witnessValidSignature(spk);
-		subject.markDeleted(resolutionTime);
-
-		subject.serialize(out);
-
-		inOrder.verify(out).writeLong(expiry);
-		inOrder.verify(out).writeByteArray(bodyBytes);
-		inOrder.verify(out).writeBoolean(false);
-		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(resolutionTime), out);
-		inOrder.verify(out).writeInt(2);
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
-		inOrder.verify(out).writeInt(number);
-	}
-
-	@Test
-	void deserializeWorksPre0180() throws IOException {
-		final var fin = mock(SerializableDataInputStream.class);
-		subject.witnessValidSignature(fpk);
-		subject.witnessValidSignature(spk);
-		subject.markExecuted(resolutionTime);
-		given(fin.readLong()).willReturn(subject.expiry());
-		given(fin.readInt()).willReturn(2);
-		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
-				.willReturn(fpk)
-				.willReturn(spk);
-		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
-		given(fin.readBoolean())
-				.willReturn(true)
-				.willReturn(false);
-		final var read = new MerkleSchedule();
-
-		read.deserialize(fin, MerkleSchedule.PRE_RELEASE_0180_VERSION);
-
-		assertEquals(subject, read);
-		assertTrue(read.signatories().contains(fpk));
-		assertTrue(read.signatories().contains(spk));
-		assertTrue(read.isExecuted());
-		assertFalse(read.isDeleted());
-		assertEquals(grpcResolutionTime, read.executionTime());
-		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
-		assertNotEquals(EntityNum.fromInt(number), read.getKey());
-	}
-
-	@Test
-	void deserializeWorksPost0180() throws IOException {
-		final var fin = mock(SerializableDataInputStream.class);
-		subject.witnessValidSignature(fpk);
-		subject.witnessValidSignature(spk);
-		subject.markExecuted(resolutionTime);
-		given(fin.readLong()).willReturn(subject.expiry());
-		given(fin.readInt()).willReturn(2).willReturn(number);
-		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
-				.willReturn(fpk)
-				.willReturn(spk);
-		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
-		given(fin.readBoolean())
-				.willReturn(true)
-				.willReturn(false);
-		final var read = new MerkleSchedule();
-
-		read.deserialize(fin, MerkleSchedule.RELEASE_0180_VERSION);
-
-		assertEquals(subject, read);
-		assertTrue(read.signatories().contains(fpk));
-		assertTrue(read.signatories().contains(spk));
-		assertTrue(read.isExecuted());
-		assertFalse(read.isDeleted());
-		assertEquals(grpcResolutionTime, read.executionTime());
-		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
-		assertEquals(EntityNum.fromInt(number), read.getKey());
 	}
 
 	@Test

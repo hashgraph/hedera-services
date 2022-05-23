@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
@@ -61,16 +61,12 @@ public class SigsAndPayerKeyScreen {
 		this.payerSigValidity = payerSigValidity;
 	}
 
-	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
+	public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor) {
 		rationalization.performFor(accessor);
 
 		final var sigStatus = rationalization.finalStatus();
-		if (sigStatus == OK) {
-			if (rationalization.usedSyncVerification()) {
-				speedometers.cycleSyncVerifications();
-			} else {
-				speedometers.cycleAsyncVerifications();
-			}
+		if (sigStatus == OK && rationalization.usedSyncVerification()) {
+			speedometers.cycleSyncVerifications();
 		}
 
 		if (hasActivePayerSig(accessor)) {
@@ -80,7 +76,7 @@ public class SigsAndPayerKeyScreen {
 		return sigStatus;
 	}
 
-	private boolean hasActivePayerSig(TxnAccessor accessor) {
+	private boolean hasActivePayerSig(SwirldsTxnAccessor accessor) {
 		try {
 			return payerSigValidity.test(accessor, validityTest);
 		} catch (Exception unknown) {

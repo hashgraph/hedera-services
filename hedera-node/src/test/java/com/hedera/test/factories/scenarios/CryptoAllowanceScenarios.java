@@ -20,16 +20,16 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.CryptoAdjustAllowanceFactory.newSignedAdjustAllowance;
 import static com.hedera.test.factories.txns.CryptoApproveAllowanceFactory.newSignedApproveAllowance;
+import static com.hedera.test.factories.txns.CryptoDeleteAllowanceFactory.newSignedDeleteAllowance;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	CRYPTO_APPROVE_ALLOWANCE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceList)
@@ -39,9 +39,21 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedApproveAllowance()
+							.withCryptoAllowances(cryptoAllowanceList)
+							.withNftAllowances(delegatingNftAllowanceList)
+							.withTokenAllowances(tokenAllowanceList)
+							.nonPayerKts(OWNER_ACCOUNT_KT, DELEGATING_SPENDER_KT)
+							.get()
+			));
+		}
+	},
 	CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceList)
@@ -52,7 +64,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceMissingOwnerList)
 							.withNftAllowances(nftAllowanceList)
@@ -63,10 +75,21 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceMissingOwnerList)
+							.withTokenAllowances(tokenAllowanceList)
+							.get()
+			));
+		}
+	},
+	CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedApproveAllowance()
+							.withCryptoAllowances(cryptoAllowanceList)
+							.withNftAllowances(delegatingNftAllowanceMissingOwnerList)
 							.withTokenAllowances(tokenAllowanceList)
 							.get()
 			));
@@ -74,7 +97,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceNoOwnerList)
 							.withNftAllowances(nftAllowanceList)
@@ -84,59 +107,21 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	CRYPTO_ADJUST_ALLOWANCE_SCENARIO {
+	CRYPTO_DELETE_ALLOWANCE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedAdjustAllowance()
-							.withCryptoAllowances(cryptoAllowanceList)
-							.withNftAllowances(nftAllowanceList)
-							.withTokenAllowances(tokenAllowanceList)
+			return PlatformTxnAccessor.from(from(
+					newSignedDeleteAllowance()
+							.withNftAllowances(nftDeleteAllowanceList)
 							.nonPayerKts(OWNER_ACCOUNT_KT)
 							.get()
 			));
 		}
 	},
-	CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO {
+	CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedAdjustAllowance()
-							.withCryptoAllowances(cryptoAllowanceList)
-							.withNftAllowances(nftAllowanceList)
-							.withTokenAllowances(tokenAllowanceMissingOwnerList)
-							.get()
-			));
-		}
-	},
-	CRYPTO_ADJUST_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedAdjustAllowance()
-							.withCryptoAllowances(cryptoAllowanceMissingOwnerList)
-							.withNftAllowances(nftAllowanceList)
-							.withTokenAllowances(tokenAllowanceList)
-							.get()
-			));
-		}
-	},
-	CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedAdjustAllowance()
-							.withCryptoAllowances(cryptoAllowanceList)
-							.withNftAllowances(nftAllowanceMissingOwnerList)
-							.withTokenAllowances(tokenAllowanceList)
-							.get()
-			));
-		}
-	},
-	CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedAdjustAllowance()
-							.withCryptoAllowances(cryptoAllowanceNoOwnerList)
-							.withNftAllowances(nftAllowanceList)
-							.withTokenAllowances(tokenAllowanceList)
-							.nonPayerKts(OWNER_ACCOUNT_KT)
+			return PlatformTxnAccessor.from(from(
+					newSignedDeleteAllowance()
+							.withNftAllowances(nftDeleteAllowanceMissingOwnerList)
 							.get()
 			));
 		}

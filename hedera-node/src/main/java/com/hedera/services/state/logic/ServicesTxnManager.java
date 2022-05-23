@@ -23,12 +23,12 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.annotations.RunRecordStreaming;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.state.migration.MigrationRecordsManager;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,35 +45,42 @@ public class ServicesTxnManager {
 	private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 
 	private final Runnable scopedProcessing;
-	private final Runnable scopedRecordStreaming;
 	private final Runnable scopedTriggeredProcessing;
 	private final RecordCache recordCache;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
+	private final MigrationRecordsManager migrationRecordsManager;
+	private final RecordStreaming recordStreaming;
+	private final BlockManager blockManager;
 
 	@Inject
 	public ServicesTxnManager(
 			final @RunTopLevelTransition Runnable scopedProcessing,
-			final @RunRecordStreaming Runnable scopedRecordStreaming,
 			final @RunTriggeredTransition Runnable scopedTriggeredProcessing,
 			final RecordCache recordCache,
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian,
+			final MigrationRecordsManager migrationRecordsManager,
+			final RecordStreaming recordStreaming,
+			final BlockManager blockManager
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.recordCache = recordCache;
+		this.recordStreaming = recordStreaming;
 		this.recordsHistorian = recordsHistorian;
 		this.scopedProcessing = scopedProcessing;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.scopedRecordStreaming = scopedRecordStreaming;
+		this.migrationRecordsManager = migrationRecordsManager;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
+		this.blockManager = blockManager;
 	}
 
+	private boolean needToPublishMigrationRecords = true;
 	private boolean createdStreamableRecord;
 
 	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
@@ -84,8 +91,15 @@ public class ServicesTxnManager {
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
 			sigImpactHistorian.setChangeTime(consensusTime);
 			recordsHistorian.clearHistory();
+			blockManager.reset();
 			ledger.begin();
 
+			if (needToPublishMigrationRecords) {
+				// The manager will only publish migration records if the MerkleNetworkContext (in state)
+				// shows that it needs to do so; our responsibility here is just to give it the opportunity
+				migrationRecordsManager.publishMigrationRecords(consensusTime);
+				needToPublishMigrationRecords = false;
+			}
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {
@@ -109,7 +123,7 @@ public class ServicesTxnManager {
 
 	private void attemptRecordStreaming() {
 		try {
-			scopedRecordStreaming.run();
+			recordStreaming.streamUserTxnRecords();
 		} catch (Exception e) {
 			logContextualizedError(e, "record streaming");
 		}

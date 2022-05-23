@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
@@ -68,7 +69,7 @@ class HederaStaticCallOperationTest {
 	@Mock
 	private Gas cost;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
 	@Mock
@@ -79,19 +80,6 @@ class HederaStaticCallOperationTest {
 	@BeforeEach
 	void setup() {
 		subject = new HederaStaticCallOperation(calc, sigsVerifier, addressValidator, precompiledContractMap);
-	}
-
-	@Test
-	void usesCanonicalAddressFromSuperNominal() {
-		final var nominal = Address.ALTBN128_ADD;
-		final var canonical = Address.BLS12_G1MUL;
-		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
-		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.priorityAddress(nominal)).willReturn(canonical);
-
-		final var actual = subject.address(evmMsgFrame);
-
-		assertEquals(actual, canonical);
 	}
 
 	@Test
@@ -135,7 +123,7 @@ class HederaStaticCallOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(addressValidator.test(any(), any())).willReturn(true);
 

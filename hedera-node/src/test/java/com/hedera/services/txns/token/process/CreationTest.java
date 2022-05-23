@@ -60,7 +60,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CreationTest {
-	private final int maxTokensPerAccount = 1_000;
 	private final long now = 1_234_567L;
 	private final long initialSupply = 777L;
 	private final Id provisionalId = new Id(0, 0, 666);
@@ -170,10 +169,30 @@ class CreationTest {
 	void mintsInitialSupplyIfSet() {
 		givenSubjectWithEverything();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
+		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
+
+		subject.setProvisionalId(provisionalId);
+		subject.setProvisionalToken(provisionalToken);
+		subject.setTreasury(treasury);
+		subject.setAutoRenew(autoRenew);
+
+		subject.doProvisionallyWith(now, modelFactory, listing);
+
+		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
+		verify(customFee).nullOutCollector();
+		verify(provisionalToken).mint(newRel, initialSupply, true);
+	}
+
+	@Test
+	void mintsInitialSupplyIfSetWithExistingAssociations() {
+		givenSubjectWithEverything();
+
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -192,10 +211,9 @@ class CreationTest {
 	void doesntMintInitialSupplyIfNotSet() {
 		givenSubjectWithEverythingExceptInitialSupply();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 
 		subject.setProvisionalId(provisionalId);
 		subject.setProvisionalToken(provisionalToken);

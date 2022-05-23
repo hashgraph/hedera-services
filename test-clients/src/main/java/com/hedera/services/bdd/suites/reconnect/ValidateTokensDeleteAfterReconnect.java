@@ -88,6 +88,7 @@ public class ValidateTokensDeleteAfterReconnect extends HapiApiSuite {
 								.logging()
 				)
 				.when(
+						sleepFor(30000),
 						getAccountBalance(GENESIS)
 								.setNode(reconnectingNode)
 								.unavailableNode(),
@@ -105,7 +106,12 @@ public class ValidateTokensDeleteAfterReconnect extends HapiApiSuite {
 								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
-
+						// So although currently disconnected node is in ACTIVE mode, it might
+						// immediately enter BEHIND mode and start a reconnection session.
+						// We need to wait for the reconnection session to finish and the platform becomes ACTIVE again,
+						// then we can send more transactions. Otherwise, transactions may be pending for too long
+						// and we will get UNKNOWN status
+						sleepFor(30000),
 						/*
 						Check that the reconnected node knows it's ok to dissociate the
 						treasury from a deleted token. -> https://github.com/hashgraph/hedera-services/issues/1678

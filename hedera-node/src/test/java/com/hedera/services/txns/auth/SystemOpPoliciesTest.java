@@ -23,7 +23,7 @@ package com.hedera.services.txns.auth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -594,8 +595,22 @@ class SystemOpPoliciesTest {
 		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
+	@Test
+	void ethereumTxnAlwaysOk() throws InvalidProtocolBufferException {
+		// given:
+		var txn = ethereumTxn()
+				.setEthereumTransaction(EthereumTransactionBody.getDefaultInstance());
+
+		// expect:
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+	}
+
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {
 		return new SignedTxnAccessor(Transaction.newBuilder().setBodyBytes(txn.build().toByteString()).build());
+	}
+
+	private TransactionBody.Builder ethereumTxn() {
+		return txnWithPayer(123);
 	}
 
 	private TransactionBody.Builder civilianTxn() {

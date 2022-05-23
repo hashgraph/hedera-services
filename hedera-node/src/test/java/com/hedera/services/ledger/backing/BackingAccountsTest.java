@@ -25,7 +25,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.MutabilityException;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -113,6 +113,8 @@ class BackingAccountsTest {
 		// expect:
 		assertEquals(aValue, subject.getRef(a));
 		assertEquals(bValue, subject.getRef(b));
+		assertEquals(aValue, subject.getImmutableRef(a));
+		assertEquals(bValue, subject.getImmutableRef(b));
 	}
 
 	@Test

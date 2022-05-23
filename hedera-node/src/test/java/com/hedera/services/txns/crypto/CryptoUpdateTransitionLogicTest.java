@@ -27,15 +27,15 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -86,7 +86,6 @@ class CryptoUpdateTransitionLogicTest {
 	private static final long NEW_EXPIRY = CONSENSUS_TIME.getEpochSecond() + 7776000L;
 	private static final int CUR_MAX_AUTOMATIC_ASSOCIATIONS = 10;
 	private static final int NEW_MAX_AUTOMATIC_ASSOCIATIONS = 15;
-	private static final int MAX_TOKEN_ASSOCIATIONS = 12345;
 
 	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private static final long AUTO_RENEW_PERIOD = 100_001L;
@@ -101,9 +100,9 @@ class CryptoUpdateTransitionLogicTest {
 	private TransactionBody cryptoUpdateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private CryptoUpdateTransitionLogic subject;
+	private SignedTxnAccessor accessor;
 	private GlobalDynamicProperties dynamicProperties;
+	private CryptoUpdateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -112,11 +111,10 @@ class CryptoUpdateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
-		dynamicProperties = mock(GlobalDynamicProperties.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 		withRubberstampingValidator();
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
@@ -186,6 +184,8 @@ class CryptoUpdateTransitionLogicTest {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
 		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
 
 		subject.doStateTransition();
 
@@ -213,6 +213,7 @@ class CryptoUpdateTransitionLogicTest {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
 		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
 
 		subject.doStateTransition();

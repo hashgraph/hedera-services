@@ -32,12 +32,13 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
@@ -298,6 +299,11 @@ public class TxnFactory {
 				.setGas(setup.defaultCallGas());
 	}
 
+	public Consumer<EthereumTransactionBody.Builder> defaultDef_EthereumTransactionBody() {
+		return builder -> builder
+				.setMaxGasAllowance(setup.defaultCallGas());
+	}
+
 	public Consumer<ContractCreateTransactionBody.Builder> defaultDef_ContractCreateTransactionBody() {
 		return builder -> builder
 				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
@@ -373,7 +379,7 @@ public class TxnFactory {
 		};
 	}
 
-	public Consumer<CryptoAdjustAllowanceTransactionBody.Builder> defaultDef_CryptoAdjustAllowanceTransactionBody() {
+	public Consumer<CryptoDeleteAllowanceTransactionBody.Builder> defaultDef_CryptoDeleteAllowanceTransactionBody() {
 		return builder -> {
 		};
 	}

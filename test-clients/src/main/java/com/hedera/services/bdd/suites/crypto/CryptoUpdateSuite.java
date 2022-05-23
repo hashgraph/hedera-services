@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -32,11 +33,11 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -44,15 +45,21 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -109,11 +116,12 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cannotSetThresholdNegative(),
 						updateWithEmptyKeyFails(),
 						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
 						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected()
+						usdFeeAsExpected(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+						updateMaxAutoAssociationsWorks()
 				}
 		);
 	}
@@ -193,10 +201,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("UpdateFailsWithInvalidMaxAutoAssociations")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
+						overridingTwo(
+								"entities.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(firstUser)
@@ -228,7 +235,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.hasNewTokenAssociation(tokenB, firstUser)
 				)
 				.then(
-						getAccountInfo(firstUser)
+						getAccountDetails(firstUser)
+								.payingWith(GENESIS)
 								.hasAlreadyUsedAutomaticAssociations(originalMax)
 								.hasMaxAutomaticAssociations(originalMax)
 								.has(accountWith().noAllowances()),
@@ -240,10 +248,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
+						overriding( "entities.limitTokenAssociations", "false"),
+						cryptoUpdate(firstUser)
+								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
+						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)
 				);
 	}
 
@@ -261,7 +269,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-		String sysAccount = "0.0.977";
+		String sysAccount = "0.0.99";
 		String randomAccount = "randomAccount";
 		String firstKey = "firstKey";
 		String secondKey = "secondKey";
@@ -305,7 +313,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(TARGET_ACCOUNT)
 								.entityMemo(secondMemo)
 				).then(
-						getAccountInfo(TARGET_ACCOUNT)
+						getAccountDetails(TARGET_ACCOUNT)
+								.payingWith(GENESIS)
 								.has(accountWith().memo(secondMemo))
 				);
 	}
@@ -430,6 +439,86 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.hasPrecheck(BAD_ENCODING)
 				);
 	}
+
+	private HapiApiSpec updateMaxAutoAssociationsWorks() {
+		final int tokenAssociations_restrictedNetwork = 10;
+		final int tokenAssociations_adventurousNetwork = 1_000;
+		final int originalMax = 2;
+		final int newBadMax = originalMax - 1;
+		final int newGoodMax = originalMax + 1;
+		final String tokenA = "tokenA";
+		final String tokenB = "tokenB";
+
+		final String treasury = "treasury";
+		final String tokenACreate = "tokenACreate";
+		final String tokenBCreate = "tokenBCreate";
+		final String transferAToC = "transferAToC";
+		final String transferBToC = "transferBToC";
+		final String CONTRACT = "Multipurpose";
+		final String ADMIN_KEY = "adminKey";
+
+		return defaultHapiSpec("updateMaxAutoAssociationsWorks")
+				.given(
+						overridingTwo(
+								"entities.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + 10),
+						cryptoCreate(treasury)
+								.balance(ONE_HUNDRED_HBARS),
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.maxAutomaticTokenAssociations(originalMax),
+						tokenCreate(tokenA)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenACreate),
+						getTxnRecord(tokenACreate)
+								.hasNewTokenAssociation(tokenA, treasury),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBCreate),
+						getTxnRecord(tokenBCreate)
+								.hasNewTokenAssociation(tokenB, treasury),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax))
+								.logged()
+				)
+				.when(
+						cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
+								.via(transferAToC),
+						getTxnRecord(transferAToC)
+								.hasNewTokenAssociation(tokenA, CONTRACT),
+						cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT))
+								.via(transferBToC),
+						getTxnRecord(transferBToC)
+								.hasNewTokenAssociation(tokenB, CONTRACT)
+				)
+				.then(
+						getContractInfo(CONTRACT)
+								.payingWith(GENESIS)
+								.has(contractWith()
+										.hasAlreadyUsedAutomaticAssociations(originalMax)
+										.maxAutoAssociations(originalMax)),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(newBadMax)
+								.hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(newGoodMax),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
+								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+
+						overriding("entities.limitTokenAssociations", "false"),
+						contractUpdate(CONTRACT)
+								.newMaxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
+						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)
+				);
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {

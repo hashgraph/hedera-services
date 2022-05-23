@@ -23,16 +23,21 @@ package com.hedera.services.records;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.ResponseCodeUtil;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,14 +50,15 @@ import static com.hedera.services.contracts.operation.HederaExceptionalHaltReaso
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionRecordServiceTest {
-
 	private static final Long GAS_USED = 1234L;
 	private static final Long SBH_REFUND = 234L;
 	private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
@@ -62,7 +68,9 @@ class TransactionRecordServiceTest {
 	@Mock
 	private TransactionProcessingResult processingResult;
 	@Mock
-	private ContractFunctionResult functionResult;
+	private EvmFnResult functionResult;
+	@Mock
+	private EthTxData evmFnCallContext;
 
 	private TransactionRecordService subject;
 
@@ -73,30 +81,36 @@ class TransactionRecordServiceTest {
 
 	@Test
 	void externalisesEvmCreateTransactionWithSuccess() {
+		final var captor = ArgumentCaptor.forClass(EvmFnResult.class);
+		final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
 		final var mockAddr = Address.ALTBN128_ADD.toArrayUnsafe();
 		given(processingResult.isSuccessful()).willReturn(true);
 		given(processingResult.getGasPrice()).willReturn(1L);
 		given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
 		given(processingResult.getGasUsed()).willReturn(GAS_USED);
-		given(processingResult.toCreationGrpc(mockAddr)).willReturn(functionResult);
+		given(processingResult.getRecipient()).willReturn(recipient);
+		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		// when:
 		subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr);
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCreateResult(functionResult);
+		verify(txnCtx).setCreateResult(captor.capture());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
-		verify(processingResult).toCreationGrpc(mockAddr);
+		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
 	}
 
 	@Test
 	void externalisesEvmCallTransactionWithSuccess() {
 		// given:
 		givenProcessingResult(true, null);
+		final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
+		given(processingResult.getRecipient()).willReturn(recipient);
+		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		// when:
 		subject.externaliseEvmCallTransaction(processingResult);
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCallResult(processingResult.toGrpc());
+		verify(txnCtx).setCallResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
@@ -108,7 +122,7 @@ class TransactionRecordServiceTest {
 		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
-		verify(txnCtx).setCreateResult(processingResult.toGrpc());
+		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
@@ -120,7 +134,7 @@ class TransactionRecordServiceTest {
 		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(OBTAINER_SAME_CONTRACT_ID);
-		verify(txnCtx).setCreateResult(processingResult.toGrpc());
+		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
@@ -132,7 +146,7 @@ class TransactionRecordServiceTest {
 		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
-		verify(txnCtx).setCreateResult(processingResult.toGrpc());
+		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
@@ -144,8 +158,17 @@ class TransactionRecordServiceTest {
 		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
-		verify(txnCtx).setCreateResult(processingResult.toGrpc());
+		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+	}
+	
+	@Test 
+	void updateFromEvmCallContextRelaysToDelegate() {
+		EntityId senderId = EntityId.fromIdentityCode(42);
+		// when:
+		subject.updateForEvmCall(evmFnCallContext, senderId);
+		// then:
+		verify(txnCtx).updateForEvmCall(evmFnCallContext, senderId);
 	}
 
 	@Test
@@ -182,7 +205,6 @@ class TransactionRecordServiceTest {
 
 	private void givenProcessingResult(final boolean isSuccessful, @Nullable final ExceptionalHaltReason haltReason) {
 		given(processingResult.isSuccessful()).willReturn(isSuccessful);
-		given(processingResult.toGrpc()).willReturn(functionResult);
 		given(processingResult.getGasPrice()).willReturn(1L);
 		given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
 		given(processingResult.getGasUsed()).willReturn(GAS_USED);

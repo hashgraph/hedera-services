@@ -40,12 +40,10 @@ import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -92,8 +90,6 @@ class SigOpsRegressionTest {
 	private HederaFs hfs;
 	private AliasManager aliasManager;
 	private FileNumbers fileNumbers = new MockFileNumbers();
-	private MiscRunningAvgs runningAvgs;
-	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
@@ -119,11 +115,13 @@ class SigOpsRegressionTest {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(
+				accessor.getPlatformTxn().getSignatures());
 
 		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
+			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID,
+					characteristics)) {
 				return false;
 			}
 		}
@@ -374,13 +372,13 @@ class SigOpsRegressionTest {
 				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
-		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
+		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs), platformTxn));
 
 		return payerSigIsActive(platformTxn, ONLY_IF_SIG_IS_VALID);
 	}
 
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
-		platformTxn.getPlatformTxn().clear();
+		platformTxn.getPlatformTxn().clearSignatures();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
@@ -422,8 +420,6 @@ class SigOpsRegressionTest {
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		hfs = scenario.hfs();
 		aliasManager = mock(AliasManager.class);
-		runningAvgs = mock(MiscRunningAvgs.class);
-		speedometers = mock(MiscSpeedometers.class);
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
 

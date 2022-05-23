@@ -49,10 +49,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_SPIN_SCAN_COUNT;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.HIGH_SCAN_CYCLE_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_TOUCH_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -71,7 +71,6 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						maxNumberOfEntitiesToRenewOrDeleteWorks(),
 						numberOfEntitiesToScanWorks(),
 						autoDeleteAfterGracePeriod(),
-
 						accountAutoRenewalSuiteCleanup(),
 						freezeAtTheEnd()
 				}
@@ -84,7 +83,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 0)),
+								.overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0)),
 						cryptoCreate(autoRemovedAccount).autoRenewSecs(1).balance(0L),
 						getAccountInfo(autoRemovedAccount).logged()
 				).when(
@@ -105,10 +104,10 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(
+								.overridingProps(propsForAccountAutoRenewOnWith(
 										briefAutoRenew,
 										0,
-										DEFAULT_HIGH_SPIN_SCAN_COUNT,
+										HIGH_SCAN_CYCLE_COUNT,
 										DEFAULT_HIGH_TOUCH_COUNT)),
 						cryptoCreate(autoRenewedAccount)
 								.autoRenewSecs(briefAutoRenew)
@@ -147,8 +146,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(
-										briefAutoRenew, 0, DEFAULT_HIGH_SPIN_SCAN_COUNT, 2)),
+								.overridingProps(propsForAccountAutoRenewOnWith(
+										briefAutoRenew, 0, HIGH_SCAN_CYCLE_COUNT, 2)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
 						cryptoCreate(firstTouchable)
 								.autoRenewSecs(briefAutoRenew).balance(0L),
@@ -200,7 +199,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(
+								.overridingProps(propsForAccountAutoRenewOnWith(
 										briefAutoRenew, 0, abbrevMaxToScan, DEFAULT_HIGH_TOUCH_COUNT)),
 						inParallel(IntStream.range(0, abbrevMaxToScan + 1)
 								.mapToObj(i -> cryptoCreate(accountName.apply(i))
@@ -237,7 +236,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(briefAutoRenew, 2 * briefAutoRenew)),
+								.overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(briefAutoRenew, 2 * briefAutoRenew)),
 						cryptoCreate(autoDeleteAccount)
 								.autoRenewSecs(briefAutoRenew)
 								.balance(0L)

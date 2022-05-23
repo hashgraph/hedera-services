@@ -20,18 +20,25 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +52,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEES;
@@ -69,12 +77,13 @@ class SpanMapManagerTest {
 	private final int maxFeeNesting = 4;
 	private final int maxBalanceChanges = 5;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
 			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
@@ -123,12 +132,27 @@ class SpanMapManagerTest {
 	private CustomFeeSchedules customFeeSchedules;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private SignedStateViewFactory stateViewFactory;
+	@Mock
+	private ContractCallTransitionLogic contractCallTransitionLogic;
+	@Mock
+	private Function<EthTxData, EthTxSigs> sigsFunction;
+	@Mock
+	private MutableStateChildren workingState;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 
 	private SpanMapManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules, aliasManager);
+		subject = new SpanMapManager(
+				sigsFunction, contractCallTransitionLogic, new ExpandHandleSpanMapAccessor(),
+				impliedTransfersMarshal, dynamicProperties, stateViewFactory,
+				syntheticTxnFactory, customFeeSchedules, sigImpactHistorian, workingState, aliasManager);
 	}
 
 	@Test
@@ -195,6 +219,7 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:

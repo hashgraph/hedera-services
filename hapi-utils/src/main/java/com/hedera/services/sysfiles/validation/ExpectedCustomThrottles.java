@@ -38,15 +38,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -81,13 +82,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public final class ExpectedCustomThrottles {
-	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY = EnumSet.of(
+	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY_SIX = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,
 			CryptoDelete,
 			CryptoApproveAllowance,
-			CryptoAdjustAllowance,
+			CryptoDeleteAllowance,
 			FileCreate,
 			FileUpdate,
 			FileDelete,
@@ -95,6 +96,7 @@ public final class ExpectedCustomThrottles {
 			ContractCreate,
 			ContractUpdate,
 			ContractCall,
+			EthereumTransaction,
 			ContractDelete,
 			ConsensusCreateTopic,
 			ConsensusUpdateTopic,

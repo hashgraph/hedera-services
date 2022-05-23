@@ -20,11 +20,16 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.util.Base64;
+
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 /**
  * Common utilities.
@@ -59,4 +64,25 @@ public class CommonUtils {
 		}
 		return null;
 	}
+
+	public static String calculateSolidityAddress(int indicator, long realmNum, long accountNum) {
+		byte[] solidityByteArray = new byte[20];
+		byte[] indicatorBytes = Ints.toByteArray(indicator);
+		copyArray(0, solidityByteArray, indicatorBytes);
+		byte[] realmNumBytes = Longs.toByteArray(realmNum);
+		copyArray(4, solidityByteArray, realmNumBytes);
+		byte[] accountNumBytes = Longs.toByteArray(accountNum);
+		copyArray(12, solidityByteArray, accountNumBytes);
+		return hex(solidityByteArray);
+	}
+
+	private static void copyArray(int startInToArray, byte[] toArray, byte[] fromArray) {
+		if (fromArray == null || toArray == null) {
+			return;
+		}
+		for (int i = 0; i < fromArray.length; i++) {
+			toArray[i + startInToArray] = fromArray[i];
+		}
+	}
+
 }

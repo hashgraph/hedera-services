@@ -20,9 +20,11 @@ package com.hedera.services;
  * ‍
  */
 
+import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
+import com.hedera.services.sysfiles.ParsingUtils;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
@@ -38,8 +40,10 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			ParsingUtils.class,
 			CommonUtils.class,
-			ProtoCommonUtils.class,
+			Ed25519Utils.class,
+			ByteStringUtils.class,
 			SignatureGenerator.class,
 			ThrottlesJsonToProtoSerde.class,
 			ErrorCodeUtils.class,

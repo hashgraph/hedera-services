@@ -1,10 +1,12 @@
 # Key files
 *.pem
-*.pass
-*.words
-!hedera-node/data/onboard/devGenesisKeypair.pem
+!test-clients/src/main/resource/genesis.pem
 !test-clients/yahcli/localhost/keys/*.pem
+!hapi-utils/src/test/resources/vectors/genesis.pem
+!hedera-node/data/onboard/devGenesisKeypair.pem
+*.pass
 !test-clients/yahcli/localhost/keys/*.pass
+*.words
 
 # Yahcli
 test-clients/yahcli/assets/yahcli.jar
@@ -62,12 +64,14 @@ hs_err_pid*
 !test-clients/src/main/resource/testSystemFiles/*.json
 !test-clients/yahcli/run/test/local/assets/*.json
 .circleci/*.yml-excerpt
+hedera-node/data/jasperdb/
 hedera-node/temp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
+hedera-node/database/
 hedera-node/data/apps/
 hedera-node/data/diskFs/
 hedera-node/data/config/*.bin
@@ -84,6 +88,7 @@ hedera-node/data/onboard/GenesisPub32Key.txt
 hedera-node/data/recordstreams/
 hedera-node/data/saved/
 hedera-node/data/jdb/
+hedera-node/database/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
@@ -94,8 +99,6 @@ hedera-node/temp
 !hedera-node/forensics/start-investigation.py
 hapi-proto/target/
 hapi-proto/src/main/proto/doc/index.html
-evm-adapter/output/
-evm-adapter/target/
 test-clients/logs/
 test-clients/puv/*.jar
 test-clients/persistent-entities/
@@ -105,11 +108,7 @@ test-clients/output/
 test-clients/devops-utils/validation-scenarios/fees/
 test-clients/devops-utils/validation-scenarios/output/
 test-clients/devops-utils/validation-scenarios/cost-snapshots/
-test-clients/devops-utils/sysfiles-update/svctools.tar.gz
-test-clients/devops-utils/sysfiles-update/certs/*.crt
-test-clients/devops-utils/sysfiles-update/run/SysFilesUpdate.jar
 test-clients/devops-utils/validation-scenarios/ValidationScenarios.jar
-test-clients/devops-utils/sysfiles-update/b64GenesisKeyPair.txt
 test-clients/src/main/resource/TestnetStartupAccount.txt
 test-clients/src/main/resource/MainnetStartupAccount.txt
 test-clients/src/main/resource/StableTestnetStartupAccount.txt
@@ -127,7 +126,12 @@ test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
 test-clients/devops-utils/validation-scenarios/files/*-application.properties
 test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
+# Maven
 target
+
+# Gradle
+.gradle
+build
 
 # Mac system
 .DS_Store

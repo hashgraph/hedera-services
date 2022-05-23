@@ -28,12 +28,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,14 +41,12 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 @Singleton
 public class RenewalRecordsHelper {
-	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
-
-	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
-
 	private final RecordStreaming recordStreaming;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private int consensusNanosIncr = 0;
@@ -59,62 +56,73 @@ public class RenewalRecordsHelper {
 	@Inject
 	public RenewalRecordsHelper(
 			final RecordStreaming recordStreaming,
+			final SyntheticTxnFactory syntheticTxnFactory,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.recordStreaming = recordStreaming;
 		this.dynamicProperties = dynamicProperties;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
-	public void beginRenewalCycle(final Instant now) {
-		cycleStart = now;
-		consensusNanosIncr = 1;
+	public void beginRenewalCycle(final Instant nextAvailConsTime) {
+		cycleStart = nextAvailConsTime;
+		consensusNanosIncr = 0;
 		funding = dynamicProperties.fundingAccount();
 	}
 
 	public void streamCryptoRemoval(
-			final EntityNum id,
+			final EntityNum entityNum,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments
 	) {
 		assertInCycle();
-
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Entity " + id.toIdString() + " was automatically deleted.";
-		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
+		final var grpcId = entityNum.toGrpcAccountId();
+		final var memo = "Account " + entityNum.toIdString() + " was automatically deleted.";
+		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.build();
-		stream(expirableTxnRecord, eventTime);
-
-		log.debug("Streamed crypto removal record {}", expirableTxnRecord);
+		final var synthBody = syntheticTxnFactory.synthAccountAutoRemove(entityNum);
+		stream(expirableTxnRecord, synthBody, eventTime);
 	}
 
-	public void streamCryptoRenewal(final EntityNum id, final long fee, final long newExpiry) {
+	public void streamCryptoRenewal(
+			final EntityNum entityNum,
+			final long fee,
+			final long newExpiry,
+			final boolean isContract,
+			final EntityNum payerForAutoRenew
+	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Entity " +
-				id.toIdString() +
+		final var grpcId = entityNum.toGrpcAccountId();
+		final var payerId = payerForAutoRenew.toGrpcAccountId();
+		final var memo = (isContract ? "Contract " : "Account ") +
+				entityNum.toIdString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";
-
-		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
+		final var synthBody = isContract
+				? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry, payerId)
+				: syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
+		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
-				.setTransferList(feeXfers(fee, grpcId))
+				.setHbarAdjustments(feeXfers(fee, payerId))
 				.setFee(fee)
 				.build();
-		stream(expirableTxnRecord, eventTime);
-
-		log.debug("Streamed crypto renewal record {}", expirableTxnRecord);
+		stream(expirableTxnRecord, synthBody, eventTime);
 	}
 
-	private void stream(final ExpirableTxnRecord expiringRecord, final Instant at) {
-		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
-		recordStreaming.stream(rso);
+	private void stream(
+			final ExpirableTxnRecord expiringRecord,
+			final TransactionBody.Builder synthBody,
+			final Instant at
+	) {
+		final var rso = new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
+		recordStreaming.streamSystemRecord(rso);
 	}
 
 	public void endRenewalCycle() {
@@ -125,18 +133,18 @@ public class RenewalRecordsHelper {
 	private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
 		return new CurrencyAdjustments(
 				new long[] { amount, -amount },
-				List.of(EntityId.fromGrpcAccountId(funding), EntityId.fromGrpcAccountId(payer))
+				new long[] { funding.getAccountNum(), payer.getAccountNum() }
 		);
 	}
 
-	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
+	private ExpirableTxnRecord.Builder forTouchedAccount(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
 		final var id = EntityId.fromGrpcAccountId(accountId);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 
-		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
-		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+		final var txnId = new TxnId(
+				EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(txnId)
 				.setReceipt(receipt)

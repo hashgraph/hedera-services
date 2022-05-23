@@ -35,12 +35,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 
 public class ContractGetBytecodeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetBytecodeSuite.class);
@@ -70,19 +70,20 @@ public class ContractGetBytecodeSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec getByteCodeWorks() {
+		final var contract = "EmptyConstructor";
 		return HapiApiSpec.defaultHapiSpec("GetByteCodeWorks")
 				.given(
-						fileCreate("contractCode").path(EMPTY_CONSTRUCTOR),
-						contractCreate("defaultContract").bytecode("contractCode")
+						uploadInitCode(contract),
+						contractCreate(contract)
 				).when(
 				).then(
 						withOpContext((spec, opLog) -> {
-							final var getBytecode = getContractBytecode("defaultContract").saveResultTo(
+							final var getBytecode = getContractBytecode(contract).saveResultTo(
 									"contractByteCode");
 							allRunFor(spec, getBytecode);
 
 							@SuppressWarnings("UnstableApiUsage")
-							final var originalBytecode = Hex.decode(Files.toByteArray(new File(EMPTY_CONSTRUCTOR)));
+							final var originalBytecode = Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
 							final var actualBytecode = spec.registry().getBytes("contractByteCode");
 							// The original bytecode is modified on deployment
 							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,

@@ -22,8 +22,8 @@ package com.hedera.services.context;
 
 import org.junit.jupiter.api.Test;
 
-import static com.swirlds.common.PlatformStatus.MAINTENANCE;
-import static com.swirlds.common.PlatformStatus.STARTING_UP;
+import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
+import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContextPlatformStatusTest {

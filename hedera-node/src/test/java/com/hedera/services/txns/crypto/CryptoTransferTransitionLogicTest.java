@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +34,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,18 +54,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
+import static com.hedera.test.utils.IdUtils.adjustFromWithAllowance;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -80,11 +83,12 @@ class CryptoTransferTransitionLogicTest {
 	final private int maxOwnershipChanges = 15;
 	private final boolean areNftsEnabled = false;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesEnabled = true;
 	private final int maxFeeNesting = 20;
 	private final int maxBalanceChanges = 20;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -103,7 +107,7 @@ class CryptoTransferTransitionLogicTest {
 	@Mock
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	private TransactionBody cryptoTransferTxn;
 
@@ -243,6 +247,30 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
+	void doesntAllowAllowanceTransfersWhenNotSupported(){
+		xfers = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(adjustFromWithAllowance(asAccount("0.0.75231"), -1_000))
+						.addAccountAmounts(adjustFromWithAllowance(asAccount("0.0.1000"), +1_000))
+						.build())
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(asToken("0.0.12345"))
+						.addAllTransfers(List.of(
+								adjustFromWithAllowance(asAccount("0.0.2"), -1_000),
+								adjustFromWithAllowance(asAccount("0.0.2000"), +1_000)
+						)))
+				.build();
+		cryptoTransferTxn = TransactionBody.newBuilder()
+				.setCryptoTransfer(xfers)
+				.build();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+		given(transferSemanticChecks.fullPureValidation(any(), any(), any())).willReturn(NOT_SUPPORTED);
+		final var validity = subject.validateSemantics(accessor);
+		assertEquals(NOT_SUPPORTED, validity);
+	}
+
+	@Test
 	void computesFailureIfImpliedTransfersNotInSpan() {
 		// setup:
 		final var pretendXferTxn = TransactionBody.getDefaultInstance();
@@ -253,6 +281,7 @@ class CryptoTransferTransitionLogicTest {
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
 				pretendXferTxn.getCryptoTransfer().getTransfers(),

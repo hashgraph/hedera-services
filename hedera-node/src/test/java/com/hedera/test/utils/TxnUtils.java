@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,18 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -36,20 +44,27 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -62,6 +77,10 @@ public class TxnUtils {
 				.build();
 	}
 
+	public static CurrencyAdjustments withAdjustments(final long[] balanceChanges, final long[] accountCodes) {
+		return new CurrencyAdjustments(balanceChanges, accountCodes);
+	}
+
 	public static TransferList withAdjustments(
 			AccountID a, long A,
 			AccountID b, long B,
@@ -72,6 +91,19 @@ public class TxnUtils {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).build())
+				.build();
+	}
+
+	public static TransferList withAllowanceAdjustments(
+			AccountID a, long A, boolean isAllowedA,
+			AccountID b, long B, boolean isAllowedB,
+			AccountID c, long C, boolean isAllowedC,
+			AccountID d, long D, boolean isAllowedD) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(A).setIsApproval(isAllowedA).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).setIsApproval(isAllowedB).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).setIsApproval(isAllowedC).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).setIsApproval(isAllowedD).build())
 				.build();
 	}
 
@@ -102,20 +134,20 @@ public class TxnUtils {
 			AccountID cSenderId, AccountID cReceiverId, Long cSerialNumber
 	) {
 		return TokenTransferList.newBuilder()
-						.setToken(a)
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(aSenderId)
-								.setReceiverAccountID(aReceiverId)
-								.setSerialNumber(aSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(bSenderId)
-								.setReceiverAccountID(bReceiverId)
-								.setSerialNumber(bSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(cSenderId)
-								.setReceiverAccountID(cReceiverId)
-								.setSerialNumber(cSerialNumber))
-						.build();
+				.setToken(a)
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(aSenderId)
+						.setReceiverAccountID(aReceiverId)
+						.setSerialNumber(aSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(bSenderId)
+						.setReceiverAccountID(bReceiverId)
+						.setSerialNumber(bSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(cSenderId)
+						.setReceiverAccountID(cReceiverId)
+						.setSerialNumber(cSerialNumber))
+				.build();
 	}
 
 	public static List<TokenTransferList> withTokenAdjustments(
@@ -250,7 +282,6 @@ public class TxnUtils {
 		final var baos = new ByteArrayOutputStream();
 		final var out = new SerializableDataOutputStream(baos);
 		original.serialize(out);
-		;
 
 		final var reconstruction = factory.get();
 
@@ -259,5 +290,85 @@ public class TxnUtils {
 		reconstruction.deserialize(in, version);
 
 		assertEquals(original, reconstruction);
+	}
+
+	public static <T extends SelfSerializable> T deserializeFromHex(
+			final Supplier<T> factory,
+			final int version,
+			final String hexedForm
+	) throws IOException {
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
+		final var in = new SerializableDataInputStream(bais);
+		reconstruction.deserialize(in, version);
+
+		return reconstruction;
+	}
+
+	public static ExpirableTxnRecord recordOne() {
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_ACCOUNT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.3"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(9_999_999_999L)).build()))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(9_999_999_999L)))
+				.setFee(555L)
+				.setHbarAdjustments(
+						CurrencyAdjustments.fromChanges(new long[] { -4L, 2L, 2L }, new long[] { 2L, 1001L, 1002L }))
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("1.2.3"))
+						.setErrorMessage("Couldn't figure it out!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsense!".getBytes()))).build()))
+				.build();
+	}
+
+	public static ExpirableTxnRecord recordTwo() {
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_CONTRACT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.4"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(7_777_777_777L)).build()))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(7_777_777_777L)))
+				.setFee(556L)
+				.setHbarAdjustments(
+						CurrencyAdjustments.fromChanges(new long[] { -6L, 3L, 3L }, new long[] { 2L, 1001L, 1002L }))
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("4.3.2"))
+						.setErrorMessage("Couldn't figure it out immediately!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsensical!".getBytes())))
+						.setGas(1_000_000L)
+						.setFunctionParameters(ByteString.copyFrom("Sensible!".getBytes())).build()))
+				.build();
+	}
+
+	public static TokenTransferList ttlOf(TokenID scope, AccountID src, AccountID dest, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.addTransfers(aaOf(dest, +amount))
+				.build();
+	}
+
+	public static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.build();
+	}
+
+	public static AccountAmount aaOf(AccountID id, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(id)
+				.setAmount(amount)
+				.build();
 	}
 }

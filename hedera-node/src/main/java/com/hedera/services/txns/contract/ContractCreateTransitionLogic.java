@@ -20,59 +20,75 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.builder.RequestBuilder;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
+@Singleton
 public class ContractCreateTransitionLogic implements TransitionLogic {
-	private static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
+	public static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
 
 	private final HederaFs hfs;
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final EntityCreator entityCreator;
+	private final RecordsHistorian recordsHistorian;
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
-	private final HederaLedger hederaLedger;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -81,82 +97,120 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final AccountStore accountStore,
 			final OptionValidator validator,
 			final HederaWorldState worldState,
+			final EntityCreator entityCreator,
+			final RecordsHistorian recordsHistorian,
 			final TransactionRecordService recordService,
 			final CreateEvmTxProcessor evmTxProcessor,
-			final HederaLedger hederaLedger,
 			final GlobalDynamicProperties properties,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final SyntheticTxnFactory syntheticTxnFactory
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
+		this.entityCreator = entityCreator;
+		this.recordsHistorian = recordsHistorian;
 		this.recordService = recordService;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.evmTxProcessor = evmTxProcessor;
-		this.hederaLedger = hederaLedger;
 		this.properties = properties;
 	}
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
+		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
-		var op = contractCreateTxn.getContractCreateInstance();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
+		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
+	}
+
+	public void doStateTransitionOperation(
+			final TransactionBody contractCreateTxn,
+			final Id senderId,
+			final boolean createSyntheticRecord,
+			final Id relayerId,
+			final long maxGasAllowance,
+			final BigInteger userOfferedGasPrice
+	) {
+		// --- Translate from gRPC types ---
+		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
 				: STANDIN_CONTRACT_ID_KEY;
+		// Standardize immutable contract key format; c.f. https://github.com/hashgraph/hedera-services/issues/3037
+		if (key.isEmpty()) {
+			key = STANDIN_CONTRACT_ID_KEY;
+		}
 
-		/* --- Load the model objects --- */
+		if (op.hasAutoRenewAccountId()) {
+			final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccountId());
+			final var autoRenewAccount = accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
+			validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
+		}
+
+		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
+		final var consensusTime = txnCtx.consensusTime();
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
-		long expiry = RequestBuilder.getExpirationTime(txnCtx.consensusTime(), op.getAutoRenewPeriod()).getSeconds();
-
-		/* --- Do the business logic --- */
+		final var expiry = consensusTime.getEpochSecond() + op.getAutoRenewPeriod().getSeconds();
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
-		final var result = evmTxProcessor.execute(
-				sender,
-				newContractAddress,
-				op.getGas(),
-				op.getInitialBalance(),
-				codeWithConstructorArgs,
-				txnCtx.consensusTime(),
-				expiry);
 
-		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persistProvisionalContractCreations();
+
+		// --- Do the business logic ---
+		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
+		TransactionProcessingResult result;
+		try {
+			if (relayerId == null) {
+				result = evmTxProcessor.execute(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry);
+			} else {
+				sender.incrementEthereumNonce();
+				accountStore.commitAccount(sender);
+
+				result = evmTxProcessor.executeEth(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						expiry,
+						accountStore.loadAccount(relayerId),
+						userOfferedGasPrice,
+						maxGasAllowance);
+			}
+		} finally {
+			worldState.resetHapiSenderCustomizer();
+		}
+
+		// --- Persist changes into state ---
+		final var createdContracts = worldState.getCreatedContractIds();
 		result.setCreatedContracts(createdContracts);
 
-		if (result.isSuccessful()) {
-			/* --- Create customizer for the newly created contract --- */
-			final var account = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
-			if (key == STANDIN_CONTRACT_ID_KEY) {
-				key = new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum());
-			}
-			final var customizer = new HederaAccountCustomizer()
-					.key(key)
-					.memo(op.getMemo())
-					.proxy(proxyAccount.asEntityId())
-					.expiry(expiry)
-					.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
-					.isSmartContract(true);
-			hederaLedger.customizePotentiallyDeleted(account, customizer);
-		} else {
+		if (!result.isSuccessful()) {
 			worldState.reclaimContractId();
 		}
-		/* --- Customize sponsored Accounts */
-		worldState.customizeSponsoredAccounts();
 
-		/* --- Externalise changes --- */
+		// --- Externalise changes
 		for (final var createdContract : createdContracts) {
 			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}
 		if (result.isSuccessful()) {
 			final var newEvmAddress = newContractAddress.toArrayUnsafe();
 			final var newContractId = contractIdFromEvmAddress(newEvmAddress);
+			if (createSyntheticRecord) {
+				recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer);
+			}
 			sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
 			txnCtx.setTargetedContract(newContractId);
 			recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
@@ -164,7 +218,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			recordService.externalizeUnsuccessfulEvmCreate(result);
 		}
 	}
-
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
@@ -194,24 +247,46 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getGas() > properties.maxGas()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
+		if (properties.areTokenAssociationsLimited() &&
+				op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {
+			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+		}
 		return validator.memoCheck(op.getMemo());
 	}
 
 	Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
-		var bytecodeSrc = op.getFileID();
-		validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
-		byte[] bytecode = hfs.cat(bytecodeSrc);
-		validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
+		if (op.getInitcodeSourceCase() == INITCODE) {
+			return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
+		} else {
+			var bytecodeSrc = op.getFileID();
+			validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
+			byte[] bytecode = hfs.cat(bytecodeSrc);
+			validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
 
-		var contractByteCodeString = new String(bytecode);
-		if (!op.getConstructorParameters().isEmpty()) {
-			final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
-			contractByteCodeString += constructorParamsHexString;
+			var contractByteCodeString = new String(bytecode);
+			if (!op.getConstructorParameters().isEmpty()) {
+				final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+				contractByteCodeString += constructorParamsHexString;
+			}
+			try {
+				return Bytes.fromHexString(contractByteCodeString);
+			} catch (IllegalArgumentException e) {
+				throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+			}
 		}
-		try {
-			return Bytes.fromHexString(contractByteCodeString);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-		}
+	}
+
+	private void recordSyntheticOperation(ContractID newContractId, byte[] newContractAddress,
+			final ContractCustomizer opCustomizer) {
+		var childRecordId = recordsHistorian.nextChildRecordSourceId();
+
+		final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+
+		final var sideEffects = new SideEffectsTracker();
+		sideEffects.trackNewContract(newContractId, Address.wrap(Bytes.wrap(newContractAddress)));
+		final var childRecord = entityCreator.createSuccessfulSyntheticRecord(
+				NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+
+		recordsHistorian.trackFollowingChildRecord(childRecordId, syntheticOp, childRecord);
 	}
 }

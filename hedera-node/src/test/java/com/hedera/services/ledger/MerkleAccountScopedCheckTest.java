@@ -20,12 +20,14 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,13 +39,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -59,11 +60,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountScopedCheckTest {
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
 	private OptionValidator validator;
 	@Mock
 	private BalanceChange balanceChange;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	@Mock
 	private MerkleAccount account;
 	@Mock
@@ -75,7 +76,7 @@ class MerkleAccountScopedCheckTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new MerkleAccountScopedCheck(dynamicProperties, validator);
+		subject = new MerkleAccountScopedCheck(validator, nftsLedger);
 		subject.setBalanceChange(balanceChange);
 	}
 
@@ -100,29 +101,24 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedForExpiredAccount() {
-		final var expiry = 1234L;
 
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
 		when(account.getBalance()).thenReturn(0L);
 		when(account.getExpiry()).thenReturn(expiry);
-		when(validator.isAfterConsensusSecond(expiry)).thenReturn(false);
+		when(account.isSmartContract()).thenReturn(false);
+		when(validator.expiryStatusGiven(0L, expiry, false))
+				.thenReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
-
-		given(extantProps.apply(IS_DELETED)).willReturn(false);
-		given(extantProps.apply(BALANCE)).willReturn(0L);
-		given(extantProps.apply(EXPIRY)).willReturn(expiry);
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(extantProps, changeSet));
 	}
 
 	@Test
 	void failsAsExpectedWhenInsufficientBalance() {
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
-
+		when(account.getExpiry()).thenReturn(expiry);
 		when(account.getBalance()).thenReturn(5L);
+		when(validator.expiryStatusGiven(5L, expiry, false)).thenReturn(OK);
 		when(balanceChange.getAggregatedUnits()).thenReturn(-6L);
 		when(balanceChange.codeForInsufficientBalance()).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -132,12 +128,13 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowance() {
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(account.getExpiry()).thenReturn(expiry);
 		when(account.getBalance()).thenReturn(10L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
+		when(validator.expiryStatusGiven(10L, expiry, false)).thenReturn(OK);
 
 		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
 	}
@@ -145,13 +142,14 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderHasInsufficientAllowance() {
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(110L);
+		when(account.getExpiry()).thenReturn(expiry);
 		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(validator.expiryStatusGiven(110L, expiry, false)).thenReturn(OK);
 
 		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.checkUsing(account, changeSet));
 	}
@@ -193,20 +191,11 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
-		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
-		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
-
-		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
-	}
-
-	@Test
-	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
-		when(balanceChange.serialNo()).thenReturn(4L);
-		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+		when(balanceChange.nftId()).thenReturn(nftId1);
+		when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(revokedSpender));
 
 		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
 	}
@@ -214,7 +203,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnAllNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
 
@@ -223,11 +212,12 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
-		when(balanceChange.serialNo()).thenReturn(2L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+		when(balanceChange.nftId()).thenReturn(nftId1);
+		when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(payerID));
 
 		assertEquals(OK, subject.checkUsing(account, changeSet));
 	}
@@ -236,7 +226,8 @@ class MerkleAccountScopedCheckTest {
 	void happyPath() {
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		given(account.getExpiry()).willReturn(expiry);
+		when(validator.expiryStatusGiven(0L, expiry, false)).thenReturn(OK);
 		when(account.getBalance()).thenReturn(0L);
 		when(balanceChange.getAggregatedUnits()).thenReturn(5L);
 
@@ -255,17 +246,19 @@ class MerkleAccountScopedCheckTest {
 	private static final EntityNum payerNum = EntityNum.fromAccountId(payerID);
 	private static final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
 	private static final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
+	private static final NftId nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+	private static final NftId nftId2 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
 	private static final FcTokenAllowanceId fungibleAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
 	private static final FcTokenAllowanceId nftAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
 	private static final Map<EntityNum, Long> CRYPTO_ALLOWANCES = new HashMap<>();
 	private static final Map<FcTokenAllowanceId, Long> FUNGIBLE_ALLOWANCES = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> NFT_ALLOWANCES = new HashMap<>();
+	private static final Set<FcTokenAllowanceId> NFT_ALLOWANCES = new TreeSet<>();
 	static {
 		CRYPTO_ALLOWANCES.put(payerNum, 100L);
 		FUNGIBLE_ALLOWANCES.put(fungibleAllowanceId, 100L);
-		NFT_ALLOWANCES.put(fungibleAllowanceId, FcTokenAllowance.from(true));
-		NFT_ALLOWANCES.put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+		NFT_ALLOWANCES.add(fungibleAllowanceId);
 	}
+	private static final long expiry = 1234L;
 }

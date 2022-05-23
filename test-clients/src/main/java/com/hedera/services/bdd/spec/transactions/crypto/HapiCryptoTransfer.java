@@ -505,8 +505,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		return spec -> {
 			List<Key> partyKeys = new ArrayList<>();
 			TransferList transfers = hbarOnlyProvider.apply(spec);
-			transfers.getAccountAmountsList().stream().forEach(accountAmount -> {
-				String account = spec.registry().getAccountIdName(accountAmount.getAccountID());
+			final var registry = spec.registry();
+			transfers.getAccountAmountsList().forEach(accountAmount -> {
+				final var accountId = accountAmount.getAccountID();
+				if (!registry.hasAccountIdName(accountId)) {
+					return;
+				}
+				final var account = spec.registry().getAccountIdName(accountId);
 				boolean isPayer = (accountAmount.getAmount() < 0L);
 				if (isPayer || spec.registry().isSigRequired(account)) {
 					partyKeys.add(spec.registry().getKey(account));
@@ -647,5 +652,4 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	};
 	private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR = Comparator.comparing(
 			AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
-
 }

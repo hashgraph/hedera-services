@@ -20,35 +20,50 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
+	private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
 	private static final String LINE_WRAP = "\n    ";
 	private static final String NOT_EXTANT = "<NONE>";
 	private static final String NOT_AVAILABLE = "<N/A>";
@@ -56,53 +71,59 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
+	public static final int NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING = 5;
 	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
 	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
-	static final int RELEASE_0130_VERSION = 2;
-	static final int RELEASE_0140_VERSION = 3;
-	static final int RELEASE_0150_VERSION = 4;
-	static final int RELEASE_0190_VERSION = 5;
 	static final int RELEASE_0200_VERSION = 6;
-	static final int CURRENT_VERSION = RELEASE_0200_VERSION;
+	static final int RELEASE_0240_VERSION = 7;
+	static final int RELEASE_0260_VERSION = 8;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final Instant NULL_CONSENSUS_TIME = null;
-
-	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
+
+	private static int blocksToLog = 0;
 
 	private int stateVersion = UNRECORDED_STATE_VERSION;
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
+	@Nullable
 	private Instant lastMidnightBoundaryCheck = null;
-	private Instant consensusTimeOfLastHandledTxn = NULL_CONSENSUS_TIME;
+	@Nullable
+	private Instant consensusTimeOfLastHandledTxn = null;
 	private SequenceNumber seqNo;
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
 	private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
 	private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
+	private boolean migrationRecordsStreamed;
+	@Nullable
 	private FeeMultiplierSource multiplierSource = null;
+	@Nullable
 	private FunctionalityThrottling throttling = null;
-	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
+	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
+	private long blockNo = Long.MIN_VALUE;
+	private Instant firstConsTimeOfCurrentBlock = null;
+	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
 
 	public MerkleNetworkContext() {
-		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
+		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
 	}
 
-	/* Used at network genesis only */
+	// Used at network genesis only
 	public MerkleNetworkContext(
-			Instant consensusTimeOfLastHandledTxn,
-			SequenceNumber seqNo,
-			long lastScannedEntity,
-			ExchangeRates midnightRates
+			final Instant consensusTimeOfLastHandledTxn,
+			final SequenceNumber seqNo,
+			final long lastScannedEntity,
+			final ExchangeRates midnightRates
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
@@ -110,7 +131,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.midnightRates = midnightRates;
 	}
 
-	public MerkleNetworkContext(MerkleNetworkContext that) {
+	public MerkleNetworkContext(final MerkleNetworkContext that) {
 		this.consensusTimeOfLastHandledTxn = that.consensusTimeOfLastHandledTxn;
 		this.seqNo = that.seqNo.copy();
 		this.lastScannedEntity = that.lastScannedEntity;
@@ -124,9 +145,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
 		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
+		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
+		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
+		this.blockNo = that.blockNo;
+		this.blockHashes = that.blockHashes.copy();
 	}
 
-	/* --- Helpers that reset the received argument based on the network context */
+	// Helpers that reset the received argument based on the network context
 	public void resetMultiplierSourceFromSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
 			feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
@@ -135,14 +160,36 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void resetThrottlingFromSavedSnapshots(FunctionalityThrottling throttling) {
 		var activeThrottles = throttling.allActiveThrottles();
-
 		if (activeThrottles.size() != usageSnapshots.length) {
 			log.warn("There are {} active throttles, but {} usage snapshots from saved state. " +
 					"Not performing a reset!", activeThrottles.size(), usageSnapshots.length);
 			return;
 		}
-
 		reset(activeThrottles, throttling.gasLimitThrottle());
+	}
+
+	/**
+	 * Given the block number that should go with a given hash, renumbers the context's block hashes to match
+	 * (assuming the given hash is found in the trailing 256), and updates the current block number.
+	 *
+	 * @param knownBlockValues
+	 * 		the known block values to use for the renumbering
+	 */
+	public void renumberBlocksToMatch(final KnownBlockValues knownBlockValues) {
+		throwIfImmutable("Cannot renumber blocks in an immutable context");
+		if (knownBlockValues.isMissing()) {
+			return;
+		}
+		final var matchIndex = matchIndexOf(knownBlockValues.hash());
+		if (matchIndex == -1) {
+			log.info("None of {} trailing block hashes matched '{}'",
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()));
+		} else {
+			blockNo = knownBlockValues.number() + (blockHashes.size() - matchIndex);
+			log.info("Renumbered {} trailing block hashes given '0x{}@{}'",
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()), knownBlockValues::number);
+			blocksToLog = NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
+		}
 	}
 
 	/* --- Mutators that change this network context --- */
@@ -210,6 +257,26 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
+	public long finishBlock(final org.hyperledger.besu.datatypes.Hash ethHash, final Instant firstConsTimeOfNewBlock) {
+		throwIfImmutable("Cannot finish a block in an immutable context");
+		if (blocksToLog > 0) {
+			log.info("""
+							--- BLOCK UPDATE ---
+							  Finished: #{} @ {} with hash {}
+							  Starting: #{} @ {}""",
+					blockNo, firstConsTimeOfCurrentBlock, ethHash, blockNo + 1, firstConsTimeOfNewBlock);
+			blocksToLog--;
+		}
+
+		if (blockHashes.size() == NUM_BLOCK_HASHES_TO_KEEP) {
+			blockHashes.poll();
+		}
+		blockHashes.add(new BytesElement(ethHash.toArrayUnsafe()));
+		blockNo++;
+		firstConsTimeOfCurrentBlock = firstConsTimeOfNewBlock;
+		return blockNo;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public MerkleNetworkContext copy() {
@@ -221,38 +288,42 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			updateCongestionStartsFrom(multiplierSource);
 			multiplierSource = null;
 		}
-
 		setImmutable(true);
-
 		return new MerkleNetworkContext(this);
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		final var lastHandleTime = serdes.readNullableInstant(in);
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		final var lastHandleTime = readNullable(in, RichInstant::from);
 		consensusTimeOfLastHandledTxn = (lastHandleTime == null) ? null : lastHandleTime.toJava();
 
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
-		if (version >= RELEASE_0130_VERSION) {
-			readCongestionControlData(in);
+		// Added in 0.13
+		readCongestionControlData(in);
+		// Added in 0.14
+		whenVersionHigherOrEqualTo0140(in);
+		// Added in 0.15
+		whenVersionHigherOrEqualTo0150(in);
+		// Added in 0.19
+		preparedUpdateFileNum = in.readLong();
+		preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
+		// Added in 0.20
+		final var gasUsed = in.readLong();
+		final var lastGasUsage = readNullable(in, RichInstant::from);
+		gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(
+				gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
+		if (version >= RELEASE_0240_VERSION) {
+			migrationRecordsStreamed = in.readBoolean();
 		}
-		if (version >= RELEASE_0140_VERSION) {
-			whenVersionHigherOrEqualTo0140(in);
-		}
-		if (version >= RELEASE_0150_VERSION) {
-			whenVersionHigherOrEqualTo0150(in);
-		}
-		if (version >= RELEASE_0190_VERSION) {
-			preparedUpdateFileNum = in.readLong();
-			preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
-		}
-		if (version >= RELEASE_0200_VERSION) {
-			var used = in.readLong();
-			var lastUsed = serdes.readNullableInstant(in);
-			gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(used, (lastUsed == null) ? null : lastUsed.toJava());
+		if (version >= RELEASE_0260_VERSION) {
+			final var firstBlockTime = readNullable(in, RichInstant::from);
+			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
+			blockNo = in.readLong();
+			blockHashes.clear();
+			in.readSerializable(true, () -> blockHashes);
 		}
 	}
 
@@ -261,8 +332,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (numUsageSnapshots > 0) {
 			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
 			for (int i = 0; i < numUsageSnapshots; i++) {
-				var used = in.readLong();
-				var lastUsed = serdes.readNullableInstant(in);
+				final var used = in.readLong();
+				final var lastUsed = readNullable(in, RichInstant::from);
 				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
 						used, (lastUsed == null) ? null : lastUsed.toJava());
 			}
@@ -271,7 +342,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (numCongestionStarts > 0) {
 			congestionLevelStarts = new Instant[numCongestionStarts];
 			for (int i = 0; i < numCongestionStarts; i++) {
-				final var levelStart = serdes.readNullableInstant(in);
+				final var levelStart = readNullable(in, RichInstant::from);
 				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
 			}
 		}
@@ -285,35 +356,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
-		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		final var lastBoundaryCheck = readNullable(in, RichInstant::from);
 		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
-		seqNo.serialize(out);
-		out.writeSerializable(midnightRates, true);
-		int n = usageSnapshots.length;
-		out.writeInt(n);
-		for (var usageSnapshot : usageSnapshots) {
-			out.writeLong(usageSnapshot.used());
-			serdes.writeNullableInstant(fromJava(usageSnapshot.lastDecisionTime()), out);
-		}
-		n = congestionLevelStarts.length;
-		out.writeInt(n);
-		for (var congestionStart : congestionLevelStarts) {
-			serdes.writeNullableInstant(fromJava(congestionStart), out);
-		}
-		out.writeLong(lastScannedEntity);
-		out.writeLong(entitiesScannedThisSecond);
-		out.writeLong(entitiesTouchedThisSecond);
-		out.writeInt(stateVersion);
-		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
-		out.writeLong(preparedUpdateFileNum);
-		out.writeByteArray(preparedUpdateFileHash);
-		out.writeLong(gasThrottleUsageSnapshot.used());
-		serdes.writeNullableInstant(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out);
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		serializeNonHashData(out);
+		out.writeSerializable(blockHashes, true);
 	}
 
 	@Override
@@ -326,6 +376,29 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return CURRENT_VERSION;
 	}
 
+	@Override
+	public boolean isSelfHashing() {
+		return true;
+	}
+
+	@Override
+	public Hash getHash() {
+		final var baos = new ByteArrayOutputStream();
+		try (final var out = new SerializableDataOutputStream(baos)) {
+			serializeNonHashData(out);
+			out.write(blockHashes.getHash().getValue());
+		} catch (IOException | UncheckedIOException e) {
+			log.error("Hash computation failed", e);
+			return EMPTY_HASH;
+		}
+		return new Hash(noThrowSha384HashOf(baos.toByteArray()), DigestType.SHA_384);
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0200_VERSION;
+	}
+
 	public String summarized() {
 		return summarizedWith(null);
 	}
@@ -333,7 +406,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public String summarizedWith(DualStateAccessor dualStateAccessor) {
 		final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
 		final var freezeTime = isDualStateAvailable
-				? ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime()
+				? dualStateAccessor.getDualState().getFreezeTime()
 				: null;
 		final var pendingUpdateDesc = currentPendingUpdateDesc();
 		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
@@ -360,7 +433,41 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				"\n  Throttle usage snapshots are               ::" +
 				usageSnapshotsDesc() +
 				"\n  Congestion level start times are           ::" +
-				congestionStartsDesc();
+				congestionStartsDesc() +
+				"\n  Block number is                            :: " +
+				blockNo +
+				"\n  Block timestamp is                         :: " +
+				reprOf(firstConsTimeOfCurrentBlock) +
+				"\n  Trailing block hashes are                  :: " +
+				stringifiedBlockHashes();
+	}
+
+	public long getAlignmentBlockNo() {
+		return blockNo;
+	}
+
+	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long reqBlockNo) {
+		if (reqBlockNo < 0) {
+			return UNAVAILABLE_BLOCK_HASH;
+		}
+		final var firstAvailable = blockNo - blockHashes.size();
+		// If blockHashes.size() == 0, then firstAvailable == blockNo; and all numbers are
+		// either less than or greater than or equal to blockNo, so we return unavailable
+		if (reqBlockNo < firstAvailable || reqBlockNo >= blockNo) {
+			return UNAVAILABLE_BLOCK_HASH;
+		} else {
+			// Oldest block hash at the head of the queue (next to "roll off" the queue);
+			// so iterate in reverse assuming recent blocks are of greater interest
+			final var hashIter = blockHashes.reverseIterator();
+			for (int i = 0, n = (int) (blockNo - 1 - reqBlockNo); i < n; i++) {
+				hashIter.next();
+			}
+			return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(hashIter.next().getData()));
+		}
+	}
+
+	public Instant firstConsTimeOfCurrentBlock() {
+		return (firstConsTimeOfCurrentBlock == null) ? Instant.EPOCH : firstConsTimeOfCurrentBlock;
 	}
 
 	private String usageSnapshotsDesc() {
@@ -449,6 +556,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return stateVersion;
 	}
 
+	public boolean areMigrationRecordsStreamed() {
+		return migrationRecordsStreamed;
+	}
+
 	/* --- Internal helpers --- */
 	void updateSnapshotsFrom(FunctionalityThrottling throttling) {
 		throwIfImmutable("Cannot update usage snapshots on an immutable context");
@@ -475,6 +586,35 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
+	void serializeNonHashData(final SerializableDataOutputStream out) throws IOException {
+		writeNullable(fromJava(consensusTimeOfLastHandledTxn), out, RichInstant::serialize);
+		seqNo.serialize(out);
+		out.writeSerializable(midnightRates, true);
+		int n = usageSnapshots.length;
+		out.writeInt(n);
+		for (var usageSnapshot : usageSnapshots) {
+			out.writeLong(usageSnapshot.used());
+			writeNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+		}
+		n = congestionLevelStarts.length;
+		out.writeInt(n);
+		for (var congestionStart : congestionLevelStarts) {
+			writeNullable(fromJava(congestionStart), out, RichInstant::serialize);
+		}
+		out.writeLong(lastScannedEntity);
+		out.writeLong(entitiesScannedThisSecond);
+		out.writeLong(entitiesTouchedThisSecond);
+		out.writeInt(stateVersion);
+		writeNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
+		out.writeLong(preparedUpdateFileNum);
+		out.writeByteArray(preparedUpdateFileHash);
+		out.writeLong(gasThrottleUsageSnapshot.used());
+		writeNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+		out.writeBoolean(migrationRecordsStreamed);
+		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
+		out.writeLong(blockNo);
+	}
+
 	private void reset(List<DeterministicThrottle> throttles, GasLimitDeterministicThrottle gasLimitThrottle) {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
@@ -487,7 +627,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				log.info("Reset {} with saved usage snapshot", throttle);
 			} catch (Exception e) {
 				log.warn(
-						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) not" +
+						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) " +
+								"not" +
 								" " +
 								"performing a reset !",
 						(i + 1), e.getMessage());
@@ -520,6 +661,33 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
 	}
 
+	private String stringifiedBlockHashes() {
+		final var jsonSb = new StringBuilder("[");
+		final var firstAvailable = blockNo - blockHashes.size();
+		final var hashIter = blockHashes.iterator();
+		for (int i = 0; hashIter.hasNext(); i++) {
+			final var nextBlockNo = firstAvailable + i;
+			final var blockHash = hashIter.next().getData();
+			jsonSb.append("{\"num\": ").append(nextBlockNo).append(", ")
+					.append("\"hash\": \"").append(CommonUtils.hex(blockHash)).append("\"}")
+					.append(hashIter.hasNext() ? ", " : "");
+		}
+		return jsonSb.append("]").toString();
+	}
+
+	private int matchIndexOf(final byte[] blockHash) {
+		var matchIndex = -1;
+		var offsetFromOldest = 0;
+		for (final var trailingHash : blockHashes) {
+			if (Arrays.equals(blockHash, trailingHash.getData())) {
+				matchIndex = offsetFromOldest;
+				break;
+			}
+			offsetFromOldest++;
+		}
+		return matchIndex;
+	}
+
 	public long getPreparedUpdateFileNum() {
 		return preparedUpdateFileNum;
 	}
@@ -538,8 +706,20 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
+	public void markMigrationRecordsStreamed() {
+		this.migrationRecordsStreamed = true;
+	}
+
+	public void markMigrationRecordsNotYetStreamed() {
+		this.migrationRecordsStreamed = false;
+	}
+
 	/* Only used for unit tests */
-	void setCongestionLevelStarts(Instant[] congestionLevelStarts) {
+	public void setUsageSnapshots(final DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
+		this.usageSnapshots = usageSnapshots;
+	}
+
+	public void setCongestionLevelStarts(final Instant[] congestionLevelStarts) {
 		this.congestionLevelStarts = congestionLevelStarts;
 	}
 
@@ -549,10 +729,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	Instant getConsensusTimeOfLastHandledTxn() {
 		return consensusTimeOfLastHandledTxn;
-	}
-
-	void setUsageSnapshots(DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
-		this.usageSnapshots = usageSnapshots;
 	}
 
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
@@ -575,11 +751,49 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return throttling;
 	}
 
-	public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+	DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
 		return gasThrottleUsageSnapshot;
 	}
 
 	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
 		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
+	}
+
+	public void setMigrationRecordsStreamed(final boolean migrationRecordsStreamed) {
+		this.migrationRecordsStreamed = migrationRecordsStreamed;
+	}
+
+	/* --- Utility methods --- */
+	public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
+		final byte[] hashBytesToConvert = hash.getValue();
+		final byte[] prefixBytes = new byte[32];
+		System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
+		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
+	}
+
+	/* --- Used for tests --- */
+	@VisibleForTesting
+	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
+		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
+	}
+
+	@VisibleForTesting
+	FCQueue<BytesElement> getBlockHashes() {
+		return blockHashes;
+	}
+
+	@VisibleForTesting
+	int getBlocksToLog() {
+		return blocksToLog;
+	}
+
+	@VisibleForTesting
+	void setBlockNo(final long blockNo) {
+		this.blockNo = blockNo;
+	}
+
+	@VisibleForTesting
+	void setBlockHashes(final FCQueue<BytesElement> blockHashes) {
+		this.blockHashes = blockHashes;
 	}
 }

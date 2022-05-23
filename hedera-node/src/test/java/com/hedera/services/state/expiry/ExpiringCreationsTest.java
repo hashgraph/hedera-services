@@ -23,27 +23,29 @@ package com.hedera.services.state.expiry;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +63,7 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -82,7 +85,7 @@ class ExpiringCreationsTest {
 	private static final long newTokenSupply = 1_234_567L;
 	private static final TokenID newTokenId = IdUtils.asToken("0.0.666");
 	private static final AccountID effPayer = IdUtils.asAccount("0.0.75231");
-	private static final ExpirableTxnRecord record = DomainSerdesTest.recordOne();
+	private static final ExpirableTxnRecord record = TxnUtils.recordOne();
 	private static ExpirableTxnRecord expectedRecord;
 
 	@Mock
@@ -99,11 +102,16 @@ class ExpiringCreationsTest {
 	private TxnAccessor accessor;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor;
+	@Mock
+	private EthTxData ethTxData;
 
 	private static final AccountID payer = asAccount("0.0.2");
 	private static final AccountID created = asAccount("1.0.2");
 	private static final AccountID another = asAccount("1.0.300");
-	private static final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private static final CurrencyAdjustments transfers = CurrencyAdjustments.fromGrpc(
+			withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList());
 	private static final TokenID tokenCreated = asToken("3.0.2");
 	private static final List<AccountAmount> adjustments =
 			withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList();
@@ -278,7 +286,7 @@ class ExpiringCreationsTest {
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
 		assertEquals(receiptBuilder.build(), created.getReceipt());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertEquals(scheduleRef, created.getScheduleRef().toGrpcScheduleId());
 		assertNull(created.getTokens());
 		assertNull(created.getTokenAdjustments());
@@ -317,8 +325,30 @@ class ExpiringCreationsTest {
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertNull(created.getScheduleRef());
+	}
+
+	@Test
+	void includesEthereumHash() {
+		final var mockHash = ByteString.copyFromUtf8("corn-beef").toByteArray();
+		setUpForExpiringRecordBuilder();
+
+		given(accessor.getFunction()).willReturn(EthereumTransaction);
+		given(accessor.getSpanMapAccessor()).willReturn(expandHandleSpanMapAccessor);
+		given(expandHandleSpanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(ethTxData.getEthereumHash()).willReturn(mockHash);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertArrayEquals(mockHash, created.getEthereumHash());
 	}
 
 	private void setupTracker() {
@@ -338,7 +368,7 @@ class ExpiringCreationsTest {
 		assertEquals(receipt.build(), actualRecord.getReceipt());
 		assertEquals(memo, actualRecord.getMemo());
 		assertArrayEquals(hash, actualRecord.getTxnHash());
-		assertEquals(timestamp, actualRecord.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, actualRecord.getConsensusTime().toJava());
 		assertEquals(scheduleRef, actualRecord.getScheduleRef().toGrpcScheduleId());
 	}
 

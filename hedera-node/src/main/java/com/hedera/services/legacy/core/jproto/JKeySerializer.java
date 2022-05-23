@@ -20,8 +20,9 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
+import com.hedera.services.state.serdes.IoUtils;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -38,7 +39,7 @@ public class JKeySerializer {
 	}
 
 	public static byte[] serialize(Object rootObject) throws IOException {
-		return byteStream(buffer -> {
+		return IoUtils.byteStream(buffer -> {
 			buffer.writeLong(BPACK_VERSION);
 
 			JObjectType objectType = JObjectType.FC_KEY;
@@ -68,7 +69,7 @@ public class JKeySerializer {
 			final JObjectType finalObjectType = objectType;
 			buffer.writeLong(objectType.longValue());
 
-			byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
+			byte[] content = IoUtils.byteStream(os -> pack(os, finalObjectType, rootObject));
 			int length = content.length;
 
 			buffer.writeLong(length);
@@ -79,7 +80,7 @@ public class JKeySerializer {
 		});
 	}
 
-	public static <T> T deserialize(DataInputStream stream) throws IOException {
+	public static <T> T deserialize(SerializableDataInputStream stream) throws IOException {
 		final var version = stream.readLong();
 		if (version == LEGACY_VERSION) {
 			throw new IllegalArgumentException("Pre-OA serialization format no longer supported");
@@ -154,7 +155,7 @@ public class JKeySerializer {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
+	static <T> T unpack(SerializableDataInputStream stream, JObjectType type, long length) throws IOException {
 		if (JObjectType.FC_ED25519_KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
@@ -209,17 +210,6 @@ public class JKeySerializer {
 		} else {
 			throw new IllegalStateException(
 					"Unknown type was encountered while reading from the input stream");
-		}
-	}
-
-	public static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-			try (DataOutputStream dos = new DataOutputStream(bos)) {
-				consumer.accept(dos);
-				dos.flush();
-				bos.flush();
-				return bos.toByteArray();
-			}
 		}
 	}
 

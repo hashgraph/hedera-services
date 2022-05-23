@@ -25,7 +25,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -95,8 +95,7 @@ class PricedUsageCalculatorTest {
 		final var inHandleAccum = subject.getHandleScopedAccumulator();
 		final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
 
-		given(accessor.sigMapSize()).willReturn(sigMapSize);
-		given(accessor.numSigPairs()).willReturn(numSigPairs);
+		given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
 		given(feeMultiplierSource.currentMultiplier()).willReturn(multiplier);
 		given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier)).willReturn(mockFees);
 
@@ -116,9 +115,7 @@ class PricedUsageCalculatorTest {
 
 		final var inHandleAccum = subject.getHandleScopedAccumulator();
 		final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
-
-		given(accessor.sigMapSize()).willReturn(sigMapSize);
-		given(accessor.numSigPairs()).willReturn(numSigPairs);
+		given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
 		given(feeMultiplierSource.currentMultiplier()).willReturn(multiplier);
 		given(calculator.fees(
 				feesCaptor.capture(),

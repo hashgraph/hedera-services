@@ -31,7 +31,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -57,6 +57,7 @@ import java.util.Collections;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,7 +86,7 @@ class AutoCreationLogicTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 
 	private AutoCreationLogic subject;
 
@@ -102,6 +103,7 @@ class AutoCreationLogicTest {
 		givenCollaborators();
 
 		final var input = wellKnownChange();
+		final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
 		final var result = subject.create(input, accountsLedger);
 		subject.submitRecordsTo(recordsHistorian);
@@ -111,7 +113,9 @@ class AutoCreationLogicTest {
 		verify(aliasManager).link(alias, createdNum);
 		verify(sigImpactHistorian).markAliasChanged(alias);
 		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+		verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
 		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+		assertEquals(totalFee, mockBuilder.getFee());
 		assertEquals(Pair.of(OK, totalFee), result);
 	}
 

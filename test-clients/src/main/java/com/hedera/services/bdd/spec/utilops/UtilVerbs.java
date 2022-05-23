@@ -30,15 +30,19 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -73,6 +77,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
@@ -289,6 +294,14 @@ public class UtilVerbs {
 
 	public static VerifyGetBySolidityIdNotSupported getBySolidityIdNotSupported() {
 		return new VerifyGetBySolidityIdNotSupported();
+	}
+
+	public static VerifyGetAccountNftInfosNotSupported getAccountNftInfosNotSupported() {
+		return new VerifyGetAccountNftInfosNotSupported();
+	}
+
+	public static VerifyGetTokenNftInfosNotSupported getTokenNftInfosNotSupported() {
+		return new VerifyGetTokenNftInfosNotSupported();
 	}
 
 	public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {
@@ -1071,6 +1084,38 @@ public class UtilVerbs {
 
 		return Tuple.of(account32, receiver32,
 				serialNumber);
+	}
+
+	public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
+		final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
+		for (final var op : ops) {
+			if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+				convertedOps.add(new HapiEthereumCall(callOp));
+			} else {
+				convertedOps.add(op);
+			}
+		}
+		return convertedOps;
+	}
+
+	public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
+		var key = spec.registry().getKey(privateKeyRef);
+		final var privateKey = spec.keys().getPrivateKey(
+				com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
+
+		byte[] privateKeyByteArray;
+		byte[] dByteArray = ((BCECPrivateKey) privateKey).getD().toByteArray();
+		if (dByteArray.length < 32) {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
+		} else if (dByteArray.length == 32) {
+			privateKeyByteArray = dByteArray;
+		} else {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
+		}
+
+		return privateKeyByteArray;
 	}
 
 	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {

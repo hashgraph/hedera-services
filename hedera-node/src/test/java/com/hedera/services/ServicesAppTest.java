@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -34,7 +35,6 @@ import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.forensics.HashLogger;
@@ -48,18 +48,13 @@ import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.JvmSystemExits;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,21 +77,9 @@ class ServicesAppTest {
 	private final NodeId selfNodeId = new NodeId(false, selfId);
 
 	@Mock
-	private Hash hash;
-	@Mock
 	private Platform platform;
 	@Mock
-	private RunningHash runningHash;
-	@Mock
-	private Address address;
-	@Mock
-	private AddressBook addressBook;
-	@Mock
 	private Cryptography cryptography;
-	@Mock
-	private ServicesState initialState;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private PropertySource overridingProps;
 
@@ -132,7 +115,7 @@ class ServicesAppTest {
 	void objectGraphRootsAreAvailable() {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
-		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
+		assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));

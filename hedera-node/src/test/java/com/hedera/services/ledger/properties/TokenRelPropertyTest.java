@@ -21,6 +21,7 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_AUTOMATIC_ASSOCIATION;
@@ -30,15 +31,21 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenRelPropertyTest {
-	long balance = 123, newBalance = 321;
-	boolean frozen = true;
-	boolean kycGranted = false;
-	boolean automaticAssociation = false;
+	private final long balance = 123, newBalance = 321;
+	private final EntityNumPair key = new EntityNumPair(1234566);
+	private final long nextKey = 12345;
+	private final long prevKey = 12346;
+	private final boolean frozen = true;
+	private final boolean kycGranted = false;
+	private final boolean automaticAssociation = false;
 
-	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+	private final MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 	@Test
 	void gettersWork() {
+		target.setKey(key);
+		target.setNext(nextKey);
+		target.setPrev(prevKey);
 		// expect:
 		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));

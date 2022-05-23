@@ -26,23 +26,25 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -50,6 +52,10 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 @Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
+
+	public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
+	public static final List<EntityNum> STAKING_FUND_ACCOUNTS =
+			List.of(EntityNum.fromLong(800L), EntityNum.fromLong(801L));
 
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
@@ -69,15 +75,13 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		this.b64KeyReader = b64KeyReader;
 	}
 
-	@Override
-	public void createSystemAccounts(MerkleMap<EntityNum, MerkleAccount> accounts, AddressBook addressBook) {
-		throw new UnsupportedOperationException();
-	}
-
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void ensureSystemAccounts(
-			BackingStore<AccountID, MerkleAccount> accounts,
-			AddressBook addressBook
+			final BackingStore<AccountID, MerkleAccount> accounts,
+			final AddressBook addressBook
 	) {
 		long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
@@ -95,6 +99,14 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			}
 		}
 
+		for (final var num : STAKING_FUND_ACCOUNTS) {
+			final var id = num.toGrpcAccountId();
+			if (!accounts.contains(id)) {
+				final var stakingFundAccount = new MerkleAccount();
+				customizeAsStakingFund(stakingFundAccount);
+				accounts.put(id, stakingFundAccount);
+			}
+		}
 		for (long num = 900; num <= 1000; num++) {
 			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (!accounts.contains(id)) {
@@ -106,6 +118,15 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
 		var msg = String.format("Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
 		log.info(msg);
+	}
+
+	public static void customizeAsStakingFund(final MerkleAccount account) {
+		account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
+		account.setTokens(new MerkleAccountTokens());
+		account.setAccountKey(EMPTY_KEY);
+		account.setSmartContract(false);
+		account.setReceiverSigRequired(false);
+		account.setMaxAutomaticAssociations(0);
 	}
 
 	private MerkleAccount accountWith(long balance, long expiry) {

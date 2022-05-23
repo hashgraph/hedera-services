@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -34,8 +34,6 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
-import static com.hedera.services.contracts.operation.HederaCallOperation.resolveCanonical;
-
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
  *
@@ -44,14 +42,14 @@ import static com.hedera.services.contracts.operation.HederaCallOperation.resolv
  * the account does not exist or it is deleted.
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
-	private final SoliditySigsVerifier sigsVerifier;
+	private final EvmSigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaStaticCallOperation(
 			final GasCalculator gasCalculator,
-			final SoliditySigsVerifier sigsVerifier,
+			final EvmSigsVerifier sigsVerifier,
 			final BiPredicate<Address, MessageFrame> addressValidator,
 			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
@@ -59,11 +57,6 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
 		this.precompiledContractMap = precompiledContractMap;
-	}
-
-	@Override
-	protected Address address(final MessageFrame frame) {
-		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
 	}
 
 	@Override

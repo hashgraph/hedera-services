@@ -209,11 +209,27 @@ public class TokenRelationship {
 	}
 
 	/* The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+		readability of unit tests; model objects are not used in hash-based
+		collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || !obj.getClass().equals(TokenRelationship.class)) {
+			return false;
+		}
+
+		final var that = (TokenRelationship) obj;
+		return new EqualsBuilder()
+				.append(notYetPersisted, that.notYetPersisted)
+				.append(account, that.account)
+				.append(balance, that.balance)
+				.append(balanceChange, that.balanceChange)
+				.append(frozen, that.frozen)
+				.append(kycGranted, that.kycGranted)
+				.append(automaticAssociation, that.automaticAssociation)
+				.isEquals();
 	}
 
 	@Override

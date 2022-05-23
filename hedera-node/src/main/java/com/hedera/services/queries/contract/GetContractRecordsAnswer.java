@@ -28,12 +28,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
-import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -41,12 +38,10 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
 public class GetContractRecordsAnswer extends AbstractAnswer {
-	public static final List<TransactionRecord> GUARANTEED_EMPTY_PAYER_RECORDS = Collections.emptyList();
-
 	@Inject
 	public GetContractRecordsAnswer() {
 		super(ContractGetRecords,
-				query -> null,
+				query -> query.getContractGetRecords().getHeader().getPayment(),
 				query -> query.getContractGetRecords().getHeader().getResponseType(),
 				response -> response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode(),
 				(query, view) -> NOT_SUPPORTED);

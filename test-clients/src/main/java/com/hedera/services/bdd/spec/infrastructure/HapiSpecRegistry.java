@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -40,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -49,17 +49,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +64,9 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_RECEIVER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -79,24 +74,29 @@ import static java.util.stream.Collectors.toList;
 public class HapiSpecRegistry {
 	static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
 
-	Map<String, Object> registry = new HashMap<>();
+	private final Map<String, Object> registry = new HashMap<>();
 	private final HapiSpecSetup setup;
 	private final List<OpObs> obs = new ArrayList<>();
 	private final List<ThroughputObs> throughputObs = new ArrayList<>();
 	private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
-	private Map<String, AccountID> autoAccountsMap = new HashMap<>();
-
-	private static final Integer ZERO = Integer.valueOf(0);
+	private static final Integer ZERO = 0;
 
 	public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
 		this.setup = setup;
-		KeyPairObj genesisKp = firstStartupKp(setup);
-		Key genesisKey = asPublicKey(genesisKp.getPublicKeyAbyteStr());
+
+		final var key = payerKey(setup);
+		final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
+
 		saveAccountId(setup.genesisAccountName(), setup.genesisAccount());
 		saveKey(setup.genesisAccountName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultPayerName(), setup.defaultPayer());
 		saveKey(setup.defaultPayerName(), asKeyList(genesisKey));
+		// The default contract sender is the default payer unless using Ethereum transactions
+		saveAccountId(DEFAULT_CONTRACT_SENDER, setup.defaultPayer());
+		saveKey(DEFAULT_CONTRACT_SENDER, asKeyList(genesisKey));
+		saveAccountId(DEFAULT_CONTRACT_RECEIVER, setup.fundingAccount());
+		saveKey(DEFAULT_CONTRACT_RECEIVER, asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());
@@ -140,18 +140,6 @@ public class HapiSpecRegistry {
 		/* (system 8) :: Throttle Definitions */
 		saveFileId(setup.throttleDefinitionsName(), setup.throttleDefinitionsId());
 		saveKey(setup.throttleDefinitionsName(), asKeyList(genesisKey));
-		/* Migration :: File */
-		saveFileId(setup.migrationFileName(), setup.migrationFileID());
-		saveKey(setup.migrationFileName(), asKeyList(genesisKey));
-		/* Migration :: Crypto Account A */
-		saveAccountId(setup.migrationAccountAName(), setup.migrationAccountAID());
-		saveKey(setup.migrationAccountAName(), asKeyList(genesisKey));
-		/* Migration :: Crypto Account B */
-		saveAccountId(setup.migrationAccountBName(), setup.migrationAccountBID());
-		saveKey(setup.migrationAccountBName(), asKeyList(genesisKey));
-		/* Migration :: Smart Contract */
-		saveContractId(setup.migrationSmartContractName(), setup.migrationSmartContractID());
-		saveKey(setup.migrationSmartContractName(), asKeyList(genesisKey));
 
 		saveKey(HapiApiSuite.NONSENSE_KEY, nonsenseKey());
 	}
@@ -259,7 +247,8 @@ public class HapiSpecRegistry {
 	public void removeTimestamp(String label) {
 		try {
 			remove(label, Timestamp.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveKey(String name, Key key) {
@@ -326,7 +315,9 @@ public class HapiSpecRegistry {
 		put(name + "Expiry", value, Long.class);
 	}
 
-	public void saveCreationTime(String name, Timestamp value) { put(name + "CreationTime", value, Timestamp.class); }
+	public void saveCreationTime(String name, Timestamp value) {
+		put(name + "CreationTime", value, Timestamp.class);
+	}
 
 	public void saveSupplyKey(String name, Key key) {
 		put(name + "Supply", key, Key.class);
@@ -420,9 +411,13 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) {
+		return get(name + "Expiry", Long.class);
+	}
 
-	public Timestamp getCreationTime(String name) { return get(name + "CreationTime", Timestamp.class); }
+	public Timestamp getCreationTime(String name) {
+		return get(name + "CreationTime", Timestamp.class);
+	}
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -431,7 +426,8 @@ public class HapiSpecRegistry {
 	public void removeKey(String name) {
 		try {
 			remove(name, Key.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveTopicMeta(String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
@@ -594,7 +590,8 @@ public class HapiSpecRegistry {
 			var id = getTokenID(name);
 			remove(name, TokenID.class);
 			remove(asTokenString(id), String.class);
-		} catch (Throwable ignore) {}
+		} catch (Throwable ignore) {
+		}
 	}
 
 	public void saveTokenRel(String account, String token) {
@@ -659,7 +656,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasAccountId(String name) {
-		return hasVia(this::getAccountID, name);
+		return registry.get(full(name, AccountID.class)) != null;
 	}
 
 	public AccountID getAccountID(String name) {
@@ -675,6 +672,10 @@ public class HapiSpecRegistry {
 
 	public String getAccountIdName(AccountID account) {
 		return get(asAccountString(account), String.class);
+	}
+
+	public boolean hasAccountIdName(AccountID accountId) {
+		return registry.get(full(asAccountString(accountId), String.class)) != null;
 	}
 
 	public void removeAccount(String name) {
@@ -796,6 +797,10 @@ public class HapiSpecRegistry {
 		put(name, info);
 	}
 
+	public void saveAccountDetails(String name, GetAccountDetailsResponse.AccountDetails details) {
+		put(name, details);
+	}
+
 	public void removeAccountInfo(String name) {
 		try {
 			remove(name, CryptoGetInfoResponse.AccountInfo.class);
@@ -805,6 +810,10 @@ public class HapiSpecRegistry {
 
 	public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
 		return get(name, CryptoGetInfoResponse.AccountInfo.class);
+	}
+
+	public GetAccountDetailsResponse.AccountDetails getAccountDetails(String name) {
+		return get(name, GetAccountDetailsResponse.AccountDetails.class);
 	}
 
 	public <T> T getId(String name, Class<T> type) {
@@ -894,58 +903,5 @@ public class HapiSpecRegistry {
 				.filter(entry -> entry.getValue().getClass().equals(String.class))
 				.map(entry -> String.format("%s -> %s", entry.getKey(), entry.getValue().toString()))
 				.collect(toList());
-	}
-
-	public void save(String path) {
-		FileOutputStream fos = null;
-		log.info("Serialize registry to : " + path);
-		try {
-			fos = new FileOutputStream(path);
-			ObjectOutputStream oos = new ObjectOutputStream(fos);
-			oos.writeObject(registry);
-			fos.close();
-			fos = null;
-		} catch (NotSerializableException e) {
-			log.error("Serializable exception catched while saving registry to " + path + ":" + e);
-		} catch (FileNotFoundException e) {
-			log.error("File not found exception catched while serializing registry to " + path + ":" + e);
-		} catch (Exception e) {
-			log.error("Other exception catched while serializing registry to " + path + ":" + e);
-		} finally {
-			try {
-				if (fos != null) {
-					fos.close();
-				}
-			} catch (IOException e) {
-				log.error("IO exception catched while serializing registry to " + path + ":" + e);
-			}
-		}
-	}
-
-	public void load(String path) {
-		FileInputStream fis = null;
-
-		log.info("Deserialize registry from : " + path);
-		try {
-			fis = new FileInputStream(path);
-			ObjectInputStream ois = new ObjectInputStream(fis);
-			Map newValues = (Map<String, Object>) ois.readObject();
-
-			registry.putAll(newValues);
-
-			fis.close();
-			fis = null;
-		} catch (Exception e) {
-			log.error("Deserializable exception catched while deserializing registry from " + path + ":" + e);
-		} finally {
-			try {
-				if (fis != null) {
-					fis.close();
-				}
-			} catch (IOException e) {
-				log.error("IO exception catched while deserializing registry from " + path + ":" + e);
-			}
-		}
-		log.info("Successfully deserialized registry from " + path);
 	}
 }

@@ -21,14 +21,15 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -36,14 +37,13 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -54,11 +54,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class GetAccountBalanceAnswer implements AnswerService {
 	private final AliasManager aliasManager;
 	private final OptionValidator optionValidator;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
+	public GetAccountBalanceAnswer(
+			final AliasManager aliasManager,
+			final OptionValidator optionValidator,
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -89,19 +95,17 @@ public class GetAccountBalanceAnswer implements AnswerService {
 				.setAccountID(id);
 
 		if (validity == OK) {
-			var key = EntityNum.fromAccountId(id);
-			var account = accounts.get(key);
+			final var key = EntityNum.fromAccountId(id);
+			final var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : account.tokens().asTokenIds()) {
-				var relKey = fromAccountTokenRel(id, tId);
-				var relationship = view.tokenAssociations().get(relKey);
-				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
-				opAnswer.addTokenBalances(TokenBalance.newBuilder()
-						.setTokenId(tId)
-						.setBalance(relationship.getBalance())
-						.setDecimals(decimals)
-						.build());
-			}
+			final var maxRels = dynamicProperties.maxTokensRelsPerInfoQuery();
+			final var firstRel = account.getLatestAssociation();
+			doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) ->
+					opAnswer.addTokenBalances(TokenBalance.newBuilder()
+							.setTokenId(token.grpcId())
+							.setDecimals(token.decimals())
+							.setBalance(rel.getBalance())
+							.build()));
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();
@@ -117,7 +121,8 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
 		if (op.hasContractID()) {
-			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
+			final var effId = resolvedContract(op.getContractID());
+			return optionValidator.queryableContractStatus(effId, accounts);
 		} else if (op.hasAccountID()) {
 			final var effId = resolvedNonContract(op.getAccountID());
 			return optionValidator.queryableAccountStatus(effId, accounts);
@@ -126,9 +131,9 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		}
 	}
 
-	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
+	private AccountID targetOf(final CryptoGetAccountBalanceQuery op) {
 		if (op.hasContractID()) {
-			return asAccount(op.getContractID());
+			return asAccount(resolvedContract(op.getContractID()));
 		} else {
 			return resolvedNonContract(op.getAccountID());
 		}
@@ -138,6 +143,15 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (isAlias(idOrAlias)) {
 			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
 			return id.toGrpcAccountId();
+		} else {
+			return idOrAlias;
+		}
+	}
+
+	private ContractID resolvedContract(final ContractID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var id = aliasManager.lookupIdBy(idOrAlias.getEvmAddress());
+			return id.toGrpcContractID();
 		} else {
 			return idOrAlias;
 		}

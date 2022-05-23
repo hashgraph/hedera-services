@@ -29,6 +29,8 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -46,11 +48,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -97,7 +101,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						ensureDefaultSystemFiles(),
+						ensureSystemStateAsExpected(),
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						accountsGetPayerRecordsIfSoConfigured(),
@@ -190,18 +194,36 @@ public class RecordCreationSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec ensureDefaultSystemFiles() {
+	private HapiApiSpec ensureSystemStateAsExpected() {
+		final var EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 		try {
 			final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
 			final var stylized121 = Files.readString(Paths.get(defaultPermissionsLoc));
 			final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
 			return defaultHapiSpec("EnsureDefaultSystemFiles")
-					.given( ).when( ).then(
+					.given(
 							uploadDefaultFeeSchedules(GENESIS),
 							fileUpdate(API_PERMISSIONS)
 									.payingWith(GENESIS)
 									.contents(serde.toValidatedRawFile(stylized121))
+					).when().then(
+							getAccountDetails("0.0.800")
+									.payingWith(GENESIS)
+									.has(accountWith()
+											.expiry(33197904000L, 0)
+											.key(EMPTY_KEY)
+											.memo("")
+											.noAlias()
+											.noAllowances()),
+							getAccountDetails("0.0.801")
+									.payingWith(GENESIS)
+									.has(accountWith()
+											.expiry(33197904000L, 0)
+											.key(EMPTY_KEY)
+											.memo("")
+											.noAlias()
+											.noAllowances())
 					);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -413,9 +435,9 @@ public class RecordCreationSuite extends HapiApiSuite {
 				.given(
 						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
 				).when(
-						contractCreate("contract").bytecode("bytecode").via("createTxn")
+						contractCreate("PayReceivable").bytecode("bytecode").via("createTxn")
 				).then(
-						contractCall("contract", ContractResources.DEPOSIT_ABI, 1_000L)
+						contractCall("PayReceivable", "deposit", 1_000L)
 								.via("callTxn")
 								.sending(1_000L)
 				);

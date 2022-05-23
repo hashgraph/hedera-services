@@ -31,10 +31,12 @@ import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.services.fees.calculation.contract.ContractFeesModule;
 import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
+import com.hedera.services.fees.calculation.ethereum.EthereumFeesModule;
 import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.services.fees.calculation.token.TokenFeesModule;
+import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.keys.HederaKeyActivation;
@@ -52,19 +54,24 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.serdes.IoUtils;
+import com.hedera.services.state.virtual.IterableStorageUtils;
+import com.hedera.services.state.virtual.KeyPackingUtils;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.contracts.precompile.DescriptorUtils;
 import com.hedera.services.store.models.TopicConversion;
-import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
@@ -86,6 +93,11 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			ReleaseTwentyFiveMigration.class,
+			MapValueListUtils.class,
+			HFileMetaSerde.class,
+			IoUtils.class,
+			DescriptorUtils.class,
 			TokenMetaUtils.class,
 			MiscCryptoUtils.class,
 			NewRels.class,
@@ -107,7 +119,7 @@ class UtilsConstructorTest {
 			MerkleAccount.ChildIndices.class,
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
-			ReleaseTwentyTwoMigration.class,
+			ReleaseTwentySixMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,
@@ -115,7 +127,6 @@ class UtilsConstructorTest {
 			MiscSpeedometers.Names.class,
 			MiscSpeedometers.Descriptions.class,
 			ServicesStatsConfig.class,
-			GrpcUtils.class,
 			PresolvencyFlaws.class,
 			PureValidation.class,
 			TokenListChecks.class,
@@ -130,6 +141,7 @@ class UtilsConstructorTest {
 			SubmissionModule.class,
 			ConsensusFeesModule.class,
 			ContractFeesModule.class,
+			EthereumFeesModule.class,
 			CryptoFeesModule.class,
 			FileFeesModule.class,
 			ScheduleFeesModule.class,
@@ -149,7 +161,10 @@ class UtilsConstructorTest {
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
-			SerializationUtils.class
+			SerializationUtils.class,
+			KeyPackingUtils.class,
+			IterableStorageUtils.class,
+			EthereumLogicModule.class
 	));
 
 	@Test

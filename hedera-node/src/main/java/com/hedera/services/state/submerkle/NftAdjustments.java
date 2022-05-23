@@ -25,8 +25,8 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,7 +48,17 @@ public class NftAdjustments implements SelfSerializable {
 	private List<EntityId> receiverAccIds = Collections.emptyList();
 
 	public NftAdjustments() {
-		/* RuntimeConstructable */
+		// RuntimeConstructable
+	}
+
+	public NftAdjustments(
+			final long[] serialNums,
+			final List<EntityId> senderAccIds,
+			final List<EntityId> receiverAccIds
+	) {
+		this.serialNums = serialNums;
+		this.senderAccIds = senderAccIds;
+		this.receiverAccIds = receiverAccIds;
 	}
 
 	@Override

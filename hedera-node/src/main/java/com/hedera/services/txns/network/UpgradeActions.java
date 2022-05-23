@@ -23,13 +23,15 @@ package com.hedera.services.txns.network;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.system.SwirldDualState;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -148,6 +150,7 @@ public class UpgradeActions {
 		log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
 		return runAsync(() -> {
 			try {
+				FileUtils.cleanDirectory(new File(artifactsLoc));
 				unzipAction.unzip(archiveData, artifactsLoc);
 				log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
 				writeSecondMarker(marker, now);

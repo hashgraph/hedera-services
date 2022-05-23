@@ -27,9 +27,10 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.contract.ExtantContractContext;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
@@ -41,17 +42,17 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -83,8 +84,10 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * adjusts only two ℏ accounts using one signature, the base TokenFeeScheduleUpdate
  * adds a single custom HTS fee to a token, etc.)
  */
-class BaseOperationUsage {
+public class BaseOperationUsage {
 	static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
+	public static final int CANONICAL_NUM_CONTRACT_KV_PAIRS = 64;
+	public static final int CANONICAL_CONTRACT_BYTECODE_SIZE = 4096;
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
@@ -141,8 +144,13 @@ class BaseOperationUsage {
 	 * 		the type of interest
 	 * @return the total resource usage of the base configuration
 	 */
-	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
+	UsageAccumulator baseUsageFor(final HederaFunctionality function, final SubType type) {
 		switch (function) {
+			case ContractAutoRenew:
+				if (type == DEFAULT) {
+					return contractAutoRenew();
+				}
+				break;
 			case FileAppend:
 				if (type == DEFAULT) {
 					return fileAppend();
@@ -179,9 +187,9 @@ class BaseOperationUsage {
 					return cryptoApproveAllowance();
 				}
 				break;
-			case CryptoAdjustAllowance:
+			case CryptoDeleteAllowance:
 				if (type == DEFAULT) {
-					return cryptoAdjustAllowance();
+					return cryptoDeleteAllowance();
 				}
 				break;
 			case TokenCreate:
@@ -238,6 +246,29 @@ class BaseOperationUsage {
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
+	UsageAccumulator contractAutoRenew() {
+		final var accountContext = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(0)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentMaxAutomaticAssociations(0)
+				.build();
+		final var contractContext = new ExtantContractContext(
+				CANONICAL_NUM_CONTRACT_KV_PAIRS,
+				CANONICAL_CONTRACT_BYTECODE_SIZE,
+				accountContext);
+		final var into = new UsageAccumulator();
+		into.addRbs(THREE_MONTHS_IN_SECONDS * contractContext.currentRb());
+		into.addSbs(THREE_MONTHS_IN_SECONDS * contractContext.currentSb());
+		return into;
+	}
+
 	UsageAccumulator cryptoCreate(int autoAssocSlots) {
 		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
 				.setMemo(BLANK_MEMO)
@@ -268,9 +299,9 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
@@ -280,35 +311,25 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	UsageAccumulator cryptoAdjustAllowance() {
+	UsageAccumulator cryptoDeleteAllowance() {
 		final var now = Instant.now().getEpochSecond();
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody
+				.setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody
 						.newBuilder()
-						.addCryptoAllowances(CryptoAllowance.newBuilder()
-								.setSpender(AN_ACCOUNT)
-								.setAmount(2L)
+						.addNftAllowances(NftRemoveAllowance.newBuilder()
+								.setOwner(AN_ACCOUNT)
+								.setTokenId(target)
+								.addAllSerialNumbers(SINGLE_SERIAL_NUM)
 								.build()))
 				.build();
-		final var ctx = ExtantCryptoContext.newBuilder()
-				.setCurrentExpiry(now + THREE_MONTHS_IN_SECONDS)
-				.setCurrentMemo(BLANK_MEMO)
-				.setCurrentKey(A_KEY)
-				.setCurrentlyHasProxy(false)
-				.setCurrentNumTokenRels(0)
-				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(List.of(GrantedCryptoAllowance.newBuilder()
-						.setSpender(AN_ACCOUNT)
-						.setAmount(1L)
-						.build()))
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
-				.build();
 
-		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
+		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(canonicalTxn.getCryptoDeleteAllowance(),
+				now);
 		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoAdjustAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoAdjustMeta,
-				ctx, into);
+		CRYPTO_OPS_USAGE.cryptoDeleteAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS,
+				cryptoDeleteAllowanceMeta, into);
 		return into;
 	}
 
@@ -328,9 +349,9 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();
@@ -346,7 +367,6 @@ class BaseOperationUsage {
 		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
-
 
 	UsageAccumulator tokenFreezeAccount() {
 		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();

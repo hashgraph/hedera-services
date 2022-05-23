@@ -25,8 +25,8 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,9 +39,9 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -50,7 +50,8 @@ import java.util.Set;
  */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
-	private CodeCache codeCache;
+	private final CodeCache codeCache;
+	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CreateEvmTxProcessor(
@@ -60,10 +61,20 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GlobalDynamicProperties globalDynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final StorageExpiry storageExpiry,
+			final InHandleBlockMetaSource blockMetaSource
 	) {
-		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		super(
+				worldState,
+				livePricesSource,
+				globalDynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap,
+				blockMetaSource);
 		this.codeCache = codeCache;
+		this.storageExpiry = storageExpiry;
 	}
 
 	public TransactionProcessingResult execute(
@@ -73,9 +84,9 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes code,
 			final Instant consensusTime,
-			final long expiry
+			final long hapiExpiry
 	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
 		return super.execute(
 				sender,
@@ -87,8 +98,42 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				true,
 				consensusTime,
 				false,
-				OptionalLong.of(expiry),
-				receiver);
+				storageExpiry.hapiCreationOracle(hapiExpiry),
+				receiver,
+				null,
+				0,
+				null);
+	}
+
+	public TransactionProcessingResult executeEth(
+			final Account sender,
+			final Address receiver,
+			final long providedGasLimit,
+			final long value,
+			final Bytes code,
+			final Instant consensusTime,
+			final long hapiExpiry,
+			final Account relayer,
+			final BigInteger providedMaxGasPrice,
+			final long maxGasAllowance
+	) {
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				storageExpiry.hapiCreationOracle(hapiExpiry),
+				receiver,
+				providedMaxGasPrice,
+				maxGasAllowance,
+				relayer);
 	}
 
 	@Override
@@ -99,10 +144,9 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	@Override
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder commonInitialFrame,
-			final HederaWorldUpdater updater,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		codeCache.invalidate(to);
 
 		return commonInitialFrame

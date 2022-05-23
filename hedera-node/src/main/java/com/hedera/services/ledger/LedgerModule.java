@@ -21,19 +21,17 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -63,9 +61,7 @@ public interface LedgerModule {
 			final EntityIdSource ids,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokenViewsManager uniqueTokenViewsManager,
-			final AccountRecordsHistorian recordsHistorian,
-			final GlobalDynamicProperties dynamicProperties,
+			final RecordsHistorian recordsHistorian,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final AutoCreationLogic autoCreationLogic,
 			final TransferLogic transferLogic
@@ -77,11 +73,9 @@ public interface LedgerModule {
 				validator,
 				sideEffectsTracker,
 				recordsHistorian,
-				dynamicProperties,
 				accountsLedger,
 				transferLogic,
 				autoCreationLogic);
-		ledger.setTokenViewsManager(uniqueTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);
 		return ledger;

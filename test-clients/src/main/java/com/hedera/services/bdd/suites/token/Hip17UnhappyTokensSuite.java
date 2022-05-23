@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +39,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -59,7 +59,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -105,7 +104,6 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				cannotGetNftInfosWhenDeleted(),
 				canStillGetNftInfoWhenDeleted(),
 				cannotWipeNftWhenDeleted(),
 				cannotBurnNftWhenDeleted(),
@@ -119,35 +117,13 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 				cannotUnfreezeNftWhenDeleted(),
 
 				// TODO: when auto removal and expiry implemented, enable the following and
-				// also add all those scenaios like above to complete the matrix.
-				//cannotGetNftInfoWhenExpired()
-				//cannotGetNftInfoWhenAutoRemoved(),
-				//autoRemovalCasesSuiteCleanup()
+				// also add all those scenarios like above to complete the matrix.
+				// cannotGetNftInfoWhenExpired()
+				// cannotGetNftInfoWhenAutoRemoved(),
+				// autoRemovalCasesSuiteCleanup()
 				}
 		);
 	}
-	private HapiApiSpec cannotGetNftInfosWhenDeleted() {
-		return defaultHapiSpec("cannotGetNftInfosWhenDeleted")
-				.given(
-						newKeyNamed(SUPPLY_KEY),
-						newKeyNamed(ADMIN_KEY),
-						cryptoCreate(TOKEN_TREASURY).key(ADMIN_KEY),
-						tokenCreate(NFTdeleted)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0)
-								.supplyType(TokenSupplyType.INFINITE)
-								.supplyKey(SUPPLY_KEY)
-								.adminKey(ADMIN_KEY)
-								.treasury(TOKEN_TREASURY),
-						mintToken(NFTdeleted, List.of(metadata(FIRST_MEMO)))
-				).when(
-						tokenDelete(NFTdeleted)
-				).then(
-						getTokenNftInfos(NFTdeleted, 0, 3)
-								.hasCostAnswerPrecheck(TOKEN_WAS_DELETED)
-				);
-	}
-
 	private HapiApiSpec canStillGetNftInfoWhenDeleted() {
 		return defaultHapiSpec("canStillGetNftInfoWhenDeleted")
 				.given(
@@ -502,7 +478,7 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(
-										enablingAutoRenewWith(1, 0L, 2, 2)),
+										AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(NFTexpired)
@@ -528,7 +504,7 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(
-										enablingAutoRenewWith(1, 0L, 100, 100))
+										AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 100, 100))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(SUPPLY_KEY),
 						newKeyNamed(ADMIN_KEY),

@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -30,15 +29,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,7 +72,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
-	private Optional<Consumer<AccountID>> newIdObserver = Optional.empty();
+	private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
+	private Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
 
 
 	@Override
@@ -94,8 +86,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		return name.equals(account) ? key : spec.registry().getKey(name);
 	}
 
-	public HapiCryptoCreate exposingCreatedIdTo(Consumer<AccountID> newIdObserver) {
-		this.newIdObserver = Optional.of(newIdObserver);
+	public HapiCryptoCreate exposingCreatedIdTo(Consumer<AccountID> newAccountIdObserver) {
+		this.newAccountIdObserver = Optional.of(newAccountIdObserver);
 		return this;
 	}
 
@@ -247,7 +239,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		if (actualStatus != SUCCESS || forgettingEverything) {
 			return;
 		}
-		final var createdId = lastReceipt.getAccountID();
+		final var createdAccountId = lastReceipt.getAccountID();
+		final var createdTokenId = lastReceipt.getTokenID();
 		if (recharging) {
 			spec.registry().setRecharging(account, initialBalance.orElse(spec.setup().defaultBalance()));
 			if (rechargeWindow.isPresent()) {
@@ -255,8 +248,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 			}
 		}
 		spec.registry().saveKey(account, key);
-		spec.registry().saveAccountId(account, createdId);
-		newIdObserver.ifPresent(obs -> obs.accept(createdId));
+		spec.registry().saveAccountId(account, createdAccountId);
+		newAccountIdObserver.ifPresent(obs -> obs.accept(createdAccountId));
+		newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
 		if (advertiseCreation) {

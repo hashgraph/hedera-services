@@ -33,9 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -77,7 +79,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.rates.nextHbarEquiv", 1),
 			entry("bootstrap.rates.nextCentEquiv", 15),
 			entry("bootstrap.rates.nextExpiry", 4102444800L),
-			entry("bootstrap.system.entityExpiry", 4102444800L),
+			entry("bootstrap.system.entityExpiry", 1654819200L),
 			entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
@@ -95,21 +97,25 @@ class BootstrapPropertiesTest {
 			entry("contracts.allowCreate2", true),
 			entry("contracts.defaultLifetime", 7890000L),
 			entry("contracts.localCall.estRetBytes", 32),
-			entry("contracts.maxGas", 300000),
+			entry("contracts.maxGas", 8000000),
 			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
 			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
-			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
+			entry("contracts.frontendThrottleMaxGasLimit", 8000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
-			entry("contracts.redirectTokenCalls", false),
+			entry("contracts.redirectTokenCalls", true),
+			entry("contracts.precompile.exchangeRateGasCost", 100L),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
-			entry("contracts.precompile.exportRecordResults", false),
+			entry("contracts.precompile.exportRecordResults", true),
+			entry("contracts.precompile.htsEnableTokenCreate", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
+			entry("entities.systemDeletable", EnumSet.of(EntityType.FILE)),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),
@@ -124,7 +130,8 @@ class BootstrapPropertiesTest {
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
 			entry("hedera.exportAccountsOnStartup", false),
-			entry("hedera.numReservedSystemEntities", 1_000L),
+			entry("hedera.firstUserEntity", 1001L),
+			entry("hedera.numReservedSystemEntities", 750L),
 			entry("hedera.prefetch.queueCapacity", 10000),
 			entry("hedera.prefetch.threadPoolSize", 2),
 			entry("hedera.prefetch.codeCacheTtlSecs", 120),
@@ -149,7 +156,9 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
-			entry("autorenew.isEnabled", false),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
+			entry("autoRemove.maxReturnedNftsPerTouch", 10),
+			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),
@@ -172,6 +181,7 @@ class BootstrapPropertiesTest {
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
 			entry("queries.blob.lookupRetries", 3),
+			entry("tokens.maxRelsPerInfoQuery", 1_000),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes", 100),
@@ -197,7 +207,6 @@ class BootstrapPropertiesTest {
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
 			entry("tokens.nfts.areEnabled", true),
-			entry("tokens.nfts.areQueriesEnabled", true),
 			entry("tokens.nfts.useTreasuryWildcards", true),
 			entry("tokens.nfts.maxQueryRange", 100L),
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
@@ -208,7 +217,9 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
-			entry("hedera.allowances.maxAccountLimit", 100)
+			entry("hedera.allowances.maxAccountLimit", 100),
+			entry("hedera.allowances.isEnabled", true),
+			entry("entities.limitTokenAssociations", false)
 	);
 
 	@Test
@@ -273,6 +284,7 @@ class BootstrapPropertiesTest {
 
 		subject.ensureProps();
 
+		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
 	}
 

@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -36,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +52,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -65,23 +66,29 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AbstractStackedLedgerUpdaterTest {
 	@Mock
+	private CodeCache codeCache;
+	@Mock
+	private EntityAccess entityAccess;
+	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private ContractCustomizer customizer;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
 
-	private AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> subject;
+	private AbstractStackedLedgerUpdater<HederaWorldState, Account> subject;
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
 	void setUp() {
 		setupLedgers();
 
-		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
+		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(), customizer);
 
-		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
+		subject = (AbstractStackedLedgerUpdater<HederaWorldState, Account>) wrapped.updater();
 	}
 
 	@Test
@@ -113,8 +120,7 @@ class AbstractStackedLedgerUpdaterTest {
 
 	@Test
 	void getForMutationWrapsParentMutable() {
-		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+		final var account = new WorldStateAccount(aAddress, Wei.of(aBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(account);
 
 		final var mutableAccount = subject.getForMutation(aAddress);
@@ -162,8 +168,7 @@ class AbstractStackedLedgerUpdaterTest {
 	@Test
 	void commitsNewlyModifiedAccountAsExpected() {
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
-		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+		final var account = new WorldStateAccount(aAddress, Wei.of(aBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(account);
 		ledgers.accounts().create(aAccount);
 		ledgers.accounts().set(aAccount, BALANCE, aBalance);

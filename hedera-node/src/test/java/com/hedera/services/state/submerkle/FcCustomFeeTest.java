@@ -33,8 +33,8 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -269,7 +269,6 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationRequiresAssociatedCollectorAtUpdateForFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
@@ -288,9 +287,8 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationWorksAtUpdateForWellBehavedFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
-		given(collectionAccount.isAssociatedWith(tokenId)).willReturn(true);
+		given(tokenStore.hasAssociation(token, collectionAccount)).willReturn(true);
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
 

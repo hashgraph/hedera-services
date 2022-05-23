@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -31,8 +30,9 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -52,8 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.RELS_LISTING;
+import static com.hedera.services.txns.token.CreateLogic.MODEL_FACTORY;
+import static com.hedera.services.txns.token.CreateLogic.RELS_LISTING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -95,8 +95,6 @@ class TokenCreateTransitionLogicTest {
 	private TransactionBody tokenCreateTxn;
 
 	@Mock
-	private SideEffectsTracker sideEffectsTracker;
-	@Mock
 	private Creation creation;
 	@Mock
 	private AccountStore accountStore;
@@ -109,7 +107,7 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -117,13 +115,16 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
+	private CreateLogic createLogic;
+	private CreateChecks createChecks;
 	private TokenCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore,
-				txnCtx, dynamicProperties, ids, sigImpactHistorian, sideEffectsTracker);
+		createLogic = new CreateLogic(
+				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
+		createChecks = new CreateChecks(dynamicProperties, validator);
+		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}
 
 	@Test
@@ -131,7 +132,8 @@ class TokenCreateTransitionLogicTest {
 		final List<FcTokenAssociation> mockAssociations = List.of(
 				new FcTokenAssociation(1L, 2L));
 		givenValidTxnCtx();
-		subject.setCreationFactory(creationFactory);
+
+		createLogic.setCreationFactory(creationFactory);
 
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -142,7 +144,6 @@ class TokenCreateTransitionLogicTest {
 				tokenStore,
 				dynamicProperties,
 				tokenCreateTxn.getTokenCreation())).willReturn(creation);
-		given(creation.newAssociations()).willReturn(mockAssociations);
 		given(creation.newTokenId()).willReturn(createdId);
 
 		subject.doStateTransition();
@@ -150,7 +151,6 @@ class TokenCreateTransitionLogicTest {
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
-		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
 		verify(sigImpactHistorian).markEntityChanged(createdId.num());
 	}
 

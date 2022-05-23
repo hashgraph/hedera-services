@@ -21,14 +21,19 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -89,7 +94,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	private final WorldLedgers trackingLedgers;
 
 	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
-	private AccountRecordsHistorian recordsHistorian = null;
+	private RecordsHistorian recordsHistorian = null;
 
 	protected Set<Address> deletedAccounts = new HashSet<>();
 	protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
@@ -112,6 +117,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	 */
 	protected abstract A getForMutation(Address address);
 
+	/**
+	 * Returns the {@link ContractCustomizer} to use for the pending creation.
+	 *
+	 * @return the pending creation's customizer
+	 */
+	public abstract ContractCustomizer customizerForPendingCreation();
+
 	@Override
 	public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
 		final var curAliases = aliases();
@@ -125,6 +137,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			if (curAliases.isInUse(addressOrAlias)) {
 				curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
 			}
+			customizerForPendingCreation().customize(newAccountId, curAccounts);
 		}
 
 		newMutable.setNonce(nonce);
@@ -135,20 +148,28 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	@Override
 	public Account get(final Address addressOrAlias) {
+		if (!addressOrAlias.equals(trackingLedgers.canonicalAddress(addressOrAlias))) {
+			return null;
+		}
+
 		final var address = aliases().resolveForEvm(addressOrAlias);
 
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
 		} else {
-			return this.deletedAccounts.contains(address) ? null : this.world.get(address);
+			if (this.deletedAccounts.contains(address)) {
+				return null;
+			}
+			if (this.world.getClass() == HederaWorldState.class) {
+				return this.world.get(address);
+			}
+			return this.world.get(addressOrAlias);
 		}
 	}
 
 	@Override
-	public EvmAccount getAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-
+	public EvmAccount getAccount(final Address address) {
 		final var extantMutable = updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return new WrappedEvmAccount(extantMutable);
@@ -213,7 +234,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	public void manageInProgressRecord(
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final ExpirableTxnRecord.Builder recordSoFar,
 			final TransactionBody.Builder syntheticBody
 	) {
@@ -224,9 +245,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
-	public WorldLedgers wrappedTrackingLedgers() {
-		final var wrappedLedgers = trackingLedgers.wrapped();
-		wrappedLedgers.accounts().setCommitInterceptor(this::onAccountPropertyChange);
+	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
+		return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));
+	}
+
+	private WorldLedgers withChangeObserver(final WorldLedgers wrappedLedgers) {
+		final var wrappedAccounts = wrappedLedgers.accounts();
+		if (wrappedAccounts != null) {
+			wrappedAccounts.setPropertyChangeObserver(this::onAccountPropertyChange);
+		}
 		return wrappedLedgers;
 	}
 
@@ -255,11 +282,11 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			}
 
 			final var newBalance = (long) newValue;
-			updatedAccount.setBalanceFromCommitInterceptor(Wei.of(newBalance));
+			updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));
 		}
 	}
 
-	protected WorldLedgers trackingLedgers() {
+	public WorldLedgers trackingLedgers() {
 		return trackingLedgers;
 	}
 
@@ -284,6 +311,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
+	}
+
+	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> trackingTokens() {
+		return trackingLedgers.tokens();
 	}
 
 	public ContractAliases aliases() {

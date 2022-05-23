@@ -20,16 +20,23 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.hyperledger.besu.evm.Gas;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
+
+import static com.hedera.services.context.properties.EntityType.ACCOUNT;
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
 
 @Singleton
 public class GlobalDynamicProperties {
@@ -43,6 +50,7 @@ public class GlobalDynamicProperties {
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
 	private int maxTokensPerAccount;
+	private int maxTokenRelsPerInfoQuery;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
@@ -64,14 +72,18 @@ public class GlobalDynamicProperties {
 	private int minValidityBuffer;
 	private int maxGas;
 	private int chainId;
+	private byte[] chainIdBytes;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
-	private boolean autoRenewEnabled;
+	private boolean atLeastOneAutoRenewTargetType;
+	private boolean expireAccounts;
+	private boolean expireContracts;
 	private int autoRenewNumberOfEntitiesToScan;
 	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	private long autoRenewGracePeriod;
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
+	private Duration grpcMinAutoRenewDuration;
 	private int localCallEstRetBytes;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
@@ -103,6 +115,13 @@ public class GlobalDynamicProperties {
 	private boolean create2Enabled;
 	private boolean redirectTokenCalls;
 	private boolean enableTraceability;
+	private boolean enableAllowances;
+	private boolean limitTokenAssociations;
+	private boolean enableHTSPrecompileCreate;
+	private int maxPurgedKvPairsPerTouch;
+	private KnownBlockValues knownBlockValues;
+	private int maxReturnedNftsPerTouch;
+	private Gas exchangeRateGasReq;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -122,6 +141,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
+		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -147,15 +167,16 @@ public class GlobalDynamicProperties {
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		chainId = properties.getIntProperty("contracts.chainId");
+		chainIdBytes = Integers.toBytes(chainId);
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
-		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
 		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
 				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
 		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
+		grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
@@ -188,27 +209,54 @@ public class GlobalDynamicProperties {
 		create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
+		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
+		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
+		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
+		limitTokenAssociations = properties.getBooleanProperty("entities.limitTokenAssociations");
+		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
+		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
+		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
+		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+		exchangeRateGasReq = Gas.of(properties.getLongProperty("contracts.precompile.exchangeRateGasCost"));
 	}
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
 	}
 
+	public int maxTokensRelsPerInfoQuery() {
+		return maxTokenRelsPerInfoQuery;
+	}
+
 	public int maxCustomFeesAllowed() {
 		return maxCustomFeesAllowed;
 	}
 
-	public int maxNftMetadataBytes() { return maxNftMetadataBytes; }
+	public int maxNftMetadataBytes() {
+		return maxNftMetadataBytes;
+	}
 
-	public int maxBatchSizeBurn() { return maxBatchSizeBurn; }
+	public int maxBatchSizeBurn() {
+		return maxBatchSizeBurn;
+	}
 
-	public int maxNftTransfersLen() { return maxNftTransfersLen; }
+	public int maxNftTransfersLen() {
+		return maxNftTransfersLen;
+	}
 
-	public int maxBatchSizeWipe() { return maxBatchSizeWipe; }
+	public int maxBatchSizeWipe() {
+		return maxBatchSizeWipe;
+	}
 
-	public int maxBatchSizeMint() { return maxBatchSizeMint; }
+	public int maxBatchSizeMint() {
+		return maxBatchSizeMint;
+	}
 
-	public long maxNftQueryRange() { return maxNftQueryRange; }
+	public long maxNftQueryRange() {
+		return maxNftQueryRange;
+	}
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;
@@ -286,8 +334,12 @@ public class GlobalDynamicProperties {
 		return maxGas;
 	}
 
-	public int getChainId() {
+	public int chainId() {
 		return chainId;
+	}
+
+	public byte[] chainIdBytes() {
+		return chainIdBytes;
 	}
 
 	public long defaultContractLifetime() {
@@ -298,8 +350,8 @@ public class GlobalDynamicProperties {
 		return feesTokenTransferUsageMultiplier;
 	}
 
-	public boolean autoRenewEnabled() {
-		return autoRenewEnabled;
+	public boolean shouldAutoRenewSomeEntityType() {
+		return atLeastOneAutoRenewTargetType;
 	}
 
 	public int autoRenewNumberOfEntitiesToScan() {
@@ -320,6 +372,10 @@ public class GlobalDynamicProperties {
 
 	public long minAutoRenewDuration() {
 		return minAutoRenewDuration;
+	}
+
+	public Duration typedMinAutoRenewDuration() {
+		return grpcMinAutoRenewDuration;
 	}
 
 	public int localCallEstRetBytes() {
@@ -352,7 +408,7 @@ public class GlobalDynamicProperties {
 
 	public boolean areNftsEnabled() {
 		return areNftsEnabled;
-        }
+	}
 
 	public long maxNftMints() {
 		return maxNftMints;
@@ -388,7 +444,7 @@ public class GlobalDynamicProperties {
 
 	public long consensusThrottleGasLimit() {
 		return consensusThrottleMaxGasLimit;
-        }
+	}
 
 	public long htsDefaultGasCost() {
 		return htsDefaultGasCost;
@@ -422,9 +478,13 @@ public class GlobalDynamicProperties {
 		return maxMostRecentQueryableRecords;
 	}
 
-	public int maxAllowanceLimitPerTransaction() {return maxAllowanceLimitPerTransaction;}
+	public int maxAllowanceLimitPerTransaction() {
+		return maxAllowanceLimitPerTransaction;
+	}
 
-	public int maxAllowanceLimitPerAccount() {return maxAllowanceLimitPerAccount;}
+	public int maxAllowanceLimitPerAccount() {
+		return maxAllowanceLimitPerAccount;
+	}
 
 	public boolean shouldExportPrecompileResults() {
 		return exportPrecompileResults;
@@ -438,5 +498,43 @@ public class GlobalDynamicProperties {
 		return create2Enabled;
 	}
 
-	public boolean isRedirectTokenCallsEnabled() { return redirectTokenCalls; }
+	public boolean isRedirectTokenCallsEnabled() {
+		return redirectTokenCalls;
+	}
+
+	public boolean areAllowancesEnabled() {
+		return enableAllowances;
+	}
+
+	public boolean shouldAutoRenewContracts() {
+		return expireContracts;
+	}
+
+	public boolean shouldAutoRenewAccounts() {
+		return expireAccounts;
+	}
+
+	public boolean areTokenAssociationsLimited() {
+		return limitTokenAssociations;
+	}
+
+	public boolean isHTSPrecompileCreateEnabled() {
+		return enableHTSPrecompileCreate;
+	}
+
+	public int getMaxPurgedKvPairsPerTouch() {
+		return maxPurgedKvPairsPerTouch;
+	}
+
+	public KnownBlockValues knownBlockValues() {
+		return knownBlockValues;
+	}
+
+	public int getMaxReturnedNftsPerTouch() {
+		return maxReturnedNftsPerTouch;
+	}
+
+	public Gas exchangeRateGasReq() {
+		return exchangeRateGasReq;
+	}
 }

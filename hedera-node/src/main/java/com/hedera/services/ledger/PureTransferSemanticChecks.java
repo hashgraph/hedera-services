@@ -21,9 +21,10 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -74,6 +75,7 @@ public class PureTransferSemanticChecks {
 		final var maxTokenAdjusts = validationProps.maxTokenAdjusts();
 		final var maxOwnershipChanges = validationProps.maxOwnershipChanges();
 		final var areNftsEnabled = validationProps.areNftsEnabled();
+		final var areAllowanceEnabled = validationProps.areAllowancesEnabled();
 
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();
 
@@ -86,9 +88,13 @@ public class PureTransferSemanticChecks {
 		if (!isAcceptableSize(hbarAdjusts, maxHbarAdjusts)) {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
+		// allowance transfers feature toggle flag
+		if (!areAllowanceEnabled && hasAllowanceTransfers(hbarAdjusts)) {
+			return NOT_SUPPORTED;
+		}
 
 		final var tokenValidity = validateTokenTransferSyntax(
-				tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
+				tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled, areAllowanceEnabled);
 		if (tokenValidity != OK) {
 			return tokenValidity;
 		}
@@ -99,22 +105,23 @@ public class PureTransferSemanticChecks {
 			List<TokenTransferList> tokenTransfersList,
 			int maxListLen,
 			int maxOwnershipChanges,
-			boolean areNftsEnabled
-	) {
+			boolean areNftsEnabled,
+			final boolean areAllowanceEnabled) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {
 			return OK;
 		}
 
-		return checkTokenTransfersList(tokenTransfersList, areNftsEnabled, maxOwnershipChanges, maxListLen);
+		return checkTokenTransfersList(tokenTransfersList,
+				areNftsEnabled, maxOwnershipChanges, maxListLen, areAllowanceEnabled);
 	}
 
 	private ResponseCodeEnum checkTokenTransfersList(
 			final List<TokenTransferList> tokenTransfersList,
 			final boolean areNftsEnabled,
 			final int maxOwnershipChanges,
-			final int maxListLen
-	) {
+			final int maxListLen,
+			final boolean areAllowanceEnabled) {
 		var count = 0;
 		var numOwnershipChanges = 0;
 		for (final var scopedTransfers : tokenTransfersList) {
@@ -135,6 +142,13 @@ public class PureTransferSemanticChecks {
 				}
 				count += transferCounts;
 			}
+			// allowance transfers feature toggle flag
+			if (!areAllowanceEnabled &&
+					(hasAllowanceTransfers(scopedTransfers.getTransfersList())
+							|| hasAllowanceNftTransfers(scopedTransfers.getNftTransfersList()))
+			) {
+				return NOT_SUPPORTED;
+			}
 			if (numOwnershipChanges > maxOwnershipChanges) {
 				return BATCH_SIZE_LIMIT_EXCEEDED;
 			}
@@ -151,8 +165,9 @@ public class PureTransferSemanticChecks {
 		}
 		ResponseCodeEnum validity;
 		final Set<TokenID> uniqueTokens = new HashSet<>();
+		final Set<Long> uniqueSerialNos = new HashSet<>();
 		for (var tokenTransfers : tokenTransfersList) {
-			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers);
+			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers, uniqueSerialNos);
 			if (validity != OK) {
 				return validity;
 			}
@@ -164,17 +179,22 @@ public class PureTransferSemanticChecks {
 	}
 
 	private ResponseCodeEnum validateScopedTransferSemantics(
-			Set<TokenID> uniqueTokens,
-			TokenTransferList tokenTransfers
+			final Set<TokenID> uniqueTokens,
+			final TokenTransferList tokenTransfers,
+			final Set<Long> uniqueSerialNos
 	) {
 		if (!tokenTransfers.hasToken()) {
 			return INVALID_TOKEN_ID;
 		}
 		uniqueTokens.add(tokenTransfers.getToken());
 		final var ownershipChanges = tokenTransfers.getNftTransfersList();
-		for (var ownershipChange : ownershipChanges) {
+		uniqueSerialNos.clear();
+		for (final var ownershipChange : ownershipChanges) {
 			if (ownershipChange.getSenderAccountID().equals(ownershipChange.getReceiverAccountID())) {
 				return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+			}
+			if (!uniqueSerialNos.add(ownershipChange.getSerialNumber())) {
+				return INVALID_ACCOUNT_AMOUNTS;
 			}
 		}
 
@@ -232,5 +252,19 @@ public class PureTransferSemanticChecks {
 
 	boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
 		return hbarAdjusts.size() <= maxHbarAdjusts;
+	}
+
+	boolean hasAllowanceTransfers(final List<AccountAmount> adjusts) {
+		for (var adjust : adjusts) {
+			if (adjust.getIsApproval()) return true;
+		}
+		return false;
+	}
+
+	boolean hasAllowanceNftTransfers(final List<NftTransfer> adjusts) {
+		for (var adjust : adjusts) {
+			if (adjust.getIsApproval()) return true;
+		}
+		return false;
 	}
 }

@@ -61,6 +61,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
+	private boolean searchKeysGlobally;
 	private Optional<TokenType> expectedTokenType = Optional.empty();
 	private Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
 	private OptionalInt expectedDecimals = OptionalInt.empty();
@@ -227,6 +228,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
+	public HapiGetTokenInfo searchKeysGlobally() {
+		searchKeysGlobally = true;
+		return this;
+	}
+
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
@@ -330,48 +336,48 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		assertFor(
 				actualInfo.getFreezeKey(),
 				expectedFreezeKey,
-				(n, r) -> r.getFreezeKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
 				"Wrong token freeze key!",
 				registry);
 		assertFor(
 				actualInfo.getAdminKey(),
 				expectedAdminKey,
-				(n, r) -> r.getAdminKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
 				"Wrong token admin key!",
 				registry);
 
 		assertFor(
 				actualInfo.getWipeKey(),
 				expectedWipeKey,
-				(n, r) -> r.getWipeKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
 				"Wrong token wipe key!",
 				registry);
 
 		assertFor(
 				actualInfo.getKycKey(),
 				expectedKycKey,
-				(n, r) -> r.getKycKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
 
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,
-				(n, r) -> r.getSupplyKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
 				"Wrong token supply key!",
 				registry);
 
 		assertFor(
 				actualInfo.getFeeScheduleKey(),
 				expectedFeeScheduleKey,
-				(n, r) -> r.getFeeScheduleKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
 				"Wrong token fee schedule key!",
 				registry);
 
 		assertFor(
 				actualInfo.getPauseKey(),
 				expectedPauseKey,
-				(n, r) -> r.getPauseKey(n),
+				(n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
 				"Wrong token pause key!",
 				registry);
 

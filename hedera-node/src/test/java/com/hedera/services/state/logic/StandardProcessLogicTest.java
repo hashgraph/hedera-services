@@ -24,17 +24,18 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,7 @@ class StandardProcessLogicTest {
 
 	private final long member = 1L;
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private final Instant postChildConsNow = Instant.ofEpochSecond(1_234_567L, 911);
 	private final Instant triggeredConsensusNow = consensusNow.minusNanos(windBackNanos);
 
 	@Mock
@@ -84,6 +86,10 @@ class StandardProcessLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
+	private RecordStreaming recordStreaming;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -94,16 +100,18 @@ class StandardProcessLogicTest {
 	void setUp() {
 		subject = new StandardProcessLogic(
 				expiries, invariantChecks,
-				expandHandleSpan, autoRenewal, txnManager,
-				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties);
+				expandHandleSpan, recordsHistorian, autoRenewal, txnManager,
+				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties, recordStreaming);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
-		final InOrder inOrder = inOrder(expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian);
+		final InOrder inOrder = inOrder(
+				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
+		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(postChildConsNow);
 
 		// when:
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
@@ -112,10 +120,11 @@ class StandardProcessLogicTest {
 		inOrder.verify(sigImpactHistorian).setChangeTime(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
 		inOrder.verify(sigImpactHistorian).purge();
+		inOrder.verify(recordStreaming).resetBlockNo();
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();
-		inOrder.verify(autoRenewal).execute(consensusNow);
+		inOrder.verify(autoRenewal).execute(postChildConsNow);
 	}
 
 	@Test
@@ -136,13 +145,14 @@ class StandardProcessLogicTest {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, triggeredConsensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
+		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(postChildConsNow);
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
 		verify(expiries).purge(consensusNow.getEpochSecond());
 		verify(txnManager).process(accessor, triggeredConsensusNow, member);
 		verify(txnManager).process(triggeredAccessor, consensusNow, member);
-		verify(autoRenewal).execute(consensusNow);
+		verify(autoRenewal).execute(postChildConsNow);
 	}
 
 	@Test

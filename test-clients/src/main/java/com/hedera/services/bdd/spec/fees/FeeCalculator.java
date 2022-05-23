@@ -62,6 +62,10 @@ public class FeeCalculator {
 		this.provider = provider;
 	}
 
+	public Map<HederaFunctionality, Map<SubType, FeeData>> getCurrentOpFeeData() {
+		return opFeeData;
+	}
+
 	public void init() {
 		if (setup.useFixedFee()) {
 			usingFixedFee = true;
@@ -75,7 +79,7 @@ public class FeeCalculator {
 		tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
 	}
 
-	private Map<SubType, FeeData> feesListToMap(List<FeeData> feesList) {
+	public static Map<SubType, FeeData> feesListToMap(List<FeeData> feesList) {
 		Map<SubType, FeeData> feeDataMap = new HashMap<>();
 		for (FeeData feeData : feesList) {
 			feeDataMap.put(feeData.getSubType(), feeData);
