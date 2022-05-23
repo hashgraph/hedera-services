@@ -25,12 +25,6 @@ plugins {
 
 description = "Hedera Services Node"
 
-repositories {
-    maven {
-        url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
-    }
-}
-
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 

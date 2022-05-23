@@ -46,6 +46,10 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
     }
+
+    maven {
+        url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
+    }
 }
 
 // Enable maven publications
