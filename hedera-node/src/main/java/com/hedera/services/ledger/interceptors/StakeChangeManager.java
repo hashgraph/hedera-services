@@ -94,8 +94,8 @@ public class StakeChangeManager {
 	}
 
 	public void updateStakedToMe(
-			final long delta,
 			@NotNull final int stakeeI,
+			final long delta,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var mutableChanges = new EnumMap<>(pendingChanges.changes(stakeeI));

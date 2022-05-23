@@ -154,7 +154,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			final var curNodeId = (account != null) ? account.getStakedId() : 0L;
 			final var newNodeId = manager.getNodeStakeeNum(changes);
-			if (curNodeId != 0 && curNodeId != newNodeId) {
+			if (curNodeId < 0 && curNodeId != newNodeId) {
 				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
 				// isDeclineReward option
 				manager.withdrawStake(
@@ -162,7 +162,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 						account.getBalance() + account.getStakedToMe(),
 						manager.finalDeclineRewardGiven(account, changes));
 			}
-			if (newNodeId != 0) {
+			if (newNodeId < 0) {
 				// Award updated stake to new node stakee to the fields stakeRewarded or stakeNotRewarded from
 				// ex-stakee based on isDeclineReward option
 				manager.awardStake(
@@ -184,20 +184,20 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = manager.getAccountStakeeNum(changes);
 
-		if (curStakeeNum != 0 && curStakeeNum != newStakeeNum) {
+		if (curStakeeNum > 0 && curStakeeNum != newStakeeNum) {
 			// Stakee has been replaced, withdraw initial balance from ex-stakee
 			final var exStakeeI = findOrAdd(curStakeeNum, pendingChanges);
-			manager.updateStakedToMe(-account.getBalance(), exStakeeI, pendingChanges);
+			manager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(curStakeeNum)) {
 				payRewardIfRewardable(pendingChanges, exStakeeI, hasBeenRewarded, latestEligibleStart);
 			}
 		}
-		if (newStakeeNum != 0) {
+		if (newStakeeNum > 0) {
 			// Add pending balance to new stakee
 			final var newStakeeI = findOrAdd(newStakeeNum, pendingChanges);
-			manager.updateStakedToMe(finalBalanceGiven(account, changes), newStakeeI, pendingChanges);
+			manager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(newStakeeNum)) {

@@ -89,7 +89,7 @@ public class StakeChangeManagerTest {
 		pendingChanges.include(counterpartyId, counterparty, changes);
 		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
 
-		subject.updateStakedToMe(20L, 0, pendingChanges);
+		subject.updateStakedToMe(0, 20L, pendingChanges);
 		assertEquals(2020L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
 
 
@@ -97,7 +97,7 @@ public class StakeChangeManagerTest {
 		pendingChanges.clear();
 		pendingChanges.include(counterpartyId, counterparty, changes);
 		assertEquals(null, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-		subject.updateStakedToMe(20L, 0, pendingChanges);
+		subject.updateStakedToMe(0, 20L, pendingChanges);
 		assertEquals(20L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
 	}
 
@@ -138,7 +138,7 @@ public class StakeChangeManagerTest {
 	}
 
 	@Test
-	void getsFieldsCorrectlyFromChanges(){
+	void getsFieldsCorrectlyFromChanges() {
 		final var changes = randomStakeFieldChanges(100L);
 
 		assertEquals(0L, subject.getAccountStakeeNum(changes));
@@ -149,7 +149,7 @@ public class StakeChangeManagerTest {
 	}
 
 	@Test
-	void getsFieldsCorrectlyIfNotFromChanges(){
+	void getsFieldsCorrectlyIfNotFromChanges() {
 		final var changes = randomNotStakeFieldChanges();
 
 		given(account.getBalance()).willReturn(1000L);

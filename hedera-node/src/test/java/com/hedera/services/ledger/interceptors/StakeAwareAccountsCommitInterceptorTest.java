@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -274,6 +275,40 @@ class StakeAwareAccountsCommitInterceptorTest {
 		verify(rewardCalculator).updateRewardChanges(counterparty, pendingChanges.changes(0));
 		verify(sideEffectsTracker).trackRewardPayment(eq(counterpartyId.getAccountNum()), anyLong());
 		assertEquals(1, hasBeenRewarded.size());
+	}
+
+	@Test
+	void stakingEffectsWorkAsExpected() {
+		final var inorderST = inOrder(sideEffectsTracker);
+		final var inorderM = inOrder(manager);
+
+		final var pendingChanges = buildPendingChanges();
+		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		given(rewardCalculator.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(rewardCalculator.updateRewardChanges(counterparty, pendingChanges.changes(0))).willReturn(10l);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		willCallRealMethod().given(manager).getNodeStakeeNum(any());
+		willCallRealMethod().given(manager).getAccountStakeeNum(any());
+		willCallRealMethod().given(manager).finalStakedToMeGiven(any(), any());
+		willCallRealMethod().given(manager).finalDeclineRewardGiven(any(), any());
+
+		subject.preview(pendingChanges);
+
+		inorderST.verify(sideEffectsTracker).trackHbarChange(321L, -455L);
+		inorderST.verify(sideEffectsTracker).trackHbarChange(800L, 99L);
+		inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, 10L);
+		inorderM.verify(manager, never()).updateStakedToMe(anyInt(), anyLong(), any());
+		inorderM.verify(manager).getAccountStakeeNum(pendingChanges.changes(0));
+		inorderM.verify(manager).getAccountStakeeNum(pendingChanges.changes(1));
+		inorderM.verify(manager).getNodeStakeeNum(pendingChanges.changes(0));
+		inorderM.verify(manager).finalDeclineRewardGiven(counterparty, pendingChanges.changes(0));
+		inorderM.verify(manager).withdrawStake(1L, counterpartyBalance + counterparty.getStakedToMe(), false);
+		inorderM.verify(manager).finalStakedToMeGiven(counterparty, pendingChanges.changes(0));
+		inorderM.verify(manager).awardStake(2L, 2100, false);
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingChanges() {
