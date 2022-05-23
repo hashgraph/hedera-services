@@ -778,6 +778,10 @@ class StateViewTest {
 				.setContractAccountID(expectedAddress)
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(asAccount("0.0.10"))
+						.build())
 				.build();
 
 		final var actualResponse =
