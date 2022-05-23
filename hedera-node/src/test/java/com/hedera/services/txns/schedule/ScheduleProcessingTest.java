@@ -626,7 +626,7 @@ class ScheduleProcessingTest {
 
 	@Test
 	void getMaxProcessingLoopIterationsWorksAsExpected() {
-		assertEquals(subject.getMaxProcessingLoopIterations(), 10L);
+		assertEquals(10L, subject.getMaxProcessingLoopIterations());
 	}
 
 	private Transaction getSignedTxn() {

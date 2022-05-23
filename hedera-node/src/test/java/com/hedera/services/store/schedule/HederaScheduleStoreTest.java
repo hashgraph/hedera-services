@@ -425,7 +425,7 @@ class HederaScheduleStoreTest {
 
 		final var expected = ScheduleVirtualValue.from(txn.build().toByteArray(), 0L);
 
-		assertEquals(expected.expirationTimeProvided().getNanos(), 500);
+		assertEquals(500, expected.expirationTimeProvided().getNanos());
 
 		var outcome = subject.createProvisionally(expected,
 				new RichInstant(expectedExpiry, 0));
