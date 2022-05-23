@@ -25,3 +25,9 @@ plugins {
 jmh {
     jmhVersion.set("1.35")
 }
+
+tasks.jmhJar {
+    manifest(Action {
+      attributes(mapOf("Multi-Release" to true))  
+    })
+}
