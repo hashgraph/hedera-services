@@ -21,6 +21,7 @@ package com.hedera.services.ledger.accounts.staking;
  */
 
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
@@ -33,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 
 import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,4 +139,26 @@ class RewardCalculatorTest {
 		assertEquals(500, result.getLeft());
 		mockedStatic.close();
 	}
+
+	@Test
+	void updatingRewardsWorks() {
+		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
+		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
+		given(account.getStakedId()).willReturn(3L);
+		given(account.isDeclinedReward()).willReturn(false);
+		given(account.getBalance()).willReturn(100L);
+		final var updatableMap = new HashMap<AccountProperty, Object>();
+
+		final var result = subject.updateRewardChanges(account, updatableMap);
+
+		assertEquals(todayNumber - 1, (long) updatableMap.get(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(600, (long) updatableMap.get(AccountProperty.BALANCE));
+		assertEquals(500, result);
+		assertEquals(500L, subject.rewardsPaidInThisTxn());
+
+		subject.reset();
+		assertEquals(0L, subject.rewardsPaidInThisTxn());
+	}
+
 }

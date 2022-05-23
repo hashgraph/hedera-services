@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-public class StakeChangeManagerTest {
+class StakeChangeManagerTest {
 	@Mock
 	private AddressBook addressBook;
 	@Mock

@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.BeanProperty;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

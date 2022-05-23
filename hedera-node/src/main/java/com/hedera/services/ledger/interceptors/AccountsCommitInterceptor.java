@@ -20,29 +20,16 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDate;
 import java.util.Map;
-import java.util.function.Supplier;
-
-import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
