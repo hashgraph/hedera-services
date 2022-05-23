@@ -155,14 +155,16 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var curNodeId = (account != null) ? account.getStakedId() : 0L;
 			final var newNodeId = manager.getNodeStakeeNum(changes);
 			if (curNodeId != 0 && curNodeId != newNodeId) {
-				// Node stakee has been replaced, withdraw initial stake from ex-stakee
+				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
+				// isDeclineReward option
 				manager.withdrawStake(
 						Math.abs(curNodeId),
 						account.getBalance() + account.getStakedToMe(),
 						manager.finalDeclineRewardGiven(account, changes));
 			}
 			if (newNodeId != 0) {
-				// Award updated stake to new node stakee
+				// Award updated stake to new node stakee to the fields stakeRewarded or stakeNotRewarded from
+				// ex-stakee based on isDeclineReward option
 				manager.awardStake(
 						Math.abs(newNodeId),
 						finalBalanceGiven(account, changes) + manager.finalStakedToMeGiven(account, changes),
@@ -178,8 +180,10 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			int changesSize,
 			final Set<Long> hasBeenRewarded,
 			final long latestEligibleStart) {
+
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = manager.getAccountStakeeNum(changes);
+
 		if (curStakeeNum != 0 && curStakeeNum != newStakeeNum) {
 			// Stakee has been replaced, withdraw initial balance from ex-stakee
 			final var exStakeeI = findOrAdd(curStakeeNum, pendingChanges);

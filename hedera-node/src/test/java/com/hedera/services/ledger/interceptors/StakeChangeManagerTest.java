@@ -8,6 +8,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.system.Address;
+import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,67 +22,177 @@ import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.RewardCalculator.zoneUTC;
 import static com.hedera.services.ledger.interceptors.StakeChangeManager.isWithinRange;
+import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class StakeChangeManagerTest {
-	private StakeChangeManager subject;
-
 	@Mock
+	private AddressBook addressBook;
+	@Mock
+	private Address address1 = mock(Address.class);
+	@Mock
+	private Address address2 = mock(Address.class);
+	@Mock
+	private MerkleAccount account;
+
+	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	private static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
 
 	@BeforeEach
 	void setUp() {
+		stakingInfo = buildsStakingInfoMap();
 		subject = new StakeChangeManager(() -> stakingInfo);
 	}
 
 	@Test
 	void validatesIfAnyStakedFieldChanges() {
 		assertTrue(subject.hasStakeFieldChanges(randomStakeFieldChanges(100L)));
-		assertFalse(subject.hasStakeFieldChanges(randomNotStakeFieldChanges(100L)));
+		assertFalse(subject.hasStakeFieldChanges(randomNotStakeFieldChanges()));
 	}
 
 	@Test
 	void validatesIfStartPeriodIsWithinRange() {
-		assertTrue(isWithinRange(stakePeriodStart - 365 , stakePeriodStart));
-		assertFalse(isWithinRange(-1 , stakePeriodStart));
-		assertFalse(isWithinRange(stakePeriodStart , stakePeriodStart));
+		assertTrue(isWithinRange(stakePeriodStart - 365, stakePeriodStart));
+		assertFalse(isWithinRange(-1, stakePeriodStart));
+		assertFalse(isWithinRange(stakePeriodStart, stakePeriodStart));
 	}
 
 	@Test
-	void updatesBalance(){
-		final var changes = randomStakeFieldChanges(100L);
-		final var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+	void updatesBalance() {
+		var changes = randomStakeFieldChanges(100L);
+		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		pendingChanges.include(counterpartyId, counterparty, changes);
 		assertEquals(100L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
 
 		subject.updateBalance(20L, 0, pendingChanges);
-
 		assertEquals(120L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
+
+		changes = randomNotStakeFieldChanges();
+		pendingChanges.clear();
+		pendingChanges.include(counterpartyId, counterparty, changes);
+		assertEquals(null, pendingChanges.changes(0).get(AccountProperty.BALANCE));
+		subject.updateBalance(20L, 0, pendingChanges);
+		assertEquals(20L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
+	}
+
+	@Test
+	void updatesStakedToMe() {
+		var changes = randomStakeFieldChanges(100L);
+		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		pendingChanges.include(counterpartyId, counterparty, changes);
+		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+
+		subject.updateStakedToMe(20L, 0, pendingChanges);
+		assertEquals(2020L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+
+
+		changes = randomNotStakeFieldChanges();
+		pendingChanges.clear();
+		pendingChanges.include(counterpartyId, counterparty, changes);
+		assertEquals(null, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+		subject.updateStakedToMe(20L, 0, pendingChanges);
+		assertEquals(20L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+	}
+
+	@Test
+	void withdrawsStakeCorrectly() {
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		subject.withdrawStake(3L, 100L, false);
+
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(200L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+
+		subject.withdrawStake(3L, 100L, true);
+
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(200L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+	}
+
+	@Test
+	void awardsStakeCorrectly() {
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		subject.awardStake(3L, 100L, false);
+
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+
+		subject.awardStake(3L, 100L, true);
+
+		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
+		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
+		assertEquals(500L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+	}
+
+	@Test
+	void getsFieldsCorrectlyFromChanges(){
+		final var changes = randomStakeFieldChanges(100L);
+
+		assertEquals(0L, subject.getAccountStakeeNum(changes));
+		assertEquals(-2L, subject.getNodeStakeeNum(changes));
+		assertEquals(100L, subject.finalBalanceGiven(account, changes));
+		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
+		assertEquals(2000L, subject.finalStakedToMeGiven(account, changes));
+	}
+
+	@Test
+	void getsFieldsCorrectlyIfNotFromChanges(){
+		final var changes = randomNotStakeFieldChanges();
+
+		given(account.getBalance()).willReturn(1000L);
+		given(account.isDeclinedReward()).willReturn(true);
+		given(account.getStakedToMe()).willReturn(200L);
+
+		assertEquals(0L, subject.getAccountStakeeNum(changes));
+		assertEquals(0L, subject.getNodeStakeeNum(changes));
+		assertEquals(1000L, subject.finalBalanceGiven(account, changes));
+		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
+		assertEquals(200L, subject.finalStakedToMeGiven(account, changes));
 	}
 
 
 	private Map<AccountProperty, Object> randomStakeFieldChanges(final long newBalance) {
 		return Map.of(
 				AccountProperty.BALANCE, newBalance,
-				AccountProperty.STAKED_ID, -2L);
+				AccountProperty.STAKED_ID, -2L,
+				AccountProperty.DECLINE_REWARD, true,
+				AccountProperty.STAKED_TO_ME, 2000L);
 	}
 
-	private Map<AccountProperty, Object> randomNotStakeFieldChanges(final long newBalance) {
+	private Map<AccountProperty, Object> randomNotStakeFieldChanges() {
 		return Map.of(
 				AccountProperty.ALIAS, ByteString.copyFromUtf8("testing"));
 	}
 
-	private Map<AccountProperty, Object> randomStakeFieldDeclineRewardChanges(final long newBalance) {
-		return Map.of(
-				AccountProperty.DECLINE_REWARD, false,
-				AccountProperty.STAKED_ID, -2L);
-	}
 
+	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
+		given(addressBook.getSize()).willReturn(2);
+		given(addressBook.getAddress(0)).willReturn(address1);
+		given(address1.getMemo()).willReturn("0.0.3");
+		given(addressBook.getAddress(1)).willReturn(address2);
+		given(address2.getMemo()).willReturn("0.0.4");
+
+		final var info = buildStakingInfoMap(addressBook);
+		info.forEach((a, b) -> {
+			b.setStakeToReward(300L);
+			b.setStake(1000L);
+			b.setStakeToNotReward(400L);
+		});
+		return info;
+	}
 
 	private static final long amount = 1L;
 	private static final long partyBalance = 111L;

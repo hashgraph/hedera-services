@@ -68,8 +68,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleNetworkContext networkCtx;
-
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -83,7 +81,9 @@ class StakeAwareAccountsCommitInterceptorTest {
 	@Mock
 	private Address address2 = mock(Address.class);
 
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	private StakeAwareAccountsCommitsInterceptor subject;
+
 	private static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
 
 	@BeforeEach
@@ -246,14 +246,20 @@ class StakeAwareAccountsCommitInterceptorTest {
 	}
 
 
-	private MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
+	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
 		given(addressBook.getAddress(0)).willReturn(address1);
 		given(address1.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(1)).willReturn(address2);
 		given(address2.getMemo()).willReturn("0.0.4");
 
-		return buildStakingInfoMap(addressBook);
+		final var info = buildStakingInfoMap(addressBook);
+		info.forEach((a, b) -> {
+			b.setStakeToReward(300L);
+			b.setStake(1000L);
+			b.setStakeToNotReward(400L);
+		});
+		return info;
 	}
 
 	private Map<AccountProperty, Object> randomStakeFieldChanges(final long newBalance) {

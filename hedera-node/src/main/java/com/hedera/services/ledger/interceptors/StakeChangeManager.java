@@ -94,29 +94,29 @@ public class StakeChangeManager {
 	}
 
 	public void updateStakedToMe(
-			final long stakedToMeDelta,
+			final long delta,
 			@NotNull final int stakeeI,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var mutableChanges = new EnumMap<>(pendingChanges.changes(stakeeI));
 		if (mutableChanges.containsKey(STAKED_TO_ME)) {
-			mutableChanges.put(STAKED_TO_ME, (long) mutableChanges.get(STAKED_TO_ME) + stakedToMeDelta);
+			mutableChanges.put(STAKED_TO_ME, (long) mutableChanges.get(STAKED_TO_ME) + delta);
 		} else {
-			mutableChanges.put(STAKED_TO_ME, stakedToMeDelta);
+			mutableChanges.put(STAKED_TO_ME, delta);
 		}
 		pendingChanges.updateChange(stakeeI, mutableChanges);
 	}
 
 	public void updateBalance(
-			final long stakedToMeDelta,
+			final long delta,
 			final int rewardAccountI,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var mutableChanges = new EnumMap<>(pendingChanges.changes(rewardAccountI));
 		if (mutableChanges.containsKey(BALANCE)) {
-			mutableChanges.put(BALANCE, (long) mutableChanges.get(BALANCE) + stakedToMeDelta);
+			mutableChanges.put(BALANCE, (long) mutableChanges.get(BALANCE) + delta);
 		} else {
-			mutableChanges.put(BALANCE, stakedToMeDelta);
+			mutableChanges.put(BALANCE, delta);
 		}
 		pendingChanges.updateChange(rewardAccountI, mutableChanges);
 	}
