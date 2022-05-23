@@ -107,7 +107,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("contracts.frontendThrottleMaxGasLimit", 8000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
-			entry("contracts.scheduleThrottleMaxGasLimit", 50000L),
+			entry("contracts.scheduleThrottleMaxGasLimit", 5000000L),
 			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.exchangeRateGasCost", 100L),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),

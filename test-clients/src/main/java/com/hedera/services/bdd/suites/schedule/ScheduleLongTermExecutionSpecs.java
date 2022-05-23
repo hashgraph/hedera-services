@@ -461,7 +461,6 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 		return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
 				.given(
 						overriding("scheduling.whitelist", "ContractCall"),
-						overriding("contracts.scheduleThrottleMaxGasLimit", "500000"),
 						uploadInitCode("SimpleUpdate"),
 						contractCreate("SimpleUpdate").gas(500_000L),
 						cryptoCreate("payingAccount").balance(1000000000000L).via("payingAccountTxn")
@@ -490,8 +489,6 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						getScheduleInfo("basicXfer")
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
-						overriding("contracts.scheduleThrottleMaxGasLimit",
-								HapiSpecSetup.getDefaultNodeProps().get("contracts.scheduleThrottleMaxGasLimit")),
 						getAccountBalance("payingAccount").hasTinyBars(spec -> bal ->
 										bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
 						withOpContext((spec, opLog) -> {
@@ -512,7 +509,6 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 		return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
 				.given(
 						overriding("scheduling.whitelist", "ContractCreate"),
-						overriding("contracts.scheduleThrottleMaxGasLimit", "1000000"),
 						uploadInitCode("SimpleUpdate"),
 						cryptoCreate("payingAccount").balance(1000000000000L).via("payingAccountTxn")
 				).when(
@@ -540,8 +536,6 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						getScheduleInfo("basicXfer")
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
-						overriding("contracts.scheduleThrottleMaxGasLimit",
-								HapiSpecSetup.getDefaultNodeProps().get("contracts.scheduleThrottleMaxGasLimit")),
 						getAccountBalance("payingAccount").hasTinyBars(spec -> bal ->
 										bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
 						withOpContext((spec, opLog) -> {
