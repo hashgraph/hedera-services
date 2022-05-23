@@ -173,7 +173,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				insufficientFee(),
 //				nonPayable(),
 //				invalidContract(),
-//				smartContractFailFirst()
+//				smartContractFailFirst(),
 //				contractTransferToSigReqAccountWithoutKeyFails(),
 //				callingDestructedContractReturnsStatusDeleted(),
 //				gasLimitOverMaxGasLimitFailsPrecheck(),
@@ -189,7 +189,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				transferZeroHbars(),
 //				sendHbarsToOuterContractFromDifferentAddresses(),
 //				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses()
+				bitcarbonTestStillPasses(),
 //				contractCreationStoragePriceMatchesFinalExpiry(),
 //				whitelistingAliasedContract(),
 //				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
@@ -654,6 +654,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
+	// For this test we use refusingEthConversion() for the Eth Call isomer,
+	// since we should modify the expected balances and change the test itself in order to pass with Eth Calls
 	HapiApiSpec ocToken() {
 		final var contract = "OcToken";
 
@@ -749,17 +751,20 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var subop6 = contractCall(contract, "transfer",
 									aliceEthAddress, 1000 * tokenMultiplier)
 									.gas(250_000L)
-									.payingWith("tokenIssuer");
+									.payingWith("tokenIssuer")
+									.refusingEthConversion();
 
 							final var subop7 = contractCall(contract, "transfer",
 									bobEthAddress, 2000 * tokenMultiplier)
 									.gas(250_000L)
-									.payingWith("tokenIssuer");
+									.payingWith("tokenIssuer")
+									.refusingEthConversion();
 
 							final var subop8 = contractCall(contract, "transfer",
 									carolEthAddress, 500 * tokenMultiplier)
 									.gas(250_000L)
-									.payingWith("Bob");
+									.payingWith("Bob")
+									.refusingEthConversion();
 
 							final var subop9 = contractCallLocal(contract, "balanceOf", aliceEthAddress)
 									.gas(250_000L)
@@ -793,12 +798,14 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var subop12 = contractCall(contract, "approve",
 									daveEthAddress, 200 * tokenMultiplier)
 									.gas(250_000L)
-									.payingWith("Alice");
+									.payingWith("Alice")
+									.refusingEthConversion();
 
 							final var subop13 = contractCall(contract, "transferFrom",
 									aliceEthAddress, bobEthAddress, 100 * tokenMultiplier)
 									.gas(250_000L)
-									.payingWith("Dave");
+									.payingWith("Dave")
+									.refusingEthConversion();
 
 							final var subop14 = contractCallLocal(contract, "balanceOf", aliceEthAddress)
 									.gas(250_000L)
@@ -1835,17 +1842,17 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec sendHbarsToCallerFromDifferentAddresses() {
-		final var ACCOUNT = "account";
+//		final var ACCOUNT = "account";
 		final var NESTED_TRANSFERRING_CONTRACT = "NestedTransferringContract";
 		final var NESTED_CONTRACT = "NestedTransferContract";
 		final var transferTxn = "transferTxn";
 		return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
 				.given(
-						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+//						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
-						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
-						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo").payingWith(GENESIS)
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(DEFAULT_CONTRACT_SENDER),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(DEFAULT_CONTRACT_SENDER),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot("accountInfo").payingWith(GENESIS)
 				)
 				.when(
 						withOpContext((spec, log) -> {
@@ -1857,10 +1864,10 @@ public class ContractCallSuite extends HapiApiSuite {
 									contractCall(
 											NESTED_TRANSFERRING_CONTRACT,
 											"transferToCallerFromDifferentAddresses", 100L)
-											.payingWith(ACCOUNT).via(transferTxn).logged(),
+											.payingWith(DEFAULT_CONTRACT_SENDER).via(transferTxn).logged(),
 
 									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn").payingWith(GENESIS),
-									getAccountInfo(ACCOUNT).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
+									getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
 						})
 				)
 				.then(
