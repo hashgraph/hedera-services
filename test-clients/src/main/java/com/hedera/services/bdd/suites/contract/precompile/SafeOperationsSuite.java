@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -36,16 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MINT_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_ASSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_DISSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFTS_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFT_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKENS_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKEN_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -54,17 +43,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
@@ -84,7 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class SafeOperationsSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(SafeOperationsSuite.class);
-	private static final String THE_CONTRACT = "Safe Operations Contract";
+	private static final String THE_CONTRACT = "SafeOperations";
 	private static final String ACCOUNT = "anybody";
 	private static final String SECOND_ACCOUNT = "anybody2";
 	private static final String FROZEN_TOKEN = "Frozen token";
@@ -92,7 +79,6 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	private static final String MULTI_KEY = "Multi key";
 	private static final String FREEZE_KEY = "Freeze key";
 	private static final TokenID DUMMY_ID = TokenID.newBuilder().build();
-	private static final long GAS_TO_OFFER = 2_000_000L;
 
 	public static void main(String... args) {
 		new SafeOperationsSuite().runSuiteSync();
@@ -142,8 +128,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -157,17 +143,18 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
+												contractCall(THE_CONTRACT, "safeTokenMint",
 														asAddress(DUMMY_ID), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("safeMintDummyTxn")
+														.gas(4_000_000)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
+												contractCall(THE_CONTRACT, "safeTokenMint",
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("safeMintTxn")
+														.gas(4_000_000)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS)
 										)
@@ -189,8 +176,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -205,14 +192,14 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
+												contractCall(THE_CONTRACT, "safeTokenBurn",
 														asAddress(DUMMY_ID), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("safeBurnDummyTxn")
+														.gas(4_000_000)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
+												contractCall(THE_CONTRACT, "safeTokenBurn",
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("safeBurnTxn")
@@ -235,8 +222,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 		return defaultHapiSpec("SafeAssociatePrecompile")
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -247,17 +234,17 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_ASSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokenAssociate",
 														asAddress(accountID.get()), asAddress(DUMMY_ID))
 														.payingWith(ACCOUNT)
 														.via("safeDummyTokenAssociateTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_ASSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokenAssociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("safeTokenAssociateTxn")
-														.gas(GAS_TO_OFFER)
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -278,8 +265,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 		return defaultHapiSpec("SafeDissociatePrecompile")
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -291,18 +278,18 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_DISSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokenDissociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("safeTokenDissociateFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-												contractCall(THE_CONTRACT, SAFE_DISSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokenDissociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("safeTokenDissociateTxn")
-														.gas(GAS_TO_OFFER)
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -325,8 +312,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -346,25 +333,23 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT)
-														.bytecode(THE_CONTRACT)
-														.gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_MULTIPLE_ASSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokensAssociate",
 														asAddress(accountID.get()),
 														List.of(
 																asAddress(DUMMY_ID),
 																asAddress(DUMMY_ID)))
 														.payingWith(ACCOUNT)
 														.via("safeMultipleTokensAssociationsFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_MULTIPLE_ASSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokensAssociate",
 														asAddress(accountID.get()),
 														List.of(
 																asAddress(frozenTokenID.get()),
 																asAddress(unfrozenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("safeMultipleTokensAssociationsTxn")
-														.gas(GAS_TO_OFFER)
+														.gas(4_000_000)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
 										)
 						)
@@ -389,8 +374,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -410,23 +395,23 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_MULTIPLE_DISSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokensDissociate",
 														asAddress(accountID.get()), List.of(
 																asAddress(vanillaTokenID.get()),
 																asAddress(knowableTokenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("safeMultipleDissociationFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
-												contractCall(THE_CONTRACT, SAFE_MULTIPLE_DISSOCIATE_ABI,
+												contractCall(THE_CONTRACT, "safeTokensDissociate",
 														asAddress(accountID.get()), List.of(
 																asAddress(vanillaTokenID.get()),
 																asAddress(knowableTokenTokenID.get())))
 														.payingWith(ACCOUNT)
-														.gas(GAS_TO_OFFER)
+														.gas(4_000_000)
 														.via("safeMultipleDissociationTxn")
 														.hasKnownStatus(SUCCESS)
 										)
@@ -451,8 +436,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -472,16 +457,16 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_NFT_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeNFTTransfer",
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
 														asAddress(accountID.get()),
 														1L)
 														.payingWith(ACCOUNT)
 														.via("safeNFTTransferFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_NFT_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeNFTTransfer",
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
 														asAddress(accountID.get()),
@@ -489,6 +474,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeNFTTransferTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -512,8 +498,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -533,16 +519,16 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_TOKEN_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeTokenTransfer",
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
 														asAddress(accountID.get()),
 														5L)
 														.payingWith(ACCOUNT)
 														.via("safeTokenTransferFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_TOKEN_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeTokenTransfer",
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
 														asAddress(accountID.get()),
@@ -550,6 +536,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeTokenTransferTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -576,8 +563,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(firstAccountID::set),
 						cryptoCreate(SECOND_ACCOUNT)
 								.exposingCreatedIdTo(secondAccountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -600,8 +587,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_TOKENS_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeTokensTransfer",
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(firstAccountID.get()),
 																asAddress(secondAccountID.get())),
@@ -610,8 +596,9 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeTokensTransferFailingTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_TOKENS_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeTokensTransfer",
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get()),
 																asAddress(firstAccountID.get()),
@@ -621,6 +608,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeTokensTransferTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -649,8 +637,8 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(SECOND_ACCOUNT)
 								.exposingCreatedIdTo(secondAccountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -674,8 +662,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeNFTsTransfer",
 														asAddress(vanillaTokenID.get()),
 														Collections.emptyList(),
 														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
@@ -683,8 +670,9 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeNftsTransferFailsTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
+												contractCall(THE_CONTRACT, "safeNFTsTransfer",
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get()), asAddress(treasuryID.get())),
 														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
@@ -692,6 +680,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("safeNftsTransferTxn")
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
