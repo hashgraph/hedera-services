@@ -115,6 +115,35 @@ class StandardProcessLogicTest {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
+		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
+		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
+
+		// when:
+		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+
+		// then:
+		inOrder.verify(consensusTimeTracker).reset(consensusNow);
+		inOrder.verify(sigImpactHistorian).setChangeTime(consensusNow);
+		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
+		inOrder.verify(sigImpactHistorian).purge();
+		inOrder.verify(recordStreaming).resetBlockNo();
+		inOrder.verify(consensusTimeTracker).isFirstUsed();
+		inOrder.verify(consensusTimeTracker).firstTransactionTime();
+		inOrder.verify(executionTimeTracker).start();
+		inOrder.verify(txnManager).process(accessor, consensusNow, member);
+		inOrder.verify(executionTimeTracker).stop();
+		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow, null, true);
+		inOrder.verify(autoRenewal).execute(consensusNow);
+	}
+
+	@Test
+	void happyPathFlowsNoScheduleProcessing() throws InvalidProtocolBufferException {
+		final InOrder inOrder = inOrder(consensusTimeTracker, scheduleProcessing,
+				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
+
+		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
+		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 
 		// when:
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
@@ -131,7 +160,9 @@ class StandardProcessLogicTest {
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();
 		inOrder.verify(autoRenewal).execute(consensusNow);
-		inOrder.verify(scheduleProcessing, never()).triggerNextTransactionExpiringAsNeeded(any(), any(), anyBoolean());
+
+		verify(scheduleProcessing, never()).triggerNextTransactionExpiringAsNeeded(any(), any(), anyBoolean());
+		verify(scheduleProcessing, never()).getMaxProcessingLoopIterations();
 	}
 
 	@Test
@@ -152,6 +183,8 @@ class StandardProcessLogicTest {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
+		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
+		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
@@ -190,6 +223,8 @@ class StandardProcessLogicTest {
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(consensusTimeTracker.nextTransactionTime(true)).willReturn(consensusNow);
 		given(consensusTimeTracker.isFirstUsed()).willReturn(true);
+		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
+		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
@@ -216,6 +251,8 @@ class StandardProcessLogicTest {
 		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, triggeredAccessor, true))
 				.willReturn(null);
 		given(txnCtx.triggeredTxn()).willReturn(null);
+		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
+		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
@@ -232,5 +269,59 @@ class StandardProcessLogicTest {
 		inOrder.verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(consensusNow,
 				triggeredAccessor, true);
 		inOrder.verify(autoRenewal).execute(consensusNow);
+	}
+
+	@Test
+	void scheduleProcessingLimitedToMaxLoopIterations() throws InvalidProtocolBufferException {
+
+		final InOrder inOrder = inOrder(consensusTimeTracker, scheduleProcessing,
+				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
+
+		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
+		given(consensusTimeTracker.hasMoreTransactionTime(false)).willReturn(true);
+		given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
+		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
+		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, null, false))
+				.willReturn(triggeredAccessor);
+		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, triggeredAccessor, false))
+				.willReturn(triggeredAccessor);
+		given(txnCtx.triggeredTxn()).willReturn(null);
+		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
+		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(4L);
+
+		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+
+		inOrder.verify(consensusTimeTracker).reset(consensusNow);
+		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
+		inOrder.verify(consensusTimeTracker).isFirstUsed();
+		inOrder.verify(consensusTimeTracker).firstTransactionTime();
+		inOrder.verify(txnManager).process(accessor, consensusNow, member);
+		inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
+		inOrder.verify(scheduleProcessing, times(1)).triggerNextTransactionExpiringAsNeeded(consensusNow, null, false);
+		inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
+		inOrder.verify(txnManager, times(1)).process(triggeredAccessor, triggeredConsensusNow, member);
+
+		inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
+		inOrder.verify(scheduleProcessing, times(1)).triggerNextTransactionExpiringAsNeeded(consensusNow,
+				triggeredAccessor, false);
+		inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
+		inOrder.verify(txnManager, times(1)).process(triggeredAccessor, triggeredConsensusNow, member);
+
+		inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
+		inOrder.verify(scheduleProcessing, times(1)).triggerNextTransactionExpiringAsNeeded(consensusNow,
+				triggeredAccessor, false);
+		inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
+		inOrder.verify(txnManager, times(1)).process(triggeredAccessor, triggeredConsensusNow, member);
+
+		inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
+		inOrder.verify(scheduleProcessing, times(1)).triggerNextTransactionExpiringAsNeeded(consensusNow,
+				triggeredAccessor, false);
+		inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
+		inOrder.verify(txnManager, times(1)).process(triggeredAccessor, triggeredConsensusNow, member);
+
+		inOrder.verify(autoRenewal).execute(consensusNow);
+
+		inOrder.verifyNoMoreInteractions();
 	}
 }

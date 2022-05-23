@@ -188,7 +188,6 @@ class TxnAwareRecordsHistorianTest {
 		final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
 		given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
-		given(consensusTimeTracker.isAllowableFollowingTime(topLevelNow.plusNanos(1))).willReturn(true);
 		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
 
 		givenTopLevelContext();
@@ -218,7 +217,6 @@ class TxnAwareRecordsHistorianTest {
 	void customizesMatchingSuccessor() {
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
 		given(txnCtx.consensusTime()).willReturn(topLevelNow);
-		given(consensusTimeTracker.isAllowableFollowingTime(topLevelNow.plusNanos(1))).willReturn(true);
 		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
@@ -271,9 +269,8 @@ class TxnAwareRecordsHistorianTest {
 		given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 		given(followingBuilder.build()).willReturn(mockFollowingRecord);
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
-		given(consensusTimeTracker.isAllowableFollowingTime(topLevelNow.plusNanos(1))).willReturn(true);
-		given(consensusTimeTracker.isAllowableFollowingTime(topLevelNow.plusNanos(2))).willReturn(true);
 		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+		given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
 		given(consensusTimeTracker.isAllowablePrecedingOffset(1)).willReturn(true);
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
@@ -448,11 +445,9 @@ class TxnAwareRecordsHistorianTest {
 
 	@Test
 	void nextFollowingChildConsensusTimeErrorsOnTooManyChildTimes() {
-		given(txnCtx.consensusTime()).willReturn(topLevelNow);
-
 		assertThrows(IllegalStateException.class, () -> subject.nextFollowingChildConsensusTime());
 
-		verify(consensusTimeTracker).isAllowableFollowingTime(topLevelNow.plusNanos(1));
+		verify(consensusTimeTracker).isAllowableFollowingOffset(1);
 	}
 
 	@Test

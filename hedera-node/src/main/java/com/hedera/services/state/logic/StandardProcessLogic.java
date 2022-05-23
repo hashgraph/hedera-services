@@ -102,7 +102,9 @@ public class StandardProcessLogic implements ProcessLogic {
 					? consensusTimeTracker.nextTransactionTime(true)
 					: consensusTimeTracker.firstTransactionTime(), accessor);
 
-			processScheduledTransactions(consensusTime, submittingMember);
+			if (scheduleProcessing.shouldProcessScheduledTransactions(consensusTime)) {
+				processScheduledTransactions(consensusTime, submittingMember);
+			}
 
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
@@ -114,7 +116,9 @@ public class StandardProcessLogic implements ProcessLogic {
 
 	private void processScheduledTransactions(Instant consensusTime, long submittingMember) {
 		TxnAccessor triggeredAccessor = null;
-		while (true) {
+
+		for (int i = 0; i < scheduleProcessing.getMaxProcessingLoopIterations(); ++i) {
+
 			boolean hasMore = consensusTimeTracker.hasMoreTransactionTime(false);
 
 			triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
@@ -127,9 +131,11 @@ public class StandardProcessLogic implements ProcessLogic {
 			}
 
 			if (!hasMore) {
-				break;
+				return;
 			}
 		}
+
+		log.error("Reached maxProcessingLoopIterations reached in processScheduledTransactions, we should never get here!");
 	}
 
 	private void doProcess(

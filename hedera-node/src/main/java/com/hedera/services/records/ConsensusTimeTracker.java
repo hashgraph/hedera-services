@@ -60,10 +60,10 @@ public class ConsensusTimeTracker {
 	private final long nanosBetweenIncorporateCalls;
 
 	private Instant minConsensusTime;
-	private Instant currentTxnMinTime;
-	private Instant currentTxnTime;
-	private Instant currentTxnMaxTime;
-	private Instant maxConsensusTime;
+	private long currentTxnMinTime;
+	private long currentTxnTime;
+	private long currentTxnMaxTime;
+	private long maxConsensusTime;
 
 	private long followingRecordsCount;
 
@@ -123,12 +123,12 @@ public class ConsensusTimeTracker {
 	 */
 	public void reset(final Instant consensusTime) {
 		minConsensusTime = consensusTime;
-		currentTxnMinTime = minConsensusTime;
-		currentTxnTime = minConsensusTime.plusNanos(MAX_PRECEDING_RECORDS);
-		currentTxnMaxTime = currentTxnTime.plusNanos(MAX_FOLLOWING_RECORDS);
+		currentTxnMinTime = 0;
+		currentTxnTime = currentTxnMinTime + MAX_PRECEDING_RECORDS;
+		currentTxnMaxTime = currentTxnTime + MAX_FOLLOWING_RECORDS;
 		followingRecordsCount = MAX_FOLLOWING_RECORDS;
 		firstUsed = false;
-		maxConsensusTime = consensusTime.plusNanos(DEFAULT_NANOS_PER_INCORPORATE_CALL - 1);
+		maxConsensusTime = currentTxnMinTime + (nanosBetweenIncorporateCalls - 1L);
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class ConsensusTimeTracker {
 
 		firstUsed = true;
 
-		return currentTxnTime;
+		return minConsensusTime.plusNanos(currentTxnTime);
 	}
 
 	/**
@@ -200,13 +200,6 @@ public class ConsensusTimeTracker {
 		return hasMoreTime(false, 0, 0);
 	}
 
-	/**
-	 * @param time the consensus time of a record
-	 * @return true if time should be allowed as a record consensus time in a "following" record.
-	 */
-	public boolean isAllowableFollowingTime(final Instant time) {
-		return time.isAfter(currentTxnTime) && (time.isBefore(currentTxnMaxTime) || time.equals(currentTxnMaxTime));
-	}
 
 	/**
 	 * @param offset an offset from the current transaction consensus time
@@ -214,20 +207,10 @@ public class ConsensusTimeTracker {
 	 *         record consensus time in a "following" record.
 	 */
 	public boolean isAllowableFollowingOffset(final long offset) {
-		return isAllowableFollowingTime(currentTxnTime.plusNanos(offset));
-	}
+		long time = currentTxnTime + offset;
 
-	/**
-	 * @param time the consensus time of a record
-	 * @return true if time should be allowed as a record consensus time in a "preceding" record.
-	 */
-	public boolean isAllowablePrecedingTime(final Instant time) {
 
-		if (isFirstSinceStartup) {
-			return time.isBefore(currentTxnTime);
-		}
-
-		return time.isBefore(currentTxnTime) && (time.isAfter(currentTxnMinTime) || time.equals(currentTxnMinTime));
+		return (time > currentTxnTime) && (time <= currentTxnMaxTime);
 	}
 
 	/**
@@ -236,7 +219,14 @@ public class ConsensusTimeTracker {
 	 *         record consensus time in a "preceding" record.
 	 */
 	public boolean isAllowablePrecedingOffset(final long offset) {
-		return isAllowablePrecedingTime(currentTxnTime.minusNanos(offset));
+
+		long time = currentTxnTime - offset;
+
+		if (isFirstSinceStartup) {
+			return time < currentTxnTime;
+		}
+
+		return (time < currentTxnTime) && (time >= currentTxnMinTime);
 	}
 
 	private Instant nextTime(final boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
@@ -249,32 +239,34 @@ public class ConsensusTimeTracker {
 		firstUsed = true;
 		isFirstSinceStartup = false;
 
-		currentTxnMinTime = currentTxnTime.plusNanos(followingRecordsCount + 1);
+		currentTxnMinTime = currentTxnTime + (followingRecordsCount + 1);
 
-		currentTxnTime = currentTxnMinTime.plusNanos(maxPreceding);
+		currentTxnTime = currentTxnMinTime + maxPreceding;
 
-		currentTxnMaxTime = currentTxnTime.plusNanos(maxFollowing);
+		currentTxnMaxTime = currentTxnTime + maxFollowing;
 
 		followingRecordsCount = maxFollowing;
 
-		return currentTxnTime;
+		return minConsensusTime.plusNanos(currentTxnTime);
 	}
 
 	private boolean hasMoreTime(boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
-		var next = currentTxnTime.plusNanos(followingRecordsCount);
+		long next = currentTxnTime + followingRecordsCount;
 
-		if (next.isAfter(currentTxnMaxTime)) {
+		if (next > currentTxnMaxTime) {
 			log.warn("Used more record slots than allowed per transaction! {}", this);
 		}
 
-		if (next.isAfter(maxConsensusTime)) {
+		if (next > maxConsensusTime) {
 			log.error("Exceeded the max nanos per handleTransaction() call! {}", this);
 			throw new IllegalStateException("Exceeded the max nanos per handleTransaction() call!");
 		}
 
-		return !next
-				.plusNanos((1L + maxPreceding + maxFollowing) * (canTriggerTxn ? 2L : 1L))
-				.isAfter(maxConsensusTime);
+		if (canTriggerTxn) {
+			return (next + ((1L + maxPreceding + maxFollowing) * 2L)) <= maxConsensusTime;
+		} else {
+			return (next + (1L + maxPreceding + maxFollowing)) <= maxConsensusTime;
+		}
 	}
 
 	@Override
@@ -298,22 +290,22 @@ public class ConsensusTimeTracker {
 
 	@VisibleForTesting
 	Instant getCurrentTxnMinTime() {
-		return currentTxnMinTime;
+		return minConsensusTime.plusNanos(currentTxnMinTime);
 	}
 
 	@VisibleForTesting
 	Instant getCurrentTxnTime() {
-		return currentTxnTime;
+		return minConsensusTime.plusNanos(currentTxnTime);
 	}
 
 	@VisibleForTesting
 	Instant getCurrentTxnMaxTime() {
-		return currentTxnMaxTime;
+		return minConsensusTime.plusNanos(currentTxnMaxTime);
 	}
 
 	@VisibleForTesting
 	Instant getMaxConsensusTime() {
-		return maxConsensusTime;
+		return minConsensusTime.plusNanos(maxConsensusTime);
 	}
 
 	@VisibleForTesting

@@ -145,7 +145,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		if (properties.schedulingLongTermEnabled() && (schedule.expirationTimeProvided() != null)) {
 
-			if (!schedule.expirationTimeProvided().isAfter(consensusTime)) {
+			if (schedule.expirationTimeProvided().getSeconds() <= consensusTime.getSeconds()) {
 				return failure(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME);
 			}
 
@@ -419,20 +419,17 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 				}
 			}
 
-			if ((!toRemove.isEmpty()) || (bySecond.getIds().size() <= 0)) {
-				bySecond = schedules.get().byExpirationSecond().get(bySecondKey);
-				if (bySecond != null) {
-					bySecond = bySecond.asWritable();
-					for (var p : toRemove) {
-						bySecond.removeId(p.getKey(), p.getValue());
-					}
+			if ((!toRemove.isEmpty()) || bySecond.getIds().isEmpty()) {
+				bySecond = bySecond.asWritable();
+				for (var p : toRemove) {
+					bySecond.removeId(p.getKey(), p.getValue());
+				}
 
-					if (bySecond.getIds().size() <= 0) {
-						log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
-						schedules.get().byExpirationSecond().remove(bySecondKey);
-					} else {
-						schedules.get().byExpirationSecond().put(bySecondKey, bySecond);
-					}
+				if (bySecond.getIds().size() <= 0) {
+					log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
+					schedules.get().byExpirationSecond().remove(bySecondKey);
+				} else {
+					schedules.get().byExpirationSecond().put(bySecondKey, bySecond);
 				}
 			}
 		}

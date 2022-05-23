@@ -100,12 +100,10 @@ class ConsensusTimeTrackerTest {
 				var time = txnTime.minusNanos(x);
 				var msg = "x = " + x + " isStandalone = " + isStandalone;
 
-				assertEquals(subject.isAllowablePrecedingTime(time),
-						x > 0 && (x <= maxPreceding || count <= 1), msg);
 				assertEquals(subject.isAllowablePrecedingOffset(x),
 						x > 0 && (x <= maxPreceding || count <= 1), msg);
 
-				if (subject.isAllowablePrecedingTime(time)) {
+				if (subject.isAllowablePrecedingOffset(x)) {
 					++availableCount;
 					if (x == maxPreceding) {
 						assertEquals(time, subject.getCurrentTxnMinTime(), msg);
@@ -121,12 +119,10 @@ class ConsensusTimeTrackerTest {
 				var time = txnTime.plusNanos(x);
 				var msg = "x = " + x + " isStandalone = " + isStandalone;
 
-				assertEquals(subject.isAllowableFollowingTime(time),
-						x > 0 && x <= maxFollowing, msg);
 				assertEquals(subject.isAllowableFollowingOffset(x),
 						x > 0 && x <= maxFollowing, msg);
 
-				if (subject.isAllowableFollowingTime(time)) {
+				if (subject.isAllowableFollowingOffset(x)) {
 					++availableCount;
 					if (x == maxFollowing) {
 						assertEquals(time, subject.getCurrentTxnMaxTime(), msg);

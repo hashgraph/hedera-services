@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -31,6 +32,7 @@ import javax.inject.Singleton;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -63,6 +65,8 @@ public class ScheduleProcessing {
 	private final ScheduleExecutor scheduleExecutor;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TimedFunctionalityThrottling scheduleThrottling;
+	private final Supplier<MerkleScheduledTransactions> schedules;
+	private final long maxProcessingLoopIterations;
 
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
@@ -72,13 +76,16 @@ public class ScheduleProcessing {
 	public ScheduleProcessing(final SigImpactHistorian sigImpactHistorian, final ScheduleStore store,
 			final ScheduleExecutor scheduleExecutor, final GlobalDynamicProperties dynamicProperties,
 			final ScheduleSigsVerifier scheduleSigsVerifier,
-			@ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling) {
+			@ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling,
+			final Supplier<MerkleScheduledTransactions> schedules) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.store = store;
 		this.scheduleExecutor = scheduleExecutor;
 		this.dynamicProperties = dynamicProperties;
 		this.scheduleThrottling = scheduleThrottling;
 		isFullySigned = scheduleSigsVerifier::areAllKeysActive;
+		this.schedules = schedules;
+		this.maxProcessingLoopIterations = dynamicProperties.schedulingMaxTxnPerSecond() * 2;
 	}
 
 	/**
@@ -87,12 +94,14 @@ public class ScheduleProcessing {
 	 */
 	public void expire(Instant consensusTime) {
 
-		while (true) {
+		// we _really_ don't want to loop forever. If the database isn't working, then it's possible. So we put
+		// an upper limit on the number of iterations here.
+		for (long i = 0; i < maxProcessingLoopIterations; ++i) {
 			store.advanceCurrentMinSecond(consensusTime);
 
 			List<ScheduleID> txnIdsToExpire = store.nextSchedulesToExpire(consensusTime);
 			if (txnIdsToExpire.isEmpty()) {
-				break;
+				return;
 			}
 
 			for (var txnId : txnIdsToExpire) {
@@ -101,6 +110,7 @@ public class ScheduleProcessing {
 			}
 		}
 
+		log.error("Reached maxProcessingLoopIterations reached in expire, we should never get here!");
 	}
 
 	/**
@@ -118,7 +128,7 @@ public class ScheduleProcessing {
 
 		LongHashSet seen = null;
 
-		while (true) {
+		for (long i = 0; i < maxProcessingLoopIterations; ++i) {
 
 			expire(consensusTime);
 
@@ -195,6 +205,9 @@ public class ScheduleProcessing {
 
 		}
 
+		log.error("Reached maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded, we should never get here!");
+
+		return null;
 	}
 
 	/**
@@ -252,6 +265,24 @@ public class ScheduleProcessing {
 		}
 
 		return OK;
+	}
+
+	/**
+	 * This method is meant to short-circuit processing scheduled transactions within a given second
+	 * after processing has already happened. It needs to be as fast as possible.
+	 *
+	 * @param consensusTime the current consensus time
+	 * @return true if we should process scheduled transactions for consensusTime
+	 */
+	public boolean shouldProcessScheduledTransactions(Instant consensusTime) {
+		return consensusTime.getEpochSecond() > schedules.get().getCurrentMinSecond();
+	}
+
+	/**
+	 * @return the max number of iterations of any loop calling triggerNextTransactionExpiringAsNeeded.
+	 */
+	public long getMaxProcessingLoopIterations() {
+		return maxProcessingLoopIterations;
 	}
 
 }

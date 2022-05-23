@@ -81,15 +81,14 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
-		Instant next = txnCtx.consensusTime().plusNanos(1L + followingChildRecords.size());
 
-		if (!consensusTimeTracker.isAllowableFollowingTime(next)) {
+		if (!consensusTimeTracker.isAllowableFollowingOffset(1L + followingChildRecords.size())) {
 			log.error("Cannot create more following child consensus times! currentCount={} consensusTimeTracker={}",
 					followingChildRecords.size(), consensusTimeTracker);
 			throw new IllegalStateException("Cannot create more following child consensus times!");
 		}
 
-		return next;
+		return txnCtx.consensusTime().plusNanos(1L + followingChildRecords.size());
 	}
 
 	@Override

@@ -416,14 +416,31 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
-	void createProvisionallyWithLongTermTxnsEnabledRejectsNotAboveConsensusTime() {
+	void createProvisionallyWithLongTermTxnsEnabledRejectsNotAboveConsensusTimeSeconds() {
 		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
-		final var expected = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
+		var txn = TransactionBody.newBuilder().mergeFrom(parentTxn);
+		txn.getScheduleCreateBuilder().getExpirationTimeBuilder().setNanos(500);
 
-		final var outcome = subject.createProvisionally(expected,
+		final var expected = ScheduleVirtualValue.from(txn.build().toByteArray(), 0L);
+
+		assertEquals(expected.expirationTimeProvided().getNanos(), 500);
+
+		var outcome = subject.createProvisionally(expected,
 				new RichInstant(expectedExpiry, 0));
+
+		assertEquals(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME, outcome.status());
+		assertNull(outcome.created());
+
+		outcome = subject.createProvisionally(expected,
+				new RichInstant(expectedExpiry, 600));
+
+		assertEquals(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME, outcome.status());
+		assertNull(outcome.created());
+
+		outcome = subject.createProvisionally(expected,
+				new RichInstant(expectedExpiry, 400));
 
 		assertEquals(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME, outcome.status());
 		assertNull(outcome.created());

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
@@ -55,13 +56,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleProcessingTest {
@@ -97,13 +102,16 @@ class ScheduleProcessingTest {
 	private ScheduleSecondVirtualValue bySecond;
 	@Mock
 	private TxnAccessor accessor;
+	@Mock
+	private MerkleScheduledTransactions schedules;
 
 	private ScheduleProcessing subject;
 
 	@BeforeEach
 	void setUp() {
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		subject = new ScheduleProcessing(sigImpactHistorian, store, scheduleExecutor, dynamicProperties,
-				scheduleSigsVerifier, scheduleThrottling);
+				scheduleSigsVerifier, scheduleThrottling, () -> schedules);
 	}
 
 	@Test
@@ -132,6 +140,18 @@ class ScheduleProcessingTest {
 		inOrder.verify(sigImpactHistorian, never()).markEntityChanged(anyLong());
 
 		inOrder.verifyNoMoreInteractions();
+	}
+
+	@Test
+	void expireLimitedToMaxLoopIterations() {
+		given(store.nextSchedulesToExpire(consensusTime))
+				.willReturn(ImmutableList.of(scheduleId1));
+
+		// when:
+		subject.expire(consensusTime);
+
+		// then:
+		verify(store, times(10)).expire(scheduleId1);
 	}
 
 	@Test
@@ -166,6 +186,40 @@ class ScheduleProcessingTest {
 		inOrder.verify(scheduleExecutor).getTriggeredTxnAccessor(scheduleId1, store, false);
 
 		inOrder.verifyNoMoreInteractions();
+	}
+
+	@Test
+	void triggerNextTransactionExpiringAsNeededLimitedToMaxLoopIterations() throws InvalidProtocolBufferException {
+		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
+
+		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, scheduleId2, scheduleId3,
+				scheduleId4, scheduleId5,
+				IdUtils.asSchedule("0.0.113331"),
+				IdUtils.asSchedule("0.0.113332"),
+				IdUtils.asSchedule("0.0.113333"),
+				IdUtils.asSchedule("0.0.113334"),
+				IdUtils.asSchedule("0.0.113335"),
+				IdUtils.asSchedule("0.0.113336"));
+
+		// when:
+		var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
+
+		// then:
+
+		assertNull(result);
+
+		verify(store, times(1)).expire(scheduleId1);
+		verify(store, times(1)).expire(scheduleId2);
+		verify(store, times(1)).expire(scheduleId3);
+		verify(store, times(1)).expire(scheduleId4);
+		verify(store, times(1)).expire(scheduleId5);
+		verify(store, times(1)).expire(IdUtils.asSchedule("0.0.113331"));
+		verify(store, times(1)).expire(IdUtils.asSchedule("0.0.113332"));
+		verify(store, times(1)).expire(IdUtils.asSchedule("0.0.113333"));
+		verify(store, times(1)).expire(IdUtils.asSchedule("0.0.113334"));
+		verify(store, times(1)).expire(IdUtils.asSchedule("0.0.113335"));
+		verify(store, never()).expire(IdUtils.asSchedule("0.0.113336"));
 	}
 
 	@Test
@@ -550,6 +604,29 @@ class ScheduleProcessingTest {
 
 		assertEquals(OK, result);
 
+	}
+
+	@Test
+	void shouldProcessScheduledTransactionsWorksAsExpected() {
+
+		given(schedules.getCurrentMinSecond()).willReturn(consensusTime.getEpochSecond());
+
+		assertTrue(subject.shouldProcessScheduledTransactions(consensusTime.plusSeconds(1)));
+		assertFalse(subject.shouldProcessScheduledTransactions(consensusTime));
+		assertFalse(subject.shouldProcessScheduledTransactions(consensusTime.minusSeconds(1)));
+
+
+		assertTrue(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusSeconds(1)));
+		assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusSeconds(1).minusNanos(1)));
+		assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusNanos(1)));
+		assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond())));
+		assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusSeconds(1)));
+		assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusNanos(1)));
+	}
+
+	@Test
+	void getMaxProcessingLoopIterationsWorksAsExpected() {
+		assertEquals(subject.getMaxProcessingLoopIterations(), 10L);
 	}
 
 	private Transaction getSignedTxn() {
