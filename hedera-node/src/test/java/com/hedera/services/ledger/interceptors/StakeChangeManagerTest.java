@@ -43,7 +43,7 @@ public class StakeChangeManagerTest {
 	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
-	private static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
+	public static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
 
 	@BeforeEach
 	void setUp() {

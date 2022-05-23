@@ -207,7 +207,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		return changesSize;
 	}
 
-	private void payRewardIfRewardable(
+	void payRewardIfRewardable(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
 			final int newStakeeI,
 			final Set<Long> hasBeenRewarded,
@@ -229,7 +229,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		hasBeenRewarded.add(accountNum);
 	}
 
-	private int findOrAdd(
+	int findOrAdd(
 			final long accountNum,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
