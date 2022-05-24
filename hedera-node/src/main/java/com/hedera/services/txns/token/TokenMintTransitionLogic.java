@@ -87,20 +87,6 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenMintTransactionBody op = txnBody.getTokenMint();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		return validateTokenOpsWith(
-				op.getMetadataCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_TOKEN_MINT_AMOUNT,
-				op.getMetadataList(),
-				validator::maxBatchSizeMintCheck,
-				validator::nftMetadataCheck
-		);
+		return mintLogic.validateSyntax(txnBody);
 	}
 }

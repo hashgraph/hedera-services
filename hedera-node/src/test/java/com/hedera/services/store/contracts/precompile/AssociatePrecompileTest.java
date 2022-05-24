@@ -95,6 +95,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -311,6 +312,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
@@ -343,6 +345,7 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -382,6 +385,7 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -426,6 +430,7 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -466,6 +471,7 @@ class AssociatePrecompileTest {
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))

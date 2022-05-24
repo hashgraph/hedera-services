@@ -24,7 +24,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,6 +35,8 @@ import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 @Singleton
@@ -51,11 +56,6 @@ public class AssociateLogic {
 	}
 
 	public void associate(final Id accountId, final List<TokenID> tokensList) {
-		validateFalse(repeatsItself(tokensList), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
-		associateUniqueTokens(accountId, tokensList);
-	}
-
-	void associateUniqueTokens(final Id accountId, final List<TokenID> tokensList) {
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */
@@ -70,4 +70,15 @@ public class AssociateLogic {
 		tokenStore.commitTokenRelationships(modifiedTokenRelationships);
 	}
 
+	public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+		final var op = txn.getTokenAssociate();
+		if (!op.hasAccount()) {
+			return INVALID_ACCOUNT_ID;
+		}
+		if (repeatsItself(op.getTokensList())) {
+			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+		}
+
+		return OK;
+	}
 }
