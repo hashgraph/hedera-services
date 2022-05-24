@@ -110,3 +110,21 @@ testing {
         }
     }
 }
+
+// Increase the heap size for the unit tests
+tasks.test {
+    maxHeapSize = "1024m"
+}
+
+// Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code
+// coverage from both unit and integration tests into a single report from `jacocoTestReport`
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val testExtension: JacocoTaskExtension = tasks.test.get().extensions.getByType<JacocoTaskExtension>()
+    val iTestExtension: JacocoTaskExtension = tasks.getByName("itest").extensions.getByType<JacocoTaskExtension>()
+    executionData.from(testExtension.destinationFile, iTestExtension.destinationFile)
+}

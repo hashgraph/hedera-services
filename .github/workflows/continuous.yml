@@ -8,12 +8,20 @@ on:
     tags: [ v* ]
 
 jobs:
+  # Compiles, assembles, and runs unit tests.
+  # Outputs (in each subproject):
+  #   - Generated Jar file(s) in build/libs
+  #   - JUnit unit test report in build/reports/tests/test and raw data in build/test-results/test
+  #   - JUnit integration test report at build/reports/tests/itest and raw data in build/test-results/itest
+  #   - Jacoco data file in build/jacoco
+  #   - Combined Jacoco XML in build/reports/jacoco/test and combined HTML reports in build/reports/jacoco/test/html
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 17
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK
         uses: actions/setup-java@v2
         with:
           java-version: 17
@@ -26,62 +34,86 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: itest
-  javadoc:
-    name: Javadoc
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: 17
-          distribution: temurin
-      - name: Javadoc
+      - name: Jacoco Coverage Report
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: javadoc
-  sonar:
-    name: SonarCloud
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Run SonarCloud
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: sonarqube
-  smoke:
-    name: Smoke End-to-End Tests
-    runs-on: ubuntu-latest
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
-                   'contract.precompile.part1,contract.records',
-                   'contract.precompile.part2,contract.hapi',
-                   'contract.opcodes.eth,contract.openzeppelin.eth,contract.traceability.eth',
-                   'contract.precompile.part1.eth,contract.records.eth',
-                   'contract.precompile.part2.eth,contract.hapi.eth']
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: 17
-          distribution: temurin
-      - name: Build docker images # build the image for hedera-node
-        run: bash compose-build.sh
-      - name: Start network # start 3 node network
-        run: docker compose up -d
-      - name: Healthcheck for Hedera node # wait until node is ready to serve requests
-        working-directory: .github/scripts
-        run: bash healthcheck.sh
-      - name: Run EET Tests
-        uses: gradle/gradle-build-action@v2
-        with:
-          #        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DdefaultPort=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
-          arguments: eet -DdefaultPort=50213 -Dpackages=${{matrix.packages}}
+          arguments: jacocoTestReport
+#      - name: Upload coverage to Codecov
+#        if: always()
+#        uses: codecov/codecov-action@v2
+#        with:
+#          files: 'jacoco.xml'
+#      - name: Upload build reports
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: build-reports
+#          path: build/reports/
+
+#  javadoc:
+#    name: Javadoc
+#    runs-on: ubuntu-latest
+#    needs: build
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: gradle/wrapper-validation-action@v1
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v2
+#        with:
+#          java-version: 17
+#          distribution: temurin
+#      - name: Javadoc
+#        uses: gradle/gradle-build-action@v2
+#        with:
+#          arguments: javadoc
+#  sonar:
+#    name: SonarCloud
+#    runs-on: ubuntu-latest
+#    needs: build
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: gradle/wrapper-validation-action@v1
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v2
+#        with:
+#          java-version: 17
+#          distribution: temurin
+#      - name: Run SonarCloud
+#        uses: gradle/gradle-build-action@v2
+#        with:
+#          arguments: sonarqube
+#  smoke:
+#    name: Smoke End-to-End Tests
+#    runs-on: ubuntu-latest
+#    needs: build
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
+#                   'contract.precompile.part1,contract.records',
+#                   'contract.precompile.part2,contract.hapi',
+#                   'contract.opcodes.eth,contract.openzeppelin.eth,contract.traceability.eth',
+#                   'contract.precompile.part1.eth,contract.records.eth',
+#                   'contract.precompile.part2.eth,contract.hapi.eth']
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: gradle/wrapper-validation-action@v1
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v2
+#        with:
+#          java-version: 17
+#          distribution: temurin
+#      - name: Build docker images # build the image for hedera-node TODO Generates a TON of useless logs
+#        run: bash compose-build.sh
+#      - name: Start network # start 3 node network
+#        run: docker compose up -d
+#      - name: Healthcheck for Hedera node # wait until node is ready to serve requests
+#        working-directory: .github/scripts
+#        run: bash healthcheck.sh
+#      - name: Run End-to-End Tests
+#        uses: gradle/gradle-build-action@v2
+#        with:
+#          #        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DdefaultPort=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
+#          arguments: eet -DdefaultPort=50213 -Dpackages=${{matrix.packages}}
 
 
 #      - name: Upload surefire report
