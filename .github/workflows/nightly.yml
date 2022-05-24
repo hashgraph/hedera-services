@@ -1,11 +1,10 @@
-#name: Build
-#
+name: Nightly
+
+# Each night at midnight central we run this workflow. We will run a full build plus hammer tests and end-to-end tests.
+# We will also run all the micro-benchmarks.
 #on:
-#  pull_request:
+#  nightly:
 #    branches: [ $default-branch, release/** ]
-#  push:
-#    branches: [ $default-branch, release/** ]
-#    tags: [ v* ]
 #
 #jobs:
 #  build:
@@ -17,10 +16,10 @@
 #        with:
 #          java-version: 17
 #          distribution: temurin
-#      - name: Setup Gradle
-#        uses: gradle/gradle-build-action@v2
 #      - name: Build with Gradle
-#        run: ./gradlew build
+#        uses: gradle/gradle-build-action@v2
+#        with:
+#          arguments: build
 #      - name: Upload build reports
 #        uses: actions/upload-artifact@v3
 #        with:
