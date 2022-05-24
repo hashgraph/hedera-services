@@ -43,13 +43,13 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           name: Jacoco Data
-          files: /**/build/jacoco/test/jacocoTestReport.xml
+          files: /**/build/reports/jacoco/test/jacocoTestReport.xml
       - name: Upload Code Coverage Reports
         if: always()
         uses: codecov/codecov-action@v3
         with:
           name: Jacoco Report
-          files: /**/build/jacoco/test/html
+          files: /**/build/reports/jacoco/test/html
 #      - name: Upload build reports
 #        uses: actions/upload-artifact@v3
 #        with:
