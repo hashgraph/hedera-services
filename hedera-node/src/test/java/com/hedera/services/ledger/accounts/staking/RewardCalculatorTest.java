@@ -129,7 +129,7 @@ class RewardCalculatorTest {
 		assertEquals(500, subject.getAccountReward());
 		assertEquals(500L, subject.rewardsPaidInThisTxn());
 
-		subject.reset();
+		subject.resetRewardsPaid();
 		assertEquals(0L, subject.rewardsPaidInThisTxn());
 	}
 

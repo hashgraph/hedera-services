@@ -154,7 +154,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.stakingRewardsActivated = that.stakingRewardsActivated;
 	}
 
-	// Helpers that reset the received argument based on the network context
+	// Helpers that resetRewardsPaid the received argument based on the network context
 	public void resetMultiplierSourceFromSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
 			feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
@@ -165,7 +165,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		var activeThrottles = throttling.allActiveThrottles();
 		if (activeThrottles.size() != usageSnapshots.length) {
 			log.warn("There are {} active throttles, but {} usage snapshots from saved state. " +
-					"Not performing a reset!", activeThrottles.size(), usageSnapshots.length);
+					"Not performing a resetRewardsPaid!", activeThrottles.size(), usageSnapshots.length);
 			return;
 		}
 		reset(activeThrottles, throttling.gasLimitThrottle());
@@ -197,7 +197,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	/* --- Mutators that change this network context --- */
 	public void clearAutoRenewSummaryCounts() {
-		throwIfImmutable("Cannot reset auto-renew summary counts on an immutable context");
+		throwIfImmutable("Cannot resetRewardsPaid auto-renew summary counts on an immutable context");
 		entitiesScannedThisSecond = 0L;
 		entitiesTouchedThisSecond = 0L;
 	}
@@ -643,7 +643,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) " +
 								"not" +
 								" " +
-								"performing a reset !",
+								"performing a resetRewardsPaid !",
 						(i + 1), e.getMessage());
 				resetUnconditionally(throttles, currUsageSnapshots);
 				break;
@@ -656,7 +656,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
 		} catch (IllegalArgumentException e) {
 			log.warn(String.format("Saved gas throttle usage snapshot was not compatible " +
-					"with the corresponding active throttle (%s); not performing a reset!", e.getMessage()));
+					"with the corresponding active throttle (%s); not performing a resetRewardsPaid!", e.getMessage()));
 			gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
 		}
 	}

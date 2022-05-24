@@ -59,7 +59,7 @@ import static com.hedera.services.state.initialization.BackedSystemAccountsCreat
  *
  * For example, in release v0.24.1 we created two new accounts {@code 0.0.800} and {@code 0.0.801} to
  * receive staking reward funds. Without synthetic {@code CryptoCreate} records in the record stream,
- * mirror nodes wouldn't know about these new staking accounts. (Note on a network reset, we will <i>also</i>
+ * mirror nodes wouldn't know about these new staking accounts. (Note on a network resetRewardsPaid, we will <i>also</i>
  * stream these two synthetic creations for mirror node consumption.)
  */
 @Singleton
@@ -109,7 +109,7 @@ public class MigrationRecordsManager {
 			return;
 		}
 
-		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
+		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network resetRewardsPaid
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
 			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));

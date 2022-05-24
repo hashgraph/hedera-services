@@ -788,7 +788,7 @@ class MerkleNetworkContextTest {
 		// and:
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 		// and:
-		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
+		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a resetRewardsPaid!";
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -815,7 +815,7 @@ class MerkleNetworkContextTest {
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
 
 		var desired = "Saved gas throttle usage snapshot was not compatible with the corresponding " +
-				"active throttle (Cannot use -1 units in a bucket of capacity 1234!); not performing a reset!";
+				"active throttle (Cannot use -1 units in a bucket of capacity 1234!); not performing a resetRewardsPaid!";
 		// when:
 		subject.setGasThrottleUsageSnapshot(new DeterministicThrottle.UsageSnapshot(-1, null));
 		subject.resetThrottlingFromSavedSnapshots(throttling);

@@ -85,7 +85,7 @@ public class RewardCalculator {
 		rewardsPaid += accountReward; // used for adding balance change for 0.0.800
 	}
 
-	public void reset() {
+	public void resetRewardsPaid() {
 		rewardsPaid = 0L;
 	}
 
