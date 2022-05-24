@@ -84,19 +84,6 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenBurnTransactionBody op = txnBody.getTokenBurn();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		return validateTokenOpsWith(
-				op.getSerialNumbersCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_TOKEN_BURN_AMOUNT,
-				op.getSerialNumbersList(),
-				validator::maxBatchSizeBurnCheck
-		);
+		return burnLogic.validateSyntax(txnBody);
 	}
 }
