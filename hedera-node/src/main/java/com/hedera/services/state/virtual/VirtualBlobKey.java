@@ -37,7 +37,7 @@ import static java.lang.Long.parseLong;
 
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 	// TODO(REMOVE)
-	private static final Logger log = LogManager.getLogger(ContractKey.class);
+	private static final Logger log = LogManager.getLogger(ContractValue.class);
 	static final int CURRENT_VERSION = 1;
 	static final int BYTES_IN_SERIALIZED_FORM = 5;
 	static final long CLASS_ID = 0x11b982c14217d523L;
@@ -88,7 +88,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 	public void deserialize(ByteBuffer buffer, int version) throws IOException {
 		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
 		if (version != CURRENT_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", version, CURRENT_VERSION);
+			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", version, CURRENT_VERSION);
 		}
 		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		type = BLOB_TYPES[0xff & buffer.get()];
@@ -99,7 +99,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
 		if (version != CURRENT_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", version, CURRENT_VERSION);
+			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", version, CURRENT_VERSION);
 		}
 		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		type = BLOB_TYPES[0xff & in.readByte()];

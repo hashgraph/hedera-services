@@ -40,7 +40,7 @@ import java.util.Objects;
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
 	// TODO(REMOVE)
-	private static final Logger log = LogManager.getLogger(ContractKey.class);
+	private static final Logger log = LogManager.getLogger(ContractValue.class);
 
 	public static final int MERKLE_VERSION = 1;
 	public static final int SERIALIZED_SIZE = 32;
@@ -266,7 +266,7 @@ public class ContractValue implements VirtualValue {
 	public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
 		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
 		if (i != MERKLE_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", i, MERKLE_VERSION);
+			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", i, MERKLE_VERSION);
 		}
 		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
@@ -278,7 +278,7 @@ public class ContractValue implements VirtualValue {
 	public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
 		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
 		if (i != MERKLE_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", i, MERKLE_VERSION);
+			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", i, MERKLE_VERSION);
 		}
 		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
