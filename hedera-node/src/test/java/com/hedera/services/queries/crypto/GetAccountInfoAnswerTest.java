@@ -26,6 +26,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -110,6 +111,8 @@ class GetAccountInfoAnswerTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	private final MutableStateChildren children = new MutableStateChildren();
 
@@ -169,7 +172,6 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(missingRelKey, missingRel);
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
-		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
 		TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
@@ -189,6 +191,9 @@ class GetAccountInfoAnswerTest {
 				.cryptoAllowances(cryptoAllowances)
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.explicitNftAllowances(nftAllowances)
+				.stakedId(-1L)
+				.stakePeriodStart(12345678L)
+				.declineReward(false)
 				.get();
 
 		children.setAccounts(accounts);
@@ -197,7 +202,7 @@ class GetAccountInfoAnswerTest {
 
 		view = new StateView(scheduleStore, children, networkInfo);
 
-		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
+		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties, rewardCalculator);
 	}
 
 	@Test
@@ -237,7 +242,7 @@ class GetAccountInfoAnswerTest {
 		// and:
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		given(view.infoForAccount(any(), any(), anyInt(), any())).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -298,6 +303,12 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
+
+		assertEquals(0L, info.getStakingInfo().getStakedNodeId());
+		assertFalse(info.getStakingInfo().hasStakedAccountId());
+		assertFalse(info.getStakingInfo().getDeclineReward());
+		assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
+		assertEquals(0L, info.getStakingInfo().getStakedToMe());
 
 		// and:
 		assertEquals(

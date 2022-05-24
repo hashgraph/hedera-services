@@ -121,7 +121,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var changes = pendingChanges.changes(i);
 			final var accountNum = pendingChanges.id(i).getAccountNum();
 
-			rewardBalanceChanged |= accountNum == STAKING_FUNDING_ACCOUNT_NUMBER;
+//			rewardBalanceChanged |= accountNum == STAKING_FUNDING_ACCOUNT_NUMBER;
+			checksFundingBalanceChange(changes, accountNum);
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes, latestEligibleStart)) {
@@ -132,13 +133,24 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 	}
 
+	private void checksFundingBalanceChange(final Map<AccountProperty, Object> changes, final long accountNum) {
+		if (changes.containsKey(AccountProperty.BALANCE)) {
+			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
+			if (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER) {
+				rewardBalanceChanged = true;
+				newRewardBalance = newBalance;
+			}
+		}
+	}
+
+
 	private void updateFundingRewardBalances(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
 		rewardBalanceChanged |= rewardsPaid > 0;
 		if (rewardsPaid > 0) {
 			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
-			newRewardBalance = stakeChangeManager.updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
+			newRewardBalance += stakeChangeManager.updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
 		}
 	}
 
@@ -258,6 +270,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	 */
 	protected boolean shouldActivateStakingRewards() {
 		return !rewardsActivated && rewardBalanceChanged && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
+		// newRewardBalance needs to check BALANCE changes for 0.0.800
 	}
 
 

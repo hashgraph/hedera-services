@@ -68,6 +68,7 @@ public class MerkleAccountFactory {
 	private int[] firstUint256Key;
 	private long stakedId = 0;
 	private long stakePeriodStart = -1;
+	private boolean declineReward;
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -97,6 +98,7 @@ public class MerkleAccountFactory {
 		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
 		value.setStakedId(stakedId);
 		value.setStakePeriodStart(stakePeriodStart);
+		value.setDeclineReward(declineReward);
 		autoRenewAccount.ifPresent(p -> value.setAutoRenewAccount(EntityId.fromGrpcAccountId(p)));
 		if (firstUint256Key != null) {
 			value.setFirstUint256StorageKey(firstUint256Key);
@@ -130,6 +132,10 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory stakedId(final long stakedId) {
 		this.stakedId = stakedId;
+		return this;
+	}
+	public MerkleAccountFactory declineReward(final boolean declineReward) {
+		this.declineReward = declineReward;
 		return this;
 	}
 
