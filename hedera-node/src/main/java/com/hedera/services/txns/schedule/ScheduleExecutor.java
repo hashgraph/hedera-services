@@ -87,7 +87,6 @@ public final class ScheduleExecutor {
 		}
 
 		final var schedule = store.get(id);
-		final var transaction = schedule.asSignedTxn();
 		return Pair.of(OK, getTxnAccessor(id, schedule, !isImmediate));
 	}
 

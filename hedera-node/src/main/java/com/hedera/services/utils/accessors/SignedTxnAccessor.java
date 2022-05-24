@@ -293,9 +293,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public boolean throttleExempt() {
 		if (throttleExempt == null) {
-			var payer = getPayer();
-			if (payer != null) {
-				return IS_THROTTLE_EXEMPT.test(payer.getAccountNum());
+			var p = getPayer();
+			if (p != null) {
+				return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
 			}
 			return false;
 		}
