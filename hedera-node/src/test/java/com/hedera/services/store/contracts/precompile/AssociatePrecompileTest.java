@@ -348,7 +348,6 @@ class AssociatePrecompileTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
 		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
