@@ -72,16 +72,6 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenDissociateTransactionBody op = txnBody.getTokenDissociate();
-
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
-
-		if (repeatsItself(op.getTokensList())) {
-			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-		}
-
-		return OK;
+		return dissociateLogic.validateSyntax(txnBody);
 	}
 }

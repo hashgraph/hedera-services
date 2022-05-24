@@ -79,7 +79,7 @@ class TokenAssociateTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(associateLogic).associateUniqueTokens(
+		verify(associateLogic).associate(
 				Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
 	}
 

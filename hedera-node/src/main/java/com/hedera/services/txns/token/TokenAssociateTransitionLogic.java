@@ -56,8 +56,7 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 		final var accountId = Id.fromGrpcAccount(op.getAccount());
 
 		/* --- Do the business logic --- */
-		// This is preceded by validate in handleTransaction, so tokens must be unique
-		associateLogic.associateUniqueTokens(accountId, op.getTokensList());
+		associateLogic.associate(accountId, op.getTokensList());
 	}
 
 	@Override

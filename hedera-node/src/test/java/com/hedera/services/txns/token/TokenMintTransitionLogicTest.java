@@ -23,6 +23,8 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -51,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,14 +74,18 @@ class TokenMintTransitionLogicTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private MintLogic mintLogic;
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AccountStore accountStore;
 
 	private TransactionBody tokenMintTxn;
 
+	private MintLogic mintLogic;
 	private TokenMintTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
+		mintLogic = new MintLogic(validator, tokenStore, accountStore, dynamicProperties);
 		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
 	}
 
@@ -188,6 +195,9 @@ class TokenMintTransitionLogicTest {
 
 	@Test
 	void callsMintLogicWithCorrectParams() {
+		mintLogic = mock(MintLogic.class);
+		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
+
 		var consensus = Instant.now();
 		var grpcId = IdUtils.asToken("0.0.1");
 		var amount = 4321L;
