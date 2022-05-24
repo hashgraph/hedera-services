@@ -23,6 +23,8 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -46,15 +48,14 @@ import java.util.stream.LongStream;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
 	private final long amount = 123L;
 	private final TokenID grpcId = IdUtils.asToken("1.2.3");
-	private final Id id = new Id(1, 2, 3);
 	private final Id treasuryId = new Id(2, 4, 6);
-	private final Account treasury = new Account(treasuryId);
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -67,16 +68,20 @@ class TokenBurnTransitionLogicTest {
 	@Mock
 	private OptionValidator validator;
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+	private TypedTokenStore tokenStore;
 	@Mock
-	private BurnLogic burnLogic;
+	private AccountStore accountStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody tokenBurnTxn;
 
+	private BurnLogic burnLogic;
 	private TokenBurnTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
+		burnLogic = new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
 		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
 	}
 
@@ -188,7 +193,9 @@ class TokenBurnTransitionLogicTest {
 
 	@Test
 	void callsBurnLogicWithCorrectParams() {
-		var consensus = Instant.now();
+		burnLogic = mock(BurnLogic.class);
+		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
+
 		var grpcId = IdUtils.asToken("0.0.1");
 		var amount = 4321L;
 		List<Long> serialNumbersList = List.of(1L, 2L, 3L);
