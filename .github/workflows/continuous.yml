@@ -38,11 +38,18 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: jacocoTestReport
-#      - name: Upload coverage to Codecov
-#        if: always()
-#        uses: codecov/codecov-action@v2
-#        with:
-#          files: 'jacoco.xml'
+      - name: Upload Code Coverage Data
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          name: Jacoco Data
+          files: /**/build/jacoco/test/jacocoTestReport.xml
+      - name: Upload Code Coverage Reports
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          name: Jacoco Report
+          files: /**/build/jacoco/test/html
 #      - name: Upload build reports
 #        uses: actions/upload-artifact@v3
 #        with:
