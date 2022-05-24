@@ -884,6 +884,20 @@ class StateViewTest {
 	}
 
 	@Test
+	void handlesNullAutoRenewAccount() {
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
+		contract.setAutoRenewAccount(null);
+
+		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
+
+		assertFalse(info.hasAutoRenewAccountId());
+		mockedStatic.close();
+	}
+
+	@Test
 	void getsAttrs() {
 		given(attrs.get(target)).willReturn(metadata);
 

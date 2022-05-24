@@ -583,8 +583,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
 			this.transactionBody = this.precompile.body(input, aliasResolver);
-		} catch (Exception e) {
-			log.warn("Internal precompile failure", e);
+		} catch (Exception ignore) {
 			transactionBody = null;
 		}
 	}
@@ -1054,7 +1053,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		/* --- Due to differences in Solidity and protobuf interfaces, perform custom checks on the input  --- */
 		private void verifySolidityInput() {
-
 			/*
 			 * Verify initial supply and decimals fall withing the allowed ranges of the types
 			 * they convert to (long and int, respectively), since in the Solidity interface
