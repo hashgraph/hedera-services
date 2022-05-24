@@ -189,10 +189,7 @@ class ServicesStateTest {
 	void doesNoMigrationsFromCurrentVersion() {
 		mockMigrators();
 
-		subject = mock(ServicesState.class);
-
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -207,18 +204,18 @@ class ServicesStateTest {
 		final var inOrder = inOrder(
 				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState, scheduledTxnsMigrator);
 
-		subject = mock(ServicesState.class);
+		ServicesState.setExpiryJustEnabled(false);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(mock(MerkleMap.class));
 
 		subject.migrate();
 
@@ -241,20 +238,19 @@ class ServicesStateTest {
 				autoRenewalMigrator, titleCountsMigrator, scheduledTxnsMigrator,
 				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
-
 		ServicesState.setExpiryJustEnabled(true);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
-		given(subject.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(mock(MerkleMap.class));
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);
@@ -273,11 +269,9 @@ class ServicesStateTest {
 	@Test
 	void doesScheduledTxnMigrationRegardlessOfVersion() {
 		mockMigrators();
-		subject = mock(ServicesState.class);
 
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(mock(MerkleMap.class));
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 
 		subject.migrate();
 

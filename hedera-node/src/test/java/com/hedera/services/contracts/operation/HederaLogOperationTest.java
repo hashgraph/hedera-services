@@ -32,7 +32,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hamcrest.Matchers;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.log.Log;
@@ -47,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class HederaLogOperationTest {
 	private static final int numTopics = 2;
-	private static final Gas reqGas = Gas.of(1234);
+	private static final long reqGas = 1234L;
 	private static final long numBytes = 12L;
 	private static final long dataLocation = 13L;
 	private static final Bytes firstLogTopic = Bytes.fromHexString("0xee");
@@ -73,11 +73,11 @@ class HederaLogOperationTest {
 	private static final Address unknownAddress = EntityNum.MISSING_NUM.toEvmAddress();
 	private static final Bytes data = Bytes.fromHexString("0xabcdef");
 	private static final Operation.OperationResult insufficientGasResult =
-			new Operation.OperationResult(Optional.of(reqGas), Optional.of(INSUFFICIENT_GAS));
+			new Operation.OperationResult(OptionalLong.of(reqGas), Optional.of(INSUFFICIENT_GAS));
 	private static final Operation.OperationResult illegalStateChangeResult =
-			new Operation.OperationResult(Optional.of(reqGas), Optional.of(ILLEGAL_STATE_CHANGE));
+			new Operation.OperationResult(OptionalLong.of(reqGas), Optional.of(ILLEGAL_STATE_CHANGE));
 	private static final Operation.OperationResult goodResult =
-			new Operation.OperationResult(Optional.of(reqGas), Optional.empty());
+			new Operation.OperationResult(OptionalLong.of(reqGas), Optional.empty());
 
 	@Mock
 	private GasCalculator gasCalculator;
@@ -119,7 +119,7 @@ class HederaLogOperationTest {
 
 	@Test
 	void failsOnInsufficientGas() {
-		final var insufficientGas = reqGas.minus(Gas.of(1));
+		final var insufficientGas = reqGas - 1L;
 		given(frame.popStackItem())
 				.willReturn(Bytes.ofUnsignedLong(dataLocation))
 				.willReturn(Bytes.ofUnsignedLong(numBytes));
@@ -143,7 +143,7 @@ class HederaLogOperationTest {
 		given(aliases.isMirror(mirrorAddress)).willReturn(true);
 		given(aliases.resolveForEvm(nonMirrorAddress)).willReturn(mirrorAddress);
 
-		final var adequateGas = reqGas.plus(Gas.of(1));
+		final var adequateGas = reqGas + 1L;
 		given(frame.popStackItem())
 				.willReturn(Bytes.ofUnsignedLong(dataLocation))
 				.willReturn(Bytes.ofUnsignedLong(numBytes))
@@ -173,7 +173,7 @@ class HederaLogOperationTest {
 		given(updater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(nonMirrorAddress)).willReturn(nonMirrorAddress);
 
-		final var adequateGas = reqGas.plus(Gas.of(1));
+		final var adequateGas = reqGas + 1L;
 		given(frame.popStackItem())
 				.willReturn(Bytes.ofUnsignedLong(dataLocation))
 				.willReturn(Bytes.ofUnsignedLong(numBytes))

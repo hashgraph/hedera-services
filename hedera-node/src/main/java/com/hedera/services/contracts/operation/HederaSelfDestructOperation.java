@@ -26,7 +26,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -36,6 +35,7 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 
 /**
@@ -90,7 +90,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 	}
 
 	private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
-		final Gas cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
-		return new OperationResult(Optional.of(cost), Optional.of(reason));
+		final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
+		return new OperationResult(OptionalLong.of(cost), Optional.of(reason));
 	}
 }

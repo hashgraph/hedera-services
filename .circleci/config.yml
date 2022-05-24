@@ -588,20 +588,6 @@ commands:
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
-  run-jrs-experiment:
-    description: Run JRS experiment json
-    parameters:
-      experiment-name:
-        type: string
-        default: ""
-    steps:
-      - run:
-          name: Run experiment << parameters.experiment-name >>.json
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
-
 executors:
   build-executor:
     resource_class: xlarge

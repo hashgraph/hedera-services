@@ -166,6 +166,9 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 
+						// wait reconnect node to finish receiving new state, otherwise it may response
+						// with incorrect answer from old state
+						sleepFor(3000),
 						/* validate tokenInfo between reconnecting node and other nodes match*/
 						getTokenInfo(tokenToBeQueried)
 								.setNode(reconnectingNode)

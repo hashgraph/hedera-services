@@ -23,7 +23,6 @@ package com.hedera.services.contracts.gascalculator;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -62,7 +61,7 @@ class StorageGasCalculatorTest {
 		given(gasCalculator.memoryExpansionGasCost(frame, 10L, 20L))
 				.willReturn(memExpansionCost);
 
-		final var expected = Gas.of(storageCostTinybars / gasPrice.toLong()).plus(memExpansionCost);
+		final var expected = (storageCostTinybars / gasPrice.toLong()) + memExpansionCost;
 		final var actual = subject.creationGasCost(frame, gasCalculator);
 
 		assertEquals(expected, actual);
@@ -75,7 +74,7 @@ class StorageGasCalculatorTest {
 				.willReturn(memExpansionCost);
 		given(oracle.storageExpiryIn(frame)).willReturn(now - 1);
 
-		final var expected = Gas.of(0L).plus(memExpansionCost);
+		final var expected = memExpansionCost;
 		final var actual = subject.creationGasCost(frame, gasCalculator);
 
 		assertEquals(expected, actual);
@@ -97,7 +96,7 @@ class StorageGasCalculatorTest {
 	}
 
 	private static final Wei gasPrice = Wei.of(42);
-	private static final Gas memExpansionCost = Gas.of(1000);
+	private static final long memExpansionCost = 1000L;
 	private static final long sbh = 12;
 	private static final long now = 1_234_567L;
 	private static final long lifetimeSecs = 7776000L;
