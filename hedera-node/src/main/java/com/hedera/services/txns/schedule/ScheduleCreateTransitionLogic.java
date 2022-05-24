@@ -122,7 +122,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		final var throttleResult = scheduleProcessing.checkFutureThrottlesForCreate(schedule);
+		final var throttleResult = scheduleProcessing.checkFutureThrottlesForCreate(scheduleId, schedule);
 
 		if (throttleResult != OK) {
 			abortWith(throttleResult);

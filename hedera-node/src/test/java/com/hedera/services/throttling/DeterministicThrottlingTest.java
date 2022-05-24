@@ -197,6 +197,38 @@ class DeterministicThrottlingTest {
 	}
 
 	@ParameterizedTest
+	@CsvSource({"HAPI,true,true", "HAPI,false,true", "CONSENSUS,true,true", "CONSENSUS,false,true",
+				"HAPI,true,false", "HAPI,false,false", "CONSENSUS,true,false", "CONSENSUS,false,false"})
+	void usesScheduleCreateThrottleWithNestedThrottleExempt(
+			final DeterministicThrottlingMode mode, final boolean longTermEnabled,
+			final boolean waitForExpiry) throws IOException {
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
+		subject.setMode(mode);
+		final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+				.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 150; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(149999992500000L, aNow.used());
+
+		assertEquals(0,
+				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+	}
+
+	@ParameterizedTest
 	@CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
 	void scheduleCreateAlwaysThrottledWhenNoBody(
 			final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
@@ -435,6 +467,47 @@ class DeterministicThrottlingTest {
 		assertEquals(149999992500000L, aNow.used());
 
 		assertEquals(longTermEnabled && mode == HAPI && (!waitForExpiry) ? 149999255000000L : 0,
+				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+	}
+
+	@ParameterizedTest
+	@CsvSource({"HAPI,true,true", "HAPI,false,true", "CONSENSUS,true,true", "CONSENSUS,false,true",
+				"HAPI,true,false", "HAPI,false,false", "CONSENSUS,true,false", "CONSENSUS,false,false"})
+	void usesScheduleSignThrottleWithNestedThrottleExempt(
+			final DeterministicThrottlingMode mode, final boolean longTermEnabled,
+			final boolean waitForExpiry) throws IOException {
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
+		subject.setMode(mode);
+
+		if (longTermEnabled && mode == HAPI) {
+			final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+					.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+					.build();
+
+			final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
+
+			given(scheduleStore.getNoError(scheduleID)).willReturn(
+					ScheduleVirtualValue.from(accessor.getTxnBytes(), 0));
+		}
+
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduleSign(scheduleID);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 150; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleSign);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(149999992500000L, aNow.used());
+
+		assertEquals(0,
 				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
 	}
 
@@ -1414,9 +1487,16 @@ class DeterministicThrottlingTest {
 		return scheduleCreate(inner, false);
 	}
 	private SignedTxnAccessor scheduleCreate(final SchedulableTransactionBody inner, boolean waitForExpiry) {
+		return scheduleCreate(inner, waitForExpiry, null);
+	}
+
+	private SignedTxnAccessor scheduleCreate(final SchedulableTransactionBody inner, boolean waitForExpiry, AccountID customPayer) {
 		final var schedule = ScheduleCreateTransactionBody.newBuilder()
 				.setWaitForExpiry(waitForExpiry)
 				.setScheduledTransactionBody(inner);
+		if (customPayer != null) {
+			schedule.setPayerAccountID(customPayer);
+		}
 		final var body = TransactionBody.newBuilder()
 				.setScheduleCreate(schedule)
 				.build();

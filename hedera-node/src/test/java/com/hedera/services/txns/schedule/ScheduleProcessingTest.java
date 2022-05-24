@@ -99,6 +99,14 @@ class ScheduleProcessingTest {
 	@Mock
 	private ScheduleVirtualValue schedule4;
 	@Mock
+	private TxnAccessor schedule1Accessor;
+	@Mock
+	private TxnAccessor schedule2Accessor;
+	@Mock
+	private TxnAccessor schedule3Accessor;
+	@Mock
+	private TxnAccessor schedule4Accessor;
+	@Mock
 	private ScheduleSecondVirtualValue bySecond;
 	@Mock
 	private TxnAccessor accessor;
@@ -532,7 +540,7 @@ class ScheduleProcessingTest {
 	}
 
 	@Test
-	void checkFutureThrottlesForCreateWorksAsExpected() {
+	void checkFutureThrottlesForCreateWorksAsExpected() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(scheduleThrottling);
 
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -561,9 +569,10 @@ class ScheduleProcessingTest {
 		given(store.getNoError(scheduleId2)).willReturn(schedule2);
 		given(store.getNoError(scheduleId3)).willReturn(schedule3);
 
-		given(schedule1.asSignedTxn()).willReturn(getSignedTxn(scheduleId1));
-		given(schedule2.asSignedTxn()).willReturn(getSignedTxn(scheduleId2));
-		given(schedule4.asSignedTxn()).willReturn(getSignedTxn(scheduleId4));
+		given(scheduleExecutor.getTxnAccessor(scheduleId1, schedule1, false)).willReturn(schedule1Accessor);
+		given(scheduleExecutor.getTxnAccessor(scheduleId2, schedule2, false)).willReturn(schedule2Accessor);
+		given(scheduleExecutor.getTxnAccessor(scheduleId4, schedule4, false)).willReturn(schedule4Accessor);
+
 
 		given(scheduleThrottling.shouldThrottleTxn(any(TxnAccessor.class),
 				eq(new RichInstant(consensusTime.getEpochSecond(), 0).toJava())))
@@ -575,22 +584,22 @@ class ScheduleProcessingTest {
 				eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
 				.willReturn(true);
 
-		var result = subject.checkFutureThrottlesForCreate(schedule4);
+		var result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
 
 		assertEquals(SCHEDULE_FUTURE_THROTTLE_EXCEEDED, result);
 
-		inOrder.verify(scheduleThrottling).shouldThrottleTxn(any(TxnAccessor.class),
-				eq(new RichInstant(consensusTime.getEpochSecond(), 0).toJava()));
-		inOrder.verify(scheduleThrottling).shouldThrottleTxn(any(TxnAccessor.class),
-				eq(new RichInstant(consensusTime.getEpochSecond(), 1).toJava()));
-		inOrder.verify(scheduleThrottling).shouldThrottleTxn(any(TxnAccessor.class),
-				eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava()));
+		inOrder.verify(scheduleThrottling).shouldThrottleTxn(schedule1Accessor,
+				new RichInstant(consensusTime.getEpochSecond(), 0).toJava());
+		inOrder.verify(scheduleThrottling).shouldThrottleTxn(schedule4Accessor,
+				new RichInstant(consensusTime.getEpochSecond(), 1).toJava());
+		inOrder.verify(scheduleThrottling).shouldThrottleTxn(schedule2Accessor,
+				new RichInstant(consensusTime.getEpochSecond(), 2).toJava());
 
 
 
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
-		result = subject.checkFutureThrottlesForCreate(schedule4);
+		result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
 
 		assertEquals(OK, result);
 
@@ -598,7 +607,7 @@ class ScheduleProcessingTest {
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 		given(scheduleThrottling.wasLastTxnGasThrottled()).willReturn(true);
 
-		result = subject.checkFutureThrottlesForCreate(schedule4);
+		result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
 
 		assertEquals(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED, result);
 
@@ -608,7 +617,7 @@ class ScheduleProcessingTest {
 				eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
 				.willReturn(false);
 
-		result = subject.checkFutureThrottlesForCreate(schedule4);
+		result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
 
 		assertEquals(OK, result);
 
@@ -638,16 +647,4 @@ class ScheduleProcessingTest {
 		assertEquals(10L, subject.getMaxProcessingLoopIterations());
 	}
 
-	private Transaction getSignedTxn() {
-		return getSignedTxn(null);
-	}
-	private Transaction getSignedTxn(ScheduleID scheduleID) {
-		final var txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
-		return Transaction.newBuilder()
-				.setBodyBytes(TransactionBody.newBuilder()
-						.setTransactionID(txnId)
-						.setMemo(scheduleID != null ? scheduleID.toString() : "scheduled")
-						.build().toByteString())
-				.build();
-	}
 }

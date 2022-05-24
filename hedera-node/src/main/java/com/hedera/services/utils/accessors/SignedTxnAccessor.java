@@ -57,6 +57,7 @@ import org.bouncycastle.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.LongPredicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -84,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
 	private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
@@ -113,7 +115,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private HederaFunctionality function;
 	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
-	private boolean throttleExempt;
+	private Boolean throttleExempt;
 	private boolean congestionExempt;
 
 
@@ -290,6 +292,13 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean throttleExempt() {
+		if (throttleExempt == null) {
+			var payer = getPayer();
+			if (payer != null) {
+				return IS_THROTTLE_EXEMPT.test(payer.getAccountNum());
+			}
+			return false;
+		}
 		return throttleExempt;
 	}
 

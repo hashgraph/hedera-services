@@ -32,39 +32,55 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
+import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
+import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORIG_FILE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
@@ -99,6 +115,13 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithCryptoInsufficientAccountBalanceFails(),
 			executionWithCryptoSenderDeletedFails(),
 			executionTriggersWithWeirdlyRepeatedKey(),
+
+			scheduledFreezeWorksAsExpected(),
+			scheduledFreezeWithUnauthorizedPayerFails(),
+			scheduledPermissionedFileUpdateWorksAsExpected(),
+			scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
+			scheduledSystemDeleteWorksAsExpected(),
+			scheduledSystemDeleteUnauthorizedPayerFails(),
 
 			executionWithContractCallWorksAtExpiry(),
 			executionWithContractCreateWorksAtExpiry(),
@@ -1029,6 +1052,284 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec scheduledFreezeWorksAsExpected() {
+
+		final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
+
+		return defaultHapiSpec("ScheduledFreezeWorksAsExpectedAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						overriding("scheduling.whitelist", "Freeze"),
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(poeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN),
+						scheduleCreate("validSchedule",
+							prepareUpgrade()
+									.withUpdateFile(standardUpdateFile)
+									.havingHash(poeticUpgradeHash)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer(GENESIS)
+								.payingWith("payingAccount")
+								.waitForExpiry()
+								.recordingScheduledTxn()
+								.withRelativeExpiry("payerTxn", 8)
+								.via("successTxn")
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(GENESIS)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getScheduleInfo("validSchedule")
+								.hasScheduleId("validSchedule")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payerTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("validSchedule")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+
+						freezeAbort(),
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("successTxn").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+						})
+				);
+	}
+
+	private HapiApiSpec scheduledFreezeWithUnauthorizedPayerFails() {
+
+		final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
+
+		return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFailsAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						cryptoCreate("payingAccount2"),
+						overriding("scheduling.whitelist", "Freeze"),
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(poeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN)
+				)
+				.when(
+				)
+				.then(
+						scheduleCreate("validSchedule",
+							prepareUpgrade()
+									.withUpdateFile(standardUpdateFile)
+									.havingHash(poeticUpgradeHash)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer("payingAccount2")
+								.waitForExpiry()
+								.withRelativeExpiry("payerTxn", 8)
+								.payingWith("payingAccount")
+								// future throttles will be exceeded because there is no throttle for freeze
+								// and the custom payer is not exempt from throttles like and admin
+								// user would be
+								.hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED),
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist"))
+				);
+	}
+
+	private HapiApiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
+
+		return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpectedAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						overriding("scheduling.whitelist", "FileUpdate"),
+						scheduleCreate("validSchedule",
+							fileUpdate(APP_PROPERTIES)
+								.overridingProps(Map.of("scheduling.whitelist",
+										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer(ADDRESS_BOOK_CONTROL)
+								.payingWith("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("payerTxn", 8)
+								.recordingScheduledTxn()
+								.via("successTxn")
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getScheduleInfo("validSchedule")
+								.hasScheduleId("validSchedule")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payerTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("validSchedule")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("successTxn").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+						})
+				);
+	}
+
+	private HapiApiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+
+		return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFailsAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						cryptoCreate("payingAccount2"),
+						overriding("scheduling.whitelist", "FileUpdate"),
+						scheduleCreate("validSchedule",
+							fileUpdate(APP_PROPERTIES)
+								.overridingProps(Map.of("scheduling.whitelist",
+										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer("payingAccount2")
+								.payingWith("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("payerTxn", 8)
+								.recordingScheduledTxn()
+								.via("successTxn")
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("payingAccount2", ADDRESS_BOOK_CONTROL)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getScheduleInfo("validSchedule")
+								.hasScheduleId("validSchedule")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payerTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("validSchedule")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("successTxn").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(AUTHORIZATION_FAILED,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be AUTHORIZATION_FAILED!");
+						})
+				);
+	}
+	private HapiApiSpec scheduledSystemDeleteWorksAsExpected() {
+
+		return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpectedAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						fileCreate("misc")
+								.lifetime(THREE_MONTHS_IN_SECONDS)
+								.contents(ORIG_FILE),
+						overriding("scheduling.whitelist", "SystemDelete"),
+						scheduleCreate("validSchedule",
+							systemFileDelete("misc")
+									.updatingExpiry(1L)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer(SYSTEM_DELETE_ADMIN)
+								.payingWith("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("payerTxn", 8)
+								.recordingScheduledTxn()
+								.via("successTxn")
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(SYSTEM_DELETE_ADMIN)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getScheduleInfo("validSchedule")
+								.hasScheduleId("validSchedule")
+								.hasWaitForExpiry()
+								.isNotExecuted()
+								.isNotDeleted()
+								.hasRelativeExpiry("payerTxn", 8)
+								.hasRecordedScheduledTxn(),
+						sleepFor(9000),
+						cryptoCreate("foo").via("triggeringTxn"),
+						getScheduleInfo("validSchedule")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
+						getFileInfo("misc")
+								.nodePayment(1_234L)
+								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("successTxn").scheduled();
+							allRunFor(spec, triggeredTx);
+
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+						})
+				);
+	}
+
+	private HapiApiSpec scheduledSystemDeleteUnauthorizedPayerFails() {
+
+		return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFailsAtExpiry")
+				.given(
+						cryptoCreate("payingAccount").via("payerTxn"),
+						cryptoCreate("payingAccount2"),
+						fileCreate("misc")
+								.lifetime(THREE_MONTHS_IN_SECONDS)
+								.contents(ORIG_FILE),
+						overriding("scheduling.whitelist", "SystemDelete")
+				)
+				.when(
+				)
+				.then(
+						scheduleCreate("validSchedule",
+							systemFileDelete("misc")
+									.updatingExpiry(1L)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer("payingAccount2")
+								.payingWith("payingAccount")
+								.waitForExpiry()
+								.withRelativeExpiry("payerTxn", 8)
+								// future throttles will be exceeded because there is no throttle for system delete
+								// and the custom payer is not exempt from throttles like and admin
+								// user would be
+								.hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED),
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist"))
+				);
+	}
+
 	private HapiApiSpec executionNoSigTxnRequiredWorks() {
 		return defaultHapiSpec("ExecutionAtExpiryWithNoSigRequiredWorks")
 				.given(
@@ -1313,6 +1614,18 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 		list.addAll(getSpecs.get());
 		list.add(enableLongTermScheduledTransactions());
 		var withEnabled = getSpecs.get();
+		withEnabled.forEach(s -> s.appendToName("WithLongTermEnabled"));
+		list.addAll(withEnabled);
+		list.add(setLongTermScheduledTransactionsToDefault());
+		return list;
+	}
+
+	public static List<HapiApiSpec> withAndWithoutLongTermEnabled(Function<Boolean, List<HapiApiSpec>> getSpecs) {
+		List<HapiApiSpec> list = new ArrayList<>();
+		list.add(disableLongTermScheduledTransactions());
+		list.addAll(getSpecs.apply(false));
+		list.add(enableLongTermScheduledTransactions());
+		var withEnabled = getSpecs.apply(true);
 		withEnabled.forEach(s -> s.appendToName("WithLongTermEnabled"));
 		list.addAll(withEnabled);
 		list.add(setLongTermScheduledTransactionsToDefault());

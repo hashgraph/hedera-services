@@ -22,6 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -87,10 +88,20 @@ public final class ScheduleExecutor {
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
-		return Pair.of(OK, factory.triggeredTxn(
+		return Pair.of(OK, getTxnAccessor(id, schedule, !isImmediate));
+	}
+
+	TxnAccessor getTxnAccessor(
+			final ScheduleID id,
+			@Nonnull final ScheduleVirtualValue schedule,
+			final boolean throttleAndCongestionExempt
+	) throws InvalidProtocolBufferException {
+
+		final var transaction = schedule.asSignedTxn();
+		return factory.triggeredTxn(
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),
-						id, !isImmediate, !isImmediate));
+						id, throttleAndCongestionExempt, throttleAndCongestionExempt);
 	}
 }
 

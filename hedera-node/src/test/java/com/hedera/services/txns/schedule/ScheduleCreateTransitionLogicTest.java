@@ -170,7 +170,7 @@ class ScheduleCreateTransitionLogicTest {
 	void followsHappyPath() throws InvalidProtocolBufferException {
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 
@@ -191,7 +191,7 @@ class ScheduleCreateTransitionLogicTest {
 	void followsHappyPathEvenIfNoNewValidSignatures() throws InvalidProtocolBufferException {
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
@@ -210,7 +210,7 @@ class ScheduleCreateTransitionLogicTest {
 	void doesNotExecuteWhenLongTermEnabledWaitForExpiry() throws InvalidProtocolBufferException {
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
@@ -237,7 +237,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(properties.schedulingLongTermEnabled()).willReturn(true);
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 
@@ -275,7 +275,7 @@ class ScheduleCreateTransitionLogicTest {
 	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
@@ -303,7 +303,7 @@ class ScheduleCreateTransitionLogicTest {
 	@Test
 	void capturesFailingThrottleCheck() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
-		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
 
 		subject.doStateTransition();
 

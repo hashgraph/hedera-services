@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -39,7 +40,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.throttling.TimedFunctionalityThrottling;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -48,7 +48,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
@@ -83,7 +82,7 @@ public class ScheduleProcessing {
 		this.dynamicProperties = dynamicProperties;
 		this.scheduleThrottling = scheduleThrottling;
 		isFullySigned = scheduleSigsVerifier::areAllKeysActive;
-		this.schedules = schedules;;
+		this.schedules = schedules;
 	}
 
 	/**
@@ -208,23 +207,25 @@ public class ScheduleProcessing {
 	}
 
 	/**
+	 * @param scheduleId the id for schedule
 	 * @param schedule a schedule to check the "future throttles" for.
 	 * @return an error code if there was an error, OK otherwise
 	 */
-	public ResponseCodeEnum checkFutureThrottlesForCreate(final ScheduleVirtualValue schedule) {
+	public ResponseCodeEnum checkFutureThrottlesForCreate(final ScheduleID scheduleId, final ScheduleVirtualValue schedule) {
 
 		if (dynamicProperties.schedulingLongTermEnabled()) {
 			scheduleThrottling.resetUsage();
 
 			final TreeMap<RichInstant, List<TxnAccessor>> transactionsInExecutionOrder = new TreeMap<>();
 
-			var curSecond = schedule.calculatedExpirationTime().getSeconds();
+			final var curSecond = schedule.calculatedExpirationTime().getSeconds();
 
-			var bySecond = store.getBySecond(curSecond);
+			final var bySecond = store.getBySecond(curSecond);
 
 			if (bySecond != null) {
 				bySecond.getIds().values().forEach(ids -> ids.forEach(id -> {
-					var existing = store.getNoError(EntityNum.fromLong(id).toGrpcScheduleId());
+					final var existingScheduleId = EntityNum.fromLong(id).toGrpcScheduleId();
+					final var existing = store.getNoError(existingScheduleId);
 
 					if (existing != null) {
 						if (existing.calculatedExpirationTime().getSeconds() != curSecond) {
@@ -233,7 +234,7 @@ public class ScheduleProcessing {
 						} else {
 							var list = transactionsInExecutionOrder.computeIfAbsent(existing.calculatedExpirationTime(),
 									k -> new ArrayList<>());
-							list.add(SignedTxnAccessor.uncheckedFrom(existing.asSignedTxn()));
+							list.add(getTxnAccessorForThrottleCheck(existingScheduleId, existing));
 						}
 					} else {
 						log.warn("bySecond contained a schedule that does not exist! Ignoring it! second={}, id={}",
@@ -243,7 +244,7 @@ public class ScheduleProcessing {
 			}
 
 			var list = transactionsInExecutionOrder.computeIfAbsent(schedule.calculatedExpirationTime(), k -> new ArrayList<>());
-			list.add(SignedTxnAccessor.uncheckedFrom(schedule.asSignedTxn()));
+			list.add(getTxnAccessorForThrottleCheck(scheduleId, schedule));
 
 			Instant timestamp = Instant.ofEpochSecond(curSecond);
 			for (var entry : transactionsInExecutionOrder.entrySet()) {
@@ -282,4 +283,12 @@ public class ScheduleProcessing {
 		return dynamicProperties.schedulingMaxTxnPerSecond() * 2;
 	}
 
+	private TxnAccessor getTxnAccessorForThrottleCheck(final ScheduleID scheduleId,
+			final ScheduleVirtualValue schedule) {
+		try {
+			return scheduleExecutor.getTxnAccessor(scheduleId, schedule, false);
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 }

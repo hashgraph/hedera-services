@@ -727,6 +727,51 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void throttleExemptWorksWithExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2"));
+
+		assertTrue(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNonExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNullPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(null);
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
 	void markCongestionExemptWorks() {
 		final var op = ContractCallTransactionBody.newBuilder()
 				.build();
