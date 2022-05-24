@@ -25,6 +25,8 @@ import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -34,6 +36,8 @@ import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE
 import static java.lang.Long.parseLong;
 
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
+	// TODO(REMOVE)
+	private static final Logger log = LogManager.getLogger(ContractKey.class);
 	static final int CURRENT_VERSION = 1;
 	static final int BYTES_IN_SERIALIZED_FORM = 5;
 	static final long CLASS_ID = 0x11b982c14217d523L;
@@ -82,12 +86,22 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 
 	@Override
 	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
+		if (version != CURRENT_VERSION) {
+			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", version, CURRENT_VERSION);
+		}
+		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		type = BLOB_TYPES[0xff & buffer.get()];
 		entityNumCode = buffer.getInt();
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
+		if (version != CURRENT_VERSION) {
+			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", version, CURRENT_VERSION);
+		}
+		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		type = BLOB_TYPES[0xff & in.readByte()];
 		entityNumCode = in.readInt();
 	}

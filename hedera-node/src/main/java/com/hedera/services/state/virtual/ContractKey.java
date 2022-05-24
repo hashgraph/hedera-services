@@ -20,10 +20,13 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.ServicesMain;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,6 +48,9 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
  * and realm.
  */
 public final class ContractKey implements VirtualKey<ContractKey> {
+	// TODO(REMOVE)
+	private static final Logger log = LogManager.getLogger(ContractKey.class);
+
 	/** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
 	private static final int[] BIT_SHIFTS = { 0, 8, 16, 24, 32, 40, 48, 56 };
 	/** The estimated average size for a contract key when serialized */
@@ -180,6 +186,11 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
+		if (i != MERKLE_VERSION) {
+			log.error("-- RADFORD: Unexpected version {} in ContractKey. Expected {}", i, MERKLE_VERSION);
+		}
+		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		final byte packedSize = in.readByte();
 		this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
 		this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
@@ -190,6 +201,11 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
 	@Override
 	public void deserialize(ByteBuffer buf, int i) throws IOException {
+		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
+		if (i != MERKLE_VERSION) {
+			log.error("-- unexpected version {} in ContractKey. Expected {}", i, MERKLE_VERSION);
+		}
+		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		final byte packedSize = buf.get();
 		this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
 		this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
