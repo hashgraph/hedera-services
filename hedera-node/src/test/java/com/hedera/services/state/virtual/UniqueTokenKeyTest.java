@@ -136,10 +136,10 @@ class UniqueTokenKeyTest {
 		SerializableDataInputStream inputStream  = serializeToStream(0xFFL, 0xFFL);
 
 		UniqueTokenKey key = new UniqueTokenKey();
-		Assertions.assertThrows(UnsupportedOperationException.class,
+		Assertions.assertThrows(IllegalStateException.class,
 				() -> key.deserialize(byteBuffer, UniqueTokenKey.CURRENT_VERSION + 1));
 
-		Assertions.assertThrows(UnsupportedOperationException.class,
+		Assertions.assertThrows(IllegalStateException.class,
 				() -> key.deserialize(inputStream, UniqueTokenKey.CURRENT_VERSION + 1));
 	}
 

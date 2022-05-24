@@ -208,7 +208,7 @@ public class UniqueTokenValue implements VirtualValue {
 		throwIfImmutable();
 
 		if (dataVersion != CURRENT_VERSION) {
-			throw new UnsupportedOperationException("Data version " + dataVersion + " unsupported. Expected: "
+			throw new IllegalStateException("Data version " + dataVersion + " unsupported. Expected: "
 					+ CURRENT_VERSION);
 		}
 

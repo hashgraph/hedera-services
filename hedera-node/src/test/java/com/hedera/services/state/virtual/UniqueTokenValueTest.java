@@ -311,7 +311,7 @@ class UniqueTokenValueTest {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 		UniqueTokenValue value = new UniqueTokenValue();
-		assertThrows(UnsupportedOperationException.class,
+		assertThrows(IllegalStateException.class,
 				() -> value.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION + 1));
 	}
 
@@ -322,7 +322,7 @@ class UniqueTokenValueTest {
 		SerializableDataInputStream stream = new SerializableDataInputStream(
 				new ByteArrayInputStream(encodedEmpty.array()));
 		UniqueTokenValue value = new UniqueTokenValue();
-		assertThrows(UnsupportedOperationException.class,
+		assertThrows(IllegalStateException.class,
 				() -> value.deserialize(stream, UniqueTokenValue.CURRENT_VERSION + 1));
 	}
 
