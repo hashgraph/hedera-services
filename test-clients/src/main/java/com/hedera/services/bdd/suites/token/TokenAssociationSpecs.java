@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -30,7 +31,6 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,8 +38,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -48,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -60,16 +63,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -77,6 +84,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TokenAssociationSpecs extends HapiApiSuite {
@@ -111,6 +119,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						dissociateHasExpectedSemanticsForDeletedTokens(),
 						dissociateHasExpectedSemanticsForDissociatedContracts(),
 						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+						multiAssociationWithSameRepeatedTokenAsExpected(),
 				}
 		);
 	}
@@ -118,6 +127,42 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+		final var nfToken = "nfToken";
+		final var civilian = "civilian";
+		final var multiAssociate = "multiAssociate";
+		final var theContract = "AssociateDissociate";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> civilianMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("MultiAssociationWithSameRepeatedTokenAsExpected")
+				.given(
+						cryptoCreate(civilian).exposingCreatedIdTo(id ->
+								civilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						tokenCreate(nfToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						uploadInitCode(theContract),
+						contractCreate(theContract)
+				).when(
+						sourcing(() -> contractCall(theContract,
+								"tokensAssociate",
+								civilianMirrorAddr.get(), List.of(tokenMirrorAddr.get(), tokenMirrorAddr.get())
+						)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+								.via(multiAssociate)
+								.payingWith(civilian)
+								.gas(4_000_000))
+				).then(
+						childRecordsCheck(multiAssociate, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(TOKEN_ID_REPEATED_IN_TOKEN_LIST)),
+						getAccountInfo(civilian).hasNoTokenRelationship(nfToken)
+				);
 	}
 
 	public HapiApiSpec handlesUseOfDefaultTokenId() {
@@ -413,7 +458,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.freezeKey(MULTI_KEY)
 								.freezeDefault(true),
 						tokenCreate(tbdUniqToken)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
@@ -510,7 +555,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
 						contractCreate(contract).bytecode(bytecode).gas(300_000),
 						tokenCreate(uniqToken)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
 								.supplyKey(multiKey)
 								.treasury(TOKEN_TREASURY),
