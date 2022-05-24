@@ -66,7 +66,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 public class ScheduleVirtualValue implements VirtualValue {
 
-	static final int CURRENT_VERSION = 4;
+	static final int CURRENT_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
 

@@ -66,7 +66,6 @@ public class ScheduleProcessing {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TimedFunctionalityThrottling scheduleThrottling;
 	private final Supplier<MerkleScheduledTransactions> schedules;
-	private final long maxProcessingLoopIterations;
 
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
@@ -84,8 +83,7 @@ public class ScheduleProcessing {
 		this.dynamicProperties = dynamicProperties;
 		this.scheduleThrottling = scheduleThrottling;
 		isFullySigned = scheduleSigsVerifier::areAllKeysActive;
-		this.schedules = schedules;
-		this.maxProcessingLoopIterations = dynamicProperties.schedulingMaxTxnPerSecond() * 2;
+		this.schedules = schedules;;
 	}
 
 	/**
@@ -96,17 +94,16 @@ public class ScheduleProcessing {
 
 		// we _really_ don't want to loop forever. If the database isn't working, then it's possible. So we put
 		// an upper limit on the number of iterations here.
-		for (long i = 0; i < maxProcessingLoopIterations; ++i) {
-			store.advanceCurrentMinSecond(consensusTime);
+		for (long i = 0; i < getMaxProcessingLoopIterations(); ++i) {
 
-			List<ScheduleID> txnIdsToExpire = store.nextSchedulesToExpire(consensusTime);
-			if (txnIdsToExpire.isEmpty()) {
+			List<ScheduleID> scheduleIdsToExpire = store.nextSchedulesToExpire(consensusTime);
+			if (scheduleIdsToExpire.isEmpty()) {
 				return;
 			}
 
-			for (var txnId : txnIdsToExpire) {
+			for (var txnId : scheduleIdsToExpire) {
 				store.expire(txnId);
-				sigImpactHistorian.markEntityChanged(fromScheduleId(txnId).longValue());
+				sigImpactHistorian.markEntityChanged(txnId.getScheduleNum());
 			}
 		}
 
@@ -128,7 +125,7 @@ public class ScheduleProcessing {
 
 		LongHashSet seen = null;
 
-		for (long i = 0; i < maxProcessingLoopIterations; ++i) {
+		for (long i = 0; i < getMaxProcessingLoopIterations(); ++i) {
 
 			expire(consensusTime);
 
@@ -142,11 +139,11 @@ public class ScheduleProcessing {
 			if (seen == null) {
 				seen = new LongHashSet();
 				if ((previous != null) && (previous.getScheduleRef() != null)) {
-					seen.add(fromScheduleId(previous.getScheduleRef()).longValue());
+					seen.add(previous.getScheduleRef().getScheduleNum());
 				}
 			}
 
-			var nextLong = fromScheduleId(next).longValue();
+			var nextLong = next.getScheduleNum();
 
 			if (!seen.add(nextLong)) {
 				log.error("tried to process the same transaction twice! {}", next);
@@ -219,7 +216,7 @@ public class ScheduleProcessing {
 		if (dynamicProperties.schedulingLongTermEnabled()) {
 			scheduleThrottling.resetUsage();
 
-			final TreeMap<RichInstant, List<TxnAccessor>> transactions = new TreeMap<>();
+			final TreeMap<RichInstant, List<TxnAccessor>> transactionsInExecutionOrder = new TreeMap<>();
 
 			var curSecond = schedule.calculatedExpirationTime().getSeconds();
 
@@ -231,25 +228,25 @@ public class ScheduleProcessing {
 
 					if (existing != null) {
 						if (existing.calculatedExpirationTime().getSeconds() != curSecond) {
-							log.error("bySecond contained a schedule in the wrong spot! Ignoring it! spot={}, id={}, schedule={}",
+							log.warn("bySecond contained a schedule in the wrong spot! Ignoring it! spot={}, id={}, schedule={}",
 									curSecond, id, existing);
 						} else {
-							var list = transactions.computeIfAbsent(existing.calculatedExpirationTime(),
+							var list = transactionsInExecutionOrder.computeIfAbsent(existing.calculatedExpirationTime(),
 									k -> new ArrayList<>());
 							list.add(SignedTxnAccessor.uncheckedFrom(existing.asSignedTxn()));
 						}
 					} else {
-						log.error("bySecond contained a schedule that does not exist! Ignoring it! second={}, id={}",
+						log.warn("bySecond contained a schedule that does not exist! Ignoring it! second={}, id={}",
 								curSecond, id);
 					}
 				}));
 			}
 
-			var list = transactions.computeIfAbsent(schedule.calculatedExpirationTime(), k -> new ArrayList<>());
+			var list = transactionsInExecutionOrder.computeIfAbsent(schedule.calculatedExpirationTime(), k -> new ArrayList<>());
 			list.add(SignedTxnAccessor.uncheckedFrom(schedule.asSignedTxn()));
 
 			Instant timestamp = Instant.ofEpochSecond(curSecond);
-			for (var entry : transactions.entrySet()) {
+			for (var entry : transactionsInExecutionOrder.entrySet()) {
 				for (var t : entry.getValue()) {
 					if (scheduleThrottling.shouldThrottleTxn(t, timestamp)) {
 						if (scheduleThrottling.wasLastTxnGasThrottled()) {
@@ -282,7 +279,7 @@ public class ScheduleProcessing {
 	 * @return the max number of iterations of any loop calling triggerNextTransactionExpiringAsNeeded.
 	 */
 	public long getMaxProcessingLoopIterations() {
-		return maxProcessingLoopIterations;
+		return dynamicProperties.schedulingMaxTxnPerSecond() * 2;
 	}
 
 }

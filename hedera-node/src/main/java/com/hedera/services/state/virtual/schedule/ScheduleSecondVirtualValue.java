@@ -47,6 +47,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
 
+	/** The value must be a list because more than one schedule can be scheduled for the same instant. */
 	private final NavigableMap<RichInstant, ImmutableLongList> ids;
 
 	private boolean immutable;

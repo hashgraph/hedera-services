@@ -22,6 +22,7 @@ package com.hedera.services.store.schedule;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -89,8 +90,11 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -789,7 +793,7 @@ class HederaScheduleStoreTest {
 		given(byEqualityValue.asWritable()).willReturn(byEqualityValue);
 		given(byEquality.get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
 				.willReturn(byEqualityValue);
-		given(byEqualityValue.getIds()).willReturn(Collections.emptyMap());
+		given(byEqualityValue.getIds()).willReturn(Collections.emptySortedMap());
 
 		subject.expire(created);
 
@@ -821,7 +825,7 @@ class HederaScheduleStoreTest {
 		given(byEqualityValue.asWritable()).willReturn(byEqualityValue);
 		given(byEquality.get(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey())))
 				.willReturn(byEqualityValue);
-		given(byEqualityValue.getIds()).willReturn(Collections.singletonMap("foo", 1L));
+		given(byEqualityValue.getIds()).willReturn(ImmutableSortedMap.of("foo", 1L));
 
 		subject.expire(created);
 
@@ -953,6 +957,9 @@ class HederaScheduleStoreTest {
 	@Test
 	void nextSchedulesToExpireWorks() {
 
+		subject = spy(subject);
+		doReturn(false).when(subject).advanceCurrentMinSecond(any());
+
 		ScheduleID notExecutedId = IdUtils.asSchedule("0.0.331233");
 		final var notExecuted = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
 		notExecuted.setCalculatedExpirationTime(new RichInstant(expectedExpiry, 1));
@@ -992,10 +999,15 @@ class HederaScheduleStoreTest {
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry + 1));
 
 		assertEquals(toExpire, ImmutableList.of(created, deletedId));
+
+		verify(subject).advanceCurrentMinSecond(Instant.ofEpochSecond(expectedExpiry + 1));
 	}
 
 	@Test
 	void nextSchedulesToExpireHandlesEmptyBySecond() {
+		subject = spy(subject);
+		doReturn(false).when(subject).advanceCurrentMinSecond(any());
+
 		given(schedules.getCurrentMinSecond()).willReturn(expectedExpiry);
 		given(schedule.isExecuted()).willReturn(true);
 
@@ -1012,10 +1024,13 @@ class HederaScheduleStoreTest {
 
 		verify(bySecondValue).asWritable();
 		verify(byExpirationSecond).remove(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(subject).advanceCurrentMinSecond(Instant.ofEpochSecond(expectedExpiry + 1));
 	}
 
 	@Test
 	void nextSchedulesToExpireHandlesPastConsensusTime() {
+		subject = spy(subject);
+		doReturn(false).when(subject).advanceCurrentMinSecond(any());
 		given(schedules.getCurrentMinSecond()).willReturn(expectedExpiry);
 
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry));
@@ -1023,10 +1038,13 @@ class HederaScheduleStoreTest {
 		assertEquals(Collections.emptyList(), toExpire);
 
 		verify(byExpirationSecond, never()).get(any());
+		verify(subject).advanceCurrentMinSecond(Instant.ofEpochSecond(expectedExpiry));
 	}
 
 	@Test
 	void nextSchedulesToExpireHandlesNoSchedulesAtCurrentSecond() {
+		subject = spy(subject);
+		doReturn(false).when(subject).advanceCurrentMinSecond(any());
 		given(schedules.getCurrentMinSecond()).willReturn(expectedExpiry);
 		given(schedule.isExecuted()).willReturn(true);
 
@@ -1035,10 +1053,14 @@ class HederaScheduleStoreTest {
 		assertEquals(Collections.emptyList(), toExpire);
 
 		verify(byExpirationSecond).get(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(subject).advanceCurrentMinSecond(Instant.ofEpochSecond(expectedExpiry + 1));
 	}
 
 	@Test
 	void nextSchedulesToExpireRemovesInvalidSchedules() {
+		subject = spy(subject);
+		doReturn(false).when(subject).advanceCurrentMinSecond(any());
+
 		ScheduleID notExistingId = IdUtils.asSchedule("0.0.331233");
 
 		ScheduleID badExpirationId = IdUtils.asSchedule("0.0.311233");
@@ -1076,6 +1098,7 @@ class HederaScheduleStoreTest {
 		verify(bySecondValue).removeId(
 				new RichInstant(expectedExpiry, 0), fromScheduleId(badExpirationId).longValue());
 		verify(byExpirationSecond, never()).remove(any());
+		verify(subject).advanceCurrentMinSecond(Instant.ofEpochSecond(expectedExpiry + 1));
 
 	}
 

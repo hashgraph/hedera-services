@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -351,8 +352,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		}
 	}
 
-	@Override
-	public boolean advanceCurrentMinSecond(Instant consensusTime) {
+	@VisibleForTesting
+	boolean advanceCurrentMinSecond(Instant consensusTime) {
 
 		boolean changed = false;
 
@@ -375,6 +376,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 	@Override
 	public List<ScheduleID> nextSchedulesToExpire(Instant consensusTime) {
+
+		advanceCurrentMinSecond(consensusTime);
 
 		final long curSecond = schedules.get().getCurrentMinSecond();
 

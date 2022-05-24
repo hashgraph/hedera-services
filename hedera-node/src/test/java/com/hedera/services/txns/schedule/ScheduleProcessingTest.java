@@ -109,7 +109,6 @@ class ScheduleProcessingTest {
 
 	@BeforeEach
 	void setUp() {
-		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		subject = new ScheduleProcessing(sigImpactHistorian, store, scheduleExecutor, dynamicProperties,
 				scheduleSigsVerifier, scheduleThrottling, () -> schedules);
 	}
@@ -117,6 +116,7 @@ class ScheduleProcessingTest {
 	@Test
 	void expireWorksAsExpected() {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime))
 				.willReturn(ImmutableList.of(scheduleId1, scheduleId2), ImmutableList.of(scheduleId3), ImmutableList.of());
 
@@ -124,17 +124,14 @@ class ScheduleProcessingTest {
 		subject.expire(consensusTime);
 
 		// then:
-		inOrder.verify(store).advanceCurrentMinSecond(consensusTime);
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
 		inOrder.verify(store).expire(scheduleId1);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId1).longValue());
 		inOrder.verify(store).expire(scheduleId2);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId2).longValue());
-		inOrder.verify(store).advanceCurrentMinSecond(consensusTime);
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
 		inOrder.verify(store).expire(scheduleId3);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(fromScheduleId(scheduleId3).longValue());
-		inOrder.verify(store).advanceCurrentMinSecond(consensusTime);
 		inOrder.verify(store).nextSchedulesToExpire(consensusTime);
 		inOrder.verify(store, never()).expire(any());
 		inOrder.verify(sigImpactHistorian, never()).markEntityChanged(anyLong());
@@ -144,6 +141,7 @@ class ScheduleProcessingTest {
 
 	@Test
 	void expireLimitedToMaxLoopIterations() {
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime))
 				.willReturn(ImmutableList.of(scheduleId1));
 
@@ -158,6 +156,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededWorksAsExpected() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -189,7 +188,8 @@ class ScheduleProcessingTest {
 	}
 
 	@Test
-	void triggerNextTransactionExpiringAsNeededLimitedToMaxLoopIterations() throws InvalidProtocolBufferException {
+	void triggerNextTransactionExpiringAsNeededLimitedToMaxLoopIterations() {
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
@@ -226,6 +226,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededOnlyExpireWorksAsExpected() {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -257,6 +258,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromExternal() {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 
 		given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1);
@@ -280,6 +282,7 @@ class ScheduleProcessingTest {
 
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
@@ -308,6 +311,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededHandlesNotReady() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -353,6 +357,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededHandlesTriggerNotOk() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -400,6 +405,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededHandlesErrorProcessing() throws InvalidProtocolBufferException {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -445,6 +451,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromInternal() {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -490,6 +497,7 @@ class ScheduleProcessingTest {
 	void triggerNextTransactionExpiringAsNeededSkipsOnNextNull() {
 		var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties,
 				scheduleExecutor);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
@@ -626,6 +634,7 @@ class ScheduleProcessingTest {
 
 	@Test
 	void getMaxProcessingLoopIterationsWorksAsExpected() {
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
 		assertEquals(10L, subject.getMaxProcessingLoopIterations());
 	}
 

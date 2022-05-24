@@ -30,9 +30,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 
 public class ScheduleEqualityVirtualValue implements VirtualValue {
@@ -41,20 +42,22 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
-	private final Map<String, Long> ids;
+	/** Although extremely unlikely, we must handle the case where more than one schedule has the
+	 * same long equality hash. So this is a Map of string equality hash to schedule ID. */
+	private final SortedMap<String, Long> ids;
 
 	private boolean immutable;
 
 
 	public ScheduleEqualityVirtualValue() {
-		this(HashMap::new);
+		this(TreeMap::new);
 	}
 
 	public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
-		this(() -> new HashMap<>(ids));
+		this(() -> new TreeMap<>(ids));
 	}
 
-	private ScheduleEqualityVirtualValue(Supplier<Map<String, Long>> ids) {
+	private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids) {
 		this.ids = ids.get();
 	}
 
@@ -173,8 +176,8 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 		ids.remove(hash);
 	}
 
-	public Map<String, Long> getIds() {
-		return Collections.unmodifiableMap(ids);
+	public SortedMap<String, Long> getIds() {
+		return Collections.unmodifiableSortedMap(ids);
 	}
 
 	/**

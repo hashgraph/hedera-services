@@ -57,7 +57,6 @@ public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
 
 	ScheduleVirtualValue getNoError(ScheduleID id);
 
-	boolean advanceCurrentMinSecond(Instant consensusTime);
 	List<ScheduleID> nextSchedulesToExpire(Instant consensusTime);
 
 	@Nullable
