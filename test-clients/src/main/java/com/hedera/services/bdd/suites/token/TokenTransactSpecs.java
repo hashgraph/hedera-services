@@ -277,6 +277,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var treasury = "treasury";
 		final var beneficiary = "beneficiary";
 		final var unluckyBeneficiary = "unluckyBeneficiary";
+		final var thirdParty = "thirdParty";
 		final var uniqueToken = "unique";
 		final var fungibleToken = "fungible";
 		final var multiPurpose = "multiPurpose";
@@ -298,15 +299,20 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
 						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
 						cryptoCreate(unluckyBeneficiary),
+						cryptoCreate(thirdParty).maxAutomaticTokenAssociations(1),
 						tokenAssociate(unluckyBeneficiary, uniqueToken),
 						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
-						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary)
+						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary),
+						cryptoTransfer(
+								movingUnique(uniqueToken, 2L)
+										.between(treasury, thirdParty)
+						)
 				).when(
 						cryptoTransfer(
 								movingUnique(uniqueToken, 1L)
 										.between(treasury, beneficiary),
 								moving(500, fungibleToken).between(treasury, beneficiary),
-								movingUnique(uniqueToken, 1L)
+								movingUnique(uniqueToken, 2L)
 										.between(treasury, unluckyBeneficiary)
 						).via(transferTxn).hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)
 				).then(

@@ -116,6 +116,11 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return this;
 	}
 
+	public HapiContractCall signingWith(String signingWith) {
+		privateKeyRef = signingWith;
+		return this;
+	}
+
 	@Override
 	protected HapiContractCall self() {
 		return this;
@@ -204,6 +209,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
 	public Optional<Supplier<String>> getExplicitHexedParams() {
 		return explicitHexedParams;
+	}
+
+	public String getPrivateKeyRef() {
+		return privateKeyRef;
 	}
 
 	@Override

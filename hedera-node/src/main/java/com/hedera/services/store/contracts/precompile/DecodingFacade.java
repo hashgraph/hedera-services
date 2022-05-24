@@ -25,6 +25,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
@@ -404,13 +405,14 @@ public class DecodingFacade {
 		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var metadataList = (byte[][]) decodedArguments.get(2);
-		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
-
+		final List<ByteString> wrappedMetadata = new ArrayList<>();
+		for (final var meta : metadataList) {
+			wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
+		}
 		if (fungibleAmount > 0) {
 			return MintWrapper.forFungible(tokenID, fungibleAmount);
 		} else {
-			return MintWrapper.forNonFungible(
-					tokenID, metadata);
+			return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
 		}
 	}
 
