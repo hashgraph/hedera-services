@@ -25,8 +25,6 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-
 public final class ReleaseTwentySevenMigration {
 	private ReleaseTwentySevenMigration() {
 		throw new UnsupportedOperationException("Utility class");
@@ -37,9 +35,8 @@ public final class ReleaseTwentySevenMigration {
 
 		final var numberOfNodes = addressBook.getSize();
 		for (int i = 0; i < numberOfNodes; i++) {
-			final var accountId = parseAccount(addressBook.getAddress(i).getMemo());
-			final var accountNum = EntityNum.fromAccountId(accountId);
-			stakingInfo.put(accountNum, new MerkleStakingInfo());
+			final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+			stakingInfo.put(nodeNum, new MerkleStakingInfo());
 		}
 
 		return stakingInfo;
