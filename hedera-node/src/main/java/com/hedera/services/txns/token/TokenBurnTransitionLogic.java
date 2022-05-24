@@ -21,12 +21,9 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -34,30 +31,17 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-
 /**
  * Provides the state transition for token burning.
  */
 @Singleton
 public class TokenBurnTransitionLogic implements TransitionLogic {
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final BurnLogic burnLogic;
 
 	@Inject
-	public TokenBurnTransitionLogic(
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			BurnLogic burnLogic
-	) {
-		this.validator = validator;
+	public TokenBurnTransitionLogic(final TransactionContext txnCtx, final BurnLogic burnLogic) {
 		this.txnCtx = txnCtx;
-		this.dynamicProperties = dynamicProperties;
 		this.burnLogic = burnLogic;
 	}
 
@@ -84,19 +68,6 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenBurnTransactionBody op = txnBody.getTokenBurn();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		return validateTokenOpsWith(
-				op.getSerialNumbersCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_TOKEN_BURN_AMOUNT,
-				op.getSerialNumbersList(),
-				validator::maxBatchSizeBurnCheck
-		);
+		return burnLogic.validateSyntax(txnBody);
 	}
 }

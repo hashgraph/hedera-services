@@ -20,17 +20,16 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.models.Account;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,23 +37,29 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
 	private final long amount = 123L;
 	private final TokenID grpcId = IdUtils.asToken("1.2.3");
-	private final Id id = new Id(1, 2, 3);
 	private final Id treasuryId = new Id(2, 4, 6);
-	private final Account treasury = new Account(treasuryId);
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -67,17 +72,21 @@ class TokenBurnTransitionLogicTest {
 	@Mock
 	private OptionValidator validator;
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+	private TypedTokenStore tokenStore;
 	@Mock
-	private BurnLogic burnLogic;
+	private AccountStore accountStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody tokenBurnTxn;
 
+	private BurnLogic burnLogic;
 	private TokenBurnTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
+		burnLogic = new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
+		subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
 	}
 
 	@Test
@@ -188,7 +197,9 @@ class TokenBurnTransitionLogicTest {
 
 	@Test
 	void callsBurnLogicWithCorrectParams() {
-		var consensus = Instant.now();
+		burnLogic = mock(BurnLogic.class);
+		subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
+
 		var grpcId = IdUtils.asToken("0.0.1");
 		var amount = 4321L;
 		List<Long> serialNumbersList = List.of(1L, 2L, 3L);

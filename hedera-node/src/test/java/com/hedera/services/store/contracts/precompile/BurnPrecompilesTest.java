@@ -101,6 +101,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.target
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -273,7 +275,8 @@ class BurnPrecompilesTest {
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
-		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
+		given(burnLogicFactory.newBurnLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -285,6 +288,7 @@ class BurnPrecompilesTest {
 				.setNewTotalSupply(123L);
 		given(mockRecordBuilder.getReceiptBuilder()).willReturn(receiptBuilder);
 		given(encoder.encodeBurnSuccess(123L)).willReturn(successResult);
+		given(burnLogic.validateSyntax(any())).willReturn(OK);
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
@@ -298,6 +302,35 @@ class BurnPrecompilesTest {
 	}
 
 	@Test
+	void nftBurnWorksForInvalidSyntax() {
+		givenNonfungibleFrameContext();
+		givenLedgers();
+
+		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+				.willReturn(tokenStore);
+		given(burnLogicFactory.newBurnLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(burnLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
+		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee()).willReturn(1L);
+		given(burnLogic.validateSyntax(any())).willReturn(INVALID_TOKEN_ID);
+		given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_ID))
+				.willReturn(mockRecordBuilder);
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.computeInternal(frame);
+
+		verify(wrappedLedgers, never()).commit();
+	}
+
+	@Test
 	void fungibleBurnHappyPathWorks() {
 		givenFungibleFrameContext();
 		givenLedgers();
@@ -307,7 +340,8 @@ class BurnPrecompilesTest {
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
-		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
+		given(burnLogicFactory.newBurnLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -316,6 +350,7 @@ class BurnPrecompilesTest {
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.encodeBurnSuccess(49)).willReturn(burnSuccessResultWith49Supply);
+		given(burnLogic.validateSyntax(any())).willReturn(OK);
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
@@ -357,7 +392,8 @@ class BurnPrecompilesTest {
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
-		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
+		given(burnLogicFactory.newBurnLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -366,6 +402,7 @@ class BurnPrecompilesTest {
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.encodeBurnSuccess(anyLong())).willReturn(burnSuccessResultWithLongMaxValueSupply);
+		given(burnLogic.validateSyntax(any())).willReturn(OK);
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
