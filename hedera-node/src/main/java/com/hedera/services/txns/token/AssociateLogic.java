@@ -56,7 +56,6 @@ public class AssociateLogic {
 	}
 
 	void associateUniqueTokens(final Id accountId, final List<TokenID> tokensList) {
-		validateFalse(repeatsItself(tokensList), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */
