@@ -70,16 +70,6 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenAssociateTransactionBody op = txnBody.getTokenAssociate();
-
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
-
-		if (repeatsItself(op.getTokensList())) {
-			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-		}
-
-		return OK;
+		return associateLogic.validateSyntax(txnBody);
 	}
 }
