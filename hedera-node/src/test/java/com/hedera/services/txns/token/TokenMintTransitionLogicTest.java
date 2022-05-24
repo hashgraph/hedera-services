@@ -86,7 +86,7 @@ class TokenMintTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		mintLogic = new MintLogic(validator, tokenStore, accountStore, dynamicProperties);
-		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
+		subject = new TokenMintTransitionLogic(txnCtx, mintLogic);
 	}
 
 	@Test
@@ -196,7 +196,7 @@ class TokenMintTransitionLogicTest {
 	@Test
 	void callsMintLogicWithCorrectParams() {
 		mintLogic = mock(MintLogic.class);
-		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
+		subject = new TokenMintTransitionLogic(txnCtx, mintLogic);
 
 		var consensus = Instant.now();
 		var grpcId = IdUtils.asToken("0.0.1");
