@@ -30,6 +30,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+
 @Singleton
 public class AssociateLogic {
 	private final TypedTokenStore tokenStore;
@@ -47,6 +51,12 @@ public class AssociateLogic {
 	}
 
 	public void associate(final Id accountId, final List<TokenID> tokensList) {
+		validateFalse(repeatsItself(tokensList), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+		associateUniqueTokens(accountId, tokensList);
+	}
+
+	void associateUniqueTokens(final Id accountId, final List<TokenID> tokensList) {
+		validateFalse(repeatsItself(tokensList), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */
@@ -60,4 +70,5 @@ public class AssociateLogic {
 		accountStore.commitAccount(account);
 		tokenStore.commitTokenRelationships(newTokenRelationships);
 	}
+
 }
