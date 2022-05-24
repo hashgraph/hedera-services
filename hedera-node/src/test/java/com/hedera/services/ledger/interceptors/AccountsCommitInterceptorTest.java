@@ -57,7 +57,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -157,7 +156,7 @@ class AccountsCommitInterceptorTest {
 				randomAndBalanceChanges(counterpartyBalance - amount - stakingFee));
 		changes.include(stakingFundId, stakingFund, randomAndBalanceChanges(stakingFee));
 		willCallRealMethod().given(networkCtx).areRewardsActivated();
-		willCallRealMethod().given(networkCtx).setStakingRewards(true);
+		willCallRealMethod().given(networkCtx).setStakingRewardsActivated(true);
 		willCallRealMethod().given(accounts).forEach(any());
 		given(accounts.entrySet()).willReturn(Map.of(
 				EntityNum.fromAccountId(counterpartyId), counterparty,
@@ -173,11 +172,12 @@ class AccountsCommitInterceptorTest {
 		assertEquals(-1, party.getStakePeriodStart());
 
 		subject.preview(changes);
+		mockedStatic.close();
 
 		inorder.verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
 		inorder.verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount - stakingFee);
 		inorder.verify(sideEffectsTracker).trackHbarChange(stakingFundId.getAccountNum(), 1L);
-		verify(networkCtx).setStakingRewards(true);
+		verify(networkCtx).setStakingRewardsActivated(true);
 
 		// rewardsSumHistory is cleared
 		assertEquals(0, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
