@@ -25,7 +25,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -38,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
@@ -70,9 +70,9 @@ class HederaExtCodeHashOperationTest {
 
 	final private String ETH_ADDRESS = "0xc257274276a4e539741ca11b590b9447b26a8051";
 	final private Address ETH_ADDRESS_INSTANCE = Address.fromHexString(ETH_ADDRESS);
-	final private Gas OPERATION_COST = Gas.of(1_000L);
-	final private Gas WARM_READ_COST = Gas.of(100L);
-	final private Gas ACTUAL_COST = OPERATION_COST.plus(WARM_READ_COST);
+	final private long OPERATION_COST = 1_000L;
+	final private long WARM_READ_COST = 100L;
+	final private long ACTUAL_COST = OPERATION_COST + WARM_READ_COST;
 
 	@BeforeEach
 	void setUp() {
@@ -89,41 +89,40 @@ class HederaExtCodeHashOperationTest {
 		var opResult = subject.execute(mf, evm);
 
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
 	void executeResolvesToInsufficientGas() {
-		givenMessageFrameWithRemainingGas(ACTUAL_COST.minus(Gas.of(1L)));
+		givenMessageFrameWithRemainingGas(ACTUAL_COST - 1L);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
 		assertEquals(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), opResult.getHaltReason());
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
 	void executeHappyPathWithEmptyAccount() {
-		givenMessageFrameWithRemainingGas(ACTUAL_COST.plus(Gas.of(1L)));
+		givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
 		given(account.isEmpty()).willReturn(true);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
 	void executeHappyPathWithAccount() {
-		givenMessageFrameWithRemainingGas(ACTUAL_COST.plus(Gas.of(1L)));
-		given(account.isEmpty()).willReturn(false);
+		givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
 		given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
@@ -135,7 +134,7 @@ class HederaExtCodeHashOperationTest {
 
 		var opResult = subject.execute(mf, evm);
 
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
@@ -145,10 +144,10 @@ class HederaExtCodeHashOperationTest {
 		var opResult = subject.execute(mf, evm);
 
 		assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
-	private void givenMessageFrameWithRemainingGas(Gas gas) {
+	private void givenMessageFrameWithRemainingGas(long gas) {
 		given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
 		given(mf.getWorldUpdater()).willReturn(worldUpdater);
 		given(mf.warmUpAddress(ETH_ADDRESS_INSTANCE)).willReturn(true);

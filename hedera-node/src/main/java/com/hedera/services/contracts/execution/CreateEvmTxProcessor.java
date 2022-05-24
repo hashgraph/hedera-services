@@ -154,7 +154,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				.address(to)
 				.contract(to)
 				.inputData(Bytes.EMPTY)
-				.code(new Code(payload, Hash.hash(payload)))
+				.code(Code.createLegacyCode(payload, Hash.hash(payload)))
 				.build();
 	}
 }

@@ -36,7 +36,7 @@ import java.util.NavigableMap;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 public class WorldStateAccount implements Account {
-	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+	private static final Code EMPTY_CODE = Code.createLegacyCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
 
 	private final Wei balance;
 	private final Address address;
