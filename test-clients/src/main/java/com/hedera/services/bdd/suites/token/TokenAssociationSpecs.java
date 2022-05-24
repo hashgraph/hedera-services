@@ -62,14 +62,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -138,6 +139,9 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("MultiAssociationWithSameRepeatedTokenAsExpected")
 				.given(
+						fileCreate("initcode"),
+						updateLargeFile(GENESIS, "initcode",
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(civilian).exposingCreatedIdTo(id ->
 								civilianMirrorAddr.set(asHexedSolidityAddress(id))),
 						tokenCreate(nfToken)
@@ -145,12 +149,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
 										asHexedSolidityAddress(
-												HapiPropertySource.asToken(idLit)))),
-						uploadInitCode(theContract),
-						contractCreate(theContract)
+												HapiPropertySource.asAccount(idLit)))),
+						contractCreate(theContract).bytecode("initcode")
 				).when(
 						sourcing(() -> contractCall(theContract,
-								"tokensAssociate",
+								ContractResources.MULTIPLE_TOKENS_ASSOCIATE,
 								civilianMirrorAddr.get(), List.of(tokenMirrorAddr.get(), tokenMirrorAddr.get())
 						)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)

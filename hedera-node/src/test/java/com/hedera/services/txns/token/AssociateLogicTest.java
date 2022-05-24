@@ -28,7 +28,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,12 +82,5 @@ class AssociateLogicTest {
 		verify(modelAccount).associateWith(tokens, tokenStore, false, false, dynamicProperties);
 		verify(accountStore).commitAccount(modelAccount);
 		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel, secondModelTokenRel));
-	}
-
-	@Test
-	void rejectsRepeatedTokenId() {
-		assertFailsWith(
-				() -> subject.associate(accountId, List.of(firstToken, secondToken, firstToken)),
-				TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 	}
 }
