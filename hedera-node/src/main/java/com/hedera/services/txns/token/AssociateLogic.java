@@ -25,7 +25,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -33,7 +32,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

@@ -24,7 +24,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -38,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -88,7 +86,7 @@ class TokenBurnTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		burnLogic = new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
-		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
+		subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
 	}
 
 	@Test
@@ -200,7 +198,7 @@ class TokenBurnTransitionLogicTest {
 	@Test
 	void callsBurnLogicWithCorrectParams() {
 		burnLogic = mock(BurnLogic.class);
-		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
+		subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
 
 		var grpcId = IdUtils.asToken("0.0.1");
 		var amount = 4321L;

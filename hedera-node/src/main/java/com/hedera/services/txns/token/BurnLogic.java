@@ -36,12 +36,8 @@ import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
-import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 @Singleton
 public class BurnLogic {
