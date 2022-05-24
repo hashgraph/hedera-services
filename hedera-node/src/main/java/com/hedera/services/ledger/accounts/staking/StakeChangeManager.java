@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.interceptors;
+package com.hedera.services.ledger.accounts.staking;
 
 /*-
  * ‌
@@ -23,10 +23,7 @@ package com.hedera.services.ledger.interceptors;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -34,7 +31,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
@@ -43,15 +39,15 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME
 
 @Singleton
 public class StakeChangeManager {
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+	private final StakingInfoManager stakingInfoManager;
 
 	@Inject
-	public StakeChangeManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
-		this.stakingInfo = stakingInfo;
+	public StakeChangeManager(final StakingInfoManager stakingInfoManager) {
+		this.stakingInfoManager = stakingInfoManager;
 	}
 
 	public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
-		final var node = stakingInfo.get().getForModify(EntityNum.fromLong(curNodeId));
+		final var node = stakingInfoManager.mutableStakeInfoFor(curNodeId);
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() - amount);
 		} else {
@@ -60,7 +56,7 @@ public class StakeChangeManager {
 	}
 
 	public void awardStake(final long newNodeId, final long amount, final boolean declinedReward) {
-		final var node = stakingInfo.get().getForModify(EntityNum.fromLong(newNodeId));
+		final var node = stakingInfoManager.mutableStakeInfoFor(newNodeId);
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() + amount);
 		} else {
@@ -74,7 +70,7 @@ public class StakeChangeManager {
 		return (entityId < 0) ? 0 : entityId;
 	}
 
-	long getNodeStakeeNum(final Map<AccountProperty, Object> changes) {
+	public long getNodeStakeeNum(final Map<AccountProperty, Object> changes) {
 		final var entityId = (long) changes.getOrDefault(STAKED_ID, 0L);
 		// Node ids are negative
 		return (entityId < 0) ? entityId : 0;
@@ -127,25 +123,28 @@ public class StakeChangeManager {
 		pendingChanges.updateChange(stakeeI, mutableChanges);
 	}
 
-	public void updateBalance(
+	public long updateBalance(
 			final long delta,
 			final int rewardAccountI,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var mutableChanges = new EnumMap<>(pendingChanges.changes(rewardAccountI));
+		var newBalance = delta;
 		if (mutableChanges.containsKey(BALANCE)) {
-			mutableChanges.put(BALANCE, (long) mutableChanges.get(BALANCE) + delta);
+			newBalance = (long) mutableChanges.get(BALANCE) + delta;
+			mutableChanges.put(BALANCE, newBalance);
 		} else {
-			mutableChanges.put(BALANCE, delta);
+			mutableChanges.put(BALANCE, newBalance);
 		}
 		pendingChanges.updateChange(rewardAccountI, mutableChanges);
+		return newBalance;
 	}
 
-	static boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
+	public static boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
 		return stakePeriodStart > -1 && stakePeriodStart < latestRewardableStakePeriodStart;
 	}
 
-	static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
+	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
 		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) ||
 				changes.containsKey(STAKED_ID) || changes.containsKey(STAKED_TO_ME);
 	}

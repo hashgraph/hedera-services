@@ -36,8 +36,7 @@ import com.hedera.services.ledger.properties.BeanProperty;
 @FunctionalInterface
 public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	/**
-	 * Accepts a pending change set to preview before it is committed to the ledger. Builds list of first order
-	 * reward situations if staking is enabled.
+	 * Accepts a pending change set to preview before it is committed to the ledger.
 	 *
 	 * @param pendingChanges
 	 * 		the pending change set
