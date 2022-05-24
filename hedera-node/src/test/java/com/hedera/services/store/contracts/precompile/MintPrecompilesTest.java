@@ -327,7 +327,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void nftMintBadSyntaxWorks() {
-		Bytes pretendArguments = givenNonFungibleFrameContext();
+		givenNonFungibleFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
