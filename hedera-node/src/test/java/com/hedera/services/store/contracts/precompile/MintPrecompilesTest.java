@@ -106,6 +106,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -286,7 +287,8 @@ class MintPrecompilesTest {
 		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(mintLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -306,6 +308,7 @@ class MintPrecompilesTest {
 		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(mintLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
@@ -339,6 +342,8 @@ class MintPrecompilesTest {
 				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
+		given(mintLogic.validateSyntax(any())).willReturn(OK);
+
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -371,6 +376,7 @@ class MintPrecompilesTest {
 				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
+		given(mintLogic.validateSyntax(any())).willReturn(OK);
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -416,6 +422,8 @@ class MintPrecompilesTest {
 				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
+		given(mintLogic.validateSyntax(any())).willReturn(OK);
+
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -467,7 +475,8 @@ class MintPrecompilesTest {
 		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore, dynamicProperties))
+				.willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
 	}

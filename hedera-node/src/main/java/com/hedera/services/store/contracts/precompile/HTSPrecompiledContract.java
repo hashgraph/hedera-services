@@ -666,7 +666,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	/* --- Constructor functional interfaces for mocking --- */
 	@FunctionalInterface
 	interface MintLogicFactory {
-		MintLogic newMintLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore);
+		MintLogic newMintLogic(
+				OptionValidator validator,
+				TypedTokenStore tokenStore,
+				AccountStore accountStore,
+				GlobalDynamicProperties dynamicProperties);
 	}
 
 	@FunctionalInterface
@@ -789,6 +793,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Execute the transaction and capture its results --- */
 			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore,
 					dynamicProperties);
+			final var validity = associateLogic.validateSyntax(transactionBody.build());
+			validateTrue(validity == OK, validity);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 		}
 
@@ -835,6 +841,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
 					validator, tokenStore, accountStore, dissociationFactory);
+			final var validity = dissociateLogic.validateSyntax(transactionBody.build());
+			validateTrue(validity == OK, validity);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 		}
 
@@ -881,8 +889,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
 			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffectsTracker);
-			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
+			final var mintLogic = mintLogicFactory.newMintLogic(
+					validator, scopedTokenStore, scopedAccountStore, dynamicProperties);
 
+			final var validity = mintLogic.validateSyntax(transactionBody.build());
+			validateTrue(validity == OK, validity);
 			/* --- Execute the transaction and capture its results --- */
 			if (mintOp.type() == NON_FUNGIBLE_UNIQUE) {
 				final var newMeta = mintOp.metadata();

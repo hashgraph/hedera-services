@@ -94,6 +94,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -267,6 +268,7 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
+		given(dissociateLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
@@ -312,6 +314,7 @@ class DissociatePrecompilesTest {
 				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
+		given(dissociateLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
