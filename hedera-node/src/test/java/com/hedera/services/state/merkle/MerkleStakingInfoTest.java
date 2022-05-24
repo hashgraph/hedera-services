@@ -63,7 +63,7 @@ class MerkleStakingInfoTest {
 	private final long stakeToNotReward = 155L;
 	private final long stakeRewardStart = 1234L;
 	private final long stake = 500L;
-	private final long[] rewardSumHistory = new long[] {1L, 2L};
+	private final long[] rewardSumHistory = new long[] {2L, 1L};
 	private final EntityNum key = EntityNum.fromInt(number);
 
 	@BeforeEach
@@ -129,7 +129,7 @@ class MerkleStakingInfoTest {
 	@Test
 	void toStringWorks() {
 		final var expected = "MerkleStakingInfo{id=0.0.0.34, minStake=100, maxStake=10000, stakeToReward=345, " +
-				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[1, 2]}";
+				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[2, 1]}";
 
 		assertEquals(expected, subject.toString());
 	}
@@ -176,7 +176,7 @@ class MerkleStakingInfoTest {
 
 		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
-		assertArrayEquals(new long[]{12L, 1L}, subject.getRewardSumHistory());
+		assertArrayEquals(new long[]{13L, 1L}, subject.getRewardSumHistory());
 	}
 
 	@Test

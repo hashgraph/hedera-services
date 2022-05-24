@@ -284,14 +284,16 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void updateRewardSumHistory(final double rewardRate, final long totalStakedRewardStart) {
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length-1];
 		for (int i = rewardSumHistory.length-1; i > 0; i--) {
-			rewardSumHistory[i] = rewardSumHistory[i - 1];
+			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
 		}
+		rewardSumHistory[0] -= droppedRewardSum;
 			/*
 				if this node was "active", then it should give rewards for this staking period
 				if (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold)
 			 */
-		rewardSumHistory[0] = totalStakedRewardStart == 0 ? 0 :
+		rewardSumHistory[0] += totalStakedRewardStart == 0 ? 0 :
 				(long) (rewardRate * stakeRewardStart / totalStakedRewardStart / 100_000_000);
 		// reset the historyHash
 		historyHash = null;

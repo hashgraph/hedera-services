@@ -115,9 +115,9 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(800L, stakingInfo1.getStake());
 		assertEquals(500L, stakingInfo2.getStake());
 		assertEquals(0L, stakingInfo3.getStake());
-		assertArrayEquals(new long[]{10,8,7}, stakingInfo1.getRewardSumHistory());
-		assertArrayEquals(new long[]{7,5,5}, stakingInfo2.getRewardSumHistory());
-		assertArrayEquals(new long[]{100,1,2}, stakingInfo3.getRewardSumHistory());
+		assertArrayEquals(new long[]{16,6,5}, stakingInfo1.getRewardSumHistory());
+		assertArrayEquals(new long[]{8,1,1}, stakingInfo2.getRewardSumHistory());
+		assertArrayEquals(new long[]{103,3,1}, stakingInfo3.getRewardSumHistory());
 	}
 
 	final long minStake = 100L;
@@ -136,7 +136,7 @@ class EndOfStakingPeriodCalculatorTest {
 	final long stake3 = 75L;
 	final long[] rewardSumHistory1 = new long[]{8,7,2};
 	final long[] rewardSumHistory2 = new long[]{5,5,4};
-	final long[] rewardSumHistory3 = new long[]{1,2,1};
+	final long[] rewardSumHistory3 = new long[]{4,2,1};
 	final EntityNum nodeNum1 = EntityNum.fromInt(0);
 	final EntityNum nodeNum2 = EntityNum.fromInt(1);
 	final EntityNum nodeNum3 = EntityNum.fromInt(2);

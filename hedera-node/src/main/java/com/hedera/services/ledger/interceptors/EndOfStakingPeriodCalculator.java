@@ -122,10 +122,7 @@ public class EndOfStakingPeriodCalculator {
 		// create a synthetic txn with this computed data
 		final var syntheticNodeStakeUpdateTxn =
 				syntheticTxnFactory.nodeStakeUpdate(
-						Timestamp.newBuilder()
-								.setSeconds(consensusTime.getEpochSecond())
-								.setNanos(consensusTime.getNano())
-								.build(),
+						getMidnightTime(consensusTime),
 						rewardRate,
 						nodeStakingInfos);
 
@@ -137,6 +134,15 @@ public class EndOfStakingPeriodCalculator {
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
 	}
 
+	private Timestamp getMidnightTime(Instant consensusTime) {
+		final var secsInDay = 86400L;
+		final var originalSecs = consensusTime.getEpochSecond();
+		final long midNightSecs = (originalSecs / secsInDay) * secsInDay;
+
+		return Timestamp.newBuilder()
+				.setSeconds(midNightSecs)
+				.build();
+	}
 	private long stakingRewardsAccountBalance() {
 		return accounts.get().get(EntityNum.fromInt(800)).getBalance();
 	}

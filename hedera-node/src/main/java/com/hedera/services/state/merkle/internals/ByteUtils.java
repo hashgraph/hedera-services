@@ -32,10 +32,10 @@ public final class ByteUtils {
 	public static byte[] getHashBytes(long[] data) {
 		if (data == null) return new byte[0];
 		// ----------
-		byte[] byts = new byte[data.length * Long.BYTES];
+		byte[] bytes = new byte[data.length * Long.BYTES];
 		for (int i = 0; i < data.length; i++)
-			System.arraycopy(getHashBytes(data[i]), 0, byts, i * Long.BYTES, Long.BYTES);
-		return CommonUtils.noThrowSha384HashOf(byts);
+			System.arraycopy(getHashBytes(data[i]), 0, bytes, i * Long.BYTES, Long.BYTES);
+		return CommonUtils.noThrowSha384HashOf(bytes);
 	}
 
 	private static byte[] getHashBytes(long num) {
