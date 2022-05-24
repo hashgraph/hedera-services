@@ -686,7 +686,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@FunctionalInterface
 	interface BurnLogicFactory {
-		BurnLogic newBurnLogic(TypedTokenStore tokenStore, AccountStore accountStore);
+		BurnLogic newBurnLogic(
+				OptionValidator validator,
+				TypedTokenStore tokenStore,
+				AccountStore accountStore,
+				GlobalDynamicProperties dynamicProperties);
 	}
 
 	@FunctionalInterface
@@ -1419,7 +1423,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
 			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffectsTracker);
-			final var burnLogic = burnLogicFactory.newBurnLogic(scopedTokenStore, scopedAccountStore);
+			final var burnLogic = burnLogicFactory.newBurnLogic(
+					validator, scopedTokenStore, scopedAccountStore, dynamicProperties);
+			final var validity = burnLogic.validateSyntax(transactionBody.build());
+			validateTrue(validity == OK, validity);
 
 			/* --- Execute the transaction and capture its results --- */
 			if (burnOp.type() == NON_FUNGIBLE_UNIQUE) {
