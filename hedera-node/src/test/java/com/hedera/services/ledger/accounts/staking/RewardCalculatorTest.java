@@ -24,8 +24,6 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,27 +33,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.HashMap;
 
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RewardCalculatorTest {
 	@Mock
 	private StakePeriodManager stakePeriodManager;
 	@Mock
-	private StakingInfoManager stakingInfoManager;
-	@Mock
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	private StakeInfoManager stakeInfoManager;
 	@Mock
 	private MerkleStakingInfo merkleStakingInfo;
 	@Mock
@@ -67,31 +57,14 @@ class RewardCalculatorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RewardCalculator(stakePeriodManager, stakingInfoManager);
+		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
 		rewardHistory[0] = 5;
 	}
 
 	@Test
-	void calculatesIfRewardShouldBeEarned() {
-		var stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 2;
-		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
-
-		stakePeriodStart = -1;
-		assertFalse(isWithinRange(stakePeriodStart, todayNumber));
-
-		stakePeriodStart = todayNumber - 365;
-		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
-
-		stakePeriodStart = todayNumber - 1;
-		assertFalse(isWithinRange(stakePeriodStart, todayNumber));
-
-		stakePeriodStart = todayNumber - 2;
-		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
-	}
-
-	@Test
 	void computesAndAppliesRewards() {
-		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
+		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
 		given(account.getStakedId()).willReturn(3L);
@@ -128,30 +101,26 @@ class RewardCalculatorTest {
 		merkleAccount.setStakedId(3L);
 		merkleAccount.setBalance(100L);
 
-		final var mockLocalDate = mock(LocalDate.class);
-		final var mockedStatic = mockStatic(LocalDate.class);
-		mockedStatic.when(() -> LocalDate.now(zoneUTC)).thenReturn(mockLocalDate);
-		when(mockLocalDate.toEpochDay()).thenReturn(expectedStakePeriodStart);
-
-		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
+		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
 
 		subject.computeRewards(merkleAccount);
 
 		assertEquals(expectedStakePeriodStart - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(500, subject.getAccountReward());
-		mockedStatic.close();
 	}
 
 	@Test
 	void updatingRewardsWorks() {
-		given(stakingInfo.get(EntityNum.fromLong(3L))).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
 		given(account.getStakedId()).willReturn(3L);
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100L);
 		final var updatableMap = new HashMap<AccountProperty, Object>();
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
+		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
 
 		subject.updateRewardChanges(account, updatableMap);
 

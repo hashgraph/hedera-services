@@ -43,18 +43,18 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME
 
 @Singleton
 public class StakeChangeManager {
-	private final StakingInfoManager stakingInfoManager;
+	private final StakeInfoManager stakeInfoManager;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	public StakeChangeManager(final StakingInfoManager stakingInfoManager,
+	public StakeChangeManager(final StakeInfoManager stakeInfoManager,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
-		this.stakingInfoManager = stakingInfoManager;
+		this.stakeInfoManager = stakeInfoManager;
 		this.accounts = accounts;
 	}
 
 	public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
-		final var node = stakingInfoManager.mutableStakeInfoFor(curNodeId);
+		final var node = stakeInfoManager.mutableStakeInfoFor(curNodeId);
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() - amount);
 		} else {
@@ -63,7 +63,7 @@ public class StakeChangeManager {
 	}
 
 	public void awardStake(final long newNodeId, final long amount, final boolean declinedReward) {
-		final var node = stakingInfoManager.mutableStakeInfoFor(newNodeId);
+		final var node = stakeInfoManager.mutableStakeInfoFor(newNodeId);
 		if (declinedReward) {
 			node.setStakeToNotReward(node.getStakeToNotReward() + amount);
 		} else {

@@ -7,13 +7,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import javax.inject.Inject;
 import java.util.function.Supplier;
 
-public class StakingInfoManager {
+public class StakeInfoManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 
-	private MerkleStakingInfo[] latestStakingInfo;
-
 	@Inject
-	public StakingInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
+	public StakeInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
 		this.stakingInfo = stakingInfo;
 	}
 

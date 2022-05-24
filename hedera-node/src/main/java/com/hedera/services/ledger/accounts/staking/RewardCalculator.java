@@ -33,7 +33,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD
 
 public class RewardCalculator {
 	private final StakePeriodManager stakePeriodManager;
-	private final StakingInfoManager stakingInfoManager;
+	private final StakeInfoManager stakeInfoManager;
 
 	private long rewardsPaid;
 	long accountReward;
@@ -41,9 +41,9 @@ public class RewardCalculator {
 
 	@Inject
 	public RewardCalculator(final StakePeriodManager stakePeriodManager,
-			final StakingInfoManager stakingInfoManager) {
+			final StakeInfoManager stakeInfoManager) {
 		this.stakePeriodManager = stakePeriodManager;
-		this.stakingInfoManager = stakingInfoManager;
+		this.stakeInfoManager = stakeInfoManager;
 	}
 
 	public final void computeRewards(final MerkleAccount account) {
@@ -54,7 +54,7 @@ public class RewardCalculator {
 			stakePeriodStart = todayNumber - 365;
 		}
 
-		if (isWithinRange(stakePeriodStart, todayNumber)) {
+		if (isWithinRange(stakePeriodStart, todayNumber - 1)) {
 			final long reward = computeReward(account, account.getStakedId(), todayNumber, stakePeriodStart);
 			stakePeriodStart = todayNumber - 1;
 			this.accountReward = reward;
@@ -66,7 +66,7 @@ public class RewardCalculator {
 
 	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber,
 			final long stakePeriodStart) {
-		final var stakedNodeAccount = stakingInfoManager.mutableStakeInfoFor(stakedNode);
+		final var stakedNodeAccount = stakeInfoManager.mutableStakeInfoFor(stakedNode);
 		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
 
 		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day todayNumber - 1,

@@ -28,7 +28,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.ledger.accounts.staking.StakingInfoManager;
+import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -45,7 +45,6 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -147,7 +146,7 @@ public interface StoresModule {
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager manager,
 			final StakePeriodManager stakePeriodManager,
-			final StakingInfoManager stakingInfoManager
+			final StakeInfoManager stakeInfoManager
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -156,7 +155,7 @@ public interface StoresModule {
 				new ChangeSummaryManager<>());
 		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker,
 				networkCtx, dynamicProperties, rewardCalculator, manager, stakePeriodManager,
-				stakingInfoManager);
+				stakeInfoManager);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

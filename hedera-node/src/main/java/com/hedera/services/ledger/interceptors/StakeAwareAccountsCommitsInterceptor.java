@@ -20,19 +20,18 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
+import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.ledger.accounts.staking.StakingInfoManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +54,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final StakePeriodManager stakePeriodManager;
-	private final StakingInfoManager stakingInfoManager;
+	private final StakeInfoManager stakeInfoManager;
 
 	private boolean rewardsActivated;
 	private boolean rewardBalanceChanged;
@@ -72,7 +71,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
-			final StakingInfoManager stakingInfoManager) {
+			final StakeInfoManager stakeInfoManager) {
 		super(sideEffectsTracker);
 		this.stakeChangeManager = stakeChangeManager;
 		this.networkCtx = networkCtx;
@@ -80,7 +79,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.dynamicProperties = dynamicProperties;
 		this.stakePeriodManager = stakePeriodManager;
-		this.stakingInfoManager = stakingInfoManager;
+		this.stakeInfoManager = stakeInfoManager;
 	}
 
 	@Override
@@ -170,12 +169,12 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	}
 
 	int updateStakedToMeSideEffects(
-			final int num,
+			final int entityI,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
 			final long latestEligibleStart) {
 		int changesSize = pendingChanges.size();
-		final var account = pendingChanges.entity(num);
-		final var changes = pendingChanges.changes(num);
+		final var account = pendingChanges.entity(entityI);
+		final var changes = pendingChanges.changes(entityI);
 
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = stakeChangeManager.getAccountStakeeNum(changes);
@@ -246,7 +245,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		long todayNumber = stakePeriodManager.currentStakePeriod();
 
 		networkCtx.get().setStakingRewards(true);
-		stakingInfoManager.clearRewardsHistory();
+		stakeInfoManager.clearRewardsHistory();
 		stakeChangeManager.setStakePeriodStart(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}
@@ -263,27 +262,43 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 
 	/* only used for unit tests */
+	@VisibleForTesting
 	public boolean isRewardsActivated() {
 		return rewardsActivated;
 	}
 
+	@VisibleForTesting
 	public void setRewardsActivated(final boolean rewardsActivated) {
 		this.rewardsActivated = rewardsActivated;
 	}
 
+	@VisibleForTesting
 	public boolean isRewardBalanceChanged() {
 		return rewardBalanceChanged;
 	}
 
+	@VisibleForTesting
 	public void setRewardBalanceChanged(final boolean rewardBalanceChanged) {
 		this.rewardBalanceChanged = rewardBalanceChanged;
 	}
 
+	@VisibleForTesting
 	public long getNewRewardBalance() {
 		return newRewardBalance;
 	}
 
+	@VisibleForTesting
 	public void setNewRewardBalance(final long newRewardBalance) {
 		this.newRewardBalance = newRewardBalance;
+	}
+
+	@VisibleForTesting
+	public Set<Long> getHasBeenRewarded() {
+		return hasBeenRewarded;
+	}
+
+	@VisibleForTesting
+	public void setHasBeenRewarded(final Set<Long> hasBeenRewarded) {
+		this.hasBeenRewarded = hasBeenRewarded;
 	}
 }

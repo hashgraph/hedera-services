@@ -60,7 +60,7 @@ class StakeChangeManagerTest {
 	@Mock
 	private MerkleAccount account;
 	@Mock
-	private StakingInfoManager stakingInfoManager;
+	private StakeInfoManager stakeInfoManager;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -72,7 +72,7 @@ class StakeChangeManagerTest {
 	@BeforeEach
 	void setUp() {
 		stakingInfo = buildsStakingInfoMap();
-		subject = new StakeChangeManager(stakingInfoManager, () -> accounts);
+		subject = new StakeChangeManager(stakeInfoManager, () -> accounts);
 	}
 
 	@Test
@@ -130,6 +130,7 @@ class StakeChangeManagerTest {
 		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
 		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
 		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(stakingInfo.get(EntityNum.fromLong(3L)));
 		subject.withdrawStake(3L, 100L, false);
 
 		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
@@ -148,6 +149,7 @@ class StakeChangeManagerTest {
 		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
 		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
 		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(stakingInfo.get(EntityNum.fromLong(3L)));
 		subject.awardStake(3L, 100L, false);
 
 		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
@@ -187,6 +189,22 @@ class StakeChangeManagerTest {
 		assertEquals(200L, subject.finalStakedToMeGiven(account, changes));
 	}
 
+	@Test
+	void findsOrAddsAccountAsExpected() {
+		final var pendingChanges = buildPendingNodeStakeChanges();
+		assertEquals(1, pendingChanges.size());
+
+		final var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
+		assertEquals(1, num);
+		assertEquals(2, pendingChanges.size());
+	}
+
+	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
+		var changes = randomStakeFieldChanges(100L);
+		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		pendingChanges.include(counterpartyId, counterparty, changes);
+		return pendingChanges;
+	}
 
 	private Map<AccountProperty, Object> randomStakeFieldChanges(final long newBalance) {
 		return Map.of(
