@@ -35,13 +35,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Unit Test Data
-          path: /**/build/test-results/test
+          path: "**/build/test-results/test"
       - name: Upload Unit Test HTML Report
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: Unit Test Report
-          path: /**/build/reports/tests/test
+          path: "**/build/reports/tests/test"
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
@@ -51,13 +51,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Integration Test Data
-          path: /**/build/test-results/itest
+          path: "**/build/test-results/itest"
       - name: Upload Integration Test HTML Report
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: Integration Test Report
-          path: /**/build/reports/tests/itest
+          path: "**/build/reports/tests/itest"
       - name: Jacoco Coverage Report
         uses: gradle/gradle-build-action@v2
         with:
@@ -68,14 +68,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Jacoco Data
-          path: /**/build/reports/jacoco/test/jacocoTestReport.xml
+          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
       - name: Upload Code Coverage Reports
         if: always()
 #        uses: codecov/codecov-action@v3
         uses: actions/upload-artifact@v3
         with:
           name: Jacoco Report
-          path: /**/build/reports/jacoco/test/html
+          path: "**/build/reports/jacoco/test/html"
 
   # In parallel with the build, generate the javadoc report
   # Outputs (in each subproject):
@@ -99,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Javadocs
-          path: /**/build/docs/javadoc
+          path: "**/build/docs/javadoc"
 
 #  sonar:
 #    name: SonarCloud
