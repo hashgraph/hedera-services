@@ -23,7 +23,6 @@ package com.hedera.services.ledger.accounts.staking;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -36,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.HashMap;
 
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,19 +74,19 @@ class RewardCalculatorTest {
 	@Test
 	void calculatesIfRewardShouldBeEarned() {
 		var stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 2;
-		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
+		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = -1;
-		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
+		assertFalse(isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 365;
-		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
+		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 1;
-		assertFalse(subject.isWithinRange(stakePeriodStart, todayNumber));
+		assertFalse(isWithinRange(stakePeriodStart, todayNumber));
 
 		stakePeriodStart = todayNumber - 2;
-		assertTrue(subject.isWithinRange(stakePeriodStart, todayNumber));
+		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
 	}
 
 	@Test

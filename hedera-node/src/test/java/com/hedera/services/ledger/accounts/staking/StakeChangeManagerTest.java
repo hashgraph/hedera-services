@@ -40,7 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Map;
 
-import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.isWithinRange;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +61,8 @@ class StakeChangeManagerTest {
 	private MerkleAccount account;
 	@Mock
 	private StakingInfoManager stakingInfoManager;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
@@ -70,7 +72,7 @@ class StakeChangeManagerTest {
 	@BeforeEach
 	void setUp() {
 		stakingInfo = buildsStakingInfoMap();
-		subject = new StakeChangeManager(stakingInfoManager);
+		subject = new StakeChangeManager(stakingInfoManager, () -> accounts);
 	}
 
 	@Test

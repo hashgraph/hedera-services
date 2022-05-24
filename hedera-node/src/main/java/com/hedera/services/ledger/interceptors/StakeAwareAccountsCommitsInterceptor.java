@@ -38,22 +38,19 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.hasStakeFieldChanges;
-import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.isWithinRange;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 
 public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitInterceptor {
-	private final StakeChangeManager manager;
+	private final StakeChangeManager stakeChangeManager;
 	private final Supplier<MerkleNetworkContext> networkCtx;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final RewardCalculator rewardCalculator;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -63,6 +60,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private boolean rewardsActivated;
 	private boolean rewardBalanceChanged;
 	private long newRewardBalance;
+	private Set<Long> hasBeenRewarded;
 
 	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
 	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
@@ -71,15 +69,13 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final RewardCalculator rewardCalculator,
-			final StakeChangeManager manager,
+			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
 			final StakingInfoManager stakingInfoManager) {
 		super(sideEffectsTracker);
-		this.manager = manager;
+		this.stakeChangeManager = stakeChangeManager;
 		this.networkCtx = networkCtx;
-		this.accounts = accounts;
 		this.rewardCalculator = rewardCalculator;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.dynamicProperties = dynamicProperties;
@@ -106,11 +102,11 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		// Now iterate through the change set again to update node stakes; we do this is in a
 		// separate loop to ensure all STAKED_TO_ME fields have their final values
 		updateNodeStakes(pendingChanges);
-		trackRewardsPaidByFunding(pendingChanges);
+		updateFundingRewardBalances(pendingChanges);
 
 		super.preview(pendingChanges);
 
-		activateRewardsIfValid();
+		checkStakingRewardsActivation();
 	}
 
 	private void updateAccountStakes(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
@@ -119,7 +115,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var latestEligibleStart = stakePeriodManager.latestRewardableStakePeriodStart();
 
 		// boolean to track if the account has been rewarded already with one of the pending changes
-		Set<Long> hasBeenRewarded = new HashSet<>();
+		hasBeenRewarded = new HashSet<>();
 
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			final var account = pendingChanges.entity(i);
@@ -130,20 +126,20 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes, latestEligibleStart)) {
-				payReward(account, changes, accountNum, hasBeenRewarded);
+				payReward(account, changes, accountNum);
 			}
 			// Update any STAKED_TO_ME side effects of this change
-			n = updateStakedToMeSideEffects(i, pendingChanges, hasBeenRewarded, latestEligibleStart);
+			n = updateStakedToMeSideEffects(i, pendingChanges, latestEligibleStart);
 		}
 	}
 
-	private void trackRewardsPaidByFunding(
+	private void updateFundingRewardBalances(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
 		rewardBalanceChanged |= rewardsPaid > 0;
 		if (rewardsPaid > 0) {
-			final var rewardAccountI = findOrAdd(800L, pendingChanges);
-			newRewardBalance = manager.updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
+			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
+			newRewardBalance = stakeChangeManager.updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
 		}
 	}
 
@@ -153,22 +149,22 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var changes = pendingChanges.changes(i);
 
 			final var curNodeId = (account != null) ? account.getStakedId() : 0L;
-			final var newNodeId = manager.getNodeStakeeNum(changes);
+			final var newNodeId = stakeChangeManager.getNodeStakeeNum(changes);
 			if (curNodeId < 0 && curNodeId != newNodeId) {
 				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
 				// isDeclineReward option
-				manager.withdrawStake(
+				stakeChangeManager.withdrawStake(
 						Math.abs(curNodeId),
 						account.getBalance() + account.getStakedToMe(),
-						manager.finalDeclineRewardGiven(account, changes));
+						stakeChangeManager.finalDeclineRewardGiven(account, changes));
 			}
 			if (newNodeId < 0) {
 				// Award updated stake to new node stakee to the fields stakeRewarded or stakeNotRewarded from
 				// ex-stakee based on isDeclineReward option
-				manager.awardStake(
+				stakeChangeManager.awardStake(
 						Math.abs(newNodeId),
-						finalBalanceGiven(account, changes) + manager.finalStakedToMeGiven(account, changes),
-						manager.finalDeclineRewardGiven(account, changes));
+						finalBalanceGiven(account, changes) + stakeChangeManager.finalStakedToMeGiven(account, changes),
+						stakeChangeManager.finalDeclineRewardGiven(account, changes));
 			}
 		}
 	}
@@ -176,35 +172,32 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	int updateStakedToMeSideEffects(
 			final int num,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
-			final Set<Long> hasBeenRewarded,
 			final long latestEligibleStart) {
 		int changesSize = pendingChanges.size();
 		final var account = pendingChanges.entity(num);
 		final var changes = pendingChanges.changes(num);
 
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
-		final var newStakeeNum = manager.getAccountStakeeNum(changes);
+		final var newStakeeNum = stakeChangeManager.getAccountStakeeNum(changes);
 
 		if (curStakeeNum > 0 && curStakeeNum != newStakeeNum) {
 			// Stakee has been replaced, withdraw initial balance from ex-stakee
-			final var exStakeeI = findOrAdd(curStakeeNum, pendingChanges);
-			manager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
+			final var exStakeeI = stakeChangeManager.findOrAdd(curStakeeNum, pendingChanges);
+			stakeChangeManager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(curStakeeNum)) {
-				payRewardIfRewardable(pendingChanges, exStakeeI, hasBeenRewarded, latestEligibleStart);
-				// do we need this ?? since stakedToMe is only for account stakes
+				payRewardIfRewardable(pendingChanges, exStakeeI, latestEligibleStart);
 			}
 		}
 		if (newStakeeNum > 0) {
 			// Add pending balance to new stakee
-			final var newStakeeI = findOrAdd(newStakeeNum, pendingChanges);
-			manager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
+			final var newStakeeI = stakeChangeManager.findOrAdd(newStakeeNum, pendingChanges);
+			stakeChangeManager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
 			} else if (!hasBeenRewarded.contains(newStakeeNum)) {
-				payRewardIfRewardable(pendingChanges, newStakeeI, hasBeenRewarded, latestEligibleStart);
-				// do we need this ?? since stakedToMe is only for account stakes
+				payRewardIfRewardable(pendingChanges, newStakeeI, latestEligibleStart);
 			}
 		}
 		return changesSize;
@@ -213,42 +206,22 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	void payRewardIfRewardable(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
 			final int stakeeI,
-			final Set<Long> hasBeenRewarded,
 			final long latestEligibleStart) {
 		final var account = pendingChanges.entity(stakeeI);
 		final var changes = pendingChanges.changes(stakeeI);
 		final var accountNum = pendingChanges.id(stakeeI).getAccountNum();
 		if (isRewardable(account, changes, latestEligibleStart)) {
-			payReward(account, changes, accountNum, hasBeenRewarded);
+			payReward(account, changes, accountNum);
 		}
 	}
 
 	private void payReward(final MerkleAccount account,
 			final Map<AccountProperty, Object> changes,
-			final long accountNum,
-			final Set<Long> hasBeenRewarded) {
+			final long accountNum) {
 		rewardCalculator.updateRewardChanges(account, changes);
 		final var reward = rewardCalculator.getAccountReward();
 		sideEffectsTracker.trackRewardPayment(accountNum, reward);
 		hasBeenRewarded.add(accountNum);
-	}
-
-	int findOrAdd(
-			final long accountNum,
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
-	) {
-		final var n = pendingChanges.size();
-		for (int i = 0; i < n; i++) {
-			if (pendingChanges.id(i).getAccountNum() == accountNum) {
-				return i;
-			}
-		}
-		// This account wasn't in the current change set
-		pendingChanges.include(
-				STATIC_PROPERTIES.scopedAccountWith(accountNum),
-				accounts.get().get(EntityNum.fromLong(accountNum)),
-				new EnumMap<>(AccountProperty.class));
-		return n;
 	}
 
 	boolean isRewardable(
@@ -266,19 +239,15 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				&& (!account.isDeclinedReward() || Boolean.FALSE.equals(changedDecline));
 	}
 
-	void activateRewardsIfValid() {
+	void checkStakingRewardsActivation() {
 		if (!shouldActivateStakingRewards()) {
 			return;
 		}
+		long todayNumber = stakePeriodManager.currentStakePeriod();
+
 		networkCtx.get().setStakingRewards(true);
 		stakingInfoManager.clearRewardsHistory();
-
-		long todayNumber = stakePeriodManager.currentStakePeriod();
-		accounts.get().forEach(((entityNum, account) -> {
-			if (account.getStakedId() < 0) {
-				account.setStakePeriodStart(todayNumber);
-			}
-		}));
+		stakeChangeManager.setStakePeriodStart(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}
 

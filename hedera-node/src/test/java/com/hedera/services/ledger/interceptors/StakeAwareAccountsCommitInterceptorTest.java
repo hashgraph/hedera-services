@@ -100,7 +100,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 	@BeforeEach
 	void setUp() {
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				() -> accounts, rewardCalculator, manager, stakePeriodManager, stakingInfoManager);
+				rewardCalculator, manager, stakePeriodManager, stakingInfoManager);
 		stakingInfo = buildsStakingInfoMap();
 	}
 
@@ -145,7 +145,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
 		assertFalse(subject.shouldActivateStakingRewards());
 
-		subject.activateRewardsIfValid();
+		subject.checkStakingRewardsActivation();
 		verify(networkCtx, never()).setStakingRewards(true);
 
 		subject.setNewRewardBalance(20L);
@@ -157,7 +157,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[1]);
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[1]);
 
-		subject.activateRewardsIfValid();
+		subject.checkStakingRewardsActivation();
 		verify(networkCtx).setStakingRewards(true);
 		verify(accounts).forEach(any());
 		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
@@ -255,15 +255,15 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(-1, party.getStakePeriodStart());
 	}
 
-	@Test
-	void findsOrAddsAccountAsExpected() {
-		final var pendingChanges = buildPendingNodeStakeChanges();
-		assertEquals(1, pendingChanges.size());
-
-		final var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
-		assertEquals(1, num);
-		assertEquals(2, pendingChanges.size());
-	}
+//	@Test
+//	void findsOrAddsAccountAsExpected() {
+//		final var pendingChanges = buildPendingNodeStakeChanges();
+//		assertEquals(1, pendingChanges.size());
+//
+//		final var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
+//		assertEquals(1, num);
+//		assertEquals(2, pendingChanges.size());
+//	}
 
 	@Test
 	void paysRewardIfRewardable() {
@@ -272,12 +272,12 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		assertEquals(1, pendingChanges.size());
 
-		subject.payRewardIfRewardable(pendingChanges, 0, Set.of(), stakePeriodStart - 2);
+		subject.payRewardIfRewardable(pendingChanges, 0, stakePeriodStart - 2);
 		verify(rewardCalculator, never()).updateRewardChanges(counterparty, pendingChanges.changes(0));
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
-		subject.payRewardIfRewardable(pendingChanges, 0, hasBeenRewarded, stakePeriodStart - 1);
+		subject.payRewardIfRewardable(pendingChanges, 0, stakePeriodStart - 1);
 		verify(rewardCalculator).updateRewardChanges(counterparty, pendingChanges.changes(0));
 		verify(sideEffectsTracker).trackRewardPayment(eq(counterpartyId.getAccountNum()), anyLong());
 		assertEquals(1, hasBeenRewarded.size());
@@ -369,7 +369,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		hasBeenRewarded.add(1L);
 		hasBeenRewarded.add(2L);
 
-		assertEquals(4, subject.updateStakedToMeSideEffects(0, pendingChanges, hasBeenRewarded,
+		assertEquals(4, subject.updateStakedToMeSideEffects(0, pendingChanges,
 				stakePeriodStart - 1));
 	}
 

@@ -155,7 +155,7 @@ public interface StoresModule {
 				backingAccounts,
 				new ChangeSummaryManager<>());
 		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker,
-				networkCtx, dynamicProperties, accounts, rewardCalculator, manager, stakePeriodManager,
+				networkCtx, dynamicProperties, rewardCalculator, manager, stakePeriodManager,
 				stakingInfoManager);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;

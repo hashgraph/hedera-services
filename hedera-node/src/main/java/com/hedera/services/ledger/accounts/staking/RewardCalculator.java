@@ -27,10 +27,9 @@ import javax.inject.Inject;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
-
-;
 
 public class RewardCalculator {
 	private final StakePeriodManager stakePeriodManager;
@@ -48,7 +47,7 @@ public class RewardCalculator {
 	}
 
 	public final void computeRewards(final MerkleAccount account) {
-		long todayNumber = stakePeriodManager.currentStakePeriod();
+		final long todayNumber = stakePeriodManager.currentStakePeriod();
 		var stakePeriodStart = account.getStakePeriodStart();
 
 		if (stakePeriodStart > -1 && stakePeriodStart < todayNumber - 365) {
@@ -59,22 +58,10 @@ public class RewardCalculator {
 			final long reward = computeReward(account, account.getStakedId(), todayNumber, stakePeriodStart);
 			stakePeriodStart = todayNumber - 1;
 			this.accountReward = reward;
-			this.accountUpdatedStakePeriodStart = stakePeriodStart;
 		} else {
 			this.accountReward = 0L;
-			this.accountUpdatedStakePeriodStart = stakePeriodStart;
 		}
-	}
-
-	boolean isWithinRange(final long stakePeriodStart, final long todayNumber) {
-		// if stakePeriodStart = -1 then it is not staked or staked to an account
-		// If it equals todayNumber, that means the staking changed today (later than the start of today),
-		// so it had no effect on consensus weights today, and should never be rewarded for helping consensus
-		// throughout today.  If it equals todayNumber-1, that means it either started yesterday or has already been
-		// rewarded for yesterday. Either way, it might be rewarded for today after today ends, but shouldn't yet be
-		// rewarded for today, because today hasn't finished yet.
-
-		return stakePeriodStart > -1 && stakePeriodStart < todayNumber - 1;
+		this.accountUpdatedStakePeriodStart = stakePeriodStart;
 	}
 
 	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber,

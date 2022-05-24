@@ -23,7 +23,9 @@ package com.hedera.services.ledger.accounts.staking;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -31,7 +33,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
@@ -40,10 +44,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME
 @Singleton
 public class StakeChangeManager {
 	private final StakingInfoManager stakingInfoManager;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	public StakeChangeManager(final StakingInfoManager stakingInfoManager) {
+	public StakeChangeManager(final StakingInfoManager stakingInfoManager,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
 		this.stakingInfoManager = stakingInfoManager;
+		this.accounts = accounts;
 	}
 
 	public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
@@ -140,12 +147,34 @@ public class StakeChangeManager {
 		return newBalance;
 	}
 
-	public static boolean isWithinRange(final long stakePeriodStart, final long latestRewardableStakePeriodStart) {
-		return stakePeriodStart > -1 && stakePeriodStart < latestRewardableStakePeriodStart;
-	}
-
 	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
 		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) ||
 				changes.containsKey(STAKED_ID) || changes.containsKey(STAKED_TO_ME);
+	}
+
+	public int findOrAdd(
+			final long accountNum,
+			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
+	) {
+		final var n = pendingChanges.size();
+		for (int i = 0; i < n; i++) {
+			if (pendingChanges.id(i).getAccountNum() == accountNum) {
+				return i;
+			}
+		}
+		// This account wasn't in the current change set
+		pendingChanges.include(
+				STATIC_PROPERTIES.scopedAccountWith(accountNum),
+				accounts.get().get(EntityNum.fromLong(accountNum)),
+				new EnumMap<>(AccountProperty.class));
+		return n;
+	}
+
+	public void setStakePeriodStart(final long todayNumber) {
+		accounts.get().forEach(((entityNum, account) -> {
+			if (account.getStakedId() < 0) {
+				account.setStakePeriodStart(todayNumber);
+			}
+		}));
 	}
 }

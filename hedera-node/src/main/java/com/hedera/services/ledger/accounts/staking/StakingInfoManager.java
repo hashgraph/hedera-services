@@ -10,6 +10,8 @@ import java.util.function.Supplier;
 public class StakingInfoManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 
+	private MerkleStakingInfo[] latestStakingInfo;
+
 	@Inject
 	public StakingInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
 		this.stakingInfo = stakingInfo;
