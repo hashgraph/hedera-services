@@ -23,8 +23,6 @@ package com.hedera.services.state.virtual;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 
@@ -39,9 +37,6 @@ import java.util.Objects;
  */
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
-	// TODO(REMOVE)
-	private static final Logger log = LogManager.getLogger(ContractValue.class);
-
 	public static final int MERKLE_VERSION = 1;
 	public static final int SERIALIZED_SIZE = 32;
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7c4802f00979857L;
@@ -264,11 +259,6 @@ public class ContractValue implements VirtualValue {
 
 	@Override
 	public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
-		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
-		if (i != MERKLE_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", i, MERKLE_VERSION);
-		}
-		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		int lengthRead = inputStream.read(this.uint256Value);
 		assert lengthRead == SERIALIZED_SIZE;
@@ -276,11 +266,6 @@ public class ContractValue implements VirtualValue {
 
 	@Override
 	public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-		// --- BEGIN DEBUG SNIPPET -- TODO(REMOVE)
-		if (i != MERKLE_VERSION) {
-			log.error("-- RADFORD: Unexpected version {} in ContractValue. Expected {}", i, MERKLE_VERSION);
-		}
-		// --- END DEBUG SNIPPET -- TODO(REMOVE)
 		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		byteBuffer.get(this.uint256Value);
 	}

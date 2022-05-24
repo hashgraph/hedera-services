@@ -131,19 +131,6 @@ class UniqueTokenKeyTest {
 	}
 
 	@Test
-	void deserializing_withWrongVersion_throwsException() throws IOException {
-		ByteBuffer byteBuffer = serializeToByteBuffer(0xFFL, 0xFFL);
-		SerializableDataInputStream inputStream  = serializeToStream(0xFFL, 0xFFL);
-
-		UniqueTokenKey key = new UniqueTokenKey();
-		Assertions.assertThrows(IllegalStateException.class,
-				() -> key.deserialize(byteBuffer, UniqueTokenKey.CURRENT_VERSION + 1));
-
-		Assertions.assertThrows(IllegalStateException.class,
-				() -> key.deserialize(inputStream, UniqueTokenKey.CURRENT_VERSION + 1));
-	}
-
-	@Test
 	void equals_whenNull_isFalse() {
 		UniqueTokenKey key = new UniqueTokenKey();
 		assertThat(key.equals(null)).isFalse();

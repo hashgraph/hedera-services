@@ -25,7 +25,6 @@ import com.google.common.primitives.Longs;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -49,20 +48,6 @@ class UniqueTokenKeySerializerTest {
 		UniqueTokenKey dst = serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
 		assertThat(dst.getNum()).isEqualTo(Long.MAX_VALUE);
 		assertThat(dst.getTokenSerial()).isEqualTo(EXAMPLE_SERIAL);
-	}
-
-	@Test
-	void deserializeToUniqueTokenKey_whenInvalidVersion_shouldThrowException() throws IOException {
-		UniqueTokenKey src = new UniqueTokenKey();
-		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-		src.serialize(new SerializableDataOutputStream(byteStream));
-
-		UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-		ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
-		Assertions.assertThrows(
-				IllegalStateException.class,
-				() -> serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION + 1)
-		);
 	}
 
 	@Test
@@ -107,19 +92,6 @@ class UniqueTokenKeySerializerTest {
 						UniqueTokenKey.CURRENT_VERSION,
 						new UniqueTokenKey(10, EXAMPLE_SERIAL)))
 				.isFalse();
-	}
-
-	@Test
-	void serializerEquals_whenIncorrectDataVersion_shouldThrowException() throws IOException {
-		ByteBuffer buffer = ByteBuffer.wrap(new byte[17]);
-		new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL).serialize(buffer);
-		buffer.rewind();
-		UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-		UniqueTokenKey key = new UniqueTokenKey();
-		Assertions.assertThrows(
-				IllegalStateException.class,
-				() -> serializer.equals(buffer, UniqueTokenKey.CURRENT_VERSION + 1, key)
-		);
 	}
 
 	@Test

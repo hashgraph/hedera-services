@@ -206,12 +206,6 @@ public class UniqueTokenValue implements VirtualValue {
 			final CheckedConsumer<byte[]> readBytesFn,
 			int dataVersion) throws IOException {
 		throwIfImmutable();
-
-		if (dataVersion != CURRENT_VERSION) {
-			throw new IllegalStateException("Data version " + dataVersion + " unsupported. Expected: "
-					+ CURRENT_VERSION);
-		}
-
 		ownerAccountNum = readLongFn.get();
 		spenderAccountNum = readLongFn.get();
 		packedCreationTime = readLongFn.get();

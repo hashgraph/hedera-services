@@ -307,26 +307,6 @@ class UniqueTokenValueTest {
 	}
 
 	@Test
-	void deserializingByteBuffer_withUnsupportedVersion_shouldThrowException() throws IOException {
-		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
-		new UniqueTokenValue().serialize(encodedEmpty);
-		UniqueTokenValue value = new UniqueTokenValue();
-		assertThrows(IllegalStateException.class,
-				() -> value.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION + 1));
-	}
-
-	@Test
-	void deserializingDataStream_withUnsupportedVersion_shouldThrowException() throws IOException {
-		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
-		new UniqueTokenValue().serialize(encodedEmpty);
-		SerializableDataInputStream stream = new SerializableDataInputStream(
-				new ByteArrayInputStream(encodedEmpty.array()));
-		UniqueTokenValue value = new UniqueTokenValue();
-		assertThrows(IllegalStateException.class,
-				() -> value.deserialize(stream, UniqueTokenValue.CURRENT_VERSION + 1));
-	}
-
-	@Test
 	void toString_containsContents() {
 		UniqueTokenValue value = new UniqueTokenValue(
 				1234L,
