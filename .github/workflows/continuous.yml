@@ -2,9 +2,9 @@ name: Continuous Build
 
 on:
   pull_request:
-    branches: [ $default-branch, release/** ]
+    branches: [ master, release/** ]
   push:
-    branches: [ $default-branch, release/** ]
+    branches: [ master, release/** ]
     tags: [ v* ]
 
 jobs:
