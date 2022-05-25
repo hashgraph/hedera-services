@@ -199,7 +199,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 		return value;
 	}
 
-	private void deserializeFrom(ByteSupplier input, int dataVersion) throws IOException {
+	private void deserializeFrom(ByteSupplier input) throws IOException {
 		byte packedLengths = input.get();
 		int numEntityBytes = unpackUpperLength(packedLengths);
 		int numSerialBytes = unpackLowerLength(packedLengths);
@@ -210,13 +210,13 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 
 	@Override
 	public void deserialize(ByteBuffer byteBuffer, int dataVersion) throws IOException {
-		deserializeFrom(byteBuffer::get, dataVersion);
+		deserializeFrom(byteBuffer::get);
 	}
 
 
 	@Override
 	public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
-		deserializeFrom(inputStream::readByte, dataVersion);
+		deserializeFrom(inputStream::readByte);
 	}
 
 	@Override
