@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Map;
@@ -91,7 +92,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	private StakeAwareAccountsCommitsInterceptor subject;
 
-	private static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
+	private static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678L), zoneUTC).toEpochDay() - 1;
 
 	@BeforeEach
 	void setUp() {
@@ -133,28 +134,31 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 	@Test
 	void checksIfRewardsToBeActivatedEveryHandle() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, randomStakedNodeChanges(partyBalance + amount));
+		changes.include(counterpartyId, counterparty, randomStakedNodeChanges(counterpartyBalance - amount));
+
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		subject.setRewardsActivated(false);
-		subject.setRewardBalanceChanged(true);
-		subject.setNewRewardBalance(10L);
-		assertTrue(subject.isRewardBalanceChanged());
-		assertEquals(10L, subject.getNewRewardBalance());
-		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
-		assertFalse(subject.shouldActivateStakingRewards());
+		subject.setRewardBalanceIncreased(true);
+		subject.calculateNewRewardBalance(changes);
+		assertTrue(subject.isRewardBalanceIncreased());
 
-		subject.checkStakingRewardsActivation();
+		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
+		assertFalse(subject.shouldActivateStakingRewards(10L));
+
+		subject.checkStakingRewardsActivation(changes);
 		verify(networkCtx, never()).setStakingRewards(true);
 
-		subject.setNewRewardBalance(20L);
-		assertEquals(20L, subject.getNewRewardBalance());
-		assertTrue(subject.shouldActivateStakingRewards());
+
+		assertTrue(subject.shouldActivateStakingRewards(20L));
 
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[0]);
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[1]);
 		assertEquals(5L, stakingInfo.get(EntityNum.fromLong(4L)).getRewardSumHistory()[1]);
 
-		subject.checkStakingRewardsActivation();
+		subject.checkStakingRewardsActivation(changes);
 		verify(networkCtx).setStakingRewards(true);
 		verify(manager).setStakePeriodStart(anyLong());
 		assertEquals(0L, stakingInfo.get(EntityNum.fromLong(3L)).getRewardSumHistory()[0]);
@@ -185,25 +189,23 @@ class StakeAwareAccountsCommitInterceptorTest {
 	void returnsIfRewardsShouldBeActivated() {
 		subject.setRewardsActivated(true);
 		assertTrue(subject.isRewardsActivated());
-		assertFalse(subject.shouldActivateStakingRewards());
+		var newRewardBalance = 10L;
+		assertFalse(subject.shouldActivateStakingRewards(newRewardBalance));
 
-		subject.setNewRewardBalance(10L);
-		assertFalse(subject.shouldActivateStakingRewards());
+		assertFalse(subject.shouldActivateStakingRewards(newRewardBalance));
 
 		subject.setRewardsActivated(false);
 		assertFalse(subject.isRewardsActivated());
-		assertFalse(subject.isRewardBalanceChanged());
-		assertFalse(subject.shouldActivateStakingRewards());
+		assertFalse(subject.isRewardBalanceIncreased());
+		assertFalse(subject.shouldActivateStakingRewards(newRewardBalance));
 
-		subject.setRewardBalanceChanged(true);
-		assertTrue(subject.isRewardBalanceChanged());
-		assertEquals(10L, subject.getNewRewardBalance());
+		subject.setRewardBalanceIncreased(true);
+		assertTrue(subject.isRewardBalanceIncreased());
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
-		assertFalse(subject.shouldActivateStakingRewards());
+		assertFalse(subject.shouldActivateStakingRewards(newRewardBalance));
 
-		subject.setNewRewardBalance(20L);
-		assertEquals(20L, subject.getNewRewardBalance());
-		assertTrue(subject.shouldActivateStakingRewards());
+		newRewardBalance = 20L;
+		assertTrue(subject.shouldActivateStakingRewards(newRewardBalance));
 	}
 
 	@Test

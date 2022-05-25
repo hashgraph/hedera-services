@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -67,7 +68,7 @@ class StakeChangeManagerTest {
 	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
-	public static final long stakePeriodStart = LocalDate.now(zoneUTC).toEpochDay() - 1;
+	public static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678L), zoneUTC).toEpochDay() - 1;
 
 	@BeforeEach
 	void setUp() {

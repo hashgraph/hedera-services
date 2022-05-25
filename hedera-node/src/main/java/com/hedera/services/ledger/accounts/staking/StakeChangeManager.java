@@ -130,21 +130,18 @@ public class StakeChangeManager {
 		pendingChanges.updateChange(stakeeI, mutableChanges);
 	}
 
-	public long updateBalance(
+	public void updateBalance(
 			final long delta,
 			final int rewardAccountI,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var mutableChanges = new EnumMap<>(pendingChanges.changes(rewardAccountI));
-		var newBalance = delta;
 		if (mutableChanges.containsKey(BALANCE)) {
-			newBalance = (long) mutableChanges.get(BALANCE) + delta;
-			mutableChanges.put(BALANCE, newBalance);
+			mutableChanges.put(BALANCE, (long) mutableChanges.get(BALANCE) + delta);
 		} else {
-			mutableChanges.put(BALANCE, newBalance);
+			mutableChanges.put(BALANCE, delta);
 		}
 		pendingChanges.updateChange(rewardAccountI, mutableChanges);
-		return newBalance;
 	}
 
 	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {

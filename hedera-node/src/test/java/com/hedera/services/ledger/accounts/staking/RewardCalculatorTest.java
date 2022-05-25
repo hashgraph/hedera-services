@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 
@@ -52,7 +53,7 @@ class RewardCalculatorTest {
 	private MerkleAccount account;
 
 	private RewardCalculator subject;
-	private static final long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
+	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678L), zoneUTC).toEpochDay();
 	private static final long[] rewardHistory = new long[366];
 
 	@BeforeEach

@@ -25,13 +25,17 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.function.Supplier;
 
+@Singleton
 public class StakePeriodManager {
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private long currentStakePeriod;
+	private long prevConsensusSecs;
 
 	public static final ZoneId zoneUTC = ZoneId.of("UTC");
 
@@ -43,7 +47,12 @@ public class StakePeriodManager {
 	}
 
 	public long currentStakePeriod() {
-		return LocalDate.ofInstant(txnCtx.consensusTime(), zoneUTC).toEpochDay(); // optimization ?
+		final var currentConsensusSecs = txnCtx.consensusTime().getEpochSecond();
+		if (prevConsensusSecs != currentConsensusSecs) {
+			prevConsensusSecs = currentConsensusSecs;
+			currentStakePeriod = LocalDate.ofInstant(txnCtx.consensusTime(), zoneUTC).toEpochDay();
+		}
+		return currentStakePeriod;
 	}
 
 	public long latestRewardableStakePeriodStart() {

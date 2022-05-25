@@ -506,6 +506,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setStakedNum(stakedId);
 	}
 
+	public long getUsableStakedNodeIdUnsafe() {
+		return -state().getStakedNum() - 1;
+	}
+
 	public Iterator<ExpirableTxnRecord> recordIterator() {
 		return records().iterator();
 	}
