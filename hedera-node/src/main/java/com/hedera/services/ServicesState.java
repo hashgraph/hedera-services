@@ -23,6 +23,7 @@ package com.hedera.services;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.init.StateInitializationFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -120,6 +121,36 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
 	}
 
+	/**
+	 * Log out the sizes the state children.
+	 */
+	 private void logStateChildrenSizes() {
+		log.info("  (@ {}) # NFTs               = {}",
+				StateChildIndices.UNIQUE_TOKENS,
+				uniqueTokens().size());
+		log.info("  (@ {}) # token associations = {}",
+				StateChildIndices.TOKEN_ASSOCIATIONS,
+				tokenAssociations().size());
+		log.info("  (@ {}) # topics             = {}",
+				StateChildIndices.TOPICS,
+				topics().size());
+		log.info("  (@ {}) # blobs              = {}",
+				StateChildIndices.STORAGE,
+				storage().size());
+		log.info("  (@ {}) # accounts/contracts = {}",
+				StateChildIndices.ACCOUNTS,
+				accounts().size());
+		log.info("  (@ {}) # tokens             = {}",
+				StateChildIndices.TOKENS,
+				tokens().size());
+		log.info("  (@ {}) # scheduled txns     = {}",
+				StateChildIndices.SCHEDULE_TXS,
+				scheduleTxs().size());
+		log.info("  (@ {}) # contract K/V pairs = {}",
+				StateChildIndices.CONTRACT_STORAGE,
+				contractStorage().size());
+	}
+
 	/* --- MerkleInternal --- */
 	@Override
 	public long getClassId() {
@@ -180,6 +211,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);
 		}
+		log.info("Migration completed.");
+		logStateChildrenSizes();
 	}
 
 	/* --- SwirldState --- */
@@ -419,6 +452,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
+			// Log state before migration.
+			logStateChildrenSizes();
 			// This updates the working state accessor with our children
 			app.initializationFlow().runWith(this);
 
