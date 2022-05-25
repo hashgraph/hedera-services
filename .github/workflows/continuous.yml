@@ -37,6 +37,7 @@ jobs:
           name: Unit Test Results
           path: "**/build/test-results/test/TEST-*.xml"
           reporter: 'java-junit'
+          fail-on-error: 'false'
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
@@ -48,6 +49,7 @@ jobs:
           name: Integration Test Results
           path: "**/build/test-results/itest/TEST-*.xml"
           reporter: 'java-junit'
+          fail-on-error: 'false'
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
