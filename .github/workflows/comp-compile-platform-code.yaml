@@ -1,0 +1,161 @@
+name: "ZComponent: Compile"
+on:
+  workflow_call:
+    inputs:
+      enable-javadoc:
+        description: "Javadoc Enabled:"
+        type: boolean
+        required: false
+        default: true
+      enable-unit-tests:
+        description: "Unit Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
+      enable-sonar-analysis:
+        description: "Sonar Analysis Enabled:"
+        type: boolean
+        required: false
+        default: false
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      custom-job-label:
+        description: "Custom Job Label:"
+        type: string
+        required: false
+        default: "Compiles"
+
+    secrets:
+      access-token:
+        description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+      sonar-token:
+        description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  actions: write
+  pull-requests: write
+  statuses: write
+  checks: write
+  contents: read
+
+jobs:
+  compile:
+    name: ${{ inputs.custom-job-label || 'Compiles' }}
+    runs-on: [self-hosted, Linux, platform, standard, ephemeral]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Expand Shallow Clone for SonarQube
+        if: ${{ inputs.enable-sonar-analysis && !cancelled() }}
+        run: |
+          git fetch --unshallow --no-recurse-submodules
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Compile
+        id: gradle-build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assemble
+
+      - name: Unit Testing
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        id: gradle-test
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: check
+
+      - name: Publish Unit Test Report
+        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
+        uses: mikepenz/action-junit-report@v3
+        with:
+          name: Unit Test Results
+          report_paths: "**/build/test-results/test/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: Integration Testing
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        id: gradle-itest
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: itest
+
+      - name: Publish Integration Test Report
+        if: ${{ inputs.enable-unit-tests && steps.gradle-itest.conclusion == 'success' && !cancelled() }}
+        uses: mikepenz/action-junit-report@v3
+        with:
+          name: Integration Test Results
+          report_paths: "**/build/test-results/itest/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: Jacoco Coverage Report
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: jacocoTestReport
+
+      - name: Publish To Codecov
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        uses: codecov/codecov-action@v3
+
+      - name: Publish Code Coverage Data
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Jacoco Data
+          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+
+      - name: Javadoc
+        if: ${{ inputs.enable-javadoc && !cancelled() }}
+        uses: gradle/gradle-build-action@v2
+        # run: ./mvnw -DskipTests javadoc:aggregate
+        # TODO What about javadoc aggregation? Should I do that too?
+        with:
+          arguments: javadoc
+
+
+      - name: SonarCloud Options
+        id: sonar-cloud
+        env:
+          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: |
+          SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
+          if [[ "${IS_PULL_REQUEST}" == true ]]; then
+            SONAR_OPTS=""
+          fi
+          
+          echo "::set-output name=options::${SONAR_OPTS}"
+
+      - name: SonarCloud Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.access-token }}
+          SONAR_TOKEN: ${{ secrets.sonar-token }}
+          SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: sonarqube --info

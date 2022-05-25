@@ -1,0 +1,47 @@
+name: "PR Checks"
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Code
+    uses: ./.github/workflows/comp-compile-platform-code.yaml
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+
+  unit-label-check:
+    name: "Label Check [CI:UnitTests]"
+    runs-on: [self-hosted, Linux, platform, standard, ephemeral]
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
+    steps:
+      - name: "Check Labels"
+        uses: jesusvasquez333/verify-pr-label-action@v1.4.0
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          valid-labels: "CI:UnitTests, CI:FinalChecks"
+          disable-reviews: true
+
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/comp-compile-platform-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: true
+      enable-sonar-analysis: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
