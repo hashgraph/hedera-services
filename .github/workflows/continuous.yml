@@ -30,48 +30,22 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: build
-      - name: Upload Unit Test Data
+      - name: Upload Unit Test Results
         if: always()
-#        uses: actions/upload-artifact@v3
         uses: scacap/action-surefire-report@v1
         with:
-          name: Unit Test Data
+          name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
-      - name: Upload Unit Test Data 3
-        if: always()
-        uses: mikepenz/action-junit-report@v3
-        with:
-          name: Unit Test Data 3
-          report_paths: "**/build/test-results/test/TEST-*.xml"
-      - name: Upload Unit Test Data 2
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Unit Test Data 2
-          path: "**/build/test-results/test/TEST-*.xml"
-          reporter: 'java-junit'
-#      - name: Upload Unit Test HTML Report
-#        if: always()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Unit Test Report
-#          path: "**/build/reports/tests/test"
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
           arguments: itest
-#      - name: Upload Integration Test Data
-#        if: always()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Integration Test Data
-#          path: "**/build/test-results/itest"
-#      - name: Upload Integration Test HTML Report
-#        if: always()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Integration Test Report
-#          path: "**/build/reports/tests/itest"
+      - name: Upload Integration Test Results
+        if: always()
+        uses: scacap/action-surefire-report@v1
+        with:
+          name: Integration Test Results
+          path: "**/build/test-results/itest/TEST-*.xml"
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
