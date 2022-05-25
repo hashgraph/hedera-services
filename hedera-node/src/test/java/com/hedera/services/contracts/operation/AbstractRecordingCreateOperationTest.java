@@ -45,7 +45,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -63,6 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.hedera.services.contracts.operation.AbstractRecordingCreateOperation.haltWith;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -74,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -109,13 +110,11 @@ class AbstractRecordingCreateOperationTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	private static final Gas childStipend = Gas.of(1_000_000L);
+	private static final long childStipend = 1_000_000L;
 	private static final Wei gasPrice = Wei.of(1000L);
 	private static final long value = 123_456L;
 	private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
 	private static final Address recipient = Address.BLAKE2B_F_COMPRESSION;
-	private static final Operation.OperationResult EMPTY_RESULT =
-			new Operation.OperationResult(Optional.empty(), Optional.empty());
 	private static final Operation.OperationResult EMPTY_HALT_RESULT =
 			new Operation.OperationResult(Subject.PRETEND_OPTIONAL_COST, Optional.empty());
 	private static final EntityId autoRenewId = new EntityId(0, 0, 8);
@@ -151,15 +150,6 @@ class AbstractRecordingCreateOperationTest {
 	}
 
 	@Test
-	void noopsOnNull() {
-		given(frame.stackSize()).willReturn(3);
-
-		subject.useNullCost();
-
-		assertSameResult(EMPTY_RESULT, subject.execute(frame, evm));
-	}
-
-	@Test
 	void haltsOnStaticFrame() {
 		given(frame.stackSize()).willReturn(3);
 		given(frame.isStatic()).willReturn(true);
@@ -172,7 +162,7 @@ class AbstractRecordingCreateOperationTest {
 	@Test
 	void haltsOnInsufficientGas() {
 		given(frame.stackSize()).willReturn(3);
-		given(frame.getRemainingGas()).willReturn(Gas.of(Subject.PRETEND_GAS_COST - 1));
+		given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST - 1);
 
 		final var expected = haltWith(Subject.PRETEND_OPTIONAL_COST, INSUFFICIENT_GAS);
 
@@ -183,7 +173,7 @@ class AbstractRecordingCreateOperationTest {
 	void failsWithInsufficientRecipientBalanceForValue() {
 		given(frame.stackSize()).willReturn(3);
 		given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
-		given(frame.getRemainingGas()).willReturn(Gas.of(Subject.PRETEND_GAS_COST));
+		given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
 		given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(value));
 		given(frame.getRecipientAddress()).willReturn(recipient);
 		given(frame.getWorldUpdater()).willReturn(updater);
@@ -259,7 +249,7 @@ class AbstractRecordingCreateOperationTest {
 	private void givenBuilderPrereqs() {
 		given(frame.getMessageFrameStack()).willReturn(stack);
 		given(updater.updater()).willReturn(updater);
-		given(gasCalculator.gasAvailableForChildCreate(any())).willReturn(childStipend);
+		given(gasCalculator.gasAvailableForChildCreate(anyLong())).willReturn(childStipend);
 		given(frame.getOriginatorAddress()).willReturn(recipient);
 		given(frame.getGasPrice()).willReturn(gasPrice);
 		given(frame.getBlockValues()).willReturn(blockValues);
@@ -270,7 +260,7 @@ class AbstractRecordingCreateOperationTest {
 	private void givenSpawnPrereqs() {
 		given(frame.stackSize()).willReturn(3);
 		given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
-		given(frame.getRemainingGas()).willReturn(Gas.of(Subject.PRETEND_GAS_COST));
+		given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
 		given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(value));
 		given(frame.getRecipientAddress()).willReturn(recipient);
 		given(frame.getWorldUpdater()).willReturn(updater);
@@ -288,10 +278,9 @@ class AbstractRecordingCreateOperationTest {
 	static class Subject extends AbstractRecordingCreateOperation {
 		static final long PRETEND_GAS_COST = 123L;
 		static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
-		static final Optional<Gas> PRETEND_OPTIONAL_COST = Optional.of(Gas.of(PRETEND_GAS_COST));
+		static final OptionalLong PRETEND_OPTIONAL_COST = OptionalLong.of(PRETEND_GAS_COST);
 
 		boolean isEnabled = true;
-		boolean usePretendCost = true;
 
 		protected Subject(
 				final int opcode,
@@ -315,8 +304,8 @@ class AbstractRecordingCreateOperationTest {
 		}
 
 		@Override
-		protected Gas cost(final MessageFrame frame) {
-			return usePretendCost ? Gas.of(PRETEND_GAS_COST) : null;
+		protected long cost(final MessageFrame frame) {
+			return PRETEND_GAS_COST;
 		}
 
 		@Override
@@ -324,8 +313,5 @@ class AbstractRecordingCreateOperationTest {
 			return PRETEND_CONTRACT_ADDRESS;
 		}
 
-		public void useNullCost() {
-			usePretendCost = false;
-		}
 	}
 }

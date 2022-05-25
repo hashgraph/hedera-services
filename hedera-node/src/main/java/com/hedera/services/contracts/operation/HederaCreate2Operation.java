@@ -30,7 +30,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -69,10 +68,9 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	}
 
 	@Override
-	protected Gas cost(final MessageFrame frame) {
+	protected long cost(final MessageFrame frame) {
 		final var calculator = gasCalculator();
-		return calculator.create2OperationGasCost(frame)
-				.plus(storageGasCalculator.creationGasCost(frame, calculator));
+		return calculator.create2OperationGasCost(frame) + storageGasCalculator.creationGasCost(frame, calculator);
 	}
 
 	@Override

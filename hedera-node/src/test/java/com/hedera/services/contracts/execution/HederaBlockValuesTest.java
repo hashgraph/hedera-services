@@ -24,6 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,7 @@ class HederaBlockValuesTest {
         subject = new HederaBlockValues(gasLimit, blockNo, consTime);
         Assertions.assertEquals(gasLimit, subject.getGasLimit());
         Assertions.assertEquals(consTime.getEpochSecond(), subject.getTimestamp());
-        Assertions.assertEquals(Optional.of(0L), subject.getBaseFee());
+        Assertions.assertEquals(Optional.of(Wei.ZERO), subject.getBaseFee());
         Assertions.assertEquals(UInt256.ZERO, subject.getDifficultyBytes());
         Assertions.assertEquals(blockNo, subject.getNumber());
     }

@@ -28,7 +28,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -66,10 +65,9 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 	}
 
 	@Override
-	public Gas cost(final MessageFrame frame) {
+	public long cost(final MessageFrame frame) {
 		final var calculator = gasCalculator();
-		return calculator.createOperationGasCost(frame)
-				.plus(storageGasCalculator.creationGasCost(frame, calculator));
+		return calculator.createOperationGasCost(frame) + storageGasCalculator.creationGasCost(frame, calculator);
 	}
 
 	@Override

@@ -74,14 +74,14 @@ public class CodeCache {
 
         if (entityAccess.isTokenAccount(address)) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
-            code = new Code(interpolatedBytecode, Hash.hash(interpolatedBytecode));
+            code = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
             cache.put(cacheKey, code);
             return code;
         }
 
         final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
         if (bytecode != null) {
-            code = new Code(bytecode, Hash.hash(bytecode));
+                code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
             cache.put(cacheKey, code);
         }
 
