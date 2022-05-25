@@ -21,12 +21,9 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -34,30 +31,17 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-
 /**
  * Provides the state transition for token minting.
  */
 @Singleton
 public class TokenMintTransitionLogic implements TransitionLogic {
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final MintLogic mintLogic;
 
 	@Inject
-	public TokenMintTransitionLogic(
-			final OptionValidator validator,
-			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties,
-			final MintLogic mintLogic
-	) {
-		this.validator = validator;
+	public TokenMintTransitionLogic(final TransactionContext txnCtx, final MintLogic mintLogic) {
 		this.txnCtx = txnCtx;
-		this.dynamicProperties = dynamicProperties;
 		this.mintLogic = mintLogic;
 	}
 
@@ -87,20 +71,6 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenMintTransactionBody op = txnBody.getTokenMint();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		return validateTokenOpsWith(
-				op.getMetadataCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_TOKEN_MINT_AMOUNT,
-				op.getMetadataList(),
-				validator::maxBatchSizeMintCheck,
-				validator::nftMetadataCheck
-		);
+		return mintLogic.validateSyntax(txnBody);
 	}
 }

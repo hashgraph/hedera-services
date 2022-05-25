@@ -24,16 +24,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Provides the state transition for associating tokens to an account.
@@ -70,16 +66,6 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenAssociateTransactionBody op = txnBody.getTokenAssociate();
-
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
-
-		if (repeatsItself(op.getTokensList())) {
-			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-		}
-
-		return OK;
+		return associateLogic.validateSyntax(txnBody);
 	}
 }
