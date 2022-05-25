@@ -32,24 +32,22 @@ jobs:
           arguments: build
       - name: Upload Unit Test Results
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: mikepenz/action-junit-report@v3
         with:
           name: Unit Test Results
-          path: "**/build/test-results/test/TEST-*.xml"
-          reporter: 'java-junit'
-          fail-on-error: 'false'
+          report_paths: "**/build/test-results/test/TEST-*.xml"
+          require_tests: 'false'
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
           arguments: itest
       - name: Upload Integration Test Results
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: mikepenz/action-junit-report@v3
         with:
           name: Integration Test Results
-          path: "**/build/test-results/itest/TEST-*.xml"
-          reporter: 'java-junit'
-          fail-on-error: 'false'
+          report_paths: "**/build/test-results/itest/TEST-*.xml"
+          require_tests: 'false'
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
