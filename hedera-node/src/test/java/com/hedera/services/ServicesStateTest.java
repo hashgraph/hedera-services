@@ -202,17 +202,20 @@ class ServicesStateTest {
 		mockMigrators();
 		final var inOrder = inOrder(
 				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+
+		ServicesState.setExpiryJustEnabled(false);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		subject.setMetadata(metadata);
 		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyNftStorage);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		ServicesState.setExpiryJustEnabled(false);
+
 		subject.migrate();
 
 		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
@@ -236,16 +239,16 @@ class ServicesStateTest {
 		ServicesState.setExpiryJustEnabled(true);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyNftStorage);
 		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		networkContext.setConsensusTimeOfLastHandledTxn(consensusTime);
-		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
-		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyNftStorage);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);

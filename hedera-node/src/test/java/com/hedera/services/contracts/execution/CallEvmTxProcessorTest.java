@@ -41,7 +41,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -183,7 +182,7 @@ class CallEvmTxProcessorTest {
 		MessageFrame.Builder protoFrame = MessageFrame.builder()
 				.messageFrameStack(new ArrayDeque<>())
 				.worldUpdater(updater)
-				.initialGas(Gas.of(1))
+				.initialGas(1L)
 				.originator(sender.canonicalAddress())
 				.gasPrice(Wei.ZERO)
 				.sender(sender.canonicalAddress())
@@ -220,7 +219,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(INTRINSIC_GAS_COST);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
@@ -318,7 +317,7 @@ class CallEvmTxProcessorTest {
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(MAX_GAS_LIMIT + 1));
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(MAX_GAS_LIMIT + 1L);
 
 		assertFailsWith(
 				() -> callEvmTxProcessor
@@ -336,7 +335,7 @@ class CallEvmTxProcessorTest {
 	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-		given(codeCache.getIfPresent(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
 		final MessageFrame.Builder commonInitialFrame =
@@ -344,9 +343,9 @@ class CallEvmTxProcessorTest {
 						.messageFrameStack(mock(Deque.class))
 						.maxStackSize(MAX_STACK_SIZE)
 						.worldUpdater(mock(WorldUpdater.class))
-						.initialGas(mock(Gas.class))
+						.initialGas(GAS_LIMIT)
 						.originator(sender.getId().asEvmAddress())
-						.gasPrice(mock(Wei.class))
+						.gasPrice(Wei.ZERO)
 						.sender(sender.getId().asEvmAddress())
 						.value(Wei.of(transaction.getValue().getAsBigInteger()))
 						.apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
@@ -354,7 +353,7 @@ class CallEvmTxProcessorTest {
 						.depth(0)
 						.completer(__ -> {
 						})
-						.miningBeneficiary(mock(Address.class))
+						.miningBeneficiary(Address.ZERO)
 						.blockHashLookup(h -> null);
 		//when:
 		MessageFrame buildMessageFrame = callEvmTxProcessor.buildInitialFrame(commonInitialFrame,
@@ -388,8 +387,8 @@ class CallEvmTxProcessorTest {
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
-		final int gasLimit = 1000;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(gasLimit));
+		final long gasLimit = 1000;
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -487,7 +486,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenSenderBalanceNotEnoughToCoverFeeWhenBothPay() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -517,7 +516,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenGasAllowanceNotEnoughWhenBothPay() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -547,7 +546,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenRelayerBalanceNotEnoughToCoverAllowanceWhenBothPay() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -597,8 +596,8 @@ class CallEvmTxProcessorTest {
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 0L;
-		final int gasLimit = 1000;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(gasLimit));
+		final long gasLimit = 1000;
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -614,7 +613,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndAllowanceCannotCoverFees() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -642,7 +641,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndRelayerDoesNotHaveBalanceForAllowance() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -690,8 +689,8 @@ class CallEvmTxProcessorTest {
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 50L;
-		final int gasLimit = 1000;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(gasLimit));
+		final long gasLimit = 1000;
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -708,7 +707,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
 		given(worldState.updater()).willReturn(updater);;
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -757,7 +756,7 @@ class CallEvmTxProcessorTest {
 
 	private void givenInvalidMock() {
 		given(worldState.updater()).willReturn(updater);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(100_000L));
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(100_000L);
 	}
 
 	private void givenValidMock() {
@@ -767,13 +766,13 @@ class CallEvmTxProcessorTest {
 
 		var evmAccount = mock(EvmAccount.class);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.getIfPresent(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
-		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
 		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
 		var senderMutableAccount = mock(MutableAccount.class);
@@ -785,7 +784,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+		given(updater.getSbhRefund()).willReturn(0L);
 
 		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
@@ -797,12 +796,12 @@ class CallEvmTxProcessorTest {
 
 		var evmAccount = mock(EvmAccount.class);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.getIfPresent(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
-		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
 		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
 		var senderMutableAccount = mock(MutableAccount.class);
@@ -814,7 +813,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+		given(updater.getSbhRefund()).willReturn(0L);
 		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 	}
 

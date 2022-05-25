@@ -63,7 +63,6 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -104,8 +103,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class DissociatePrecompilesTest {
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -212,7 +209,7 @@ class DissociatePrecompilesTest {
 	@Test
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -245,7 +242,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
@@ -270,7 +267,7 @@ class DissociatePrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -286,7 +283,7 @@ class DissociatePrecompilesTest {
 	void computeMultiDissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS);
 
 		given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
 				.willReturn(multiDissociateOp);
@@ -315,7 +312,7 @@ class DissociatePrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -337,7 +334,7 @@ class DissociatePrecompilesTest {
 		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
 		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

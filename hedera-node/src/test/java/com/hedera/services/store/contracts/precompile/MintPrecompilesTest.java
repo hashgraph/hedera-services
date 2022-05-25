@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -64,7 +65,6 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -117,8 +117,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MintPrecompilesTest {
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -215,7 +213,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void mintFailurePathWorks() {
-		givenNonFungibleFrameContext();
+		Bytes pretendArguments = givenNonFungibleFrameContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -236,7 +234,7 @@ class MintPrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -248,7 +246,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void mintRandomFailurePathWorks() {
-		givenNonFungibleFrameContext();
+		Bytes pretendArguments = givenNonFungibleFrameContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
 				.willThrow(new IllegalArgumentException("random error"));
@@ -269,7 +267,7 @@ class MintPrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -279,7 +277,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void nftMintHappyPathWorks() {
-		givenNonFungibleFrameContext();
+		Bytes pretendArguments = givenNonFungibleFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
@@ -309,7 +307,7 @@ class MintPrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -323,7 +321,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void fungibleMintHappyPathWorks() {
-		givenFungibleFrameContext();
+		Bytes pretendArguments = givenFungibleFrameContext();
 		givenLedgers();
 		givenFungibleCollaborators();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
@@ -354,7 +352,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void mintFailsWithMissingParentUpdater() {
-		givenFungibleFrameContext();
+		Bytes pretendArguments = givenFungibleFrameContext();
 		givenLedgers();
 		givenFungibleCollaborators();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
@@ -380,11 +378,11 @@ class MintPrecompilesTest {
 
 	@Test
 	void fungibleMintFailureAmountLimitOversize() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
 		// given:
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 		doCallRealMethod().when(frame).setRevertReason(any());
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintAmountOversize);
 		// when:
@@ -399,7 +397,7 @@ class MintPrecompilesTest {
 	void fungibleMintForMaxAmountWorks() {
 		// given:
 		givenLedgers();
-		givenFrameContext();
+		Bytes pretendArguments = givenFrameContext();
 		givenFungibleCollaborators();
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintMaxAmount);
 		given(syntheticTxnFactory.createMint(fungibleMintMaxAmount)).willReturn(mockSynthBodyBuilder);
@@ -429,29 +427,31 @@ class MintPrecompilesTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
 	}
 
-	private void givenNonFungibleFrameContext() {
-		givenFrameContext();
+	private Bytes givenNonFungibleFrameContext() {
+		Bytes pretendArguments = givenFrameContext();
 		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
 		given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
+		return pretendArguments;
 	}
 
-	private void givenFungibleFrameContext() {
-		givenFrameContext();
+	private Bytes givenFungibleFrameContext() {
+		Bytes pretendArguments = givenFrameContext();
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMint);
 		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
+		return pretendArguments;
 	}
 
-	private void givenFrameContext() {
+	private Bytes givenFrameContext() {
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		return Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
 	}
 
 	private void givenLedgers() {

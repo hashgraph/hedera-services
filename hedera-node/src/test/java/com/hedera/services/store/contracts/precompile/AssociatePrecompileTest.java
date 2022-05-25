@@ -63,7 +63,6 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -106,8 +105,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class AssociatePrecompileTest {
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -213,7 +210,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenFailurePathWorks() {
 		// given:
 		givenCommonFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false,
@@ -247,7 +244,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenFailurePathWorksWithNullLedgers() {
 		// given:
 		givenCommonFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false,
@@ -283,14 +280,14 @@ class AssociatePrecompileTest {
 		given(frame.getRecipientAddress()).willReturn(contractAddress);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -337,7 +334,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
 		givenFrameContextWithDelegateCallFromParent();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -376,7 +373,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
 		givenFrameContextWithEmptyMessageFrameStack();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -405,7 +402,7 @@ class AssociatePrecompileTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -420,7 +417,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
 		givenFrameContextWithoutParentFrame();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -464,7 +461,7 @@ class AssociatePrecompileTest {
 	void computeMultiAssociateTokenHappyPathWorks() {
 		givenCommonFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
 		given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
 				.willReturn(multiAssociateOp);
 		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
@@ -529,7 +526,7 @@ class AssociatePrecompileTest {
 		given(frame.getMessageFrameStack()).willReturn(frameDeque);
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -74,7 +75,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -128,8 +128,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {
 
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -240,7 +238,7 @@ class CreatePrecompileTest {
 		// given
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -250,7 +248,7 @@ class CreatePrecompileTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
 		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
 		given(mockSynthBodyBuilder.build())
@@ -264,7 +262,7 @@ class CreatePrecompileTest {
 		// then
 		assertEquals(
 				subject.getPrecompile().getMinimumFeeInTinybars(timestamp),
-				subject.gasRequirement(pretendArguments).toLong()
+				subject.gasRequirement(pretendArguments)
 		);
 		final var tinyBarsRequirement =
 				EXPECTED_TINYBARS_REQUIREMENT - subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
@@ -286,7 +284,7 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 
 		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
 		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
 		given(mockSynthBodyBuilder.build())
@@ -335,10 +333,10 @@ class CreatePrecompileTest {
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 				))
 		);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
 	@Test
@@ -351,13 +349,13 @@ class CreatePrecompileTest {
 								new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH], null)
 				))
 		);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
 		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
 	@Test
@@ -375,10 +373,10 @@ class CreatePrecompileTest {
 				)));
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
 		tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
 		given(decoder.decodeFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
 	@Test
@@ -396,14 +394,14 @@ class CreatePrecompileTest {
 		));
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
 		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
 		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 		given(accounts.get(any(), eq(KEY)))
 				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
 	@Test
@@ -414,7 +412,7 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
 								1,
@@ -465,14 +463,14 @@ class CreatePrecompileTest {
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
 		givenValidGasCalculation();
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
 								1,
@@ -521,14 +519,14 @@ class CreatePrecompileTest {
 		givenMinimalFrameContext();
 		givenValidGasCalculation();
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
 		when(keyValueMock.getKeyValueType())
 				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
@@ -744,7 +742,7 @@ class CreatePrecompileTest {
 		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
 	}
 
-	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper) {
+	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper, Bytes pretendArguments) {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenValidGasCalculation();
@@ -803,8 +801,8 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 
 		// when:
@@ -824,7 +822,7 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

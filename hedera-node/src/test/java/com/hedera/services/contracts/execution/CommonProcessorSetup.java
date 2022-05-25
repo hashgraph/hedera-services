@@ -22,23 +22,22 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import static org.mockito.BDDMockito.given;
 
 public class CommonProcessorSetup {
 	static void setup(GasCalculator gasCalculator) {
-		given(gasCalculator.getVeryLowTierGasCost()).willReturn(Gas.of(3));
-		given(gasCalculator.getLowTierGasCost()).willReturn(Gas.of(5));
-		given(gasCalculator.getMidTierGasCost()).willReturn(Gas.of(8));
-		given(gasCalculator.getBaseTierGasCost()).willReturn(Gas.of(2));
-		given(gasCalculator.getBlockHashOperationGasCost()).willReturn(Gas.of(20));
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(160));
-		given(gasCalculator.getColdSloadCost()).willReturn(Gas.of(2100));
-		given(gasCalculator.getSloadOperationGasCost()).willReturn(Gas.ZERO);
-		given(gasCalculator.getHighTierGasCost()).willReturn(Gas.of(10));
-		given(gasCalculator.getJumpDestOperationGasCost()).willReturn(Gas.of(1));
-		given(gasCalculator.getZeroTierGasCost()).willReturn(Gas.ZERO);
+		given(gasCalculator.getVeryLowTierGasCost()).willReturn(3L);
+		given(gasCalculator.getLowTierGasCost()).willReturn(5L);
+		given(gasCalculator.getMidTierGasCost()).willReturn(8L);
+		given(gasCalculator.getBaseTierGasCost()).willReturn(2L);
+		given(gasCalculator.getBlockHashOperationGasCost()).willReturn(20L);
+		given(gasCalculator.getWarmStorageReadCost()).willReturn(160L);
+		given(gasCalculator.getColdSloadCost()).willReturn(2100L);
+		given(gasCalculator.getSloadOperationGasCost()).willReturn(0L);
+		given(gasCalculator.getHighTierGasCost()).willReturn(10L);
+		given(gasCalculator.getJumpDestOperationGasCost()).willReturn(1L);
+		given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
 	}
 }
