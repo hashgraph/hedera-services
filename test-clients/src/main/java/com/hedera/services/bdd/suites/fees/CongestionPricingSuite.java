@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,7 +44,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
@@ -108,33 +112,35 @@ public class CongestionPricingSuite extends HapiApiSuite {
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()),
-						blockingOrder(
-								IntStream.range(0, 10).mapToObj(i ->
+						sleepFor(2_000),
+
+						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
+								uncheckedSubmit(
 										contractCall("scMulti")
-												.payingWith("civilian")
+												.signedBy("civilian")
 												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR))
-										.toArray(HapiSpecOperation[]::new)
-						),
+												.sending(ONE_HBAR)
+												.txnId("uncheckedTxn" + i)
+								).payingWith(GENESIS),
+								sleepFor(125)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
+
 						contractCall("scMulti")
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
 								.via("pricyCall")
 				).then(
+
 						getTxnRecord("pricyCall")
 								.payingWith(GENESIS)
 								.providingFeeTo(congestionFee -> {
 									log.info("Congestion fee is {}", congestionFee);
 									sevenXPrice.set(congestionFee);
 								}),
-						withOpContext((spec, opLog) -> {
-							Assertions.assertEquals(
-									7.0,
-									(1.0 * sevenXPrice.get()) / normalPrice.get(),
-									0.1,
-									"~7x multiplier should be in affect!");
-						}),
+
+						/* Make sure the multiplier is reset before the next spec runs */
 						fileUpdate(THROTTLE_DEFS)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -146,9 +152,17 @@ public class CongestionPricingSuite extends HapiApiSuite {
 										"fees.percentCongestionMultipliers", defaultCongestionMultipliers,
 										"fees.minCongestionPeriod", defaultMinCongestionPeriod
 								)),
-						/* Make sure the multiplier is reset before the next spec runs */
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-								.payingWith(GENESIS)
+								.payingWith(GENESIS),
+
+						/* Check for error after resetting settings. */
+						withOpContext((spec, opLog) -> {
+							Assertions.assertEquals(
+									7.0,
+									(1.0 * sevenXPrice.get()) / normalPrice.get(),
+									0.1,
+									"~7x multiplier should be in affect!");
+						})
 				);
 	}
 
