@@ -41,14 +41,17 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StakeChangeManagerTest {
@@ -171,7 +174,7 @@ class StakeChangeManagerTest {
 
 		assertEquals(0L, subject.getAccountStakeeNum(changes));
 		assertEquals(-2L, subject.getNodeStakeeNum(changes));
-		assertEquals(100L, subject.finalBalanceGiven(account, changes));
+		assertEquals(100L, finalBalanceGiven(account, changes));
 		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
 		assertEquals(2000L, subject.finalStakedToMeGiven(account, changes));
 	}
@@ -186,7 +189,7 @@ class StakeChangeManagerTest {
 
 		assertEquals(0L, subject.getAccountStakeeNum(changes));
 		assertEquals(0L, subject.getNodeStakeeNum(changes));
-		assertEquals(1000L, subject.finalBalanceGiven(account, changes));
+		assertEquals(1000L, finalBalanceGiven(account, changes));
 		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
 		assertEquals(200L, subject.finalStakedToMeGiven(account, changes));
 	}
@@ -196,9 +199,36 @@ class StakeChangeManagerTest {
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		assertEquals(1, pendingChanges.size());
 
-		final var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
+		var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
 		assertEquals(1, num);
+		num = subject.findOrAdd(counterpartyId.getAccountNum(), pendingChanges);
+		assertEquals(0, num);
+
 		assertEquals(2, pendingChanges.size());
+	}
+
+	@Test
+	void setsStakePeriodStart(){
+		final long todayNum = 123456789L;
+
+		final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
+		accountsMap.put(EntityNum.fromAccountId(counterpartyId), counterparty);
+		accountsMap.put(EntityNum.fromAccountId(partyId), party);
+
+		subject = new StakeChangeManager(stakeInfoManager, () -> accountsMap);
+		subject.setStakePeriodStart(todayNum);
+
+		assertEquals(todayNum, counterparty.getStakePeriodStart());
+		assertEquals(-1, party.getStakePeriodStart());
+	}
+
+	@Test
+	void returnsDefaultsWhenAccountIsNull(){
+		final var changes = randomNotStakeFieldChanges();
+
+		assertEquals(0, finalBalanceGiven(null, changes));
+		assertEquals(false, subject.finalDeclineRewardGiven(null, changes));
+		assertEquals(0, subject.finalStakedToMeGiven(null, changes));
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {

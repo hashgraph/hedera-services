@@ -130,7 +130,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 	}
 
-	private boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
+	boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
 		if (changes.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
 			final long currentBalance = account != null ? account.getBalance() : 0;
@@ -190,7 +190,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
-			} else if (!hasBeenRewarded[(int) curStakeeNum]) {
+			} else if (!hasBeenRewarded[exStakeeI]) {
 				payRewardIfRewardable(pendingChanges, exStakeeI, latestEligibleStart);
 			}
 		}
@@ -200,7 +200,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
-			} else if (!hasBeenRewarded[(int) newStakeeNum]) {
+			} else if (!hasBeenRewarded[newStakeeI]) {
 				payRewardIfRewardable(pendingChanges, newStakeeI, latestEligibleStart);
 			}
 		}

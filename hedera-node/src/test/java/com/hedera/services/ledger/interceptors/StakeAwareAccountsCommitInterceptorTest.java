@@ -361,6 +361,18 @@ class StakeAwareAccountsCommitInterceptorTest {
 				stakePeriodStart - 1));
 	}
 
+	@Test
+	void checksIfBalanceIncraesed(){
+		Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		assertTrue(subject.isIncreased(stakingFundChanges, stakingFund));
+
+		stakingFundChanges = Map.of(AccountProperty.BALANCE, -100L);
+		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
+
+		stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		assertTrue(subject.isIncreased(stakingFundChanges, null));
+	}
+
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
 		var changes = randomStakedNodeChanges(100L);
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();

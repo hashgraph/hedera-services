@@ -55,15 +55,28 @@ class StakeInfoManagerTest {
 	}
 
 	@Test
-	void getsCachedInput(){
-		final var oldStakingInfo = buildsStakingInfoMap();
+	void getsCachedInput() {
+		// old and new are same
+		var oldStakingInfo = stakingInfo;
 		oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
+		subject.setOldStakingInfo(oldStakingInfo);
 
-		final var expectedInfo = stakingInfo.get(node0Id);
+		var expectedInfo = stakingInfo.get(node0Id);
 		var actual = subject.mutableStakeInfoFor(0L);
+		assertEquals(expectedInfo.getStakeToReward(), actual.getStakeToReward());
+
+		// old and new are not same instances, but the cached value is null
+		oldStakingInfo = buildsStakingInfoMap();
+		oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
+		subject.setOldStakingInfo(oldStakingInfo);
+
+		expectedInfo = stakingInfo.get(node0Id);
+		actual = subject.mutableStakeInfoFor(0L);
 		assertEquals(expectedInfo, actual);
 
-		subject.setCurrentStakingInfos(new MerkleStakingInfo[]{oldStakingInfo.get(node0Id)});
+		//old and new are not same instances, and the cached value is not null
+		subject.setCurrentStakingInfos(new MerkleStakingInfo[] { oldStakingInfo.get(node0Id) });
+		assertEquals(oldStakingInfo.get(node0Id), subject.getCurrentStakingInfos()[0]);
 		actual = subject.mutableStakeInfoFor(0L);
 		assertEquals(oldStakingInfo.get(node0Id).getStakeToReward(), actual.getStakeToReward());
 	}
