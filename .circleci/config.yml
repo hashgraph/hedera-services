@@ -1283,6 +1283,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
+    triggers:
+      - schedule:
+          cron: "40 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1392,6 +1399,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1597,7 +1611,6 @@ jobs:
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
-            cd /swirlds-platform/regression; git checkout -b 02411-D-MixedOps-reconnect-test origin/02411-D-MixedOps-reconnect-test;   cd -;         
             
             # Build Platform
             cd /swirlds-platform
@@ -1682,10 +1695,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
