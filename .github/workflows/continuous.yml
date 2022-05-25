@@ -41,13 +41,13 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: itest
-      - name: Upload Integration Test Results
-        if: always()
-        uses: scacap/action-surefire-report@v1
-        with:
-          name: Integration Test Results
-          report_paths: "**/build/test-results/itest/TEST-*.xml"
-          fail_if_no_tests: false
+#      - name: Upload Integration Test Results
+#        if: always()
+#        uses: scacap/action-surefire-report@v1
+#        with:
+#          name: Integration Test Results
+#          report_paths: "**/build/test-results/itest/TEST-*.xml"
+#          fail_if_no_tests: false
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
