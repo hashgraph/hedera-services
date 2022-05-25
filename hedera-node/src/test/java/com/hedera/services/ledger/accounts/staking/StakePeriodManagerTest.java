@@ -33,7 +33,7 @@ class StakePeriodManagerTest {
 	}
 
 	@Test
-	public void givesCurrentStakePeriod() {
+	void givesCurrentStakePeriod() {
 		final var instant = Instant.ofEpochSecond(12345L);
 		given(txnCtx.consensusTime()).willReturn(instant);
 		final var period = subject.currentStakePeriod();

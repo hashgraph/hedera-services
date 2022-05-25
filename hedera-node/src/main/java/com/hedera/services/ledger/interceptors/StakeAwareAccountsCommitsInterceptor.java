@@ -165,7 +165,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
 				// isDeclineReward option
 				stakeChangeManager.withdrawStake(
-						Math.abs(curNodeId),
+						Math.abs(curNodeId + 1),
 						account.getBalance() + account.getStakedToMe(),
 						stakeChangeManager.finalDeclineRewardGiven(account, changes));
 			}

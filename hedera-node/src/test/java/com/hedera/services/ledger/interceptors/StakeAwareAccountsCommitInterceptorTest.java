@@ -296,7 +296,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderM.verify(manager).getAccountStakeeNum(pendingChanges.changes(1));
 		inorderM.verify(manager).getNodeStakeeNum(pendingChanges.changes(0));
 		inorderM.verify(manager).finalDeclineRewardGiven(counterparty, pendingChanges.changes(0));
-		inorderM.verify(manager).withdrawStake(1L, counterpartyBalance + counterparty.getStakedToMe(), false);
+		inorderM.verify(manager).withdrawStake(0L, counterpartyBalance + counterparty.getStakedToMe(), false);
 		inorderM.verify(manager).finalStakedToMeGiven(counterparty, pendingChanges.changes(0));
 		inorderM.verify(manager).awardStake(2L, 2100, false);
 	}
@@ -330,7 +330,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderM.verify(manager).updateStakedToMe(0, 100, pendingChanges);
 		inorderM.verify(manager).getAccountStakeeNum(pendingChanges.changes(1));
 
-		inorderM.verify(manager).withdrawStake(1L, counterpartyBalance + counterparty.getStakedToMe(), false);
+		inorderM.verify(manager).withdrawStake(0L, counterpartyBalance + counterparty.getStakedToMe(), false);
 		inorderM.verify(manager, never()).awardStake(2L, 2100, false);
 	}
 
