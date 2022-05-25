@@ -61,7 +61,6 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -326,7 +325,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		subject.preview(pendingChanges);
 
-		inorderST.verify(sideEffectsTracker, times(2)).trackRewardPayment(321L, 10L);
+		inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, 10L);
 		inorderST.verify(sideEffectsTracker).trackHbarChange(321L, -455L);
 		inorderST.verify(sideEffectsTracker).trackHbarChange(800L, 99L);
 

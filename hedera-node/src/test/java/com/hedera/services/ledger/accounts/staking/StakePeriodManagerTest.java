@@ -69,4 +69,21 @@ class StakePeriodManagerTest {
 		stakePeriodStart = todayNumber - 2;
 		assertTrue(isWithinRange(stakePeriodStart, todayNumber));
 	}
+
+	@Test
+	void calculatesOnlyOncePerSecond(){
+		var consensusTime = Instant.ofEpochSecond(12345678L);
+		var expectedStakePeriod =  LocalDate.ofInstant(consensusTime, zoneUTC).toEpochDay();
+
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
+		assertEquals(consensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
+
+		final var newConsensusTime = Instant.ofEpochSecond(12345679L);
+		given(txnCtx.consensusTime()).willReturn(newConsensusTime);
+		expectedStakePeriod =  LocalDate.ofInstant(newConsensusTime, zoneUTC).toEpochDay();
+
+		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
+		assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
+	}
 }

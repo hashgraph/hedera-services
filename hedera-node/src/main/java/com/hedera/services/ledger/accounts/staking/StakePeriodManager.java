@@ -21,6 +21,7 @@ package com.hedera.services.ledger.accounts.staking;
  */
 
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 
@@ -68,5 +69,10 @@ public class StakePeriodManager {
 		// rewarded for yesterday. Either way, it might be rewarded for today after today ends, but shouldn't yet be
 		// rewarded for today, because today hasn't finished yet.
 		return stakePeriodStart > -1 && stakePeriodStart < latestRewardableStakePeriodStart;
+	}
+
+	@VisibleForTesting
+	public long getPrevConsensusSecs() {
+		return prevConsensusSecs;
 	}
 }

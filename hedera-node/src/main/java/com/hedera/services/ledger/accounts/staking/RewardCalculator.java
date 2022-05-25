@@ -46,7 +46,7 @@ public class RewardCalculator {
 		this.stakeInfoManager = stakeInfoManager;
 	}
 
-	public final void computeRewards(final MerkleAccount account) {
+	public final void computePendingRewards(final MerkleAccount account) {
 		final long todayNumber = stakePeriodManager.currentStakePeriod();
 		var stakePeriodStart = account.getStakePeriodStart();
 
@@ -76,7 +76,7 @@ public class RewardCalculator {
 	}
 
 	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
-		computeRewards(account);
+		computePendingRewards(account);
 
 		var balance = finalBalanceGiven(account, changes);
 

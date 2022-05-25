@@ -72,7 +72,7 @@ class RewardCalculatorTest {
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100L);
 
-		subject.computeRewards(account);
+		subject.computePendingRewards(account);
 
 		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(500, subject.getAccountReward());
@@ -82,13 +82,13 @@ class RewardCalculatorTest {
 	void doesntComputeReturnsZeroReward() {
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
-		subject.computeRewards(account);
+		subject.computePendingRewards(account);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, subject.getAccountReward());
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-		subject.computeRewards(account);
+		subject.computePendingRewards(account);
 		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(0, subject.getAccountReward());
 	}
@@ -106,7 +106,7 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
 		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
 
-		subject.computeRewards(merkleAccount);
+		subject.computePendingRewards(merkleAccount);
 
 		assertEquals(expectedStakePeriodStart - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(500, subject.getAccountReward());
