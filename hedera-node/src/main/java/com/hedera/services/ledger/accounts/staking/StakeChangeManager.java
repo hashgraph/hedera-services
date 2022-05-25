@@ -174,4 +174,13 @@ public class StakeChangeManager {
 			}
 		}));
 	}
+
+	public boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
+		if (changes.containsKey(AccountProperty.BALANCE)) {
+			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
+			final long currentBalance = account != null ? account.getBalance() : 0;
+			return (newBalance - currentBalance) > 0;
+		}
+		return false;
+	}
 }

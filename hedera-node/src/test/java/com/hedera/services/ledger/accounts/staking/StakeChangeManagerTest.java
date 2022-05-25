@@ -48,10 +48,8 @@ import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.bu
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StakeChangeManagerTest {
@@ -221,6 +219,19 @@ class StakeChangeManagerTest {
 		assertEquals(todayNum, counterparty.getStakePeriodStart());
 		assertEquals(-1, party.getStakePeriodStart());
 	}
+
+	@Test
+	void checksIfBalanceIncraesed(){
+		Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		assertTrue(subject.isIncreased(stakingFundChanges, stakingFund));
+
+		stakingFundChanges = Map.of(AccountProperty.BALANCE, -100L);
+		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
+
+		stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		assertTrue(subject.isIncreased(stakingFundChanges, null));
+	}
+
 
 	@Test
 	void returnsDefaultsWhenAccountIsNull(){

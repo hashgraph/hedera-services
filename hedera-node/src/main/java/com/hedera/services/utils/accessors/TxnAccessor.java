@@ -122,7 +122,7 @@ public interface TxnAccessor {
 	// ---- These will be removed by using the fields in custom accessors in future PR ---
 
 	/**
-	 * Used in {@code handleTransaction} to resetRewardsPaid this accessor's span map to new, <b>unmodifiable</b> map
+	 * Used in {@code handleTransaction} to reset this accessor's span map to new, <b>unmodifiable</b> map
 	 * with the authoritative results of expanding from the working state. This protects the authoritative
 	 * values from contamination by a pre-fetch thread.
 	 */

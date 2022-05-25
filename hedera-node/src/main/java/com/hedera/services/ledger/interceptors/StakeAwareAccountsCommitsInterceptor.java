@@ -119,7 +119,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var changes = pendingChanges.changes(i);
 			final var accountNum = pendingChanges.id(i).getAccountNum();
 
-			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && isIncreased(changes, account));
+			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && stakeChangeManager.isIncreased(changes, account));
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes, latestEligibleStart)) {
@@ -128,15 +128,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			// Update any STAKED_TO_ME side effects of this change
 			n = updateStakedToMeSideEffects(account, changes, pendingChanges, latestEligibleStart);
 		}
-	}
-
-	boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
-		if (changes.containsKey(AccountProperty.BALANCE)) {
-			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
-			final long currentBalance = account != null ? account.getBalance() : 0;
-			return (newBalance - currentBalance) > 0;
-		}
-		return false;
 	}
 
 	private void updateFundingRewardBalances(

@@ -230,6 +230,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(19131L);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(19132L);
+		given(manager.isIncreased(changes.changes(2), stakingFund)).willReturn(true);
 
 		// rewardsSumHistory is not cleared
 		assertEquals(5, stakingInfo.get(node0Id).getRewardSumHistory()[0]);
@@ -358,18 +359,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges,
 				stakePeriodStart - 1));
-	}
-
-	@Test
-	void checksIfBalanceIncraesed(){
-		Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		assertTrue(subject.isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(AccountProperty.BALANCE, -100L);
-		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		assertTrue(subject.isIncreased(stakingFundChanges, null));
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
