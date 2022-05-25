@@ -88,11 +88,6 @@
 		</developer>
 	</developers>
 
-	<ciManagement>
-		<system>CircleCI</system>
-		<url>https://circleci.com/gh/hashgraph/hedera-services</url>
-	</ciManagement>
-
 	<issueManagement>
 		<system>GitHub</system>
 		<url>https://github.com/hashgraph/hedera-services/issues</url>

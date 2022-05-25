@@ -154,7 +154,7 @@ Any new naming conventions need to be added to the file if required, after seeki
 
 # **Services Nightly Regression**
 
-Current Services nightly regression runs the following tests based on the cron timings defined in [config.yml](https://github.com/hashgraph/hedera-services/blob/master/.circleci/config.yml).
+Current Services nightly regression runs the following tests based on the cron timings:
 - _Performance :_ Test performance of the system for all services and mixed operations.
 - _Restart :_ Nodes enter freeze and restarted in middle of the test.
 - _State Recovery :_ Events are replayed on a node.
