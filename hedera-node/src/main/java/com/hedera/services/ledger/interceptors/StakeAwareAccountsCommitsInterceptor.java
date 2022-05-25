@@ -37,9 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
@@ -121,7 +119,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var changes = pendingChanges.changes(i);
 			final var accountNum = pendingChanges.id(i).getAccountNum();
 
-			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER & isIncreased(changes, account));
+			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && isIncreased(changes, account));
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes, latestEligibleStart)) {

@@ -49,23 +49,23 @@ class ReleaseTwentySevenMigrationTest {
 
 		given(addressBook.getSize()).willReturn(5);
 		given(addressBook.getAddress(0)).willReturn(address1);
-		given(address1.getMemo()).willReturn("0.0.3");
+		given(address1.getId()).willReturn(0L);
 		given(addressBook.getAddress(1)).willReturn(address2);
-		given(address2.getMemo()).willReturn("0.0.4");
+		given(address2.getId()).willReturn(1L);
 		given(addressBook.getAddress(2)).willReturn(address3);
-		given(address3.getMemo()).willReturn("0.0.5");
+		given(address3.getId()).willReturn(2L);
 		given(addressBook.getAddress(3)).willReturn(address4);
-		given(address4.getMemo()).willReturn("0.0.6");
+		given(address4.getId()).willReturn(3L);
 		given(addressBook.getAddress(4)).willReturn(address5);
-		given(address5.getMemo()).willReturn("0.0.7");
+		given(address5.getId()).willReturn(4L);
 
 		var stakingInfoMap = buildStakingInfoMap(addressBook);
 
 		assertEquals(5, stakingInfoMap.size());
+		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(0)));
+		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(1)));
+		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(2)));
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(3)));
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(4)));
-		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(5)));
-		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(6)));
-		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(7)));
 	}
 }

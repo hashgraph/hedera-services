@@ -69,6 +69,7 @@ class StakeChangeManagerTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	public static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), zoneUTC).toEpochDay() - 1;
+	private final EntityNum node0Id = EntityNum.fromLong(0L);
 
 	@BeforeEach
 	void setUp() {
@@ -128,40 +129,40 @@ class StakeChangeManagerTest {
 
 	@Test
 	void withdrawsStakeCorrectly() {
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
-		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(stakingInfo.get(EntityNum.fromLong(3L)));
-		subject.withdrawStake(3L, 100L, false);
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
+		subject.withdrawStake(0L, 100L, false);
 
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(200L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(200L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 
-		subject.withdrawStake(3L, 100L, true);
+		subject.withdrawStake(0L, 100L, true);
 
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(200L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(200L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToNotReward());
 	}
 
 	@Test
 	void awardsStakeCorrectly() {
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(300L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
-		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(stakingInfo.get(EntityNum.fromLong(3L)));
-		subject.awardStake(3L, 100L, false);
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
+		subject.awardStake(0L, 100L, false);
 
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 
-		subject.awardStake(3L, 100L, true);
+		subject.awardStake(0L, 100L, true);
 
-		assertEquals(1000L, stakingInfo.get(EntityNum.fromLong(3L)).getStake());
-		assertEquals(400L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToReward());
-		assertEquals(500L, stakingInfo.get(EntityNum.fromLong(3L)).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(500L, stakingInfo.get(node0Id).getStakeToNotReward());
 	}
 
 	@Test
@@ -224,9 +225,9 @@ class StakeChangeManagerTest {
 	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
 		given(addressBook.getAddress(0)).willReturn(address1);
-		given(address1.getMemo()).willReturn("0.0.3");
+		given(address1.getId()).willReturn(0L);
 		given(addressBook.getAddress(1)).willReturn(address2);
-		given(address2.getMemo()).willReturn("0.0.4");
+		given(address2.getId()).willReturn(1L);
 
 		final var info = buildStakingInfoMap(addressBook);
 		info.forEach((a, b) -> {

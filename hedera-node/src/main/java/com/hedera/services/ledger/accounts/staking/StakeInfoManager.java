@@ -21,6 +21,7 @@ package com.hedera.services.ledger.accounts.staking;
  */
 
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -49,7 +50,7 @@ public class StakeInfoManager {
 
 		if (currentStakingInfos[(int) nodeId] == null && oldStakingInfo == currentStakingInfo) {
 			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
-		} else if (currentStakingInfos[(int) nodeId] != null && oldStakingInfo != currentStakingInfo) {
+		} else if (oldStakingInfo != currentStakingInfo) {
 			clearCurrentStakingInfos(currentStakingInfos);
 			oldStakingInfo = stakingInfo.get();
 			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
@@ -65,5 +66,21 @@ public class StakeInfoManager {
 
 	public void clearRewardsHistory() {
 		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+	}
+
+	@VisibleForTesting
+	public MerkleStakingInfo[] getCurrentStakingInfos() {
+		return currentStakingInfos;
+	}
+
+	@VisibleForTesting
+	public void setOldStakingInfo(
+			final MerkleMap<EntityNum, MerkleStakingInfo> oldStakingInfo) {
+		this.oldStakingInfo = oldStakingInfo;
+	}
+
+	@VisibleForTesting
+	public void setCurrentStakingInfos(final MerkleStakingInfo[] currentStakingInfos) {
+		this.currentStakingInfos = currentStakingInfos;
 	}
 }
