@@ -194,9 +194,10 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 				endRunningHash = runningHash.getFutureHash().get();
 				recordStreamFile.setEndObjectRunningHash(toProto(endRunningHash));
 				dosMeta.writeSerializable(endRunningHash, true);
-				//TODO: do we need block number also in the metadata?
 				LOG.info(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
 						endRunningHash);
+				// write block number to metadata
+				dosMeta.writeLong(recordStreamFile.getBlockNumber());
 			} catch (IOException e) {
 				Thread.currentThread().interrupt();
 				LOG.warn(EXCEPTION.getMarker(),
