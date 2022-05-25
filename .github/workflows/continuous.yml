@@ -85,6 +85,8 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones don't work well with SonarCloud
       - uses: gradle/wrapper-validation-action@v1
       - name: Set up JDK
         uses: actions/setup-java@v2
@@ -138,23 +140,3 @@ jobs:
 #        with:
 #          #        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DdefaultPort=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
 #          arguments: eet -DdefaultPort=50213 -Dpackages=${{matrix.packages}}
-
-
-#      - name: Upload surefire report
-#        if: always()
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: surefire-report-(${{matrix.packages}})
-#          path: test-clients/target/surefire-reports/*
-
-
-#      - name: Upload build reports
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: build-reports
-#          path: build/reports/
-#      - name: Upload coverage to Codecov
-#        if: always()
-#        uses: codecov/codecov-action@v2
-#        with:
-#          files: 'jacoco.xml'
