@@ -92,7 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -184,10 +183,7 @@ class ServicesStateTest {
 	void doesNoMigrationsFromCurrentVersion() {
 		mockMigrators();
 
-		subject = mock(ServicesState.class);
-
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -202,15 +198,15 @@ class ServicesStateTest {
 		final var inOrder = inOrder(
 				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
+		ServicesState.setExpiryJustEnabled(false);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
 
@@ -234,19 +230,18 @@ class ServicesStateTest {
 				autoRenewalMigrator, titleCountsMigrator,
 				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
-
 		ServicesState.setExpiryJustEnabled(true);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);

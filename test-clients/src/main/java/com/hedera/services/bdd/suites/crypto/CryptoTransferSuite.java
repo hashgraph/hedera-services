@@ -25,6 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
+import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -38,8 +40,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -138,6 +140,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOK
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
@@ -185,6 +188,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						canUseMirrorAliasesForNonContractXfers(),
 						canUseEip1014AliasesForXfers(),
 						cannotTransferFromImmutableAccounts(),
+//						nftTransfersHaveTransitiveClosure(),
 				}
 		);
 	}
@@ -913,6 +917,74 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec nftTransfersHaveTransitiveClosure() {
+		final var aParty = "aParty";
+		final var bParty = "bParty";
+		final var cParty = "cParty";
+		final var dParty = "dParty";
+		final var multipurpose = "multi";
+		final var nftType = "nftType";
+		final var hotTxn = "hotTxn";
+		final var mintTxn = "mintTxn";
+
+		return defaultHapiSpec("NftTransfersHaveTransitiveClosure")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(aParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(bParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(cParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(dParty).maxAutomaticTokenAssociations(1),
+						tokenCreate(nftType)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.initialSupply(0),
+						mintToken(nftType, List.of(copyFromUtf8("Hot potato!"))).via(mintTxn),
+						getTxnRecord(mintTxn).logged(),
+						cryptoTransfer(movingUnique(nftType, 1L)
+								.between(TOKEN_TREASURY, aParty))
+				).when(
+						cryptoTransfer((spec, b) -> {
+									final var registry = spec.registry();
+									final var aId = registry.getAccountID(aParty);
+									final var bId = registry.getAccountID(bParty);
+									final var cId = registry.getAccountID(cParty);
+									final var dId = registry.getAccountID(dParty);
+									b.addTokenTransfers(TokenTransferList.newBuilder()
+											.setToken(registry.getTokenID(nftType))
+											.addNftTransfers(ocWith(aId, bId, 1))
+											.addNftTransfers(ocWith(bId, cId, 1))
+											.addNftTransfers(ocWith(cId, dId, 1)));
+								}
+						)
+								.via(hotTxn)
+								.signedBy(DEFAULT_PAYER, aParty, bParty, cParty)
+				).then(
+						getTxnRecord(hotTxn)
+								.hasPriority(recordWith()
+										.tokenTransfers(new BaseErroringAssertsProvider<>() {
+											@Override
+											public ErroringAsserts<List<TokenTransferList>> assertsFor(
+													final HapiApiSpec spec
+											) {
+												return tokenTransfers -> {
+													try {
+														assertEquals(1, tokenTransfers.size(),
+																"No transfers appeared");
+														final var changes = tokenTransfers.get(0);
+//														assertEquals(1, changes.getNftTransfersCount(),
+//																"Transitive closure didn't happen");
+													} catch (Throwable failure) {
+														return List.of(failure);
+													}
+													return Collections.emptyList();
+												};
+											}
+										})).logged()
+				);
+	}
+
 	private HapiApiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
 		final var owningParty = "owningParty";
 		final var multipurpose = "multi";
@@ -1548,15 +1620,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
 							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
 							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
-							Assertions.assertEquals(
+							assertEquals(
 									10.0,
 									pureOneTokenTwoAccountsUsd / pureHbarUsd,
 									1.0);
-							Assertions.assertEquals(
+							assertEquals(
 									20.0,
 									pureTwoTokensFourAccountsUsd / pureHbarUsd,
 									2.0);
-							Assertions.assertEquals(
+							assertEquals(
 									30.0,
 									pureThreeTokensSixAccountsUsd / pureHbarUsd,
 									3.0);

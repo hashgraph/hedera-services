@@ -22,10 +22,12 @@ plugins {
     `java-library`
     `maven-publish`
     jacoco
+    id("org.sonarqube")
 }
 
 group = "com.hedera.hashgraph"
 
+// Specify the JDK Version and vendor that we will support
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
@@ -34,6 +36,7 @@ java {
     }
 }
 
+// Define the repositories from which we will pull dependencies
 repositories {
     mavenLocal()
     maven {
@@ -57,9 +60,49 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-// Enable JUnit as our test engine
-tasks.test {
-    useJUnitPlatform {
-        includeEngines("junit-jupiter")
+testing {
+    suites {
+        // Configure the normal unit test suite to use JUnit Jupiter.
+        @Suppress("UnstableApiUsage")
+        val test by getting(JvmTestSuite::class) {
+            // Enable JUnit as our test engine
+            useJUnitJupiter()
+        }
+
+        // Configure the integration test suite
+        @Suppress("UNUSED_VARIABLE", "UnstableApiUsage")
+        val itest by registering(JvmTestSuite::class) {
+            testType.set(TestSuiteType.INTEGRATION_TEST)
+            dependencies {
+                implementation(project)
+            }
+
+            // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
+            // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+
+        // Configure the hammer test suite
+        @Suppress("UNUSED_VARIABLE", "UnstableApiUsage")
+        val hammer by registering(JvmTestSuite::class) {
+            testType.set("hammer-test")
+            dependencies {
+                implementation(project)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
     }
 }

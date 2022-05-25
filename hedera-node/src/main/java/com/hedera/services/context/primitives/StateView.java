@@ -25,6 +25,7 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
@@ -87,15 +88,18 @@ import com.swirlds.virtualmap.VirtualValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -448,7 +452,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asHexedEvmAddress(accountID))
+				.setContractAccountID(getContractAccountId(account.getAccountKey(), accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
 				.setEthereumNonce(account.getEthereumNonce());
@@ -460,6 +464,16 @@ public class StateView {
 			info.addAllTokenRelationships(tokenRels);
 		}
 		return Optional.of(info.build());
+	}
+
+	private String getContractAccountId(final JKey key, final AccountID accountID) {
+		// If we can recover an Ethereum EOA address from the account key, we should return that
+		final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+		if (evmAddress != null)	 {
+			return Bytes.wrap(evmAddress).toUnprefixedHexString();
+		} else {
+			return asHexedEvmAddress(accountID);
+		}
 	}
 
 	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
@@ -539,8 +553,10 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId())
 				.setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
+		if (contract.hasAutoRenewAccount()) {
+			info.setAutoRenewAccountId(Objects.requireNonNull(contract.getAutoRenewAccount()).toGrpcAccountId());
+		}
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
@@ -555,7 +571,7 @@ public class StateView {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
-			return Optional.of(info.build());
+			// Leave the admin key empty if it can't be decoded
 		}
 
 		return Optional.of(info.build());

@@ -34,6 +34,7 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
@@ -693,6 +695,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		}
 	}
 
+	public boolean hasAutoRenewAccount() {
+		return autoRenewAccount != null && !autoRenewAccount.equals(MISSING_ENTITY_ID);
+	}
+
+	@Nullable
 	public EntityId getAutoRenewAccount() {
 		return autoRenewAccount;
 	}

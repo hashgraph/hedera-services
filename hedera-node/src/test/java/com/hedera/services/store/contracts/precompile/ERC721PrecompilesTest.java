@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -81,7 +82,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -127,6 +127,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.missingNftResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -135,6 +136,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.serialNumber;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
@@ -146,7 +148,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -157,8 +158,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ERC721PrecompilesTest {
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -215,8 +214,6 @@ class ERC721PrecompilesTest {
 	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
 	@Mock
 	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
-	@Mock
-	private Bytes nestedPretendArguments;
 	@Mock
 	private FeeObject mockFeeObject;
 	@Mock
@@ -295,8 +292,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void name() {
-		givenMinimalFrameContext();
-		given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0" + Integer.toHexString(ABI_ID_NAME)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_NAME)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -313,7 +309,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -325,8 +321,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void symbol() {
-		givenMinimalFrameContext();
-		given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_SYMBOL)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_SYMBOL)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -343,7 +338,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -354,15 +349,17 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
-	void isApprovedForAll() {
+	void isApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
 		Set<FcTokenAllowanceId> allowances = new TreeSet<>();
 		FcTokenAllowanceId fcTokenAllowanceId = FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()),
 				EntityNum.fromLong(receiver.getAccountNum()));
 		allowances.add(fcTokenAllowanceId);
 
-		givenMinimalFrameContext();
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_IS_APPROVED_FOR_ALL);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
+		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.operator())).willReturn(true);
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -385,7 +382,44 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void isApprovedForAllWorksWithOperatorMissing() {
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
+		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getNodeFee())
+				.willReturn(1L);
+		given(mockFeeObject.getNetworkFee())
+				.willReturn(1L);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+
+		given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
+		given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), any())).willReturn(
+				IS_APPROVE_FOR_ALL_WRAPPER);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -400,9 +434,9 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -439,7 +473,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -454,9 +488,9 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 
@@ -496,7 +530,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
@@ -507,9 +541,9 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0WhenOwner() {
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
@@ -553,7 +587,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -565,9 +599,9 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0WhenGrantedApproveForAll() {
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
@@ -610,7 +644,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -622,9 +656,8 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0NoGoodIfNotPermissioned() {
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -650,7 +683,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
@@ -661,9 +694,8 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void validatesImpliedNftApprovalDeletion() {
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
@@ -700,7 +732,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(INVALID_ALLOWANCE_OWNER_ID);
@@ -714,9 +746,10 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		givenMinimalFrameContext();
-
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_APPROVE);
+		
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 
@@ -750,7 +783,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -763,9 +796,10 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		givenMinimalFrameContext();
 
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_SET_APPROVAL_FOR_ALL);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -799,7 +833,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -816,11 +850,13 @@ class ERC721PrecompilesTest {
 				EntityNum.fromLong(receiver.getAccountNum()));
 		allowances.add(fcTokenAllowanceId);
 
-		givenMinimalFrameContext();
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_GET_APPROVED);
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(wrappedLedgers.nfts()).willReturn(nfts);
-		given(nfts.get(NftId.fromGrpc(token, GET_APPROVED_WRAPPER.serialNo()), NftProperty.SPENDER))
-				.willReturn(EntityId.fromAddress(RIPEMD160));
+		final var nftId = NftId.fromGrpc(token, GET_APPROVED_WRAPPER.serialNo());
+		given(nfts.contains(nftId)).willReturn(true);
+		given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(RIPEMD160));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO)).willReturn(
@@ -837,7 +873,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -849,9 +885,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void totalSupply() {
-		givenMinimalFrameContext();
-		given(pretendArguments.slice(24)).willReturn(
-				Bytes.fromHexString(Integer.toHexString(ABI_ID_TOTAL_SUPPLY_TOKEN)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -868,7 +902,7 @@ class ERC721PrecompilesTest {
 		given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
 
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -879,9 +913,10 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void balanceOf() {
-		givenMinimalFrameContext();
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_BALANCE_OF_TOKEN));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_BALANCE_OF_TOKEN);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -900,7 +935,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then:
@@ -910,11 +945,11 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
-	void ownerOf() {
-		givenMinimalFrameContext();
-
+	void ownerOfHappyPathWorks() {
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -927,13 +962,15 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 		given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+		given(wrappedLedgers.nfts()).willReturn(nfts);
+		given(nfts.contains(NftId.fromGrpc(token, ownerOfAndTokenUriWrapper.serialNo()))).willReturn(true);
 		given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
 		given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
 		given(encoder.encodeOwner(senderAddress)).willReturn(successResult);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -942,14 +979,43 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
+	void ownerOfRevertsWithMissingNft() {
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+		
+		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getNodeFee())
+				.willReturn(1L);
+		given(mockFeeObject.getNetworkFee())
+				.willReturn(1L);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+		given(wrappedLedgers.nfts()).willReturn(nfts);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		assertEquals(missingNftResult, result);
+	}
+
+	@Test
 	void transferFrom() {
-		givenMinimalFrameContext();
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
 
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
 				.willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
@@ -985,16 +1051,18 @@ class ERC721PrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-
 		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
 				.willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+		final var nftId = NftId.fromGrpc(token, serialNumber);
+		given(wrappedLedgers.nfts()).willReturn(nfts);
+		given(nfts.contains(nftId)).willReturn(true);
 
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -1008,14 +1076,14 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
-	void transferFromFails() {
-		givenMinimalFrameContext();
+	void transferFromFailsForInvalidSig() {
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
 
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
 				.willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(false);
@@ -1042,12 +1110,15 @@ class ERC721PrecompilesTest {
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
 				.willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+		final var nftId = NftId.fromGrpc(token, serialNumber);
+		given(wrappedLedgers.nfts()).willReturn(nfts);
+		given(nfts.contains(nftId)).willReturn(true);
 
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -1056,11 +1127,11 @@ class ERC721PrecompilesTest {
 	}
 
 	@Test
-	void erc20FailureResultIsNull() {
-		givenMinimalFrameContext();
+	void erc721SystemFailureSurfacesResult() {
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -1073,24 +1144,22 @@ class ERC721PrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 		given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-		given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
-		given(wrappedLedgers.canonicalAddress(senderAddress)).willThrow(IllegalStateException.class);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
-		assertNull(result);
+		assertEquals(failResult, result);
 	}
 
 	@Test
 	void tokenURI() {
-		givenMinimalFrameContext();
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOKEN_URI_NFT));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -1108,7 +1177,7 @@ class ERC721PrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -1118,48 +1187,48 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void transferNotSupported() {
-		givenMinimalFrameContextWithoutParentUpdater();
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
+		Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER)));
 		given(wrappedLedgers.typeOf(token)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.prepareFields(frame);
 
 		final var exception = assertThrows(InvalidTransactionException.class,
-				() -> subject.prepareComputation(pretendArguments, а -> а));
+				() -> subject.prepareComputation(pretendArguments, a -> a));
 		assertEquals(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, exception.getMessage());
 	}
 
 	@Test
 	void decimalsNotSupported() {
-		givenMinimalFrameContextWithoutParentUpdater();
-		given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_DECIMALS);
+		Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(Bytes.of(Integers.toBytes(ABI_ID_DECIMALS)));
 		given(wrappedLedgers.typeOf(token)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.prepareFields(frame);
 
 		final var exception = assertThrows(InvalidTransactionException.class,
-				() -> subject.prepareComputation(pretendArguments, а -> а));
+				() -> subject.prepareComputation(pretendArguments, a -> a));
 		assertEquals(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, exception.getMessage());
 	}
 
-	private void givenMinimalFrameContext() {
+	private Bytes givenMinimalFrameContext(Bytes nestedPretendArguments) {
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+        given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
-		given(pretendArguments.slice(4, 20)).willReturn(nonFungibleTokenAddr);
-		given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
+		return Bytes.concatenate(
+				Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+				nonFungibleTokenAddr,
+				nestedPretendArguments);
 	}
 
-	private void givenMinimalFrameContextWithoutParentUpdater() {
+	private Bytes givenMinimalFrameContextWithoutParentUpdater(Bytes nestedPretendArguments) {
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
-		given(pretendArguments.slice(4, 20)).willReturn(nonFungibleTokenAddr);
-		given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
+		return Bytes.concatenate(
+				Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+				nonFungibleTokenAddr,
+				nestedPretendArguments);
 	}
 
 	public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);

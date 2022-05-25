@@ -25,6 +25,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
@@ -213,7 +214,7 @@ public class DecodingFacade {
 	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function IS_APPROVED_FOR_ALL =
-			new Function("isApprovedForAll(address,address)");
+			new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
@@ -309,7 +310,8 @@ public class DecodingFacade {
 			final boolean isFungible,
 			final UnaryOperator<byte[]> aliasResolver,
 			final WorldLedgers ledgers,
-			final EntityId operatorId) {
+			final EntityId operatorId
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
 		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
@@ -318,7 +320,11 @@ public class DecodingFacade {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);
 			addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
-			addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			if (from.equals(operatorId.toGrpcAccountId())) {
+				addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			} else {
+				addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+			}
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
@@ -399,13 +405,14 @@ public class DecodingFacade {
 		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var metadataList = (byte[][]) decodedArguments.get(2);
-		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
-
+		final List<ByteString> wrappedMetadata = new ArrayList<>();
+		for (final var meta : metadataList) {
+			wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
+		}
 		if (fungibleAmount > 0) {
 			return MintWrapper.forFungible(tokenID, fungibleAmount);
 		} else {
-			return MintWrapper.forNonFungible(
-					tokenID, metadata);
+			return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
 		}
 	}
 

@@ -646,38 +646,6 @@ public class EthereumSuite extends HapiApiSuite {
 								.has(accountWith().nonce(1L))
 				);
 	}
-	private HapiApiSpec ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode() {
-		final var txn = "creation";
-		final var contract = "EmptyConstructor";
-		return HapiApiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
-				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-								.via("autoAccount"),
-
-						uploadInitCode(contract),
-						ethereumContractCreate(contract)
-								.type(EthTxData.EthTransactionType.EIP1559)
-								.gasLimit(GAS_LIMIT)
-								.via(txn)
-				).when(
-				).then(
-						withOpContext((spec, opLog) -> {
-							final var getBytecode = getContractBytecode(contract).saveResultTo(
-									"contractByteCode");
-							allRunFor(spec, getBytecode);
-
-							final var originalBytecode = Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
-							final var actualBytecode = spec.registry().getBytes("contractByteCode");
-							// The original bytecode is modified on deployment
-							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,
-									originalBytecode.length);
-							Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
-						})
-				);
-	}
-
 
 	private HapiApiSpec ETX_008_contractCreateExecutesWithExpectedRecord() {
 		final var txn = "creation";
@@ -777,6 +745,37 @@ public class EthereumSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode() {
+		final var txn = "creation";
+		final var contract = "EmptyConstructor";
+		return HapiApiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
+				.given(
+						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+						cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+								.via("autoAccount"),
+
+						uploadInitCode(contract),
+						ethereumContractCreate(contract)
+								.type(EthTxData.EthTransactionType.EIP1559)
+								.gasLimit(GAS_LIMIT)
+								.via(txn)
+				).when(
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var getBytecode = getContractBytecode(contract).saveResultTo(
+									"contractByteCode");
+							allRunFor(spec, getBytecode);
+
+							final var originalBytecode = Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
+							final var actualBytecode = spec.registry().getBytes("contractByteCode");
+							// The original bytecode is modified on deployment
+							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,
+									originalBytecode.length);
+							Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+						})
+				);
+	}
 
 	@Override
 	protected Logger getResultsLogger() {
