@@ -51,7 +51,15 @@ class CurrentRecordStreamTypeTest {
 			.setBuild("2b26be40")
 			.build();
 	private static final int[] expectedHeader = new int[] {
-			RecordStreamType.RECORD_VERSION, pretendSemVer.getMajor(), pretendSemVer.getMinor(),
+			RecordStreamType.RECORD_VERSION,
+			pretendSemVer.getMajor(),
+			pretendSemVer.getMinor(),
+			pretendSemVer.getPatch()
+	};
+	private static final int[] expectedV6Header = new int[] {
+			RecordStreamType.RECORD_VERSION + 1,
+			pretendSemVer.getMajor(),
+			pretendSemVer.getMinor(),
 			pretendSemVer.getPatch()
 	};
 
@@ -69,8 +77,7 @@ class CurrentRecordStreamTypeTest {
 
 	@BeforeEach
 	void setUp() {
-		//TODO: add tests
-		subject = new CurrentRecordStreamType(semanticVersions, dynamicProperties); //TODO: fixme
+		subject = new CurrentRecordStreamType(semanticVersions, dynamicProperties);
 	}
 
 	@Test
@@ -80,6 +87,18 @@ class CurrentRecordStreamTypeTest {
 
 		final var header = subject.getFileHeader();
 		assertArrayEquals(expectedHeader, header);
+		assertSame(header, subject.getFileHeader());
+	}
+
+	@Test
+	void returnsCurrentStreamTypeFromResourceV6() {
+		given(semanticVersions.getDeployed()).willReturn(activeVersions);
+		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
+		given(dynamicProperties.isRecordStreamV6Enabled()).willReturn(true);
+
+		final var header = subject.getFileHeader();
+
+		assertArrayEquals(expectedV6Header, header);
 		assertSame(header, subject.getFileHeader());
 	}
 
