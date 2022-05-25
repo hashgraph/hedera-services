@@ -20,6 +20,7 @@
 
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
 description = "Hedera Services Node"
@@ -51,8 +52,7 @@ tasks.jar {
         attributes(
             "Main-Class" to "com.hedera.services.ServicesMain",
             "Class-Path" to configurations.getByName("runtimeClasspath")
-                .map { it -> "../lib/" + it.name }
-                .joinToString(separator=" ")
+                .joinToString(separator = " ") { "../lib/" + it.name }
         )
     }
 }
@@ -66,7 +66,7 @@ tasks.processResources {
             } else if (line.contains("project.version")) {
                 "hedera.services.version=" + project.version
             } else {
-                line;
+                line
             }
         }
     }
@@ -82,11 +82,28 @@ tasks.register<Copy>("copyLib") {
 tasks.register<Copy>("copyApp") {
     from(tasks.jar)
     into("data/apps")
-    rename { filename: String -> "HederaNode.jar" }
+    rename { "HederaNode.jar" }
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     dependsOn(tasks.findByName("copyApp"), tasks.findByName("copyLib"))
     classpath("data/apps/HederaNode.jar")
+}
+
+val cleanRun = tasks.register("cleanRun") {
+    project.delete(File(project.projectDir, "database"))
+    project.delete(File(project.projectDir, "output"))
+    project.delete(File(project.projectDir, "settingsUsed.txt"))
+    project.delete(File(project.projectDir, "swirlds.jar"))
+    project.projectDir.list { file, fileName -> fileName.startsWith("MainNetStats") }.forEach { file ->
+        project.delete(file)
+    }
+
+    val dataDir = File(project.projectDir, "data")
+    project.delete(File(dataDir, "accountBalances"))
+    project.delete(File(dataDir, "apps"))
+    project.delete(File(dataDir, "lib"))
+    project.delete(File(dataDir, "recordstreams"))
+    project.delete(File(dataDir, "saved"))
 }

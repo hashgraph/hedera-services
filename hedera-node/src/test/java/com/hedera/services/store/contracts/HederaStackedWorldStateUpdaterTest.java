@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -298,10 +297,10 @@ class HederaStackedWorldStateUpdaterTest {
 	@Test
 	void revertBehavesAsExpected() {
 		subject.countIdsAllocatedByStacked(3);
-		subject.addSbhRefund(Gas.of(123L));
-		assertEquals(123L, subject.getSbhRefund().toLong());
+		subject.addSbhRefund(123L);
+		assertEquals(123L, subject.getSbhRefund());
 		subject.revert();
-		assertEquals(0, subject.getSbhRefund().toLong());
+		assertEquals(0L, subject.getSbhRefund());
 		verify(worldState, times(3)).reclaimContractId();
 	}
 

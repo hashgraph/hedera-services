@@ -27,7 +27,6 @@ import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.hyperledger.besu.evm.Gas;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -313,7 +312,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
-		assertEquals(Gas.of(66L), subject.exchangeRateGasReq());
+		assertEquals(66L, subject.exchangeRateGasReq());
 	}
 
 	private void givenPropsWithSeed(int i) {

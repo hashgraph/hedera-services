@@ -94,6 +94,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -552,8 +553,10 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId())
 				.setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
+		if (contract.hasAutoRenewAccount()) {
+			info.setAutoRenewAccountId(Objects.requireNonNull(contract.getAutoRenewAccount()).toGrpcAccountId());
+		}
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
@@ -568,7 +571,7 @@ public class StateView {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
-			return Optional.of(info.build());
+			// Leave the admin key empty if it can't be decoded
 		}
 
 		return Optional.of(info.build());

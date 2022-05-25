@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.Gas;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,22 +54,20 @@ class GasCalculatorHederaV22Test {
 
     @Test
     void gasDepositCost() {
-//        assertEquals(Gas.of(200 * 37), subject.codeDepositGasCost(37));
-        assertEquals(Gas.ZERO, subject.codeDepositGasCost(37));
+//        assertEquals(200 * 37, subject.codeDepositGasCost(37));
+        assertEquals(0L, subject.codeDepositGasCost(37));
     }
 
     @Test
     void transactionIntrinsicGasCost() {
-        assertEquals(Gas.of(
-                4 * 2 +  // zero byte cost
-                16 * 3 +  // non-zero byte cost
-                21_000L   // base TX cost
-        ), subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 2, 3, 0), false));
-        assertEquals(Gas.of(
-                4 * 3 +  // zero byte cost
-                16 * 2 +  // non-zero byte cost
-                21_000L + // base TX cost
-                32_000L   // contract creation base cost
-        ), subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 0, 3, 0), true));
+        assertEquals(4 * 2 +  // zero byte cost
+                     16 * 3 +  // non-zero byte cost
+                     21_000L,   // base TX cost
+                subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 2, 3, 0), false));
+        assertEquals(4 * 3 +  // zero byte cost
+                     16 * 2 +  // non-zero byte cost
+                     21_000L + // base TX cost
+                     32_000L,   // contract creation base cost
+                subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 0, 3, 0), true));
     }
 }
