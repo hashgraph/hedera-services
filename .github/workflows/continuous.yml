@@ -37,6 +37,19 @@ jobs:
         with:
           name: Unit Test Data
           report_paths: "**/build/test-results/test/TEST-*.xml"
+      - name: Upload Unit Test Data 3
+        if: always()
+        uses: mikepenz/action-junit-report@v3
+        with:
+          name: Unit Test Data 3
+          report_paths: "**/build/test-results/test/TEST-*.xml"
+      - name: Upload Unit Test Data 2
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Unit Test Data 2
+          path: "**/build/test-results/test/TEST-*.xml"
+          reporter: 'java-junit'
 #      - name: Upload Unit Test HTML Report
 #        if: always()
 #        uses: actions/upload-artifact@v3
