@@ -32,22 +32,22 @@ jobs:
           arguments: build
       - name: Upload Unit Test Results
         if: always()
-        uses: scacap/action-surefire-report@v1
+        uses: dorny/test-reporter@v1
         with:
           name: Unit Test Results
-          report_paths: "**/build/test-results/test/TEST-*.xml"
-          fail_if_no_tests: false
+          path: "**/build/test-results/test/TEST-*.xml"
+          reporter: 'java-junit'
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
           arguments: itest
-#      - name: Upload Integration Test Results
-#        if: always()
-#        uses: scacap/action-surefire-report@v1
-#        with:
-#          name: Integration Test Results
-#          report_paths: "**/build/test-results/itest/TEST-*.xml"
-#          fail_if_no_tests: false
+      - name: Upload Integration Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Integration Test Results
+          path: "**/build/test-results/itest/TEST-*.xml"
+          reporter: 'java-junit'
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
