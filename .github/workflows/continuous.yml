@@ -54,13 +54,6 @@ jobs:
           arguments: jacocoTestReport
       - name: Upload Code Coverage Data
         uses: codecov/codecov-action@v3
-#      - name: Upload Code Coverage Reports
-#        if: always()
-##        uses: codecov/codecov-action@v3
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Jacoco Report
-#          path: "**/build/reports/jacoco/test/html"
 
   # In parallel with the build, generate the javadoc report
   # Outputs (in each subproject):
