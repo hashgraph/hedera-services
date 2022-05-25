@@ -36,6 +36,7 @@ jobs:
         with:
           name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
+          fail_if_no_tests: false
       - name: Integration Testing
         uses: gradle/gradle-build-action@v2
         with:
@@ -45,7 +46,8 @@ jobs:
         uses: scacap/action-surefire-report@v1
         with:
           name: Integration Test Results
-          path: "**/build/test-results/itest/TEST-*.xml"
+          report_paths: "**/build/test-results/itest/TEST-*.xml"
+          fail_if_no_tests: false
 #      - name: Jacoco Coverage Report
 #        uses: gradle/gradle-build-action@v2
 #        with:
