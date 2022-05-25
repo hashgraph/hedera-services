@@ -53,7 +53,7 @@ class RewardCalculatorTest {
 	private MerkleAccount account;
 
 	private RewardCalculator subject;
-	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678L), zoneUTC).toEpochDay();
+	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), zoneUTC).toEpochDay();
 	private static final long[] rewardHistory = new long[366];
 
 	@BeforeEach

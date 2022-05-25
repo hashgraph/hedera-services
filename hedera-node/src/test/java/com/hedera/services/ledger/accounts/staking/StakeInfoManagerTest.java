@@ -46,8 +46,8 @@ class StakeInfoManagerTest {
 
 	@Test
 	void getsCorrectStakeInfo() {
-		final var expectedInfo = stakingInfo.get(EntityNum.fromLong(3L));
-		final var actual = subject.mutableStakeInfoFor(3L);
+		final var expectedInfo = stakingInfo.get(EntityNum.fromLong(0L));
+		final var actual = subject.mutableStakeInfoFor(0L);
 		assertEquals(expectedInfo, actual);
 	}
 

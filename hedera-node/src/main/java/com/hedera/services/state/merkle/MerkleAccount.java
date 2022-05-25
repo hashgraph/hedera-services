@@ -330,6 +330,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAccountKey(key);
 	}
 
+	public int number() {
+		return state().number();
+	}
+
 	public EntityId getProxy() {
 		return state().proxy();
 	}

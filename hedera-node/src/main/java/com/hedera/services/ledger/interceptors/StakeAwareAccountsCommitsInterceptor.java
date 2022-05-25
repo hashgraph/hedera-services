@@ -59,7 +59,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	private boolean rewardsActivated;
 	private boolean rewardBalanceIncreased;
-	private Set<Long> hasBeenRewarded;
+	private boolean[] hasBeenRewarded;
 
 	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
 	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
@@ -114,7 +114,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var latestEligibleStart = stakePeriodManager.latestRewardableStakePeriodStart();
 
 		// boolean to track if the account has been rewarded already with one of the pending changes
-		hasBeenRewarded = new HashSet<>();
+		hasBeenRewarded = new boolean[64];
 
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			final var account = pendingChanges.entity(i);
@@ -125,7 +125,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes, latestEligibleStart)) {
-				payReward(account, changes, accountNum);
+				payReward(i, account, changes);
 			}
 			// Update any STAKED_TO_ME side effects of this change
 			n = updateStakedToMeSideEffects(i, pendingChanges, latestEligibleStart);
@@ -193,7 +193,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
-			} else if (!hasBeenRewarded.contains(curStakeeNum)) {
+			} else if (!hasBeenRewarded[(int) curStakeeNum]) {
 				payRewardIfRewardable(pendingChanges, exStakeeI, latestEligibleStart);
 			}
 		}
@@ -203,9 +203,12 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
-			} else if (!hasBeenRewarded.contains(newStakeeNum)) {
+			} else if (!hasBeenRewarded[(int) newStakeeNum]) {
 				payRewardIfRewardable(pendingChanges, newStakeeI, latestEligibleStart);
 			}
+		}
+		if (changesSize > hasBeenRewarded.length) {
+			hasBeenRewarded = new boolean[changesSize * 2];
 		}
 		return changesSize;
 	}
@@ -216,19 +219,18 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final long latestEligibleStart) {
 		final var account = pendingChanges.entity(stakeeI);
 		final var changes = pendingChanges.changes(stakeeI);
-		final var accountNum = pendingChanges.id(stakeeI).getAccountNum();
 		if (isRewardable(account, changes, latestEligibleStart)) {
-			payReward(account, changes, accountNum);
+			payReward(stakeeI, account, changes);
 		}
 	}
 
-	private void payReward(final MerkleAccount account,
-			final Map<AccountProperty, Object> changes,
-			final long accountNum) {
+	private void payReward(final int accountI,
+			final MerkleAccount account,
+			final Map<AccountProperty, Object> changes) {
 		rewardCalculator.updateRewardChanges(account, changes);
 		final var reward = rewardCalculator.getAccountReward();
-		sideEffectsTracker.trackRewardPayment(accountNum, reward);
-		hasBeenRewarded.add(accountNum);
+		sideEffectsTracker.trackRewardPayment(account.number(), reward);
+		hasBeenRewarded[accountI] = true;
 	}
 
 	boolean isRewardable(
@@ -308,12 +310,12 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	}
 
 	@VisibleForTesting
-	public Set<Long> getHasBeenRewarded() {
+	public boolean[] getHasBeenRewarded() {
 		return hasBeenRewarded;
 	}
 
 	@VisibleForTesting
-	public void setHasBeenRewarded(final Set<Long> hasBeenRewarded) {
+	public void setHasBeenRewarded(final boolean[] hasBeenRewarded) {
 		this.hasBeenRewarded = hasBeenRewarded;
 	}
 }

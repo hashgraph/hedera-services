@@ -38,12 +38,14 @@ public class StakeInfoManager {
 	@Inject
 	public StakeInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
 		this.stakingInfo = stakingInfo;
-		currentStakingInfos = new MerkleStakingInfo[stakingInfo.get().size()];
-		oldStakingInfo = stakingInfo.get();
 	}
 
 	public MerkleStakingInfo mutableStakeInfoFor(long nodeId) {
 		final var currentStakingInfo = stakingInfo.get();
+
+		if (currentStakingInfos == null) {
+			currentStakingInfos = new MerkleStakingInfo[stakingInfo.get().size()];
+		}
 
 		if (currentStakingInfos[(int) nodeId] == null && oldStakingInfo == currentStakingInfo) {
 			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
