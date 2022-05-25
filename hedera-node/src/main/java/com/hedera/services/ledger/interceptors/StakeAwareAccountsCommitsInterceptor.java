@@ -126,14 +126,14 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				payReward(i, account, changes);
 			}
 			// Update any STAKED_TO_ME side effects of this change
-			n = updateStakedToMeSideEffects(i, pendingChanges, latestEligibleStart);
+			n = updateStakedToMeSideEffects(account, changes, pendingChanges, latestEligibleStart);
 		}
 	}
 
 	private boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
 		if (changes.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
-			final long currentBalance = account.getBalance();
+			final long currentBalance = account != null ? account.getBalance() : 0;
 			return (newBalance - currentBalance) > 0;
 		}
 		return false;
@@ -175,12 +175,11 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	}
 
 	int updateStakedToMeSideEffects(
-			final int entityI,
+			final MerkleAccount account,
+			final Map<AccountProperty, Object> changes,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
 			final long latestEligibleStart) {
 		int changesSize = pendingChanges.size();
-		final var account = pendingChanges.entity(entityI);
-		final var changes = pendingChanges.changes(entityI);
 
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = stakeChangeManager.getAccountStakeeNum(changes);

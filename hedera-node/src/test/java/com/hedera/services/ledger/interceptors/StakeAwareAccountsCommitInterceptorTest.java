@@ -357,7 +357,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		hasBeenRewarded[2] = true;
 		subject.setHasBeenRewarded(hasBeenRewarded);
 
-		assertEquals(3, subject.updateStakedToMeSideEffects(0, pendingChanges,
+		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges,
 				stakePeriodStart - 1));
 	}
 
