@@ -28,7 +28,6 @@ import com.hedera.services.store.contracts.precompile.EncodingFacade;
 import com.hedera.services.store.models.NftId;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -74,7 +73,7 @@ public class RedirectViewExecutor {
 		this.ledgers = updater.trackingLedgers();
 	}
 
-	public Pair<Gas, Bytes> computeCosted() {
+	public Pair<Long, Bytes> computeCosted() {
 		final var target = getRedirectTarget(input);
 		final var tokenId = target.tokenId();
 		final var now = asSecondsTimestamp(frame.getBlockValues().getTimestamp());
