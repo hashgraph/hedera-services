@@ -721,9 +721,12 @@ class SignedTxnAccessorTest {
 
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
+		subject.setPayer(asAccount("0.0.2222"));
+
 		assertFalse(subject.throttleExempt());
 		subject.markThrottleExempt();
 		assertTrue(subject.throttleExempt());
+
 	}
 
 	@Test

@@ -111,7 +111,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 						blockingOrder(
 								IntStream.range(0, 10).mapToObj(i ->
 										contractCall("scMulti")
-												.payingWith(GENESIS)
+												.payingWith("civilian")
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR))
 										.toArray(HapiSpecOperation[]::new)

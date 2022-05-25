@@ -115,7 +115,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private HederaFunctionality function;
 	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
-	private Boolean throttleExempt;
+	private boolean throttleExempt;
 	private boolean congestionExempt;
 
 
@@ -292,14 +292,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean throttleExempt() {
-		if (throttleExempt == null) {
-			var p = getPayer();
-			if (p != null) {
-				return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
-			}
-			return false;
+		if (throttleExempt) {
+			return true;
 		}
-		return throttleExempt;
+		var p = getPayer();
+		if (p != null) {
+			return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
+		}
+		return false;
 	}
 
 	public void markThrottleExempt() {
