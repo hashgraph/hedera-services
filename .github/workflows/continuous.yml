@@ -105,7 +105,7 @@ jobs:
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-              arguments: sonarqube
+              arguments: sonarqube --info
 
 #  smoke:
 #    name: Smoke End-to-End Tests
