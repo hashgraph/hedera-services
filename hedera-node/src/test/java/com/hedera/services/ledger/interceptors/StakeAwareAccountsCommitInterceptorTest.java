@@ -298,7 +298,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderM.verify(manager).finalDeclineRewardGiven(counterparty, pendingChanges.changes(0));
 		inorderM.verify(manager).withdrawStake(0L, counterpartyBalance + counterparty.getStakedToMe(), false);
 		inorderM.verify(manager).finalStakedToMeGiven(counterparty, pendingChanges.changes(0));
-		inorderM.verify(manager).awardStake(2L, 2100, false);
+		inorderM.verify(manager).awardStake(1L, 2100, false);
 	}
 
 	@Test

@@ -165,7 +165,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
 				// isDeclineReward option
 				stakeChangeManager.withdrawStake(
-						Math.abs(curNodeId + 1),
+						Math.abs(curNodeId + 1), // since nodeId is saved as  -nodeId -1
 						account.getBalance() + account.getStakedToMe(),
 						stakeChangeManager.finalDeclineRewardGiven(account, changes));
 			}
@@ -173,7 +173,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				// Award updated stake to new node stakee to the fields stakeRewarded or stakeNotRewarded from
 				// ex-stakee based on isDeclineReward option
 				stakeChangeManager.awardStake(
-						Math.abs(newNodeId),
+						Math.abs(newNodeId + 1), // since nodeId is saved as  -nodeId -1
 						finalBalanceGiven(account, changes) + stakeChangeManager.finalStakedToMeGiven(account, changes),
 						stakeChangeManager.finalDeclineRewardGiven(account, changes));
 			}
