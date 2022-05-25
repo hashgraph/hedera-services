@@ -48,17 +48,12 @@ jobs:
           name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
           require_tests: 'false'
-#      - name: Jacoco Coverage Report
-#        uses: gradle/gradle-build-action@v2
-#        with:
-#          arguments: jacocoTestReport
-#      - name: Upload Code Coverage Data
-#        if: always()
-##        uses: codecov/codecov-action@v3
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Jacoco Data
-#          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+      - name: Jacoco Coverage Report
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: jacocoTestReport
+      - name: Upload Code Coverage Data
+        uses: codecov/codecov-action@v3
 #      - name: Upload Code Coverage Reports
 #        if: always()
 ##        uses: codecov/codecov-action@v3
