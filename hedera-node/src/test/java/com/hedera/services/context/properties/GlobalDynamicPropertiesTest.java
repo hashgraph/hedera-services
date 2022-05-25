@@ -93,6 +93,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
+		assertTrue(subject.isRecordStreamV6Enabled());
 	}
 
 	@Test
@@ -224,6 +225,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
+		assertFalse(subject.isRecordStreamV6Enabled());
 	}
 
 	@Test
@@ -401,6 +403,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
 		given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost")).willReturn(i + 64L);
+		given(properties.getBooleanProperty("hedera.recordStream.isV6Enabled")).willReturn( (i + 65L) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
