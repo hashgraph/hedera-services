@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
@@ -97,16 +99,17 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				safeMintPrecompile(),
-				safeBurnPrecompile(),
-				safeAssociatePrecompile(),
-				safeDissociatePrecompile(),
-				safeMultipleAssociatePrecompile(),
-				safeMultipleDissociationPrecompile(),
-				safeNFTTransferPrecompile(),
-				safeTokenTransferPrecompile(),
-				safeTokensTransferPrecompile(),
-				safeNftsTransferPrecompile()
+//				safeMintPrecompile(),
+//				safeBurnPrecompile(),
+//				safeAssociatePrecompile(),
+//				safeDissociatePrecompile(),
+//				safeMultipleAssociatePrecompile(),
+//				safeMultipleDissociationPrecompile(),
+//				safeNFTTransferPrecompile(),
+//				safeTokenTransferPrecompile(),
+//				safeTokensTransferPrecompile(),
+//				safeNftsTransferPrecompile()
+				fungibleTokenSafeCreateHappyPath()
 		);
 	}
 
@@ -692,6 +695,22 @@ public class SafeOperationsSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
 						getAccountBalance(SECOND_ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 0)
+				);
+	}
+
+	private HapiApiSpec fungibleTokenSafeCreateHappyPath() {
+		return defaultHapiSpec("fungibleTokenSafeCreateHappyPath")
+				.given(
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT)
+
+				).when(
+						sourcing(() -> contractCall(
+								THE_CONTRACT, "safeCreateOfFungibleToken"
+						)
+								.via("SAFE_CREATE_FUNGIBLE_TOKEN_TXN").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+				).then(
+						getTxnRecord("SAFE_CREATE_FUNGIBLE_TOKEN_TXN").andAllChildRecords().logged()
 				);
 	}
 }

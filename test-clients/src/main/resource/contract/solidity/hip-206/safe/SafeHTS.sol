@@ -9,6 +9,14 @@ library SafeHTS {
 
     address constant precompileAddress = address(0x167);
 
+    function safeCryptoTransfer(IHTS.TokenTransferList[] memory tokenTransfers) internal {
+        int32 responseCode;
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHTS.cryptoTransfer.selector, tokenTransfers));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe crypto transfer failed!");
+    }
+
     function safeMintToken(IHTS token, uint64 amount, bytes[] memory metadata) internal
     returns (uint64 newTotalSupply, int64[] memory serialNumbers) {
         int32 responseCode;
@@ -36,6 +44,15 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe burn failed!");
     }
 
+    function safeAssociateTokens(address account, address[] memory tokens) internal {
+        int32 responseCode;
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHTS.associateTokens.selector,
+            account, tokens));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple associations failed!");
+    }
+
     function safeAssociateToken(IHTS token, address account) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
@@ -43,6 +60,15 @@ library SafeHTS {
             account, token));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe single association failed!");
+    }
+
+    function safeDissociateTokens(address account, address[] memory tokens) internal {
+        int32 responseCode;
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHTS.dissociateTokens.selector,
+            account, tokens));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple dissociations failed!");
     }
 
     function safeDissociateToken(IHTS token, address account) internal {
@@ -90,29 +116,60 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe NFT transfer failed!");
     }
 
-    function safeAssociateTokens(address account, address[] memory tokens) internal {
+    function safeCreateFungibleToken(IHTS.HederaToken memory token, uint initialTotalSupply,
+        uint decimals) internal returns (address tokenAddress){
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHTS.associateTokens.selector,
-            account, tokens));
-        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-        require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple associations failed!");
+            abi.encodeWithSelector(IHTS.createFungibleToken.selector,
+            token, initialTotalSupply, decimals));
+        (responseCode, tokenAddress) =
+        success
+        ? abi.decode(result, (int32, address))
+        : (HederaResponseCodes.UNKNOWN, address(0));
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe create fungible token failed!");
     }
 
-    function safeDissociateTokens(address account, address[] memory tokens) internal {
-        int32 responseCode;
+    function safeCreateFungibleTokenWithCustomFees(IHTS.HederaToken memory token,
+        uint initialTotalSupply,
+        uint decimals,
+        IHTS.FixedFee[] memory fixedFees,
+        IHTS.FractionalFee[] memory fractionalFees) internal returns
+    (address tokenAddress){
+        int responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHTS.dissociateTokens.selector,
-            account, tokens));
-        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-        require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple dissociations failed!");
+            abi.encodeWithSelector(IHTS.createFungibleTokenWithCustomFees.selector,
+            token, initialTotalSupply, decimals, fixedFees, fractionalFees));
+        (responseCode, tokenAddress) =
+        success
+        ? abi.decode(result, (int32, address))
+        : (HederaResponseCodes.UNKNOWN, address(0));
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe create fungible token with custom fees failed!");
     }
 
-    function safeCryptoTransfer(IHTS.TokenTransferList[] memory tokenTransfers) internal {
-        int32 responseCode;
+    function safeCreateNonFungibleToken(IHTS.HederaToken memory token) internal returns
+    (address tokenAddress){
+        int responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHTS.cryptoTransfer.selector, tokenTransfers));
-        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-        require(responseCode == HederaResponseCodes.SUCCESS, "Safe crypto transfer failed!");
+            abi.encodeWithSelector(IHTS.createNonFungibleToken.selector, token));
+        (responseCode, tokenAddress) =
+        success
+        ? abi.decode(result, (int32, address))
+        : (HederaResponseCodes.UNKNOWN, address(0));
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe create non fungible token failed!");
+    }
+
+    function safeCreateNonFungibleTokenWithCustomFees(IHTS.HederaToken memory token,
+        IHTS.FixedFee[] memory fixedFees,
+        IHTS.RoyaltyFee[] memory royaltyFees) internal returns
+    (address tokenAddress){
+        int responseCode;
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHTS.createNonFungibleTokenWithCustomFees.selector,
+            token, fixedFees, royaltyFees));
+        (responseCode, tokenAddress) =
+        success
+        ? abi.decode(result, (int32, address))
+        : (HederaResponseCodes.UNKNOWN, address(0));
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe create non fungible token with custom fees failed!");
     }
 }
