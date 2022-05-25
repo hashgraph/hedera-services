@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
@@ -65,11 +66,20 @@ public class RecordStreamManager {
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter */
 	private QueueThreadObjectStream<RecordStreamObject> writeQueueThread;
+
 	/**
 	 * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link RecordStreamObject}s to record
-	 * stream files
+	 * stream files.
+	 * <b>Should be deleted after migration to V6 is done</b>.
 	 */
-	private TimestampStreamFileWriter<RecordStreamObject> streamFileWriter;
+	private TimestampStreamFileWriter<RecordStreamObject> V5StreamFileWriter;
+
+	/**
+	 * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link RecordStreamObject}s to record
+	 * stream files.
+	 * Will be used from V6 onwards.
+	 */
+	private RecordStreamFileWriter<RecordStreamObject> V6StreamFileWriter;
 
 	/** initial running Hash of records */
 	private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -116,22 +126,33 @@ public class RecordStreamManager {
 			final NodeLocalProperties nodeLocalProperties,
 			final String accountMemo,
 			final Hash initialHash,
-			final RecordStreamType streamType
+			final RecordStreamType streamType,
+			final GlobalDynamicProperties globalDynamicProperties
 	) throws NoSuchAlgorithmException, IOException {
 		final var nodeScopedRecordLogDir = effLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
-			streamFileWriter = new TimestampStreamFileWriter<>(
-					nodeScopedRecordLogDir,
-					nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
-					platform,
-					startWriteAtCompleteWindow,
-					streamType);
+			if (globalDynamicProperties.isRecordStreamV6Enabled()) {
+				V6StreamFileWriter = new RecordStreamFileWriter<>(
+						nodeScopedRecordLogDir,
+						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
+						platform,
+						startWriteAtCompleteWindow,
+						streamType
+				);
+			} else {
+				V5StreamFileWriter = new TimestampStreamFileWriter<>(
+						nodeScopedRecordLogDir,
+						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
+						platform,
+						startWriteAtCompleteWindow,
+						streamType);
+			}
 			writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
 					.setNodeId(platform.getSelfId().getId())
 					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
-					.setForwardTo(streamFileWriter)
+					.setForwardTo(V6StreamFileWriter == null ? V5StreamFileWriter : V6StreamFileWriter)
 					.setThreadName("writeQueueThread")
 					.setComponent("recordStream")
 					.build();
@@ -249,8 +270,11 @@ public class RecordStreamManager {
 	 * 		whether the writer should not write until the first complete window
 	 */
 	public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
-		if (streamFileWriter != null) {
-			streamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+		if (V5StreamFileWriter != null) {
+			V5StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
+		} else if (V6StreamFileWriter != null) {
+			V6StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
 		}
 	}
@@ -294,8 +318,17 @@ public class RecordStreamManager {
 	 *
 	 * @return current TimestampStreamFileWriter instance
 	 */
-	TimestampStreamFileWriter<RecordStreamObject> getStreamFileWriter() {
-		return streamFileWriter;
+	TimestampStreamFileWriter<RecordStreamObject> getV5StreamFileWriter() {
+		return V5StreamFileWriter;
+	}
+
+	/**
+	 * for unit testing
+	 *
+	 * @return current RecordStreamFileWriter instance
+	 */
+	RecordStreamFileWriter<RecordStreamObject> getV6StreamFileWriter() {
+		return V6StreamFileWriter;
 	}
 
 	/**

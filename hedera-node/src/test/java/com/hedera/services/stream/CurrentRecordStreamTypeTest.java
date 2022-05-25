@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.ActiveVersions;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -58,6 +59,8 @@ class CurrentRecordStreamTypeTest {
 	private ActiveVersions activeVersions;
 	@Mock
 	private SemanticVersions semanticVersions;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@LoggingSubject
 	private CurrentRecordStreamType subject;
@@ -66,7 +69,8 @@ class CurrentRecordStreamTypeTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new CurrentRecordStreamType(semanticVersions);
+		//TODO: add tests
+		subject = new CurrentRecordStreamType(semanticVersions, dynamicProperties); //TODO: fixme
 	}
 
 	@Test

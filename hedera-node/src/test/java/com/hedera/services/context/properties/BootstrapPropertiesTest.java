@@ -140,6 +140,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
 			entry("hedera.recordStream.logPeriod", 2L),
 			entry("hedera.recordStream.isEnabled", true),
+			entry("hedera.recordStream.isV6Enabled", false),
 			entry("hedera.recordStream.queueCapacity", 5000),
 			entry("hedera.shard", 0L),
 			entry("hedera.transaction.maxMemoUtf8Bytes", 100),

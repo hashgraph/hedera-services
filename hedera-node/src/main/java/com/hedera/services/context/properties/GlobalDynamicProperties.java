@@ -122,6 +122,7 @@ public class GlobalDynamicProperties {
 	private KnownBlockValues knownBlockValues;
 	private int maxReturnedNftsPerTouch;
 	private Gas exchangeRateGasReq;
+	private boolean enableRecordStreamV6;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -220,6 +221,7 @@ public class GlobalDynamicProperties {
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 		exchangeRateGasReq = Gas.of(properties.getLongProperty("contracts.precompile.exchangeRateGasCost"));
+		enableRecordStreamV6 = properties.getBooleanProperty("hedera.recordStream.isV6Enabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -536,5 +538,9 @@ public class GlobalDynamicProperties {
 
 	public Gas exchangeRateGasReq() {
 		return exchangeRateGasReq;
+	}
+
+	public boolean isRecordStreamV6Enabled() {
+		return enableRecordStreamV6;
 	}
 }
