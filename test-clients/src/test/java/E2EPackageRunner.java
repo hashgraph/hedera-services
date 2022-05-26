@@ -718,14 +718,14 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> schedule() {
 		return List.of(
-//				extractSpecsFromSuite(ScheduleCreateSpecs::new),
-//				extractSpecsFromSuite(ScheduleDeleteSpecs::new),
-				extractSpecsFromSuite(ScheduleExecutionSpecs::new)
-//				extractSpecsFromSuite(ScheduleExecutionSpecStateful::new),
-//				extractSpecsFromSuite(ScheduleRecordSpecs::new)
-//				extractSpecsFromSuite(ScheduleSignSpecs::new),
-//				extractSpecsFromSuite(ScheduleLongTermExecutionSpecs::new)
-//				extractSpecsFromSuite(ScheduleLongTermSignSpecs::new)
+				extractSpecsFromSuite(ScheduleCreateSpecs::new),
+				extractSpecsFromSuite(ScheduleDeleteSpecs::new),
+				extractSpecsFromSuite(ScheduleExecutionSpecs::new),
+				extractSpecsFromSuite(ScheduleExecutionSpecStateful::new),
+				extractSpecsFromSuite(ScheduleRecordSpecs::new),
+				extractSpecsFromSuite(ScheduleSignSpecs::new),
+				extractSpecsFromSuite(ScheduleLongTermExecutionSpecs::new),
+				extractSpecsFromSuite(ScheduleLongTermSignSpecs::new)
 		);
 	}
 
