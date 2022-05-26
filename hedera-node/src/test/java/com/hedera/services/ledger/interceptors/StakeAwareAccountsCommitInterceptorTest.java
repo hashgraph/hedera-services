@@ -126,6 +126,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.getAccountReward()).willReturn(1L);
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		subject.preview(changes);
 
@@ -175,17 +176,23 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		counterparty.setStakePeriodStart(-1);
 		counterparty.setStakedId(-1);
-		assertFalse(subject.isRewardable(counterparty, randomStakedNodeChanges(100L), stakePeriodStart));
+
+		final var changes = randomStakedNodeChanges(100L);
+
+		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+
+		assertFalse(subject.isRewardable(counterparty, changes));
 
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
-		assertTrue(subject.isRewardable(counterparty, randomStakedNodeChanges(100L), stakePeriodStart));
+		assertTrue(subject.isRewardable(counterparty, changes));
 
 		given(networkCtx.areRewardsActivated()).willReturn(false);
-		assertFalse(subject.isRewardable(counterparty, randomStakedNodeChanges(100L), stakePeriodStart));
+		assertFalse(subject.isRewardable(counterparty, changes));
 
 		counterparty.setDeclineReward(true);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		assertTrue(subject.isRewardable(counterparty, randomStakedNodeChanges(100L), stakePeriodStart));
+		assertTrue(subject.isRewardable(counterparty, changes));
 	}
 
 	@Test
@@ -229,7 +236,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 		counterparty.setStakePeriodStart(-1L);
 
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(19131L);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(19132L);
 		given(manager.isIncreased(changes.changes(2), stakingFund)).willReturn(true);
 
@@ -255,18 +261,22 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 	@Test
 	void paysRewardIfRewardable() {
+		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 2);
 		final var hasBeenRewarded = new boolean[100];
 		subject.setHasBeenRewarded(hasBeenRewarded);
 
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		assertEquals(1, pendingChanges.size());
 
-		subject.payRewardIfRewardable(pendingChanges, 0, stakePeriodStart - 2);
+		subject.payRewardIfRewardable(pendingChanges, 0);
 		verify(rewardCalculator, never()).updateRewardChanges(counterparty, pendingChanges.changes(0));
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
-		subject.payRewardIfRewardable(pendingChanges, 0, stakePeriodStart - 1);
+		subject.payRewardIfRewardable(pendingChanges, 0);
 		verify(rewardCalculator).updateRewardChanges(counterparty, pendingChanges.changes(0));
 		verify(sideEffectsTracker).trackRewardPayment(eq(counterpartyId.getAccountNum()), anyLong());
 		assertTrue(hasBeenRewarded[0]);
@@ -279,7 +289,10 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+
 		given(rewardCalculator.getAccountReward()).willReturn(10l);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
@@ -314,7 +327,10 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		final var pendingChanges = buildPendingAccountStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+
 		given(rewardCalculator.getAccountReward()).willReturn(10L);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
@@ -358,8 +374,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		hasBeenRewarded[2] = true;
 		subject.setHasBeenRewarded(hasBeenRewarded);
 
-		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges,
-				stakePeriodStart - 1));
+		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {

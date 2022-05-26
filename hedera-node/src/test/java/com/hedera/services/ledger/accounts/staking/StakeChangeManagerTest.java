@@ -37,14 +37,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,8 +66,6 @@ class StakeChangeManagerTest {
 	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
-	public static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-			zoneUTC).toEpochDay() - 1;
 	private final EntityNum node0Id = EntityNum.fromLong(0L);
 
 	@BeforeEach
@@ -84,13 +78,6 @@ class StakeChangeManagerTest {
 	void validatesIfAnyStakedFieldChanges() {
 		assertTrue(subject.hasStakeFieldChanges(randomStakeFieldChanges(100L)));
 		assertFalse(subject.hasStakeFieldChanges(randomNotStakeFieldChanges()));
-	}
-
-	@Test
-	void validatesIfStartPeriodIsWithinRange() {
-		assertTrue(isWithinRange(stakePeriodStart - 365, stakePeriodStart));
-		assertFalse(isWithinRange(-1, stakePeriodStart));
-		assertFalse(isWithinRange(stakePeriodStart, stakePeriodStart));
 	}
 
 	@Test

@@ -28,7 +28,6 @@ import javax.inject.Inject;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.isWithinRange;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 
@@ -48,32 +47,32 @@ public class RewardCalculator {
 	}
 
 	public final void computePendingRewards(final MerkleAccount account) {
-		final long todayNumber = stakePeriodManager.currentStakePeriod();
-		var stakePeriodStart = account.getStakePeriodStart();
+		final var currentPeriod = stakePeriodManager.currentStakePeriod();
 
-		if (stakePeriodStart > -1 && stakePeriodStart < todayNumber - 365) {
-			stakePeriodStart = todayNumber - 365;
-		}
+		// Staking rewards only accumulate for a finite # of periods (currently 365 days), so get the effective start
+		var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
 
-		if (isWithinRange(stakePeriodStart, todayNumber - 1)) {
-			final long reward = computeReward(account, account.getStakedId(), todayNumber, stakePeriodStart);
-			stakePeriodStart = todayNumber - 1;
-			this.accountReward = reward;
+		// Check if effectiveStart is within the range for receiving rewards
+		if (stakePeriodManager.isRewardable(effectiveStart)) {
+			this.accountReward = computeReward(account, currentPeriod, effectiveStart);
+			// After we've got our rewards till the last full period, it becomes our effective start
+			effectiveStart = currentPeriod - 1;
 		} else {
-			this.accountReward = 0L;
+			this.accountReward = 0;
 		}
-		this.accountUpdatedStakePeriodStart = stakePeriodStart;
+
+		this.accountUpdatedStakePeriodStart = effectiveStart;
 	}
 
-	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber,
-			final long stakePeriodStart) {
+	long computeReward(final MerkleAccount account, final long currentStakePeriod, final long effectiveStart) {
+		final long stakedNode = account.getStakedId();
 		final var stakedNodeAccount = stakeInfoManager.mutableStakeInfoFor(stakedNode);
 		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
 
-		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day todayNumber - 1,
-		// since today is not finished yet.
+		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day
+		// currentStakePeriod - 1, since today is not finished yet.
 		return account.isDeclinedReward() ? 0 :
-				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (todayNumber - 1 - (stakePeriodStart - 1))]);
+				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
 	}
 
 	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {

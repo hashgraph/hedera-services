@@ -38,6 +38,7 @@ import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zon
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -53,13 +54,19 @@ class RewardCalculatorTest {
 	private MerkleAccount account;
 
 	private RewardCalculator subject;
-	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), zoneUTC).toEpochDay();
+	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
+			zoneUTC).toEpochDay();
 	private static final long[] rewardHistory = new long[366];
 
 	@BeforeEach
 	void setUp() {
 		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
 		rewardHistory[0] = 5;
+
+
+		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(todayNumber);
+		willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 	}
 
 	@Test
@@ -80,6 +87,10 @@ class RewardCalculatorTest {
 
 	@Test
 	void doesntComputeReturnsZeroReward() {
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
+		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
+
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
 		subject.computePendingRewards(account);
@@ -88,6 +99,7 @@ class RewardCalculatorTest {
 		assertEquals(0, subject.getAccountReward());
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
+
 		subject.computePendingRewards(account);
 		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(0, subject.getAccountReward());
