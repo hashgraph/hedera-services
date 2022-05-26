@@ -145,10 +145,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
 						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 						cannotSendToNonExistentAccount(),
-//						canCallPendingContractSafely(),
 						delegateContractIdRequiredForTransferInDelegateCall(),
 						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 						minChargeIsTXGasUsedByContractCreate(),
@@ -157,7 +155,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 						propagatesNestedCreations(),
 						blockTimestampChangesWithinFewSeconds(),
 						contractWithAutoRenewNeedSignatures(),
-						autoAssociationSlotsAppearsInInfo()
+						autoAssociationSlotsAppearsInInfo(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						canCallPendingContractSafely(),
 				}
 		);
 	}
@@ -595,7 +595,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
 		final var civilian = "civilian";
 		final var creation = "creation";
-		final var gasToOffer = 64_000L;
+		final var gasToOffer = 128_000L;
 		final var civilianStartBalance = ONE_HUNDRED_HBARS;
 		final AtomicLong gasFee = new AtomicLong();
 		final AtomicLong offeredGasFee = new AtomicLong();

@@ -21,7 +21,6 @@ package com.hedera.services.contracts.gascalculator;
  */
 
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -75,18 +74,17 @@ public class StorageGasCalculator {
 	 * @param gasCalculator the gas calculator
 	 * @return the gas required for the storage and memory usage of this contract creaiton
 	 */
-	public Gas creationGasCost(final MessageFrame frame, final GasCalculator gasCalculator) {
-		return gasCostOfStorageIn(frame)
-				.plus(memoryExpansionGasCost(frame, gasCalculator));
+	public long creationGasCost(final MessageFrame frame, final GasCalculator gasCalculator) {
+		return gasCostOfStorageIn(frame) + memoryExpansionGasCost(frame, gasCalculator);
 	}
 
-	public Gas gasCostOfStorageIn(final MessageFrame frame) {
+	public long gasCostOfStorageIn(final MessageFrame frame) {
 		final var baseFrame = base(frame);
 		final var expectedLifetimeSecs = effStorageLifetime(frame, baseFrame);
 		final long sbhPrice = baseFrame.getContextVariable(SBH_CONTEXT_KEY);
 		final var storagePrice = (expectedLifetimeSecs * sbhPrice) / SECONDS_PER_HOUR;
 		final var gasPrice = frame.getGasPrice().toLong();
-		return Gas.of(storagePrice / gasPrice);
+		return storagePrice / gasPrice;
 	}
 
 	private static long effStorageLifetime(final MessageFrame frame, final MessageFrame baseFrame) {
@@ -96,7 +94,7 @@ public class StorageGasCalculator {
 		return Math.max(0, expectedLifetimeSecs);
 	}
 
-	private static Gas memoryExpansionGasCost(final MessageFrame frame, final GasCalculator gasCalculator) {
+	private static long memoryExpansionGasCost(final MessageFrame frame, final GasCalculator gasCalculator) {
 		final var initCodeOffset = clampedToLong(frame.getStackItem(1));
 		final var initCodeLength = clampedToLong(frame.getStackItem(2));
 		return gasCalculator.memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);

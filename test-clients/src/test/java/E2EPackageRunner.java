@@ -431,7 +431,7 @@ class E2EPackageRunner {
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
-		return List.of(
+		return List.of(new DynamicContainer[]{
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
 				extractSpecsFromSuiteForEth(ContractCallSuite::new),
 				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
@@ -440,7 +440,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
 				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
 				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")

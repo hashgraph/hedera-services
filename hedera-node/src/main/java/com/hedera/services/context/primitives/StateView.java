@@ -95,10 +95,12 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -466,18 +468,12 @@ public class StateView {
 	}
 
 	private String getContractAccountId(final JKey key, final AccountID accountID) {
-		final var contractAccountId = asHexedEvmAddress(accountID);
-		if (key != null && key.hasECDSAsecp256k1Key()) {
-			// Only compressed keys are stored at the moment
-			final byte[] rawCompressedKey = key.getECDSASecp256k1Key();
-			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-				final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
-				return Bytes.wrap(evmAddress!=null ? evmAddress : new byte[]{}).toUnprefixedHexString();
-			} else {
-				return contractAccountId;
-			}
+		// If we can recover an Ethereum EOA address from the account key, we should return that
+		final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+		if (evmAddress != null)	 {
+			return Bytes.wrap(evmAddress).toUnprefixedHexString();
 		} else {
-			return contractAccountId;
+			return asHexedEvmAddress(accountID);
 		}
 	}
 
@@ -558,8 +554,10 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId())
 				.setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
+		if (contract.hasAutoRenewAccount()) {
+			info.setAutoRenewAccountId(Objects.requireNonNull(contract.getAutoRenewAccount()).toGrpcAccountId());
+		}
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
@@ -574,7 +572,7 @@ public class StateView {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
-			return Optional.of(info.build());
+			// Leave the admin key empty if it can't be decoded
 		}
 
 		return Optional.of(info.build());

@@ -86,8 +86,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -97,6 +100,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
@@ -143,6 +148,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				transferErc20Token(),
 				erc20Allowance(),
 				erc20Approve(),
+				someERC20ApproveAllowanceScenariosPass(),
+				someERC20NegativeTransferFromScenariosPass(),
+				someERC20ApproveAllowanceScenarioInOneCall(),
 				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
@@ -2109,7 +2117,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 								.via("MISSING_TO").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
 						childRecordsCheck("MISSING_TO", CONTRACT_REVERT_EXECUTED,
-								recordWith().status(INVALID_ALLOWANCE_SPENDER_ID)),
+								recordWith()
+										.status(INVALID_ALLOWANCE_SPENDER_ID)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
 						// * Can't approve if msg.sender != owner and not an operator
 						cryptoTransfer(movingUnique(nfToken, 1L, 2L).between(someERC721Scenarios, aCivilian)),
 						cryptoTransfer(movingUnique(nfToken, 3L, 4L).between(someERC721Scenarios, bCivilian)),
@@ -2196,6 +2209,291 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 								.gas(4_000_000)),
 						getTokenNftInfo(nfToken, 5L).hasAccountID(bCivilian).hasNoSpender()
+				);
+	}
+
+	private HapiApiSpec someERC20ApproveAllowanceScenariosPass() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+		final var token = "token";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var bCivilian = "bCivilian";
+		final var someERC20Scenarios = "someERC20Scenarios";
+
+		return defaultHapiSpec("someERC20ApproveAllowanceScenariosPass")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(bCivilian).exposingCreatedIdTo(id ->
+								bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(someERC20Scenarios),
+						contractCreate(someERC20Scenarios)
+								.adminKey(multiKey),
+						tokenCreate(token)
+								.supplyKey(multiKey)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(bCivilian)
+								.initialSupply(10)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit))))
+				).when(
+						withOpContext((spec, opLog) -> {
+							zCivilianMirrorAddr.set(asHexedSolidityAddress(
+									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+							contractMirrorAddr.set(asHexedSolidityAddress(
+									spec.registry().getAccountID(someERC20Scenarios)));
+						}),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 0L
+						)
+								.via("ACCOUNT_NOT_ASSOCIATED_TXN").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						tokenAssociate(someERC20Scenarios, token),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), 5L
+						)
+								.via("MISSING_TO").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), 5L
+						)
+								.via("SPENDER_SAME_AS_OWNER_TXN").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 5L
+						)
+								.via("SUCCESSFUL_APPROVE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "getAllowance",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), aCivilianMirrorAddr.get()
+						)
+								.via("ALLOWANCE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doSpecificApproval",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 0L
+						)
+								.via("SUCCESSFUL_REVOKE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "getAllowance",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), aCivilianMirrorAddr.get()
+						)
+								.via("ALLOWANCE_AFTER_REVOKE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "getAllowance",
+								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), aCivilianMirrorAddr.get()
+						)
+								.via("MISSING_OWNER_ID").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+				).then(
+						childRecordsCheck("ACCOUNT_NOT_ASSOCIATED_TXN", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+						childRecordsCheck("MISSING_TO", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ALLOWANCE_SPENDER_ID)),
+						childRecordsCheck("SPENDER_SAME_AS_OWNER_TXN", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(SPENDER_ACCOUNT_SAME_AS_OWNER)),
+						childRecordsCheck("SUCCESSFUL_APPROVE_TXN", SUCCESS,
+								recordWith().status(SUCCESS)),
+						childRecordsCheck("SUCCESSFUL_REVOKE_TXN", SUCCESS,
+								recordWith().status(SUCCESS)),
+						childRecordsCheck("MISSING_OWNER_ID", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ALLOWANCE_OWNER_ID)),
+						childRecordsCheck("ALLOWANCE_TXN", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.ALLOWANCE)
+																.withAllowance(5L)
+														)
+										)
+						),
+						childRecordsCheck("ALLOWANCE_AFTER_REVOKE_TXN", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.ALLOWANCE)
+																.withAllowance(0L)
+														)
+										)
+						)
+				);
+	}
+
+	private HapiApiSpec someERC20NegativeTransferFromScenariosPass() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+		final var token = "token";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var bCivilian = "bCivilian";
+		final var someERC20Scenarios = "someERC20Scenarios";
+
+		return defaultHapiSpec("someERC20NegativeTransferFromScenariosPass")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(bCivilian).exposingCreatedIdTo(id ->
+								bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(someERC20Scenarios),
+						contractCreate(someERC20Scenarios)
+								.adminKey(multiKey),
+						tokenCreate(token)
+								.supplyKey(multiKey)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(someERC20Scenarios)
+								.initialSupply(10)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit))))
+				).when(
+						withOpContext((spec, opLog) -> {
+							zCivilianMirrorAddr.set(asHexedSolidityAddress(
+									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+							contractMirrorAddr.set(asHexedSolidityAddress(
+									spec.registry().getAccountID(someERC20Scenarios)));
+						}),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("TOKEN_NOT_ASSOCIATED_TO_ACCOUNT_TXN").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						tokenAssociate(bCivilian, token),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), zCivilianMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MISSING_FROM").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), zCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MISSING_TO").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), bCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MSG_SENDER_IS_THE_SAME_AS_FROM").hasKnownStatus(SUCCESS)),
+						cryptoTransfer(moving(9L, token).between(someERC20Scenarios, bCivilian)),
+						tokenAssociate(aCivilian, token),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), bCivilianMirrorAddr.get(), aCivilianMirrorAddr.get(), 1L
+						)
+								.payingWith(GENESIS).via("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						cryptoApproveAllowance()
+								.payingWith(bCivilian)
+								.addTokenAllowance(bCivilian, token, someERC20Scenarios, 1L)
+								.signedBy(DEFAULT_PAYER, bCivilian)
+								.fee(ONE_HBAR),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), bCivilianMirrorAddr.get(), aCivilianMirrorAddr.get(), 5L
+						)
+								.payingWith(GENESIS).via("TRY_TO_TRANSFER_MORE_THAN_APPROVED_AMOUNT_TXN")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+						cryptoApproveAllowance()
+								.payingWith(bCivilian)
+								.addTokenAllowance(bCivilian, token, someERC20Scenarios, 20L)
+								.signedBy(DEFAULT_PAYER, bCivilian)
+								.fee(ONE_HBAR),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "doTransferFrom",
+								tokenMirrorAddr.get(), bCivilianMirrorAddr.get(), aCivilianMirrorAddr.get(), 20L
+						)
+								.payingWith(GENESIS).via("TRY_TO_TRANSFER_MORE_THAN_OWNERS_BALANCE_TXN")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+				).then(
+						childRecordsCheck("TOKEN_NOT_ASSOCIATED_TO_ACCOUNT_TXN", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+						childRecordsCheck("MISSING_FROM", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("MISSING_TO", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_ACCOUNT_ID)),
+						childRecordsCheck("MSG_SENDER_IS_THE_SAME_AS_FROM", SUCCESS,
+								recordWith().status(SUCCESS)),
+						childRecordsCheck("MSG_SENDER_IS_NOT_THE_SAME_AS_FROM", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+						childRecordsCheck("TRY_TO_TRANSFER_MORE_THAN_APPROVED_AMOUNT_TXN", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(AMOUNT_EXCEEDS_ALLOWANCE)),
+						childRecordsCheck("TRY_TO_TRANSFER_MORE_THAN_OWNERS_BALANCE_TXN", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INSUFFICIENT_TOKEN_BALANCE))
+				);
+	}
+
+	private HapiApiSpec someERC20ApproveAllowanceScenarioInOneCall() {
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+		final var token = "token";
+		final var multiKey = "multiKey";
+		final var aCivilian = "aCivilian";
+		final var bCivilian = "bCivilian";
+		final var someERC20Scenarios = "someERC20Scenarios";
+
+		return defaultHapiSpec("someERC20ApproveAllowanceScenarioInOneCall")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(aCivilian).exposingCreatedIdTo(id ->
+								aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(bCivilian).exposingCreatedIdTo(id ->
+								bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+						uploadInitCode(someERC20Scenarios),
+						contractCreate(someERC20Scenarios)
+								.adminKey(multiKey),
+						tokenCreate(token)
+								.supplyKey(multiKey)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(bCivilian)
+								.initialSupply(10)
+								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						tokenAssociate(someERC20Scenarios, token)
+				).when(
+						withOpContext((spec, opLog) -> {
+							zCivilianMirrorAddr.set(asHexedSolidityAddress(
+									AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+							contractMirrorAddr.set(asHexedSolidityAddress(
+									spec.registry().getAccountID(someERC20Scenarios)));
+						}),
+						sourcing(() -> contractCall(
+								someERC20Scenarios, "approveAndGetAllowanceAmount",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 5L
+						)
+								.via("APPROVE_AND_GET_ALLOWANCE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS).logged())
+				).then(
+						childRecordsCheck("APPROVE_AND_GET_ALLOWANCE_TXN", SUCCESS,
+								recordWith()
+										.status(SUCCESS),
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(
+																		HTSPrecompileResult.FunctionType.ALLOWANCE)
+																.withAllowance(5L)
+														)
+										)
+						)
 				);
 	}
 

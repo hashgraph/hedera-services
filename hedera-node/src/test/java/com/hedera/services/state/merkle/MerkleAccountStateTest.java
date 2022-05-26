@@ -153,6 +153,16 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void onlyHasAutoRenewAccountIfSetToNonMissing() {
+		final var otherSubject = new MerkleAccountState();
+		assertFalse(otherSubject.hasAutoRenewAccount());
+		otherSubject.setAutoRenewAccount(EntityId.MISSING_ENTITY_ID);
+		assertFalse(otherSubject.hasAutoRenewAccount());
+		otherSubject.setAutoRenewAccount(autoRenewAccountId);
+		assertTrue(otherSubject.hasAutoRenewAccount());
+	}
+
+	@Test
 	void toStringWorks() {
 		assertEquals("MerkleAccountState{number=123 <-> 0.0.123, " +
 						"key=" + MiscUtils.describe(key) + ", " +
