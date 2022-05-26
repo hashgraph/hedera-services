@@ -379,29 +379,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
 	}
 
-	@Test
-	void updatesStakedToMeSideEffectsDoublesHasBeenrewarded() {
-		counterparty.setStakedId(1L);
-		stakingFund.setStakePeriodStart(-1);
-		counterparty.setStakePeriodStart(stakePeriodStart - 2);
-
-		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		final var pendingChanges = buildPendingAccountStakeChanges();
-		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-
-		willCallRealMethod().given(manager).getAccountStakeeNum(any());
-		willCallRealMethod().given(manager).updateStakedToMe(anyInt(), anyLong(), any());
-		willCallRealMethod().given(manager).findOrAdd(anyLong(), any());
-		given(accounts.get(any())).willReturn(new MerkleAccount());
-
-		final var hasBeenRewarded = new boolean[2 + 1];
-		hasBeenRewarded[0] = true;
-		hasBeenRewarded[1] = true;
-		subject.setHasBeenRewarded(hasBeenRewarded);
-
-		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
-	}
-
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
 		var changes = randomStakedNodeChanges(100L);
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
