@@ -131,6 +131,36 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
 	}
 
+	/**
+	 * Log out the sizes the state children.
+	 */
+	 private void logStateChildrenSizes() {
+		log.info("  (@ {}) # NFTs               = {}",
+				StateChildIndices.UNIQUE_TOKENS,
+				uniqueTokens().size());
+		log.info("  (@ {}) # token associations = {}",
+				StateChildIndices.TOKEN_ASSOCIATIONS,
+				tokenAssociations().size());
+		log.info("  (@ {}) # topics             = {}",
+				StateChildIndices.TOPICS,
+				topics().size());
+		log.info("  (@ {}) # blobs              = {}",
+				StateChildIndices.STORAGE,
+				storage().size());
+		log.info("  (@ {}) # accounts/contracts = {}",
+				StateChildIndices.ACCOUNTS,
+				accounts().size());
+		log.info("  (@ {}) # tokens             = {}",
+				StateChildIndices.TOKENS,
+				tokens().size());
+		log.info("  (@ {}) # scheduled txns     = {}",
+				StateChildIndices.SCHEDULE_TXS,
+				scheduleTxs().getNumSchedules());
+		log.info("  (@ {}) # contract K/V pairs = {}",
+				StateChildIndices.CONTRACT_STORAGE,
+				contractStorage().size());
+	}
+
 	/* --- MerkleInternal --- */
 	@Override
 	public long getClassId() {
@@ -197,6 +227,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
 			scheduledTxnsMigrator.accept(this);
 		}
+
+		log.info("Migration completed.");
+		logStateChildrenSizes();
 	}
 
 	/* --- SwirldState --- */
@@ -444,6 +477,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
+			// Log state before migration.
+			logStateChildrenSizes();
 			// This updates the working state accessor with our children
 			app.initializationFlow().runWith(this);
 
