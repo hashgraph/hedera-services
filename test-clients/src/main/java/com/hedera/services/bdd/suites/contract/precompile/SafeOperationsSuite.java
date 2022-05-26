@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -28,17 +29,21 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -59,6 +64,8 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -73,6 +80,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class SafeOperationsSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(SafeOperationsSuite.class);
+	private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+	private static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
+	private static final String ED_25519_KEY = "ed25519key";
+	private static final String EXISTING_TOKEN = "EXISTING_TOKEN";
+	private static final String FEE_COLLECTOR = "feeCollector";
 	private static final String THE_CONTRACT = "SafeOperations";
 	private static final String ACCOUNT = "anybody";
 	private static final String SECOND_ACCOUNT = "anybody2";
@@ -99,17 +111,20 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-//				safeMintPrecompile(),
-//				safeBurnPrecompile(),
-//				safeAssociatePrecompile(),
-//				safeDissociatePrecompile(),
-//				safeMultipleAssociatePrecompile(),
-//				safeMultipleDissociationPrecompile(),
-//				safeNFTTransferPrecompile(),
-//				safeTokenTransferPrecompile(),
-//				safeTokensTransferPrecompile(),
-//				safeNftsTransferPrecompile()
-				fungibleTokenSafeCreateHappyPath()
+				safeMintPrecompile(),
+				safeBurnPrecompile(),
+				safeAssociatePrecompile(),
+				safeDissociatePrecompile(),
+				safeMultipleAssociatePrecompile(),
+				safeMultipleDissociationPrecompile(),
+				safeNFTTransferPrecompile(),
+				safeTokenTransferPrecompile(),
+				safeTokensTransferPrecompile(),
+				safeNftsTransferPrecompile(),
+				fungibleTokenSafeCreateHappyPath(),
+				fungibleTokenSafeCreateWithCustomFeesHappyPath(),
+				nonFungibleTokenSafeCreateHappyPath(),
+				nonFungibleTokenSafeCreateWithCustomFeesHappyPath()
 		);
 	}
 
@@ -699,18 +714,234 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec fungibleTokenSafeCreateHappyPath() {
+		final var createdTokenNum = new AtomicLong();
+		final var safeCreateFungibleTokenTxn = "SAFE_CREATE_FUNGIBLE_TOKEN_TXN";
+		final var safeCreateFungibleTokenFailedTxn = "SAFE_CREATE_FUNGIBLE_TOKEN_FAILED_TXN";
 		return defaultHapiSpec("fungibleTokenSafeCreateHappyPath")
 				.given(
+						newKeyNamed(ED_25519_KEY).shape(ED25519),
+						newKeyNamed(CONTRACT_ADMIN_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED_25519_KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED_25519_KEY),
 						uploadInitCode(THE_CONTRACT),
 						contractCreate(THE_CONTRACT)
-
+								.adminKey(CONTRACT_ADMIN_KEY)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT)
 				).when(
 						sourcing(() -> contractCall(
-								THE_CONTRACT, "safeCreateOfFungibleToken"
+										THE_CONTRACT, "safeCreateOfFungibleToken"
+								)
+										.via(safeCreateFungibleTokenFailedTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+						),
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateOfFungibleToken"
+								)
+										.via(safeCreateFungibleTokenTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.exposingResultTo(result -> {
+											final var res = (byte[]) result[0];
+											createdTokenNum.set(new BigInteger(res).longValueExact());
+										})
 						)
-								.via("SAFE_CREATE_FUNGIBLE_TOKEN_TXN").gas(4_000_000).hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				).then(
-						getTxnRecord("SAFE_CREATE_FUNGIBLE_TOKEN_TXN").andAllChildRecords().logged()
+						childRecordsCheck(safeCreateFungibleTokenFailedTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INSUFFICIENT_TX_FEE)),
+						childRecordsCheck(safeCreateFungibleTokenTxn, SUCCESS, recordWith().status(SUCCESS)),
+						sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+								.setTokenNum(createdTokenNum.get()).build())).hasTokenType(FUNGIBLE_COMMON))
+				);
+	}
+
+	private HapiApiSpec fungibleTokenSafeCreateWithCustomFeesHappyPath() {
+		final var createdTokenNum = new AtomicLong();
+		final AtomicReference<String> existingTokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> feeCollectorMirrorAddr = new AtomicReference<>();
+		final var safeCreateFungibleTokenWithCustomFeesTxn = "SAFE_CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_TXN";
+		final var safeCreateFungibleTokenWithCustomFeesFailedTxn = "SAFE_CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FAILED_TXN";
+
+		return defaultHapiSpec("fungibleTokenSafeCreateWithCustomFeesHappyPath")
+				.given(
+						newKeyNamed(ED_25519_KEY).shape(ED25519),
+						newKeyNamed(CONTRACT_ADMIN_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED_25519_KEY),
+						cryptoCreate(FEE_COLLECTOR)
+								.balance(ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(id ->
+										feeCollectorMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED_25519_KEY),
+						tokenCreate(EXISTING_TOKEN)
+								.exposingCreatedIdTo(idLit -> existingTokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						tokenAssociate(FEE_COLLECTOR, EXISTING_TOKEN),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT)
+								.adminKey(CONTRACT_ADMIN_KEY)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT)
+				).when(
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateFungibleOfTokenWithCustomFees",
+										"1234567",
+										existingTokenMirrorAddr.get()
+								)
+										.via(safeCreateFungibleTokenWithCustomFeesFailedTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+						),
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateFungibleOfTokenWithCustomFees",
+										feeCollectorMirrorAddr.get(),
+										existingTokenMirrorAddr.get()
+								)
+										.via(safeCreateFungibleTokenWithCustomFeesTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.exposingResultTo(result -> {
+											final var res = (byte[]) result[0];
+											createdTokenNum.set(new BigInteger(res).longValueExact());
+										})
+						)
+				).then(
+						childRecordsCheck(safeCreateFungibleTokenWithCustomFeesFailedTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_CUSTOM_FEE_COLLECTOR)),
+						childRecordsCheck(safeCreateFungibleTokenWithCustomFeesTxn, SUCCESS,
+								recordWith().status(SUCCESS)),
+						sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+								.setTokenNum(createdTokenNum.get()).build())).hasTokenType(FUNGIBLE_COMMON))
+				);
+	}
+
+	private HapiApiSpec nonFungibleTokenSafeCreateHappyPath() {
+		final var createdTokenNum = new AtomicLong();
+		final var safeCreateNonFungibleTokenTxn = "SAFE_CREATE_NON_FUNGIBLE_TOKEN_TXN";
+		final var safeCreateNonFungibleTokenFailedTxn = "SAFE_CREATE_NON_FUNGIBLE_TOKEN_FAILED_TXN";
+		return defaultHapiSpec("nonFungibleTokenSafeCreateHappyPath")
+				.given(
+						newKeyNamed(ED_25519_KEY).shape(ED25519),
+						newKeyNamed(CONTRACT_ADMIN_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED_25519_KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED_25519_KEY),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT)
+								.adminKey(CONTRACT_ADMIN_KEY)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT)
+				).when(
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateOfNonFungibleToken"
+								)
+										.via(safeCreateNonFungibleTokenFailedTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+						),
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateOfNonFungibleToken"
+								)
+										.via(safeCreateNonFungibleTokenTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.exposingResultTo(result -> {
+											final var res = (byte[]) result[0];
+											createdTokenNum.set(new BigInteger(res).longValueExact());
+										})
+						)
+				).then(
+						childRecordsCheck(safeCreateNonFungibleTokenFailedTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INSUFFICIENT_TX_FEE)),
+						childRecordsCheck(safeCreateNonFungibleTokenTxn, SUCCESS, recordWith().status(SUCCESS)),
+						sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+								.setTokenNum(createdTokenNum.get()).build())).hasTokenType(NON_FUNGIBLE_UNIQUE))
+				);
+	}
+
+	private HapiApiSpec nonFungibleTokenSafeCreateWithCustomFeesHappyPath() {
+		final var createdTokenNum = new AtomicLong();
+		final AtomicReference<String> existingTokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> feeCollectorMirrorAddr = new AtomicReference<>();
+		final var safeCreateNonFungibleTokenWithCustomFeesTxn = "SAFE_CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_TXN";
+		final var safeCreateNonFungibleTokenWithCustomFeesFailedTxn = "SAFE_CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FAILED_TXN";
+
+		return defaultHapiSpec("nonFungibleTokenSafeCreateWithCustomFeesHappyPath")
+				.given(
+						newKeyNamed(ED_25519_KEY).shape(ED25519),
+						newKeyNamed(CONTRACT_ADMIN_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED_25519_KEY),
+						cryptoCreate(FEE_COLLECTOR)
+								.balance(ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(id ->
+										feeCollectorMirrorAddr.set(asHexedSolidityAddress(id))),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED_25519_KEY),
+						tokenCreate(EXISTING_TOKEN)
+								.exposingCreatedIdTo(idLit -> existingTokenMirrorAddr.set(
+										asHexedSolidityAddress(
+												HapiPropertySource.asToken(idLit)))),
+						tokenAssociate(FEE_COLLECTOR, EXISTING_TOKEN),
+						uploadInitCode(THE_CONTRACT),
+						contractCreate(THE_CONTRACT)
+								.adminKey(CONTRACT_ADMIN_KEY)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT)
+				).when(
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateOfNonFungibleTokenWithCustomFees",
+										"1234567",
+										existingTokenMirrorAddr.get()
+								)
+										.via(safeCreateNonFungibleTokenWithCustomFeesFailedTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+						),
+						sourcing(() -> contractCall(
+										THE_CONTRACT, "safeCreateOfNonFungibleTokenWithCustomFees",
+										feeCollectorMirrorAddr.get(),
+										existingTokenMirrorAddr.get()
+								)
+										.via(safeCreateNonFungibleTokenWithCustomFeesTxn)
+										.payingWith(ACCOUNT)
+										.gas(4_000_000)
+										.sending(20 * ONE_HBAR)
+										.exposingResultTo(result -> {
+											final var res = (byte[]) result[0];
+											createdTokenNum.set(new BigInteger(res).longValueExact());
+										})
+						)
+				).then(
+						childRecordsCheck(safeCreateNonFungibleTokenWithCustomFeesFailedTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_CUSTOM_FEE_COLLECTOR)),
+						childRecordsCheck(safeCreateNonFungibleTokenWithCustomFeesTxn, SUCCESS,
+								recordWith().status(SUCCESS)),
+						sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+								.setTokenNum(createdTokenNum.get()).build())).hasTokenType(NON_FUNGIBLE_UNIQUE))
 				);
 	}
 }

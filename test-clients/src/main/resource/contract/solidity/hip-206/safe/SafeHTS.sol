@@ -8,6 +8,8 @@ import "./HederaResponseCodes.sol";
 library SafeHTS {
 
     address constant precompileAddress = address(0x167);
+    // 90 days in seconds
+    uint32 constant defaultAutoRenewPeriod = 7776000;
 
     function safeCryptoTransfer(IHTS.TokenTransferList[] memory tokenTransfers) internal {
         int32 responseCode;
@@ -117,9 +119,9 @@ library SafeHTS {
     }
 
     function safeCreateFungibleToken(IHTS.HederaToken memory token, uint initialTotalSupply,
-        uint decimals) internal returns (address tokenAddress){
+        uint decimals) nonEmptyExpiry(token) internal returns (address tokenAddress){
         int32 responseCode;
-        (bool success, bytes memory result) = precompileAddress.call(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHTS.createFungibleToken.selector,
             token, initialTotalSupply, decimals));
         (responseCode, tokenAddress) =
@@ -133,10 +135,10 @@ library SafeHTS {
         uint initialTotalSupply,
         uint decimals,
         IHTS.FixedFee[] memory fixedFees,
-        IHTS.FractionalFee[] memory fractionalFees) internal returns
+        IHTS.FractionalFee[] memory fractionalFees) nonEmptyExpiry(token) internal returns
     (address tokenAddress){
         int responseCode;
-        (bool success, bytes memory result) = precompileAddress.call(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHTS.createFungibleTokenWithCustomFees.selector,
             token, initialTotalSupply, decimals, fixedFees, fractionalFees));
         (responseCode, tokenAddress) =
@@ -146,10 +148,10 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe create fungible token with custom fees failed!");
     }
 
-    function safeCreateNonFungibleToken(IHTS.HederaToken memory token) internal returns
+    function safeCreateNonFungibleToken(IHTS.HederaToken memory token) nonEmptyExpiry(token) internal returns
     (address tokenAddress){
         int responseCode;
-        (bool success, bytes memory result) = precompileAddress.call(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHTS.createNonFungibleToken.selector, token));
         (responseCode, tokenAddress) =
         success
@@ -160,10 +162,10 @@ library SafeHTS {
 
     function safeCreateNonFungibleTokenWithCustomFees(IHTS.HederaToken memory token,
         IHTS.FixedFee[] memory fixedFees,
-        IHTS.RoyaltyFee[] memory royaltyFees) internal returns
+        IHTS.RoyaltyFee[] memory royaltyFees) nonEmptyExpiry(token) internal returns
     (address tokenAddress){
         int responseCode;
-        (bool success, bytes memory result) = precompileAddress.call(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHTS.createNonFungibleTokenWithCustomFees.selector,
             token, fixedFees, royaltyFees));
         (responseCode, tokenAddress) =
@@ -171,5 +173,13 @@ library SafeHTS {
         ? abi.decode(result, (int32, address))
         : (HederaResponseCodes.UNKNOWN, address(0));
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe create non fungible token with custom fees failed!");
+    }
+
+    modifier nonEmptyExpiry(IHTS.HederaToken memory token)
+    {
+        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
+            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
+        }
+        _;
     }
 }

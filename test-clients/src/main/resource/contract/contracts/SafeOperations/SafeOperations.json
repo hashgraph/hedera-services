@@ -2,191 +2,14 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "symbol",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "treasury",
-            "type": "address"
-          },
-          {
-            "internalType": "string",
-            "name": "memo",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "tokenSupplyType",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maxSupply",
-            "type": "uint32"
-          },
-          {
-            "internalType": "bool",
-            "name": "freezeDefault",
-            "type": "bool"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "keyType",
-                "type": "uint256"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "bool",
-                    "name": "inheritAccountKey",
-                    "type": "bool"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "contractId",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ed25519",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ECDSA_secp256k1",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "delegatableContractId",
-                    "type": "address"
-                  }
-                ],
-                "internalType": "struct IHTS.KeyValue",
-                "name": "key",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct IHTS.TokenKey[]",
-            "name": "tokenKeys",
-            "type": "tuple[]"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint32",
-                "name": "second",
-                "type": "uint32"
-              },
-              {
-                "internalType": "address",
-                "name": "autoRenewAccount",
-                "type": "address"
-              },
-              {
-                "internalType": "uint32",
-                "name": "autoRenewPeriod",
-                "type": "uint32"
-              }
-            ],
-            "internalType": "struct IHTS.Expiry",
-            "name": "expiry",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct IHTS.HederaToken",
-        "name": "token",
-        "type": "tuple"
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "initialTotalSupply",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "decimals",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "amount",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "tokenId",
-            "type": "address"
-          },
-          {
-            "internalType": "bool",
-            "name": "useHbarsForPayment",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "useCurrentTokenForPayment",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "feeCollector",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IHTS.FixedFee[]",
-        "name": "fixedFees",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "numerator",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "denominator",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "minimumAmount",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maximumAmount",
-            "type": "uint32"
-          },
-          {
-            "internalType": "bool",
-            "name": "netOfTransfers",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "feeCollector",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IHTS.FractionalFee[]",
-        "name": "fractionalFees",
-        "type": "tuple[]"
+        "internalType": "address",
+        "name": "existingTokenAddress",
+        "type": "address"
       }
     ],
     "name": "safeCreateFungibleOfTokenWithCustomFees",
@@ -197,7 +20,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -210,120 +33,11 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "symbol",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "treasury",
-            "type": "address"
-          },
-          {
-            "internalType": "string",
-            "name": "memo",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "tokenSupplyType",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maxSupply",
-            "type": "uint32"
-          },
-          {
-            "internalType": "bool",
-            "name": "freezeDefault",
-            "type": "bool"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "keyType",
-                "type": "uint256"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "bool",
-                    "name": "inheritAccountKey",
-                    "type": "bool"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "contractId",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ed25519",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ECDSA_secp256k1",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "delegatableContractId",
-                    "type": "address"
-                  }
-                ],
-                "internalType": "struct IHTS.KeyValue",
-                "name": "key",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct IHTS.TokenKey[]",
-            "name": "tokenKeys",
-            "type": "tuple[]"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint32",
-                "name": "second",
-                "type": "uint32"
-              },
-              {
-                "internalType": "address",
-                "name": "autoRenewAccount",
-                "type": "address"
-              },
-              {
-                "internalType": "uint32",
-                "name": "autoRenewPeriod",
-                "type": "uint32"
-              }
-            ],
-            "internalType": "struct IHTS.Expiry",
-            "name": "expiry",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct IHTS.HederaToken",
-        "name": "token",
-        "type": "tuple"
-      }
-    ],
+    "inputs": [],
     "name": "safeCreateOfNonFungibleToken",
     "outputs": [
       {
@@ -332,187 +46,20 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "symbol",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "treasury",
-            "type": "address"
-          },
-          {
-            "internalType": "string",
-            "name": "memo",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "tokenSupplyType",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maxSupply",
-            "type": "uint32"
-          },
-          {
-            "internalType": "bool",
-            "name": "freezeDefault",
-            "type": "bool"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "keyType",
-                "type": "uint256"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "bool",
-                    "name": "inheritAccountKey",
-                    "type": "bool"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "contractId",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ed25519",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "ECDSA_secp256k1",
-                    "type": "bytes"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "delegatableContractId",
-                    "type": "address"
-                  }
-                ],
-                "internalType": "struct IHTS.KeyValue",
-                "name": "key",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct IHTS.TokenKey[]",
-            "name": "tokenKeys",
-            "type": "tuple[]"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint32",
-                "name": "second",
-                "type": "uint32"
-              },
-              {
-                "internalType": "address",
-                "name": "autoRenewAccount",
-                "type": "address"
-              },
-              {
-                "internalType": "uint32",
-                "name": "autoRenewPeriod",
-                "type": "uint32"
-              }
-            ],
-            "internalType": "struct IHTS.Expiry",
-            "name": "expiry",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct IHTS.HederaToken",
-        "name": "token",
-        "type": "tuple"
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
       },
       {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "amount",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "tokenId",
-            "type": "address"
-          },
-          {
-            "internalType": "bool",
-            "name": "useHbarsForPayment",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "useCurrentTokenForPayment",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "feeCollector",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IHTS.FixedFee[]",
-        "name": "fixedFees",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "numerator",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "denominator",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "amount",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "tokenId",
-            "type": "address"
-          },
-          {
-            "internalType": "bool",
-            "name": "useHbarsForPayment",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "feeCollector",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IHTS.RoyaltyFee[]",
-        "name": "royaltyFees",
-        "type": "tuple[]"
+        "internalType": "address",
+        "name": "existingTokenAddress",
+        "type": "address"
       }
     ],
     "name": "safeCreateOfNonFungibleTokenWithCustomFees",
@@ -523,7 +70,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
