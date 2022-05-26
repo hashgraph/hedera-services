@@ -390,7 +390,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
-								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
@@ -552,8 +551,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						contractCreate(ercContract).omitAdminKey(),
 						contractCreate(pc2User)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(pc2User, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -656,8 +654,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.omitAdminKey()
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -837,8 +834,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildDonor", salt)
 								.sending(1_000)
 								.payingWith(GENESIS)
@@ -890,8 +886,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.adminKey(adminKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -963,8 +958,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1033,8 +1027,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1094,8 +1087,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)

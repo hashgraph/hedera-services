@@ -176,6 +176,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
+				// If the changesSize is more than hasBeenRewarded array size , double hasBeenRewarded. This may happen
+				// very rarely since the initial array size is 64.
+				checkHasBeenRewardedSize(changesSize);
 			} else if (!hasBeenRewarded[exStakeeI]) {
 				payRewardIfRewardable(pendingChanges, exStakeeI);
 			}
@@ -186,16 +189,22 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
+				// If the changesSize is more than hasBeenRewarded array size , double hasBeenRewarded. This may happen
+				// very rarely since the initial array size is 64.
+				checkHasBeenRewardedSize(changesSize);
 			} else if (!hasBeenRewarded[newStakeeI]) {
 				payRewardIfRewardable(pendingChanges, newStakeeI);
 			}
 		}
-		if (changesSize > hasBeenRewarded.length) {
+		return changesSize;
+	}
+
+	private void checkHasBeenRewardedSize(final int changesSize) {
+		if (changesSize >= hasBeenRewarded.length) {
 			final var newHasBeenRewarded = new boolean[hasBeenRewarded.length * 2];
 			System.arraycopy(hasBeenRewarded, 0, newHasBeenRewarded, 0, hasBeenRewarded.length);
 			hasBeenRewarded = newHasBeenRewarded;
 		}
-		return changesSize;
 	}
 
 	void payRewardIfRewardable(
