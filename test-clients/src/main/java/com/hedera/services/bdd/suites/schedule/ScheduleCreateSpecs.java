@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -108,6 +109,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 			doesntTriggerUntilPayerSigns(),
 			requiresExtantPayer(),
 			rejectsFunctionlessTxn(),
+			functionlessTxnBusyWithNonExemptPayer(),
 			whitelistWorks(),
 			preservesRevocationServiceSemanticsForFileDelete(),
 			worksAsExpectedWithDefaultScheduleId(),
@@ -591,6 +593,17 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given().when().then(
 						scheduleCreateFunctionless("unknown")
 								.hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
+								.payingWith(GENESIS)
+				);
+	}
+
+	public HapiApiSpec functionlessTxnBusyWithNonExemptPayer() {
+		return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
+				.given().when().then(
+						cryptoCreate("sender"),
+						scheduleCreateFunctionless("unknown")
+								.hasPrecheck(BUSY)
+								.payingWith("sender")
 				);
 	}
 

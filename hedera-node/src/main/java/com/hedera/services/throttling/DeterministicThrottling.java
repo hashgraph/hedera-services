@@ -313,7 +313,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		try {
 			scheduledFunction = MiscUtils.functionOf(normalTxn);
 		} catch (UnknownHederaFunctionality ex) {
-			log.error("ScheduleCreate was associated with an invalid txn.", ex);
+			log.debug("ScheduleCreate was associated with an invalid txn.", ex);
 			return true;
 		}
 

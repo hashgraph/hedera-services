@@ -400,6 +400,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("ExtraSigsDontMatterAtExpiry")
 				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
 						newKeyNamed(senderKey).shape(senderShape),
 						newKeyNamed("extraKey"),
 						cryptoCreate(sender).key(senderKey).via("senderTxn"),
@@ -412,41 +413,59 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 								.recordingScheduledTxn()
 								.payingWith(DEFAULT_PAYER),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(receiver),
 						getAccountBalance(receiver).hasTinyBars(0L)
 				)
 				.when(
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigOne)),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigTwo)),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith("extraKey")
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigTwo))
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigThree)),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigTwo))
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith("extraKey")
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						getAccountBalance(receiver).hasTinyBars(0L),
 						scheduleSign(schedule)
+								.payingWith("payer")
+								.fee(THOUSAND_HBAR)
 								.alsoSigningWith(senderKey)
 								.sigControl(forKey(senderKey, sigOne))
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),

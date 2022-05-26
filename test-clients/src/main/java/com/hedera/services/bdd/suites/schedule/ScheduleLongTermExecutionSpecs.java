@@ -1106,7 +1106,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						getScheduleInfo("validSchedule")
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
 
-						freezeAbort(),
+						freezeAbort().payingWith(GENESIS),
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
 						withOpContext((spec, opLog) -> {
 							var triggeredTx = getTxnRecord("successTxn").scheduled();
@@ -1167,17 +1167,14 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.payingWith("payingAccount")
+								.payingWith(GENESIS)
+								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
 								.via("successTxn")
 				)
 				.when(
-						scheduleSign("validSchedule")
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
-								.payingWith("payingAccount")
-								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						getScheduleInfo("validSchedule")
@@ -1218,7 +1215,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith("payingAccount")
+								.payingWith(GENESIS)
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
@@ -1566,11 +1563,13 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec failsWithExpiryInFarFuture() {
 		return defaultHapiSpec("FailsWithExpiryInFarFuture")
 				.given(
-						cryptoCreate("sender").via("senderTxn")
+						cryptoCreate("sender").balance(ONE_MILLION_HBARS).via("senderTxn")
 				).when(
 						scheduleCreate("validSchedule",
 								cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 1))
 						)
+								.payingWith("sender")
+								.fee(THOUSAND_HBAR)
 								.withRelativeExpiry("senderTxn",
 										Long.parseLong(HapiSpecSetup.getDefaultNodeProps().
 												get("scheduling.maxExpirationFutureSeconds")) + 10)

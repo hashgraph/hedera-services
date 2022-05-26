@@ -404,6 +404,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
 				.given(
+						cryptoCreate("payer"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -418,6 +419,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								)
 						)
 								.designatingPayer("schedulePayer")
+								.payingWith("payer")
 								.via(failingTxn)
 				)
 				.when(
@@ -2228,7 +2230,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 				)
 				.then(
-						freezeAbort(),
+						freezeAbort().payingWith(GENESIS),
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
 						getScheduleInfo("validSchedule").isExecuted(),
 						withOpContext((spec, opLog) -> {
@@ -2304,7 +2306,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 				)
 				.then(
-						freezeAbort(),
+						freezeAbort().payingWith(GENESIS),
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
 						getScheduleInfo("validSchedule").isExecuted(),
 						withOpContext((spec, opLog) -> {
@@ -2331,15 +2333,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.payingWith("payingAccount")
+								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.via(successTxn)
 				)
 				.when(
-						scheduleSign("validSchedule")
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
-								.payingWith("payingAccount")
-								.via(signTxn)
-								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
@@ -2369,7 +2367,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith("payingAccount")
+								.payingWith(GENESIS)
 								.via(successTxn)
 				)
 				.when(
