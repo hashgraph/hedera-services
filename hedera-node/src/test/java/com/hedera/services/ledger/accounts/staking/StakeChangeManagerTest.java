@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
@@ -69,7 +70,8 @@ class StakeChangeManagerTest {
 	private StakeChangeManager subject;
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
-	public static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), zoneUTC).toEpochDay() - 1;
+	public static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
+			zoneUTC).toEpochDay() - 1;
 	private final EntityNum node0Id = EntityNum.fromLong(0L);
 
 	@BeforeEach
@@ -206,7 +208,7 @@ class StakeChangeManagerTest {
 	}
 
 	@Test
-	void setsStakePeriodStart(){
+	void setsStakePeriodStart() {
 		final long todayNum = 123456789L;
 
 		final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
@@ -221,7 +223,7 @@ class StakeChangeManagerTest {
 	}
 
 	@Test
-	void checksIfBalanceIncraesed(){
+	void checksIfBalanceIncraesed() {
 		Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 		assertTrue(subject.isIncreased(stakingFundChanges, stakingFund));
 
@@ -234,7 +236,7 @@ class StakeChangeManagerTest {
 
 
 	@Test
-	void returnsDefaultsWhenAccountIsNull(){
+	void returnsDefaultsWhenAccountIsNull() {
 		final var changes = randomNotStakeFieldChanges();
 
 		assertEquals(0, finalBalanceGiven(null, changes));
@@ -250,16 +252,18 @@ class StakeChangeManagerTest {
 	}
 
 	private Map<AccountProperty, Object> randomStakeFieldChanges(final long newBalance) {
-		return Map.of(
-				AccountProperty.BALANCE, newBalance,
-				AccountProperty.STAKED_ID, -2L,
-				AccountProperty.DECLINE_REWARD, true,
-				AccountProperty.STAKED_TO_ME, 2000L);
+		final var map = new HashMap<AccountProperty, Object>();
+		map.put(AccountProperty.BALANCE, newBalance);
+		map.put(AccountProperty.STAKED_ID, -2L);
+		map.put(AccountProperty.DECLINE_REWARD, true);
+		map.put(AccountProperty.STAKED_TO_ME, 2000L);
+		return map;
 	}
 
 	private Map<AccountProperty, Object> randomNotStakeFieldChanges() {
-		return Map.of(
-				AccountProperty.ALIAS, ByteString.copyFromUtf8("testing"));
+		final var map = new HashMap<AccountProperty, Object>();
+		map.put(AccountProperty.ALIAS, ByteString.copyFromUtf8("testing"));
+		return map;
 	}
 
 

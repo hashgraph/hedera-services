@@ -510,6 +510,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setStakedNum(stakedId);
 	}
 
+	public boolean mayHavePendingReward() {
+		return getStakedId() < 0 && !isDeclinedReward();
+	}
+
 	public long getUsableStakedNodeIdUnsafe() {
 		return -state().getStakedNum() - 1;
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.ledger.accounts.staking;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 
@@ -97,6 +98,7 @@ public class RewardCalculator {
 		return accountReward;
 	}
 
+	@VisibleForTesting
 	public long getAccountUpdatedStakePeriodStart() {
 		return accountUpdatedStakePeriodStart;
 	}

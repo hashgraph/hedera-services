@@ -75,4 +75,5 @@ public class StakePeriodManager {
 	public long getPrevConsensusSecs() {
 		return prevConsensusSecs;
 	}
+
 }

@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
@@ -392,19 +393,21 @@ class StakeAwareAccountsCommitInterceptorTest {
 	}
 
 	private Map<AccountProperty, Object> randomStakedNodeChanges(final long newBalance) {
-		return Map.of(
-				AccountProperty.BALANCE, newBalance,
-				AccountProperty.STAKED_ID, -2L,
-				AccountProperty.DECLINE_REWARD, false,
-				AccountProperty.STAKED_TO_ME, 2000L);
+		final var map = new HashMap<AccountProperty, Object>();
+		map.put(AccountProperty.BALANCE, newBalance);
+		map.put(AccountProperty.STAKED_ID, -2L);
+		map.put(AccountProperty.DECLINE_REWARD, false);
+		map.put(AccountProperty.STAKED_TO_ME, 2000L);
+		return map;
 	}
 
 	private Map<AccountProperty, Object> randomStakeAccountChanges(final long newBalance) {
-		return Map.of(
-				AccountProperty.BALANCE, newBalance,
-				AccountProperty.STAKED_ID, 2L,
-				AccountProperty.DECLINE_REWARD, false,
-				AccountProperty.STAKED_TO_ME, 2000L);
+		final var map = new HashMap<AccountProperty, Object>();
+		map.put(AccountProperty.BALANCE, newBalance);
+		map.put(AccountProperty.STAKED_ID, 2L);
+		map.put(AccountProperty.DECLINE_REWARD, false);
+		map.put(AccountProperty.STAKED_TO_ME, 2000L);
+		return map;
 	}
 
 	private static final long amount = 1L;
