@@ -2321,23 +2321,24 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
-
 		return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
 				.given(
 						cryptoCreate("payingAccount"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+								fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
-								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
-								.payingWith(GENESIS)
+								.designatingPayer(FREEZE_ADMIN)
+								.payingWith("payingAccount")
 								.via(successTxn)
 				)
 				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(FREEZE_ADMIN)
+								.payingWith("payingAccount")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
@@ -2361,9 +2362,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount2"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+							fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
@@ -2372,7 +2371,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				)
 				.when(
 						scheduleSign("validSchedule")
-								.alsoSigningWith("payingAccount2", ADDRESS_BOOK_CONTROL)
+								.alsoSigningWith("payingAccount2", FREEZE_ADMIN)
 								.payingWith("payingAccount")
 								.via(signTxn)
 								.hasKnownStatus(SUCCESS)

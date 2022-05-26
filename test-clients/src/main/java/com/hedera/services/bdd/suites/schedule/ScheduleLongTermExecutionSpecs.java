@@ -1161,20 +1161,21 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount").via("payerTxn"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+								fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
-								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.payingWith(GENESIS)
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
+								.designatingPayer(FREEZE_ADMIN)
+								.payingWith("payingAccount")
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
 								.via("successTxn")
 				)
 				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(FREEZE_ADMIN)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						getScheduleInfo("validSchedule")
@@ -1209,13 +1210,11 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount2"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+							fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith(GENESIS)
+								.payingWith("payingAccount")
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
@@ -1223,7 +1222,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 				)
 				.when(
 						scheduleSign("validSchedule")
-								.alsoSigningWith("payingAccount2", ADDRESS_BOOK_CONTROL)
+								.alsoSigningWith("payingAccount2", FREEZE_ADMIN)
 								.payingWith("payingAccount")
 								.hasKnownStatus(SUCCESS)
 				)
