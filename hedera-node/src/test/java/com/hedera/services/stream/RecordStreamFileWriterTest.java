@@ -18,18 +18,20 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
@@ -53,7 +55,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class RecordStreamFileWriterTest {
@@ -69,6 +73,37 @@ class RecordStreamFileWriterTest {
 				streamType
 		);
 		messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+	}
+
+	@Test
+	void clear() {
+		subject.clear();
+	}
+
+	@Test
+	void testsExceptions() {
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
+
+		try (MockedConstruction<SerializableDataOutputStream> mocked = Mockito.mockConstruction(SerializableDataOutputStream.class,
+				(mock, context) -> {
+
+					doThrow(IOException.class).when(mock).writeSerializable(any(SelfSerializable.class), anyBoolean());
+				})) {
+
+			firstBlockRSOs.forEach(subject::addObject);
+
+		}
+
+		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
+				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
+		secondBlockRSOs.forEach(subject::addObject);
 	}
 
 	@Test
@@ -115,6 +150,8 @@ class RecordStreamFileWriterTest {
 				firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
 				secondBlockEntireFileSignature,
 				secondBlockMetadataSignature);
+		tearDown();
+
 	}
 
 	private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
@@ -314,7 +351,6 @@ class RecordStreamFileWriterTest {
 		}
 	}
 
-	@AfterEach
 	void tearDown() throws IOException {
 		Files.walk(Path.of(expectedExportDir()))
 				.map(Path::toFile)
@@ -351,6 +387,8 @@ class RecordStreamFileWriterTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamFileWriter<RecordStreamObject> subject;
+	@Mock
+	SerializableDataOutputStream dosMeta;
 
 	private MessageDigest messageDigest;
 	private final static MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
