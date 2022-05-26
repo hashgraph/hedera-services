@@ -20,10 +20,12 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.*;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -51,11 +53,14 @@ class BurnLogicTest {
 
 	@Mock
 	private Token token;
-
 	@Mock
 	private TypedTokenStore store;
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody tokenBurnTxn;
 
@@ -63,7 +68,7 @@ class BurnLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new BurnLogic(store, accountStore);
+		subject = new BurnLogic(validator, store, accountStore, dynamicProperties);
 	}
 
 	@Test
