@@ -211,15 +211,12 @@ public class ContractCallSuite extends HapiApiSuite {
 								DEFAULT_PAYER, WHITELISTER, literalInitcodeFor("Whitelister"))),
 						sourcing(() -> createLargeFile(
 								DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
-//						uploadInitCode(WHITELISTER, CREATOR),
 						withOpContext((spec, op) -> allRunFor(spec,
 								contractCreate(WHITELISTER)
 										.payingWith(DEFAULT_PAYER)
-//										.bytecode(WHITELISTER)
 										.gas(GAS_TO_OFFER),
 								contractCreate(CREATOR)
 										.payingWith(DEFAULT_PAYER)
-//										.bytecode(CREATOR)
 										.gas(GAS_TO_OFFER)
 										.via(creationTxn)
 						))

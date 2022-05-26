@@ -22,12 +22,14 @@ package com.hedera.services.bdd.suites.autorenew;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,6 +37,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -65,6 +69,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWith;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -81,19 +86,19 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						gracePeriodRestrictionsSuiteSetup(),
+//						gracePeriodRestrictionsSuiteSetup(),
 
 						contractCallRestrictionsEnforced(),
-						payerRestrictionsEnforced(),
-						cryptoTransferRestrictionsEnforced(),
-						tokenMgmtRestrictionsEnforced(),
-						cryptoAndContractDeleteRestrictionsEnforced(),
-						treasuryOpsRestrictionEnforced(),
-						tokenAutoRenewOpsEnforced(),
-						topicAutoRenewOpsEnforced(),
-						cryptoUpdateRestrictionsEnforced(),
-
-						gracePeriodRestrictionsSuiteCleanup(),
+//						payerRestrictionsEnforced(),
+//						cryptoTransferRestrictionsEnforced(),
+//						tokenMgmtRestrictionsEnforced(),
+//						cryptoAndContractDeleteRestrictionsEnforced(),
+//						treasuryOpsRestrictionEnforced(),
+//						tokenAutoRenewOpsEnforced(),
+//						topicAutoRenewOpsEnforced(),
+//						cryptoUpdateRestrictionsEnforced(),
+//
+//						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
@@ -102,13 +107,13 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		final var civilian = "misc";
 		final var detachedAccount = "gone";
 		final var contract = "DoubleSend";
-		final AtomicInteger detachedNum = new AtomicInteger();
-		final AtomicInteger civilianNum = new AtomicInteger();
+		final AtomicReference<AccountID> detachedAccountID = new AtomicReference();
+		final AtomicReference<AccountID> civilianAccountID = new AtomicReference();
 
 		return defaultHapiSpec("ContractCallRestrictionsEnforced")
 				.given(
 						uploadInitCode(contract),
-						createDefaultContract(contract)
+						contractCreate(contract)
 								.balance(ONE_HBAR),
 						cryptoCreate(civilian)
 								.balance(0L),
@@ -119,11 +124,11 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						sleepFor(1_500L),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
 						withOpContext((spec, opLog) -> {
-							detachedNum.set((int) spec.registry().getAccountID(detachedAccount).getAccountNum());
-							civilianNum.set((int) spec.registry().getAccountID(civilian).getAccountNum());
+							detachedAccountID.set(spec.registry().getAccountID(detachedAccount));
+							civilianAccountID.set(spec.registry().getAccountID(civilian));
 						}),
 						sourcing(() -> explicitContractCall(contract, getABIFor(FUNCTION, "donate", contract), new Object[] {
-								civilianNum.get(), detachedNum.get()
+								asAddress(civilianAccountID.get()), asAddress(detachedAccountID.get())
 						})
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
 						getAccountBalance(civilian).hasTinyBars(0L),
@@ -132,7 +137,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						cryptoUpdate(detachedAccount)
 								.expiring(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS),
 						sourcing(() -> explicitContractCall(contract, getABIFor(FUNCTION, "donate", contract), new Object[] {
-								civilianNum.get(), detachedNum.get()
+								asAddress(civilianAccountID.get()), asAddress(detachedAccountID.get())
 						})),
 						getAccountBalance(civilian).hasTinyBars(1L),
 						getAccountBalance(detachedAccount).hasTinyBars(1L)
