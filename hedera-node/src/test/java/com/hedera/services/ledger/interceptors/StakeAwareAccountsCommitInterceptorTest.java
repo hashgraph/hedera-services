@@ -390,7 +390,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(accounts.get(any())).willReturn(merkleAccount);
 
 		final StakeChangeManager manager = new StakeChangeManager(stakeInfoManager, () -> accounts);
-		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+		final var subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, manager, stakePeriodManager, stakeInfoManager);
 
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
@@ -405,6 +405,11 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final var result = subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges);
 		assertEquals(4, result);
 		assertEquals(6, subject.getHasBeenRewarded().length);
+
+		// reset
+		counterparty.setStakedId(-1L);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
