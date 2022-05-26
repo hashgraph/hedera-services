@@ -211,14 +211,15 @@ public class ContractCallSuite extends HapiApiSuite {
 								DEFAULT_PAYER, WHITELISTER, literalInitcodeFor("Whitelister"))),
 						sourcing(() -> createLargeFile(
 								DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
+//						uploadInitCode(WHITELISTER, CREATOR),
 						withOpContext((spec, op) -> allRunFor(spec,
 								contractCreate(WHITELISTER)
 										.payingWith(DEFAULT_PAYER)
-										.bytecode(WHITELISTER)
+//										.bytecode(WHITELISTER)
 										.gas(GAS_TO_OFFER),
 								contractCreate(CREATOR)
 										.payingWith(DEFAULT_PAYER)
-										.bytecode(CREATOR)
+//										.bytecode(CREATOR)
 										.gas(GAS_TO_OFFER)
 										.via(creationTxn)
 						))
@@ -229,7 +230,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						withOpContext((spec, op) -> allRunFor(spec,
 								contractCall(WHITELISTER, "addToWhitelist", childEip1014.get())
 										.payingWith(DEFAULT_PAYER),
-								contractCallWithFunctionAbi(asContractString(
+								contractCallWithFunctionAbi(
+										asContractString(
 												contractIdFromHexedMirrorAddress(childMirror.get())),
 										getABIFor(FUNCTION, "isWhitelisted", WHITELISTER),
 										getNestedContractAddress(WHITELISTER, spec))
