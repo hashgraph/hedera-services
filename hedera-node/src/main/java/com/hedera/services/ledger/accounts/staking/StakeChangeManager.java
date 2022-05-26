@@ -137,8 +137,10 @@ public class StakeChangeManager {
 	}
 
 	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
-		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) ||
-				changes.containsKey(STAKED_ID) || changes.containsKey(STAKED_TO_ME);
+		return changes.containsKey(BALANCE) ||
+				changes.containsKey(DECLINE_REWARD) ||
+				changes.containsKey(STAKED_ID) ||
+				changes.containsKey(STAKED_TO_ME);
 	}
 
 	public int findOrAdd(
@@ -168,6 +170,7 @@ public class StakeChangeManager {
 	}
 
 	public boolean isIncreased(final Map<AccountProperty, Object> changes, final MerkleAccount account) {
+		// checks if balance of 0.0.800 increased
 		if (changes.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) changes.get(AccountProperty.BALANCE);
 			final long currentBalance = account != null ? account.getBalance() : 0;

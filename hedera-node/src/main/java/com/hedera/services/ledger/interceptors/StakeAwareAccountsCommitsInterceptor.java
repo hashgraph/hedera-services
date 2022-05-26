@@ -95,7 +95,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		//      new STAKED_TO_ME change
 		updateAccountStakes(pendingChanges);
 
-		// Now iterate through the change set again to update node stakes; we do this is in a
+		// Iterate through the change set again to update node stakes; we do this is in a
 		// separate loop to ensure all STAKED_TO_ME fields have their final values
 		updateNodeStakes(pendingChanges);
 		updateFundingRewardBalances(pendingChanges);
@@ -114,7 +114,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final var changes = pendingChanges.changes(i);
 			final var accountNum = pendingChanges.id(i).getAccountNum();
 
-			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && stakeChangeManager.isIncreased(changes, account));
+			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && stakeChangeManager.isIncreased(
+					changes, account));
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes)) {
@@ -190,7 +191,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			}
 		}
 		if (changesSize > hasBeenRewarded.length) {
-			hasBeenRewarded = new boolean[changesSize * 2];
+			final var newHasBeenRewarded = new boolean[hasBeenRewarded.length * 2];
+			System.arraycopy(hasBeenRewarded, 0, newHasBeenRewarded, 0, hasBeenRewarded.length);
+			hasBeenRewarded = newHasBeenRewarded;
 		}
 		return changesSize;
 	}

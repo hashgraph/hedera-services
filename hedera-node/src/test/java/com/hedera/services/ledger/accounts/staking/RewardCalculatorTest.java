@@ -116,6 +116,7 @@ class RewardCalculatorTest {
 
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
+		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(expectedStakePeriodStart - 365);
 		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
 
 		subject.computePendingRewards(merkleAccount);

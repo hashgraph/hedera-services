@@ -80,8 +80,7 @@ public class StakePeriodManager {
 	}
 
 	public long effectivePeriod(final long stakePeriodStart) {
-		final long currentStakePeriod = currentStakePeriod();
-
+		// currentStakePeriod will be already set before calling this method in RewardCalculator
 		if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - 365) {
 			return currentStakePeriod - 365;
 		}

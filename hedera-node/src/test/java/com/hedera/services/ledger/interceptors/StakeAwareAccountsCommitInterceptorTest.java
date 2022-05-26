@@ -369,7 +369,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(manager.findOrAdd(anyLong(), eq(pendingChanges))).willReturn(pendingChanges.size());
 		willCallRealMethod().given(manager).getAccountStakeeNum(any());
 
-		final var hasBeenRewarded = new boolean[100];
+		final var hasBeenRewarded = new boolean[64];
 		hasBeenRewarded[1] = true;
 		hasBeenRewarded[2] = true;
 		subject.setHasBeenRewarded(hasBeenRewarded);
