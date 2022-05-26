@@ -138,7 +138,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.balance(10_000_000_000L),
 						fileCreate("contractFile")
 								.payingWith("payer")
-								.fromResource("contract/bytecodes/CreateTrivial.bin")
+								.fromResource("contract/contracts/CreateTrivial/CreateTrivial.bin")
 				)
 				.when(
 						uploadInitCode(contract),
