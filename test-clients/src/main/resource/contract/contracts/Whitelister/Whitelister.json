@@ -13,7 +13,13 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "whitelister",
+        "type": "address"
+      }
+    ],
     "name": "isWhitelisted",
     "outputs": [
       {

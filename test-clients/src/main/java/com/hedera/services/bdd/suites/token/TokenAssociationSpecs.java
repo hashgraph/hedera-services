@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -52,7 +51,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -60,6 +58,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -199,7 +198,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
-		final String contract = "nothingMattersAnymore";
+		final String contract = "Fuse";
 		final String treasury = "something";
 		final String expiringToken = "expiringToken";
 		final long lifetimeSecs = 10;
@@ -209,8 +208,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed("admin"),
 						cryptoCreate(treasury),
-						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate(contract).bytecode("bytecode").gas(300_000).via("creation"),
+						uploadInitCode(contract),
+						contractCreate(contract).gas(300_000).via("creation"),
 						withOpContext((spec, opLog) -> {
 							var subOp = getTxnRecord("creation");
 							allRunFor(spec, subOp);
@@ -497,7 +496,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	public HapiApiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
 		final var multiKey = "multiKey";
 		final var uniqToken = "UniqToken";
-		final var contract = "1bUnfrozen";
+		final var contract = "Fuse";
 		final var bytecode = "bytecode";
 		final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
 		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
@@ -507,8 +506,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
-						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate(contract).bytecode(bytecode).gas(300_000),
+						uploadInitCode(contract),
+						contractCreate(contract).gas(300_000),
 						tokenCreate(uniqToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
