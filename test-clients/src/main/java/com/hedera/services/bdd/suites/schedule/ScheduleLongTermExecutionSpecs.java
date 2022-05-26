@@ -21,7 +21,10 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,11 +32,14 @@ import org.junit.jupiter.api.Assertions;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -52,31 +58,33 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORIG_FILE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
@@ -130,6 +138,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 
 			failsWithExpiryInPast(),
 			failsWithExpiryInFarFuture(),
+
+			congestionPricingDoesNotAffectScheduleExecutionAtExpiry(),
 
 			disableLongTermScheduledTransactions(),
 
@@ -1567,6 +1577,155 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								.hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE)
 				)
 				.then();
+	}
+
+	private HapiApiSpec congestionPricingDoesNotAffectScheduleExecutionAtExpiry() {
+		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+
+		AtomicLong normalPriceScheduled = new AtomicLong();
+		AtomicLong normalPriceRegular = new AtomicLong();
+
+		return defaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
+				.given(
+						cryptoCreate("civilian")
+								.payingWith(GENESIS)
+								.balance(ONE_MILLION_HBARS).via("civilianTxn"),
+							overriding("scheduling.whitelist", "ContractCall"),
+
+						fileCreate("bytecode")
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+								.payingWith(GENESIS),
+						contractCreate("scMulti")
+								.bytecode("bytecode")
+								.payingWith(GENESIS),
+
+						contractCall("scMulti")
+								.payingWith("civilian")
+								.fee(ONE_HUNDRED_HBARS)
+								.sending(ONE_HBAR)
+								.via("cheapCallRegular"),
+						getTxnRecord("cheapCallRegular")
+								.providingFeeTo(normalFee -> {
+									log.info("Normal fee is {}", normalFee);
+									normalPriceRegular.set(normalFee);
+								}),
+
+						scheduleCreate("cheapSchedule",
+							contractCall("scMulti")
+									.fee(ONE_HUNDRED_HBARS)
+									.sending(ONE_HBAR)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer("civilian")
+								.alsoSigningWith("civilian")
+								.waitForExpiry()
+								.withRelativeExpiry("civilianTxn", 8)
+								.payingWith(GENESIS)
+								.via("cheapCallScheduled"),
+
+						sleepFor(9000),
+						cryptoCreate("foo").via("fooTxn"),
+
+						getTxnRecord("cheapCallScheduled")
+								.scheduled()
+								.providingFeeTo(normalFee -> {
+									log.info("Normal fee is {}", normalFee);
+									normalPriceScheduled.set(normalFee);
+								}),
+
+						scheduleCreate("validSchedule",
+							contractCall("scMulti")
+									.fee(ONE_HUNDRED_HBARS)
+									.sending(ONE_HBAR)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.designatingPayer("civilian")
+								.alsoSigningWith("civilian")
+								.waitForExpiry()
+								.withRelativeExpiry("fooTxn", 8)
+								.payingWith(GENESIS)
+								.via("pricyCallScheduled"),
+
+
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"fees.percentCongestionMultipliers", "1,7x",
+										"fees.minCongestionPeriod", "1"
+								)),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(artificialLimits.toByteArray())
+				)
+				.when(
+
+						blockingOrder(IntStream.range(0, 75).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
+								uncheckedSubmit(
+										contractCall("scMulti")
+												.signedBy("civilian")
+												.fee(ONE_HUNDRED_HBARS)
+												.sending(ONE_HBAR)
+												.txnId("uncheckedTxn" + i)
+								).payingWith(GENESIS),
+								sleepFor(125)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
+
+						contractCall("scMulti")
+								.payingWith("civilian")
+								.fee(ONE_HUNDRED_HBARS)
+								.sending(ONE_HBAR)
+								.via("pricyCallRegular")
+				)
+				.then(
+
+						fileUpdate(THROTTLE_DEFS)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles.toByteArray()),
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"fees.percentCongestionMultipliers", HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers"),
+										"fees.minCongestionPeriod", HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod"),
+										"scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")
+								)),
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
+								.payingWith(GENESIS),
+						getScheduleInfo("validSchedule")
+								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+
+						withOpContext((spec, opLog) -> {
+							var regularTx = getTxnRecord("pricyCallRegular");
+							var scheduledTx = getTxnRecord("pricyCallScheduled").scheduled();
+							allRunFor(spec, regularTx, scheduledTx);
+
+							Assertions.assertEquals(SUCCESS,
+									scheduledTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+							Assertions.assertEquals(SUCCESS,
+									regularTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
+
+							var priceScheduled = scheduledTx.getResponseRecord().getTransactionFee();
+							var priceRegular = regularTx.getResponseRecord().getTransactionFee();
+
+							Assertions.assertEquals(
+									7.0,
+									(1.0 * priceRegular) / normalPriceRegular.get(),
+									0.1,
+									"~7x multiplier should be in affect for regular txns!");
+
+							Assertions.assertEquals(
+									1.0,
+									(1.0 * priceScheduled) / normalPriceScheduled.get(),
+									0.1,
+									"no multiplier should be in affect for execution at expiry!");
+						})
+				);
 	}
 
 

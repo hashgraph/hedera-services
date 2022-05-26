@@ -73,7 +73,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec canUpdateMultipliersDynamically() {
-		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
+		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 		String tmpMinCongestionPeriod = "1";
 
