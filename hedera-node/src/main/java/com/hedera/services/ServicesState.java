@@ -462,7 +462,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getFreezeTime(),
 				dualState.getLastFrozenTime());
 
-		final var stateVersion = fromGenesis ? CURRENT_VERSION : networkCtx().getStateVersion();
+		final var stateVersion = networkCtx().getStateVersion();
 		if (stateVersion > CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
@@ -476,7 +476,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.setFreezeTime(null);
 			}
 			if (stateVersion < CURRENT_VERSION) {
-				// Only signal the MigrationRecordsManager to re-run if this is an upgrade
+				// Only signal the MigrationRecordsManager to re-run if this is an upgrade or genesis.
 				networkCtx().markMigrationRecordsNotYetStreamed();
 			}
 			networkCtx().setStateVersion(CURRENT_VERSION);
