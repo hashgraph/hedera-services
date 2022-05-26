@@ -283,12 +283,12 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setRewardSumHistory(final long[] rewardSumHistory) {
-		assertMutable("rewardSumHistory");
+		assertMutableRewardSumHistory();
 		this.rewardSumHistory = rewardSumHistory;
 	}
 
 	public void clearRewardSumHistory() {
-		assertMutable("rewardSumHistory");
+		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		// reset rewardSumHistory array.
 		Arrays.fill(rewardSumHistory, 0);
@@ -297,7 +297,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void updateRewardSumHistory(final double rewardRate, final long totalStakedRewardStart) {
-		assertMutable("rewardSumHistory");
+		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length-1];
 		for (int i = rewardSumHistory.length-1; i > 0; i--) {
@@ -318,5 +318,9 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
 		}
+	}
+
+	private void assertMutableRewardSumHistory() {
+		assertMutable("rewardSumHistory");
 	}
 }
