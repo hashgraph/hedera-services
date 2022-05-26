@@ -409,7 +409,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 								tinyBarsFromTo(sender, receiver, 1))
 						)
 								.waitForExpiry()
-								.withRelativeExpiry("senderTxn", 8)
+								.withRelativeExpiry("senderTxn", 20)
 								.recordingScheduledTxn()
 								.payingWith(DEFAULT_PAYER),
 						scheduleSign(schedule)
@@ -477,9 +477,9 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 								.hasWaitForExpiry()
 								.isNotExecuted()
 								.isNotDeleted()
-								.hasRelativeExpiry("senderTxn", 8)
+								.hasRelativeExpiry("senderTxn", 20)
 								.hasRecordedScheduledTxn(),
-						sleepFor(9000),
+						sleepFor(21000),
 						cryptoCreate("foo"),
 						getScheduleInfo(schedule)
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
