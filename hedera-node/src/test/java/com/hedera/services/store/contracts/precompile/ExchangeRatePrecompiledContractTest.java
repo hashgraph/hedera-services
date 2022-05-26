@@ -26,7 +26,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -168,5 +167,5 @@ class ExchangeRatePrecompiledContractTest {
 			.build();
 	private static final long someTinybarAmount = tinycentsToTinybars(someTinycentAmount, someRate);
 	private static final Instant now = Instant.ofEpochSecond(1_234_567, 890);
-	private static final Gas GAS_REQUIREMENT = Gas.of(100L);
+	private static final long GAS_REQUIREMENT = 100L;
 }

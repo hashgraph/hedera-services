@@ -21,9 +21,8 @@ package com.hedera.services.store.contracts.precompile.proxy;
  */
 
 import com.hederahashgraph.api.proto.java.Timestamp;
-import org.hyperledger.besu.evm.Gas;
 
 @FunctionalInterface
 public interface RedirectGasCalculator {
-	Gas compute(final Timestamp now, final long minimumTinybarCost);
+	long compute(final Timestamp now, final long minimumTinybarCost);
 }

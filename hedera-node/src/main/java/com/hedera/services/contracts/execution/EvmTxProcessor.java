@@ -35,7 +35,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -191,7 +190,7 @@ abstract class EvmTxProcessor {
 	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
-		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
@@ -204,7 +203,7 @@ abstract class EvmTxProcessor {
 			mutableRelayer = relayerAccount.getMutable();
 		}
 		if (!isStatic) {
-			if (intrinsicGas.toLong() > gasLimit) {
+			if (intrinsicGas > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 			if (relayer == null) {
@@ -245,7 +244,7 @@ abstract class EvmTxProcessor {
 
 		final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 		final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
-		final var gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
+		final var gasAvailable = gasLimit - intrinsicGas;
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 		final var valueAsWei = Wei.of(value);
@@ -282,15 +281,15 @@ abstract class EvmTxProcessor {
 		}
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-		final Gas sbhRefund = updater.getSbhRefund();
+		final long sbhRefund = updater.getSbhRefund();
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 		if (isStatic) {
 			stateChanges = Map.of();
 		} else {
 			// return gas price to accounts
-			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
-			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
+			final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
+			final Wei refundedWei = Wei.of(refunded * gasPrice);
 
 			if (refundedWei.greaterThan(Wei.ZERO)) {
 				if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
@@ -308,9 +307,9 @@ abstract class EvmTxProcessor {
 
 			// Send fees to coinbase
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
+			final long coinbaseFee = gasLimit - refunded;
 
-			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
+			mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
 			if (dynamicProperties.shouldEnableTraceability()) {
@@ -327,16 +326,16 @@ abstract class EvmTxProcessor {
 		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
 			return TransactionProcessingResult.successful(
 					initialFrame.getLogs(),
-					gasUsedByTransaction.toLong(),
-					sbhRefund.toLong(),
+					gasUsedByTransaction,
+					sbhRefund,
 					gasPrice,
 					initialFrame.getOutputData(),
 					mirrorReceiver,
 					stateChanges);
 		} else {
 			return TransactionProcessingResult.failed(
-					gasUsedByTransaction.toLong(),
-					sbhRefund.toLong(),
+					gasUsedByTransaction,
+					sbhRefund,
 					gasPrice,
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
@@ -344,18 +343,19 @@ abstract class EvmTxProcessor {
 		}
 	}
 
-	private Gas calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
-		Gas gasUsedByTransaction = Gas.of(txGasLimit).minus(initialFrame.getRemainingGas());
+	private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
+		long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
 		/* Return leftover gas */
-		final Gas selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
-						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+		final long selfDestructRefund =
+				gasCalculator.getSelfDestructRefundAmount() *
+				Math.min(
+						initialFrame.getSelfDestructs().size(),
+						gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+		gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
 		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-		gasUsedByTransaction = Gas.of(
-				Math.max(gasUsedByTransaction.toLong(), txGasLimit - txGasLimit * maxRefundPercent / 100));
+		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
 		return gasUsedByTransaction;
 	}

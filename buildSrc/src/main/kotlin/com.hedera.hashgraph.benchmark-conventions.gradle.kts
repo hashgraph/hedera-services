@@ -1,6 +1,6 @@
 /*-
  * ‌
- * Hedera Build Sources
+ * Hedera Conventions
  * ​
  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
@@ -19,17 +19,15 @@
  */
 
 plugins {
-    // Support convention plugins written in Kotlin. Convention plugins are build scripts in 'src/main'
-    // that automatically become available as plugins in the main build.
-    `kotlin-dsl`
+    id("me.champeau.jmh")
 }
 
-repositories {
-    // Use the plugin portal to apply community plugins in convention plugins.
-    gradlePluginPortal()
+jmh {
+    jmhVersion.set("1.35")
 }
 
-dependencies {
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3")
-    implementation("me.champeau.jmh:jmh-gradle-plugin:0.6.6")
+tasks.jmhJar {
+    manifest(Action {
+      attributes(mapOf("Multi-Release" to true))  
+    })
 }
