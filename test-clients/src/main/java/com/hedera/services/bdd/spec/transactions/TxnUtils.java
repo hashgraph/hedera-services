@@ -606,7 +606,7 @@ public class TxnUtils {
 	}
 
 	public static String bytecodePath(String bytecode) {
-		return String.format("src/main/resource/contract/contracts/%s/%s.bin", bytecode);
+		return String.format("src/main/resource/contract/contracts/%s/%s.bin", bytecode, bytecode);
 	}
 
 	public static ByteString literalInitcodeFor(final String contract) {
