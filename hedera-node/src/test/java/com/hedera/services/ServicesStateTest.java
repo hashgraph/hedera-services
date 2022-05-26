@@ -65,6 +65,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -170,7 +171,13 @@ class ServicesStateTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private ServicesState subject = new ServicesState();
+	private ServicesState subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new ServicesState();
+		setAllChildren();
+	}
 
 	@AfterEach
 	void cleanup() {
@@ -779,5 +786,9 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.STORAGE, mockMm);
 		subject.setChild(StateChildIndices.TOPICS, mockMm);
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
+	}
+
+	private void setAllChildren() {
+		subject.createGenesisChildren(addressBook, 0);
 	}
 }
