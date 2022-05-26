@@ -605,8 +605,8 @@ public class TxnUtils {
 				com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
 	}
 
-	public static String bytecodePath(String bytecode) {
-		return String.format("src/main/resource/contract/contracts/%s/%s.bin", bytecode, bytecode);
+	public static String bytecodePath(String contractName) {
+		return String.format("src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
 	}
 
 	public static ByteString literalInitcodeFor(final String contract) {

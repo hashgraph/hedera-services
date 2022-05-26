@@ -1847,15 +1847,21 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var transferTxn = "transferTxn";
 		return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
 				.given(
-						newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-						cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-								.via("autoAccount"),
+						withOpContext((spec, log) -> {
+							if(!spec.isUsingEthCalls()) {
+								spec.registry().saveAccountId(DEFAULT_CONTRACT_RECEIVER, spec.setup().strongControlAccount());
+							}
+							final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
+							final var transfer1 = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+									.via("autoAccount");
 
-						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L),
-						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L),
-						cryptoTransfer(TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER)),
-						getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfo").payingWith(GENESIS)
+							final var nestedTransferringUpload = uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT);
+							final var createFirstNestedContract = contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L);
+							final var createSecondNestedContract = contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L);
+							final var transfer2 = cryptoTransfer(TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
+							final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfo").payingWith(GENESIS);
+							allRunFor(spec, keyCreation, transfer1, nestedTransferringUpload, createFirstNestedContract, createSecondNestedContract, transfer2, saveSnapshot);
+						})
 				)
 				.when(
 						withOpContext((spec, log) -> {
