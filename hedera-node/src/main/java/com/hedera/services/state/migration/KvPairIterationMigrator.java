@@ -53,6 +53,7 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 	private final SizeLimitedStorage.IterableStorageUpserter storageUpserter;
 
 	private int numInsertions = 0;
+	private int numSkipped = 0;
 	private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
 
 	public KvPairIterationMigrator(
@@ -79,6 +80,7 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 		presentContractNums.add(contractNum);
 		final var nonIterableValue = kvPair.getValue();
 		if (ZERO_VALUE.equals(nonIterableValue)) {
+			numSkipped++;
 			return;
 		}
 		numNonZeroKvPairs.merge(contractNum, 1, Integer::sum);
@@ -108,8 +110,11 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 			if (rootKey != null) {
 				contract.setFirstUint256StorageKey(rootKey.getKey());
 			}
-			log.debug("Migrated {} k/v pairs from contract {}",
-					contract.getNumContractKvPairs(), contractNum.toIdString());
+			log.info("Migrated {} k/v pairs from contract {}",
+					contract.getNumContractKvPairs(),
+					contractNum.toIdString());
 		});
+
+		log.info("Migration summary: {} k/v pairs migrated. {} skipped.", numInsertions, numSkipped);
 	}
 }
