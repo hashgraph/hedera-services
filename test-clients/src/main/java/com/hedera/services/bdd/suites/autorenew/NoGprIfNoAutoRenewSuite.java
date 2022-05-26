@@ -84,19 +84,19 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup(),
-//
-//						payerRestrictionsNotEnforced(),
-//						cryptoTransferRestrictionsNotEnforced(),
-//						tokenMgmtRestrictionsNotEnforced(),
-//						cryptoDeleteRestrictionsNotEnforced(),
-//						treasuryOpsRestrictionNotEnforced(),
-//						tokenAutoRenewOpsNotEnforced(),
-//						topicAutoRenewOpsNotEnforced(),
-//						cryptoUpdateRestrictionsNotEnforced(),
+						noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup(),
+
+						payerRestrictionsNotEnforced(),
+						cryptoTransferRestrictionsNotEnforced(),
+						tokenMgmtRestrictionsNotEnforced(),
+						cryptoDeleteRestrictionsNotEnforced(),
+						treasuryOpsRestrictionNotEnforced(),
+						tokenAutoRenewOpsNotEnforced(),
+						topicAutoRenewOpsNotEnforced(),
+						cryptoUpdateRestrictionsNotEnforced(),
 						contractCallRestrictionsNotEnforced(),
 
-//						noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup(),
+						noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup(),
 				}
 		);
 	}
