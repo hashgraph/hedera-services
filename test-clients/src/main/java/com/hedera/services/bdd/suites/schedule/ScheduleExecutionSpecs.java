@@ -2366,7 +2366,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith(GENESIS)
+								.payingWith("payingAccount")
 								.via(successTxn)
 				)
 				.when(
