@@ -62,15 +62,11 @@ class RewardCalculatorTest {
 	void setUp() {
 		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
 		rewardHistory[0] = 5;
-
-
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(todayNumber);
-		willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
-		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 	}
 
 	@Test
 	void computesAndAppliesRewards() {
+		setUpMocks();
 		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
@@ -87,10 +83,10 @@ class RewardCalculatorTest {
 
 	@Test
 	void doesntComputeReturnsZeroReward() {
+		setUpMocks();
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
-
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
 		subject.computePendingRewards(account);
@@ -106,7 +102,21 @@ class RewardCalculatorTest {
 	}
 
 	@Test
+	void doesntComputeReturnsZeroRewardIfNotInRange() {
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
+		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(-1L);
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+
+		subject.computePendingRewards(account);
+
+		verify(account, never()).setStakePeriodStart(anyLong());
+		assertEquals(0, subject.getAccountReward());
+	}
+
+	@Test
 	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
+		setUpMocks();
 		final var expectedStakePeriodStart = 19365L;
 
 		final var merkleAccount = new MerkleAccount();
@@ -127,6 +137,7 @@ class RewardCalculatorTest {
 
 	@Test
 	void updatingRewardsWorks() {
+		setUpMocks();
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
 		given(account.getStakedId()).willReturn(3L);
@@ -145,6 +156,12 @@ class RewardCalculatorTest {
 
 		subject.resetRewardsPaid();
 		assertEquals(0L, subject.rewardsPaidInThisTxn());
+	}
+
+	private void setUpMocks(){
+		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(todayNumber);
+		willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
+		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 	}
 
 }

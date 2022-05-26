@@ -58,15 +58,16 @@ public class StakeInfoManager {
 		return currentStakingInfos[(int) nodeId];
 	}
 
+	public void clearRewardsHistory() {
+		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+	}
+
 	private void clearCurrentStakingInfos(final MerkleStakingInfo[] currentStakingInfos) {
 		for (int i = 0; i < currentStakingInfos.length; i++) {
 			currentStakingInfos[i] = null;
 		}
 	}
 
-	public void clearRewardsHistory() {
-		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
-	}
 
 	@VisibleForTesting
 	public MerkleStakingInfo[] getCurrentStakingInfos() {

@@ -176,8 +176,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
 			if (exStakeeI == changesSize) {
 				changesSize++;
-				// If the changesSize is more than hasBeenRewarded array size , double hasBeenRewarded. This may happen
-				// very rarely since the initial array size is 64.
+				// If the changesSize is more than hasBeenRewarded array size, double hasBeenRewarded.
+				// This may happen very rarely.
 				checkHasBeenRewardedSize(changesSize);
 			} else if (!hasBeenRewarded[exStakeeI]) {
 				payRewardIfRewardable(pendingChanges, exStakeeI);
@@ -189,8 +189,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeManager.updateStakedToMe(newStakeeI, finalBalanceGiven(account, changes), pendingChanges);
 			if (newStakeeI == changesSize) {
 				changesSize++;
-				// If the changesSize is more than hasBeenRewarded array size , double hasBeenRewarded. This may happen
-				// very rarely since the initial array size is 64.
+				// If the changesSize is more than hasBeenRewarded array size, double hasBeenRewarded.
+				// This may happen very rarely.
 				checkHasBeenRewardedSize(changesSize);
 			} else if (!hasBeenRewarded[newStakeeI]) {
 				payRewardIfRewardable(pendingChanges, newStakeeI);
@@ -226,6 +226,15 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		hasBeenRewarded[accountI] = true;
 	}
 
+	/**
+	 * Checks if the account is eligible for rewards.
+	 *
+	 * @param account
+	 * 		account that is being checked
+	 * @param changes
+	 * 		account property changes
+	 * @return true if rewardable, false otherwise
+	 */
 	boolean isRewardable(
 			@Nullable final MerkleAccount account,
 			@NotNull final Map<AccountProperty, Object> changes
@@ -240,6 +249,12 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				&& (!account.isDeclinedReward() || Boolean.FALSE.equals(changedDecline));
 	}
 
+	/**
+	 * Checks and activates staking rewards if the staking funding account balance reaches threshold
+	 *
+	 * @param pendingChanges
+	 * 		account property changes
+	 */
 	void checkStakingRewardsActivation(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		final var newRewardBalance = rewardBalanceIncreased ? calculateNewRewardBalance(pendingChanges) : 0;
@@ -254,6 +269,13 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}
 
+	/**
+	 * Calculates new reward balance for the account 0.0.800 and checks if staking rewards should be activated
+	 *
+	 * @param pendingChanges
+	 * 		account property changes
+	 * @return new balance of 0.0.800
+	 */
 	long calculateNewRewardBalance(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		long stakingFundBalance = 0;
@@ -275,7 +297,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	 * @param newRewardBalance
 	 * @return true if rewards should be activated, false otherwise
 	 */
-	protected boolean shouldActivateStakingRewards(final long newRewardBalance) {
+	boolean shouldActivateStakingRewards(final long newRewardBalance) {
 		return !rewardsActivated && rewardBalanceIncreased && (newRewardBalance >= dynamicProperties.getStakingStartThreshold());
 	}
 

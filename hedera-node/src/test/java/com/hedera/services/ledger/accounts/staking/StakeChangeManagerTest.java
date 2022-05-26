@@ -219,6 +219,9 @@ class StakeChangeManagerTest {
 
 		stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 		assertTrue(subject.isIncreased(stakingFundChanges, null));
+
+		stakingFundChanges = Map.of(AccountProperty.ALIAS, ByteString.copyFromUtf8("Testing"));
+		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
 	}
 
 

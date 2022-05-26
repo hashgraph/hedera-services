@@ -74,16 +74,16 @@ public class StakePeriodManager {
 		return stakePeriodStart > -1 && stakePeriodStart < latestRewardableStakePeriodStart();
 	}
 
-	@VisibleForTesting
-	public long getPrevConsensusSecs() {
-		return prevConsensusSecs;
-	}
-
 	public long effectivePeriod(final long stakePeriodStart) {
 		// currentStakePeriod will be already set before calling this method in RewardCalculator
 		if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - 365) {
 			return currentStakePeriod - 365;
 		}
 		return stakePeriodStart;
+	}
+
+	@VisibleForTesting
+	public long getPrevConsensusSecs() {
+		return prevConsensusSecs;
 	}
 }

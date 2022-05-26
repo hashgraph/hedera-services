@@ -71,9 +71,9 @@ class StakePeriodManagerTest {
 	}
 
 	@Test
-	void calculatesOnlyOncePerSecond(){
+	void calculatesOnlyOncePerSecond() {
 		var consensusTime = Instant.ofEpochSecond(12345678L);
-		var expectedStakePeriod =  LocalDate.ofInstant(consensusTime, zoneUTC).toEpochDay();
+		var expectedStakePeriod = LocalDate.ofInstant(consensusTime, zoneUTC).toEpochDay();
 
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
@@ -81,7 +81,7 @@ class StakePeriodManagerTest {
 
 		final var newConsensusTime = Instant.ofEpochSecond(12345679L);
 		given(txnCtx.consensusTime()).willReturn(newConsensusTime);
-		expectedStakePeriod =  LocalDate.ofInstant(newConsensusTime, zoneUTC).toEpochDay();
+		expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, zoneUTC).toEpochDay();
 
 		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
 		assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
@@ -97,6 +97,20 @@ class StakePeriodManagerTest {
 		assertTrue(subject.isRewardable(stakePeriodStart - 365));
 		assertFalse(subject.isRewardable(-1));
 		assertFalse(subject.isRewardable(stakePeriodStart));
+	}
+
+	@Test
+	void givesEffectivePeriodCorrectly() {
+		final var delta = 500;
+		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(12345678910L));
+
+		final var stakePeriod = subject.currentStakePeriod();
+		final var period = subject.effectivePeriod(stakePeriod - delta);
+
+		final var expectedEffectivePeriod = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
+				zoneUTC).toEpochDay();
+		assertEquals(expectedEffectivePeriod - 365, period);
+		assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
 	}
 
 }

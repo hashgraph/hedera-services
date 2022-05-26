@@ -64,17 +64,6 @@ public class RewardCalculator {
 		this.accountUpdatedStakePeriodStart = effectiveStart;
 	}
 
-	long computeReward(final MerkleAccount account, final long currentStakePeriod, final long effectiveStart) {
-		final long stakedNode = account.getStakedId();
-		final var stakedNodeAccount = stakeInfoManager.mutableStakeInfoFor(stakedNode);
-		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
-
-		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day
-		// currentStakePeriod - 1, since today is not finished yet.
-		return account.isDeclinedReward() ? 0 :
-				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
-	}
-
 	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
 		computePendingRewards(account);
 
@@ -83,6 +72,17 @@ public class RewardCalculator {
 		changes.put(BALANCE, balance + accountReward);
 		changes.put(STAKE_PERIOD_START, accountUpdatedStakePeriodStart);
 		rewardsPaid += accountReward; // used for adding balance change for 0.0.800
+	}
+
+	private long computeReward(final MerkleAccount account, final long currentStakePeriod, final long effectiveStart) {
+		final long stakedNode = account.getStakedId();
+		final var stakedNodeAccount = stakeInfoManager.mutableStakeInfoFor(stakedNode);
+		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
+
+		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day
+		// currentStakePeriod - 1, since today is not finished yet.
+		return account.isDeclinedReward() ? 0 :
+				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
 	}
 
 	public void resetRewardsPaid() {
