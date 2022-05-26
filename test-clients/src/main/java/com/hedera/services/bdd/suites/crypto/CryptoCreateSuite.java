@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -173,6 +174,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
 								.payingWith("civilian")
+								.via("createTxn"),
+						getTxnRecord("createTxn").logged()
 				).then(
 						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
 						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),

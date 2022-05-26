@@ -36,6 +36,8 @@ import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
+
 /**
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
  * to charge the requested fees.
@@ -162,7 +164,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 			return;
 		}
 		ledger.adjustBalance(grpcNodeId, +nodeFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
+		adjustNetworkAndServiceFee(+(networkFee + serviceFee));
 		totalCharged = nodeFee + networkFee + serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 		serviceFeeCharged = true;
@@ -173,7 +175,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		if (payerExempt) {
 			return;
 		}
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
+		adjustNetworkAndServiceFee(+serviceFee);
 		totalCharged = serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 		serviceFeeCharged = true;
@@ -187,7 +189,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		if (!serviceFeeCharged) {
 			throw new IllegalStateException("NarratedCharging asked to refund service fee to un-charged payer");
 		}
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), -serviceFee);
+		adjustNetworkAndServiceFee(-serviceFee);
 		ledger.adjustBalance(grpcPayerId, +serviceFee);
 		totalCharged -= serviceFee;
 	}
@@ -202,7 +204,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		}
 		long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
 		ledger.adjustBalance(grpcNodeId, +chargeableNodeFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +networkFee);
+		adjustNetworkAndServiceFee(+networkFee);
 		totalCharged = networkFee + chargeableNodeFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 	}
@@ -212,7 +214,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		initEffPayerBalance(nodeId);
 		long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
 		ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
+		adjustNetworkAndServiceFee(+chargeableNetworkFee);
 	}
 
 	private void initEffPayerBalance(EntityNum effPayerId) {
@@ -223,5 +225,15 @@ public class NarratedLedgerCharging implements NarratedCharging {
 					+ " is missing!");
 		}
 		effPayerStartingBalance = payerAccount.getBalance();
+	}
+
+	private void adjustNetworkAndServiceFee(final long totalFee) {
+		final var stakingRewardFee = (dynamicProperties.getStakingRewardPercent() * totalFee)/100;
+		final var nodeRewardFee = (dynamicProperties.getNodeRewardPercent() * totalFee)/100;
+		final var fundingAccountFee = totalFee - stakingRewardFee - nodeRewardFee;
+
+		ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAccountFee);
+		ledger.adjustBalance(STAKING_FUND_ACCOUNTS.get(0).toGrpcAccountId(), stakingRewardFee);
+		ledger.adjustBalance(STAKING_FUND_ACCOUNTS.get(1).toGrpcAccountId(), nodeRewardFee);
 	}
 }
