@@ -129,10 +129,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/**
 	 * Log out the sizes the state children.
 	 */
-	 private void logStateChildrenSizes() {
+	 private void logStateChildrenSizes(int version) {
+		 final var numUniqueTokens =
+				 version < UniqueTokensMigrator.TARGET_RELEASE
+						 ? legacyUniqueTokens().size()
+						 : uniqueTokens().size();
 		log.info("  (@ {}) # NFTs               = {}",
 				StateChildIndices.UNIQUE_TOKENS,
-				uniqueTokens().size());
+				numUniqueTokens);
 		log.info("  (@ {}) # token associations = {}",
 				StateChildIndices.TOKEN_ASSOCIATIONS,
 				tokenAssociations().size());
@@ -223,7 +227,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		runPostMigrationTasks();
 
 		log.info("Migration completed.");
-		logStateChildrenSizes();
+		logStateChildrenSizes(CURRENT_VERSION);
 	}
 
 	/* --- SwirldState --- */
@@ -458,7 +462,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getFreezeTime(),
 				dualState.getLastFrozenTime());
 
-		final var stateVersion = networkCtx().getStateVersion();
+		final var stateVersion = fromGenesis ? CURRENT_VERSION : networkCtx().getStateVersion();
 		if (stateVersion > CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
@@ -479,7 +483,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
 			// Log state before migration.
-			logStateChildrenSizes();
+			logStateChildrenSizes(stateVersion);
 			final Runnable initTask = () -> {
 				// This updates the working state accessor with our children
 				app.initializationFlow().runWith(this);

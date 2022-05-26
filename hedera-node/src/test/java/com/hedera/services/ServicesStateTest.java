@@ -526,7 +526,10 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
 		given(platform.getSelfId()).willReturn(selfId);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
 		APPS.save(selfId.getId(), app);
 
@@ -664,6 +667,7 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -784,6 +788,7 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		subject.setMetadata(metadata);
 		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE - 1);
 
