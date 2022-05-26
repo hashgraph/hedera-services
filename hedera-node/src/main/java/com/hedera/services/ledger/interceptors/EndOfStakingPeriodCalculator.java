@@ -37,6 +37,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -47,6 +50,7 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 @Singleton
 public class EndOfStakingPeriodCalculator {
 	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
+	private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfoSupplier;
@@ -91,7 +95,7 @@ public class EndOfStakingPeriodCalculator {
 		long updatedTotalStakedStart = 0L;
 		List<NodeStake> nodeStakingInfos = new ArrayList<>();
 
-		for (final var nodeNum : stakingInfo.keySet()) {
+		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
 			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
 			merkleStakingInfo.updateRewardSumHistory(rewardRate, merkleNetworkContext.getTotalStakedRewardStart());
 
@@ -130,14 +134,14 @@ public class EndOfStakingPeriodCalculator {
 				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn,
 				creator.createSuccessfulSyntheticRecord(
 						NO_CUSTOM_FEES,
-						new SideEffectsTracker(),
+						NO_OTHER_SIDE_EFFECTS,
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
 	}
 
 	private Timestamp getMidnightTime(Instant consensusTime) {
-		final var secsInDay = 86400L;
-		final var originalSecs = consensusTime.getEpochSecond();
-		final long midNightSecs = (originalSecs / secsInDay) * secsInDay;
+		final long midNightSecs = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
+				.atStartOfDay()
+				.toEpochSecond(ZoneOffset.UTC);
 
 		return Timestamp.newBuilder()
 				.setSeconds(midNightSecs)

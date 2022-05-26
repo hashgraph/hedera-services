@@ -25,6 +25,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -42,6 +43,7 @@ import java.util.Objects;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
@@ -227,6 +229,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setMinStake(final long minStake) {
+		assertMutable("minStake");
 		this.minStake = minStake;
 	}
 
@@ -235,6 +238,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setMaxStake(final long maxStake) {
+		assertMutable("maxStake");
 		this.maxStake = maxStake;
 	}
 
@@ -243,6 +247,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setStakeToReward(final long stakeToReward) {
+		assertMutable("stakeToReward");
 		this.stakeToReward = stakeToReward;
 	}
 
@@ -251,6 +256,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setStakeToNotReward(final long stakeToNotReward) {
+		assertMutable("stakeToNotReward");
 		this.stakeToNotReward = stakeToNotReward;
 	}
 
@@ -259,6 +265,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setStakeRewardStart(final long stakeRewardStart) {
+		assertMutable("stakeRewardStart");
 		this.stakeRewardStart = stakeRewardStart;
 	}
 
@@ -267,6 +274,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setStake(final long stake) {
+		assertMutable("stake");
 		this.stake = stake;
 	}
 
@@ -275,14 +283,21 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	public void setRewardSumHistory(final long[] rewardSumHistory) {
+		assertMutable("rewardSumHistory");
 		this.rewardSumHistory = rewardSumHistory;
 	}
 
 	public void clearRewardSumHistory() {
+		assertMutable("rewardSumHistory");
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		// reset rewardSumHistory array.
 		Arrays.fill(rewardSumHistory, 0);
+		// reset the historyHash
+		historyHash = null;
 	}
 
 	public void updateRewardSumHistory(final double rewardRate, final long totalStakedRewardStart) {
+		assertMutable("rewardSumHistory");
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length-1];
 		for (int i = rewardSumHistory.length-1; i > 0; i--) {
@@ -294,8 +309,14 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				if (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold)
 			 */
 		rewardSumHistory[0] += totalStakedRewardStart == 0 ? 0 :
-				(long) (rewardRate * stakeRewardStart / totalStakedRewardStart / 100_000_000);
+				(long) (rewardRate * stakeRewardStart / totalStakedRewardStart / HBARS_TO_TINYBARS);
 		// reset the historyHash
 		historyHash = null;
+	}
+
+	private void assertMutable(String proximalField) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
+		}
 	}
 }

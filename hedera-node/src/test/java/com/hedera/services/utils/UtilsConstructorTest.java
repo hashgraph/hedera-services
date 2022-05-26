@@ -168,7 +168,8 @@ class UtilsConstructorTest {
 			IterableStorageUtils.class,
 			EthereumLogicModule.class,
 			ReleaseTwentySevenMigration.class,
-			ByteUtils.class
+			ByteUtils.class,
+			Units.class
 	));
 
 	@Test
