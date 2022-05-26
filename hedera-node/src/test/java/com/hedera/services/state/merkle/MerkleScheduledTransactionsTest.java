@@ -113,7 +113,7 @@ class MerkleScheduledTransactionsTest {
 	@Test
 	void merkleMethodsWork() {
 		assertEquals(
-				MerkleScheduledTransactions.ChildIndices.NUM_0260_CHILDREN,
+				MerkleScheduledTransactions.ChildIndices.NUM_0270_CHILDREN,
 				subject.getMinimumChildCount(MerkleScheduledTransactions.CURRENT_VERSION));
 		assertEquals(MerkleScheduledTransactions.CURRENT_VERSION, subject.getVersion());
 		assertEquals(MerkleScheduledTransactions.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());

@@ -33,11 +33,9 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
@@ -142,7 +140,6 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(schedules.getNumSchedules()).willReturn(1L);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
 
 		// when:

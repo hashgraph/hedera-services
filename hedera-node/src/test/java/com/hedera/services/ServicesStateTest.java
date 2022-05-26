@@ -96,7 +96,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -223,6 +224,10 @@ class ServicesStateTest {
 		given(app.workingState()).willReturn(workingState);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
+		doAnswer(inv -> {
+			subject.setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions(1));
+			return null;
+		}).when(scheduledTxnsMigrator).accept(subject);
 
 		subject.migrate();
 
@@ -258,6 +263,10 @@ class ServicesStateTest {
 		given(app.workingState()).willReturn(workingState);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
+		doAnswer(inv -> {
+			subject.setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions(1));
+			return null;
+		}).when(scheduledTxnsMigrator).accept(subject);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);
@@ -279,6 +288,10 @@ class ServicesStateTest {
 
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
 		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
+		doAnswer(inv -> {
+			subject.setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions(1));
+			return null;
+		}).when(scheduledTxnsMigrator).accept(subject);
 
 		subject.migrate();
 
@@ -733,7 +746,6 @@ class ServicesStateTest {
 	@Test
 	void initHandlesScheduledTxnMigration() {
 
-		assertNull(subject.scheduleTxs());
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleScheduledTransactions.class));
 		assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
 

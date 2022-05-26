@@ -56,7 +56,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 		static final int BY_ID = 1;
 		private static final int BY_EXPIRATION_SECOND = 2;
 		private static final int BY_EQUALITY = 3;
-		static final int NUM_0260_CHILDREN = 4;
+		static final int NUM_0270_CHILDREN = 4;
 
 		ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
@@ -70,7 +70,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	}
 
 	public MerkleScheduledTransactions(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_0260_CHILDREN);
+		super(ChildIndices.NUM_0270_CHILDREN);
 		addDeserializedChildren(children, CURRENT_VERSION);
 	}
 
@@ -85,9 +85,9 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 
 	/**
 	 * @param pendingMigrationSize the size of the legacy schedules map
-	 * @deprecated remove once 0.26 migration is no longer needed
+	 * @deprecated remove once 0.27 migration is no longer needed
 	 */
-	@Deprecated(since = "0.26")
+	@Deprecated(since = "0.27")
 	public MerkleScheduledTransactions(int pendingMigrationSize) {
 		this();
 		this.pendingMigrationSize = pendingMigrationSize;
@@ -106,7 +106,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_0260_CHILDREN;
+		return ChildIndices.NUM_0270_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
