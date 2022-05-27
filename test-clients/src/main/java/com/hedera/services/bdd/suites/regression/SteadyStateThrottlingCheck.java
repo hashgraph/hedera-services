@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -49,10 +48,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -272,15 +271,13 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 
 
 	private Function<HapiApiSpec, OpProvider> scCallOps() {
+		final var contract = "Multipurpose";
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate("scMulti")
-								.bytecode("bytecode")
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.payingWith(GENESIS),
 						cryptoCreate("civilian")
 								.balance(ONE_MILLION_HBARS)

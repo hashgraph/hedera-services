@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.records;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -39,9 +38,9 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.addLogInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -121,6 +120,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec circularTransfersRecordSanityChecks() {
+		final var contractName = "CircularTransfers";
 		int NUM_ALTRUISTS = 3;
 		Function<String, Long> INIT_BALANCE_FN = ignore -> 1_000_000L;
 		int INIT_KEEP_AMOUNT_DIVISOR = 2;
@@ -134,28 +134,28 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CircularTransfersRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(ContractResources.CIRCULAR_TRANSFERS_BYTECODE_PATH),
+						uploadInitCode(contractName),
 						Stream.of(altruists)
-								.map(name -> contractCreate(name).bytecode("bytecode"))
+								.map(suffix -> contractCustomCreate(contractName, suffix))
 								.toArray(n -> new HapiSpecOperation[n]),
 						Stream.of(altruists)
-								.map(name ->
+								.map(suffix ->
 										contractCall(
-											name,
-											ContractResources.SET_NODES_ABI,
+												contractName + suffix,
+											"setNodes",
 											spec -> new Object[] {
 												Stream.of(altruists)
-														.map(a -> spec.registry().getContractId(a).getContractNum())
+														.map(a -> spec.registry().getContractId(contractName + a).getContractNum())
 														.toArray()
 											}
-										).gas(120_000).via("txnFor" + name).sending(INIT_BALANCE_FN.apply(name))
+										).gas(120_000).via("txnFor" + contractName + suffix).sending(INIT_BALANCE_FN.apply(contractName + suffix))
 								).toArray(n -> new HapiSpecOperation[n]),
 						UtilVerbs.takeBalanceSnapshots(
 								Stream.of(Stream.of(altruists), Stream.of(CANONICAL_ACCOUNTS))
 										.flatMap(identity()).toArray(n -> new String[n])
 						)
 				)).when(
-						contractCall(altruists[0], ContractResources.RECEIVE_AND_SEND_ABI, INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
+						contractCall(contractName + altruists[0], "receiveAndSend", INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
 								.via("altruisticTxn")
 				).then(
 						validateTransferListForBalances(

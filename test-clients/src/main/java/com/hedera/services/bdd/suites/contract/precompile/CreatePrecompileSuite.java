@@ -86,6 +86,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+//Some of the test cases cannot be converted to use eth calls,
+//since they use admin keys, which are held by the txn payer.
+//In the case of an eth txn, we revoke the payers keys and the txn would fail.
+//The only way an eth account to create a token is the admin key to be of a contractId type.
 public class CreatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
@@ -208,6 +212,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
 															final var res = (byte[]) result[0];
@@ -293,6 +298,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
 															final var res = (byte[]) result[0];
@@ -376,6 +382,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.gas(GAS_TO_OFFER)
 									.payingWith(ACCOUNT)
 									.sending(DEFAULT_AMOUNT_TO_SEND)
+									.refusingEthConversion()
 									.exposingResultTo(result -> {
 										log.info("Explicit create result is {}", result[0]);
 										final var res = (byte[]) result[0];
@@ -447,6 +454,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
 															final var res = (byte[]) result[0];
@@ -472,7 +480,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
-						uploadInitCode(TOKEN_CREATE_CONTRACT)
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -484,9 +493,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var subop1 = spec.isUsingEthCalls()
-									? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
-									: balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
 							final var subop2 = contractCall(
 									TOKEN_CREATE_CONTRACT,
 									"createNFTTokenWithKeysAndExpiry",
@@ -503,16 +510,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										final var res = (byte[]) result[0];
 										createdTokenNum.set(new BigInteger(res).longValueExact());
 									})
+									.refusingEthConversion()
 									.hasKnownStatus(SUCCESS);
 							final var subop3 = getTxnRecord(FIRST_CREATE_TXN);
 							allRunFor(spec, subop1, subop2, subop3,
 									childRecordsCheck(FIRST_CREATE_TXN, SUCCESS,
 											TransactionRecordAsserts.recordWith().status(SUCCESS)));
 
-							final var delta = spec.isUsingEthCalls() 
-									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS 
-									: subop3.getResponseRecord().getTransactionFee();
-							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
+							final var delta = subop3.getResponseRecord().getTransactionFee();
+							final var effectivePayer = ACCOUNT;
 							final var subop4 = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(
 											ACCOUNT_BALANCE,
@@ -663,6 +669,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
 															final var res = (byte[]) result[0];
@@ -779,7 +786,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_MILLION_HBARS),
-						uploadInitCode(TOKEN_CREATE_CONTRACT)
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -791,9 +799,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var balanceSnapshot = spec.isUsingEthCalls()
-									? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
-									: balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var balanceSnapshot =
+									balanceSnapshot(ACCOUNT_BALANCE, spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT);
 							final var hapiContractCall =
 									contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithEmptyKeysArray",
 											asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -808,9 +815,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L),
 									emptyChildRecordsCheck(FIRST_CREATE_TXN,
 											ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
-							final var delta = spec.isUsingEthCalls()
-									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
-									: txnRecord.getResponseRecord().getTransactionFee();
+							final var delta =
+									spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS :
+									txnRecord.getResponseRecord().getTransactionFee();
 							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
 							final var changeFromSnapshot = getAccountBalance(effectivePayer)
 									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
@@ -1121,6 +1129,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
@@ -1167,6 +1176,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)

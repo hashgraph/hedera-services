@@ -68,6 +68,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.ethereum.core.CallTransaction;
@@ -75,8 +76,10 @@ import org.ethereum.core.CallTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -466,6 +469,30 @@ public class TxnVerbs {
 				ops.add(file);
 				ops.add(updatedFile);
 			}
+			allRunFor(spec, ops);
+		});
+	}
+
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			final var path = getResourcePath(contractName, ".bin");
+			final var file = new HapiFileCreate(contractName).payingWith(payingWith).exposingNumTo(exposingTo).expiry(expiry);
+			final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+			ops.add(file);
+			ops.add(updatedFile);
+			allRunFor(spec, ops);
+		});
+	}
+
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final ResponseCodeEnum... statuses) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			final var path = getResourcePath(contractName, ".bin");
+			final var file = new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
+			final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+			ops.add(file);
+			ops.add(updatedFile);
 			allRunFor(spec, ops);
 		});
 	}
