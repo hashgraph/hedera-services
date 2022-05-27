@@ -58,17 +58,12 @@ public class StakeChangeManager {
 
 	public void setStakePeriodStart(final long todayNumber) {
 		final var mutableAccounts = accounts.get();
-		for (var entry : mutableAccounts.entrySet()) {
-			final var account = mutableAccounts.getForModify(entry.getKey());
+		for (var key : mutableAccounts.keySet()) {
+			final var account = mutableAccounts.getForModify(key);
 			if (account.getStakedId() < 0) {
 				account.setStakePeriodStart(todayNumber);
 			}
 		}
-//		accounts.get().forEach(((entityNum, account) -> {
-//			if (account.getStakedId() < 0) {
-//				account.setStakePeriodStart(todayNumber);
-//			}
-//		}));
 	}
 
 	public int findOrAdd(

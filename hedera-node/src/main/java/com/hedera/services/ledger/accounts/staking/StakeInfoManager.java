@@ -60,8 +60,8 @@ public class StakeInfoManager {
 
 	public void clearRewardsHistory() {
 		final var mutableStakingInfo = stakingInfo.get();
-		for (var entry : mutableStakingInfo.entrySet()) {
-			final var info = mutableStakingInfo.getForModify(entry.getKey());
+		for (var key : mutableStakingInfo.keySet()) {
+			final var info = mutableStakingInfo.getForModify(key);
 			info.clearRewardSumHistory();
 		}
 	}

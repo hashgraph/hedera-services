@@ -165,7 +165,6 @@ class RewardCalculatorTest {
 		final var changes = new HashMap<AccountProperty, Object>();
 		final var todayNum = 300L;
 
-		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNum);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
@@ -173,7 +172,7 @@ class RewardCalculatorTest {
 		given(account.getBalance()).willReturn(100L);
 
 		subject.setRewardsPaidInThisTxn(100L);
-		final long reward = subject.estimatePendingRewards(account, 0L);
+		final long reward = subject.estimatePendingRewards(account, merkleStakingInfo);
 
 		assertEquals(500, reward);
 
@@ -185,7 +184,7 @@ class RewardCalculatorTest {
 
 		// if declinedReward
 		given(account.isDeclinedReward()).willReturn(true);
-		assertEquals(0L, subject.estimatePendingRewards(account, 0L));
+		assertEquals(0L, subject.estimatePendingRewards(account, merkleStakingInfo));
 	}
 
 	private void setUpMocks() {

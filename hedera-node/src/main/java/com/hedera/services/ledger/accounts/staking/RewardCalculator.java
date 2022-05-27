@@ -59,10 +59,10 @@ public class RewardCalculator {
 		rewardsPaid += accountReward; // used for adding balance change for 0.0.800
 	}
 
-	public long estimatePendingRewards(final MerkleAccount account, final long nodeId) {
+	public long estimatePendingRewards(final MerkleAccount account, final MerkleStakingInfo stakingNode) {
 		return computeRewardFromDetails(
 				account,
-				stakeInfoManager.mutableStakeInfoFor(nodeId),
+				stakingNode,
 				stakePeriodManager.currentStakePeriod(),
 				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
 	}

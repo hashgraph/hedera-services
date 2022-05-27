@@ -347,7 +347,8 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(merkleAccount.getStakedToMe()).willReturn(0L);
 
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager, stakeInfoManager);
+				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
+				stakeInfoManager);
 
 		final var hasBeenRewarded = new boolean[64];
 		hasBeenRewarded[1] = true;
@@ -358,6 +359,43 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(4, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
 		assertEquals(-555L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 		assertEquals(100L, pendingChanges.changes(3).get(AccountProperty.STAKED_TO_ME));
+	}
+
+	@Test
+	void updatesStakedToMeSideEffectsPaysRewardsIfRewardable() {
+		counterparty.setStakedId(123L);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		final var stakingFundChanges = new HashMap<AccountProperty, Object>();
+		stakingFundChanges.put(AccountProperty.BALANCE, 100L);
+		stakingFundChanges.put(AccountProperty.STAKED_TO_ME, 2000L);
+
+		final var map = new HashMap<AccountProperty, Object>();
+		map.put(AccountProperty.BALANCE, 100L);
+		map.put(AccountProperty.STAKED_ID, 123L);
+		map.put(AccountProperty.DECLINE_REWARD, false);
+		map.put(AccountProperty.STAKED_TO_ME, 2000L);
+
+		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		pendingChanges.include(counterpartyId, counterparty, map);
+		pendingChanges.include(partyId, party, stakingFundChanges);
+		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+
+		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
+				stakeInfoManager);
+
+		final var hasBeenRewarded = new boolean[64];
+		hasBeenRewarded[1] = false;
+		hasBeenRewarded[2] = false;
+		subject.setHasBeenRewarded(hasBeenRewarded);
+		assertEquals(3, pendingChanges.size());
+
+		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
+		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+		assertEquals(2100L, pendingChanges.changes(1).get(AccountProperty.STAKED_TO_ME));
+		assertEquals(2100L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 	}
 
 	@Test

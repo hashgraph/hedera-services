@@ -159,7 +159,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 				stakeChangeManager.withdrawStake(
 						account.getStakedNodeAddressBookId(), // since nodeId is saved as  -nodeId -1
 						account.getBalance() + account.getStakedToMe(),
-						account == null ? false : account.isDeclinedReward());
+						account != null && account.isDeclinedReward());
 			}
 			if (newNodeId < 0) {
 				// Award updated stake to new node stakee to the fields stakeRewarded or stakeNotRewarded from
