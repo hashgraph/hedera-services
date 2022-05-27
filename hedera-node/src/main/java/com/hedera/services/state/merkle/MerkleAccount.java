@@ -514,7 +514,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return getStakedId() < 0 && !isDeclinedReward();
 	}
 
-	public long getUsableStakedNodeIdUnsafe() {
+	public long getStakedNodeAddressBookId() {
+		if (state().getStakedNum() >= 0) {
+			throw new IllegalStateException("Account is not staked to a node");
+		}
 		return -state().getStakedNum() - 1;
 	}
 

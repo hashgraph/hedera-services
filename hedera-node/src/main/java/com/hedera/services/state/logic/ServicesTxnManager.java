@@ -96,7 +96,7 @@ public class ServicesTxnManager {
 			sigImpactHistorian.setChangeTime(consensusTime);
 			recordsHistorian.clearHistory();
 			blockManager.reset();
-			rewardCalculator.resetRewardsPaid();
+			rewardCalculator.reset();
 			ledger.begin();
 
 			if (needToPublishMigrationRecords) {

@@ -63,10 +63,6 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 		return changes.get(i);
 	}
 
-	public void updateChange(final int num, final Map<P, Object> mutableChange) {
-		changes.set(num, mutableChange);
-	}
-
 	public void clear() {
 		ids.clear();
 		changes.clear();

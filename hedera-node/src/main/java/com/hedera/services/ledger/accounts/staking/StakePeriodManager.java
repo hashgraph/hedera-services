@@ -49,6 +49,7 @@ public class StakePeriodManager {
 
 	public long currentStakePeriod() {
 		final var currentConsensusSecs = txnCtx.consensusTime().getEpochSecond();
+
 		if (prevConsensusSecs != currentConsensusSecs) {
 			prevConsensusSecs = currentConsensusSecs;
 			currentStakePeriod = LocalDate.ofInstant(txnCtx.consensusTime(), zoneUTC).toEpochDay();
@@ -59,7 +60,6 @@ public class StakePeriodManager {
 	public long latestRewardableStakePeriodStart() {
 		// The latest period by which an account must have started staking, if it can be eligible for a
 		// reward; if staking is not active, this will return Long.MIN_VALUE so no account is eligible
-
 		return networkCtx.get().areRewardsActivated() ? currentStakePeriod() - 1 : Long.MIN_VALUE;
 	}
 

@@ -509,7 +509,7 @@ public class StateView {
 		if (account.getStakePeriodStart() > 0) {
 			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
 			if (account.mayHavePendingReward()) {
-				rewardCalculator.computePendingRewards(account);
+				rewardCalculator.estimatePendingRewards(account, account.getStakedNodeAddressBookId());
 				stakingInfo.setPendingReward(rewardCalculator.getAccountReward());
 			}
 		}
