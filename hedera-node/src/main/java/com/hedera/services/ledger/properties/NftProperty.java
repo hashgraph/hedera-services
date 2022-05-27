@@ -22,7 +22,6 @@ package com.hedera.services.ledger.properties;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.NftNumPair;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
