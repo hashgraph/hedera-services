@@ -206,14 +206,14 @@ public class FeesAndRatesProvider {
 
 	private Transaction defaultPayerSponsored(long queryFee) throws Throwable {
 		TransferList transfers = asTransferList(
-				tinyBarsFromTo(queryFee, setup.defaultPayer(), setup.defaultNode()));
+				tinyBarsFromTo(queryFee, setup.genesisAccount(), setup.defaultNode()));
 		CryptoTransferTransactionBody opBody = txns
 				.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>
 						body(CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
 		Transaction.Builder txnBuilder = txns.getReadyToSign(b -> b.setCryptoTransfer(opBody));
 		return keys.signWithFullPrefixEd25519Keys(
 				txnBuilder,
-				List.of(flattenedMaybeList(registry.getKey(setup.defaultPayerName()))));
+				List.of(flattenedMaybeList(registry.getKey(setup.genesisAccountName()))));
 	}
 
 	private Key flattenedMaybeList(final Key k) {
