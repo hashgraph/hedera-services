@@ -26,7 +26,6 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStak
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getAccountStakeeNum;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getNodeStakeeNum;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.isIncreased;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -128,21 +127,6 @@ public class StakingUtilsTest {
 		assertEquals(0, finalBalanceGiven(null, changes));
 		assertEquals(false, finalDeclineRewardGiven(null, changes));
 		assertEquals(0, finalStakedToMeGiven(null, changes));
-	}
-
-	@Test
-	void checksIfBalanceIncreased() {
-		Map<AccountProperty, Object> stakingFundChanges = Map.of(BALANCE, 100L);
-		assertTrue(isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(BALANCE, -100L);
-		assertFalse(isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(BALANCE, 100L);
-		assertTrue(isIncreased(stakingFundChanges, null));
-
-		stakingFundChanges = Map.of(AccountProperty.ALIAS, ByteString.copyFromUtf8("Testing"));
-		assertFalse(isIncreased(stakingFundChanges, stakingFund));
 	}
 
 	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {

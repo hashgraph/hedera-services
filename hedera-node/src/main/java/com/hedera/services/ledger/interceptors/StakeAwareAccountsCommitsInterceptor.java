@@ -46,7 +46,6 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStak
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getAccountStakeeNum;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getNodeStakeeNum;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.isIncreased;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
