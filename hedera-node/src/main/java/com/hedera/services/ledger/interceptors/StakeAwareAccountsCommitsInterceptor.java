@@ -62,7 +62,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final StakeInfoManager stakeInfoManager;
 
 	private boolean rewardsActivated;
-	private boolean rewardBalanceIncreased;
 	// boolean to track if the account has been rewarded already with one of the pending changes
 	private boolean[] hasBeenRewarded = new boolean[64];
 
@@ -94,7 +93,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 		// if the rewards are activated previously they will not be activated again
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
-		rewardBalanceIncreased = false;
 
 		// Iterate through the change set, maintaining two invariants:
 		//   1. At the beginning of iteration i, any account that is rewardable due to change in balance or
@@ -124,9 +122,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			final var account = pendingChanges.entity(i);
 			final var changes = pendingChanges.changes(i);
-			final var accountNum = pendingChanges.id(i).getAccountNum();
-
-			rewardBalanceIncreased |= (accountNum == STAKING_FUNDING_ACCOUNT_NUMBER && isIncreased(changes, account));
 
 			// Update BALANCE and STAKE_PERIOD_START in the pending changes for this account, if reward-eligible
 			if (isRewardable(account, changes)) {
@@ -268,7 +263,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	 */
 	private void checkStakingRewardsActivation(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		final var newRewardBalance = rewardBalanceIncreased ? calculateNewRewardBalance(pendingChanges) : 0;
+		final var newRewardBalance = calculateNewRewardBalance(pendingChanges);
 		if (!shouldActivateStakingRewards(newRewardBalance)) {
 			return;
 		}
@@ -315,23 +310,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	/* only used for unit tests */
 	@VisibleForTesting
-	public boolean isRewardsActivated() {
-		return rewardsActivated;
-	}
-
-	@VisibleForTesting
 	public void setRewardsActivated(final boolean rewardsActivated) {
 		this.rewardsActivated = rewardsActivated;
-	}
-
-	@VisibleForTesting
-	public boolean isRewardBalanceIncreased() {
-		return rewardBalanceIncreased;
-	}
-
-	@VisibleForTesting
-	public void setRewardBalanceIncreased(final boolean rewardBalanceIncreased) {
-		this.rewardBalanceIncreased = rewardBalanceIncreased;
 	}
 
 	@VisibleForTesting
