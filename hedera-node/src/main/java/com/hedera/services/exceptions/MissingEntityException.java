@@ -22,8 +22,8 @@ package com.hedera.services.exceptions;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
-public class MissingAccountException extends IllegalArgumentException {
-	public MissingAccountException(Object id) {
+public class MissingEntityException extends IllegalArgumentException {
+	public MissingEntityException(final Object id) {
 		super(readableId(id));
 	}
 }
