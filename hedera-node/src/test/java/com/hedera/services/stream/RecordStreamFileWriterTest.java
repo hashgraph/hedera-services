@@ -24,6 +24,7 @@ import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamType;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,6 +113,8 @@ class RecordStreamFileWriterTest {
 		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
 				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
 		secondBlockRSOs.forEach(subject::addObject);
+
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing endRunningHash")));
 	}
 
 	@Test
@@ -130,6 +135,7 @@ class RecordStreamFileWriterTest {
 				})) {
 
 			firstBlockRSOs.forEach(subject::addObject);
+			assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("begin :: Got IOException when writing startRunningHash to")));
 
 		}
 
