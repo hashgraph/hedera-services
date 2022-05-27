@@ -55,8 +55,12 @@ class NarratedLedgerChargingTest {
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
 	private final AccountID grpcPayerId = IdUtils.asAccount("0.0.1234");
 	private final AccountID grpcFundingId = IdUtils.asAccount("0.0.98");
+	private final AccountID grpcStakeFundingId = IdUtils.asAccount("0.0.800");
+	private final AccountID grpcNodeFundingId = IdUtils.asAccount("0.0.801");
 	private final EntityNum nodeId = EntityNum.fromLong(3L);
 	private final EntityNum payerId = EntityNum.fromLong(1_234L);
+	private final int stakingRewardPercent = 10;
+	private final int nodeRewardPercent = 20;
 
 	@Mock
 	private NodeInfo nodeInfo;
@@ -97,6 +101,8 @@ class NarratedLedgerChargingTest {
 	@Test
 	void chargesAllFeesToPayerAsExpected() {
 		givenSetupToChargePayer(nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
+		given(dynamicProperties.getStakingRewardPercent()).willReturn(stakingRewardPercent);
+		given(dynamicProperties.getNodeRewardPercent()).willReturn(nodeRewardPercent);
 
 		// expect:
 		assertTrue(subject.canPayerAffordAllFees());
@@ -106,15 +112,24 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerAllFees();
 
 		// then:
+		final var totalFee = nodeFee + networkFee + serviceFee;
+		final var expectedNodeRewardFee = totalFee * nodeRewardPercent / 100;
+		final var expectedStakingRewardFee = totalFee * stakingRewardPercent / 100;
+
 		verify(ledger).adjustBalance(grpcPayerId, -(nodeFee + networkFee + serviceFee));
 		verify(ledger).adjustBalance(grpcNodeId, +nodeFee);
-		verify(ledger).adjustBalance(grpcFundingId, +(networkFee + serviceFee));
+		verify(ledger).adjustBalance(grpcFundingId,
+				+(networkFee + serviceFee) - expectedNodeRewardFee - expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcStakeFundingId, +expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcNodeFundingId, +expectedNodeRewardFee);
 		assertEquals(nodeFee + networkFee + serviceFee, subject.totalFeesChargedToPayer());
 	}
 
 	@Test
 	void chargesServiceFeeToPayerAsExpected() {
 		givenSetupToChargePayer(serviceFee, serviceFee);
+		given(dynamicProperties.getStakingRewardPercent()).willReturn(stakingRewardPercent);
+		given(dynamicProperties.getNodeRewardPercent()).willReturn(nodeRewardPercent);
 
 		// expect:
 		assertTrue(subject.canPayerAffordServiceFee());
@@ -124,14 +139,22 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerServiceFee();
 
 		// then:
+		final var totalFee = serviceFee;
+		final var expectedNodeRewardFee = totalFee * nodeRewardPercent / 100;
+		final var expectedStakingRewardFee = totalFee * stakingRewardPercent / 100;
+
 		verify(ledger).adjustBalance(grpcPayerId, -serviceFee);
-		verify(ledger).adjustBalance(grpcFundingId, +serviceFee);
+		verify(ledger).adjustBalance(grpcFundingId, +serviceFee - expectedNodeRewardFee - expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcStakeFundingId, +expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcNodeFundingId, +expectedNodeRewardFee);
 		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
 	}
 
 	@Test
 	void refundsServiceFeeToPayerAsExpected() {
 		final var inOrder = Mockito.inOrder(ledger);
+		given(dynamicProperties.getStakingRewardPercent()).willReturn(stakingRewardPercent);
+		given(dynamicProperties.getNodeRewardPercent()).willReturn(nodeRewardPercent);
 
 		final var allFees = nodeFee + networkFee + serviceFee;
 		givenSetupToChargePayer(allFees, allFees);
@@ -140,10 +163,24 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerAllFees();
 		subject.refundPayerServiceFee();
 
+
+		final var expectedNodeRewardFee = allFees * nodeRewardPercent / 100;
+		final var expectedStakingRewardFee = allFees * stakingRewardPercent / 100;
+
 		inOrder.verify(ledger).adjustBalance(grpcNodeId, +nodeFee);
-		inOrder.verify(ledger).adjustBalance(grpcFundingId, +(networkFee + serviceFee));
+		inOrder.verify(ledger).adjustBalance(grpcFundingId,
+				+(networkFee + serviceFee) - expectedNodeRewardFee - expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcStakeFundingId, +expectedStakingRewardFee);
+		verify(ledger).adjustBalance(grpcNodeFundingId, +expectedNodeRewardFee);
+
 		inOrder.verify(ledger).adjustBalance(grpcPayerId, -(nodeFee + networkFee + serviceFee));
-		inOrder.verify(ledger).adjustBalance(grpcFundingId, -serviceFee);
+		inOrder.verify(ledger).adjustBalance(grpcFundingId,
+				-serviceFee + expectedNodeRewardFee + expectedStakingRewardFee);
+		inOrder.verify(ledger).adjustBalance(grpcStakeFundingId,
+				-expectedStakingRewardFee);
+		inOrder.verify(ledger).adjustBalance(grpcNodeFundingId,
+				-expectedNodeRewardFee);
+
 		inOrder.verify(ledger).adjustBalance(grpcPayerId, +serviceFee);
 		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
 	}
