@@ -355,7 +355,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														asAddress(accountID.get()),
 														List.of(
 																asAddress(DUMMY_ID),
-																asAddress(DUMMY_ID)))
+																asAddress(unfrozenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("safeMultipleTokensAssociationsFailsTxn")
 														.gas(4_000_000)
