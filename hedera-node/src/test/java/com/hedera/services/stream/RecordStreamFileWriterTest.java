@@ -56,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 
@@ -78,6 +79,37 @@ class RecordStreamFileWriterTest {
 	@Test
 	void clear() {
 		subject.clear();
+	}
+
+	@Test
+	void close() {
+		subject.close();
+	}
+
+	@Test
+	void testsWriteLongIOException() {
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
+
+		try (MockedConstruction<SerializableDataOutputStream> mocked = Mockito.mockConstruction(SerializableDataOutputStream.class,
+				(mock, context) -> {
+
+					doThrow(IOException.class).when(mock).writeLong(anyLong());
+				})) {
+
+			firstBlockRSOs.forEach(subject::addObject);
+
+		}
+
+		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
+				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
+		secondBlockRSOs.forEach(subject::addObject);
 	}
 
 	@Test
