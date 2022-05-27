@@ -31,6 +31,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class RewardCalculator {
 	private final StakePeriodManager stakePeriodManager;
@@ -98,7 +99,7 @@ public class RewardCalculator {
 		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day
 		// currentStakePeriod - 1, since today is not finished yet.
 		return account.isDeclinedReward() ? 0 :
-				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
+				(account.getBalance() / HBARS_TO_TINYBARS) * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
 	}
 
 	public void reset() {

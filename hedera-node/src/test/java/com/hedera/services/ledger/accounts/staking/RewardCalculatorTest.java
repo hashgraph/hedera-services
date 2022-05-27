@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.Units;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,7 +76,7 @@ class RewardCalculatorTest {
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
 		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100L);
+		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
 		subject.setRewardsPaidInThisTxn(100L);
 		subject.updateRewardChanges(account, changes);
@@ -144,7 +145,7 @@ class RewardCalculatorTest {
 		final var merkleAccount = new MerkleAccount();
 		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
 		merkleAccount.setStakedId(-3L);
-		merkleAccount.setBalance(100L);
+		merkleAccount.setBalance(100 * Units.HBARS_TO_TINYBARS);
 
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
@@ -169,7 +170,7 @@ class RewardCalculatorTest {
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100L);
+		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
 		subject.setRewardsPaidInThisTxn(100L);
 		final long reward = subject.estimatePendingRewards(account, merkleStakingInfo);
