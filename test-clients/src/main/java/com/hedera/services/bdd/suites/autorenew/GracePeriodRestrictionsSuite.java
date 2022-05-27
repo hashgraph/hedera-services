@@ -86,19 +86,19 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						gracePeriodRestrictionsSuiteSetup(),
+						gracePeriodRestrictionsSuiteSetup(),
 
 						contractCallRestrictionsEnforced(),
-//						payerRestrictionsEnforced(),
-//						cryptoTransferRestrictionsEnforced(),
-//						tokenMgmtRestrictionsEnforced(),
-//						cryptoAndContractDeleteRestrictionsEnforced(),
-//						treasuryOpsRestrictionEnforced(),
-//						tokenAutoRenewOpsEnforced(),
-//						topicAutoRenewOpsEnforced(),
-//						cryptoUpdateRestrictionsEnforced(),
-//
-//						gracePeriodRestrictionsSuiteCleanup(),
+						payerRestrictionsEnforced(),
+						cryptoTransferRestrictionsEnforced(),
+						tokenMgmtRestrictionsEnforced(),
+						cryptoAndContractDeleteRestrictionsEnforced(),
+						treasuryOpsRestrictionEnforced(),
+						tokenAutoRenewOpsEnforced(),
+						topicAutoRenewOpsEnforced(),
+						cryptoUpdateRestrictionsEnforced(),
+
+						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
