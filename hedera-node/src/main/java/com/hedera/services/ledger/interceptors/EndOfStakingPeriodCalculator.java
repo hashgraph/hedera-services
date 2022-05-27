@@ -130,7 +130,7 @@ public class EndOfStakingPeriodCalculator {
 						rewardRate,
 						nodeStakingInfos);
 
-		recordsHistorian.trackFollowingChildRecord(
+		recordsHistorian.trackPrecedingChildRecord(
 				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn,
 				creator.createSuccessfulSyntheticRecord(
 						NO_CUSTOM_FEES,
@@ -138,15 +138,17 @@ public class EndOfStakingPeriodCalculator {
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
 	}
 
-	private Timestamp getMidnightTime(Instant consensusTime) {
-		final long midNightSecs = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
+	Timestamp getMidnightTime(Instant consensusTime) {
+		final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
 				.atStartOfDay()
-				.toEpochSecond(ZoneOffset.UTC);
+				.minusNanos(1); // give out the timestamp that is just before midnight
 
 		return Timestamp.newBuilder()
-				.setSeconds(midNightSecs)
+				.setSeconds(justBeforeMidNightTime.toEpochSecond(ZoneOffset.UTC))
+				.setNanos(justBeforeMidNightTime.getNano())
 				.build();
 	}
+
 	private long stakingRewardsAccountBalance() {
 		return accounts.get().get(EntityNum.fromInt(800)).getBalance();
 	}

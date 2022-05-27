@@ -8,6 +8,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,20 @@ class EndOfStakingPeriodCalculatorTest {
 		assertArrayEquals(new long[]{16,6,5}, stakingInfo1.getRewardSumHistory());
 		assertArrayEquals(new long[]{8,1,1}, stakingInfo2.getRewardSumHistory());
 		assertArrayEquals(new long[]{103,3,1}, stakingInfo3.getRewardSumHistory());
+	}
+
+	@Test
+	void calculatesMidnightTimeCorrectly() {
+		final var consensusSecs = 1653660350L;
+		final var consensusNanos = 12345L;
+		final var expectedNanos = 999_999_999;
+		final var consensusTime = Instant.ofEpochSecond(consensusSecs, consensusNanos);
+		final var expectedMidnightTime = Timestamp.newBuilder()
+				.setSeconds(1653609599L)
+				.setNanos(expectedNanos)
+				.build();
+
+		assertEquals(expectedMidnightTime, subject.getMidnightTime(consensusTime));
 	}
 
 	final long minStake = 100L;
