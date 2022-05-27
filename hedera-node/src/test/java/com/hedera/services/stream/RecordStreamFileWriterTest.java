@@ -224,9 +224,10 @@ class RecordStreamFileWriterTest {
 			final byte[] expectedEntireFileSignature,
 			final byte[] expectedMetadataSignature
 	) throws IOException, NoSuchAlgorithmException {
+		final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
 		final var recordStreamFilePath =
-				subject.generateStreamFilePath(Instant.ofEpochSecond(
-						blockRSOs.get(0).getTimestamp().getEpochSecond()));
+				subject.generateStreamFilePath(
+						Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
 		final var recordStreamFilePair = readRecordStreamFile(recordStreamFilePath);
 
 		assertEquals(RECORD_STREAM_VERSION, recordStreamFilePair.getLeft());

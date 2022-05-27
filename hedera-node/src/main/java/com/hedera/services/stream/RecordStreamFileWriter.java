@@ -219,9 +219,10 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 				3. We populate the SidecarMetadata of the RecordStreamFile message
 			*/
 
+			final var firstTxnTimestamp = recordStreamFile.getRecordFileObjects(0).getRecord().getConsensusTimestamp();
 			this.file = new File(
 					generateStreamFilePath(
-							Instant.ofEpochSecond(recordStreamFile.getRecordFileObjects(0).getRecord().getConsensusTimestamp().getSeconds())));
+							Instant.ofEpochSecond(firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos())));
 			this.fileNameShort = file.getName();
 			try {
 				if (file.exists() && !file.isDirectory()) {
