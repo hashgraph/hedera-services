@@ -148,7 +148,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			if (!store.associationExists(newTreasury, id)) {
 				outcome = store.autoAssociate(newTreasury, id);
 				if (outcome != OK) {
-					txnCtx.setStatus(outcome);
+					abortWith(outcome);
 					return;
 				}
 			}
