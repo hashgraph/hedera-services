@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,9 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 
@@ -74,20 +75,20 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
-						fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
-						contractCreate("multi").bytecode("bytecode"),
+						uploadInitCode("Multipurpose"),
+						contractCreate("Multipurpose"),
 						contractCreate("impossible")
 								.setNode("0.0.7")
 								.bytecode("bytecode")
 								.hasPrecheck(INVALID_NODE_ACCOUNT),
-						contractUpdate("multi")
+						contractUpdate("Multipurpose")
 								.setNode("0.0.8")
 								.newMemo("Oops!")
 								.hasPrecheck(INVALID_NODE_ACCOUNT),
-						contractDelete("multi")
+						contractDelete("Multipurpose")
 								.setNode("0.0.7")
 								.hasPrecheck(INVALID_NODE_ACCOUNT),
-						contractCall("multi")
+						contractCall("Multipurpose")
 								.setNode("0.0.8")
 								.sending(1L)
 								.hasPrecheck(INVALID_NODE_ACCOUNT)
@@ -98,26 +99,26 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.memo("Hello World!")
 								.setNode("0.0.5"),
-						getContractInfo("multi")
+						getContractInfo("Multipurpose")
 								.setNode("0.0.5")
 								.payingWith("sponsor")
 								.nodePayment(0L)
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
 				).then(
-						contractCallLocal("multi", ContractResources.LUCKY_NO_LOOKUP_ABI)
+						contractCallLocal("Multipurpose", "pick")
 								.setNode("0.0.7")
 								.payingWith("sponsor")
 								.nodePayment(0L)
 								.has(resultWith()
 										.resultThruAbi(
-												ContractResources.LUCKY_NO_LOOKUP_ABI,
+												getABIFor(FUNCTION, "pick", "Multipurpose"),
 												isLiteralResult(new Object[] { BigInteger.valueOf(42) }))),
-						getContractInfo("multi")
+						getContractInfo("Multipurpose")
 								.setNode("0.0.7")
 								.payingWith("sponsor")
 								.nodePayment(0L)
 								.logged(),
-						getContractBytecode("multi")
+						getContractBytecode("Multipurpose")
 								.setNode("0.0.8")
 								.payingWith("sponsor")
 								.nodePayment(0L)
