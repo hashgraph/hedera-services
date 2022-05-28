@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -115,7 +116,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						renewalPeriodCheckHolds(),
 						invalidTreasuryCheckHolds(),
 						newTreasuryMustSign(),
-						newTreasuryMustBeAssociated(),
+						newTreasuryAutoAssociationWorks(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
 						updateNftTreasuryHappyPath(),
 						updateTokenTreasuryRequiresZeroTokenBalance(),
@@ -126,8 +127,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						customFeesOnlyUpdatableWithKey(),
 						updateUniqueTreasuryWithNfts(),
 						updateHappyPath(),
-						safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
-
+						safeToUpdateCustomFeesWithNewFallbackWhileTransferring()
 				}
 		);
 	}
@@ -287,7 +287,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec newTreasuryMustBeAssociated() {
+	public HapiApiSpec newTreasuryAutoAssociationWorks() {
 		return defaultHapiSpec("NewTreasuryMustBeAssociated")
 				.given(
 						newKeyNamed("adminKey"),
@@ -296,10 +296,17 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.treasury("oldTreasury")
 				).when(
-						cryptoCreate("newTreasury").balance(0L)
+						cryptoCreate("newTreasuryWithoutRemainingAutoAssociations")
+								.balance(0L),
+						cryptoCreate("newTreasuryWithRemainingAutoAssociations")
+								.balance(0L).maxAutomaticTokenAssociations(10)
 				).then(
 						tokenUpdate("tbu")
-								.treasury("newTreasury").hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+								.treasury("newTreasuryWithoutRemainingAutoAssociations")
+								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						tokenUpdate("tbu")
+								.treasury("newTreasuryWithRemainingAutoAssociations"),
+						getTokenInfo("tbu").hasTreasury("newTreasuryWithRemainingAutoAssociations")
 				);
 	}
 
