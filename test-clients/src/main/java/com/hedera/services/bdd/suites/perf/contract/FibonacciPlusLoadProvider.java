@@ -73,6 +73,8 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -287,6 +289,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							.noLogging()
 							.payingWith(civilian)
 							.gas(GAS_TO_OFFER)
+							.hasPrecheckFrom(OK, BUSY)
 							.exposingGasTo((code, gas) -> {
 								if (verbose.get()) {
 									log.info("(Tried to) call {} (targets = {}, fibN = {}) with {} gas --> {}",
@@ -311,6 +314,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							.payingWith(civilian)
 							.balance(0L)
 							.gas(GAS_TO_OFFER)
+							.hasPrecheckFrom(OK, BUSY)
 							.exposingGasTo((code, gas) -> {
 								if (code == SUCCESS) {
 									createdSoFar.add(choice);
