@@ -1546,13 +1546,13 @@ jobs:
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
-            git checkout -b 02449-D-VM-Contract-Recovery origin/02449-D-VM-Contract-Recovery 
             # Build Platform
             cd /swirlds-platform
             ./mvnw clean install -DskipTests;
             
             # Build JRS
             cd /swirlds-platform/regression
+            git checkout -b 02449-D-VM-Contract-Recovery origin/02449-D-VM-Contract-Recovery 
             ./mvnw clean install
 
       - run:
