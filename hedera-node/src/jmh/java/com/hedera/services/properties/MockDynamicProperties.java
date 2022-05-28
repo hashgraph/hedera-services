@@ -1,4 +1,4 @@
-package com.hedera.hashgraph.properties;
+package com.hedera.services.properties;
 
 /*-
  * ‌

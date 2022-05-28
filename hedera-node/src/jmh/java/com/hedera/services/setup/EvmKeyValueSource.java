@@ -1,4 +1,4 @@
-package com.hedera.hashgraph.setup;
+package com.hedera.services.setup;
 
 /*-
  * ‌
