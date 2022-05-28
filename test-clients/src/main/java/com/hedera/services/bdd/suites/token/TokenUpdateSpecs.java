@@ -288,7 +288,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec newTreasuryAutoAssociationWorks() {
-		return defaultHapiSpec("NewTreasuryMustBeAssociated")
+		return defaultHapiSpec("NewTreasuryAutoAssociationWorks")
 				.given(
 						newKeyNamed("adminKey"),
 						cryptoCreate("oldTreasury").balance(0L),
