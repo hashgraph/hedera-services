@@ -1,6 +1,7 @@
 package com.hedera.services.setup;
 
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.merkle.Archivable;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -11,6 +12,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * Wrapper for a "bundle" of Services infrastructure components. Only components with a {@link InfrastructureType}
+ * enum constant are supported.
+ *
+ * <p>Used with {@link InfrastructureManager#loadOrCreateBundle(Map, Collection)}, this class should make it easy
+ * for a benchmark to create and re-use components with a specific configuration. (For example, a
+ * {@link InfrastructureType#ACCOUNTS_LEDGER} component with well-known range of contracts whose storage is bundled
+ * as a component of type {@link InfrastructureType#CONTRACT_STORAGE_VM}.)
+ */
 public class InfrastructureBundle {
 	private final Set<InfrastructureType> types;
 	private final Map<InfrastructureType, AtomicReference<?>> refs = new EnumMap<>(InfrastructureType.class);
@@ -40,10 +50,14 @@ public class InfrastructureBundle {
 		});
 	}
 
-	public void copyInPlace() {
+	public void newRound() {
 		refs.forEach((type, ref) -> {
-			if (type.isFastCopyable()) {
-				ref.set(((FastCopyable) ref.get()).copy());
+			final var curRef = ref.get();
+			if (curRef instanceof FastCopyable fc) {
+				ref.set(fc.copy());
+				if (curRef instanceof Archivable a) {
+					a.archive();
+				}
 			}
 		});
 	}

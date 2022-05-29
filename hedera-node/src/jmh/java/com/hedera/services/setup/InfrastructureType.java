@@ -25,6 +25,10 @@ import java.util.Set;
 
 import static com.hedera.services.setup.InfrastructureManager.CRYPTO;
 
+/**
+ * An instance of this type facilitates the "bundling" of a particular Services infrastructure component into a
+ * {@link InfrastructureBundle} that can be created, configured with well-known entities, and saved to disk.
+ */
 public enum InfrastructureType {
 	ACCOUNTS_LEDGER {
 		@Override
@@ -50,11 +54,6 @@ public enum InfrastructureType {
 		@Override
 		public EnumSet<InfrastructureType> dependencies() {
 			return EnumSet.of(InfrastructureType.ACCOUNTS_MM);
-		}
-
-		@Override
-		public boolean isFastCopyable() {
-			return false;
 		}
 	},
 	ACCOUNTS_MM {
@@ -155,10 +154,6 @@ public enum InfrastructureType {
 	}
 	public String locWithin(String dir) {
 		return dir + File.separator;
-	}
-
-	public boolean isFastCopyable() {
-		return true;
 	}
 
 	abstract public <T> T abInitio(String dir, InfrastructureBundle bundle);

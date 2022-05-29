@@ -26,7 +26,7 @@ import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 @State(Scope.Benchmark)
 @Fork(1)
 @Warmup(iterations = 1, time = 10)
-@Measurement(iterations = 5, time = 60)
+@Measurement(iterations = 3, time = 30)
 public class SimpleTransfersBench {
 	private static final int NUM_NODES = 39;
 	private static final int FIRST_NODE_I = 3;
@@ -60,9 +60,9 @@ public class SimpleTransfersBench {
 	}
 
 	@Setup(Level.Invocation)
-	public void fastCopyAtRoundBoundary() {
+	public void simulateRoundBoundary() {
 		if (n > 0 && n % transfersPerRound == 0) {
-			bundle.copyInPlace();
+			bundle.newRound();
 		}
 	}
 
