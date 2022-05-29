@@ -2,6 +2,7 @@ package com.hedera.services.setup;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -57,6 +58,8 @@ public class InfrastructureBundle {
 				ref.set(fc.copy());
 				if (curRef instanceof Archivable a) {
 					a.archive();
+				} else if (curRef instanceof VirtualMap<?,?> vm) {
+					vm.release();
 				}
 			}
 		});
