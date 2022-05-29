@@ -25,7 +25,7 @@ plugins {
 val includesRegex: String by project
 jmh {
     jmhVersion.set("1.35")
-    includes.set(listOf(includesRegex ?: "*"))
+    includes.set(listOf(includesRegex))
 }
 
 tasks.jmh {
