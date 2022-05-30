@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.file;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -50,6 +49,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -83,7 +83,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
 	public static final String FUSE_BYTECODE = "fuseBytecode";
 	public static final String MULTI_INITCODE = "multiInitcode";
 	public static final String FUSE_CONTRACT = "fuseContract";
-	public static final String MULTI_CONTRACT = "multiContract";
+	public static final String MULTI_CONTRACT = "Multipurpose";
 
 	private final Map<String, Long> entityNums = new HashMap<>();
 	private final Map<String, String> keyReprs = new HashMap<>();
@@ -130,10 +130,8 @@ public final class DiverseStateCreation extends HapiApiSuite {
 		final var mediumKey = "mediumKey";
 		final var largeKey = "largeKey";
 
-		final var fuseInitcode = "fuseInitcode";
-		final var multiInitcode = "multiInitcode";
-		final var fuseContract = "fuseContract";
-		final var multiContract = "multiContract";
+		final var fuseContract = "Fuse";
+		final var multiContract = "Multipurpose";
 
 		return defaultHapiSpec("CreateDiverseState").given(
 				newKeyNamed(smallKey).shape(SMALL_SHAPE),
@@ -166,24 +164,16 @@ public final class DiverseStateCreation extends HapiApiSuite {
 						LARGE_FILE, ByteString.copyFrom(LARGE_CONTENTS),
 						false, OptionalLong.of(ONE_HBAR)),
 				/* Create some bytecode files */
-				fileCreate(fuseInitcode)
-						.expiry(FUSE_EXPIRY_TIME)
-						.path(ContractResources.FUSE_BYTECODE_PATH)
-						.exposingNumTo(num -> entityNums.put(FUSE_INITCODE, num)),
-				fileCreate(multiInitcode)
-						.expiry(MULTI_EXPIRY_TIME)
-						.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-						.exposingNumTo(num -> entityNums.put(MULTI_INITCODE, num)),
+				uploadSingleInitCode(fuseContract, FUSE_EXPIRY_TIME, GENESIS, num -> entityNums.put(FUSE_INITCODE, num)),
+				uploadSingleInitCode(multiContract, MULTI_EXPIRY_TIME, GENESIS, num -> entityNums.put(MULTI_INITCODE, num)),
 				contractCreate(fuseContract)
-						.bytecode(fuseInitcode)
 						.exposingNumTo(num -> entityNums.put(FUSE_CONTRACT, num)),
 				contractCreate(multiContract)
-						.bytecode(multiInitcode)
 						.exposingNumTo(num -> entityNums.put(MULTI_CONTRACT, num)),
-				contractCall(multiContract, ContractResources.BELIEVE_IN_ABI, EXPECTED_LUCKY_NO)
+				contractCall(multiContract, "believeIn", EXPECTED_LUCKY_NO)
 		).then(
-				systemFileDelete(fuseInitcode).payingWith(GENESIS),
-				systemFileDelete(multiInitcode).payingWith(GENESIS),
+				systemFileDelete(fuseContract).payingWith(GENESIS),
+				systemFileDelete(multiContract).payingWith(GENESIS),
 				getFileInfo(SMALL_FILE)
 						.exposingKeyReprTo(repr -> keyReprs.put(SMALL_FILE, repr)),
 				getFileInfo(MEDIUM_FILE)

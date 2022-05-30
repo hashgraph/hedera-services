@@ -21,6 +21,11 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -34,8 +39,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAssociateTransitionLogicTest {
@@ -43,19 +55,30 @@ class TokenAssociateTransitionLogicTest {
 	private final TokenID firstToken = IdUtils.asToken("1.2.3");
 	private final TokenID secondToken = IdUtils.asToken("2.3.4");
 	private TransactionBody tokenAssociateTxn;
+
+	private AssociateLogic associateLogic;
 	private TokenAssociateTransitionLogic subject;
 
-	@Mock private TransactionContext txnCtx;
-	@Mock private AssociateLogic associateLogic;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
+		associateLogic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
 		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
 	}
 
 	@Test
 	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+		givenValidTxn();
 
 		// expect:
 		assertTrue(subject.applicability().test(tokenAssociateTxn));
@@ -63,8 +86,22 @@ class TokenAssociateTransitionLogicTest {
 	}
 
 	@Test
+	void happyPathWorks() {
+		givenValidTxn();
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
+		associateLogic = mock(AssociateLogic.class);
+		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
+
+		subject.doStateTransition();
+
+		verify(associateLogic).associate(
+				Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
+	}
+
+	@Test
 	void acceptsValidTxn() {
-		givenValidTxnCtx();
+		givenValidTxn();
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenAssociateTxn));
@@ -86,7 +123,7 @@ class TokenAssociateTransitionLogicTest {
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
 	}
 
-	private void givenValidTxnCtx() {
+	private void givenValidTxn() {
 		tokenAssociateTxn = TransactionBody.newBuilder()
 				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
 						.setAccount(account)
