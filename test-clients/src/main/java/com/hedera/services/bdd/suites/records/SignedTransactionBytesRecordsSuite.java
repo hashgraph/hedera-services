@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.records;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,8 +33,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -53,9 +52,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						transactionsWithOnlySigMap(),
-						transactionsWithSignedTxnBytesAndSigMap(),
-						transactionsWithSignedTxnBytesAndBodyBytes()
+						transactionsWithOnlySigMap()
+//						transactionsWithSignedTxnBytesAndSigMap(),
+//						transactionsWithSignedTxnBytesAndBodyBytes()
 				}
 		);
 	}
@@ -66,21 +65,20 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec transactionsWithOnlySigMap() {
+		final var contract = "BalanceLookup";
 		return defaultHapiSpec("TransactionsWithOnlySigMap")
 				.given(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1L))
 								.via("failedCryptoTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY),
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						fileUpdate("bytecode")
-								.path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH)
+						uploadInitCode(contract),
+						fileUpdate(contract)
 								.via("failedFileTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY)
 				).when(
-						contractCreate("test")
-								.bytecode("bytecode")
+						contractCreate(contract)
 								.balance(1_000L)
 								.via("failedContractTransaction")
 								.asTxnWithOnlySigMap()

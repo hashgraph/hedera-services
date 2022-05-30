@@ -35,9 +35,9 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import javax.inject.Inject;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
@@ -59,8 +59,8 @@ public class ApproveAllowanceLogic {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.dynamicProperties = dynamicProperties;
-		this.entitiesChanged = new HashMap<>();
-		this.nftsTouched = new HashMap<>();
+		this.entitiesChanged = new TreeMap<>();
+		this.nftsTouched = new TreeMap<>();
 	}
 
 	public void approveAllowance(
