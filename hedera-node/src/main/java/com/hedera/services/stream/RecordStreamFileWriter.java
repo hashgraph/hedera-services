@@ -2,13 +2,7 @@ package com.hedera.services.stream;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
-import com.hederahashgraph.api.proto.java.HashAlgorithm;
-import com.hederahashgraph.api.proto.java.HashObject;
-import com.hederahashgraph.api.proto.java.RecordStreamFile;
-import com.hederahashgraph.api.proto.java.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.hederahashgraph.api.proto.java.SignatureFile;
-import com.hederahashgraph.api.proto.java.SignatureObject;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
@@ -20,6 +14,13 @@ import com.swirlds.common.stream.StreamType;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import proto.HashAlgorithm;
+import proto.HashObject;
+import proto.RecordStreamFile;
+import proto.RecordStreamItem;
+import proto.SignatureFile;
+import proto.SignatureObject;
+import proto.SignatureType;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -38,6 +39,7 @@ import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 
 public class RecordStreamFileWriter<T extends RecordStreamObject>  implements LinkedObjectStream<T> {
+	//TODO: lower log level to debug/trace for all log.infoe
 
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 	public static final int OBJECT_STREAM_SIG_VERSION = 1; //TODO: can probably remove this
@@ -219,7 +221,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 				3. We populate the SidecarMetadata of the RecordStreamFile message
 			*/
 
-			final var firstTxnTimestamp = recordStreamFile.getRecordFileObjects(0).getRecord().getConsensusTimestamp();
+			final var firstTxnTimestamp = recordStreamFile.getRecordStreamItems(0).getRecord().getConsensusTimestamp();
 			this.file = new File(
 					generateStreamFilePath(
 							Instant.ofEpochSecond(firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos())));
@@ -323,7 +325,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	 * @param object
 	 */
 	private void consume(T object) {
-		recordStreamFile.addRecordFileObjects(
+		recordStreamFile.addRecordStreamItems(
 				RecordStreamItem.newBuilder()
 						.setTransaction(object.getTransaction())
 						.setRecord(object.getTransactionRecord())
@@ -433,7 +435,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	private SignatureObject generateSignatureObject(final Hash hash) {
 		final var signature = signer.sign(hash.getValue());
 		return SignatureObject.newBuilder()
-				.setType(com.hederahashgraph.api.proto.java.SignatureType.SHA_384_WITH_RSA)
+				.setType(SignatureType.SHA_384_WITH_RSA)
 				.setLength(signature.length)
 				.setChecksum(101 - signature.length) // simple checksum to detect if at wrong place in the stream
 				.setSignature(ByteString.copyFrom(signature))

@@ -6,12 +6,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hederahashgraph.api.proto.java.HashAlgorithm;
-import com.hederahashgraph.api.proto.java.HashObject;
-import com.hederahashgraph.api.proto.java.RecordStreamFile;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.hederahashgraph.api.proto.java.SignatureFile;
-import com.hederahashgraph.api.proto.java.SignatureType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -34,6 +29,11 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import proto.HashAlgorithm;
+import proto.HashObject;
+import proto.RecordStreamFile;
+import proto.SignatureFile;
+import proto.SignatureType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -268,8 +268,8 @@ class RecordStreamFileWriterTest {
 		assertEquals(toProto(startRunningHash), recordStreamFile.getStartObjectRunningHash());
 
 		// assert RSOs
-		assertEquals(blockRSOs.size(), recordStreamFile.getRecordFileObjectsCount());
-		final var recordFileObjectsList = recordStreamFile.getRecordFileObjectsList();
+		assertEquals(blockRSOs.size(), recordStreamFile.getRecordStreamItemsCount());
+		final var recordFileObjectsList = recordStreamFile.getRecordStreamItemsList();
 		for (int i = 0; i < blockRSOs.size(); i++) {
 			final var expectedRSO = blockRSOs.get(i);
 			final var actualRSOProto = recordFileObjectsList.get(i);
