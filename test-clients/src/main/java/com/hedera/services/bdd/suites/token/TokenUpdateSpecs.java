@@ -103,31 +103,31 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						symbolChanges(),
-//						standardImmutabilitySemanticsHold(),
-//						validAutoRenewWorks(),
-//						tooLongNameCheckHolds(),
-//						tooLongSymbolCheckHolds(),
-//						nameChanges(),
-//						keysChange(),
-//						validatesAlreadyDeletedToken(),
-//						treasuryEvolves(),
-//						deletedAutoRenewAccountCheckHolds(),
-//						renewalPeriodCheckHolds(),
-						invalidTreasuryCheckHolds()
-//						newTreasuryMustSign(),
-//						newTreasuryAutoAssociationWorks(),
-//						tokensCanBeMadeImmutableWithEmptyKeyList(),
-//						updateNftTreasuryHappyPath(),
-//						updateTokenTreasuryRequiresZeroTokenBalance(),
-//						validatesMissingAdminKey(),
-//						validatesMissingRef(),
-//						validatesNewExpiry(),
+						symbolChanges(),
+						standardImmutabilitySemanticsHold(),
+						validAutoRenewWorks(),
+						tooLongNameCheckHolds(),
+						tooLongSymbolCheckHolds(),
+						nameChanges(),
+						keysChange(),
+						validatesAlreadyDeletedToken(),
+						treasuryEvolves(),
+						deletedAutoRenewAccountCheckHolds(),
+						renewalPeriodCheckHolds(),
+						invalidTreasuryCheckHolds(),
+						newTreasuryMustSign(),
+						newTreasuryAutoAssociationWorks(),
+						tokensCanBeMadeImmutableWithEmptyKeyList(),
+						updateNftTreasuryHappyPath(),
+						updateTokenTreasuryRequiresZeroTokenBalance(),
+						validatesMissingAdminKey(),
+						validatesMissingRef(),
+						validatesNewExpiry(),
 						/* HIP-18 */
-//						customFeesOnlyUpdatableWithKey(),
-//						updateUniqueTreasuryWithNfts(),
-//						updateHappyPath(),
-//						safeToUpdateCustomFeesWithNewFallbackWhileTransferring()
+						customFeesOnlyUpdatableWithKey(),
+						updateUniqueTreasuryWithNfts(),
+						updateHappyPath(),
+						safeToUpdateCustomFeesWithNewFallbackWhileTransferring()
 				}
 		);
 	}
