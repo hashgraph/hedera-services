@@ -315,6 +315,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
 				.given(
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas"),
 						newKeyNamed(FREEZE_KEY),
 						newKeyNamed(KYC_KEY),
 						cryptoCreate(ACCOUNT)
@@ -445,6 +447,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
 				.given(
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas"),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
@@ -456,13 +460,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
 						uploadInitCode(THE_CONTRACT),
-						contractCreate(THE_CONTRACT)
+						contractCreate(THE_CONTRACT),
+						UtilVerbs.overriding("tokens.maxPerAccount", "1"),
+						UtilVerbs.overriding("entities.limitTokenAssociations", "true"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true")
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
@@ -505,7 +511,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-						UtilVerbs.resetToDefault("tokens.maxPerAccount")
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas")
 				);
 	}
 
