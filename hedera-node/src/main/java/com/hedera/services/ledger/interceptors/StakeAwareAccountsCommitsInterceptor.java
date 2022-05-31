@@ -145,6 +145,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		if (rewardsPaid > 0) {
 			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
 			updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
+			// no need to update newFundingBalance because if rewardsPaid > 0, we will not be needing newFundingBalance
+			// for rewards activation, since rewards are already activated
 		}
 	}
 
