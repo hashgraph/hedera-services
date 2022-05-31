@@ -23,15 +23,19 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
 import java.math.BigInteger;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+
 public enum SupportedContract {
-	SIMPLE_STORAGE(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH,
+	SIMPLE_STORAGE(bytecodePath("SimpleStorage"),
 			List.of(
 					new ContractCallDetails(
-							ContractResources.SIMPLE_STORAGE_SETTER_ABI,
+							getABIFor(FUNCTION, "set", "SimpleStorage"),
 							new Object[] { BigInteger.valueOf(1) })
 			),
 			List.of(
-					new ContractCallDetails(ContractResources.SIMPLE_STORAGE_GETTER_ABI, new Object[] {})
+					new ContractCallDetails(getABIFor(FUNCTION, "get", "SimpleStorage"), new Object[] {})
 			)
 	);
 

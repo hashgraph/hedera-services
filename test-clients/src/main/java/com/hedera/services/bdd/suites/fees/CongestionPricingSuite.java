@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.fees;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -42,9 +41,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -75,6 +74,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 	private HapiApiSpec canUpdateMultipliersDynamically() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		var contract = "Multipurpose";
 		String tmpMinCongestionPeriod = "1";
 
 		AtomicLong normalPrice = new AtomicLong();
@@ -85,13 +85,9 @@ public class CongestionPricingSuite extends HapiApiSuite {
 						cryptoCreate("civilian")
 								.payingWith(GENESIS)
 								.balance(ONE_MILLION_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate("scMulti")
-								.bytecode("bytecode")
-								.payingWith(GENESIS),
-						contractCall("scMulti")
+						uploadInitCode(contract),
+						contractCreate(contract),
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
@@ -117,7 +113,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
 								uncheckedSubmit(
-										contractCall("scMulti")
+										contractCall(contract)
 												.signedBy("civilian")
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
@@ -126,7 +122,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								sleepFor(125)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 
-						contractCall("scMulti")
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
