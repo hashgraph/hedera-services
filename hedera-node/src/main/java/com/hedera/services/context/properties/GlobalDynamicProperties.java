@@ -89,6 +89,8 @@ public class GlobalDynamicProperties {
 	private long schedulingMaxExpirationFutureSeconds;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
+	private long maxPrecedingRecords;
+	private long maxFollowingRecords;
 	private Set<HederaFunctionality> schedulingWhitelist;
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
@@ -186,6 +188,8 @@ public class GlobalDynamicProperties {
 		schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
+		maxPrecedingRecords = properties.getLongProperty("consensus.handle.maxPrecedingRecords");
+		maxFollowingRecords = properties.getLongProperty("consensus.handle.maxFollowingRecords");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
@@ -405,6 +409,14 @@ public class GlobalDynamicProperties {
 
 	public int messageMaxBytesAllowed() {
 		return messageMaxBytesAllowed;
+	}
+
+	public long maxPrecedingRecords() {
+		return maxPrecedingRecords;
+	}
+
+	public long maxFollowingRecords() {
+		return maxFollowingRecords;
 	}
 
 	public Set<HederaFunctionality> schedulingWhitelist() {

@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"address","name":"returner_address","type":"address"}],"name":"callReturner","outputs":[{"internalType":"uint160","name":"","type":"uint160"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"}],"name":"createReturner","outputs":[],"stateMutability":"nonpayable","type":"function"}]

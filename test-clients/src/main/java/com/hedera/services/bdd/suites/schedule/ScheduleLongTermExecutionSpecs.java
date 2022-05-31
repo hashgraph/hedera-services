@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.schedule;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -134,12 +133,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithContractCallWorksAtExpiry(),
 			executionWithContractCreateWorksAtExpiry(),
 
-			executionNoSigTxnRequiredWorks(),
-
-			failsWithExpiryInPast(),
-			failsWithExpiryInFarFuture(),
-
-			congestionPricingDoesNotAffectScheduleExecutionAtExpiry(),
+			futureThrottlesAreRespected(),
 
 			disableLongTermScheduledTransactions(),
 
@@ -1161,20 +1155,21 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount").via("payerTxn"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+								fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
-								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.payingWith(GENESIS)
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
+								.designatingPayer(FREEZE_ADMIN)
+								.payingWith("payingAccount")
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
 								.via("successTxn")
 				)
 				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(FREEZE_ADMIN)
+								.payingWith("payingAccount")
+								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						getScheduleInfo("validSchedule")
@@ -1209,13 +1204,11 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount2"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+							fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith(GENESIS)
+								.payingWith("payingAccount")
 								.waitForExpiry()
 								.withRelativeExpiry("payerTxn", 8)
 								.recordingScheduledTxn()
@@ -1223,7 +1216,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 				)
 				.when(
 						scheduleSign("validSchedule")
-								.alsoSigningWith("payingAccount2", ADDRESS_BOOK_CONTROL)
+								.alsoSigningWith("payingAccount2", FREEZE_ADMIN)
 								.payingWith("payingAccount")
 								.hasKnownStatus(SUCCESS)
 				)
@@ -1581,6 +1574,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec congestionPricingDoesNotAffectScheduleExecutionAtExpiry() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		var contract = "Multipurpose";
 
 		AtomicLong normalPriceScheduled = new AtomicLong();
 		AtomicLong normalPriceRegular = new AtomicLong();
@@ -1592,14 +1586,10 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								.balance(ONE_MILLION_HBARS).via("civilianTxn"),
 							overriding("scheduling.whitelist", "ContractCall"),
 
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate("scMulti")
-								.bytecode("bytecode")
-								.payingWith(GENESIS),
+						uploadInitCode(contract),
+						contractCreate(contract),
 
-						contractCall("scMulti")
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
@@ -1611,7 +1601,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								}),
 
 						scheduleCreate("cheapSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -1634,7 +1624,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								}),
 
 						scheduleCreate("validSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -1663,7 +1653,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						blockingOrder(IntStream.range(0, 75).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
 								uncheckedSubmit(
-										contractCall("scMulti")
+										contractCall(contract)
 												.signedBy("civilian")
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
@@ -1672,7 +1662,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								sleepFor(125)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 
-						contractCall("scMulti")
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
@@ -1724,6 +1714,66 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 									0.1,
 									"no multiplier should be in affect for execution at expiry!");
 						})
+				);
+	}
+
+
+	private HapiApiSpec futureThrottlesAreRespected() {
+		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+
+		return defaultHapiSpec("FutureThrottlesAreRespected")
+				.given(
+						cryptoCreate("sender").balance(ONE_MILLION_HBARS).via("senderTxn"),
+						cryptoCreate("receiver"),
+
+						overriding("scheduling.maxTxnPerSecond", "100"),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(artificialLimits.toByteArray()),
+
+						sleepFor(500)
+				)
+				.when(
+
+						blockingOrder(IntStream.range(0, 17).mapToObj(i -> new HapiSpecOperation[] {
+								scheduleCreate(
+										"twoSigXfer" + i,
+										cryptoTransfer(
+												tinyBarsFromTo("sender", "receiver", 1)
+										).fee(ONE_HBAR)
+								)
+										.withEntityMemo(randomUppercase(100))
+										.payingWith("sender")
+										.waitForExpiry()
+										.withRelativeExpiry("senderTxn", 120),
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
+
+						scheduleCreate(
+								"twoSigXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).fee(ONE_HBAR)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.payingWith("sender")
+								.waitForExpiry()
+								.withRelativeExpiry("senderTxn", 120)
+								.hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+
+				)
+				.then(
+
+						overriding("scheduling.maxTxnPerSecond",
+								HapiSpecSetup.getDefaultNodeProps().get("scheduling.maxTxnPerSecond")),
+						fileUpdate(THROTTLE_DEFS)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles.toByteArray()),
+
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
+								.payingWith(GENESIS)
+
 				);
 	}
 

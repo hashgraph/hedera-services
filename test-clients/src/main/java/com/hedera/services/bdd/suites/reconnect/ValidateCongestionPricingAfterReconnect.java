@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.reconnect;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -44,8 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
@@ -85,7 +84,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 		String tmpMinCongestionPeriodInSecs = "5";
 		String civilianAccount = "civilian";
-		String oneContract = "contract";
+		String oneContract = "Multipurpose";
 
 		AtomicLong normalPrice = new AtomicLong();
 		AtomicLong tenXPrice = new AtomicLong();
@@ -100,11 +99,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						cryptoCreate(civilianAccount)
 								.payingWith(GENESIS)
 								.balance(ONE_MILLION_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
+						uploadInitCode(oneContract),
 						contractCreate(oneContract)
-								.bytecode("bytecode")
 								.payingWith(GENESIS)
 								.logging(),
 						contractCall(oneContract)

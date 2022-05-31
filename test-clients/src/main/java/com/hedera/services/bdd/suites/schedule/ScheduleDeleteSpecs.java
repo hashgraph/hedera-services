@@ -51,11 +51,6 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	protected Logger getResultsLogger() {
 		return log;
 	}

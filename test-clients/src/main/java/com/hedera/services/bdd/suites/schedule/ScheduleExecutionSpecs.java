@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -86,6 +85,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -158,11 +158,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 	public static void main(String... args) {
 		new ScheduleExecutionSpecs().runSuiteAsync();
-	}
-
-	@Override
-	public boolean canRunAsync() {
-		return true;
 	}
 
 	@Override
@@ -2321,23 +2316,24 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
-
 		return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
 				.given(
 						cryptoCreate("payingAccount"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+								fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
-								.designatingPayer(ADDRESS_BOOK_CONTROL)
-								.alsoSigningWith(ADDRESS_BOOK_CONTROL)
-								.payingWith(GENESIS)
+								.designatingPayer(FREEZE_ADMIN)
+								.payingWith("payingAccount")
 								.via(successTxn)
 				)
 				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith(FREEZE_ADMIN)
+								.payingWith("payingAccount")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
 				)
 				.then(
 						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
@@ -2361,18 +2357,16 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						cryptoCreate("payingAccount2"),
 						overriding("scheduling.whitelist", "FileUpdate"),
 						scheduleCreate("validSchedule",
-							fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("scheduling.whitelist",
-										HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")))
+							fileUpdate(standardUpdateFile).contents("fooo!")
 						)
 								.withEntityMemo(randomUppercase(100))
 								.designatingPayer("payingAccount2")
-								.payingWith(GENESIS)
+								.payingWith("payingAccount")
 								.via(successTxn)
 				)
 				.when(
 						scheduleSign("validSchedule")
-								.alsoSigningWith("payingAccount2", ADDRESS_BOOK_CONTROL)
+								.alsoSigningWith("payingAccount2", FREEZE_ADMIN)
 								.payingWith("payingAccount")
 								.via(signTxn)
 								.hasKnownStatus(SUCCESS)
@@ -2506,6 +2500,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec congestionPricingAffectsImmediateScheduleExecution() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		var contract = "Multipurpose";
 
 		AtomicLong normalPrice = new AtomicLong();
 
@@ -2516,16 +2511,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.balance(ONE_MILLION_HBARS),
 							overriding("scheduling.whitelist", "ContractCall"),
 
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate("scMulti")
-								.bytecode("bytecode")
-								.payingWith(GENESIS),
+						uploadInitCode(contract),
+						contractCreate(contract),
 
 
 						scheduleCreate("cheapSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -2547,7 +2538,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								}),
 
 						scheduleCreate("validSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -2573,7 +2564,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
 								uncheckedSubmit(
-										contractCall("scMulti")
+										contractCall(contract)
 												.signedBy("civilian")
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
