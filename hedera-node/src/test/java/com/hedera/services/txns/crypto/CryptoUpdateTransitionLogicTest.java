@@ -26,7 +26,7 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
@@ -366,7 +366,7 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void translatesMissingAccountException() {
 		givenTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
+		willThrow(MissingEntityException.class).given(ledger).customize(any(), any());
 
 		subject.doStateTransition();
 

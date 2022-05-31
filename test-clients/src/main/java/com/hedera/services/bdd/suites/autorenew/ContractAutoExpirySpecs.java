@@ -33,12 +33,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INSTANT_HOG_CONS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -222,7 +221,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 
 	private HapiApiSpec storageExpiryWorksAtTheExpectedInterval() {
 		final var initcode = "initcode";
-		final var contractToRemove = "contractToRemove";
+		final var contractToRemove = "InstantStorageHog";
 		final var minimalLifetime = 4;
 		final var aFungibleToken = "aFT";
 		final var bFungibleToken = "bFT";
@@ -255,7 +254,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 						enableContractAutoRenewWith(
 								minimalLifetime, 0,
 								HIGH_SCAN_CYCLE_COUNT, 1),
-						contractCreate(contractToRemove, INSTANT_HOG_CONS_ABI, 63)
+						contractCreate(contractToRemove, 63)
 								.gas(2_000_000)
 								.entityMemo("")
 								.bytecode(initcode)
