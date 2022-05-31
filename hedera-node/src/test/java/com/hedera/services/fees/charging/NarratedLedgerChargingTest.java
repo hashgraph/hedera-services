@@ -181,9 +181,15 @@ class NarratedLedgerChargingTest {
 		inOrder.verify(ledger).adjustBalance(grpcNodeFundingId, +expectedNodeRewardFee);
 		inOrder.verify(ledger).adjustBalance(grpcPayerId, -(allFees));
 
-		inOrder.verify(ledger).adjustBalance(grpcFundingId, -fundingAccountFee);
-		inOrder.verify(ledger).adjustBalance(grpcStakeFundingId, -expectedStakingRewardFee);
-		inOrder.verify(ledger).adjustBalance(grpcNodeFundingId, -expectedNodeRewardFee);
+		final var refundFee = serviceFee;
+		final var refundNodeRewardFee = refundFee * nodeRewardPercent / 100;
+		final var refundStakingRewardFee = refundFee * stakingRewardPercent / 100;
+		final var refundFundingAccountFee = refundFee - (refundNodeRewardFee + refundStakingRewardFee);
+		assertEquals(refundFee, refundFundingAccountFee + refundNodeRewardFee + refundStakingRewardFee);
+
+		inOrder.verify(ledger).adjustBalance(grpcFundingId, -refundFundingAccountFee);
+		inOrder.verify(ledger).adjustBalance(grpcStakeFundingId, -refundStakingRewardFee);
+		inOrder.verify(ledger).adjustBalance(grpcNodeFundingId, -refundNodeRewardFee);
 		inOrder.verify(ledger).adjustBalance(grpcPayerId, +serviceFee);
 
 		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
