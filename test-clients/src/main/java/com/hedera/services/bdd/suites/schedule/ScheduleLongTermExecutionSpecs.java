@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.schedule;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -1580,6 +1579,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec congestionPricingDoesNotAffectScheduleExecutionAtExpiry() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		var contract = "Multipurpose";
 
 		AtomicLong normalPriceScheduled = new AtomicLong();
 		AtomicLong normalPriceRegular = new AtomicLong();
@@ -1591,14 +1591,10 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								.balance(ONE_MILLION_HBARS).via("civilianTxn"),
 							overriding("scheduling.whitelist", "ContractCall"),
 
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate("scMulti")
-								.bytecode("bytecode")
-								.payingWith(GENESIS),
+						uploadInitCode(contract),
+						contractCreate(contract),
 
-						contractCall("scMulti")
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
@@ -1610,7 +1606,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								}),
 
 						scheduleCreate("cheapSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -1633,7 +1629,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								}),
 
 						scheduleCreate("validSchedule",
-							contractCall("scMulti")
+							contractCall(contract)
 									.fee(ONE_HUNDRED_HBARS)
 									.sending(ONE_HBAR)
 						)
@@ -1662,7 +1658,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 						blockingOrder(IntStream.range(0, 75).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
 								uncheckedSubmit(
-										contractCall("scMulti")
+										contractCall(contract)
 												.signedBy("civilian")
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
@@ -1671,7 +1667,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 								sleepFor(125)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 
-						contractCall("scMulti")
+						contractCall(contract)
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
