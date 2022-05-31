@@ -39,11 +39,11 @@ class StakePeriodManagerTest {
 		final var expectedPeriod = LocalDate.ofInstant(instant, zoneUTC).toEpochDay();
 		assertEquals(expectedPeriod, period);
 
-		var latesteRewardable = subject.latestRewardableStakePeriodStart();
+		var latesteRewardable = subject.firstNonRewardableStakePeriod();
 		assertEquals(Long.MIN_VALUE, latesteRewardable);
 
 		given(networkContext.areRewardsActivated()).willReturn(true);
-		latesteRewardable = subject.latestRewardableStakePeriodStart();
+		latesteRewardable = subject.firstNonRewardableStakePeriod();
 		assertEquals(expectedPeriod - 1, latesteRewardable);
 	}
 

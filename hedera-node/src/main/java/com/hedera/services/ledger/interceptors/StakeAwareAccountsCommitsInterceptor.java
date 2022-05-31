@@ -48,7 +48,6 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.getNodeSt
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 
 public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitInterceptor {
@@ -63,6 +62,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private boolean rewardsActivated;
 	// boolean to track if the account has been rewarded already with one of the pending changes
 	private boolean[] hasBeenRewarded = new boolean[64];
+
+	private long newFundingBalance;
 
 	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
 	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
@@ -93,6 +94,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		// if the rewards are activated previously they will not be activated again
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
 
+		// initialize finding balance
+		newFundingBalance = -1;
+
 		// Iterate through the change set, maintaining two invariants:
 		//   1. At the beginning of iteration i, any account that is rewardable due to change in balance or
 		//      stakedAccountId or stakedNodeId or declineRewards fields. Also checks the balance of funding account
@@ -110,8 +114,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 		super.preview(pendingChanges);
 
-		if (!rewardsActivated) {
-			checkStakingRewardsActivation(pendingChanges);
+		if (!rewardsActivated && newFundingBalance > dynamicProperties.getStakingStartThreshold()) {
+			activateStakingRewards();
 		}
 	}
 
@@ -128,6 +132,10 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			}
 			// Update any STAKED_TO_ME side effects of this change
 			n = updateStakedToMeSideEffects(account, changes, pendingChanges);
+
+			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == 800) {
+				newFundingBalance = finalBalanceGiven(account, changes);
+			}
 		}
 	}
 
@@ -137,6 +145,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		if (rewardsPaid > 0) {
 			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
 			updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
+			// no need to update newFundingBalance because if rewardsPaid > 0, we will not be needing newFundingBalance
+			// for rewards activation, since rewards are already activated
 		}
 	}
 
@@ -147,7 +157,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			final var curNodeId = (account != null) ? account.getStakedId() : 0L;
 			final var newNodeId = getNodeStakeeNum(changes);
-			if (curNodeId < 0 && curNodeId != newNodeId) {
+			if (curNodeId < 0 && curNodeId != newNodeId) { // should include newNodeId != 0 ?
 				// Node stakee has been replaced, withdraw stakeRewarded or stakeNotRewarded from ex-stakee based on
 				// isDeclineReward option
 				stakeChangeManager.withdrawStake(
@@ -175,7 +185,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var curStakeeNum = (account != null) ? account.getStakedId() : 0L;
 		final var newStakeeNum = getAccountStakeeNum(changes);
 
-		if (curStakeeNum > 0 && curStakeeNum != newStakeeNum) {
+		if (curStakeeNum > 0 && curStakeeNum != newStakeeNum) { // should add newStakeeNum != 0 ?
 			// Stakee has been replaced, withdraw initial balance from ex-stakee
 			final var exStakeeI = stakeChangeManager.findOrAdd(curStakeeNum, pendingChanges);
 			updateStakedToMe(exStakeeI, -account.getBalance(), pendingChanges);
@@ -247,7 +257,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		Boolean changedDecline = (Boolean) changes.get(DECLINE_REWARD);
 		return account != null
 				&& account.getStakedId() < 0
-				&& networkCtx.get().areRewardsActivated()
+				&& rewardsActivated
 				&& hasStakeFieldChanges(changes)
 				&& stakePeriodManager.isRewardable(account.getStakePeriodStart())
 				&& !Boolean.TRUE.equals(changedDecline)
@@ -256,16 +266,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	/**
 	 * Checks and activates staking rewards if the staking funding account balance reaches threshold
-	 *
-	 * @param pendingChanges
-	 * 		account property changes
 	 */
-	private void checkStakingRewardsActivation(
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		final var newRewardBalance = calculateNewRewardBalance(pendingChanges);
-		if (!shouldActivateStakingRewards(newRewardBalance)) {
-			return;
-		}
+	private void activateStakingRewards() {
 		long todayNumber = stakePeriodManager.currentStakePeriod();
 
 		networkCtx.get().setStakingRewards(true);
@@ -273,39 +275,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		stakeChangeManager.setStakePeriodStart(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}
-
-	/**
-	 * Calculates new reward balance for the account 0.0.800 and checks if staking rewards should be activated
-	 *
-	 * @param pendingChanges
-	 * 		account property changes
-	 * @return new balance of 0.0.800
-	 */
-	private long calculateNewRewardBalance(
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		long stakingFundBalance = 0;
-		long existingBalance = 0;
-		for (int i = 0; i < pendingChanges.size(); i++) {
-			if (pendingChanges.id(i).getAccountNum() == STAKING_FUNDING_ACCOUNT_NUMBER) {
-				existingBalance = pendingChanges.entity(i).getBalance();
-				final var changes = pendingChanges.changes(i);
-				stakingFundBalance += (long) changes.get(BALANCE);
-			}
-		}
-		return stakingFundBalance + existingBalance;
-	}
-
-	/**
-	 * If the balance on 0.0.800 changed in the current transaction and the balance reached above the specified
-	 * threshold activates staking rewards
-	 *
-	 * @param newRewardBalance
-	 * @return true if rewards should be activated, false otherwise
-	 */
-	private boolean shouldActivateStakingRewards(final long newRewardBalance) {
-		return newRewardBalance >= dynamicProperties.getStakingStartThreshold();
-	}
-
 
 	/* only used for unit tests */
 	@VisibleForTesting

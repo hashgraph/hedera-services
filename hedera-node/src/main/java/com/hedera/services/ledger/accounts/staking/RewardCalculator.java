@@ -26,13 +26,14 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
-
+@Singleton
 public class RewardCalculator {
 	private final StakePeriodManager stakePeriodManager;
 	private final StakeInfoManager stakeInfoManager;
