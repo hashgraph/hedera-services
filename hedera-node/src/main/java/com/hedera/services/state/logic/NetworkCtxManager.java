@@ -52,7 +52,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 @Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
-	static final long MIDNIGHT_CHECK_RATE_SECS = 1;
+	static final long IS_MIDNIGHT_CHECK_RATE_SECS = 1;
 
 	private final int issResetPeriod;
 
@@ -128,7 +128,7 @@ public class NetworkCtxManager {
 			final long elapsedInterval = consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond();
 
 			/* We only check whether the midnight rates should be updated every intervalSecs in consensus time */
-			if (elapsedInterval >= MIDNIGHT_CHECK_RATE_SECS) {
+			if (elapsedInterval >= IS_MIDNIGHT_CHECK_RATE_SECS) {
 				/* If the lastMidnightBoundaryCheck was in a different UTC day, we update the midnight rates
 				* and perform end of staking period calculations */
 				if (isNextDay.test(lastMidnightBoundaryCheck, consensusTime)) {
