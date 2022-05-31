@@ -101,7 +101,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private final String TARGET_ACCOUNT = "complexKeyAccount";
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 

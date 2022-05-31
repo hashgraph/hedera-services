@@ -670,7 +670,7 @@ public class SuiteRunner {
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
-		return Stream.of(suites).anyMatch(suite -> !suite.canRunAsync());
+		return Stream.of(suites).anyMatch(suite -> !suite.canRunConcurrent());
 	}
 
 	private static List<CategoryResult> runTargetCategories() {

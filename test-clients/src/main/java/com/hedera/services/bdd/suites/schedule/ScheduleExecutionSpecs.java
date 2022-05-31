@@ -161,11 +161,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	protected Logger getResultsLogger() {
 		return log;
 	}

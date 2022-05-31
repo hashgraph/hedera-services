@@ -71,11 +71,6 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return withAndWithoutLongTermEnabled(() -> List.of(
 			executionTimeIsAvailable(),
