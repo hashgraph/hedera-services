@@ -127,7 +127,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 				)
 		)
 		;
-		then.add(UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+		then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
 
 		return defaultHapiSpec("playGame")
 				.given(given.toArray(HapiSpecOperation[]::new))

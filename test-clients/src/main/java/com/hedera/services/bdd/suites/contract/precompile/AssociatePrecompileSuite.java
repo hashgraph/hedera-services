@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -316,7 +315,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
 				.given(
-						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties"),
 						newKeyNamed(FREEZE_KEY),
 						newKeyNamed(KYC_KEY),
 						cryptoCreate(ACCOUNT)
@@ -507,7 +505,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")
+						UtilVerbs.resetToDefault("tokens.maxPerAccount")
 				);
 	}
 
