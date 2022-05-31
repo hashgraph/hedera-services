@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.utils.EntityNum;
@@ -47,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -63,7 +66,7 @@ class MerkleStakingInfoTest {
 	private final long stakeToNotReward = 155L;
 	private final long stakeRewardStart = 1234L;
 	private final long stake = 500L;
-	private final long[] rewardSumHistory = new long[] {2L, 1L};
+	private final long[] rewardSumHistory = new long[] {2L, 1L, 0L};
 	private final EntityNum key = EntityNum.fromInt(number);
 
 	@BeforeEach
@@ -129,14 +132,16 @@ class MerkleStakingInfoTest {
 	@Test
 	void toStringWorks() {
 		final var expected = "MerkleStakingInfo{id=0.0.0.34, minStake=100, maxStake=10000, stakeToReward=345, " +
-				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[2, 1]}";
+				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[2, 1, 0]}";
 
 		assertEquals(expected, subject.toString());
 	}
 
 	@Test
 	void gettersAndSettersWork() {
-		var subject = new MerkleStakingInfo();
+		final var props = mock(BootstrapProperties.class);
+		given(props.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+		var subject = new MerkleStakingInfo(props);
 
 		subject.setKey(key);
 		subject.setMinStake(minStake);
@@ -157,7 +162,7 @@ class MerkleStakingInfoTest {
 		assertArrayEquals(rewardSumHistory, subject.getRewardSumHistory());
 
 		subject.clearRewardSumHistory();
-		assertArrayEquals(new long[] { 0, 0 }, subject.getRewardSumHistory());
+		assertArrayEquals(new long[] { 0, 0, 0 }, subject.getRewardSumHistory());
 	}
 
 	@Test
@@ -176,7 +181,7 @@ class MerkleStakingInfoTest {
 
 		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
-		assertArrayEquals(new long[]{13L, 1L}, subject.getRewardSumHistory());
+		assertArrayEquals(new long[]{14L, 2L, 1L}, subject.getRewardSumHistory());
 	}
 
 	@Test

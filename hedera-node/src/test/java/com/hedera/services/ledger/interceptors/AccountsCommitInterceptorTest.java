@@ -22,6 +22,7 @@ package com.hedera.services.ledger.interceptors;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -71,6 +72,8 @@ class AccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private BootstrapProperties bootstrapProperties;
 	@Mock
 	private AddressBook addressBook;
 	@Mock
@@ -263,7 +266,7 @@ class AccountsCommitInterceptorTest {
 		given(addressBook.getAddress(1)).willReturn(address2);
 		given(address2.getId()).willReturn(1l);
 
-		return buildStakingInfoMap(addressBook);
+		return buildStakingInfoMap(addressBook, bootstrapProperties);
 	}
 
 	private void setupMockInterceptor() {

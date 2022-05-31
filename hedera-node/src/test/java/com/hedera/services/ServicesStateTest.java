@@ -91,6 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -542,7 +543,8 @@ class ServicesStateTest {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 
-		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(addressBook.getSize()).willReturn(3);
+		given(addressBook.getAddress(anyLong())).willReturn(address);
 		given(address.getMemo()).willReturn(bookMemo);
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
 		given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
@@ -572,6 +574,7 @@ class ServicesStateTest {
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
 		assertNotNull(subject.contractStorage());
+		assertNotNull(subject.stakingInfo());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
