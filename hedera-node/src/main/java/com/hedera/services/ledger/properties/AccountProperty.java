@@ -271,17 +271,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNumPositiveBalances;
 		}
 	},
-	HEAD_TOKEN_NUM {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadTokenId((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadTokenId;
-		}
-	},
 	FIRST_CONTRACT_STORAGE_KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {

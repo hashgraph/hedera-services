@@ -24,7 +24,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -128,7 +128,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			ledger.customize(target, customizer);
 			sigImpactHistorian.markEntityChanged(target.getAccountNum());
 			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
+		} catch (MissingEntityException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);

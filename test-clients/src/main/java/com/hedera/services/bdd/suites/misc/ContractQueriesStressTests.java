@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,9 +49,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ContractQueriesStressTests extends HapiApiSuite {
@@ -123,13 +124,13 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode"),
-						contractCall( "childStorage", ContractResources.GROW_CHILD_ABI, 0, 1, 1),
-						contractCall( "childStorage", ContractResources.GROW_CHILD_ABI, 1, 1, 3),
-						contractCall( "childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23).via("first"),
-						contractCall( "childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23).via("second"),
-						contractCall( "childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23).via("third")
+						uploadInitCode("ChildStorage"),
+						contractCreate("ChildStorage"),
+						contractCall( "ChildStorage", "growChild", 0, 1, 1),
+						contractCall( "ChildStorage", "growChild", 1, 1, 3),
+						contractCall( "ChildStorage", "setZeroReadOne", 23).via("first"),
+						contractCall( "ChildStorage", "setZeroReadOne", 23).via("second"),
+						contractCall( "ChildStorage", "setZeroReadOne", 23).via("third")
 				);
 			}
 
@@ -150,14 +151,14 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode")
+						uploadInitCode("ChildStorage"),
+						contractCreate("ChildStorage")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getContractInfo("childStorage").noLogging());
+				return Optional.of(getContractInfo("ChildStorage").noLogging());
 			}
 		};
 	}
@@ -167,14 +168,14 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode")
+						uploadInitCode("ChildStorage"),
+						contractCreate("ChildStorage")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getContractBytecode("childStorage").noLogging());
+				return Optional.of(getContractBytecode("ChildStorage").noLogging());
 			}
 		};
 	}
@@ -184,17 +185,17 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode")
+						uploadInitCode("ChildStorage"),
+						contractCreate("ChildStorage")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var op = contractCallLocal("childStorage", ContractResources.GET_MY_VALUE_ABI)
+				var op = contractCallLocal("ChildStorage", getABIFor(FUNCTION, "getMyValue", "ChildStorage"))
 						.noLogging()
 						.has(resultWith().resultThruAbi(
-								ContractResources.GET_MY_VALUE_ABI,
+								getABIFor(FUNCTION, "getMyValue", "ChildStorage"),
 								isLiteralResult(new Object[] { BigInteger.valueOf(73) })));
 				return Optional.of(op);
 			}

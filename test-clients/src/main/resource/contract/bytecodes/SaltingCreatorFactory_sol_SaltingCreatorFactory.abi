@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"}],"name":"buildCreator","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"creator_address","type":"address"},{"internalType":"bytes32","name":"salt","type":"bytes32"}],"name":"callCreator","outputs":[],"stateMutability":"nonpayable","type":"function"}]
