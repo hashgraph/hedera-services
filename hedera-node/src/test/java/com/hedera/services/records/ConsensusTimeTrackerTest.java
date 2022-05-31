@@ -20,6 +20,8 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -27,21 +29,26 @@ import com.hedera.test.extensions.LoggingTarget;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.records.ConsensusTimeTracker.MAX_FOLLOWING_RECORDS;
-import static com.hedera.services.records.ConsensusTimeTracker.MAX_PRECEDING_RECORDS;
 import static com.hedera.services.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_INCORPORATE_CALL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
-@ExtendWith({ LogCaptureExtension.class })
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ConsensusTimeTrackerTest {
 	private static final Instant consensusTime = Instant.ofEpochSecond(2, 20);
 
+	@Mock(lenient = true)
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock(lenient = true)
+	private MerkleNetworkContext merkleNetworkContext;
 	@LoggingTarget
 	private LogCaptor logCaptor;
 
@@ -51,7 +58,10 @@ class ConsensusTimeTrackerTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConsensusTimeTracker();
+		given(merkleNetworkContext.areMigrationRecordsStreamed()).willReturn(true);
+		given(dynamicProperties.maxPrecedingRecords()).willReturn(3L);
+		given(dynamicProperties.maxFollowingRecords()).willReturn(50L);
+		subject = new ConsensusTimeTracker(dynamicProperties, () -> merkleNetworkContext);
 	}
 
 	@Test
@@ -70,8 +80,8 @@ class ConsensusTimeTrackerTest {
 		assertTrue(subject.hasMoreTransactionTime(true));
 		assertTrue(subject.hasMoreTransactionTime(false));
 
-		long maxPreceding = MAX_PRECEDING_RECORDS;
-		long maxFollowing = MAX_FOLLOWING_RECORDS;
+		long maxPreceding = subject.getMaxPrecedingRecords();
+		long maxFollowing = subject.getMaxFollowingRecords();
 		int count = 0;
 		int standaloneCount = 0;
 		int moreTxnCount = 0;
@@ -101,7 +111,7 @@ class ConsensusTimeTrackerTest {
 				var msg = "x = " + x + " isStandalone = " + isStandalone;
 
 				assertEquals(subject.isAllowablePrecedingOffset(x),
-						x > 0 && (x <= maxPreceding || count <= 1), msg);
+						x > 0 && (x <= maxPreceding), msg);
 
 				if (subject.isAllowablePrecedingOffset(x)) {
 					++availableCount;
@@ -134,11 +144,7 @@ class ConsensusTimeTrackerTest {
 				}
 			}
 
-			if (count > 1) {
-				assertEquals(availableCount, maxFollowing + maxPreceding);
-			} else {
-				assertTrue(availableCount > maxFollowing + maxPreceding);
-			}
+			assertEquals(availableCount, maxFollowing + maxPreceding);
 
 			var hadMore = subject.hasMoreTransactionTime(nextCanTriggerTxn);
 
@@ -175,11 +181,11 @@ class ConsensusTimeTrackerTest {
 				++moreTxnCount;
 
 				++actualFollowing;
-				if (actualFollowing > MAX_FOLLOWING_RECORDS) {
+				if (actualFollowing > subject.getMaxFollowingRecords()) {
 					actualFollowing = 0;
 				}
-				maxPreceding = MAX_PRECEDING_RECORDS;
-				maxFollowing = MAX_FOLLOWING_RECORDS;
+				maxPreceding = subject.getMaxPrecedingRecords();
+				maxFollowing = subject.getMaxFollowingRecords();
 
 			} else if (subject.hasMoreStandaloneRecordTime()) {
 
@@ -211,7 +217,7 @@ class ConsensusTimeTrackerTest {
 		}
 
 		assertFalse(nextCanTriggerTxn);
-		assertTrue(moreTxnCount > 50);
+		assertTrue(moreTxnCount > 30);
 		assertTrue(standaloneCount > 3);
 
 	}
@@ -223,8 +229,8 @@ class ConsensusTimeTrackerTest {
 
 		subject.nextTransactionTime(false);
 		assertTrue(subject.isFirstUsed());
-		assertTrue(subject.isAllowableFollowingOffset(MAX_FOLLOWING_RECORDS));
-		assertTrue(subject.isAllowablePrecedingOffset(MAX_PRECEDING_RECORDS));
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertTrue(subject.isAllowablePrecedingOffset(subject.getMaxPrecedingRecords()));
 
 		checkBounds(null, false);
 
@@ -253,8 +259,8 @@ class ConsensusTimeTrackerTest {
 
 		subject.firstTransactionTime();
 		assertTrue(subject.isFirstUsed());
-		assertTrue(subject.isAllowableFollowingOffset(MAX_FOLLOWING_RECORDS));
-		assertTrue(subject.isAllowablePrecedingOffset(1_000_000_000));
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertFalse(subject.isAllowablePrecedingOffset(1_000_000_000));
 
 		checkBounds(null, false);
 
@@ -262,31 +268,168 @@ class ConsensusTimeTrackerTest {
 	}
 
 	@Test
+	void unlimitedPrecedingWorksAsExpected() {
+		given(merkleNetworkContext.areMigrationRecordsStreamed()).willReturn(false);
+
+		subject.reset(consensusTime);
+		assertFalse(subject.isFirstUsed());
+
+		subject.firstTransactionTime();
+
+		assertTrue(subject.isFirstUsed());
+		assertTrue(subject.unlimitedPreceding());
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertTrue(subject.isAllowablePrecedingOffset(1_000_000_000));
+
+		checkBounds(null, false);
+
+
+		given(merkleNetworkContext.areMigrationRecordsStreamed()).willReturn(true);
+
+		assertTrue(subject.isFirstUsed());
+		assertTrue(subject.unlimitedPreceding());
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertTrue(subject.isAllowablePrecedingOffset(1_000_000_000));
+		assertTrue(subject.isAllowablePrecedingOffset(3));
+
+
+		subject.reset(consensusTime);
+		assertFalse(subject.isFirstUsed());
+
+		subject.firstTransactionTime();
+
+		assertTrue(subject.isFirstUsed());
+		assertFalse(subject.unlimitedPreceding());
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertFalse(subject.isAllowablePrecedingOffset(1_000_000_000));
+		assertTrue(subject.isAllowablePrecedingOffset(3));
+
+
+
+		given(merkleNetworkContext.areMigrationRecordsStreamed()).willReturn(false);
+		subject.reset(consensusTime);
+		assertFalse(subject.isFirstUsed());
+
+		subject.firstTransactionTime();
+
+		assertTrue(subject.isFirstUsed());
+		assertTrue(subject.unlimitedPreceding());
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertTrue(subject.isAllowablePrecedingOffset(1_000_000_000));
+
+		subject.nextTransactionTime(false);
+
+		assertTrue(subject.isFirstUsed());
+		assertFalse(subject.unlimitedPreceding());
+		assertTrue(subject.isAllowableFollowingOffset(subject.getMaxFollowingRecords()));
+		assertFalse(subject.isAllowablePrecedingOffset(1_000_000_000));
+		assertTrue(subject.isAllowablePrecedingOffset(3));
+	}
+
+	@Test
+	void maxPrecedingRecordsCanChangeDynamically() {
+		given(dynamicProperties.maxPrecedingRecords()).willReturn(3L);
+
+		subject.reset(consensusTime);
+		subject.firstTransactionTime();
+		assertTrue(subject.isAllowablePrecedingOffset(2L));
+		assertTrue(subject.isAllowablePrecedingOffset(3L));
+		assertFalse(subject.isAllowablePrecedingOffset(4L));
+		assertFalse(subject.isAllowablePrecedingOffset(5L));
+
+		given(dynamicProperties.maxPrecedingRecords()).willReturn(4L);
+
+		assertTrue(subject.isAllowablePrecedingOffset(2L));
+		assertTrue(subject.isAllowablePrecedingOffset(3L));
+		assertFalse(subject.isAllowablePrecedingOffset(4L));
+		assertFalse(subject.isAllowablePrecedingOffset(5L));
+
+		checkBounds(null, false);
+
+		subject.nextTransactionTime(false);
+
+		assertTrue(subject.isAllowablePrecedingOffset(2L));
+		assertTrue(subject.isAllowablePrecedingOffset(3L));
+		assertFalse(subject.isAllowablePrecedingOffset(4L));
+		assertFalse(subject.isAllowablePrecedingOffset(5L));
+
+		checkBounds(null, false);
+
+		subject.reset(consensusTime);
+		subject.firstTransactionTime();
+		assertTrue(subject.isAllowablePrecedingOffset(2L));
+		assertTrue(subject.isAllowablePrecedingOffset(3L));
+		assertTrue(subject.isAllowablePrecedingOffset(4L));
+		assertFalse(subject.isAllowablePrecedingOffset(5L));
+
+		checkBounds(null, false);
+	}
+
+	@Test
+	void maxFollowingRecordsCanChangeDynamically() {
+		given(dynamicProperties.maxFollowingRecords()).willReturn(3L);
+
+		subject.reset(consensusTime);
+		subject.firstTransactionTime();
+		assertTrue(subject.isAllowableFollowingOffset(2L));
+		assertTrue(subject.isAllowableFollowingOffset(3L));
+		assertFalse(subject.isAllowableFollowingOffset(4L));
+		assertFalse(subject.isAllowableFollowingOffset(5L));
+
+		given(dynamicProperties.maxFollowingRecords()).willReturn(4L);
+
+		assertTrue(subject.isAllowableFollowingOffset(2L));
+		assertTrue(subject.isAllowableFollowingOffset(3L));
+		assertFalse(subject.isAllowableFollowingOffset(4L));
+		assertFalse(subject.isAllowableFollowingOffset(5L));
+
+		checkBounds(null, false);
+
+		subject.nextTransactionTime(false);
+
+		assertTrue(subject.isAllowableFollowingOffset(2L));
+		assertTrue(subject.isAllowableFollowingOffset(3L));
+		assertFalse(subject.isAllowableFollowingOffset(4L));
+		assertFalse(subject.isAllowableFollowingOffset(5L));
+
+		checkBounds(null, false);
+
+		subject.reset(consensusTime);
+		subject.firstTransactionTime();
+		assertTrue(subject.isAllowableFollowingOffset(2L));
+		assertTrue(subject.isAllowableFollowingOffset(3L));
+		assertTrue(subject.isAllowableFollowingOffset(4L));
+		assertFalse(subject.isAllowableFollowingOffset(5L));
+
+		checkBounds(null, false);
+	}
+
+	@Test
 	void warningOnUsageOverflowLessThanMax() {
 		subject.reset(consensusTime);
 		subject.firstTransactionTime();
 
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords());
 		assertTrue(subject.hasMoreTransactionTime(false));
 		assertTrue(subject.hasMoreTransactionTime(true));
 		assertTrue(subject.hasMoreStandaloneRecordTime());
 		subject.nextTransactionTime(false);
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords());
 		subject.nextTransactionTime(true);
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords());
 		subject.nextStandaloneRecordTime();
 
 		assertEquals(0, logCaptor.warnLogs().stream().filter(
 				s -> s.contains("Used more record slots than allowed per transaction")).count());
 
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS + 1);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords() + 1);
 		assertTrue(subject.hasMoreTransactionTime(false));
 		assertTrue(subject.hasMoreTransactionTime(true));
 		assertTrue(subject.hasMoreStandaloneRecordTime());
 		subject.nextTransactionTime(false);
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS + 1);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords() + 1);
 		subject.nextTransactionTime(true);
-		subject.setActualFollowingRecordsCount(MAX_FOLLOWING_RECORDS + 1);
+		subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords() + 1);
 		subject.nextStandaloneRecordTime();
 
 		assertEquals(6, logCaptor.warnLogs().stream().filter(
@@ -298,7 +441,7 @@ class ConsensusTimeTrackerTest {
 		subject.reset(consensusTime);
 		subject.firstTransactionTime();
 
-		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - MAX_PRECEDING_RECORDS - 1);
+		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - subject.getMaxPrecedingRecords() - 1);
 		assertFalse(subject.hasMoreTransactionTime(false));
 		assertFalse(subject.hasMoreTransactionTime(true));
 		assertFalse(subject.hasMoreStandaloneRecordTime());
@@ -308,7 +451,7 @@ class ConsensusTimeTrackerTest {
 		assertThrows(IllegalStateException.class, () -> subject.nextTransactionTime(true));
 		assertThrows(IllegalStateException.class, () -> subject.nextStandaloneRecordTime());
 
-		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - MAX_PRECEDING_RECORDS);
+		subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - subject.getMaxPrecedingRecords());
 
 		assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(false));
 		assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(true));
@@ -321,7 +464,8 @@ class ConsensusTimeTrackerTest {
 
 	@Test
 	void errorOnNanosPerRoundTooSmall() {
-		assertThrows(IllegalArgumentException.class, () -> new ConsensusTimeTracker(1));
+		assertThrows(IllegalArgumentException.class, () ->
+				new ConsensusTimeTracker(dynamicProperties, () -> merkleNetworkContext, 1));
 	}
 
 	@Test

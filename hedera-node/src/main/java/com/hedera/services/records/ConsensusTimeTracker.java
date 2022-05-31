@@ -20,11 +20,14 @@ package com.hedera.services.records;
  */
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.swirlds.platform.state.TransactionHandler;
 
 import org.apache.logging.log4j.LogManager;
@@ -41,22 +44,8 @@ public class ConsensusTimeTracker {
 	@VisibleForTesting
 	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
-	/**
-	 * The max number of records that can be placed before transactions in a
-	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
-	 *
-	 * There is a special case. When the system first starts up, the first
-	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call can
-	 * haven an unlimited number of preceding records. This is for migrations.
-	 */
-	public static final long MAX_PRECEDING_RECORDS = 3;
-
-	/**
-	 * The max number of records that can be placed after a transaction in a
-	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
-	 */
-	public static final long MAX_FOLLOWING_RECORDS = 10;
-
+	private final GlobalDynamicProperties properties;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final long nanosBetweenIncorporateCalls;
 
 	private Instant minConsensusTime;
@@ -67,27 +56,50 @@ public class ConsensusTimeTracker {
 
 	private long followingRecordsCount;
 
-	private boolean isFirstSinceStartup = true;
-
 	private boolean firstUsed;
 
+	/**
+	 * The max number of records that can be placed before transactions in a
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+	 */
+	private long maxPrecedingRecords;
+	/**
+	 * There is a special case. When the system first starts up, there are migrations that can process
+	 * that need unlimited preceding records. See {@link com.hedera.services.state.migration.MigrationRecordsManager}.
+	 *
+	 * unlimitedPreceding should only ever true on the first transaction in an
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+	 */
+	private boolean unlimitedPreceding;
+	/**
+	 * The max number of records that can be placed after a transaction in a
+	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
+	 */
+	private long maxFollowingRecords;
+
 	@Inject
-	public ConsensusTimeTracker() {
-		this(DEFAULT_NANOS_PER_INCORPORATE_CALL);
+	public ConsensusTimeTracker(final GlobalDynamicProperties properties,
+			final Supplier<MerkleNetworkContext> networkCtx) {
+		this(properties, networkCtx, DEFAULT_NANOS_PER_INCORPORATE_CALL);
 	}
 
 	@VisibleForTesting
-	ConsensusTimeTracker(final long nanosBetweenIncorporateCalls) {
+	ConsensusTimeTracker(final GlobalDynamicProperties properties, final Supplier<MerkleNetworkContext> networkCtx,
+			final long nanosBetweenIncorporateCalls) {
+		maxPrecedingRecords = properties.maxPrecedingRecords();
+		maxFollowingRecords = properties.maxFollowingRecords();
 		this.nanosBetweenIncorporateCalls = nanosBetweenIncorporateCalls;
 		if (nanosBetweenIncorporateCalls <
-				(MAX_FOLLOWING_RECORDS + MAX_PRECEDING_RECORDS + 10)) {
+				(maxFollowingRecords + maxPrecedingRecords + 10)) {
 			throw new IllegalArgumentException("TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS is too small!");
 		}
+		this.properties = properties;
+		this.networkCtx = networkCtx;
 	}
 
 	@VisibleForTesting
 	ConsensusTimeTracker(ConsensusTimeTracker toCopy) {
-		this();
+		this(toCopy.properties, toCopy.networkCtx);
 		minConsensusTime = toCopy.minConsensusTime;
 		currentTxnMinTime = toCopy.currentTxnMinTime;
 		currentTxnTime = toCopy.currentTxnTime;
@@ -95,7 +107,9 @@ public class ConsensusTimeTracker {
 		maxConsensusTime = toCopy.maxConsensusTime;
 		followingRecordsCount = toCopy.followingRecordsCount;
 		firstUsed = toCopy.firstUsed;
-		isFirstSinceStartup = toCopy.isFirstSinceStartup;
+		maxFollowingRecords = toCopy.maxFollowingRecords;
+		maxPrecedingRecords = toCopy.maxPrecedingRecords;
+		unlimitedPreceding = toCopy.unlimitedPreceding;
 	}
 
 	/**
@@ -117,16 +131,27 @@ public class ConsensusTimeTracker {
 	}
 
 	/**
+	 * @return true if we allow an unlimited number of preceding records for the current transaction.
+	 */
+	public boolean unlimitedPreceding() {
+		return unlimitedPreceding;
+	}
+
+	/**
 	 * Resets this tracker, should be called at the beginning of
 	 * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn}
 	 * @param consensusTime the consensusTime passed to incorporateConsensusTxn
 	 */
 	public void reset(final Instant consensusTime) {
+		maxPrecedingRecords = properties.maxPrecedingRecords();
+		maxFollowingRecords = properties.maxFollowingRecords();
+		unlimitedPreceding = !networkCtx.get().areMigrationRecordsStreamed();
+
 		minConsensusTime = consensusTime;
 		currentTxnMinTime = 0;
-		currentTxnTime = currentTxnMinTime + MAX_PRECEDING_RECORDS;
-		currentTxnMaxTime = currentTxnTime + MAX_FOLLOWING_RECORDS;
-		followingRecordsCount = MAX_FOLLOWING_RECORDS;
+		currentTxnTime = currentTxnMinTime + maxPrecedingRecords;
+		currentTxnMaxTime = currentTxnTime + maxFollowingRecords;
+		followingRecordsCount = maxFollowingRecords;
 		firstUsed = false;
 		maxConsensusTime = currentTxnMinTime + (nanosBetweenIncorporateCalls - 1L);
 	}
@@ -166,7 +191,7 @@ public class ConsensusTimeTracker {
 	 * @return the consensus time to use.
 	 */
 	public Instant nextTransactionTime(boolean canTriggerTxn) {
-		return nextTime(canTriggerTxn, MAX_PRECEDING_RECORDS, MAX_FOLLOWING_RECORDS);
+		return nextTime(canTriggerTxn, maxPrecedingRecords, maxFollowingRecords);
 	}
 
 	/**
@@ -174,7 +199,7 @@ public class ConsensusTimeTracker {
 	 * @return true if there are more full transaction times available.
 	 */
 	public boolean hasMoreTransactionTime(boolean canTriggerTxn) {
-		return hasMoreTime(canTriggerTxn, MAX_PRECEDING_RECORDS, MAX_FOLLOWING_RECORDS);
+		return hasMoreTime(canTriggerTxn, maxPrecedingRecords, maxFollowingRecords);
 	}
 
 	/**
@@ -222,7 +247,7 @@ public class ConsensusTimeTracker {
 
 		long time = currentTxnTime - offset;
 
-		if (isFirstSinceStartup) {
+		if (unlimitedPreceding()) {
 			return time < currentTxnTime;
 		}
 
@@ -237,7 +262,7 @@ public class ConsensusTimeTracker {
 		}
 
 		firstUsed = true;
-		isFirstSinceStartup = false;
+		unlimitedPreceding = false;
 
 		currentTxnMinTime = currentTxnTime + (followingRecordsCount + 1);
 
@@ -280,6 +305,8 @@ public class ConsensusTimeTracker {
 				", maxConsensusTime=" + maxConsensusTime +
 				", followingRecordsCount=" + followingRecordsCount +
 				", firstUsed=" + firstUsed +
+				", maxFollowingRecords=" + maxFollowingRecords +
+				", maxPrecedingRecords=" + maxPrecedingRecords +
 				'}';
 	}
 
@@ -311,5 +338,15 @@ public class ConsensusTimeTracker {
 	@VisibleForTesting
 	long getFollowingRecordsCount() {
 		return followingRecordsCount;
+	}
+
+	@VisibleForTesting
+	long getMaxPrecedingRecords() {
+		return maxPrecedingRecords;
+	}
+
+	@VisibleForTesting
+	long getMaxFollowingRecords() {
+		return maxFollowingRecords;
 	}
 }

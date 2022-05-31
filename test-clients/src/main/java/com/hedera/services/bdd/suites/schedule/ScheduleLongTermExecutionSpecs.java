@@ -133,12 +133,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 			executionWithContractCallWorksAtExpiry(),
 			executionWithContractCreateWorksAtExpiry(),
 
-			executionNoSigTxnRequiredWorks(),
-
-			failsWithExpiryInPast(),
-			failsWithExpiryInFarFuture(),
-
-			congestionPricingDoesNotAffectScheduleExecutionAtExpiry(),
+			futureThrottlesAreRespected(),
 
 			disableLongTermScheduledTransactions(),
 
@@ -1719,6 +1714,66 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 									0.1,
 									"no multiplier should be in affect for execution at expiry!");
 						})
+				);
+	}
+
+
+	private HapiApiSpec futureThrottlesAreRespected() {
+		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+
+		return defaultHapiSpec("FutureThrottlesAreRespected")
+				.given(
+						cryptoCreate("sender").balance(ONE_MILLION_HBARS).via("senderTxn"),
+						cryptoCreate("receiver"),
+
+						overriding("scheduling.maxTxnPerSecond", "100"),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(artificialLimits.toByteArray()),
+
+						sleepFor(500)
+				)
+				.when(
+
+						blockingOrder(IntStream.range(0, 17).mapToObj(i -> new HapiSpecOperation[] {
+								scheduleCreate(
+										"twoSigXfer" + i,
+										cryptoTransfer(
+												tinyBarsFromTo("sender", "receiver", 1)
+										).fee(ONE_HBAR)
+								)
+										.withEntityMemo(randomUppercase(100))
+										.payingWith("sender")
+										.waitForExpiry()
+										.withRelativeExpiry("senderTxn", 120),
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
+
+						scheduleCreate(
+								"twoSigXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).fee(ONE_HBAR)
+						)
+								.withEntityMemo(randomUppercase(100))
+								.payingWith("sender")
+								.waitForExpiry()
+								.withRelativeExpiry("senderTxn", 120)
+								.hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+
+				)
+				.then(
+
+						overriding("scheduling.maxTxnPerSecond",
+								HapiSpecSetup.getDefaultNodeProps().get("scheduling.maxTxnPerSecond")),
+						fileUpdate(THROTTLE_DEFS)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles.toByteArray()),
+
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
+								.payingWith(GENESIS)
+
 				);
 	}
 

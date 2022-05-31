@@ -182,6 +182,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(44L, subject.maxNftMints());
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
+		assertEquals(66L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(67L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(69L, subject.maxPrecedingRecords());
+		assertEquals(70L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -297,6 +302,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
 		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
 		assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(70L, subject.maxPrecedingRecords());
+		assertEquals(71L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -406,6 +413,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("scheduling.maxTxnPerSecond")).willReturn(i + 65L);
 		given(properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit")).willReturn(i + 66L);
 		given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds")).willReturn(i + 67L);
+		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
+		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
