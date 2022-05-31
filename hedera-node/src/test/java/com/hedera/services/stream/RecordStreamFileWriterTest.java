@@ -2,6 +2,11 @@ package com.hedera.services.stream;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.stream.proto.HashAlgorithm;
+import com.hedera.services.stream.proto.HashObject;
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.SignatureFile;
+import com.hedera.services.stream.proto.SignatureType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -29,11 +34,6 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import proto.HashAlgorithm;
-import proto.HashObject;
-import proto.RecordStreamFile;
-import proto.SignatureFile;
-import proto.SignatureType;
 
 import java.io.File;
 import java.io.FileInputStream;

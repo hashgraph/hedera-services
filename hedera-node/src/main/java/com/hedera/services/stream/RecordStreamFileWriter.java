@@ -2,6 +2,13 @@ package com.hedera.services.stream;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
+import com.hedera.services.stream.proto.HashAlgorithm;
+import com.hedera.services.stream.proto.HashObject;
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hedera.services.stream.proto.SignatureFile;
+import com.hedera.services.stream.proto.SignatureObject;
+import com.hedera.services.stream.proto.SignatureType;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -14,13 +21,6 @@ import com.swirlds.common.stream.StreamType;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.HashAlgorithm;
-import proto.HashObject;
-import proto.RecordStreamFile;
-import proto.RecordStreamItem;
-import proto.SignatureFile;
-import proto.SignatureObject;
-import proto.SignatureType;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
