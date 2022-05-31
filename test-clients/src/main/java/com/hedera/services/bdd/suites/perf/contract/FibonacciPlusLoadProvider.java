@@ -88,7 +88,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private static final int FIBONACCI_NUM_TO_USE = 12;
 	private static final long SECS_TO_RUN = 600;
 	private static final long MS_TO_DRAIN_QUEUE = 60_000L;
-	private static final long GAS_TO_OFFER = 600_000L;
+	private static final long GAS_TO_OFFER = 1000_000L;
 	private static final String CONTRACT = "FibonacciPlus";
 
 	private static final String SUITE_PROPS_PREFIX = "fibplus_";
