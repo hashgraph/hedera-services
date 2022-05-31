@@ -205,7 +205,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		counterparty.setStakedId(-1);
 		final var changes = randomStakedNodeChanges(100L);
 
-		given(networkCtx.areRewardsActivated()).willReturn(true);
+		subject.setRewardsActivated(true);
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
@@ -217,12 +217,12 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertTrue(subject.isRewardable(counterparty, changes));
 
 		// rewards not activated
-		given(networkCtx.areRewardsActivated()).willReturn(false);
+		subject.setRewardsActivated(false);
 		assertFalse(subject.isRewardable(counterparty, changes));
 
 		// declined reward on account, but changes have it as false
 		counterparty.setDeclineReward(true);
-		given(networkCtx.areRewardsActivated()).willReturn(true);
+		subject.setRewardsActivated(true);
 		assertTrue(subject.isRewardable(counterparty, changes));
 
 		// staked to account
@@ -324,6 +324,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderST.verify(sideEffectsTracker).trackHbarChange(321L, -455L);
 		inorderST.verify(sideEffectsTracker).trackHbarChange(800L, 99L);
 
+		inorderM.verify(stakeChangeManager).findOrAdd(anyLong(), any());
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance + counterparty.getStakedToMe(),
 				false);
 		inorderM.verify(stakeChangeManager, never()).awardStake(2L, 2100, false);
