@@ -31,6 +31,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -434,8 +435,8 @@ public class StateView {
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
 			final AccountID id,
 			final AliasManager aliasManager,
-			final int maxTokensForAccountInfo
-	) {
+			final int maxTokensForAccountInfo,
+			final RewardCalculator rewardCalculator) {
 		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -467,7 +468,7 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
-		info.setStakingInfo(stakingInfo(account));
+		info.setStakingInfo(stakingInfo(account, rewardCalculator));
 
 		return Optional.of(info.build());
 	}
@@ -475,7 +476,7 @@ public class StateView {
 	private String getContractAccountId(final JKey key, final AccountID accountID) {
 		// If we can recover an Ethereum EOA address from the account key, we should return that
 		final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
-		if (evmAddress != null)	 {
+		if (evmAddress != null) {
 			return Bytes.wrap(evmAddress).toUnprefixedHexString();
 		} else {
 			return asHexedEvmAddress(accountID);
@@ -490,14 +491,14 @@ public class StateView {
 	 * 		given account for which info is queried
 	 * @return staking info
 	 */
-	public StakingInfo stakingInfo(final MerkleAccount account) {
+	public StakingInfo stakingInfo(final MerkleAccount account, final RewardCalculator rewardCalculator) {
 		// will be updated with pending_reward in future PR
 		final var stakingInfo = StakingInfo.newBuilder()
 				.setDeclineReward(account.isDeclinedReward())
 				.setStakedToMe(account.getStakedToMe());
 
 		final var stakedNum = account.getStakedId();
-		if (stakedNum <= 0) {
+		if (stakedNum < 0) {
 			// since we store the staking node id as (-nodeId -1), the node id account is staking to will be
 			// -stakedNum -1
 			stakingInfo.setStakedNodeId(-stakedNum - 1);
@@ -507,6 +508,12 @@ public class StateView {
 
 		if (account.getStakePeriodStart() > 0) {
 			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
+			if (account.mayHavePendingReward()) {
+				final var info = stateChildren.stakingInfo();
+				rewardCalculator.estimatePendingRewards(account,
+						info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId())));
+				stakingInfo.setPendingReward(rewardCalculator.getAccountReward());
+			}
 		}
 
 		return stakingInfo.build();
@@ -569,7 +576,8 @@ public class StateView {
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
 			final ContractID id,
 			final AliasManager aliasManager,
-			final int maxTokensForAccountInfo
+			final int maxTokensForAccountInfo,
+			final RewardCalculator rewardCalculator
 	) {
 		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
@@ -603,7 +611,7 @@ public class StateView {
 			info.addAllTokenRelationships(tokenRels);
 		}
 
-		info.setStakingInfo(stakingInfo(contract));
+		info.setStakingInfo(stakingInfo(contract, rewardCalculator));
 
 		try {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());

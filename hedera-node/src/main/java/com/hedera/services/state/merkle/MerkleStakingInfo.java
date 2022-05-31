@@ -49,7 +49,8 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	private long stake;
 	private long[] rewardSumHistory = EMPTY_REWARD_HISTORY;
 
-	public MerkleStakingInfo() {}
+	public MerkleStakingInfo() {
+	}
 
 	public MerkleStakingInfo(
 			final long minStake,
@@ -232,5 +233,21 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void clearRewardSumHistory() {
 		Arrays.fill(rewardSumHistory, 0);
+	}
+
+	public void removeRewardStake(final long amount, final boolean declinedReward) {
+		if (declinedReward) {
+			this.stakeToNotReward = stakeToNotReward - amount;
+		} else {
+			this.stakeToReward = stakeToReward - amount;
+		}
+	}
+
+	public void addRewardStake(final long amount, final boolean declinedReward) {
+		if (declinedReward) {
+			this.stakeToNotReward = stakeToNotReward + amount;
+		} else {
+			this.stakeToReward = stakeToReward + amount;
+		}
 	}
 }

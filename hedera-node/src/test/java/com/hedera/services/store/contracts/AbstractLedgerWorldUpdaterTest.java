@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -549,8 +548,7 @@ class AbstractLedgerWorldUpdaterTest {
 		nftsLedger.begin();
 		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx,
-				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private void setupWellKnownAccounts() {

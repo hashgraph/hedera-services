@@ -20,66 +20,110 @@ package com.hedera.services.ledger.accounts.staking;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.function.Supplier;
+import javax.inject.Singleton;
+import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKE_PERIOD_START;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+@Singleton
 public class RewardCalculator {
-	public static final EntityNum stakingFundAccount = EntityNum.fromLong(800L);
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+	private final StakePeriodManager stakePeriodManager;
+	private final StakeInfoManager stakeInfoManager;
 
-	public static final ZoneId zoneUTC = ZoneId.of("UTC");
+	private long rewardsPaid;
+	private long accountReward;
+	private long accountUpdatedStakePeriodStart;
 
 	@Inject
-	public RewardCalculator(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
-		this.accounts = accounts;
-		this.stakingInfo = stakingInfo;
+	public RewardCalculator(final StakePeriodManager stakePeriodManager,
+			final StakeInfoManager stakeInfoManager) {
+		this.stakePeriodManager = stakePeriodManager;
+		this.stakeInfoManager = stakeInfoManager;
 	}
 
-	public final long computeAndApplyRewards(final EntityNum accountNum) {
-		long todayNumber = LocalDate.now(zoneUTC).toEpochDay();
-		final var account = accounts.get().getForModify(accountNum);
-		var stakePeriodStart = account.getStakePeriodStart();
+	public void updateRewardChanges(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
+		computePendingRewards(account);
 
-		if (stakePeriodStart > -1 && stakePeriodStart < todayNumber - 365) {
-			account.setStakePeriodStart(todayNumber - 365);
+		if (accountReward > 0) {
+			final var balance = finalBalanceGiven(account, changes);
+			changes.put(BALANCE, balance + accountReward);
 		}
 
-		stakePeriodStart = account.getStakePeriodStart();
-		if (isWithinRange(stakePeriodStart, todayNumber)) {
-			final long reward = computeReward(account, account.getStakedId(), todayNumber);
-			account.setStakePeriodStart(todayNumber - 1);
-			return reward;
+		changes.put(STAKE_PERIOD_START, accountUpdatedStakePeriodStart);
+		rewardsPaid += accountReward; // used for adding balance change for 0.0.800
+	}
+
+	public long estimatePendingRewards(final MerkleAccount account, final MerkleStakingInfo stakingNode) {
+		return computeRewardFromDetails(
+				account,
+				stakingNode,
+				stakePeriodManager.currentStakePeriod(),
+				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+	}
+
+	private final void computePendingRewards(final MerkleAccount account) {
+		final var currentPeriod = stakePeriodManager.currentStakePeriod();
+
+		// Staking rewards only accumulate for a finite # of periods (currently 365 days), so get the effective start
+		var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+
+		// Check if effectiveStart is within the range for receiving rewards
+		if (stakePeriodManager.isRewardable(effectiveStart)) {
+			final long stakedNode = account.getStakedNodeAddressBookId();
+			final var stakedNodeAccount = stakeInfoManager.mutableStakeInfoFor(stakedNode);
+
+			this.accountReward = computeRewardFromDetails(account, stakedNodeAccount, currentPeriod, effectiveStart);
+			// After we've got our rewards till the last full period, it becomes our effective start
+			effectiveStart = currentPeriod - 1;
+		} else {
+			this.accountReward = 0;
 		}
-		return 0;
+
+		this.accountUpdatedStakePeriodStart = effectiveStart;
 	}
 
-	boolean isWithinRange(final long stakePeriodStart, final long todayNumber) {
-		// if stakePeriodStart = -1 then it is not staked or staked to an account
-		// If it equals todayNumber, that means the staking changed today (later than the start of today),
-		// so it had no effect on consensus weights today, and should never be rewarded for helping consensus
-		// throughout today.  If it equals todayNumber-1, that means it either started yesterday or has already been
-		// rewarded for yesterday. Either way, it might be rewarded for today after today ends, but shouldn't yet be
-		// rewarded for today, because today hasn't finished yet.
-
-		return stakePeriodStart > -1 && stakePeriodStart < todayNumber - 1;
-	}
-
-	long computeReward(final MerkleAccount account, final long stakedNode, final long todayNumber) {
-		final var stakedNodeAccount = stakingInfo.get().get(EntityNum.fromLong(stakedNode));
+	private long computeRewardFromDetails(
+			final MerkleAccount account,
+			final MerkleStakingInfo stakedNodeAccount,
+			final long currentStakePeriod,
+			final long effectiveStart) {
 		final var rewardSumHistory = stakedNodeAccount.getRewardSumHistory();
-		final var stakePeriodStart = account.getStakePeriodStart();
-		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day todayNumber - 1,
-		// since today is not finished yet.
+
+		// stakedNode.rewardSumHistory[0] is the reward for all days up to and including the full day
+		// currentStakePeriod - 1, since today is not finished yet.
 		return account.isDeclinedReward() ? 0 :
-				account.getBalance() * (rewardSumHistory[0] - rewardSumHistory[(int) (todayNumber - 1 - (stakePeriodStart - 1))]);
+				(account.getBalance() / HBARS_TO_TINYBARS) * (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
+	}
+
+	public void reset() {
+		rewardsPaid = 0;
+		accountReward = 0;
+		accountUpdatedStakePeriodStart = 0;
+	}
+
+	public long rewardsPaidInThisTxn() {
+		return rewardsPaid;
+	}
+
+	public long getAccountReward() {
+		return accountReward;
+	}
+
+	@VisibleForTesting
+	public long getAccountUpdatedStakePeriodStart() {
+		return accountUpdatedStakePeriodStart;
+	}
+
+	@VisibleForTesting
+	public void setRewardsPaidInThisTxn(long rewards) {
+		rewardsPaid = rewards;
 	}
 }

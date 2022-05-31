@@ -503,5 +503,4 @@ class MerkleAccountStateTest {
 		subject.setAutoRenewAccount(account);
 		assertEquals(account, subject.getAutoRenewAccount());
 	}
-
 }

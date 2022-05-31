@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
@@ -79,6 +80,7 @@ class GetContractInfoResourceUsageTest {
 	private FeeData expected;
 	private AliasManager aliasManager;
 	private GlobalDynamicProperties dynamicProperties;
+	private RewardCalculator rewardCalculator;
 
 	private GetContractInfoResourceUsage subject;
 
@@ -87,10 +89,12 @@ class GetContractInfoResourceUsageTest {
 		expected = mock(FeeData.class);
 		aliasManager = mock(AliasManager.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		rewardCalculator = mock(RewardCalculator.class);
 
 		view = mock(StateView.class);
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerContractInfo);
-		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo)).willReturn(Optional.of(info));
+		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator)).willReturn(
+				Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
 		mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -101,7 +105,7 @@ class GetContractInfoResourceUsageTest {
 		given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
-		subject = new GetContractInfoResourceUsage(aliasManager, dynamicProperties);
+		subject = new GetContractInfoResourceUsage(aliasManager, dynamicProperties, rewardCalculator);
 	}
 
 	@AfterEach
@@ -140,7 +144,8 @@ class GetContractInfoResourceUsageTest {
 	@Test
 	void onlySetsContractInfoInQueryCxtIfFound() {
 		final var queryCtx = new HashMap<String, Object>();
-		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo)).willReturn(Optional.empty());
+		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator)).willReturn(
+				Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

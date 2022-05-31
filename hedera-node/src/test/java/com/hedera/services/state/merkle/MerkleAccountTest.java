@@ -93,7 +93,7 @@ class MerkleAccountTest {
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	private static final FcTokenAllowanceId tokenAllowanceKey =
-			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
+			FcTokenAllowanceId.from(EntityNum.fromLong(2000L), EntityNum.fromLong(1000L));
 	private static final long stakedToMe = 12_345L;
 	private static final long stakePeriodStart = 786L;
 	private static final long stakedNum = 1111L;
@@ -427,5 +427,30 @@ class MerkleAccountTest {
 		subject.release();
 
 		verify(payerRecords).decrementReferenceCount();
+	}
+
+	@Test
+	void checksIfMayHavePendingReward() {
+		assertFalse(subject.mayHavePendingReward());
+
+		subject.setStakedId(-1L);
+		assertTrue(subject.mayHavePendingReward());
+
+		subject.setDeclineReward(true);
+		assertFalse(subject.mayHavePendingReward());
+	}
+
+	@Test
+	void getsNodeStakedIdCorrectly() {
+		var subject = new MerkleAccount();
+
+		subject.setStakedId(-1L);
+		assertEquals(0L, subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(1L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(0L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
 	}
 }

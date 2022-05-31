@@ -330,6 +330,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAccountKey(key);
 	}
 
+	public int number() {
+		return state().number();
+	}
+
 	public EntityId getProxy() {
 		return state().proxy();
 	}
@@ -504,6 +508,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setStakedId(long stakedId) {
 		throwIfImmutable("Cannot change this account's staked id if it's immutable");
 		state().setStakedNum(stakedId);
+	}
+
+	public boolean mayHavePendingReward() {
+		return getStakedId() < 0 && !isDeclinedReward();
+	}
+
+	public long getStakedNodeAddressBookId() {
+		if (state().getStakedNum() >= 0) {
+			throw new IllegalStateException("Account is not staked to a node");
+		}
+		return -state().getStakedNum() - 1;
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {

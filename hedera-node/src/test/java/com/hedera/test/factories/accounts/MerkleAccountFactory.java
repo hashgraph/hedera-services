@@ -66,8 +66,10 @@ public class MerkleAccountFactory {
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
 	private TreeSet<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
 	private int[] firstUint256Key;
-	private long stakedId = 0;
-	private long stakePeriodStart = -1;
+	private Optional<Long> stakedId = Optional.empty();
+	private Optional<Long> stakedToMe = Optional.empty();
+	private Optional<Long> stakePeriodStart = Optional.empty();
+	private Optional<Boolean> declineReward = Optional.empty();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -95,8 +97,10 @@ public class MerkleAccountFactory {
 		value.setNumAssociations(associatedTokensCount.orElse(0));
 		value.setNumPositiveBalances(numPositiveBalances.orElse(0));
 		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
-		value.setStakedId(stakedId);
-		value.setStakePeriodStart(stakePeriodStart);
+		stakedId.ifPresent(value::setStakedId);
+		stakePeriodStart.ifPresent(value::setStakePeriodStart);
+		declineReward.ifPresent(value::setDeclineReward);
+		stakedToMe.ifPresent(value::setStakedToMe);
 		autoRenewAccount.ifPresent(p -> value.setAutoRenewAccount(EntityId.fromGrpcAccountId(p)));
 		if (firstUint256Key != null) {
 			value.setFirstUint256StorageKey(firstUint256Key);
@@ -129,12 +133,22 @@ public class MerkleAccountFactory {
 	}
 
 	public MerkleAccountFactory stakedId(final long stakedId) {
-		this.stakedId = stakedId;
+		this.stakedId = Optional.of(stakedId);
+		return this;
+	}
+
+	public MerkleAccountFactory stakedToMe(final long stakedToMe) {
+		this.stakedToMe = Optional.of(stakedToMe);
+		return this;
+	}
+
+	public MerkleAccountFactory declineReward(final boolean declineReward) {
+		this.declineReward = Optional.of(declineReward);
 		return this;
 	}
 
 	public MerkleAccountFactory stakePeriodStart(final long stakePeriodStart) {
-		this.stakePeriodStart = stakePeriodStart;
+		this.stakePeriodStart = Optional.of(stakePeriodStart);
 		return this;
 	}
 
