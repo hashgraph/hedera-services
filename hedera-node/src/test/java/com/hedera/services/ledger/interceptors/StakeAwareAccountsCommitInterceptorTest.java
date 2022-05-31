@@ -133,7 +133,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.getAccountReward()).willReturn(1L);
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		subject.preview(changes);
@@ -206,7 +206,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final var changes = randomStakedNodeChanges(100L);
 
 		subject.setRewardsActivated(true);
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		// invalid stake period start
@@ -281,7 +281,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		given(rewardCalculator.getAccountReward()).willReturn(10l);
@@ -309,7 +309,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final var pendingChanges = buildPendingAccountStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(stakePeriodStart - 1);
+		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		given(rewardCalculator.getAccountReward()).willReturn(10L);

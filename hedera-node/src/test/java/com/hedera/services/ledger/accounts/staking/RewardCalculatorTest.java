@@ -189,7 +189,7 @@ class RewardCalculatorTest {
 	}
 
 	private void setUpMocks() {
-		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(todayNumber);
+		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(todayNumber);
 		willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 	}
