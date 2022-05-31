@@ -22,7 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -130,7 +130,7 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 				.when(
 						fileCreate(TARGET_FILE)
 								.payingWith(GENESIS)
-								.path(ContractResources.VALID_BYTECODE_PATH)
+								.path(HapiSpecSetup.getDefaultInstance().defaultContractPath())
 								.entityMemo(FILE_MEMO)
 								.logged(),
 						fileCreate(TARGET_FILE+"Info")

@@ -145,6 +145,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.resultObserver = contractCall.getResultObserver();
         this.explicitHexedParams = contractCall.getExplicitHexedParams();
         this.privateKeyRef = contractCall.getPrivateKeyRef();
+        this.deferStatusResolution = contractCall.getDeferStatusResolution();
         if (contractCall.getValueSent().isPresent()) {
             this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
         }
@@ -317,6 +318,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
+        System.out.println("Size = " + callData.length + " vs " + MAX_CALL_DATA_SIZE);
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
             final var callDataBytesString = ByteString.copyFrom(Hex.encode(callData));
             final var createFile = new HapiFileCreate(callDataFileName);

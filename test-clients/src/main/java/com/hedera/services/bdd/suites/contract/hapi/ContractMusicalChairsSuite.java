@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ContractMusicalChairsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
@@ -76,12 +78,13 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 		////// Create contract //////
 		given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
 		given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
+		given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
 		given.add(uploadInitCode(contract));
 		given.add(withOpContext(
 						(spec, opLog) ->
 								allRunFor(
 										spec,
-										contractCreate(contract, asAddress(spec.registry().getAccountID(dj))
+										contractCreate(contract, unhex(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID())
 										)
 												.payingWith(dj)
 								)
@@ -94,7 +97,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 				.forEach(given::add);
 
 		////// Start the music! //////
-		when.add(contractCall(contract, "startMusic").payingWith("dj"));
+		when.add(contractCall(contract, "startMusic").payingWith(DEFAULT_CONTRACT_SENDER));
 
 		////// 100 "random" seats taken //////
 		new Random(0x1337)
@@ -103,11 +106,12 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 						when.add(contractCall(contract,
 								"sitDown")
 								.payingWith(players.get(i))
+								.refusingEthConversion()
 								.hasAnyStatusAtAll())); // sometimes a player sits too soon, so don't fail on reverts
 
 
 		////// Stop the music! //////
-		then.add(contractCall(contract, "stopMusic").payingWith(dj));
+		then.add(contractCall(contract, "stopMusic").payingWith(DEFAULT_CONTRACT_SENDER));
 
 		////// And the winner is..... //////
 		then.add(withOpContext(

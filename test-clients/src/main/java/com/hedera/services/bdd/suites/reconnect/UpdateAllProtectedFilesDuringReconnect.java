@@ -22,7 +22,7 @@ package com.hedera.services.bdd.suites.reconnect;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -153,7 +153,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 						fileCreate("contractFile")
 								.setNode("0.0.8")
 								.payingWith(GENESIS)
-								.path(ContractResources.VALID_BYTECODE_PATH),
+								.path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
 						contractCreate("testContract")
 								.bytecode("contractFile")
 								.autoRenewSecs(15)
