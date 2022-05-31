@@ -22,7 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -123,7 +123,7 @@ class CryptoDeleteTransitionLogicTest {
 	@Test
 	void translatesMissingAccount() {
 		givenValidTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
+		willThrow(MissingEntityException.class).given(ledger).delete(any(), any());
 
 		// when:
 		subject.doStateTransition();

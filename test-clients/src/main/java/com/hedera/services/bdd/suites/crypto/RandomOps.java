@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -49,11 +48,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
@@ -169,8 +168,7 @@ public class RandomOps extends HapiApiSuite {
 
 		final var humbleUser = "aamAdmi";
 		final var topic = "ofGeneralInterest";
-		final var contract = "binding";
-		final var bytecode = "bytecode";
+		final var contract = "Multipurpose";
 
 		return defaultHapiSpec("execTimesDemo")
 				.given(
@@ -182,10 +180,8 @@ public class RandomOps extends HapiApiSuite {
 						sleepFor(5_000),
 						cryptoCreate(humbleUser).balance(ONE_HUNDRED_HBARS),
 						createTopic(topic),
-						fileCreate(bytecode)
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
+						uploadInitCode(contract),
 						contractCreate(contract)
-								.bytecode(bytecode)
 				).when(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
 								.payingWith(GENESIS)

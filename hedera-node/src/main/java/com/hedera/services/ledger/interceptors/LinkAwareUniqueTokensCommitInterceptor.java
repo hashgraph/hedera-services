@@ -28,11 +28,13 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 
+import java.util.Objects;
+
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 /**
- * Placeholder for upcoming work.
+ * Manages the "map value linked list" of each account's owned non-treasury NFTs.
  */
 public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor<NftId, UniqueTokenValue, NftProperty> {
 	private final UniqueTokensLinkManager uniqueTokensLinkManager;
@@ -61,9 +63,11 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 					// Non-treasury-owned NFT wiped (or burned via a multi-stage contract operation)
 					uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
 				} else if (changes != null && changes.containsKey(OWNER)) {
-					// NFT owner changed (could be a treasury exit or return)
 					final var toAccount = (EntityId) changes.get(OWNER);
-					uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), nftId);
+					if (!Objects.equals(fromAccount, toAccount)) {
+						// NFT owner changed (could be a treasury exit or return)
+						uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), nftId);
+					}
 				}
 			} else if (changes != null) {
 				final var newOwner = (EntityId) changes.get(OWNER);
