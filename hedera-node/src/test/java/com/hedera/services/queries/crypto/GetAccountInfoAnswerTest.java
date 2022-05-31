@@ -29,6 +29,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
@@ -97,6 +98,8 @@ class GetAccountInfoAnswerTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	@Mock
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
@@ -199,6 +202,7 @@ class GetAccountInfoAnswerTest {
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 		children.setTokens(tokens);
+		children.setStakingInfo(stakingInfo);
 
 		view = new StateView(scheduleStore, children, networkInfo);
 

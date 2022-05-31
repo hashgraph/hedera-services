@@ -439,4 +439,18 @@ class MerkleAccountTest {
 		subject.setDeclineReward(true);
 		assertFalse(subject.mayHavePendingReward());
 	}
+
+	@Test
+	void getsNodeStakedIdCorrectly() {
+		var subject = new MerkleAccount();
+
+		subject.setStakedId(-1L);
+		assertEquals(0L, subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(1L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(0L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
+	}
 }

@@ -52,14 +52,18 @@ public class StakeInfoManager {
 			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
 		} else if (oldStakingInfo != currentStakingInfo) {
 			clearCurrentStakingInfos(currentStakingInfos);
-			oldStakingInfo = stakingInfo.get();
+			oldStakingInfo = currentStakingInfo;
 			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
 		}
 		return currentStakingInfos[(int) nodeId];
 	}
 
 	public void clearRewardsHistory() {
-		stakingInfo.get().forEach((entityNum, info) -> info.clearRewardSumHistory());
+		final var mutableStakingInfo = stakingInfo.get();
+		for (var key : mutableStakingInfo.keySet()) {
+			final var info = mutableStakingInfo.getForModify(key);
+			info.clearRewardSumHistory();
+		}
 	}
 
 	private void clearCurrentStakingInfos(final MerkleStakingInfo[] currentStakingInfos) {

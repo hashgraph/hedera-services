@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.Units;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
@@ -65,100 +67,128 @@ class RewardCalculatorTest {
 	}
 
 	@Test
-	void computesAndAppliesRewards() {
+	void updatesRewardsAsExpected() {
+		final var changes = new HashMap<AccountProperty, Object>();
 		setUpMocks();
-		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
-		given(account.getStakedId()).willReturn(3L);
+		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100L);
+		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
-		subject.computePendingRewards(account);
+		subject.setRewardsPaidInThisTxn(100L);
+		subject.updateRewardChanges(account, changes);
 
 		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(500, subject.getAccountReward());
+		assertEquals(account.getBalance() + subject.getAccountReward(), changes.get(AccountProperty.BALANCE));
+		assertEquals(subject.getAccountUpdatedStakePeriodStart(), changes.get(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(100 + subject.getAccountReward(), subject.rewardsPaidInThisTxn());
+
+		// resets all fields
+		subject.reset();
+		assertEquals(0, subject.getAccountUpdatedStakePeriodStart());
+		assertEquals(0, subject.getAccountReward());
+		assertEquals(0, subject.rewardsPaidInThisTxn());
 	}
 
 	@Test
-	void doesntComputeReturnsZeroReward() {
+	void returnsZeroRewardsIfRewardSumHistoryIsEmpty() {
+		final var changes = new HashMap<AccountProperty, Object>();
+
 		setUpMocks();
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
-		subject.computePendingRewards(account);
+		subject.setRewardsPaidInThisTxn(100L);
+		subject.updateRewardChanges(account, changes);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, subject.getAccountReward());
-
-		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-
-		subject.computePendingRewards(account);
 		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
-		assertEquals(0, subject.getAccountReward());
+		assertFalse(changes.containsKey(AccountProperty.BALANCE));
+		assertEquals(subject.getAccountUpdatedStakePeriodStart(), changes.get(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(100, subject.rewardsPaidInThisTxn());
 	}
 
 	@Test
-	void doesntComputeReturnsZeroRewardIfNotInRange() {
+	void doesntComputeRewardReturnsZeroIfNotInRange() {
+		final var changes = new HashMap<AccountProperty, Object>();
+
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
-		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(-1L);
+		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(todayNumber - 1);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
-		subject.computePendingRewards(account);
+		subject.updateRewardChanges(account, changes);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, subject.getAccountReward());
+
+		assertEquals(todayNumber - 1, subject.getAccountUpdatedStakePeriodStart());
+		assertFalse(changes.containsKey(AccountProperty.BALANCE));
+		assertEquals(subject.getAccountUpdatedStakePeriodStart(), changes.get(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(0, subject.rewardsPaidInThisTxn());
 	}
 
 	@Test
-	void adjustsStakePeriodStartIfBeforeAnYear() throws NegativeAccountBalanceException {
+	void adjustsEffectiveStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		setUpMocks();
+		final var changes = new HashMap<AccountProperty, Object>();
+
 		final var expectedStakePeriodStart = 19365L;
 
 		final var merkleAccount = new MerkleAccount();
 		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
-		merkleAccount.setStakedId(3L);
-		merkleAccount.setBalance(100L);
+		merkleAccount.setStakedId(-3L);
+		merkleAccount.setBalance(100 * Units.HBARS_TO_TINYBARS);
 
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
 		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(expectedStakePeriodStart - 365);
-		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
+		given(stakeInfoManager.mutableStakeInfoFor(2L)).willReturn(merkleStakingInfo);
 
-		subject.computePendingRewards(merkleAccount);
+		subject.updateRewardChanges(merkleAccount, changes);
 
 		assertEquals(expectedStakePeriodStart - 1, subject.getAccountUpdatedStakePeriodStart());
 		assertEquals(500, subject.getAccountReward());
+		assertEquals(merkleAccount.getBalance() + subject.getAccountReward(), changes.get(AccountProperty.BALANCE));
+		assertEquals(subject.getAccountUpdatedStakePeriodStart(), changes.get(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(subject.getAccountReward(), subject.rewardsPaidInThisTxn());
 	}
 
 	@Test
-	void updatingRewardsWorks() {
-		setUpMocks();
+	void estimatesPendingRewardsForStateView() {
+		final var changes = new HashMap<AccountProperty, Object>();
+		final var todayNum = 300L;
+
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNum);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
-		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
-		given(account.getStakedId()).willReturn(3L);
+		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100L);
-		final var updatableMap = new HashMap<AccountProperty, Object>();
-		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
-		given(stakeInfoManager.mutableStakeInfoFor(3L)).willReturn(merkleStakingInfo);
+		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
-		subject.updateRewardChanges(account, updatableMap);
+		subject.setRewardsPaidInThisTxn(100L);
+		final long reward = subject.estimatePendingRewards(account, merkleStakingInfo);
 
-		assertEquals(todayNumber - 1, (long) updatableMap.get(AccountProperty.STAKE_PERIOD_START));
-		assertEquals(600, (long) updatableMap.get(AccountProperty.BALANCE));
-		assertEquals(500, subject.getAccountReward());
-		assertEquals(500L, subject.rewardsPaidInThisTxn());
+		assertEquals(500, reward);
 
-		subject.resetRewardsPaid();
-		assertEquals(0L, subject.rewardsPaidInThisTxn());
+		// no changes to state
+		assertEquals(0, subject.getAccountReward());
+		assertFalse(changes.containsKey(AccountProperty.BALANCE));
+		assertFalse(changes.containsKey(AccountProperty.STAKE_PERIOD_START));
+		assertEquals(100, subject.rewardsPaidInThisTxn());
+
+		// if declinedReward
+		given(account.isDeclinedReward()).willReturn(true);
+		assertEquals(0L, subject.estimatePendingRewards(account, merkleStakingInfo));
 	}
 
-	private void setUpMocks(){
+	private void setUpMocks() {
 		given(stakePeriodManager.latestRewardableStakePeriodStart()).willReturn(todayNumber);
 		willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());

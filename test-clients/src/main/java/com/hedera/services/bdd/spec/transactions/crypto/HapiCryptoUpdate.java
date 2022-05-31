@@ -83,7 +83,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 	private Optional<AccountID> newStakedAccountId = Optional.empty();
 	private Optional<Long> newStakedNodeId = Optional.empty();
-	private boolean isDeclinedReward = false;
+	private Optional<Boolean> isDeclinedReward = Optional.empty();
 
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
@@ -166,7 +166,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	public HapiCryptoUpdate newDeclinedReward(boolean isDeclined) {
-		isDeclinedReward = isDeclined;
+		isDeclinedReward = Optional.of(isDeclined);
 		return this;
 	}
 
@@ -230,7 +230,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							} else if (newStakedNodeId.isPresent()) {
 								builder.setStakedNodeId(newStakedNodeId.get());
 							}
-							builder.setDeclineReward(BoolValue.of(isDeclinedReward));
+							isDeclinedReward.ifPresent(b -> builder.setDeclineReward(BoolValue.of(b)));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

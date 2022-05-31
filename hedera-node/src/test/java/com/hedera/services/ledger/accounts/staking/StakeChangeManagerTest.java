@@ -20,9 +20,6 @@ package com.hedera.services.ledger.accounts.staking;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
@@ -37,14 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.hedera.services.ledger.accounts.staking.StakeChangeManager.finalBalanceGiven;
+import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -56,8 +48,6 @@ class StakeChangeManagerTest {
 	private Address address1 = mock(Address.class);
 	@Mock
 	private Address address2 = mock(Address.class);
-	@Mock
-	private MerkleAccount account;
 	@Mock
 	private StakeInfoManager stakeInfoManager;
 	@Mock
@@ -75,53 +65,11 @@ class StakeChangeManagerTest {
 	}
 
 	@Test
-	void validatesIfAnyStakedFieldChanges() {
-		assertTrue(subject.hasStakeFieldChanges(randomStakeFieldChanges(100L)));
-		assertFalse(subject.hasStakeFieldChanges(randomNotStakeFieldChanges()));
-	}
-
-	@Test
-	void updatesBalance() {
-		var changes = randomStakeFieldChanges(100L);
-		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		pendingChanges.include(counterpartyId, counterparty, changes);
-		assertEquals(100L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
-
-		subject.updateBalance(20L, 0, pendingChanges);
-		assertEquals(120L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
-
-		changes = randomNotStakeFieldChanges();
-		pendingChanges.clear();
-		pendingChanges.include(counterpartyId, counterparty, changes);
-		assertEquals(null, pendingChanges.changes(0).get(AccountProperty.BALANCE));
-		subject.updateBalance(20L, 0, pendingChanges);
-		assertEquals(20L, pendingChanges.changes(0).get(AccountProperty.BALANCE));
-	}
-
-	@Test
-	void updatesStakedToMe() {
-		var changes = randomStakeFieldChanges(100L);
-		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		pendingChanges.include(counterpartyId, counterparty, changes);
-		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-
-		subject.updateStakedToMe(0, 20L, pendingChanges);
-		assertEquals(2020L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-
-
-		changes = randomNotStakeFieldChanges();
-		pendingChanges.clear();
-		pendingChanges.include(counterpartyId, counterparty, changes);
-		assertEquals(null, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-		subject.updateStakedToMe(0, 20L, pendingChanges);
-		assertEquals(20L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-	}
-
-	@Test
 	void withdrawsStakeCorrectly() {
 		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
 		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
 		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
+
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
 		subject.withdrawStake(0L, 100L, false);
 
@@ -142,6 +90,7 @@ class StakeChangeManagerTest {
 		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
 		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
+
 		subject.awardStake(0L, 100L, false);
 
 		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
@@ -156,40 +105,15 @@ class StakeChangeManagerTest {
 	}
 
 	@Test
-	void getsFieldsCorrectlyFromChanges() {
-		final var changes = randomStakeFieldChanges(100L);
-
-		assertEquals(0L, subject.getAccountStakeeNum(changes));
-		assertEquals(-2L, subject.getNodeStakeeNum(changes));
-		assertEquals(100L, finalBalanceGiven(account, changes));
-		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
-		assertEquals(2000L, subject.finalStakedToMeGiven(account, changes));
-	}
-
-	@Test
-	void getsFieldsCorrectlyIfNotFromChanges() {
-		final var changes = randomNotStakeFieldChanges();
-
-		given(account.getBalance()).willReturn(1000L);
-		given(account.isDeclinedReward()).willReturn(true);
-		given(account.getStakedToMe()).willReturn(200L);
-
-		assertEquals(0L, subject.getAccountStakeeNum(changes));
-		assertEquals(0L, subject.getNodeStakeeNum(changes));
-		assertEquals(1000L, finalBalanceGiven(account, changes));
-		assertEquals(true, subject.finalDeclineRewardGiven(account, changes));
-		assertEquals(200L, subject.finalStakedToMeGiven(account, changes));
-	}
-
-	@Test
 	void findsOrAddsAccountAsExpected() {
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		assertEquals(1, pendingChanges.size());
 
-		var num = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
-		assertEquals(1, num);
-		num = subject.findOrAdd(counterpartyId.getAccountNum(), pendingChanges);
-		assertEquals(0, num);
+		var placeOfInsertion = subject.findOrAdd(partyId.getAccountNum(), pendingChanges);
+		assertEquals(1, placeOfInsertion);
+		assertEquals(partyId, pendingChanges.id(1));
+		placeOfInsertion = subject.findOrAdd(counterpartyId.getAccountNum(), pendingChanges);
+		assertEquals(0, placeOfInsertion);
 
 		assertEquals(2, pendingChanges.size());
 	}
@@ -202,60 +126,17 @@ class StakeChangeManagerTest {
 		accountsMap.put(EntityNum.fromAccountId(counterpartyId), counterparty);
 		accountsMap.put(EntityNum.fromAccountId(partyId), party);
 
+		assertEquals(-1, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
+		assertEquals(-1,  accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
+
 		subject = new StakeChangeManager(stakeInfoManager, () -> accountsMap);
 		subject.setStakePeriodStart(todayNum);
 
 		assertEquals(todayNum, counterparty.getStakePeriodStart());
 		assertEquals(-1, party.getStakePeriodStart());
+		assertEquals(todayNum, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
+		assertEquals(-1,  accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 	}
-
-	@Test
-	void checksIfBalanceIncraesed() {
-		Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		assertTrue(subject.isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(AccountProperty.BALANCE, -100L);
-		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
-
-		stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		assertTrue(subject.isIncreased(stakingFundChanges, null));
-
-		stakingFundChanges = Map.of(AccountProperty.ALIAS, ByteString.copyFromUtf8("Testing"));
-		assertFalse(subject.isIncreased(stakingFundChanges, stakingFund));
-	}
-
-
-	@Test
-	void returnsDefaultsWhenAccountIsNull() {
-		final var changes = randomNotStakeFieldChanges();
-
-		assertEquals(0, finalBalanceGiven(null, changes));
-		assertEquals(false, subject.finalDeclineRewardGiven(null, changes));
-		assertEquals(0, subject.finalStakedToMeGiven(null, changes));
-	}
-
-	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
-		var changes = randomStakeFieldChanges(100L);
-		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		pendingChanges.include(counterpartyId, counterparty, changes);
-		return pendingChanges;
-	}
-
-	private Map<AccountProperty, Object> randomStakeFieldChanges(final long newBalance) {
-		final var map = new HashMap<AccountProperty, Object>();
-		map.put(AccountProperty.BALANCE, newBalance);
-		map.put(AccountProperty.STAKED_ID, -2L);
-		map.put(AccountProperty.DECLINE_REWARD, true);
-		map.put(AccountProperty.STAKED_TO_ME, 2000L);
-		return map;
-	}
-
-	private Map<AccountProperty, Object> randomNotStakeFieldChanges() {
-		final var map = new HashMap<AccountProperty, Object>();
-		map.put(AccountProperty.ALIAS, ByteString.copyFromUtf8("testing"));
-		return map;
-	}
-
 
 	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
 		given(addressBook.getSize()).willReturn(2);
@@ -273,13 +154,11 @@ class StakeChangeManagerTest {
 		return info;
 	}
 
-	private static final long amount = 1L;
-	private static final long partyBalance = 111L;
+	private final long partyBalance = 111L;
 	private static final long counterpartyBalance = 555L;
-	private static final AccountID partyId = AccountID.newBuilder().setAccountNum(123).build();
+	private final AccountID partyId = AccountID.newBuilder().setAccountNum(123).build();
 	private static final AccountID counterpartyId = AccountID.newBuilder().setAccountNum(321).build();
-	private static final AccountID stakingFundId = AccountID.newBuilder().setAccountNum(800).build();
-	private static final MerkleAccount party = MerkleAccountFactory.newAccount()
+	private final MerkleAccount party = MerkleAccountFactory.newAccount()
 			.number(EntityNum.fromAccountId(partyId))
 			.balance(partyBalance)
 			.get();
@@ -287,9 +166,5 @@ class StakeChangeManagerTest {
 			.stakedId(-1)
 			.number(EntityNum.fromAccountId(counterpartyId))
 			.balance(counterpartyBalance)
-			.get();
-	private static final MerkleAccount stakingFund = MerkleAccountFactory.newAccount()
-			.number(EntityNum.fromAccountId(stakingFundId))
-			.balance(amount)
 			.get();
 }
