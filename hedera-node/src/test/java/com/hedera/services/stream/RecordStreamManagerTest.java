@@ -145,7 +145,7 @@ public class RecordStreamManagerTest {
 	void initializeTest() {
 		assertNull(disableStreamingInstance.getV5StreamFileWriter(),
 				"When recordStreaming is disabled, V5streamFileWriter instance should be null");
-		assertNull(disableStreamingInstance.getV6StreamFileWriter(),
+		assertNull(disableStreamingInstance.getProtobufStreamFileWriter(),
 				"When recordStreaming is disabled, V6streamFileWriter instance should be null");
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(disableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
@@ -154,7 +154,7 @@ public class RecordStreamManagerTest {
 
 		assertNotNull(enableV5StreamingInstance.getV5StreamFileWriter(),
 				"When V5 recordStreaming is enabled, V5streamFileWriter instance should not be null");
-		assertNull(enableV5StreamingInstance.getV6StreamFileWriter(),
+		assertNull(enableV5StreamingInstance.getProtobufStreamFileWriter(),
 				"When V5 recordStreaming is enabled, V6streamFileWriter instance should be null");
 		assertNotNull(enableV5StreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(enableV5StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
@@ -163,7 +163,7 @@ public class RecordStreamManagerTest {
 
 		assertNull(enableV6StreamingInstance.getV5StreamFileWriter(),
 				"When V6 recordStreaming is enabled, V5streamFileWriter instance should be null");
-		assertNotNull(enableV6StreamingInstance.getV6StreamFileWriter(),
+		assertNotNull(enableV6StreamingInstance.getProtobufStreamFileWriter(),
 				"When V6 recordStreaming is enabled, V6streamFileWriter instance should not be null");
 		assertNotNull(enableV6StreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(enableV6StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
@@ -230,17 +230,27 @@ public class RecordStreamManagerTest {
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
 	void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
+		// when
 		enableV5StreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
 		assertEquals(startWriteAtCompleteWindow,
 				enableV5StreamingInstance.getV5StreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+		assertThat(logCaptor.infoLogs(),
+				contains(Matchers.startsWith("RecordStreamManager::setStartWriteAtCompleteWindow")));
 	}
 
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
 	void setStartWriteAtCompleteWindowTestV6(boolean startWriteAtCompleteWindow) {
+		// when
 		enableV6StreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
 		assertEquals(startWriteAtCompleteWindow,
-				enableV6StreamingInstance.getV6StreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+				enableV6StreamingInstance.getProtobufStreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+		assertThat(logCaptor.infoLogs(),
+				contains(Matchers.startsWith("RecordStreamManager::setStartWriteAtCompleteWindow")));
 	}
 
 	@ParameterizedTest
@@ -248,7 +258,11 @@ public class RecordStreamManagerTest {
 	void setStartWriteAtCompleteWindowTestWhenRecordStreamingIsDisabledDoesNothingSilently(
 			boolean startWriteAtCompleteWindow
 	) {
+		// when
 		disableStreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
+		assertTrue(logCaptor.infoLogs().isEmpty());
 	}
 
 	@Test

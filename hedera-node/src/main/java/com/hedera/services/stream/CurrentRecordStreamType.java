@@ -54,7 +54,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 				log.error("Failed to load HAPI proto versions, record stream files may be unusable");
 			}
 			fileHeader = new int[] {
-					getRecordStreamVersion(), //TODO: probably will need to be changed
+					getRecordStreamVersion(),
 					protoSemVer.getMajor(),
 					protoSemVer.getMinor(),
 					protoSemVer.getPatch()

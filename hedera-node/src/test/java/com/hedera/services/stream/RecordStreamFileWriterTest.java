@@ -22,7 +22,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.stream.StreamType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -56,12 +55,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class RecordStreamFileWriterTest {
@@ -77,71 +78,6 @@ class RecordStreamFileWriterTest {
 				streamType
 		);
 		messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-	}
-
-	@Test
-	void clear() {
-		subject.clear();
-	}
-
-	@Test
-	void close() {
-		subject.close();
-	}
-
-	@Test
-	void testsWriteLongIOException() {
-		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-
-		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-		final var startRunningHash = new Hash(messageDigest.digest());
-		subject.setRunningHash(startRunningHash);
-
-		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
-
-		try (MockedConstruction<SerializableDataOutputStream> mocked = Mockito.mockConstruction(SerializableDataOutputStream.class,
-				(mock, context) -> {
-
-					doThrow(IOException.class).when(mock).writeLong(anyLong());
-				})) {
-
-			firstBlockRSOs.forEach(subject::addObject);
-
-		}
-
-		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
-				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
-		secondBlockRSOs.forEach(subject::addObject);
-
-		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing endRunningHash")));
-	}
-
-	@Test
-	void testsExceptions() {
-		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-
-		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-		final var startRunningHash = new Hash(messageDigest.digest());
-		subject.setRunningHash(startRunningHash);
-
-		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
-
-		try (MockedConstruction<SerializableDataOutputStream> mocked = Mockito.mockConstruction(SerializableDataOutputStream.class,
-				(mock, context) -> {
-
-					doThrow(IOException.class).when(mock).writeSerializable(any(SelfSerializable.class), anyBoolean());
-				})) {
-
-			firstBlockRSOs.forEach(subject::addObject);
-			assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("begin :: Got IOException when writing startRunningHash to")));
-
-		}
-
-		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
-				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
-		secondBlockRSOs.forEach(subject::addObject);
 	}
 
 	@Test
@@ -188,8 +124,6 @@ class RecordStreamFileWriterTest {
 				firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
 				secondBlockEntireFileSignature,
 				secondBlockMetadataSignature);
-		tearDown();
-
 	}
 
 	private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
@@ -382,6 +316,101 @@ class RecordStreamFileWriterTest {
 		}
 	}
 
+	@Test
+	void clearCalledInMiddleOfWritingSucceeds() {
+		// given
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		// set initial running hash
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+		// send RSOs for block 1
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
+		firstBlockRSOs.forEach(subject::addObject);
+
+		// when
+		subject.clear();
+
+		// then
+		assertNull(subject.getDosMeta());
+		assertNull(subject.getRecordStreamFile());
+		assertTrue(logCaptor.debugLogs().contains("RecordStreamFileWriter::clear executed."));
+	}
+
+	@Test
+	void clearCalledWhenNotWritingFileSucceeds() {
+		// when
+		subject.clear();
+
+		// then
+		assertNull(subject.getDosMeta());
+		assertNull(subject.getRecordStreamFile());
+		assertThat(logCaptor.debugLogs(),
+				contains(Matchers.startsWith("RecordStreamFileWriter::clear executed.")));
+	}
+
+	@Test
+	void closeSucceeds() {
+		// given
+		final var subjectSpy = Mockito.spy(subject);
+
+		// when
+		subjectSpy.close();
+
+		// then
+		verify(subjectSpy).closeCurrentAndSign();
+		assertThat(logCaptor.debugLogs(),
+				contains(Matchers.startsWith("RecordStreamFileWriter finished writing the last object, is stopped")));
+	}
+
+	@Test
+	void testsWriteLongIOException() {
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
+
+		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+				SerializableDataOutputStream.class,
+				(mock, context) -> doThrow(IOException.class).when(mock).writeLong(anyLong()))
+		) {
+			firstBlockRSOs.forEach(subject::addObject);
+		}
+
+		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
+				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
+		secondBlockRSOs.forEach(subject::addObject);
+		assertThat(logCaptor.warnLogs(),
+				contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing endRunningHash")));
+	}
+
+	@Test
+	void testsExceptions() {
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
+
+		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+				SerializableDataOutputStream.class,
+				(mock, context) -> doThrow(IOException.class).when(mock).writeSerializable(
+						any(SelfSerializable.class), anyBoolean()))
+		) {
+			firstBlockRSOs.forEach(subject::addObject);
+			assertThat(logCaptor.errorLogs(),
+					contains(Matchers.startsWith("begin :: Got IOException when writing startRunningHash to")));
+		}
+
+		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
+				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
+		secondBlockRSOs.forEach(subject::addObject);
+	}
+
 	@BeforeAll
 	static void beforeAll() {
 		final var file = new File(expectedExportDir());
@@ -390,16 +419,13 @@ class RecordStreamFileWriterTest {
 		}
 	}
 
-	void tearDown() throws IOException {
-		Files.walk(Path.of(expectedExportDir()))
-				.map(Path::toFile)
-				.forEach(File::delete);
-	}
-
 	@AfterAll
-	static void afterAll() {
+	static void afterAll() throws IOException {
 		final var file = new File(expectedExportDir());
 		if (file.exists() && file.isDirectory()) {
+			Files.walk(Path.of(expectedExportDir()))
+					.map(Path::toFile)
+					.forEach(File::delete);
 			file.delete();
 		}
 	}
@@ -419,15 +445,13 @@ class RecordStreamFileWriterTest {
 	};
 
 	@Mock
-	private StreamType streamType;
+	private RecordStreamType streamType;
 	@Mock
 	private Signer signer;
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamFileWriter<RecordStreamObject> subject;
-	@Mock
-	SerializableDataOutputStream dosMeta;
 
 	private MessageDigest messageDigest;
 	private final static MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();

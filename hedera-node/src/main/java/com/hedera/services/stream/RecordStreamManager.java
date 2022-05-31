@@ -4,7 +4,7 @@ package com.hedera.services.stream;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,14 +72,14 @@ public class RecordStreamManager {
 	 * stream files.
 	 * <b>Should be deleted after migration to V6 is done</b>.
 	 */
-	private TimestampStreamFileWriter<RecordStreamObject> V5StreamFileWriter;
+	private TimestampStreamFileWriter<RecordStreamObject> v5StreamFileWriter;
 
 	/**
 	 * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link RecordStreamObject}s to record
 	 * stream files.
 	 * Will be used from V6 onwards.
 	 */
-	private RecordStreamFileWriter<RecordStreamObject> V6StreamFileWriter;
+	private RecordStreamFileWriter<RecordStreamObject> protobufStreamFileWriter;
 
 	/** initial running Hash of records */
 	private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -134,7 +134,7 @@ public class RecordStreamManager {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
 			if (globalDynamicProperties.isRecordStreamV6Enabled()) {
-				V6StreamFileWriter = new RecordStreamFileWriter<>(
+				protobufStreamFileWriter = new RecordStreamFileWriter<>(
 						nodeScopedRecordLogDir,
 						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 						platform,
@@ -142,7 +142,7 @@ public class RecordStreamManager {
 						streamType
 				);
 			} else {
-				V5StreamFileWriter = new TimestampStreamFileWriter<>(
+				v5StreamFileWriter = new TimestampStreamFileWriter<>(
 						nodeScopedRecordLogDir,
 						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 						platform,
@@ -152,7 +152,7 @@ public class RecordStreamManager {
 			writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
 					.setNodeId(platform.getSelfId().getId())
 					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
-					.setForwardTo(V6StreamFileWriter == null ? V5StreamFileWriter : V6StreamFileWriter)
+					.setForwardTo(protobufStreamFileWriter == null ? v5StreamFileWriter : protobufStreamFileWriter)
 					.setThreadName("writeQueueThread")
 					.setComponent("recordStream")
 					.build();
@@ -270,11 +270,11 @@ public class RecordStreamManager {
 	 * 		whether the writer should not write until the first complete window
 	 */
 	public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
-		if (V5StreamFileWriter != null) {
-			V5StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+		if (v5StreamFileWriter != null) {
+			v5StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
-		} else if (V6StreamFileWriter != null) {
-			V6StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+		} else if (protobufStreamFileWriter != null) {
+			protobufStreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
 		}
 	}
@@ -319,7 +319,7 @@ public class RecordStreamManager {
 	 * @return current TimestampStreamFileWriter instance
 	 */
 	TimestampStreamFileWriter<RecordStreamObject> getV5StreamFileWriter() {
-		return V5StreamFileWriter;
+		return v5StreamFileWriter;
 	}
 
 	/**
@@ -327,8 +327,8 @@ public class RecordStreamManager {
 	 *
 	 * @return current RecordStreamFileWriter instance
 	 */
-	RecordStreamFileWriter<RecordStreamObject> getV6StreamFileWriter() {
-		return V6StreamFileWriter;
+	RecordStreamFileWriter<RecordStreamObject> getProtobufStreamFileWriter() {
+		return protobufStreamFileWriter;
 	}
 
 	/**

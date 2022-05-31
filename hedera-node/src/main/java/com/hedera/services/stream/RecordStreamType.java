@@ -29,7 +29,6 @@ import com.swirlds.common.stream.StreamType;
  * from properties filtering during the Maven build, all the specializations are static and will change very rarely.
  */
 public interface RecordStreamType extends StreamType {
-	//TODO: change version, extensions?
 	int RECORD_VERSION = 5;
 	String RECORD_DESCRIPTION = "records";
 	String RECORD_EXTENSION = "rcd";

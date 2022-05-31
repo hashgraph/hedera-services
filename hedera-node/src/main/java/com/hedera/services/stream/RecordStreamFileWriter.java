@@ -1,5 +1,25 @@
 package com.hedera.services.stream;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.hedera.services.stream.proto.HashAlgorithm;
@@ -17,7 +37,6 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStream;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.stream.StreamType;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,16 +57,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 
-public class RecordStreamFileWriter<T extends RecordStreamObject>  implements LinkedObjectStream<T> {
-	//TODO: lower log level to debug/trace for all log.infoe
-
+class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObjectStream<T> {
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
-	public static final int OBJECT_STREAM_SIG_VERSION = 1; //TODO: can probably remove this
 
 	/**
 	 * stream file type: record stream, or event stream
 	 */
-	private final StreamType streamType; //TODO: can probably be of type CurrentRecordStreamType
+	private final RecordStreamType streamType;
 
 	/**
 	 * a messageDigest object for digesting entire stream file and generating entire Hash
@@ -72,7 +88,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	/**
 	 * the path to which we write object stream files and signature files
 	 */
-	private String dirPath;
+	private final String dirPath;
 
 	/**
 	 * current runningHash before consuming the object added by calling {@link #addObject(T)} method
@@ -82,12 +98,12 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	/**
 	 * generate signature bytes for endRunningHash in corresponding file
 	 */
-	private Signer signer;
+	private final Signer signer;
 
 	/**
 	 * period of generating object stream files in ms
 	 */
-	private long logPeriodMs;
+	private final long logPeriodMs;
 
 	/**
 	 * initially, set to be consensus timestamp of the first object;
@@ -108,7 +124,6 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	 */
 	private boolean startWriteAtCompleteWindow;
 
-	//TODO: add javaDoc
 	private RecordStreamFile.Builder recordStreamFile;
 	private int recordFileVersion;
 
@@ -117,20 +132,15 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			final long logPeriodMs,
 			final Signer signer,
 			final boolean startWriteAtCompleteWindow,
-			final StreamType streamType
-	) {
+			final RecordStreamType streamType
+	) throws NoSuchAlgorithmException {
 		this.dirPath = dirPath;
 		this.logPeriodMs = logPeriodMs;
 		this.signer = signer;
 		this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
 		this.streamType = streamType;
-
-		try {
-			this.streamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-			this.metadataStreamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-		} catch (NoSuchAlgorithmException ex) {
-			throw new RuntimeException(ex);
-		}
+		this.streamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+		this.metadataStreamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
 	}
 
 	@Override
@@ -145,12 +155,13 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			begin();
 		}
 
-		// if recordStreamFile is null, it means startWriteAtCompleteWindow is true and we are still in the first
-		// incomplete window, so we don't serialize this object;
+		// if recordStreamFile is null, it means startWriteAtCompleteWindow is true,
+		// and we are still in the first incomplete window, so we don't serialize this object;
 		// so we only serialize the object when stream is not null
 		if (recordStreamFile != null) {
 			consume(object);
 		}
+
 		// update runningHash
 		this.runningHash = object.getRunningHash();
 	}
@@ -168,7 +179,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 		if (lastConsensusTimestamp == null && !startWriteAtCompleteWindow) {
 			// this is the first object, we should start writing it to new File
 			result = true;
-		} else if (lastConsensusTimestamp == null && startWriteAtCompleteWindow) {
+		} else if (lastConsensusTimestamp == null) {
 			// this is the first object, we should wait for the first complete window
 			result = false;
 		} else {
@@ -196,7 +207,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 				endRunningHash = runningHash.getFutureHash().get();
 				recordStreamFile.setEndObjectRunningHash(toProto(endRunningHash));
 				dosMeta.writeSerializable(endRunningHash, true);
-				LOG.info(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
+				LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
 						endRunningHash);
 				// write block number to metadata
 				dosMeta.writeLong(recordStreamFile.getBlockNumber());
@@ -228,13 +239,13 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			this.fileNameShort = file.getName();
 			try {
 				if (file.exists() && !file.isDirectory()) {
-					LOG.info(OBJECT_STREAM.getMarker(), "Stream file already exists {}", fileNameShort);
+					LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", fileNameShort);
 				} else {
 					// create record file
 					stream = new FileOutputStream(file, false);
 					dos = new SerializableDataOutputStream(
 							new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)));
-					LOG.info(OBJECT_STREAM_FILE.getMarker(), "Stream file created {}", fileNameShort);
+					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file created {}", fileNameShort);
 
 					// write contents of record file - record file version and serialized RecordFile protobuf
 					dos.writeInt(recordFileVersion);
@@ -245,29 +256,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 					final var currentFile = file;
 					closeFile();
 
-					// get entire hash of this stream file
-					final var entireHash = new Hash(streamDigest.digest(), DigestType.SHA_384);
-					// get metaData hash of this stream file
-					final var metaHash = new Hash(metadataStreamDigest.digest(), DigestType.SHA_384);
-
-					// create proto messages for signature file
-					final var fileSignature = generateSignatureObject(entireHash);
-					final var metadataSignature = generateSignatureObject(metaHash);
-					final var signatureFile = SignatureFile.newBuilder()
-							.setFileSignature(fileSignature)
-							.setMetadataSignature(metadataSignature);
-
-					// create signature file
-					final var sigFilePath = generateSigFilePath(currentFile);
-					try (final var fos = new FileOutputStream(sigFilePath)) {
-						signatureFile.build().writeTo(fos);
-						LOG.info(OBJECT_STREAM_FILE.getMarker(),
-								"closeCurrentAndSign :: signature file saved: {}", sigFilePath);
-					} catch (IOException e) {
-						LOG.error(EXCEPTION.getMarker(),
-								"closeCurrentAndSign ::  :: Fail to generate signature file for {}",
-								fileNameShort, e);
-					}
+					createSignatureFile(currentFile);
 				}
 			} catch (FileNotFoundException e) {
 				Thread.currentThread().interrupt();
@@ -282,7 +271,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 
 	private void startNewFile(T object) {
 		this.recordStreamFile = RecordStreamFile.newBuilder()
-				.setBlockNumber(object.getStreamAlignment()); // Do we need to populate block number for phase 1?
+				.setBlockNumber(object.getStreamAlignment());
 	}
 
 	/**
@@ -307,7 +296,7 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			final var startRunningHash = runningHash.getFutureHash().get();
 			recordStreamFile.setStartObjectRunningHash(toProto(startRunningHash));
 			dosMeta.writeSerializable(startRunningHash, true);
-			LOG.info(OBJECT_STREAM_FILE.getMarker(), "begin :: write startRunningHash {}", startRunningHash);
+			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "begin :: write startRunningHash {}", startRunningHash);
 		} catch (IOException e) {
 			Thread.currentThread().interrupt();
 			LOG.error(EXCEPTION.getMarker(), "begin :: Got IOException when writing startRunningHash to {}",
@@ -320,9 +309,10 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	}
 
 	/**
-	 * serialize given object with ClassId
+	 * add given object to the current record stream file
 	 *
 	 * @param object
+	 * 	object to be added to the record stream file
 	 */
 	private void consume(T object) {
 		recordStreamFile.addRecordStreamItems(
@@ -332,8 +322,8 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 						.build()
 		);
 
-		// We will need to add logic here to save the sidecar records
-		// of the current object but that has been planned for phase
+		// In phase 2 we will need to add logic here to also
+		// save the sidecar records of the current object
 	}
 
 	/**
@@ -360,8 +350,8 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			} catch (IOException e) {
 				LOG.warn(EXCEPTION.getMarker(), "Exception in close file", e);
 			}
-			LOG.info(OBJECT_STREAM_FILE.getMarker(), "File {} is closed at {}",
-					() -> fileNameShort, () -> Instant.now());
+			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "File {} is closed at {}",
+					() -> fileNameShort, Instant::now);
 		}
 	}
 
@@ -381,9 +371,8 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 	}
 
 	/**
-	 * //TODO: fix JavaDoc
 	 * this method is called when the node falls behind
-	 * resets all populated up to this point fields (digests, dosMeta, recordStreamFile)
+	 * resets all populated up to this point fields (metadataDigest, dosMeta, recordStreamFile)
 	 */
 	@Override
 	public void clear() {
@@ -397,17 +386,18 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 			}
 		}
 		recordStreamFile = null;
-		LOG.info(OBJECT_STREAM.getMarker(), "RecordStreamFileWriter::clear executed.");
+		LOG.debug(OBJECT_STREAM.getMarker(), "RecordStreamFileWriter::clear executed.");
 	}
 
 	public void close() {
 		this.closeCurrentAndSign();
-		LOG.info(LogMarker.FREEZE.getMarker(), "RecordStreamFileWriter finished writing the last object, is stopped");
+		LOG.debug(LogMarker.FREEZE.getMarker(), "RecordStreamFileWriter finished writing the last object, is stopped");
 	}
 
 	public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
 		this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
-		LOG.info(OBJECT_STREAM.getMarker(), "RecordStreamFileWriter::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
+		LOG.debug(OBJECT_STREAM.getMarker(), "RecordStreamFileWriter::setStartWriteAtCompleteWindow: {}",
+				startWriteAtCompleteWindow);
 	}
 
 	public boolean getStartWriteAtCompleteWindow() {
@@ -441,5 +431,40 @@ public class RecordStreamFileWriter<T extends RecordStreamObject>  implements Li
 				.setSignature(ByteString.copyFrom(signature))
 				.setHashObject(toProto(hash))
 				.build();
+	}
+
+	private void createSignatureFile(final File relatedRecordStreamFile) {
+		// get entire hash of this stream file
+		final var entireHash = new Hash(streamDigest.digest(), DigestType.SHA_384);
+		// get metaData hash of this stream file
+		final var metaHash = new Hash(metadataStreamDigest.digest(), DigestType.SHA_384);
+
+		// create proto messages for signature file
+		final var fileSignature = generateSignatureObject(entireHash);
+		final var metadataSignature = generateSignatureObject(metaHash);
+		final var signatureFile = SignatureFile.newBuilder()
+				.setFileSignature(fileSignature)
+				.setMetadataSignature(metadataSignature);
+
+		// create signature file
+		final var sigFilePath = generateSigFilePath(relatedRecordStreamFile);
+		try (final var fos = new FileOutputStream(sigFilePath)) {
+			signatureFile.build().writeTo(fos);
+			LOG.debug(OBJECT_STREAM_FILE.getMarker(),
+					"closeCurrentAndSign :: signature file saved: {}", sigFilePath);
+		} catch (IOException e) {
+			LOG.error(EXCEPTION.getMarker(),
+					"closeCurrentAndSign ::  :: Fail to generate signature file for {}",
+					fileNameShort, e);
+		}
+	}
+
+	/* -- Only used by unit tests --- */
+	SerializableDataOutputStream getDosMeta() {
+		return this.dosMeta;
+	}
+
+	RecordStreamFile.Builder getRecordStreamFile() {
+		return this.recordStreamFile;
 	}
 }
