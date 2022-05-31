@@ -23,7 +23,7 @@ package com.hedera.services.ledger;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -471,7 +471,7 @@ class TransactionalLedgerTest {
 
 		testLedger.begin();
 
-		assertThrows(MissingAccountException.class, () -> testLedger.set(0L, OBJ, things[0]));
+		assertThrows(MissingEntityException.class, () -> testLedger.set(0L, OBJ, things[0]));
 	}
 
 	@Test
@@ -792,8 +792,7 @@ class TransactionalLedgerTest {
 		setupAccountsLedger();
 
 
-		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker(), () -> networkCtx,
-				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker());
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}
 

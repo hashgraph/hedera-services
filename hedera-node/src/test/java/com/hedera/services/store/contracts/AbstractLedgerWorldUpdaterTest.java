@@ -548,8 +548,7 @@ class AbstractLedgerWorldUpdaterTest {
 		nftsLedger.begin();
 		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger, () -> networkCtx,
-				() -> stakingInfo, dynamicProperties, () -> accounts, rewardCalculator);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private void setupWellKnownAccounts() {

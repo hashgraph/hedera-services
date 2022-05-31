@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"address","name":"makerAddress","type":"address"}],"name":"makeOpaquely","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"}]

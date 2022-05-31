@@ -119,7 +119,6 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);
@@ -142,7 +141,6 @@ class StateInitializationFlowTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
-		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);

@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -43,13 +44,16 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 
 	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final RewardCalculator rewardCalculator;
 
 	@Inject
 	public GetContractInfoResourceUsage(
 			AliasManager aliasManager,
-			GlobalDynamicProperties dynamicProperties) {
+			GlobalDynamicProperties dynamicProperties,
+			final RewardCalculator rewardCalculator) {
 		this.aliasManager = aliasManager;
 		this.dynamicProperties = dynamicProperties;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	@Override
@@ -61,7 +65,7 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
 		final var op = query.getContractGetInfo();
 		final var tentativeInfo =
-				view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+				view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
 		if (tentativeInfo.isPresent()) {
 			final var info = tentativeInfo.get();
 			putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);

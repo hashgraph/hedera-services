@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -66,6 +67,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -94,7 +96,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -171,11 +172,19 @@ class ServicesStateTest {
 	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
 	@Mock
 	private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
+	@Mock
+	private BootstrapProperties bootstrapProperties;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private ServicesState subject = new ServicesState();
+	private ServicesState subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new ServicesState();
+		setAllChildren();
+	}
 
 	@AfterEach
 	void cleanup() {
@@ -188,10 +197,7 @@ class ServicesStateTest {
 	void doesNoMigrationsFromCurrentVersion() {
 		mockMigrators();
 
-		subject = mock(ServicesState.class);
-
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0270_VERSION);
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 		subject.migrate();
 
 		verifyNoInteractions(
@@ -206,15 +212,15 @@ class ServicesStateTest {
 		final var inOrder = inOrder(
 				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
+		ServicesState.setExpiryJustEnabled(false);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
 
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
 
@@ -238,19 +244,18 @@ class ServicesStateTest {
 				autoRenewalMigrator, titleCountsMigrator,
 				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
 
-		subject = mock(ServicesState.class);
-
 		ServicesState.setExpiryJustEnabled(true);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.accounts()).willReturn(accounts);
-		given(subject.tokenAssociations()).willReturn(tokenAssociations);
-		given(subject.getMetadata()).willReturn(metadata);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
-		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
 		subject.migrate();
 		ServicesState.setExpiryJustEnabled(false);
@@ -799,5 +804,14 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.TOPICS, mockMm);
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
 		subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
+	}
+
+	private void setAllChildren() {
+		given(addressBook.getSize()).willReturn(1);
+		given(addressBook.getAddress(0)).willReturn(address);
+		given(address.getId()).willReturn(0L);
+		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(3_000_000_000L);
+		given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+		subject.createGenesisChildren(addressBook, 0, bootstrapProperties);
 	}
 }

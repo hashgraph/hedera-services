@@ -24,25 +24,19 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -73,12 +67,7 @@ public class MutableEntityAccess implements EntityAccess {
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
-			final Supplier<MerkleNetworkContext> networkCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo,
-			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final RewardCalculator rewardCalculator
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -91,12 +80,7 @@ public class MutableEntityAccess implements EntityAccess {
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
-				tokensLedger,
-				networkCtx,
-				stakingInfo,
-				dynamicProperties,
-				accounts,
-				rewardCalculator
+				tokensLedger
 		);
 
 		ledger.setMutableEntityAccess(this);

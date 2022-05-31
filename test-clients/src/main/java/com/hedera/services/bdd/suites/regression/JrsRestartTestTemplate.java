@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,8 +36,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BELIEVE_IN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -56,6 +53,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -90,13 +89,13 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
 
 	private static final String SENDER = "sender";
-	private static final String MULTIPURPOSE = "multipurpose";
+	private static final String MULTIPURPOSE = "Multipurpose";
 	private static final String RECEIVER = "receiver";
 	private static final String TREASURY = "treasury";
 	private static final String JRS_TOKEN = "jrsToken";
 	private static final String PENDING_XFER = "pendingXfer";
 	private static final String BYTECODE_FILE = "bytecode";
-	private static final String BYTECODE_FILE_MEMO = "EVM bytecode for multipurpose contract";
+	private static final String BYTECODE_FILE_MEMO = "EVM bytecode for Multipurpose contract";
 
 	public static void main(String... args) {
 		var hero = new JrsRestartTestTemplate();
@@ -167,11 +166,11 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 
 	private HapiSpecOperation[] postRestartContractValidation() {
 		return new HapiSpecOperation[] {
-				contractCall(MULTIPURPOSE, BELIEVE_IN_ABI, 256),
-				contractCallLocal(MULTIPURPOSE, ContractResources.LUCKY_NO_LOOKUP_ABI)
+				contractCall(MULTIPURPOSE, "believeIn", 256),
+				contractCallLocal(MULTIPURPOSE, "pick")
 						.has(resultWith()
 						.resultThruAbi(
-								LUCKY_NO_LOOKUP_ABI,
+								getABIFor(FUNCTION, "pick", MULTIPURPOSE),
 								isLiteralResult(new Object[] { BigInteger.valueOf(256) }))),
 		};
 	}

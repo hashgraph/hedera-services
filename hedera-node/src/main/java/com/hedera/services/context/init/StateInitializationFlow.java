@@ -25,7 +25,6 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.stream.RecordStreamManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,30 +66,6 @@ public class StateInitializationFlow {
 
 		workingState.updateFrom(activeState);
 		log.info("Context updated with working state");
-		log.info("  (@ {}) # NFTs               = {}",
-				StateChildIndices.UNIQUE_TOKENS,
-				activeState.uniqueTokens().size());
-		log.info("  (@ {}) # token associations = {}",
-				StateChildIndices.TOKEN_ASSOCIATIONS,
-				activeState.tokenAssociations().size());
-		log.info("  (@ {}) # topics             = {}",
-				StateChildIndices.TOPICS,
-				activeState.topics().size());
-		log.info("  (@ {}) # blobs              = {}",
-				StateChildIndices.STORAGE,
-				activeState.storage().size());
-		log.info("  (@ {}) # accounts/contracts = {}",
-				StateChildIndices.ACCOUNTS,
-				activeState.accounts().size());
-		log.info("  (@ {}) # tokens             = {}",
-				StateChildIndices.TOKENS,
-				activeState.tokens().size());
-		log.info("  (@ {}) # scheduled txns     = {}",
-				StateChildIndices.SCHEDULE_TXS,
-				activeState.scheduleTxs().size());
-		log.info("  (@ {}) # contract K/V pairs = {}",
-				StateChildIndices.CONTRACT_STORAGE,
-				activeState.contractStorage().size());
 
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);

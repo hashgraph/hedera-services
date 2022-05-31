@@ -23,6 +23,7 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
@@ -87,6 +88,8 @@ class ServicesTxnManagerTest {
 	private RecordStreaming recordStreaming;
 	@Mock
 	private BlockManager blockManager;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -97,7 +100,7 @@ class ServicesTxnManagerTest {
 	void setup() {
 		subject = new ServicesTxnManager(
 				processLogic, triggeredProcessLogic, recordCache, ledger,
-				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager);
+				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming, blockManager, rewardCalculator);
 	}
 
 	@Test

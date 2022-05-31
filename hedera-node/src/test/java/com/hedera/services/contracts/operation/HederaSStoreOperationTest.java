@@ -27,7 +27,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -43,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
@@ -64,10 +64,8 @@ class HederaSStoreOperationTest {
 	private MutableAccount mutableAccount;
 	@Mock
 	private EvmAccount evmAccount;
-	@Mock
-	private Bytes keyBytesMock;
-	@Mock
-	private Bytes valueBytesMock;
+	final private Bytes keyBytesMock = Bytes.of(1,2,3,4);
+	final private Bytes valueBytesMock = Bytes.of(4,3,2,1);
 	@Mock
 	private BlockValues hederaBlockValues;
 	@Mock
@@ -94,7 +92,7 @@ class HederaSStoreOperationTest {
 
 		final var result = subject.execute(messageFrame, evm);
 
-		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
+		final var expected = new Operation.OperationResult(OptionalLong.of(10), Optional.empty());
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
@@ -111,7 +109,7 @@ class HederaSStoreOperationTest {
 
 		final var result = subject.execute(messageFrame, evm);
 
-		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+		final var expected = new Operation.OperationResult(OptionalLong.of(10), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
@@ -132,14 +130,14 @@ class HederaSStoreOperationTest {
 		given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
 		given(evmAccount.getMutable()).willReturn(mutableAccount);
 		given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
-		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
+		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(10L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.isStatic()).willReturn(false);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
+		given(messageFrame.getRemainingGas()).willReturn(0L);
 
 		final var result = subject.execute(messageFrame, evm);
 
-		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		final var expected = new Operation.OperationResult(OptionalLong.of(10), Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
@@ -162,7 +160,7 @@ class HederaSStoreOperationTest {
 		final var result = subject.execute(messageFrame, evm);
 
 		final var expected = new Operation.OperationResult(
-				Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+				OptionalLong.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
@@ -179,12 +177,12 @@ class HederaSStoreOperationTest {
 		givenValidContext(key, value);
 		given(mutableAccount.getStorageValue(any())).willReturn(UInt256.ZERO);
 
-		final var frameGasCost = Gas.of(10L);
+		final var frameGasCost = 10L;
 		given(storageGasCalculator.gasCostOfStorageIn(messageFrame)).willReturn(frameGasCost);
 
 		final var result = subject.execute(messageFrame, evm);
 
-		final var expected = new Operation.OperationResult(Optional.of(frameGasCost), Optional.empty());
+		final var expected = new Operation.OperationResult(OptionalLong.of(frameGasCost), Optional.empty());
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
@@ -204,10 +202,10 @@ class HederaSStoreOperationTest {
 		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
 		given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
 		given(evmAccount.getMutable()).willReturn(mutableAccount);
-		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
+		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(10L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.isStatic()).willReturn(false);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 
 		given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
 	}
