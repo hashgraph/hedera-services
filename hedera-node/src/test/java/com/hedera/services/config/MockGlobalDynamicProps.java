@@ -225,11 +225,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public long ratesMidnightCheckInterval() {
-		return 1L;
-	}
-
-	@Override
 	public boolean shouldThrottleByGas() {
 		return throttleByGas;
 	}

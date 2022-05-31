@@ -191,7 +191,6 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
-			entry("rates.midnightCheckInterval", 1L),
 			entry("scheduling.whitelist", Set.of(
 					CryptoTransfer,
 					TokenMint,

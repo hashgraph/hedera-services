@@ -45,6 +45,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
+import static com.hedera.services.state.logic.NetworkCtxManager.MIDNIGHT_CHECK_RATE_SECS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -335,7 +336,7 @@ class NetworkCtxManagerTest {
 				1, 150, 2_345_678L);
 		// and:
 		subject.setIsNextDay(shouldUpdateMidnightRates);
-		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(mockDynamicProps.ratesMidnightCheckInterval());
+		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(MIDNIGHT_CHECK_RATE_SECS);
 
 		given(shouldUpdateMidnightRates.test(lastBoundaryCheck, sometimeNextDay)).willReturn(true);
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
@@ -358,7 +359,7 @@ class NetworkCtxManagerTest {
 		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval())));
+				.willReturn(sometimeNextDay.minusSeconds((MIDNIGHT_CHECK_RATE_SECS)));
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
@@ -375,7 +376,7 @@ class NetworkCtxManagerTest {
 		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval() - 1)));
+				.willReturn(sometimeNextDay.minusSeconds((MIDNIGHT_CHECK_RATE_SECS - 1)));
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:

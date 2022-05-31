@@ -116,6 +116,7 @@ public class EndOfStakingPeriodCalculator {
 			updatedTotalStakedStart += merkleStakingInfo.getStake();
 
 			nodeStakingInfos.add(NodeStake.newBuilder()
+					.setNodeId(nodeNum.longValue())
 					.setStake(merkleStakingInfo.getStake())
 					.setStakeRewarded(merkleStakingInfo.getStakeToReward())
 					.build());
