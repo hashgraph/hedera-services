@@ -196,12 +196,16 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().defaultNode(),
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).assertingOnlyPriority().logged(),
 						getTxnRecord("begin").scheduled().hasPriority(recordWith()
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged()
 				).then(
@@ -216,6 +220,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged(),
 						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)

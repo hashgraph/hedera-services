@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -90,17 +92,17 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						autoAccountCreationsHappyPath(),
-						autoAccountCreationBadAlias(),
-						autoAccountCreationUnsupportedAlias(),
-						transferToAccountAutoCreatedUsingAlias(),
-						transferToAccountAutoCreatedUsingAccount(),
-						transferFromAliasToAlias(),
-						transferFromAliasToAccount(),
-						multipleAutoAccountCreations(),
-						accountCreatedIfAliasUsedAsPubKey(),
-						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-						canGetBalanceAndInfoViaAlias()
+//						autoAccountCreationBadAlias(),
+//						autoAccountCreationUnsupportedAlias(),
+//						transferToAccountAutoCreatedUsingAlias(),
+//						transferToAccountAutoCreatedUsingAccount(),
+//						transferFromAliasToAlias(),
+//						transferFromAliasToAccount(),
+//						multipleAutoAccountCreations(),
+//						accountCreatedIfAliasUsedAsPubKey(),
+//						aliasCanBeUsedOnManyAccountsNotAsAlias(),
+//						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+//						canGetBalanceAndInfoViaAlias()
 				}
 		);
 	}
@@ -418,6 +420,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoCreate(civilian),
 						cryptoCreate(autoCreateSponsor).balance(initialBalance * ONE_HBAR)
 				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "20"
+								)),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(autoCreateSponsor, "validAlias", ONE_HUNDRED_HBARS)
 						).via("transferTxn").payingWith(civilian)
@@ -462,12 +470,16 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 			final long newAccountFunding
 	) {
 		long receivedBalance = 0;
+		log.info("parent " + parent);
+		log.info("child " + child);
 		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
 			final var id = adjust.getAccountID();
-			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(defaultPayer)) {
+			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(
+					defaultPayer) || id.getAccountNum() == 800 || id.getAccountNum() == 801) {
 				continue;
 			}
 			receivedBalance = adjust.getAmount();
+			log.info("Received balance " + receivedBalance + " newAccountFunding" + newAccountFunding);
 			break;
 		}
 		final var fee = newAccountFunding - receivedBalance;
