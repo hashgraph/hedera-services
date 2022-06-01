@@ -201,46 +201,50 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 */
 	public void closeCurrentAndSign() {
 		if (recordStreamFile != null) {
-			// write endRunningHash
-			Hash endRunningHash;
-			try {
-				endRunningHash = runningHash.getFutureHash().get();
-				recordStreamFile.setEndObjectRunningHash(toProto(endRunningHash));
-				dosMeta.writeSerializable(endRunningHash, true);
-				LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
-						endRunningHash);
-				// write block number to metadata
-				dosMeta.writeLong(recordStreamFile.getBlockNumber());
-			} catch (IOException e) {
-				Thread.currentThread().interrupt();
-				LOG.warn(EXCEPTION.getMarker(),
-						"closeCurrentAndSign :: IOException when serializing endRunningHash", e);
-				return;
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				LOG.error(EXCEPTION.getMarker(),
-						"closeCurrentAndSign :: Got interrupted when getting endRunningHash for writing {}",
-						fileNameShort, e);
-				return;
-			}
-
-			/* When sidecars are enabled we will need to add more logic at this point:
-				1. We should have a map (?) of the TransactionSidecarRecords with key - the type of sidecar, updated
-				everytime we consume a RSO.
-				2. At this point, we will create a SidecarFile for each present type of sidecar record in the current
-				 block
-				3. We populate the SidecarMetadata of the RecordStreamFile message
-			*/
-
+			// generate file name
 			final var firstTxnTimestamp = recordStreamFile.getRecordStreamItems(0).getRecord().getConsensusTimestamp();
 			this.file = new File(
 					generateStreamFilePath(
 							Instant.ofEpochSecond(firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos())));
 			this.fileNameShort = file.getName();
-			try {
-				if (file.exists() && !file.isDirectory()) {
-					LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", fileNameShort);
-				} else {
+			if (file.exists() && !file.isDirectory()) {
+				LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", fileNameShort);
+			} else {
+				try {
+					// write endRunningHash
+					final var endRunningHash = runningHash.getFutureHash().get();
+					recordStreamFile.setEndObjectRunningHash(toProto(endRunningHash));
+					dosMeta.writeSerializable(endRunningHash, true);
+					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
+							endRunningHash);
+
+					// write block number to metadata
+					dosMeta.writeLong(recordStreamFile.getBlockNumber());
+					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write block number {}",
+							recordStreamFile.getBlockNumber());
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					LOG.error(EXCEPTION.getMarker(),
+							"closeCurrentAndSign :: Got interrupted when getting endRunningHash for writing {}",
+							fileNameShort, e);
+					return;
+				} catch (IOException e) {
+					Thread.currentThread().interrupt();
+					LOG.warn(EXCEPTION.getMarker(),
+							"closeCurrentAndSign :: IOException when serializing endRunningHash and block number into " +
+									"metadata", e);
+					return;
+				}
+
+				/* When sidecars are enabled we will need to add more logic at this point:
+					1. We should have a map (?) of the TransactionSidecarRecords with key - the type of sidecar, updated
+					everytime we consume a RSO.
+					2. At this point, we will create a SidecarFile for each present type of sidecar record in the current
+					 block
+					3. We populate the SidecarMetadata of the RecordStreamFile message
+				*/
+
+				try {
 					// create record file
 					stream = new FileOutputStream(file, false);
 					dos = new SerializableDataOutputStream(
@@ -251,20 +255,22 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 					dos.writeInt(recordFileVersion);
 					dos.write(toBytes(recordStreamFile));
 					dos.flush();
+					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file written successfully {}", fileNameShort);
 
-					// close file
+					// close record file
 					final var currentFile = file;
 					closeFile();
 
+					// create signature file
 					createSignatureFile(currentFile);
+				} catch (FileNotFoundException e) {
+					Thread.currentThread().interrupt();
+					LOG.error(EXCEPTION.getMarker(), "closeCurrentAndSign :: FileNotFound: {}", e.getMessage());
+				} catch (IOException e) {
+					Thread.currentThread().interrupt();
+					LOG.warn(EXCEPTION.getMarker(),
+							"closeCurrentAndSign :: IOException when serializing {}", recordStreamFile, e);
 				}
-			} catch (FileNotFoundException e) {
-				Thread.currentThread().interrupt();
-				LOG.error(EXCEPTION.getMarker(), "closeCurrentAndSign :: FileNotFound: ", e);
-			} catch (IOException e) {
-				Thread.currentThread().interrupt();
-				LOG.warn(EXCEPTION.getMarker(),
-						"closeCurrentAndSign :: IOException when serializing {}", recordStreamFile, e);
 			}
 		}
 	}
@@ -296,15 +302,16 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 			final var startRunningHash = runningHash.getFutureHash().get();
 			recordStreamFile.setStartObjectRunningHash(toProto(startRunningHash));
 			dosMeta.writeSerializable(startRunningHash, true);
-			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "begin :: write startRunningHash {}", startRunningHash);
+			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "begin :: write startRunningHash to metadata {}",
+					startRunningHash);
 		} catch (IOException e) {
 			Thread.currentThread().interrupt();
-			LOG.error(EXCEPTION.getMarker(), "begin :: Got IOException when writing startRunningHash to {}",
-					fileNameShort, e);
+			LOG.error(EXCEPTION.getMarker(), "begin :: Got IOException when writing startRunningHash to metadata " +
+							"stream", e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			LOG.error(EXCEPTION.getMarker(), "begin :: Got interrupted when getting startRunningHash for writing {}",
-					fileNameShort, e);
+			LOG.error(EXCEPTION.getMarker(), "begin :: Got interrupted when getting startRunningHash for writing to " +
+							"metadata stream.", e);
 		}
 	}
 
@@ -330,29 +337,27 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 * if stream is not null, close current file and save to disk
 	 */
 	private void closeFile() {
-		if (stream != null) {
-			try {
-				dos.flush();
-				stream.flush();
+		try {
+			dos.flush();
+			stream.flush();
 
-				stream.getChannel().force(true);
-				stream.getFD().sync();
+			stream.getChannel().force(true);
+			stream.getFD().sync();
 
-				dos.close();
-				stream.close();
-				dosMeta.close();
+			dos.close();
+			stream.close();
+			dosMeta.close();
 
-				file = null;
-				stream = null;
-				dos = null;
-				dosMeta = null;
-				recordStreamFile = null;
-			} catch (IOException e) {
-				LOG.warn(EXCEPTION.getMarker(), "Exception in close file", e);
-			}
-			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "File {} is closed at {}",
-					() -> fileNameShort, Instant::now);
+			file = null;
+			stream = null;
+			dos = null;
+			dosMeta = null;
+			recordStreamFile = null;
+		} catch (IOException e) {
+			LOG.warn(EXCEPTION.getMarker(), "Exception in close file", e);
 		}
+		LOG.debug(OBJECT_STREAM_FILE.getMarker(), "File {} is closed at {}",
+				() -> fileNameShort, Instant::now);
 	}
 
 	/**
@@ -457,14 +462,5 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 					"closeCurrentAndSign ::  :: Fail to generate signature file for {}",
 					fileNameShort, e);
 		}
-	}
-
-	/* -- Only used by unit tests --- */
-	SerializableDataOutputStream getDosMeta() {
-		return this.dosMeta;
-	}
-
-	RecordStreamFile.Builder getRecordStreamFile() {
-		return this.recordStreamFile;
 	}
 }
