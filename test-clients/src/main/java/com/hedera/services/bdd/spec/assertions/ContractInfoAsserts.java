@@ -278,6 +278,15 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts noStakingNodeId(){
+		registerProvider((spec, o) -> {
+			assertEquals(0, (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
+
 	public ContractInfoAsserts autoRenewAccountId(String id) {
 		registerProvider((spec, o) -> {
 			assertEquals(spec.registry().getAccountID(id)
