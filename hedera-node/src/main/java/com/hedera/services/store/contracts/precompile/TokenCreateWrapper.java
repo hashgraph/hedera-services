@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -164,7 +165,7 @@ final class TokenCreateWrapper {
 	}
 
 	void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
-		for (final var tokenKey: tokenKeys) {
+		for (final var tokenKey : tokenKeys) {
 			if (tokenKey.key.isShouldInheritAccountKeySet()) {
 				tokenKey.key.setInheritedKey(JKey.mapJKey(senderKey));
 			}
@@ -175,6 +176,14 @@ final class TokenCreateWrapper {
 		return tokenKeys.stream()
 				.filter(TokenKeyWrapper::isUsedForAdminKey)
 				.findFirst();
+	}
+
+	boolean hasAutoRenewAccount() {
+		return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
+	}
+
+	public void inheritAutoRenewAccount(final EntityId parentAutoRenewId) {
+		expiry.setAutoRenewAccount(parentAutoRenewId.toGrpcAccountId());
 	}
 
 	/* ------------------ */
@@ -234,7 +243,7 @@ final class TokenCreateWrapper {
 				final boolean shouldInheritAccountKey,
 				final ContractID contractID,
 				final byte[] ed25519,
-		   		final byte[] ecdsaSecp256k1,
+				final byte[] ecdsaSecp256k1,
 				final ContractID delegatableContractID
 		) {
 			this.shouldInheritAccountKey = shouldInheritAccountKey;
@@ -262,7 +271,7 @@ final class TokenCreateWrapper {
 		}
 
 		private boolean isEcdsaSecp256k1KeySet() {
-			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 		}
 
 		private void setInheritedKey(final Key key) {
@@ -325,8 +334,6 @@ final class TokenCreateWrapper {
 		}
 	}
 
-	record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) { }
-
 	static final class FixedFeeWrapper {
 		enum FixedFeePayment {
 			INVALID_PAYMENT,
@@ -377,13 +384,14 @@ final class TokenCreateWrapper {
 		private FixedFee.Builder asBuilder() {
 			return switch (fixedFeePayment) {
 				case USE_HBAR -> FixedFee.newBuilder().setAmount(amount);
-				case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(tokenID);
+				case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(
+						tokenID);
 				case USE_CURRENTLY_CREATED_TOKEN -> FixedFee.newBuilder().setAmount(amount)
 						.setDenominatingTokenId(TokenID.newBuilder()
-							.setShardNum(0L)
-							.setRealmNum(0L)
-							.setTokenNum(0L)
-							.build());
+								.setShardNum(0L)
+								.setRealmNum(0L)
+								.setTokenNum(0L)
+								.build());
 				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 			};
 		}

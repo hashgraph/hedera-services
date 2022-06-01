@@ -35,6 +35,7 @@ import java.util.Map;
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+
 	static {
 		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
 		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
@@ -48,6 +49,7 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
+		optionAccountPropertyMap.put(Option.AUTO_RENEW_ACCOUNT_ID, AccountProperty.AUTO_RENEW_ACCOUNT_ID);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}
 
@@ -66,6 +68,12 @@ public final class HederaAccountCustomizer extends
 		}
 		if (changes.containsKey(AccountProperty.PROXY)) {
 			op.setProxyAccountID(((EntityId) changes.get(AccountProperty.PROXY)).toGrpcAccountId());
+		}
+		if (changes.containsKey(AccountProperty.AUTO_RENEW_ACCOUNT_ID)) {
+			op.setAutoRenewAccountId(((EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID)).toGrpcAccountId());
+		}
+		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(((int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)));
 		}
 	}
 

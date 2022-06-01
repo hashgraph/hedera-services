@@ -28,7 +28,8 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.sigs.SigWrappers;
 import com.swirlds.common.crypto.SignatureType;
@@ -57,7 +58,7 @@ import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -229,7 +230,7 @@ class HederaKeyActivationTest {
 
 	@Test
 	void throwsIfNoSigMetaHasBeenRationalized() {
-		final var accessor = mock(TxnAccessor.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 
 		assertThrows(IllegalArgumentException.class,
 				() -> HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
@@ -237,7 +238,7 @@ class HederaKeyActivationTest {
 
 	@Test
 	void immediatelyReturnsFalseForNoRationalizedPayerData() {
-		final var accessor = mock(TxnAccessor.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 
@@ -265,5 +266,10 @@ class HederaKeyActivationTest {
 		assertTrue(HederaKeyActivation.keysMatch(sameParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(otherParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(sameParityCompressed, other));
+	}
+
+	@Test
+	void validSigIsValid() {
+		assertEquals(VerificationStatus.VALID, HederaKeyActivationTest.VALID_SIG.getSignatureStatus());
 	}
 }

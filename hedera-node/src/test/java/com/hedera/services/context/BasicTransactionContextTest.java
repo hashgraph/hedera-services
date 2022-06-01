@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -38,8 +39,9 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -145,7 +147,9 @@ class BasicTransactionContextTest {
 	@Mock
 	private NarratedCharging narratedCharging;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
+	@Mock
+	private SwirldsTxnAccessor swirldsTxnAccessor;
 	@Mock
 	private TransactionBody txn;
 	@Mock
@@ -164,6 +168,8 @@ class BasicTransactionContextTest {
 	private EntityIdSource ids;
 	@Mock
 	private EvmFnResult result;
+	@Mock
+	private EthTxData evmFnCallContext;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -353,6 +359,26 @@ class BasicTransactionContextTest {
 		record = subject.recordSoFar().build();
 
 		assertSame(result, record.getContractCallResult());
+	}
+
+	@Test
+	void configuresEthereumHash() {
+		var ethHash = new byte[] {2};
+		var senderId = EntityId.fromIdentityCode(42);
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+		given(evmFnCallContext.getEthereumHash()).willReturn(ethHash);
+
+		// when:
+		subject.setCallResult(result);
+		subject.updateForEvmCall(evmFnCallContext, senderId);
+		setUpBuildingExpirableTxnRecord();
+		record = subject.recordSoFar().build();
+
+		// then:
+		verify(result).updateForEvmCall(evmFnCallContext, senderId);
+		assertArrayEquals(ethHash, record.getEthereumHash());
 	}
 
 	@Test
@@ -624,6 +650,19 @@ class BasicTransactionContextTest {
 		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCallResult(result);
 		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
+	}
+
+	@Test
+	void throwsIfNotSwirldsTxnAccessor(){
+		assertThrows(IllegalStateException.class, () -> subject.swirldsTxnAccessor());
+
+		subject = new BasicTransactionContext(
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids);
+
+		subject.resetFor(swirldsTxnAccessor, now, memberId);
+		verify(narratedCharging).resetForTxn(swirldsTxnAccessor, memberId);
+
+		assertEquals(swirldsTxnAccessor, subject.swirldsTxnAccessor());
 	}
 
 	private ExpirableTxnRecord.Builder buildExpectedRecord(

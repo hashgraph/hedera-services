@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,10 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -76,7 +76,7 @@ class CryptoDeleteTransitionLogicTest {
 	private TransactionBody cryptoDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -87,7 +87,7 @@ class CryptoDeleteTransitionLogicTest {
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
@@ -123,7 +123,7 @@ class CryptoDeleteTransitionLogicTest {
 	@Test
 	void translatesMissingAccount() {
 		givenValidTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
+		willThrow(MissingEntityException.class).given(ledger).delete(any(), any());
 
 		// when:
 		subject.doStateTransition();

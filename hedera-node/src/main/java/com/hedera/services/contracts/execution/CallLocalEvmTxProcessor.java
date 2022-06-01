@@ -66,15 +66,25 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final AliasManager aliasManager,
 			final StorageExpiry storageExpiry
 	) {
-		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		super(
+				livePricesSource,
+				dynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;
 	}
 
 	@Override
-	public void setWorldState(HederaMutableWorldState worldState) {
+	public void setWorldState(final HederaMutableWorldState worldState) {
 		super.setWorldState(worldState);
+	}
+
+	@Override
+	public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
+		super.setBlockMetaSource(blockMetaSource);
 	}
 
 	@Override
@@ -103,14 +113,18 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				true,
 				storageExpiry.hapiStaticCallOracle(),
-				aliasManager.resolveForEvm(receiver));
+				aliasManager.resolveForEvm(receiver),
+				null,
+				0,
+				null);
 	}
 
 	@Override
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
 			final Address to,
-			final Bytes payload
+			final Bytes payload,
+			final long value
 	) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's

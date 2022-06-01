@@ -30,8 +30,8 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +53,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final RecordStreaming recordStreaming;
 
 	@Inject
 	public StandardProcessLogic(
@@ -65,7 +66,8 @@ public class StandardProcessLogic implements ProcessLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final ExecutionTimeTracker executionTimeTracker,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final RecordStreaming recordStreaming
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
@@ -77,6 +79,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.recordStreaming = recordStreaming;
 	}
 
 	@Override
@@ -96,6 +99,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			sigImpactHistorian.setChangeTime(effectiveConsensusTime);
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
 			sigImpactHistorian.purge();
+			recordStreaming.resetBlockNo();
 
 			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 
@@ -111,7 +115,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final long submittingMember,
 			final Instant consensusTime,
 			final Instant effectiveConsensusTime,
-			final PlatformTxnAccessor accessor
+			final SwirldsTxnAccessor accessor
 	) {
 		executionTimeTracker.start();
 		txnManager.process(accessor, effectiveConsensusTime, submittingMember);

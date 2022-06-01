@@ -21,12 +21,14 @@ package com.hedera.services.state.expiry.removal;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -61,15 +63,26 @@ class AccountGCTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
 	private AccountGC.RemovalFacilitation removalFacilitation;
 	@Mock
-	private TokenRelsListRemoval listRemoval;
+	private TokenRelsListMutation listRemoval;
 
 	private AccountGC subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccountGC(aliasManager, sigImpactHistorian, treasuryReturnHelper, backingAccounts, () -> tokenRels);
+		subject = new AccountGC(
+				aliasManager,
+				sigImpactHistorian,
+				treasuryReturnHelper,
+				backingAccounts,
+				() -> tokenRels,
+				() -> uniqueTokens,
+				dynamicProperties);
 		subject.setRemovalFacilitation(removalFacilitation);
 	}
 
@@ -85,7 +98,59 @@ class AccountGCTest {
 	}
 
 	@Test
-	void removalWithTokensWorks() {
+	void removalWithNftsWorks() {
+		final var expectedReturns = new TreasuryReturns(
+				List.of(aToken.toEntityId()), Collections.emptyList(), true);
+		accountWithTokens.setNumAssociations(1);
+		accountWithTokens.setNftsOwned(3);
+		accountWithTokens.setHeadNftId(aNum);
+		accountWithTokens.setHeadNftSerialNum(1L);
+		final var rootKey = accountWithTokens.getLatestAssociation();
+		given(removalFacilitation.removeNext(
+				eq(rootKey),
+				eq(rootKey),
+				any(TokenRelsListMutation.class))).willReturn(null);
+		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
+		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(10);
+
+		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
+
+		assertEquals(expectedReturns, actualReturns);
+		verify(treasuryReturnHelper).updateReturns(any(), eq(aToken), eq(1L), any());
+		assertEquals(0, accountWithTokens.getNumAssociations());
+		assertEquals(0, accountWithTokens.getNftsOwned());
+		assertRemovalStepsTaken(num, accountWithTokens);
+	}
+
+	@Test
+	void removalWithNftsWorksWithMoreNftsOwnedThanMaxTouched() {
+		final var expectedReturns = new TreasuryReturns(
+				List.of(aToken.toEntityId()), Collections.emptyList(), false);
+		accountWithTokens.setNumAssociations(1);
+		accountWithTokens.setNftsOwned(3);
+		accountWithTokens.setHeadNftId(aNum);
+		accountWithTokens.setHeadNftSerialNum(1L);
+		final var rootKey = accountWithTokens.getLatestAssociation();
+		given(removalFacilitation.removeNext(
+				eq(rootKey),
+				eq(rootKey),
+				any(TokenRelsListMutation.class))).willReturn(null);
+		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
+		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(1);
+
+		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
+
+		assertEquals(expectedReturns, actualReturns);
+		verify(treasuryReturnHelper).updateReturns(any(), eq(aToken), eq(1L), any());
+		assertEquals(0, accountWithTokens.getNumAssociations());
+		assertEquals(2, accountWithTokens.getNftsOwned());
+		verify(aliasManager, never()).forgetAlias(accountWithTokens.getAlias());
+		verify(backingAccounts, never()).remove(num.toGrpcAccountId());
+		verify(sigImpactHistorian, never()).markEntityChanged(num.longValue());
+	}
+
+	@Test
+	void removalWithTokensAndNoNftsWorks() {
 		final var expectedReturns = new TreasuryReturns(
 				List.of(aToken.toEntityId(), bToken.toEntityId()),
 				Collections.emptyList(), true);
@@ -96,18 +161,20 @@ class AccountGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(TokenRelsListRemoval.class))).willReturn(nextKey);
+				any(TokenRelsListMutation.class))).willReturn(nextKey);
 		given(removalFacilitation.removeNext(
 				eq(nextKey),
 				eq(nextKey),
-				any(TokenRelsListRemoval.class))).willReturn(unusedKey);
+				any(TokenRelsListMutation.class))).willReturn(unusedKey);
 		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
 		given(tokenRels.get(nextKey)).willReturn(new MerkleTokenRelStatus(0, true, true, true));
 
 		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
 
 		assertEquals(expectedReturns, actualReturns);
-		verify(treasuryReturnHelper, never()).updateReturns(any(), eq(bToken), eq(0), any());
+		verify(treasuryReturnHelper).updateReturns(any(), eq(aToken), eq(1L), any());
+		verify(treasuryReturnHelper, never()).updateReturns(any(), eq(bToken), eq(0L), any());
+		assertEquals(0, accountWithTokens.getNumAssociations());
 		assertRemovalStepsTaken(num, accountWithTokens);
 	}
 

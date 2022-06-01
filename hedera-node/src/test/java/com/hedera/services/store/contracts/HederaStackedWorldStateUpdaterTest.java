@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +40,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,6 +56,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 	private static final Address address = Address.fromHexString("0xabc");
 	private static final Address otherAddress = Address.fromHexString("0xdef");
@@ -98,6 +100,32 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
+	void recognizesNonZeroTokenBalanceAccount() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(positiveBalanceId, NUM_POSITIVE_BALANCES)).willReturn(1);
+		assertTrue(subject.contractHasAnyBalance(treasuryAddress));
+		given(accountsLedger.get(positiveBalanceId, NUM_POSITIVE_BALANCES)).willReturn(0);
+		assertFalse(subject.contractHasAnyBalance(treasuryAddress));
+	}
+
+	@Test
+	void recognizesAccountWhoStillOwnsNfts() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(1L);
+		assertTrue(subject.contractOwnsNfts(treasuryAddress));
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(0L);
+		assertFalse(subject.contractOwnsNfts(treasuryAddress));
+	}
+
+	@Test
 	void understandsRedirectsIfDisabled() {
 		assertFalse(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
 	}
@@ -113,9 +141,26 @@ class HederaStackedWorldStateUpdaterTest {
 	void usesAliasesForDecodingHelp() {
 		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
 		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias);
 
 		final var resolved = subject.unaliased(alias.toArrayUnsafe());
 		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
+	void usesAliasesForPermissiveDecodingHelp() {
+		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var resolved = subject.permissivelyUnaliased(alias.toArrayUnsafe());
+		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
+	void unaliasingFailsWhenNotUsingCanonicalAddress() {
+		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias2);
+
+		assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
 	}
 
 	@Test
@@ -252,10 +297,10 @@ class HederaStackedWorldStateUpdaterTest {
 	@Test
 	void revertBehavesAsExpected() {
 		subject.countIdsAllocatedByStacked(3);
-		subject.addSbhRefund(Gas.of(123L));
-		assertEquals(123L, subject.getSbhRefund().toLong());
+		subject.addSbhRefund(123L);
+		assertEquals(123L, subject.getSbhRefund());
 		subject.revert();
-		assertEquals(0, subject.getSbhRefund().toLong());
+		assertEquals(0L, subject.getSbhRefund());
 		verify(worldState, times(3)).reclaimContractId();
 	}
 

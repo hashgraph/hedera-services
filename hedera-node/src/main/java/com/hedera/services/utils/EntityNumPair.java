@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -84,16 +83,10 @@ public record EntityNumPair(long value) {
 		return unsignedHighOrder32From(value);
 	}
 
-	public EntityId getHighOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(getHiOrderAsLong());
-	}
-
-	public EntityId getLowOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(getLowOrderAsLong());
-	}
-
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
-		return tokenRelationship.getKey();
+		return EntityNumPair.fromLongs(
+				tokenRelationship.getAccount().getId().num(),
+				tokenRelationship.getToken().getId().num());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
@@ -110,6 +103,10 @@ public record EntityNumPair(long value) {
 
 	public EntityNum getLowOrderAsNum() {
 		return EntityNum.fromLong(getLowOrderAsLong());
+	}
+
+	public NftNumPair asNftNumPair() {
+		return NftNumPair.fromLongs(getHiOrderAsLong(), getLowOrderAsLong());
 	}
 
 	@Override

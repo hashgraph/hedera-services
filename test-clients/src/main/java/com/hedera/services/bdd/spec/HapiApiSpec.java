@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -65,6 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -80,6 +82,10 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.markSpecAsBeenExecuted;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.joining;
@@ -96,6 +102,7 @@ public class HapiApiSpec implements Runnable {
 
 	public enum UTF8Mode {FALSE, TRUE}
 
+	private Map<String, Long> privateKeyToNonce = new HashMap<>();
 	List<Payment> costs = new ArrayList<>();
 	List<Payment> costSnapshot = Collections.EMPTY_LIST;
 	String name;
@@ -186,6 +193,10 @@ public class HapiApiSpec implements Runnable {
 		return name;
 	}
 
+	public String getSuitePrefix() {
+		return suitePrefix;
+	}
+
 	public String logPrefix() {
 		return "'" + name + "' - ";
 	}
@@ -216,9 +227,23 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
-		List<HapiSpecOperation> ops = Stream.of(given, when, then)
-				.flatMap(Arrays::stream)
-				.collect(toList());
+		List<HapiSpecOperation> ops;
+
+		if (!suitePrefix.endsWith(ETH_SUFFIX)) {
+			ops = Stream.of(given, when, then)
+					.flatMap(Arrays::stream)
+					.collect(toList());
+		} else {
+			if (!isEthereumAccountCreatedForSpec(this)) {
+				initializeEthereumAccountForSpec(this);
+			}
+
+			ops = UtilVerbs.convertHapiCallsToEthereumCalls(
+					Stream.of(given, when, then)
+							.flatMap(Arrays::stream)
+							.collect(Collectors.toList()));
+		}
+
 		exec(ops);
 
 		if (hapiSetup.costSnapshotMode() == TAKE) {
@@ -227,7 +252,21 @@ public class HapiApiSpec implements Runnable {
 			compareWithSnapshot();
 		}
 
+		markSpecAsBeenExecuted(this);
 		nullOutInfrastructure();
+	}
+
+	public long getNonce(final String privateKey) {
+		return privateKeyToNonce.getOrDefault(privateKey, 0L);
+	}
+
+	public void incrementNonce(final String privateKey) {
+		var updatedNonce = (privateKeyToNonce.getOrDefault(privateKey, 0L)) + 1;
+		privateKeyToNonce.put(privateKey, updatedNonce);
+	}
+
+	public boolean isUsingEthCalls() {
+		return suitePrefix.endsWith(ETH_SUFFIX);
 	}
 
 	public boolean tryReinitializingFees() {
@@ -506,9 +545,9 @@ public class HapiApiSpec implements Runnable {
 	private static Def.Sourced customizedHapiSpec(String name, Stream<Object> prioritySource) {
 		return (Object... sources) -> {
 			Object[] allSources = Stream.of(
-					prioritySource,
-					Stream.of(sources),
-					Stream.of(HapiSpecSetup.getDefaultPropertySource()))
+							prioritySource,
+							Stream.of(sources),
+							Stream.of(HapiSpecSetup.getDefaultPropertySource()))
 					.flatMap(Function.identity()).toArray();
 			return hapiSpec(name).withSetup(setupFrom(allSources));
 		};

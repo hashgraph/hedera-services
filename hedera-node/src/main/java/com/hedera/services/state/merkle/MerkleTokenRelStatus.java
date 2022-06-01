@@ -22,14 +22,18 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
@@ -40,7 +44,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
-
 
 	private long numbers;
 	private long balance;
@@ -53,6 +56,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
+	}
+
+	public MerkleTokenRelStatus(final Pair<AccountID, TokenID> grpcRel) {
+		this.numbers = packedNums(grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
 	}
 
 	public MerkleTokenRelStatus(
@@ -252,5 +259,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	public void setNext(final long next) {
 		this.next = next;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
 	}
 }

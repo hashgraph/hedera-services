@@ -49,12 +49,24 @@ public class HederaExceptionalHaltReason {
 	 * Used when the target of a {@code selfdestruct} is a token treasury.
 	 */
 	public static final ExceptionalHaltReason CONTRACT_IS_TREASURY = HederaExceptionalHalt.CONTRACT_IS_TREASURY;
+	/**
+	 * Used when the target of a {@code selfdestruct} has positive fungible unit balances.
+	 */
+	public static final ExceptionalHaltReason CONTRACT_STILL_OWNS_NFTS =
+			HederaExceptionalHalt.CONTRACT_STILL_OWNS_NFTS;
+	/**
+	 * Used when the target of a {@code selfdestruct} has positive balances.
+	 */
+	public static final ExceptionalHaltReason TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES =
+			HederaExceptionalHalt.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 	enum HederaExceptionalHalt implements ExceptionalHaltReason {
 		INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
 		SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
 		CONTRACT_IS_TREASURY("Token treasuries cannot be deleted"),
-		INVALID_SIGNATURE("Invalid signature");
+		INVALID_SIGNATURE("Invalid signature"),
+		TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES("Accounts with positive fungible token balances cannot be deleted"),
+		CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted");
 
 		final String description;
 

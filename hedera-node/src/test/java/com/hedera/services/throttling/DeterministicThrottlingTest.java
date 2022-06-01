@@ -29,8 +29,8 @@ import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -72,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -530,7 +531,8 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCallWhenGasThrottleReturnsTrue() {
 		givenFunction(ContractCall);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(1L);
+		given(accessor.getGasLimitForContractTx()).willReturn(2L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -552,7 +554,35 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCreateWhenGasThrottleReturnsTrue() {
 		givenFunction(ContractCreate);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(1L);
+		given(accessor.getGasLimitForContractTx()).willReturn(2L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+		assertTrue(subject.wasLastTxnGasThrottled());
+
+		givenFunction(TokenBurn);
+		subject.shouldThrottleTxn(accessor, consensusNow.plusSeconds(1));
+		assertFalse(subject.wasLastTxnGasThrottled());
+	}
+
+	@Test
+	void alwaysThrottlesEthereumTxnWhenGasThrottleIsNotDefined() {
+		givenFunction(EthereumTransaction);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysThrottlesEthereumTxnWhenGasThrottleReturnsTrue() {
+		givenFunction(EthereumTransaction);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(1L);
+		given(accessor.getGasLimitForContractTx()).willReturn(2L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
@@ -703,6 +733,14 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void alwaysRejectsIfNoThrottleForEthereumTxn() {
+		givenFunction(EthereumTransaction);
+
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
 	void alwaysRejectsIfNoThrottleForConsensus() {
 		givenFunction(ContractCall);
 		subject.setConsensusThrottled(true);
@@ -714,6 +752,15 @@ class DeterministicThrottlingTest {
 	@Test
 	void alwaysRejectsIfNoThrottleForCreateForConsensus() {
 		givenFunction(ContractCreate);
+		subject.setConsensusThrottled(true);
+
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysRejectsIfNoThrottleForEthereumTxnForConsensus() {
+		givenFunction(EthereumTransaction);
 		subject.setConsensusThrottled(true);
 
 		// expect:
@@ -781,7 +828,19 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void contractCallTXCallsConsensusGasThrottle() throws IOException {
+	void frontEndEthereumTxnTXCallsFrontendGasThrottle() {
+		Instant now = Instant.now();
+
+		//setup:
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		givenFunction(EthereumTransaction);
+
+		//when:
+		assertTrue(subject.shouldThrottleTxn(accessor, now));
+	}
+
+	@Test
+	void contractCreateTXCallsConsensusGasThrottle() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
@@ -792,55 +851,6 @@ class DeterministicThrottlingTest {
 
 		//when:
 		subject.rebuildFor(defs);
-
-		//expect:
-		assertTrue(subject.shouldThrottleTxn(accessor, now));
-	}
-
-	@Test
-	void contractCreateTXCallsConsensusGasThrottle() {
-		Instant now = Instant.now();
-		subject.setConsensusThrottled(true);
-
-		//setup:
-		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		givenFunction(ContractCall);
-
-		//when:
-		subject.shouldThrottleTxn(accessor, now);
-	}
-
-	@Test
-	void contractCreateTXCallsConsensusGasThrottleWithDefinitions() {
-		Instant now = Instant.now();
-
-		//setup:
-		givenFunction(ContractCreate);
-		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
-		given(accessor.getGasLimitForContractTx()).willReturn(11L);
-		subject.setConsensusThrottled(true);
-
-		//when:
-		subject.applyGasConfig();
-
-		//expect:
-		assertTrue(subject.shouldThrottleTxn(accessor, now));
-	}
-
-	@Test
-	void contractCallTXCallsConsensusGasThrottleWithDefinitions() {
-		Instant now = Instant.now();
-
-		//setup:
-		givenFunction(ContractCall);
-		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
-		given(accessor.getGasLimitForContractTx()).willReturn(11L);
-		subject.setConsensusThrottled(true);
-
-		//when:
-		subject.applyGasConfig();
 
 		//expect:
 		assertTrue(subject.shouldThrottleTxn(accessor, now));
@@ -861,7 +871,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void verifyLeakUnusedGas() throws IOException {
+	void verifyLeakUnusedGas() {
 		Instant now = Instant.now();
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);

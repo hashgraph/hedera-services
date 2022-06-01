@@ -30,47 +30,36 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.TxnAccessor;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.function.Supplier;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -81,7 +70,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+@ExtendWith(MockitoExtension.class)
 class MutableEntityAccessTest {
 	@Mock
 	private HederaLedger ledger;
@@ -100,22 +89,16 @@ class MutableEntityAccessTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private SizeLimitedStorage storage;
 	@Mock
 	private AliasManager aliasManager;
 
-	@LoggingTarget
-	private LogCaptor logCaptor;
-	@LoggingSubject
 	private MutableEntityAccess subject;
 
-	private final long autoRenewSecs = Instant.now().getEpochSecond();
 	private final AccountID id = IdUtils.asAccount("0.0.1234");
 	private final long balance = 1234L;
-	private final EntityId proxy = EntityId.MISSING_ENTITY_ID;
-	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
 	private final UInt256 contractStorageKey = UInt256.ONE;
 	private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
@@ -168,6 +151,13 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
+	void commitsIfEthOpActive() {
+		givenActive(EthereumTransaction);
+		subject.commit();
+		verify(tokensLedger).commit();
+	}
+
+	@Test
 	void doesntCommitIfNonContractOpActive() {
 		givenActive(TokenMint);
 		subject.commit();
@@ -186,22 +176,6 @@ class MutableEntityAccessTest {
 		givenActive(TokenMint);
 		subject.rollback();
 		verify(tokensLedger, never()).rollback();
-	}
-
-	@Test
-	void warnsIfTokensLedgerMustBeRolledBackBeforeBeginning() {
-		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
-		givenActive(ContractCreate);
-		given(tokensLedger.isInTransaction()).willReturn(true);
-
-		subject.begin();
-
-		verify(tokensLedger).rollback();
-		verify(tokensLedger).begin();
-		verify(storage).beginSession();
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Tokens ledger had to be rolled back")));
 	}
 
 	@Test

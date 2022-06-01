@@ -21,12 +21,11 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -41,16 +40,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSLoadOperationTest {
+	final Address recipientAccount = Address.fromHexString("0x0001");
+
 	HederaSLoadOperation subject;
 
 	@Mock
@@ -63,30 +66,28 @@ class HederaSLoadOperationTest {
 	EVM evm;
 
 	@Mock
-	HederaWorldState.Updater worldUpdater;
+	HederaStackedWorldStateUpdater worldUpdater;
 
 	@Mock
 	EvmAccount evmAccount;
 
-	@Mock
-	Bytes keyBytesMock;
-
-	@Mock
-	Bytes valueBytesMock;
+	final Bytes keyBytesMock = Bytes.of(1,2,3,4);
+	final Bytes valueBytesMock = Bytes.of(4,3,2,1);
 
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	void setUp() {
-		givenValidContext(keyBytesMock, valueBytesMock);
+		givenValidContext();
 		subject = new HederaSLoadOperation(gasCalculator, dynamicProperties);
 	}
 
 	@Test
 	void executesProperlyWithColdSuccess() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 
@@ -96,7 +97,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var coldResult = subject.execute(messageFrame, evm);
 
-		final var expectedColdResult = new Operation.OperationResult(Optional.of(Gas.of(20L)), Optional.empty());
+		final var expectedColdResult = new Operation.OperationResult(OptionalLong.of(20L), Optional.empty());
 
 		assertEquals(expectedColdResult.getGasCost(), coldResult.getGasCost());
 		assertEquals(expectedColdResult.getHaltReason(), coldResult.getHaltReason());
@@ -107,8 +108,9 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executesProperlyWithWarmSuccess() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -116,7 +118,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var warmResult = subject.execute(messageFrame, evm);
 
-		final var expectedWarmResult = new Operation.OperationResult(Optional.of(Gas.of(30L)), Optional.empty());
+		final var expectedWarmResult = new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
 
 		assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
 		assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
@@ -127,11 +129,12 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeHaltsForInsufficientGas() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
+		given(messageFrame.getRemainingGas()).willReturn(0L);
 
-		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(30L)),
+		final var expectedHaltResult = new Operation.OperationResult(OptionalLong.of(30L),
 				Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
 		final var haltResult = subject.execute(messageFrame, evm);
@@ -143,6 +146,7 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeWithUnderFlowException() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.popStackItem()).willThrow(new FixedStack.UnderflowException());
 		final var result = subject.execute(messageFrame, evm);
 		assertEquals(INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
@@ -150,8 +154,9 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeWithOverFlowException() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -160,22 +165,25 @@ class HederaSLoadOperationTest {
 		doThrow(new FixedStack.OverflowException()).when(messageFrame).pushStackItem(any());
 
 		final var result = subject.execute(messageFrame, evm);
+		assertTrue(result.getHaltReason().isPresent());
 		assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason().get());
 	}
 
-	private void givenValidContext(Bytes key, Bytes value) {
+	private void givenAdditionalContext(Bytes key, Bytes value) {
 		final UInt256 keyBytes = UInt256.fromBytes(key);
 		final UInt256 valueBytes = UInt256.fromBytes(value);
-		final var recipientAccount = Address.fromHexString("0x0001");
 
 		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
+		given(worldUpdater.get(recipientAccount)).willReturn(evmAccount);
+		given(evmAccount.getAddress()).willReturn(Address.fromHexString("0x123"));
+	}
+
+	private void givenValidContext() {
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
-		given(worldUpdater.get(recipientAccount)).willReturn(evmAccount);
 
-		given(evmAccount.getAddress()).willReturn(Address.fromHexString("0x123"));
-		given(gasCalculator.getSloadOperationGasCost()).willReturn(Gas.of(10));
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(20));
-		given(gasCalculator.getColdSloadCost()).willReturn(Gas.of(10));
+		given(gasCalculator.getSloadOperationGasCost()).willReturn(10L);
+		given(gasCalculator.getWarmStorageReadCost()).willReturn(20L);
+		given(gasCalculator.getColdSloadCost()).willReturn(10L);
 	}
 }

@@ -32,8 +32,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -270,6 +270,7 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public Address toEvmAddress() {
-		return Address.wrap(Bytes.wrap(asEvmAddress((int) shard, realm, num)));
+		final var evmAddress = asEvmAddress((int) shard, realm, num);
+		return Address.wrap(Bytes.wrap(evmAddress));
 	}
 }

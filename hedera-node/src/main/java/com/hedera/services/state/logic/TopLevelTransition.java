@@ -73,7 +73,7 @@ public class TopLevelTransition implements Runnable {
 
 	@Override
 	public void run() {
-		final var accessor = txnCtx.accessor();
+		final var accessor = txnCtx.swirldsTxnAccessor();
 		final var now = txnCtx.consensusTime();
 		networkCtxManager.advanceConsensusClockTo(now);
 

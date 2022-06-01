@@ -30,7 +30,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.crypto.RunningHash;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
@@ -56,7 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
@@ -64,6 +67,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,9 +116,11 @@ class TxnAwareRecordsHistorianTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private TxnAccessor accessor;
+	@Mock
+	private RecordStreamObject rso;
 
-	private TxnAwareRecordsHistorian subject;
+	private RecordsHistorian subject;
 
 	@BeforeEach
 	void setUp() {
@@ -123,8 +129,28 @@ class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	void lastAddedIsEmptyAtFirst() {
-		assertNull(subject.lastCreatedTopLevelRecord());
+	void lastUsedRunningHashIsLastSucceedingChildIfPreset() {
+		final var mockHash = new RunningHash();
+		subject = mock(RecordsHistorian.class);
+		willCallRealMethod().given(subject).lastRunningHash();
+
+		given(subject.hasFollowingChildRecords()).willReturn(true);
+		given(subject.getFollowingChildRecords()).willReturn(List.of(new RecordStreamObject(), rso));
+		given(rso.getRunningHash()).willReturn(mockHash);
+
+		assertSame(mockHash, subject.lastRunningHash());
+	}
+
+	@Test
+	void lastUsedRunningHashIsTopLevelIfNoSuccesors() {
+		final var mockHash = new RunningHash();
+		subject = mock(RecordsHistorian.class);
+		willCallRealMethod().given(subject).lastRunningHash();
+
+		given(subject.getTopLevelRecord()).willReturn(rso);
+		given(rso.getRunningHash()).willReturn(mockHash);
+
+		assertSame(mockHash, subject.lastRunningHash());
 	}
 
 	@Test
@@ -170,6 +196,7 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
 		given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.saveExpirableTransactionRecords();
 		final var followingRsos = subject.getFollowingChildRecords();
@@ -305,7 +332,7 @@ class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	void addsPayerRecord() {
+	void constructsTopLevelAsExpected() {
 		givenTopLevelContext();
 		given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
 		given(creator.saveExpiringRecord(
@@ -313,6 +340,8 @@ class TxnAwareRecordsHistorianTest {
 				finalRecord.build(),
 				nows,
 				submittingMember)).willReturn(payerRecord);
+		final var mockTxn = Transaction.getDefaultInstance();
+		given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
 
 		final var builtFinal = finalRecord.build();
 
@@ -324,7 +353,12 @@ class TxnAwareRecordsHistorianTest {
 				ResponseCodeEnum.valueOf(builtFinal.getReceipt().getStatus()),
 				payerRecord);
 		verify(creator).saveExpiringRecord(effPayer, builtFinal, nows, submittingMember);
-		assertEquals(builtFinal, subject.lastCreatedTopLevelRecord());
+		// and:
+		final var topLevelRso = subject.getTopLevelRecord();
+		final var topLevel = topLevelRso.getExpirableTransactionRecord();
+		assertEquals(builtFinal, topLevel);
+		assertSame(mockTxn, topLevelRso.getTransaction());
+		assertEquals(topLevelNow, topLevelRso.getTimestamp());
 	}
 
 	@Test

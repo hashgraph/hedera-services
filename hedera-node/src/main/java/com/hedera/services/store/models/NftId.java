@@ -20,11 +20,20 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-public record NftId(long shard, long realm, long num, long serialNo){
+public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId> {
+	private static final Comparator<NftId> NATURAL_ORDER = Comparator.comparingLong(NftId::num)
+			.thenComparingLong(NftId::serialNo)
+			.thenComparingLong(NftId::shard)
+			.thenComparingLong(NftId::realm);
+	
 	public TokenID tokenId() {
 		return TokenID.newBuilder()
 				.setShardNum(shard)
@@ -39,5 +48,14 @@ public record NftId(long shard, long realm, long num, long serialNo){
 
 	public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
 		return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
+	}
+
+	public EntityNumPair asEntityNumPair() {
+		return EntityNumPair.fromLongs(num, serialNo);
+	}
+
+	@Override
+	public int compareTo(final @NotNull NftId that) {
+		return NATURAL_ORDER.compare(this, that);
 	}
 }

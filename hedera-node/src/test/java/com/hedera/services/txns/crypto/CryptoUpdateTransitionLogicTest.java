@@ -26,7 +26,7 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
@@ -35,7 +35,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -100,7 +100,7 @@ class CryptoUpdateTransitionLogicTest {
 	private TransactionBody cryptoUpdateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private GlobalDynamicProperties dynamicProperties;
 	private CryptoUpdateTransitionLogic subject;
 
@@ -111,7 +111,7 @@ class CryptoUpdateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
@@ -366,7 +366,7 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void translatesMissingAccountException() {
 		givenTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
+		willThrow(MissingEntityException.class).given(ledger).customize(any(), any());
 
 		subject.doStateTransition();
 

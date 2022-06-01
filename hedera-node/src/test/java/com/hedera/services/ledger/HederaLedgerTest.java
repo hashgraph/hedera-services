@@ -48,9 +48,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -83,6 +87,18 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		assertFalse(subject.isKnownTreasury(misc));
 		given(accountsLedger.get(misc, NUM_TREASURY_TITLES)).willReturn(1);
 		assertTrue(subject.isKnownTreasury(misc));
+	}
+
+	@Test
+	void understandsNonZeroBalanceValidation() {
+		given(accountsLedger.get(misc, NUM_POSITIVE_BALANCES)).willReturn(0);
+		assertFalse(subject.hasAnyFungibleTokenBalance(misc));
+		given(accountsLedger.get(misc, NUM_POSITIVE_BALANCES)).willReturn(1);
+		assertTrue(subject.hasAnyFungibleTokenBalance(misc));
+		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(0L);
+		assertFalse(subject.hasAnyNfts(misc));
+		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(1L);
+		assertTrue(subject.hasAnyNfts(misc));
 	}
 
 	@Test
@@ -194,7 +210,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
+				new SideEffectsTracker(), historian, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -206,56 +222,22 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
+				new SideEffectsTracker(), historian, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
 
 	@Test
-	void recognizesCannotBeDetachedWithBalance() {
+	void recognizesCannotBeDetachedIfValidatorIsOk() {
 		validator = mock(OptionValidator.class);
-		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
-		given(accountsLedger.get(genesis, BALANCE)).willReturn(1L);
-		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
-
+		given(validator.expiryStatusGiven(any(), any())).willReturn(OK);
 		assertFalse(subject.isDetached(genesis));
 	}
 
 	@Test
-	void recognizesCannotBeDetachedIfAutoRenewDisabled() {
+	void recognizesDetachedIfValidatorIsNotOk() {
 		validator = mock(OptionValidator.class);
-		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
-		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
-		dynamicProps.disableAutoRenew();
-
-		assertFalse(subject.isDetached(genesis));
-	}
-
-	@Test
-	void recognizesCannotBeDetachedIfNotExpired() {
-		validator = mock(OptionValidator.class);
-		given(validator.isAfterConsensusSecond(anyLong())).willReturn(true);
-		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
-
-		assertFalse(subject.isDetached(genesis));
-	}
-
-	@Test
-	void recognizesCannotBeDetachedContractIfAutoRenewSpecificallyDisabled() {
-		validator = mock(OptionValidator.class);
-		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
-		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
-		dynamicProps.disableContractAutoRenew();
-
+		given(validator.expiryStatusGiven(any(), any())).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 		assertFalse(subject.isDetached(genesis));
 	}
 

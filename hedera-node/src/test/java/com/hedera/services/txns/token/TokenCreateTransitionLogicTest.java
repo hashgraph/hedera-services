@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -33,7 +32,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -96,8 +95,6 @@ class TokenCreateTransitionLogicTest {
 	private TransactionBody tokenCreateTxn;
 
 	@Mock
-	private SideEffectsTracker sideEffectsTracker;
-	@Mock
 	private Creation creation;
 	@Mock
 	private AccountStore accountStore;
@@ -110,7 +107,7 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -124,8 +121,8 @@ class TokenCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		createLogic = new CreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian,
-				sideEffectsTracker, ids, validator);
+		createLogic = new CreateLogic(
+				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
 		createChecks = new CreateChecks(dynamicProperties, validator);
 		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}
@@ -138,8 +135,8 @@ class TokenCreateTransitionLogicTest {
 
 		createLogic.setCreationFactory(creationFactory);
 
-		given(txnCtx.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(creationFactory.processFrom(
@@ -147,7 +144,6 @@ class TokenCreateTransitionLogicTest {
 				tokenStore,
 				dynamicProperties,
 				tokenCreateTxn.getTokenCreation())).willReturn(creation);
-		given(creation.newAssociations()).willReturn(mockAssociations);
 		given(creation.newTokenId()).willReturn(createdId);
 
 		subject.doStateTransition();
@@ -155,7 +151,6 @@ class TokenCreateTransitionLogicTest {
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
-		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
 		verify(sigImpactHistorian).markEntityChanged(createdId.num());
 	}
 

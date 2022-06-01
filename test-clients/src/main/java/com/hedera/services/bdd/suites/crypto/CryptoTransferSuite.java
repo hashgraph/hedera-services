@@ -25,6 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
+import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -38,8 +40,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -59,9 +61,6 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -81,7 +80,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -96,6 +94,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -114,13 +113,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureOneChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -142,7 +139,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
@@ -190,6 +188,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						canUseMirrorAliasesForNonContractXfers(),
 						canUseEip1014AliasesForXfers(),
 						cannotTransferFromImmutableAccounts(),
+//						nftTransfersHaveTransitiveClosure(),
 				}
 		);
 	}
@@ -298,9 +297,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var counterparty = "counterparty";
 		final var partyCreation2 = "partyCreation2";
 		final var counterCreation2 = "counterCreation2";
-		final var initcode = "initcode";
-		final var createDonor = "createDonor";
 		final var multiKey = "multi";
+		final var contract = "CreateDonor";
 
 		final AtomicReference<String> partyAliasAddr = new AtomicReference<>();
 		final AtomicReference<String> partyMirrorAddr = new AtomicReference<>();
@@ -323,20 +321,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(initcode),
-						updateLargeFile(GENESIS, initcode, extractByteCode(CREATE_DONOR_PATH)),
-						contractCreate(createDonor)
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.bytecode(initcode),
-						contractCall(createDonor, CREATE_DONOR_ABI, salt)
+								.payingWith(GENESIS),
+						contractCall(contract, "buildDonor", salt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
 								.via(partyCreation2),
 						captureOneChildCreate2MetaFor(
 								party, partyCreation2, partyMirrorAddr, partyAliasAddr),
-						contractCall(createDonor, CREATE_DONOR_ABI, otherSalt)
+						contractCall(contract, "buildDonor", otherSalt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
@@ -438,8 +434,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec cannotTransferFromImmutableAccounts() {
-		final var initcode = "initcode";
-		final var contract = "contract";
+		final var contract = "PayableConstructor";
 		final var firstStakingFund = "0.0.800";
 		final var secondStakingFund = "0.0.801";
 		final var snapshot800 = "800startBalance";
@@ -450,9 +445,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotTransferFromImmutableAccounts")
 				.given(
 						newKeyNamed(multiKey),
-						fileCreate(initcode).path(PAYABLE_CONSTRUCTOR),
+						uploadInitCode(contract),
 						contractCreate(contract)
-								.bytecode(initcode)
 								.balance(ONE_HBAR)
 								.immutable()
 								.payingWith(GENESIS)
@@ -920,6 +914,74 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasAlreadyUsedAutomaticAssociations(1)
 								.hasToken(relationshipWith(fungibleType).balance(120))
 								.logged()
+				);
+	}
+
+	private HapiApiSpec nftTransfersHaveTransitiveClosure() {
+		final var aParty = "aParty";
+		final var bParty = "bParty";
+		final var cParty = "cParty";
+		final var dParty = "dParty";
+		final var multipurpose = "multi";
+		final var nftType = "nftType";
+		final var hotTxn = "hotTxn";
+		final var mintTxn = "mintTxn";
+
+		return defaultHapiSpec("NftTransfersHaveTransitiveClosure")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(aParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(bParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(cParty).maxAutomaticTokenAssociations(1),
+						cryptoCreate(dParty).maxAutomaticTokenAssociations(1),
+						tokenCreate(nftType)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.initialSupply(0),
+						mintToken(nftType, List.of(copyFromUtf8("Hot potato!"))).via(mintTxn),
+						getTxnRecord(mintTxn).logged(),
+						cryptoTransfer(movingUnique(nftType, 1L)
+								.between(TOKEN_TREASURY, aParty))
+				).when(
+						cryptoTransfer((spec, b) -> {
+									final var registry = spec.registry();
+									final var aId = registry.getAccountID(aParty);
+									final var bId = registry.getAccountID(bParty);
+									final var cId = registry.getAccountID(cParty);
+									final var dId = registry.getAccountID(dParty);
+									b.addTokenTransfers(TokenTransferList.newBuilder()
+											.setToken(registry.getTokenID(nftType))
+											.addNftTransfers(ocWith(aId, bId, 1))
+											.addNftTransfers(ocWith(bId, cId, 1))
+											.addNftTransfers(ocWith(cId, dId, 1)));
+								}
+						)
+								.via(hotTxn)
+								.signedBy(DEFAULT_PAYER, aParty, bParty, cParty)
+				).then(
+						getTxnRecord(hotTxn)
+								.hasPriority(recordWith()
+										.tokenTransfers(new BaseErroringAssertsProvider<>() {
+											@Override
+											public ErroringAsserts<List<TokenTransferList>> assertsFor(
+													final HapiApiSpec spec
+											) {
+												return tokenTransfers -> {
+													try {
+														assertEquals(1, tokenTransfers.size(),
+																"No transfers appeared");
+														final var changes = tokenTransfers.get(0);
+//														assertEquals(1, changes.getNftTransfersCount(),
+//																"Transitive closure didn't happen");
+													} catch (Throwable failure) {
+														return List.of(failure);
+													}
+													return Collections.emptyList();
+												};
+											}
+										})).logged()
 				);
 	}
 
@@ -1558,15 +1620,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
 							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
 							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
-							Assertions.assertEquals(
+							assertEquals(
 									10.0,
 									pureOneTokenTwoAccountsUsd / pureHbarUsd,
 									1.0);
-							Assertions.assertEquals(
+							assertEquals(
 									20.0,
 									pureTwoTokensFourAccountsUsd / pureHbarUsd,
 									2.0);
-							Assertions.assertEquals(
+							assertEquals(
 									30.0,
 									pureThreeTokensSixAccountsUsd / pureHbarUsd,
 									3.0);

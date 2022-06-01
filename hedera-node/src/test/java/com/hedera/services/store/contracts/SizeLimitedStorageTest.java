@@ -25,7 +25,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,10 +45,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
-import static com.hedera.services.store.contracts.SizeLimitedStorage.treeSetFactory;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.incorporateKvImpact;
+import static com.hedera.services.store.contracts.SizeLimitedStorage.treeSetFactory;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
@@ -59,35 +60,44 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
+	@Mock
+	private SizeLimitedStorage.IterableStorageUpserter storageUpserter;
+	@Mock
+	private SizeLimitedStorage.IterableStorageRemover storageRemover;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
-	private final Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+	private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
 
 	private SizeLimitedStorage subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SizeLimitedStorage(dynamicProperties, () -> accounts, () -> storage);
+		subject = new SizeLimitedStorage(storageUpserter, storageRemover, dynamicProperties, () -> accounts,
+				() -> storage);
 	}
 
 	@Test
 	void removesMappingsInOrder() {
-		givenAccount(firstAccount, firstKvPairs);
-		givenAccount(nextAccount, nextKvPairs);
+		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(nextAccount, nextKvPairs, nextRootKey);
+		given(storageRemover.removeMapping(firstAKey, firstRootKey, storage)).willReturn(firstRootKey);
+		given(storageRemover.removeMapping(firstBKey, firstRootKey, storage)).willReturn(firstRootKey);
+		given(storageRemover.removeMapping(nextAKey, nextRootKey, storage)).willReturn(null);
 
-		InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger);
+		InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger, storageRemover);
 
 		givenNoSizeLimits();
 		given(storage.containsKey(firstAKey)).willReturn(true);
@@ -101,12 +111,14 @@ class SizeLimitedStorageTest {
 		subject.validateAndCommit();
 		subject.recordNewKvUsageTo(accountsLedger);
 
-		inOrder.verify(storage).put(firstAKey, ZERO_VALUE);
-		inOrder.verify(storage).put(firstBKey, ZERO_VALUE);
-		inOrder.verify(storage).put(nextAKey, ZERO_VALUE);
+		inOrder.verify(storageRemover).removeMapping(firstAKey, firstRootKey, storage);
+		inOrder.verify(storageRemover).removeMapping(firstBKey, firstRootKey, storage);
+		inOrder.verify(storageRemover).removeMapping(nextAKey, nextRootKey, storage);
 		// and:
 		inOrder.verify(accountsLedger).set(firstAccount, NUM_CONTRACT_KV_PAIRS, firstKvPairs - 2);
+		inOrder.verify(accountsLedger).set(firstAccount, FIRST_CONTRACT_STORAGE_KEY, firstRootKey.getKey());
 		inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
+		inOrder.verify(accountsLedger).set(nextAccount, FIRST_CONTRACT_STORAGE_KEY, null);
 	}
 
 	@Test
@@ -116,21 +128,52 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void commitsMappingsInOrder() {
-		InOrder inOrder = Mockito.inOrder(storage);
+		InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
 
 		givenNoSizeLimits();
-		givenAccount(firstAccount, firstKvPairs);
-		givenAccount(nextAccount, nextKvPairs);
+		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(nextAccount, nextKvPairs, nextRootKey);
+		given(storageUpserter.upsertMapping(
+				firstAKey, aValue, firstRootKey, null, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				firstBKey, bValue, firstAKey, aValue, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				firstDKey, dValue, firstAKey, null, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				nextAKey, aValue, nextRootKey, null, storage)).willReturn(nextAKey);
 
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
 		subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
+		subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
 		subject.validateAndCommit();
 
-		inOrder.verify(storage).put(firstAKey, aValue);
-		inOrder.verify(storage).put(firstBKey, bValue);
-		inOrder.verify(storage).put(nextAKey, aValue);
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstAKey, aValue, firstRootKey, null, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstBKey, bValue, firstAKey, aValue, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstDKey, dValue, firstAKey, null, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				nextAKey, aValue, nextRootKey, null, storage);
+	}
+
+	@Test
+	void commitsMappingsForMissingAccount() {
+		InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
+
+		givenNoSizeLimits();
+		given(storageUpserter.upsertMapping(
+				firstAKey, aValue, null, null, storage)).willReturn(firstAKey);
+
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+
+		subject.validateAndCommit();
+		subject.recordNewKvUsageTo(accountsLedger);
+
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstAKey, aValue, null, null, storage);
 	}
 
 	@Test
@@ -187,6 +230,7 @@ class SizeLimitedStorageTest {
 		given(storage.containsKey(firstAKey)).willReturn(true);
 		given(storage.containsKey(nextAKey)).willReturn(true);
 
+		subject.getNewFirstKeys().put(firstAKey.getContractId(), firstAKey);
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
@@ -196,6 +240,7 @@ class SizeLimitedStorageTest {
 		assertTrue(subject.getNewMappings().isEmpty());
 		assertTrue(subject.getUpdatedKeys().isEmpty());
 		assertTrue(subject.getRemovedKeys().isEmpty());
+		assertTrue(subject.getNewFirstKeys().isEmpty());
 	}
 
 	@Test
@@ -219,6 +264,23 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
 		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, aLiteralKey));
 		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
+	}
+
+	@Test
+	void removingOnlyCurrentMappingInListCausesSubsequentInsertionToUseNullRoot() {
+		givenAccount(firstAccount, 1, firstAKey);
+		given(storage.containsKey(firstAKey)).willReturn(true);
+		givenNoSizeLimits();
+
+		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
+		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+
+		given(storageUpserter.upsertMapping(firstBKey, bValue, null, null, storage))
+				.willReturn(firstBKey);
+
+		subject.validateAndCommit();
+
+		verify(storageUpserter).upsertMapping(firstBKey, bValue, null, null, storage);
 	}
 
 	@Test
@@ -371,14 +433,30 @@ class SizeLimitedStorageTest {
 	}
 
 	/* --- Internal helpers --- */
+	private void givenAccount(final AccountID id, final int initialKvPairs, final ContractKey firstKey) {
+		givenAccountInternal(id, initialKvPairs, firstKey, true);
+	}
+
 	private void givenAccount(final AccountID id, final int initialKvPairs) {
+		givenAccountInternal(id, initialKvPairs, null, false);
+	}
+
+	private void givenAccountInternal(
+			final AccountID id,
+			final int initialKvPairs,
+			final ContractKey firstKey,
+			final boolean mockFirstKey
+	) {
 		final var key = EntityNum.fromAccountId(id);
 		final var account = mock(MerkleAccount.class);
 		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
+		if (mockFirstKey) {
+			given(account.getFirstContractStorageKey()).willReturn(firstKey);
+		}
 		given(accounts.get(key)).willReturn(account);
 	}
 
-	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
+	private void givenContainedStorage(final ContractKey key, final IterableContractValue value) {
 		given(storage.get(key)).willReturn(value);
 		given(storage.containsKey(key)).willReturn(true);
 	}
@@ -389,18 +467,23 @@ class SizeLimitedStorageTest {
 	}
 
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
-	private static final EntityNum firstAccountKey = EntityNum.fromAccountId(firstAccount);
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
-	private static final EntityNum nextAccountKey = EntityNum.fromAccountId(nextAccount);
 	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");
 	private static final UInt256 bLiteralKey = UInt256.fromHexString("0xbbccdd");
+	private static final UInt256 cLiteralKey = UInt256.fromHexString("0xffddee");
+	private static final UInt256 dLiteralKey = UInt256.fromHexString("0xdddddd");
 	private static final UInt256 aLiteralValue = UInt256.fromHexString("0x1234aa");
 	private static final UInt256 bLiteralValue = UInt256.fromHexString("0x1234bb");
+	private static final UInt256 dLiteralValue = UInt256.fromHexString("0xadadad");
 	private static final ContractKey firstAKey = ContractKey.from(firstAccount, aLiteralKey);
 	private static final ContractKey firstBKey = ContractKey.from(firstAccount, bLiteralKey);
+	private static final ContractKey firstDKey = ContractKey.from(firstAccount, dLiteralKey);
 	private static final ContractKey nextAKey = ContractKey.from(nextAccount, aLiteralKey);
-	private static final ContractValue aValue = ContractValue.from(aLiteralValue);
-	private static final ContractValue bValue = ContractValue.from(bLiteralValue);
+	private static final ContractKey firstRootKey = ContractKey.from(firstAccount, cLiteralKey);
+	private static final ContractKey nextRootKey = ContractKey.from(nextAccount, cLiteralKey);
+	private static final IterableContractValue aValue = IterableContractValue.from(aLiteralValue);
+	private static final IterableContractValue bValue = IterableContractValue.from(bLiteralValue);
+	private static final IterableContractValue dValue = IterableContractValue.from(dLiteralValue);
 	private static final int firstKvPairs = 5;
 	private static final int nextKvPairs = 6;
 }

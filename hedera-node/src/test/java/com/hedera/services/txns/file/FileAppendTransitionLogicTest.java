@@ -29,10 +29,11 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -91,10 +92,11 @@ class FileAppendTransitionLogicTest {
 
 	TransactionID txnId;
 	TransactionBody fileAppendTxn;
-	PlatformTxnAccessor accessor;
+	SignedTxnAccessor accessor;
 
 	HederaFs hfs;
 	TransactionContext txnCtx;
+	SigImpactHistorian sigImpactHistorian;
 	MerkleNetworkContext networkCtx;
 
 	FileAppendTransitionLogic subject;
@@ -107,9 +109,10 @@ class FileAppendTransitionLogicTest {
 		deletedAttr = new HFileMeta(true, wacl, 2_000_000L);
 		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
 
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		networkCtx = mock(MerkleNetworkContext.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(target)).willReturn(true);
@@ -121,7 +124,7 @@ class FileAppendTransitionLogicTest {
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 		given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileAppendTransitionLogic(hfs, numbers, txnCtx, () -> networkCtx);
+		subject = new FileAppendTransitionLogic(hfs, numbers, txnCtx, sigImpactHistorian, () -> networkCtx);
 	}
 
 	@Test
@@ -228,7 +231,7 @@ class FileAppendTransitionLogicTest {
 	@Test
 	void happyPathFlowsForSpecialFile() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx);
+		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
 
 		givenTxnCtxAppending(TargetType.SPECIAL);
 		// and:
@@ -238,6 +241,7 @@ class FileAppendTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		inOrder.verify(sigImpactHistorian).markEntityChanged(special.getFileNum());
 		inOrder.verify(hfs).append(argThat(special::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}

@@ -24,11 +24,18 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 @Singleton
 public class AssociateLogic {
@@ -54,10 +61,22 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		final var modifiedTokenRelationships = account.associateWith(
+		final var newTokenRelationships = account.associateWith(
 				tokens, tokenStore, false, false, dynamicProperties);
 
 		accountStore.commitAccount(account);
-		tokenStore.commitTokenRelationships(modifiedTokenRelationships);
+		tokenStore.commitTokenRelationships(newTokenRelationships);
+	}
+
+	public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+		final var op = txn.getTokenAssociate();
+		if (!op.hasAccount()) {
+			return INVALID_ACCOUNT_ID;
+		}
+		if (repeatsItself(op.getTokensList())) {
+			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+		}
+
+		return OK;
 	}
 }

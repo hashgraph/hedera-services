@@ -38,7 +38,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.logic.PayerSigValidity;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
 import dagger.Binds;
 import dagger.Module;

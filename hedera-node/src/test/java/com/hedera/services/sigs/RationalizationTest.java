@@ -30,11 +30,11 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ class RationalizationTest {
 	@Mock
 	private SwirldTransaction swirldsTxn;
 	@Mock
-	private TxnAccessor txnAccessor;
+	private PlatformTxnAccessor txnAccessor;
 	@Mock
 	private SyncVerifier syncVerifier;
 	@Mock

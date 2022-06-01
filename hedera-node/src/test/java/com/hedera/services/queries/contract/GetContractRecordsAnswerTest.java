@@ -25,12 +25,14 @@ import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class GetContractRecordsAnswerTest {
@@ -59,5 +61,15 @@ class GetContractRecordsAnswerTest {
 		var result = subject.responseGiven(query, null, null, 0);
 
 		assertEquals(NOT_SUPPORTED, result.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
+	}
+
+	@Test
+	void canExtractPayment() {
+		final var query = Query.newBuilder()
+				.setContractGetRecords(queryBuilder
+						.setHeader(QueryHeader.newBuilder().setPayment(Transaction.getDefaultInstance()))
+						.build())
+				.build();
+		assertTrue(subject.extractPaymentFrom(query).isPresent());
 	}
 }

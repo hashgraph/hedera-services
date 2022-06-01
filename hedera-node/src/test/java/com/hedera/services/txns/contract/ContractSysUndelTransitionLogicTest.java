@@ -27,7 +27,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -67,7 +67,7 @@ class ContractSysUndelTransitionLogicTest {
 	private ContractSysUndelTransitionLogic.LegacySystemUndeleter delegate;
 	private TransactionBody contractSysUndelTxn;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private SigImpactHistorian sigImpactHistorian;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 	PropertySource properties;
@@ -81,7 +81,7 @@ class ContractSysUndelTransitionLogicTest {
 		delegate = mock(ContractSysUndelTransitionLogic.LegacySystemUndeleter.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 		sigImpactHistorian = mock(SigImpactHistorian.class);

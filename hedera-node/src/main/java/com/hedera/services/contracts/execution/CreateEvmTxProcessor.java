@@ -39,6 +39,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -61,9 +62,17 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final StorageExpiry storageExpiry
+			final StorageExpiry storageExpiry,
+			final InHandleBlockMetaSource blockMetaSource
 	) {
-		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		super(
+				worldState,
+				livePricesSource,
+				globalDynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap,
+				blockMetaSource);
 		this.codeCache = codeCache;
 		this.storageExpiry = storageExpiry;
 	}
@@ -77,7 +86,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Instant consensusTime,
 			final long hapiExpiry
 	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
 		return super.execute(
 				sender,
@@ -90,7 +99,41 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				storageExpiry.hapiCreationOracle(hapiExpiry),
-				receiver);
+				receiver,
+				null,
+				0,
+				null);
+	}
+
+	public TransactionProcessingResult executeEth(
+			final Account sender,
+			final Address receiver,
+			final long providedGasLimit,
+			final long value,
+			final Bytes code,
+			final Instant consensusTime,
+			final long hapiExpiry,
+			final Account relayer,
+			final BigInteger providedMaxGasPrice,
+			final long maxGasAllowance
+	) {
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				storageExpiry.hapiCreationOracle(hapiExpiry),
+				receiver,
+				providedMaxGasPrice,
+				maxGasAllowance,
+				relayer);
 	}
 
 	@Override
@@ -102,8 +145,8 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder commonInitialFrame,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		codeCache.invalidate(to);
 
 		return commonInitialFrame
@@ -111,7 +154,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				.address(to)
 				.contract(to)
 				.inputData(Bytes.EMPTY)
-				.code(new Code(payload, Hash.hash(payload)))
+				.code(Code.createLegacyCode(payload, Hash.hash(payload)))
 				.build();
 	}
 }

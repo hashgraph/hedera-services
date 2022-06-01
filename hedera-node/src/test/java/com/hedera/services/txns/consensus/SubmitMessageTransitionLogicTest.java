@@ -24,16 +24,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ class SubmitMessageTransitionLogicTest {
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
@@ -77,12 +77,13 @@ class SubmitMessageTransitionLogicTest {
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		topics.clear();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext,
+				globalDynamicProperties);
 	}
 
 	@Test
@@ -148,7 +149,6 @@ class SubmitMessageTransitionLogicTest {
 		assertUnchangedTopics();
 		verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
 	}
-
 
 
 	@Test

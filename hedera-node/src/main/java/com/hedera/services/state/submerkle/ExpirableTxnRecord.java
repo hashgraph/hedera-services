@@ -28,10 +28,10 @@ import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
@@ -67,14 +67,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	static final int RELEASE_0230_VERSION = 7;
 	static final int RELEASE_0250_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
+	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
@@ -104,6 +106,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<FcAssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
 	private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 	private ByteString alias = MISSING_ALIAS;
+	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 
 	@Override
 	public void release() {
@@ -133,6 +136,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.packedParentConsensusTime = builder.packedParentConsensusTime;
 		this.numChildRecords = builder.numChildRecords;
 		this.alias = builder.alias;
+		this.ethereumHash = builder.ethereumHash;
 	}
 
 	/* --- Object --- */
@@ -153,7 +157,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("contractCall", contractCallResult)
 				.add("hbarAdjustments", hbarAdjustments)
 				.add("scheduleRef", scheduleRef)
-				.add("alias", alias.toStringUtf8());
+				.add("alias", alias.toStringUtf8())
+				.add("ethereumHash", CommonUtils.hex(ethereumHash));
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -224,7 +229,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees) &&
 				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
-				Objects.equals(this.alias, that.alias);
+				Objects.equals(this.alias, that.alias) &&
+				Arrays.equals(this.ethereumHash, that.ethereumHash);
 	}
 
 	@Override
@@ -248,7 +254,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				newTokenAssociations,
 				numChildRecords,
 				packedParentConsensusTime,
-				alias);
+				alias,
+				ethereumHash);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -310,6 +317,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			out.writeBoolean(false);
 		}
 		out.writeByteArray(alias.toByteArray());
+		out.writeByteArray(ethereumHash);
 	}
 
 	@Override
@@ -335,6 +343,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		// Added in 0.18
 		newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		if (newTokenAssociations.isEmpty()) {
+			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
+		}
 		// Added in 0.21
 		final var hasChildRecords = in.readBoolean();
 		if (hasChildRecords) {
@@ -349,6 +360,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
 		// Added in 0.23. It is needed only for versions < 0.25.0 and >= 0.23.0
 		deserializeAllowanceMaps(in, version);
+		// Added in 0.26
+		if (version >= RELEASE_0260_VERSION) {
+			ethereumHash = in.readByteArray(Integer.MAX_VALUE);
+		}
 	}
 
 	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
@@ -475,6 +490,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return alias;
 	}
 
+	public byte[] getEthereumHash() {
+		return ethereumHash;
+	}
+
+	public void setEthereumHash(byte[] ethereumHash) {
+		this.ethereumHash = ethereumHash;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public boolean isImmutable() {
@@ -537,6 +560,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (alias != MISSING_ALIAS) {
 			grpc.setAlias(alias);
 		}
+		if (ethereumHash != MISSING_ETHEREUM_HASH) {
+			grpc.setEthereumHash(ByteString.copyFrom(ethereumHash));
+		}
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
@@ -585,6 +611,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcAssessedCustomFee> assessedCustomFees;
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
+		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 
 		private boolean onlyExternalizedIfSuccessful = false;
 
@@ -683,6 +710,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
+		public Builder setEthereumHash(byte[] ethereumHash) {
+			this.ethereumHash = ethereumHash;
+			return this;
+		}
+
 		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
 		}
@@ -772,6 +804,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			assessedCustomFees = NO_CUSTOM_FEES;
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
+			ethereumHash = MISSING_ETHEREUM_HASH;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {
 				contractCallResult = null;

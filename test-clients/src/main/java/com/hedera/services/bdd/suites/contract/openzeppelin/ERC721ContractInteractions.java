@@ -29,20 +29,11 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC721_APPROVE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC721_BYTECODE_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC721_MINT_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC721_TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERC721ContractInteractions extends HapiApiSuite {
@@ -65,58 +56,53 @@ public class ERC721ContractInteractions extends HapiApiSuite {
     }
 
     private HapiApiSpec callsERC721ContractInteractions() {
-        final var PAYER = "tx_payer";
-        final var CONTRACT_CREATOR = "contractCreator";
-        final var NFT_SENDER = "sender";
-        final var CONTRACT_FILE_NAME = "ERC721ContractFile";
+        final var CONTRACT = "GameItem";
         final var NFT_ID = 1;
-
         final var CREATE_TX = "create";
         final var MINT_TX = "mint";
         final var APPROVE_TX = "approve";
         final var TRANSFER_FROM_TX = "transferFrom";
-        final var PAYER_KEY = "payerKey";
-        final var FILE_KEY_LIST = "fileKeyList";
 
         return defaultHapiSpec("CallsERC721ContractInteractions")
                 .given(
-                        newKeyNamed(PAYER_KEY),
-                        newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
-                        cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS).key(PAYER_KEY),
-                        cryptoCreate(CONTRACT_CREATOR),
-                        cryptoCreate(NFT_SENDER),
-                        QueryVerbs.getAccountBalance(PAYER).logged(),
-                        fileCreate(CONTRACT_FILE_NAME).payingWith(PAYER).key(FILE_KEY_LIST),
-                        updateLargeFile(PAYER, CONTRACT_FILE_NAME, extractByteCode(ERC721_BYTECODE_PATH))
+                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+                        uploadInitCode(CONTRACT)
                 ).when(
-                        QueryVerbs.getAccountBalance(PAYER).logged(),
-                        contractCreate("testContract")
-                                .payingWith(CONTRACT_CREATOR)
-                                .bytecode(CONTRACT_FILE_NAME)
+                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+                        contractCreate(CONTRACT)
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX)
                 ).then(
-                        QueryVerbs.getAccountInfo(CONTRACT_CREATOR).savingSnapshot(CONTRACT_CREATOR),
-                        QueryVerbs.getAccountInfo(NFT_SENDER).savingSnapshot(NFT_SENDER),
+                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
 
                         withOpContext((spec, log) -> {
-                            final var contractCreatorId = spec.registry().getAccountInfo(CONTRACT_CREATOR).getContractAccountID();
-                            final var nftSenderId = spec.registry().getAccountInfo(NFT_SENDER).getContractAccountID();
+                            final var contractCreatorId = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID();
+                            final var nftSenderId = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER).getContractAccountID();
 
                             final var mintParams = new Object[]{nftSenderId, NFT_ID};
                             final var approveParams = new Object[]{contractCreatorId, NFT_ID};
                             final var transferFromParams = new Object[]{nftSenderId, contractCreatorId, NFT_ID};
 
-                            final var mint = contractCall("testContract",
-                                    ERC721_MINT_ABI, mintParams).payingWith(CONTRACT_CREATOR).via(MINT_TX);
+                            final var mint = contractCall(CONTRACT, "mint", mintParams
+                            )
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .via(MINT_TX);
                             allRunFor(spec, mint);
 
-                            final var approve = contractCall("testContract",
-                                    ERC721_APPROVE_ABI, approveParams).payingWith(NFT_SENDER).via(APPROVE_TX);
+                            final var approve = contractCall(CONTRACT, "approve", approveParams
+                            )
+                                    .payingWith(DEFAULT_CONTRACT_RECEIVER)
+                                    .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
+                                    .gas(4_000_000L)
+                                    .via(APPROVE_TX);
                             allRunFor(spec, approve);
 
-                            final var transferFrom = contractCall("testContract",
-                                    ERC721_TRANSFER_FROM_ABI, transferFromParams).payingWith(CONTRACT_CREATOR).via(TRANSFER_FROM_TX);
+                            final var transferFrom = contractCall(CONTRACT, "transferFrom", transferFromParams
+                            )
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .via(TRANSFER_FROM_TX);
                             allRunFor(spec, transferFrom);
                         }),
                         QueryVerbs.getTxnRecord(CREATE_TX).logged(),

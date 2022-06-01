@@ -38,8 +38,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,11 +49,10 @@ import java.util.function.Supplier;
 import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
-	private static final Logger log = LogManager.getLogger(MutableEntityAccess.class);
-
 	private final HederaLedger ledger;
 	private final WorldLedgers worldLedgers;
 	private final TransactionContext txnCtx;
@@ -97,11 +94,6 @@ public class MutableEntityAccess implements EntityAccess {
 	public void begin() {
 		if (isActiveContractOp()) {
 			sizeLimitedStorage.beginSession();
-			if (tokensLedger.isInTransaction()) {
-				tokensLedger.rollback();
-				log.warn("Tokens ledger had to be rolled back before beginning contract op; " +
-						"full transaction is {}", txnCtx.accessor().getSignedTxnWrapper());
-			}
 			tokensLedger.begin();
 		}
 	}
@@ -193,8 +185,7 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	private boolean isActiveContractOp() {
-		final var accessor = txnCtx.accessor();
-		final var activeFunction = accessor.getFunction();
-		return activeFunction == ContractCreate || activeFunction == ContractCall;
+		final var function = txnCtx.accessor().getFunction();
+		return function == ContractCreate || function == ContractCall || function == EthereumTransaction;
 	}
 }

@@ -28,7 +28,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -115,10 +115,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	public RenewAssessment assessCryptoAutoRenewal(
 			final MerkleAccount expiredAccountOrContract,
 			final long requestedRenewal,
-			final Instant now
+			final Instant now,
+			final MerkleAccount payer
 	) {
 		return autoRenewCalcs.assessCryptoRenewal(
-				expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now));
+				expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now), payer);
 	}
 
 	@Override
@@ -199,6 +200,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 				var contractCallOp = accessor.getTxn().getContractCall();
 				return -contractCallOp.getAmount()
 						- contractCallOp.getGas() * estimatedGasPriceInTinybars(ContractCall, at);
+			case EthereumTransaction:
+				return -accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
 			default:
 				return 0L;
 		}
@@ -274,6 +277,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
-		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
+		int numPayerKeys = numSimpleKeys(payerKey);
+		final var sigUsage = accessor.usageGiven(numPayerKeys);
+		return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());
 	}
 }

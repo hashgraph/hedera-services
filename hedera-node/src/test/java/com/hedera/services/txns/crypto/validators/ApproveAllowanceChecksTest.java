@@ -70,7 +70,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -89,6 +88,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -191,7 +192,6 @@ class ApproveAllowanceChecksTest {
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
 		given(ownerAccount.getNumAssociations()).willReturn(1);
 		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
@@ -428,7 +428,7 @@ class ApproveAllowanceChecksTest {
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 		given(ownerAccount.getNumAssociations()).willReturn(1);
 		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -534,6 +534,7 @@ class ApproveAllowanceChecksTest {
 
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner, view));

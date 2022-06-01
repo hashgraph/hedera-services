@@ -28,39 +28,44 @@ import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.system.Address;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,11 +73,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -87,8 +91,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -145,19 +150,135 @@ class ServicesStateTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private Consumer<ServicesState> mockMigrator;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	@Mock
+	private VirtualMapFactory virtualMapFactory;
+	@Mock
+	private VirtualMap<ContractKey, IterableContractValue> iterableStorage;
+	@Mock
+	private ServicesState.TokenRelsLinkMigrator tokenRelsLinkMigrator;
+	@Mock
+	private ServicesState.OwnedNftsLinkMigrator ownedNftsLinkMigrator;
+	@Mock
+	private ServicesState.IterableStorageMigrator iterableStorageMigrator;
+	@Mock
+	private Consumer<ServicesState> titleCountsMigrator;
+	@Mock
+	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
+	@Mock
+	private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private ServicesState subject = new ServicesState();
+	private ServicesState subject;
 
+	@BeforeEach
+	void setUp() {
+		subject = new ServicesState();
+		setAllChildren();
+	}
 
 	@AfterEach
 	void cleanup() {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void doesNoMigrationsFromCurrentVersion() {
+		mockMigrators();
+
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
+		subject.migrate();
+
+		verifyNoInteractions(
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesAllMigrationsExceptAutoRenewFromRelease024VersionIfExpiryNotJustEnabled() {
+		mockMigrators();
+		final var inOrder = inOrder(
+				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+
+		ServicesState.setExpiryJustEnabled(false);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+
+		given(metadata.app()).willReturn(app);
+		given(app.workingState()).willReturn(workingState);
+		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
+		given(vmf.apply(any())).willReturn(virtualMapFactory);
+
+		subject.migrate();
+
+		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
+		inOrder.verify(titleCountsMigrator).accept(subject);
+		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
+				eq(subject), any(), any(), eq(iterableStorage));
+		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+
+		verifyNoInteractions(autoRenewalMigrator);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesAllMigrationsFromRelease024VersionIfExpiryJustEnabled() {
+		mockMigrators();
+		final var inOrder = inOrder(
+				autoRenewalMigrator, titleCountsMigrator,
+				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+
+		ServicesState.setExpiryJustEnabled(true);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(StateVersions.RELEASE_024X_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
+
+		given(metadata.app()).willReturn(app);
+		given(app.workingState()).willReturn(workingState);
+		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
+		given(vmf.apply(any())).willReturn(virtualMapFactory);
+
+		subject.migrate();
+		ServicesState.setExpiryJustEnabled(false);
+
+		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
+		inOrder.verify(titleCountsMigrator).accept(subject);
+		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
+				eq(subject), any(), any(), eq(iterableStorage));
+		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+
+		unmockMigrators();
+	}
+
+	private void mockMigrators() {
+		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
+		ServicesState.setTitleCountsMigrator(titleCountsMigrator);
+		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
+		ServicesState.setTokenRelsLinkMigrator(tokenRelsLinkMigrator);
+		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
+		ServicesState.setVmFactory(vmf);
+	}
+
+	private void unmockMigrators() {
+		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
+		ServicesState.setTitleCountsMigrator(ReleaseTwentyFiveMigration::initTreasuryTitleCounts);
+		ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
+		ServicesState.setTokenRelsLinkMigrator(ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList);
+		ServicesState.setOwnedNftsLinkMigrator(ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList);
+		ServicesState.setVmFactory(VirtualMapFactory::new);
 	}
 
 	@Test
@@ -368,16 +489,16 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0190() {
+	void minimumVersionIsRelease0240() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0220_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_024X_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
 		assertEquals(
 				StateChildIndices.NUM_POST_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0230_VERSION));
+				subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
@@ -405,90 +526,6 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		assertDoesNotThrow(() -> subject.init(platform, addressBook, null));
-	}
-
-	@Test
-	void doesntMigrateWhenInitializingFromRelease0220() {
-		given(accounts.keySet()).willReturn(Set.of());
-		ServicesState.setStakeFundingMigrator(mockMigrator);
-
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
-		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
-		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-
-		assertDoesNotThrow(subject::migrate);
-
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
-	}
-
-	@Test
-	void migratesWhenInitializingFromRelease0230() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
-
-		subject = mock(ServicesState.class);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
-		given(subject.tokens()).willReturn(new MerkleMap<>());
-		given(subject.accounts()).willReturn(accounts);
-		given(accounts.keySet()).willReturn(Set.of());
-
-		subject.migrate();
-
-		verify(mockMigrator).accept(subject);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
-	}
-
-	@Test
-	void migratesWhenInitializingFromStateWithReleaseLessThan0250() {
-		var merkleAccount1 = mock(MerkleAccount.class);
-		var merkleAccount2 = mock(MerkleAccount.class);
-		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
-		var merkleAccountTokens2 = mock(MerkleAccountTokens.class);
-		final var account1 = new EntityNum(1001);
-		final var account2 = new EntityNum(1002);
-		final var token1 = new EntityNum(1003);
-		final var token2 = new EntityNum(1004);
-		final var associationKey1 = EntityNumPair.fromLongs(account1.longValue(), token1.longValue());
-		final var associationKey2 = EntityNumPair.fromLongs(account2.longValue(), token1.longValue());
-		final var associationKey3 = EntityNumPair.fromLongs(account2.longValue(), token2.longValue());
-		final var association1 = new MerkleTokenRelStatus(1000L, false, true, false);
-		final var association2 = new MerkleTokenRelStatus(0L, true, true, false);
-		final var association3 = new MerkleTokenRelStatus(500L, false, false, true);
-
-		MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations = new MerkleMap<>();
-		tokenAssociations.put(associationKey1, association1);
-		tokenAssociations.put(associationKey2, association2);
-		tokenAssociations.put(associationKey3, association3);
-
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
-		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
-		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
-		given(accounts.keySet()).willReturn(Set.of(account1, account2));
-		given(accounts.getForModify(account1)).willReturn(merkleAccount1);
-		given(accounts.getForModify(account2)).willReturn(merkleAccount2);
-		given(merkleAccount1.tokens()).willReturn(merkleAccountTokens1);
-		given(merkleAccount2.tokens()).willReturn(merkleAccountTokens2);
-		given(merkleAccountTokens1.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId()));
-		given(merkleAccountTokens2.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId(), token2.toGrpcTokenId()));
-
-		subject.migrate();
-
-		verify(merkleAccount1).setHeadTokenId(token1.longValue());
-		verify(merkleAccount1).setNumAssociations(1);
-		verify(merkleAccount1).setNumPositiveBalances(1);
-		verify(merkleAccount2).setHeadTokenId(token2.longValue());
-		verify(merkleAccount2).setNumAssociations(2);
-		verify(merkleAccount2).setNumPositiveBalances(1);
-		assertEquals(0, tokenAssociations.get(associationKey1).nextKey());
-		assertEquals(0, tokenAssociations.get(associationKey1).prevKey());
-		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());
-		assertEquals(0, tokenAssociations.get(associationKey2).nextKey());
-		assertEquals(token2.longValue(), tokenAssociations.get(associationKey2).prevKey());
-		assertEquals(associationKey2, tokenAssociations.get(associationKey2).getKey());
-		assertEquals(token1.longValue(), tokenAssociations.get(associationKey3).nextKey());
-		assertEquals(0, tokenAssociations.get(associationKey3).prevKey());
-		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
 	}
 
 	@Test
@@ -749,5 +786,9 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.STORAGE, mockMm);
 		subject.setChild(StateChildIndices.TOPICS, mockMm);
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
+	}
+
+	private void setAllChildren() {
+		subject.createGenesisChildren(addressBook, 0);
 	}
 }

@@ -2233,14 +2233,14 @@
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 723488834765,
-				"bpt": 1156641840,
-				"vpt": 2891604599463,
-				"rbh": 771095,
-				"sbh": 57832,
-				"gas": 7710946,
-				"bpr": 1156641840,
-				"sbpr": 28916046,
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 11566419,
+				"bpr": 0,
+				"sbpr": 0,
 				"min": 0,
 				"max": 1000000000000000
 			  }
@@ -2368,14 +2368,59 @@
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 53384243355,
-				"bpt": 85345408,
-				"vpt": 213363518838,
-				"rbh": 56897,
-				"sbh": 4267,
-				"gas": 568969,
-				"bpr": 85345408,
-				"sbpr": 2133635,
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 853454,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
+		  "hederaFunctionality": "EthereumTransaction",
+		  "fees": [
+			{
+			  "nodedata": {
+				"constant": 6122046,
+				"bpt": 9787,
+				"vpt": 24468293,
+				"rbh": 6,
+				"sbh": 0,
+				"gas": 65,
+				"bpr": 9787,
+				"sbpr": 244,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 97952740,
+				"bpt": 156597,
+				"vpt": 391492695,
+				"rbh": 104,
+				"sbh": 7,
+				"gas": 1043,
+				"bpr": 156597,
+				"sbpr": 3914,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 853454,
+				"bpr": 0,
+				"sbpr": 0,
 				"min": 0,
 				"max": 1000000000000000
 			  }
@@ -5434,14 +5479,14 @@
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 723488834765,
-				"bpt": 1156641840,
-				"vpt": 2891604599463,
-				"rbh": 771095,
-				"sbh": 57832,
-				"gas": 7710946,
-				"bpr": 1156641840,
-				"sbpr": 28916046,
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 11566419,
+				"bpr": 0,
+				"sbpr": 0,
 				"min": 0,
 				"max": 1000000000000000
 			  }
@@ -5569,14 +5614,59 @@
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 53384243355,
-				"bpt": 85345408,
-				"vpt": 213363518838,
-				"rbh": 56897,
-				"sbh": 4267,
-				"gas": 568969,
-				"bpr": 85345408,
-				"sbpr": 2133635,
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 853454,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
+		  "hederaFunctionality": "EthereumTransaction",
+		  "fees": [
+			{
+			  "nodedata": {
+				"constant": 6122046,
+				"bpt": 9787,
+				"vpt": 24468293,
+				"rbh": 6,
+				"sbh": 0,
+				"gas": 65,
+				"bpr": 9787,
+				"sbpr": 244,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 97952740,
+				"bpt": 156597,
+				"vpt": 391492695,
+				"rbh": 104,
+				"sbh": 7,
+				"gas": 1043,
+				"bpr": 156597,
+				"sbpr": 3914,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 853454,
+				"bpr": 0,
+				"sbpr": 0,
 				"min": 0,
 				"max": 1000000000000000
 			  }

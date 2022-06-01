@@ -23,7 +23,6 @@ package com.hedera.services.contracts.operation;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -61,17 +60,13 @@ class HederaBalanceOperationTest {
 	@Mock
 	private EVM evm;
 	@Mock
-	private Address address;
-	@Mock
-	private Bytes bytes;
-	@Mock
 	private WorldUpdater worldUpdater;
 	@Mock
 	private Account account;
 	@Mock
-	private Gas gas;
-	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
+	
+	private final long gas = 100L; 
 
 	private HederaBalanceOperation subject;
 
@@ -79,8 +74,8 @@ class HederaBalanceOperationTest {
 	void setUp() {
 		subject = new HederaBalanceOperation(gasCalculator, addressValidator);
 		givenAddress();
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.ZERO);
-		given(gasCalculator.getBalanceOperationGasCost()).willReturn(Gas.ZERO);
+		given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
+		given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
 	}
 
 	@Test
@@ -114,10 +109,9 @@ class HederaBalanceOperationTest {
 
 	@Test
 	void haltsWithInsufficientGasOperationResult() {
-		given(frame.popStackItem()).willReturn(bytes);
+		given(frame.popStackItem()).willReturn(Bytes.EMPTY);
 		given(frame.warmUpAddress(any())).willReturn(true);
-		given(frame.getRemainingGas()).willReturn(gas);
-		given(gas.compareTo(Gas.ZERO)).willReturn(-1);
+		given(frame.getRemainingGas()).willReturn(0L);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		thenOperationWillFailWithReason(INSUFFICIENT_GAS);
@@ -127,10 +121,9 @@ class HederaBalanceOperationTest {
 	void returnsOperationResultWithoutException() {
 		given(worldUpdater.get(any())).willReturn(account);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.popStackItem()).willReturn(bytes);
+		given(frame.popStackItem()).willReturn(Bytes.EMPTY);
 		given(frame.warmUpAddress(any())).willReturn(true);
-		given(frame.getRemainingGas()).willReturn(gas);
-		given(gas.compareTo(Gas.ZERO)).willReturn(1);
+		given(frame.getRemainingGas()).willReturn(10_000L);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		final var result = subject.execute(frame, evm);
@@ -139,9 +132,9 @@ class HederaBalanceOperationTest {
 	}
 
 	private void givenAddress() {
-		given(frame.getStackItem(anyInt())).willReturn(bytes);
+		given(frame.getStackItem(anyInt())).willReturn(Bytes.EMPTY);
 		try (MockedStatic<Words> theMock = mockStatic(Words.class)) {
-			theMock.when(() -> Words.toAddress(bytes)).thenReturn(address);
+			theMock.when(() -> Words.toAddress(Bytes.EMPTY)).thenReturn(Address.ZERO);
 		}
 	}
 

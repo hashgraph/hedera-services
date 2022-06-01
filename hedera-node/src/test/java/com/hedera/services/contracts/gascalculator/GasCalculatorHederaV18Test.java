@@ -26,14 +26,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hederahashgraph.api.proto.java.*;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.ArrayDeque;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,6 +55,8 @@ class GasCalculatorHederaV18Test {
 	private HbarCentExchange hbarCentExchange;
 	@Mock
 	private UsagePricesProvider usagePricesProvider;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	private GasCalculatorHederaV18 gasCalculatorHedera;
 
@@ -79,16 +78,18 @@ class GasCalculatorHederaV18Test {
 		final var rbh = 20000L;
 		final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
 		final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
+		final var blockConsTime =  Instant.ofEpochSecond(consensusTime);
+		final var blockNo = 123L;
 
 		given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, consensusTime));
+		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
 		given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
 		given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
 		given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
 		given(hbarCentExchange.rate(timestamp)).willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
 		given(properties.cacheRecordsTtl()).willReturn(1000000);
-		assertEquals(Gas.of(28), gasCalculatorHedera.logOperationGasCost(messageFrame, 1L, 2L, 3));
+		assertEquals(28L, gasCalculatorHedera.logOperationGasCost(messageFrame, 1L, 2L, 3));
 		verify(messageFrame).getGasPrice();
 		verify(messageFrame).getBlockValues();
 		verify(messageFrame).getContextVariable("HederaFunctionality");
@@ -99,52 +100,52 @@ class GasCalculatorHederaV18Test {
 
 	@Test
 	void assertCodeDepositGasCostIsZero() {
-		assertEquals(Gas.ZERO, gasCalculatorHedera.codeDepositGasCost(10));
+		assertEquals(0L, gasCalculatorHedera.codeDepositGasCost(10));
 	}
 
 	@Test
 	void assertTransactionIntrinsicGasCost() {
-		assertEquals(Gas.ZERO, gasCalculatorHedera.transactionIntrinsicGasCost(Bytes.EMPTY, true));
+		assertEquals(0L, gasCalculatorHedera.transactionIntrinsicGasCost(Bytes.EMPTY, true));
 	}
 
 	@Test
 	void assertGetBalanceOperationGasCost() {
-		assertEquals(Gas.of(20L), gasCalculatorHedera.getBalanceOperationGasCost());
+		assertEquals(20L, gasCalculatorHedera.getBalanceOperationGasCost());
 	}
 
 	@Test
 	void assertExpOperationByteGasCost() {
-		assertEquals(Gas.of(10L), gasCalculatorHedera.expOperationByteGasCost());
+		assertEquals(10L, gasCalculatorHedera.expOperationByteGasCost());
 	}
 
 	@Test
 	void assertExtCodeBaseGasCost() {
-		assertEquals(Gas.of(20L), gasCalculatorHedera.extCodeBaseGasCost());
+		assertEquals(20L, gasCalculatorHedera.extCodeBaseGasCost());
 	}
 
 	@Test
 	void assertCallOperationBaseGasCost() {
-		assertEquals(Gas.of(40L), gasCalculatorHedera.callOperationBaseGasCost());
+		assertEquals(40L, gasCalculatorHedera.callOperationBaseGasCost());
 	}
 
 	@Test
 	void assertGetExtCodeSizeOperationGasCost() {
-		assertEquals(Gas.of(20L), gasCalculatorHedera.getExtCodeSizeOperationGasCost());
+		assertEquals(20L, gasCalculatorHedera.getExtCodeSizeOperationGasCost());
 	}
 
 	@Test
 	void assertExtCodeHashOperationGasCost() {
-		assertEquals(Gas.of(400L), gasCalculatorHedera.extCodeHashOperationGasCost());
+		assertEquals(400L, gasCalculatorHedera.extCodeHashOperationGasCost());
 	}
 
 	@Test
 	void assertSelfDestructOperationGasCost() {
 		Account recipient = mock(Account.class);
-		assertEquals(Gas.of(0), gasCalculatorHedera.selfDestructOperationGasCost(recipient, Wei.of(10L)));
+		assertEquals(0L, gasCalculatorHedera.selfDestructOperationGasCost(recipient, Wei.of(10L)));
 	}
 
 	@Test
 	void assertGetSloadOperationGasCost() {
-		assertEquals(Gas.of(50L), gasCalculatorHedera.getSloadOperationGasCost());
+		assertEquals(50L, gasCalculatorHedera.getSloadOperationGasCost());
 	}
 }

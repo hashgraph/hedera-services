@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.records;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -39,9 +38,10 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.addLogInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
@@ -52,6 +52,8 @@ import static java.util.stream.Collectors.toList;
 
 public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractRecordsSanityCheckSuite.class);
+	private static final String BALANCE_LOOKUP = "BalanceLookup";
+	private static final String PAYABLE_CONTRACT = "PayReceivable";
 
 	public static void main(String... args) {
 		new ContractRecordsSanityCheckSuite().runSuiteSync();
@@ -62,7 +64,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						contractCallWithSendRecordSanityChecks(),
-						circularTransfersRecordSanityChecks(),
+//						circularTransfersRecordSanityChecks(),
 						contractCreateRecordSanityChecks(),
 						contractUpdateRecordSanityChecks(),
 						contractDeleteRecordSanityChecks(),
@@ -73,19 +75,17 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec contractDeleteRecordSanityChecks() {
 		return defaultHapiSpec("ContractDeleteRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecodeWithPayableConstructor")
-								.path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("toBeDeleted")
-								.bytecode("bytecodeWithPayableConstructor")
+						uploadInitCode(BALANCE_LOOKUP),
+						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L),
-						takeBalanceSnapshots("toBeDeleted", FUNDING, NODE, DEFAULT_PAYER)
+						takeBalanceSnapshots(BALANCE_LOOKUP, FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractDelete("toBeDeleted").via("txn").transferAccount(DEFAULT_PAYER)
+						contractDelete(BALANCE_LOOKUP).via("txn").transferAccount(DEFAULT_PAYER)
 				).then(
 						validateTransferListForBalances(
 								"txn",
-								List.of(FUNDING, NODE, DEFAULT_PAYER, "toBeDeleted"),
-								Set.of("toBeDeleted")),
+								List.of(FUNDING, NODE, DEFAULT_PAYER, BALANCE_LOOKUP),
+								Set.of(BALANCE_LOOKUP)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -93,15 +93,14 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec contractCreateRecordSanityChecks() {
 		return defaultHapiSpec("ContractCreateRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+						uploadInitCode(BALANCE_LOOKUP),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractCreate("test")
-								.bytecode("bytecode")
+						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L)
 								.via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, BALANCE_LOOKUP)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -109,18 +108,19 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec contractCallWithSendRecordSanityChecks() {
 		return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
-						contractCreate("test").bytecode("bytecode"),
-						UtilVerbs.takeBalanceSnapshots("test", FUNDING, NODE, DEFAULT_PAYER)
+						uploadInitCode(PAYABLE_CONTRACT),
+						contractCreate(PAYABLE_CONTRACT),
+						UtilVerbs.takeBalanceSnapshots(PAYABLE_CONTRACT, FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractCall("test", ContractResources.DEPOSIT_ABI, 1_000L).via("txn").sending(1_000L)
+						contractCall(PAYABLE_CONTRACT, "deposit", 1_000L).via("txn").sending(1_000L)
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, PAYABLE_CONTRACT)),
 						validateRecordTransactionFees("txn")
 				);
 	}
 
 	private HapiApiSpec circularTransfersRecordSanityChecks() {
+		final var contractName = "CircularTransfers";
 		int NUM_ALTRUISTS = 3;
 		Function<String, Long> INIT_BALANCE_FN = ignore -> 1_000_000L;
 		int INIT_KEEP_AMOUNT_DIVISOR = 2;
@@ -134,28 +134,28 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CircularTransfersRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(ContractResources.CIRCULAR_TRANSFERS_BYTECODE_PATH),
+						uploadInitCode(contractName),
 						Stream.of(altruists)
-								.map(name -> contractCreate(name).bytecode("bytecode"))
+								.map(suffix -> contractCustomCreate(contractName, suffix))
 								.toArray(n -> new HapiSpecOperation[n]),
 						Stream.of(altruists)
-								.map(name ->
+								.map(suffix ->
 										contractCall(
-											name,
-											ContractResources.SET_NODES_ABI,
+												contractName + suffix,
+											"setNodes",
 											spec -> new Object[] {
 												Stream.of(altruists)
-														.map(a -> spec.registry().getContractId(a).getContractNum())
+														.map(a -> spec.registry().getContractId(contractName + a).getContractNum())
 														.toArray()
 											}
-										).gas(120_000).via("txnFor" + name).sending(INIT_BALANCE_FN.apply(name))
+										).gas(120_000).via("txnFor" + contractName + suffix).sending(INIT_BALANCE_FN.apply(contractName + suffix))
 								).toArray(n -> new HapiSpecOperation[n]),
 						UtilVerbs.takeBalanceSnapshots(
 								Stream.of(Stream.of(altruists), Stream.of(CANONICAL_ACCOUNTS))
 										.flatMap(identity()).toArray(n -> new String[n])
 						)
 				)).when(
-						contractCall(altruists[0], ContractResources.RECEIVE_AND_SEND_ABI, INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
+						contractCall(contractName + altruists[0], "receiveAndSend", INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
 								.via("altruisticTxn")
 				).then(
 						validateTransferListForBalances(
@@ -191,11 +191,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractUpdateRecordSanityChecks")
 				.given(flattened(
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("test").bytecode("bytecode").balance(1_000L),
+						uploadInitCode(BALANCE_LOOKUP),
+						contractCreate(BALANCE_LOOKUP).balance(1_000L),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractUpdate("test").newKey("newKey").via("txn").fee(95_000_000L)
+						contractUpdate(BALANCE_LOOKUP).newKey("newKey").via("txn").fee(95_000_000L)
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")

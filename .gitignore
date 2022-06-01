@@ -64,12 +64,14 @@ hs_err_pid*
 !test-clients/src/main/resource/testSystemFiles/*.json
 !test-clients/yahcli/run/test/local/assets/*.json
 .circleci/*.yml-excerpt
+hedera-node/data/jasperdb/
 hedera-node/temp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
+hedera-node/database/
 hedera-node/data/apps/
 hedera-node/data/diskFs/
 hedera-node/data/config/*.bin
@@ -86,6 +88,7 @@ hedera-node/data/onboard/GenesisPub32Key.txt
 hedera-node/data/recordstreams/
 hedera-node/data/saved/
 hedera-node/data/jdb/
+hedera-node/database/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
@@ -123,7 +126,12 @@ test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
 test-clients/devops-utils/validation-scenarios/files/*-application.properties
 test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
+# Maven
 target
+
+# Gradle
+.gradle
+build
 
 # Mac system
 .DS_Store

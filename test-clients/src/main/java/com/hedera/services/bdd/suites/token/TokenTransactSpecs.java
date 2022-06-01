@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -29,7 +30,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -49,17 +49,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -162,6 +163,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						newSlotsCanBeOpenedViaDissociate(),
 						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
 						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
+						autoAssociationWorksForContracts()
 				}
 		);
 	}
@@ -275,6 +277,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var treasury = "treasury";
 		final var beneficiary = "beneficiary";
 		final var unluckyBeneficiary = "unluckyBeneficiary";
+		final var thirdParty = "thirdParty";
 		final var uniqueToken = "unique";
 		final var fungibleToken = "fungible";
 		final var multiPurpose = "multiPurpose";
@@ -296,15 +299,20 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
 						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
 						cryptoCreate(unluckyBeneficiary),
+						cryptoCreate(thirdParty).maxAutomaticTokenAssociations(1),
 						tokenAssociate(unluckyBeneficiary, uniqueToken),
 						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
-						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary)
+						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary),
+						cryptoTransfer(
+								movingUnique(uniqueToken, 2L)
+										.between(treasury, thirdParty)
+						)
 				).when(
 						cryptoTransfer(
 								movingUnique(uniqueToken, 1L)
 										.between(treasury, beneficiary),
 								moving(500, fungibleToken).between(treasury, beneficiary),
-								movingUnique(uniqueToken, 1L)
+								movingUnique(uniqueToken, 2L)
 										.between(treasury, unluckyBeneficiary)
 						).via(transferTxn).hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)
 				).then(
@@ -366,17 +374,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								moving(500, firstFungibleToken).between(treasury, beneficiary)
 						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
-						// even with unlimited token associations the will fail as expected.
-						cryptoTransfer(
-								moving(500, firstFungibleToken).between(treasury, beneficiary)
-						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
-						/* Dissociating from a token that didn't use a slot doesn't free one up */
+						// Dissociating from a token that didn't use a slot doesn't free one up
 						tokenDissociate(beneficiary, secondFungibleToken),
 						cryptoTransfer(
 								moving(500, firstFungibleToken).between(treasury, beneficiary)
@@ -496,10 +494,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(500, fungibleToken).between(treasury, beneficiary)
 						).via(transferTxn)
 				).then(
-						getTxnRecord(transferTxn).hasPriority(recordWith()
-								.autoAssociated(accountTokenPairs(List.of(
-										Pair.of(beneficiary, fungibleToken),
-										Pair.of(beneficiary, uniqueToken))))),
+						getTxnRecord(transferTxn)
+								.hasPriority(recordWith()
+										.autoAssociated(accountTokenPairs(List.of(
+												Pair.of(beneficiary, fungibleToken),
+												Pair.of(beneficiary, uniqueToken))))),
 						getAccountInfo(beneficiary)
 								.hasAlreadyUsedAutomaticAssociations(2)
 								.has(accountWith().newAssociationsFromSnapshot(
@@ -582,7 +581,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return defaultHapiSpec("CannotGiveNftsToDissociatedContractsOrAccounts")
 				.given(
 						newKeyNamed(theKey),
-						contractCreate(theContract),
+						createDefaultContract(theContract),
 						cryptoCreate(theAccount),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -619,9 +618,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec cannotSendFungibleToDissociatedContractsOrAccounts() {
 		final var theContract = "tbd";
 		final var theAccount = "alsoTbd";
-		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
+		return defaultHapiSpec("CannotSendFungibleToDissociatedContractsOrAccounts")
 				.given(
-						contractCreate(theContract),
+						createDefaultContract(theContract),
 						cryptoCreate(theAccount),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -653,6 +652,75 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec autoAssociationWorksForContracts() {
+		final var theContract = "CreateDonor";
+		final String tokenA = "tokenA";
+		final String tokenB = "tokenB";
+		final String uniqueToken = "unique";
+		final String treasury = "treasury";
+		final String tokenAcreateTxn = "tokenACreate";
+		final String tokenBcreateTxn = "tokenBCreate";
+		final String transferToFU = "transferToFU";
+
+		return defaultHapiSpec("autoAssociationWorksForContracts")
+				.given(
+						newKeyNamed("supplyKey"),
+						uploadInitCode(theContract),
+						contractCreate(theContract)
+								.maxAutomaticTokenAssociations(2),
+						cryptoCreate(treasury)
+								.balance(ONE_HUNDRED_HBARS),
+						tokenCreate(tokenA)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenAcreateTxn),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBcreateTxn),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyKey("supplyKey")
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						getTxnRecord(tokenAcreateTxn)
+								.hasNewTokenAssociation(tokenA, treasury)
+								.logged(),
+						getTxnRecord(tokenBcreateTxn)
+								.hasNewTokenAssociation(tokenB, treasury)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(treasury, theContract))
+								.via(transferToFU).logged(),
+						getTxnRecord(transferToFU)
+								.hasNewTokenAssociation(tokenA, theContract)
+								.logged(),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(1)
+										.maxAutoAssociations(2))
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, theContract)),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
+				).then(
+						cryptoTransfer(moving(1, tokenB).between(treasury, theContract))
+								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
+								.via("failedTransfer"),
+						getContractInfo(theContract)
+								.has(ContractInfoAsserts.contractWith()
+										.hasAlreadyUsedAutomaticAssociations(2)
+										.maxAutoAssociations(2))
+
+								.logged()
+				);
+	}
 
 	public HapiApiSpec missingEntitiesRejected() {
 		return defaultHapiSpec("MissingTokensRejected")

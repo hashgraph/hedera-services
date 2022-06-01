@@ -21,77 +21,34 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.CommonUtils;
+import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.common.utility.CommonUtils;
 import org.ethereum.core.CallTransaction;
-import org.ethereum.util.ByteUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.ObjLongConsumer;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.function.*;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static org.ethereum.crypto.HashUtil.sha3;
 
-public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
-	public static final int HEXED_EVM_ADDRESS_LEN = 40;
-	private static final String FALLBACK_ABI = "<empty>";
-	private static final String ADDRESS_ABI_TYPE = "address";
-	private static final String ADDRESS_ENCODE_TYPE = "bytes32";
-	private final static ObjectMapper DEFAULT_MAPPER = new ObjectMapper()
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
-
-	private boolean tryAsHexedAddressIfLenMatches = true;
-	private Object[] params;
-	private String abi;
-	private String contract;
-	private List<String> otherSigs = Collections.emptyList();
+public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
+	protected List<String> otherSigs = Collections.emptyList();
 	private Optional<Long> gas = Optional.empty();
-	private Optional<Long> sentTinyHbars = Optional.of(0L);
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
-
+	private Optional<Long> valueSent = Optional.of(0L);
+	private boolean convertableToEthCall = true;
 	private Consumer<Object[]> resultObserver = null;
-
-	@Override
-	public HederaFunctionality type() {
-		return HederaFunctionality.ContractCall;
-	}
-
-	@Override
-	protected HapiContractCall self() {
-		return this;
-	}
 
 	public HapiContractCall withExplicitParams(final Supplier<String> supplier) {
 		explicitHexedParams = Optional.of(supplier);
@@ -139,6 +96,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		return this;
 	}
 
+	public HapiContractCall refusingEthConversion() {
+		convertableToEthCall = false;
+		return this;
+	}
+
 	public HapiContractCall gas(long amount) {
 		gas = Optional.of(amount);
 		return this;
@@ -150,8 +112,111 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	}
 
 	public HapiContractCall sending(long amount) {
-		sentTinyHbars = Optional.of(amount);
+		valueSent = Optional.of(amount);
 		return this;
+	}
+
+	public HapiContractCall signingWith(String signingWith) {
+		privateKeyRef = signingWith;
+		return this;
+	}
+
+	@Override
+	protected HapiContractCall self() {
+		return this;
+	}
+
+	@Override
+	public HederaFunctionality type() {
+		return HederaFunctionality.ContractCall;
+	}
+
+	public boolean isConvertableToEthCall() {
+		return convertableToEthCall;
+	}
+
+	public Consumer<Object[]> getResultObserver() {
+		return resultObserver;
+	}
+
+	public String getContract() {
+		return contract;
+	}
+
+	public String getAbi() {
+		return abi;
+	}
+
+	public Object[] getParams() {
+		return params;
+	}
+
+	public String getTxnName() {
+		return txnName;
+	}
+
+	public Optional<Long> getGas() {
+		return gas;
+	}
+
+	public List<String> getOtherSigs() {
+		return otherSigs;
+	}
+
+	public Optional<String> getPayer() {
+		return payer;
+	}
+
+	public Optional<String> getMemo() {
+		return memo;
+	}
+
+	public Optional<Long> getValueSent() {
+		return valueSent;
+	}
+
+	public Optional<Function<Transaction, Transaction>> getFiddler() {
+		return fiddler;
+	}
+
+	public Optional<Long> getFee() {
+		return fee;
+	}
+
+	public Optional<Long> getSubmitDelay() {
+		return submitDelay;
+	}
+
+	public Optional<Long> getValidDurationSeconds() {
+		return validDurationSecs;
+	}
+
+	public Optional<String> getCustomTxnId() {
+		return customTxnId;
+	}
+
+	public Optional<AccountID> getNode() {
+		return node;
+	}
+
+	public OptionalDouble getUsdFee() {
+		return usdFee;
+	}
+
+	public Optional<Integer> getRetryLimits() {
+		return retryLimits;
+	}
+
+	public Optional<Supplier<String>> getExplicitHexedParams() {
+		return explicitHexedParams;
+	}
+
+	public String getPrivateKeyRef() {
+		return privateKeyRef;
+	}
+
+	public boolean getDeferStatusResolution() {
+		return deferStatusResolution;
 	}
 
 	@Override
@@ -200,104 +265,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 								builder.setContractID(TxnUtils.asContractId(contract, spec));
 							}
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
-							sentTinyHbars.ifPresent(builder::setAmount);
+							valueSent.ifPresent(builder::setAmount);
 							gas.ifPresent(builder::setGas);
 						}
 				);
 		return b -> b.setContractCall(opBody);
-	}
-
-	private byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
-		byte[] callData = new byte[] { };
-		var abiFunction = DEFAULT_MAPPER.readValue(abi, AbiFunction.class);
-		final var signatureParameters = getParametersForSignature(abi);
-		final var signature = abiFunction.getName() + signatureParameters;
-		final var argumentTypes = signatureParameters.replace(
-				ADDRESS_ABI_TYPE,
-				ADDRESS_ENCODE_TYPE);
-		final var paramsAsTuple = Tuple.of(params);
-
-		final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
-				argumentTypes);
-		callData = ByteUtil.merge(callData, tupleEncoded);
-
-		return ByteUtil.merge(encodeSignature(signature), callData);
-	}
-
-	private String getParametersForSignature(final String jsonABI) throws Throwable {
-		final var abiFunction = DEFAULT_MAPPER.readValue(jsonABI, AbiFunction.class);
-		final var parametersBuilder = new StringBuilder();
-		parametersBuilder.append("(");
-		for (final InputOutput input : abiFunction.getInputs()) {
-			parametersBuilder.append(getArgumentTypesForInput(input));
-		}
-
-		parametersBuilder.append(")");
-		return parametersBuilder.toString().replace(",)", ")");
-	}
-
-	private String getArgumentTypesForInput(final InputOutput input) {
-		final var argumentTypeBuilder = new StringBuilder();
-		if (input.getComponents() != null) {
-			argumentTypeBuilder.append(getOpenCharacterForInput(input));
-			argumentTypeBuilder.append(getArgumentTypesForComponents(input.getComponents()));
-			argumentTypeBuilder.append(getClosingCharacterForInput(input));
-		} else {
-			argumentTypeBuilder.append(input.getType()).append(",");
-		}
-
-		return argumentTypeBuilder.toString();
-	}
-
-	private String getOpenCharacterForInput(final InputOutput input) {
-		switch (input.getType()) {
-			case "tuple[]":
-			case "tuple":
-				return "(";
-			default:
-				return "";
-		}
-	}
-
-	private String getClosingCharacterForInput(final InputOutput input) {
-		switch (input.getType()) {
-			case "tuple[]":
-				return ")[],";
-			case "tuple":
-				return "),";
-			default:
-				return "";
-		}
-	}
-
-	private String getArgumentTypesForComponents(final List<Component> components) {
-		final var componentsTypeBuilder = new StringBuilder();
-		for (final Component component : components) {
-			if (component.getComponents() != null && !component.getComponents().isEmpty()) {
-				componentsTypeBuilder.append("(");
-				for (final Component nestedComponent : component.getComponents()) {
-					componentsTypeBuilder.append(nestedComponent.getType()).append(",");
-				}
-				componentsTypeBuilder.append("tuple[]".equals(component.getType()) ? ")[]," : "),");
-			} else {
-				componentsTypeBuilder.append(component.getType()).append(",");
-			}
-		}
-
-		return componentsTypeBuilder.toString();
-	}
-
-	public byte[] encodeSignature(final String functionSignature) {
-		return Arrays.copyOfRange(encodeSignatureLong(functionSignature), 0, 4);
-	}
-
-	public byte[] encodeSignatureLong(final String functionSignature) {
-		return sha3(functionSignature.getBytes());
-	}
-
-	private static byte[] getTupleAsBytes(final Tuple argumentValues, final String argumentTypes) {
-		final TupleType tupleType = TupleType.parse(argumentTypes);
-		return tupleType.encode((Tuple) argumentValues.get(0)).array();
 	}
 
 	@Override
@@ -362,80 +334,5 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 				.add("contract", contract)
 				.add("abi", abi)
 				.add("params", Arrays.toString(params));
-	}
-
-	private static class AbiFunction {
-		private List<InputOutput> outputs;
-		private List<InputOutput> inputs;
-		private String name;
-		private String stateMutability;
-		private String type;
-
-		public List<InputOutput> getOutputs() {
-			return outputs;
-		}
-
-		public List<InputOutput> getInputs() {
-			return inputs;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getStateMutability() {
-			return stateMutability;
-		}
-
-		public String getType() {
-			return type;
-		}
-	}
-
-	private static class InputOutput {
-		private List<Component> components;
-		private String internalType;
-		private String name;
-		private String type;
-
-		public List<Component> getComponents() {
-			return components;
-		}
-
-		public String getInternalType() {
-			return internalType;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getType() {
-			return type;
-		}
-	}
-
-
-	private static class Component {
-		private List<Component> components;
-		private String internalType;
-		private String name;
-		private String type;
-
-		public List<Component> getComponents() {
-			return components;
-		}
-
-		public String getInternalType() {
-			return internalType;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getType() {
-			return type;
-		}
 	}
 }

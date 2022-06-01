@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 
@@ -38,6 +39,14 @@ public class LinkedRefs {
 	private Instant sourceSignedAt = Instant.EPOCH;
 	private long[] linkedNums = new long[EXPECTED_LINKED_NUMS];
 	private List<ByteString> linkedAliases = null;
+
+	public LinkedRefs() {
+		// No-op
+	}
+
+	public LinkedRefs(final Instant sourceSignedAt) {
+		this.sourceSignedAt = sourceSignedAt;
+	}
 
 	public boolean haveNoChangesAccordingTo(final SigImpactHistorian historian) {
 		for (int j = 0; j < linkedNums.length && linkedNums[j] != 0; j++) {
@@ -112,5 +121,13 @@ public class LinkedRefs {
 
 	public void setSourceSignedAt(final Instant sourceSignedAt) {
 		this.sourceSignedAt = sourceSignedAt;
+	}
+
+	public String toString(){
+		return MoreObjects.toStringHelper(this)
+				.add("sourceSignedAt", sourceSignedAt)
+				.add("linkedAliases", linkedAliases)
+				.add("linkedNums", linkedNums)
+				.toString();
 	}
 }

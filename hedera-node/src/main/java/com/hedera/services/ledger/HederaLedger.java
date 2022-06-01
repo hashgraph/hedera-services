@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -65,6 +64,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
@@ -112,7 +112,6 @@ public class HederaLedger {
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final RecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
@@ -132,7 +131,6 @@ public class HederaLedger {
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final RecordsHistorian historian,
-			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic,
 			final AutoCreationLogic autoCreationLogic
@@ -142,7 +140,6 @@ public class HederaLedger {
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
-		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.transferLogic = transferLogic;
 		this.autoCreationLogic = autoCreationLogic;
@@ -203,12 +200,18 @@ public class HederaLedger {
 		}
 	}
 
+	/**
+	 * Commits the pending change sets in the four {@link TransactionalLedger} implementations.
+	 *
+	 * <p><b>Important: </b> The <i>order</i> of these {@code commit()} calls matters, because the
+	 * {@code tokenRelsLedger} and {@code nftsLedger} both have interceptors that update properties in the
+	 * accounts {@code MerkleMap}. If either of them were committed before the {@code accountsLedger} at
+	 * the end of a contract operation, their changes would be overwritten, since in a contract operation,
+	 * <i>all</i> {@link AccountProperty} values appear in an account's change set.
+	 */
 	public void commit() {
-		// The interceptor on the accounts ledger tracks and validates any hbar side effects of this txn;
-		// so we must commit here _before_ saving a record derived from the singleton SideEffectsTracker
+		// The ledger interceptors track side effects, hence must be committed before saving a record
 		accountsLedger.commit();
-		historian.saveExpirableTransactionRecords();
-		historian.noteNewExpirationEvents();
 		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
@@ -216,6 +219,8 @@ public class HederaLedger {
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
 		}
+		historian.saveExpirableTransactionRecords();
+		historian.noteNewExpirationEvents();
 	}
 
 	public String currentChangeSet() {
@@ -285,6 +290,14 @@ public class HederaLedger {
 
 	public boolean isKnownTreasury(final AccountID aId) {
 		return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
+	}
+
+	public boolean hasAnyFungibleTokenBalance(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES) > 0;
+	}
+
+	public boolean hasAnyNfts(final AccountID aId) {
+		return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0L;
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
@@ -412,16 +425,7 @@ public class HederaLedger {
 	}
 
 	public boolean isDetached(final AccountID id) {
-		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
-			return false;
-		}
-		final var shouldAutoRenewThisType = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
-				? dynamicProperties.shouldAutoRenewContracts() : dynamicProperties.shouldAutoRenewAccounts();
-		if (!shouldAutoRenewThisType) {
-			return false;
-		}
-		return (long) accountsLedger.get(id, BALANCE) == 0L
-				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+		return validator.expiryStatusGiven(accountsLedger, id) != OK;
 	}
 
 	public JKey key(AccountID id) {

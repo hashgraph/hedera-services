@@ -43,7 +43,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

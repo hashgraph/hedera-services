@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -210,7 +210,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public void begin() {
-		throwIfInTxn();
+		ensureNotInTxn();
 		isInTransaction = true;
 		if (pendingChanges != null) {
 			pendingChanges.clear();
@@ -268,7 +268,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			changes.clear();
 
 			if (!deadKeys.isEmpty()) {
-				removedKeys.forEach(entities::remove);
+				if (commitInterceptor == null || !commitInterceptor.completesPendingRemovals()) {
+					removedKeys.forEach(entities::remove);
+				}
 				deadKeys.clear();
 				removedKeys.clear();
 			}
@@ -287,7 +289,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -355,12 +356,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public void destroy(final K id) {
 		throwIfNotInTxn();
-		deadKeys.add(id);
-		removedKeys.add(id);
+		if (!deadKeys.contains(id)) {
+			deadKeys.add(id);
+			removedKeys.add(id);
+		}
 	}
 
 	// --- BackingStore implementation ---
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -397,6 +399,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		throwIfNotInTxn();
 		if (isZombie(id)) {
 			deadKeys.remove(id);
+			removedKeys.remove(id);
 		}
 		// The ledger wrapping us may have created an entity we don't have, so catch up on that if necessary;
 		// note this differs from the semantics of set() above, which throws if the target entity is missing
@@ -494,19 +497,33 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
-	private void throwIfInTxn() {
+	private void ensureNotInTxn() {
 		if (isInTransaction) {
-			throw new IllegalStateException("Transaction already active");
+			log.warn("Ledger with property type {} still in transaction at begin()", propertyType::getSimpleName);
+			rollback();
 		}
 	}
 
 	private void computePendingChanges() {
-		doForRetainedIn(changedKeys, previewAction);
-		doForRetainedIn(createdKeys, previewAction);
+		computeForRetainedIn(changedKeys, previewAction);
+		computeForRetainedIn(createdKeys, previewAction);
+		if (!removedKeys.isEmpty()) {
+			computeRemovals();
+		}
+	}
+
+	private void computeRemovals() {
+		for (final var id : removedKeys) {
+			final var entity = entities.getImmutableRef(id);
+			// Ignore entities that were created and destroyed within the transaction
+			if (entity != null) {
+				pendingChanges.includeRemoval(id, entity);
+			}
+		}
 	}
 
 	private void flushPendingChanges() {
-		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+		for (int i = 0, n = pendingChanges.retainedSize(); i < n; i++) {
 			final var id = pendingChanges.id(i);
 			final var cachedEntity = pendingChanges.entity(i);
 			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
@@ -517,12 +534,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	private void flushListed(final List<K> l) {
-		if (doForRetainedIn(l, finalizeAction)) {
+		if (computeForRetainedIn(l, finalizeAction)) {
 			l.clear();
 		}
 	}
 
-	private boolean doForRetainedIn(final List<K> l, final Consumer<K> action) {
+	private boolean computeForRetainedIn(final List<K> l, final Consumer<K> action) {
 		if (l.isEmpty()) {
 			return false;
 		}
@@ -558,7 +575,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private void throwIfMissing(K id) {
 		if (!exists(id)) {
-			throw new MissingAccountException(id);
+			throw new MissingEntityException(id);
 		}
 	}
 
@@ -583,6 +600,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@VisibleForTesting
 	public TransactionalLedger<K, P, A> getEntitiesLedger() {
 		return entitiesLedger;
+	}
+
+	@VisibleForTesting
+	public CommitInterceptor<K, A, P> getCommitInterceptor() {
+		return commitInterceptor;
 	}
 
 	@VisibleForTesting

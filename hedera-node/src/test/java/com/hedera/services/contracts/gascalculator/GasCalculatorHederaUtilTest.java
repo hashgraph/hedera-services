@@ -25,13 +25,9 @@ package com.hedera.services.contracts.gascalculator;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hederahashgraph.api.proto.java.*;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +48,8 @@ class GasCalculatorHederaUtilTest {
 	private HbarCentExchange hbarCentExchange;
 	@Mock
 	private UsagePricesProvider usagePricesProvider;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	@Test
 	void assertRamByteHoursTinyBarsGiven() {
@@ -104,16 +102,18 @@ class GasCalculatorHederaUtilTest {
 		final var rbh = 20000L;
 		final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
 		final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
+		final var blockConsTime =  Instant.ofEpochSecond(consensusTime);
+		final var blockNo = 123L;
 
 		given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, consensusTime));
+		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
 		given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
 		given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
 		given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
 		given(hbarCentExchange.rate(timestamp)).willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
 
-		assertEquals(Gas.of(28), GasCalculatorHederaUtil.logOperationGasCost(usagePricesProvider, hbarCentExchange, messageFrame, 1000000, 1L, 2L, 3));
+		assertEquals(28L, GasCalculatorHederaUtil.logOperationGasCost(usagePricesProvider, hbarCentExchange, messageFrame, 1000000, 1L, 2L, 3));
 		verify(messageFrame).getGasPrice();
 		verify(messageFrame).getBlockValues();
 		verify(messageFrame).getContextVariable("HederaFunctionality");

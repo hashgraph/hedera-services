@@ -23,10 +23,10 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,7 +73,7 @@ public class PlatformSubmissionManager {
 		var txn = accessor.getTxn();
 		if (txn.hasUncheckedSubmit()) {
 			try {
-				return new SignedTxnAccessor(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
+				return SignedTxnAccessor.from(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
 			} catch (InvalidProtocolBufferException e) {
 				log.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
 				return null;

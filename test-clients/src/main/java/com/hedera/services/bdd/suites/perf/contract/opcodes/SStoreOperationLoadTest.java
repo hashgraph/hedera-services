@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.perf.contract.opcodes;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +36,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -72,11 +71,12 @@ public class SStoreOperationLoadTest extends LoadTest {
 	}
 
 	private HapiApiSpec runContractCalls() {
+		final var contract = "BigArray";
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		long setValue = 0x1234abdeL;
 		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
-				contractCall("perf", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI, setValue)
+				contractCall(contract, "changeArray", setValue)
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
@@ -94,14 +94,13 @@ public class SStoreOperationLoadTest extends LoadTest {
 								.withRecharging()
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						fileCreate("contractBytecode").path(ContractResources.BIG_ARRAY_BYTECODE_PATH)
+						uploadSingleInitCode(contract, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+						contractCreate(contract)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						contractCreate("perf").bytecode("contractBytecode")
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						getContractInfo("perf").hasExpectedInfo().logged(),
+						getContractInfo(contract).hasExpectedInfo().logged(),
 
 						// Initialize storage size
-						contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_ABI, size)
+						contractCall(contract, "setSize", size)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 								.gas(300_000)
 				).then(

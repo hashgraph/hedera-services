@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.AccountStore;
@@ -32,7 +33,7 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -68,11 +69,13 @@ class MintLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private OptionValidator validator;
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
@@ -81,7 +84,7 @@ class MintLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MintLogic(validator, store, accountStore);
+		subject = new MintLogic(validator, store, accountStore, dynamicProperties);
 	}
 
 	@Test

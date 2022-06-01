@@ -29,13 +29,13 @@ import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +88,8 @@ class StandardProcessLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private RecordsHistorian recordsHistorian;
+	@Mock
+	private RecordStreaming recordStreaming;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -99,12 +101,13 @@ class StandardProcessLogicTest {
 		subject = new StandardProcessLogic(
 				expiries, invariantChecks,
 				expandHandleSpan, recordsHistorian, autoRenewal, txnManager,
-				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties);
+				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties, recordStreaming);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
-		final InOrder inOrder = inOrder(expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian);
+		final InOrder inOrder = inOrder(
+				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
@@ -117,6 +120,7 @@ class StandardProcessLogicTest {
 		inOrder.verify(sigImpactHistorian).setChangeTime(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
 		inOrder.verify(sigImpactHistorian).purge();
+		inOrder.verify(recordStreaming).resetBlockNo();
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();

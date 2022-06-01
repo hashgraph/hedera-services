@@ -30,7 +30,7 @@ import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.logging.log4j.LogManager;

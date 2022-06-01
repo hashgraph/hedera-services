@@ -29,6 +29,7 @@ import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
@@ -40,6 +41,7 @@ import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -57,8 +59,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 		TokenLogicModule.class,
 		CryptoLogicModule.class,
 		NetworkLogicModule.class,
-		ScheduleLogicModule.class,
 		ContractLogicModule.class,
+		EthereumLogicModule.class,
+		ScheduleLogicModule.class,
 		ConsensusLogicModule.class
 })
 public interface TransactionsModule {
@@ -76,8 +79,8 @@ public interface TransactionsModule {
 
 	@Provides
 	@Singleton
-	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager) {
-		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager);
+	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager, AccessorFactory factory) {
+		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager, factory);
 	}
 
 	@Provides
@@ -116,3 +119,4 @@ public interface TransactionsModule {
 		return List.of(fileSysUndelTransitionLogic, contractSysUndelTransitionLogic);
 	}
 }
+

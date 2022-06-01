@@ -108,7 +108,8 @@ public class AllowanceChecks {
 	Pair<Account, ResponseCodeEnum> fetchOwnerAccount(
 			final Id owner,
 			final Account payerAccount,
-			final AccountStore accountStore) {
+			final AccountStore accountStore
+	) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 			return Pair.of(payerAccount, OK);
 		} else {

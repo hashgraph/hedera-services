@@ -30,7 +30,8 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -46,6 +47,8 @@ import java.util.function.BiFunction;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
@@ -57,7 +60,7 @@ public class Rationalization {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
-	private TxnAccessor txnAccessor;
+	private SwirldsTxnAccessor txnAccessor;
 	private PubKeyToSigBytes pkToSigFn;
 
 	private JKey reqPayerSig;
@@ -82,7 +85,7 @@ public class Rationalization {
 		this.bodySigningFactory = bodySigningFactory;
 	}
 
-	public void performFor(final TxnAccessor txnAccessor) {
+	public void performFor(final SwirldsTxnAccessor txnAccessor) {
 		final var linkedRefs = txnAccessor.getLinkedRefs();
 		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
 			finalStatus = txnAccessor.getExpandedSigStatus();
@@ -106,7 +109,7 @@ public class Rationalization {
 		return verifiedSync;
 	}
 
-	void resetFor(final TxnAccessor txnAccessor) {
+	void resetFor(final SwirldsTxnAccessor txnAccessor) {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 
@@ -163,9 +166,9 @@ public class Rationalization {
 
 	private void makeRationalizedMetaAccessible() {
 		if (reqOthersSigs == null) {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerOnly(reqPayerSig, txnSigs));
+			txnAccessor.setSigMeta(forPayerOnly(reqPayerSig, txnSigs, txnAccessor));
 		} else {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs));
+			txnAccessor.setSigMeta(forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
 		}
 	}
 

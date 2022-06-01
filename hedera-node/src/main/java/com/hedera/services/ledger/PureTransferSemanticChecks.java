@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -165,8 +165,9 @@ public class PureTransferSemanticChecks {
 		}
 		ResponseCodeEnum validity;
 		final Set<TokenID> uniqueTokens = new HashSet<>();
+		final Set<Long> uniqueSerialNos = new HashSet<>();
 		for (var tokenTransfers : tokenTransfersList) {
-			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers);
+			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers, uniqueSerialNos);
 			if (validity != OK) {
 				return validity;
 			}
@@ -178,17 +179,22 @@ public class PureTransferSemanticChecks {
 	}
 
 	private ResponseCodeEnum validateScopedTransferSemantics(
-			Set<TokenID> uniqueTokens,
-			TokenTransferList tokenTransfers
+			final Set<TokenID> uniqueTokens,
+			final TokenTransferList tokenTransfers,
+			final Set<Long> uniqueSerialNos
 	) {
 		if (!tokenTransfers.hasToken()) {
 			return INVALID_TOKEN_ID;
 		}
 		uniqueTokens.add(tokenTransfers.getToken());
 		final var ownershipChanges = tokenTransfers.getNftTransfersList();
-		for (var ownershipChange : ownershipChanges) {
+		uniqueSerialNos.clear();
+		for (final var ownershipChange : ownershipChanges) {
 			if (ownershipChange.getSenderAccountID().equals(ownershipChange.getReceiverAccountID())) {
 				return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+			}
+			if (!uniqueSerialNos.add(ownershipChange.getSerialNumber())) {
+				return INVALID_ACCOUNT_AMOUNTS;
 			}
 		}
 

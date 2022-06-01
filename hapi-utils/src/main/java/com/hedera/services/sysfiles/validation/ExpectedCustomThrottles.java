@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -81,7 +82,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public final class ExpectedCustomThrottles {
-	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY_FIVE = EnumSet.of(
+	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY_SIX = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,
@@ -95,6 +96,7 @@ public final class ExpectedCustomThrottles {
 			ContractCreate,
 			ContractUpdate,
 			ContractCall,
+			EthereumTransaction,
 			ContractDelete,
 			ConsensusCreateTopic,
 			ConsensusUpdateTopic,

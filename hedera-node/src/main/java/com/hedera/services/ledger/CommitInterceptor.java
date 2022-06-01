@@ -44,4 +44,14 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	 * 		if these changes are invalid
 	 */
 	void preview(EntityChangeSet<K, A, P> pendingChanges);
+
+	/**
+	 * Returns whether this interceptor completes the pending removals in the previewed change set.
+	 * (If true, the {@link TransactionalLedger} will skip calling remove itself.)
+	 *
+	 * @return if pending removals are done as a side effect of preview
+	 */
+	default boolean completesPendingRemovals() {
+		return false;
+	}
 }

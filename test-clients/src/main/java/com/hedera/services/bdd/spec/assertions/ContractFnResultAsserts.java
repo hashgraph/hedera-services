@@ -24,12 +24,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.bdd.spec.utilops.UtilStateChange;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -42,6 +44,7 @@ import java.util.Random;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
 	static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
@@ -55,6 +58,24 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts resultThruAbi(
 			String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+		registerProvider((spec, o) -> {
+			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+			if (error.isPresent()) {
+				throw error.get();
+			}
+		});
+		return this;
+	}
+
+	/*  Note:
+	    This method utilizes algorithmic extraction of a function ABI by the name of the function and the contract
+	    and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
+    */
+	public ContractFnResultAsserts resultViaFunctionName(final String functionName,
+														 final String contractName,
+														 final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+		final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
 		registerProvider((spec, o) -> {
 			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
 			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
@@ -81,7 +102,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts evmAddress(ByteString expected) {
 		registerProvider((spec, o) -> {
-			final var result = (ContractFunctionResult)	o;
+			final var result = (ContractFunctionResult) o;
 			Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
 			final var actual = result.getEvmAddress().getValue();
 			Assertions.assertEquals(expected, actual, "Bad EVM address");
@@ -105,6 +126,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					msg, Optional.ofNullable(result.getErrorMessage()).orElse(""),
 					"Wrong contract function error!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts approxGasUsed(final long expected, final double allowedPercentDeviation) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			final var actual = result.getGasUsed();
+			final var epsilon = allowedPercentDeviation * actual / 100.0;
+			Assertions.assertEquals(
+					expected, (double) result.getGasUsed(), epsilon,
+					"Wrong amount of gas used");
 		});
 		return this;
 	}
@@ -166,6 +199,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					ByteString.copyFrom(functionParameters.toArray()), result.getFunctionParameters(),
 					"Wrong function parameters!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts senderId(AccountID senderId) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					senderId, result.getSenderId(),
+					"Wrong senderID!");
 		});
 		return this;
 	}
