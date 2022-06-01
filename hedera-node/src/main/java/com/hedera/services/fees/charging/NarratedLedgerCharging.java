@@ -38,6 +38,7 @@ import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
 /**
