@@ -364,7 +364,13 @@ class StakeAwareAccountsCommitInterceptorTest {
 		subject.setHasBeenRewarded(hasBeenRewarded);
 		assertEquals(2, pendingChanges.size());
 
-		assertEquals(4, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
+		subject.setCurStakedId(1L);
+		subject.setNewStakedId(2L);
+		subject.updateStakedToMeSideEffects(
+				counterparty,
+				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
+				pendingChanges.changes(0),
+				pendingChanges);
 		assertEquals(-555L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 		assertEquals(100L, pendingChanges.changes(3).get(AccountProperty.STAKED_TO_ME));
 	}
@@ -386,61 +392,31 @@ class StakeAwareAccountsCommitInterceptorTest {
 		map.put(AccountProperty.STAKED_TO_ME, 2000L);
 
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		pendingChanges.include(counterpartyId, counterparty, map);
 		pendingChanges.include(partyId, party, stakingFundChanges);
-		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+		pendingChanges.include(stakingFundId, stakingFund, new HashMap<>(stakingFundChanges));
+		pendingChanges.include(counterpartyId, counterparty, map);
 
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
 				stakeInfoManager, accountNumbers);
 
 		final var hasBeenRewarded = new boolean[64];
+		hasBeenRewarded[0] = false;
 		hasBeenRewarded[1] = false;
-		hasBeenRewarded[2] = false;
 		subject.setHasBeenRewarded(hasBeenRewarded);
+		subject.setCurStakedId(123L);
+		subject.setNewStakedId(123L);
 		assertEquals(3, pendingChanges.size());
 
-		assertEquals(3, subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges));
-		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-		assertEquals(2100L, pendingChanges.changes(1).get(AccountProperty.STAKED_TO_ME));
-		assertEquals(2100L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
-	}
+		subject.updateStakedToMeSideEffects(
+				counterparty,
+				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
+				pendingChanges.changes(0),
+				pendingChanges);
 
-	@Test
-	void doublesArrayIfChangesSizeIncreases() {
-		counterparty.setStakedId(1L);
-		stakingFund.setStakePeriodStart(-1);
-		counterparty.setStakePeriodStart(stakePeriodStart - 2);
-		final var merkleAccount = mock(MerkleAccount.class);
-
-		final StakeChangeManager manager = new StakeChangeManager(stakeInfoManager, () -> accounts);
-		final var subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx,
-				dynamicProperties,
-				rewardCalculator, manager, stakePeriodManager, stakeInfoManager, accountNumbers);
-
-		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-		final var pendingChanges = buildPendingAccountStakeChanges();
-		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-
-		given(accounts.getForModify(EntityNum.fromLong(1L))).willReturn(merkleAccount);
-		given(merkleAccount.getStakedToMe()).willReturn(0L);
-
-		given(accounts.getForModify(EntityNum.fromLong(2L))).willReturn(merkleAccount);
-		given(merkleAccount.getStakedToMe()).willReturn(0L);
-
-		final var hasBeenRewarded = new boolean[3];
-		hasBeenRewarded[1] = true;
-		hasBeenRewarded[2] = true;
-		subject.setHasBeenRewarded(hasBeenRewarded);
-
-		final var result = subject.updateStakedToMeSideEffects(counterparty, pendingChanges.changes(0), pendingChanges);
-		assertEquals(4, result);
-		assertEquals(6, subject.getHasBeenRewarded().length);
-
-		// reset
-		counterparty.setStakedId(-1L);
-		stakingFund.setStakePeriodStart(-1);
-		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+		assertEquals(1545L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+		assertEquals(2000L, pendingChanges.changes(1).get(AccountProperty.STAKED_TO_ME));
+		assertEquals(2000L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {

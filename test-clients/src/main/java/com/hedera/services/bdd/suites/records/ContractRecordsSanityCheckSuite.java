@@ -78,13 +78,13 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						uploadInitCode(BALANCE_LOOKUP),
 						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L),
-						takeBalanceSnapshots(BALANCE_LOOKUP, FUNDING, NODE, DEFAULT_PAYER)
+						takeBalanceSnapshots(BALANCE_LOOKUP, FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)
 				)).when(
 						contractDelete(BALANCE_LOOKUP).via("txn").transferAccount(DEFAULT_PAYER)
 				).then(
 						validateTransferListForBalances(
 								"txn",
-								List.of(FUNDING, NODE, DEFAULT_PAYER, BALANCE_LOOKUP),
+								List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, BALANCE_LOOKUP),
 								Set.of(BALANCE_LOOKUP)),
 						validateRecordTransactionFees("txn")
 				);
@@ -94,13 +94,13 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCreateRecordSanityChecks")
 				.given(flattened(
 						uploadInitCode(BALANCE_LOOKUP),
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)
 				)).when(
 						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L)
 								.via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, BALANCE_LOOKUP)),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, BALANCE_LOOKUP)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -110,11 +110,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						uploadInitCode(PAYABLE_CONTRACT),
 						contractCreate(PAYABLE_CONTRACT),
-						UtilVerbs.takeBalanceSnapshots(PAYABLE_CONTRACT, FUNDING, NODE, DEFAULT_PAYER)
+						UtilVerbs.takeBalanceSnapshots(PAYABLE_CONTRACT, FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)
 				)).when(
 						contractCall(PAYABLE_CONTRACT, "deposit", 1_000L).via("txn").sending(1_000L)
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, PAYABLE_CONTRACT)),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, PAYABLE_CONTRACT)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -126,7 +126,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		int INIT_KEEP_AMOUNT_DIVISOR = 2;
 		BigInteger STOP_BALANCE = BigInteger.valueOf(399_999L);
 
-		String[] CANONICAL_ACCOUNTS = { FUNDING, NODE, DEFAULT_PAYER };
+		String[] CANONICAL_ACCOUNTS = { FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER };
 		String[] altruists = IntStream
 				.range(0, NUM_ALTRUISTS)
 				.mapToObj(i -> String.format("Altruist%s", new String(new char[] { (char)('A' + i) })))
@@ -193,11 +193,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
 						uploadInitCode(BALANCE_LOOKUP),
 						contractCreate(BALANCE_LOOKUP).balance(1_000L),
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)
 				)).when(
 						contractUpdate(BALANCE_LOOKUP).newKey("newKey").via("txn").fee(95_000_000L)
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER)),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")
 				);
 	}
