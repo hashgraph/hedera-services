@@ -37,4 +37,5 @@ dependencies {
     implementation(libs.besu.secp256k1)
 
     testImplementation(testLibs.bundles.testing)
+    itestImplementation(libs.hapi)
 }

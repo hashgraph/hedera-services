@@ -7,7 +7,7 @@
 FROM ubuntu:21.10 AS base-runtime
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y dos2unix openssl libsodium23 postgresql-client
+    apt-get install -y dos2unix openssl libsodium23
 
 # JDK
 RUN apt-get install -y software-properties-common && \
@@ -16,7 +16,6 @@ RUN apt-get install -y software-properties-common && \
 
 # Services runtime
 RUN mkdir -p /opt/hedera/services/data/lib
-RUN mkdir -p /opt/hedera/services/data/backup
 RUN mkdir /opt/hedera/services/data/apps
 RUN mkdir /opt/hedera/services/data/config
 RUN mkdir /opt/hedera/services/data/saved
@@ -27,15 +26,6 @@ RUN mkdir /opt/hedera/services/config-mount
 ## Builds the HederaNode.jar from the current source tree and creates 
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
-
-# Maven
-# Note: Java 17 requires Maven 3.8+ so the distro provided one just won't do
-RUN apt-get update && \
-    apt-get install -y wget unzip && \
-    wget https://dlcdn.apache.org/maven/maven-3/3.8.5/binaries/apache-maven-3.8.5-bin.zip && \
-    unzip apache-maven-3.8.5-bin.zip -d /opt && \
-    rm apache-maven-3.8.5-bin.zip
-ENV PATH=/opt/apache-maven-3.8.5/bin:$PATH
 
 WORKDIR /opt/hedera/services
 # Install Services
@@ -51,18 +41,23 @@ RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
 COPY test-clients /opt/hedera/services/test-clients
-RUN mvn install -pl hedera-node -am -DskipTests -Dmaven.gitcommitid.skip=true
+RUN mkdir /opt/hedera/services/buildSrc
+COPY buildSrc /opt/hedera/services/buildSrc
+RUN mkdir /opt/hedera/services/gradle
+COPY gradle /opt/hedera/services/gradle
+COPY gradlew /opt/hedera/services/gradlew
+COPY gradle.properties /opt/hedera/services/gradle.properties
+COPY settings.gradle.kts /opt/hedera/services/settings.gradle.kts
+RUN ./gradlew assemble copyLib copyApp
 
 ## Finishes by copying the Services JAR to the base runtime
 FROM base-runtime AS final-image
 COPY image-utils/ /opt/hedera/services 
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
-COPY --from=services-builder /opt/hedera/services/hedera-node/data/backup /opt/hedera/services/data/backup
-COPY --from=services-builder /opt/hedera/services/hedera-node/swirlds.jar /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/onboard/StartUpAccount.txt /opt/hedera/services/data/onboard
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/apps /opt/hedera/services/data/apps
 WORKDIR /opt/hedera/services
-RUN dos2unix start-services.sh wait-for-it /opt/hedera/services/data/backup/*.sh
+RUN dos2unix start-services.sh
 CMD ["/bin/sh", "-c", "./start-services.sh"]

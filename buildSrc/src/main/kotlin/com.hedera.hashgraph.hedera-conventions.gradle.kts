@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.*
+
 /*-
  * ‌
  * Hedera Conventions
@@ -114,6 +117,19 @@ testing {
 // Increase the heap size for the unit tests
 tasks.test {
     maxHeapSize = "1024m"
+}
+
+tasks.getByName<Test>("itest") {
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) {
+            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
+        }
+        override fun beforeTest(testDescriptor: TestDescriptor) { }
+        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
+            logger.lifecycle(SimpleDateFormat.getDateTimeInstance().format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name)
+        }
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) { }
+    })
 }
 
 // Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code

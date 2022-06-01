@@ -34,15 +34,15 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -88,21 +89,19 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						autoAccountCreationsHappyPath(),
-						autoAccountCreationBadAlias(),
-						autoAccountCreationUnsupportedAlias(),
-						transferToAccountAutoCreatedUsingAlias(),
-						transferToAccountAutoCreatedUsingAccount(),
-						transferFromAliasToAlias(),
-						transferFromAliasToAccount(),
-						multipleAutoAccountCreations(),
-						accountCreatedIfAliasUsedAsPubKey(),
-						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-						canGetBalanceAndInfoViaAlias()
-				}
-		);
+		return List.of(
+				autoAccountCreationsHappyPath(),
+				autoAccountCreationBadAlias(),
+				autoAccountCreationUnsupportedAlias(),
+				transferToAccountAutoCreatedUsingAlias(),
+				transferToAccountAutoCreatedUsingAccount(),
+				transferFromAliasToAlias(),
+				transferFromAliasToAccount(),
+				multipleAutoAccountCreations(),
+				accountCreatedIfAliasUsedAsPubKey(),
+				aliasCanBeUsedOnManyAccountsNotAsAlias(),
+				autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+				canGetBalanceAndInfoViaAlias());
 	}
 
 	private HapiApiSpec canGetBalanceAndInfoViaAlias() {
@@ -409,9 +408,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec autoAccountCreationsHappyPath() {
-		final var now = Instant.now().getEpochSecond();
 		final var civilian = "somebody";
 		final var autoCreateSponsor = "autoCreateSponsor";
+		final var creationTime = new AtomicLong();
 		return defaultHapiSpec("AutoAccountCreationsHappyPath")
 				.given(
 						newKeyNamed("validAlias"),
@@ -440,18 +439,19 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 							final var parent = lookup.getResponseRecord();
 							final var child = lookup.getChildRecord(0);
 							assertFeeInChildRecord(parent, child, sponsor, payer, ONE_HUNDRED_HBARS);
+							creationTime.set(child.getConsensusTimestamp().getSeconds());
 						}),
-						getAliasedAccountInfo("validAlias").has(
+						sourcing(() -> getAliasedAccountInfo("validAlias").has(
 										accountWith()
 												.key("validAlias")
 												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 10)
 												.alias("validAlias")
 												.autoRenew(THREE_MONTHS_IN_SECONDS)
 												.receiverSigReq(false)
-												.expiry(now + THREE_MONTHS_IN_SECONDS, 10)
+												.expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
 												.memo(AUTO_MEMO))
 								.logged()
-				);
+				));
 	}
 
 	private void assertFeeInChildRecord(

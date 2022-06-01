@@ -10,7 +10,7 @@ services:
       - "./compose-network/node0/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node0/output:/opt/hedera/services/output"
     ports:
-      - 50213:50211
+      - 50211:50211
   node_1:
     container_name: node_1
     image: ${REGISTRY_PREFIX}services-node:${TAG}
@@ -21,7 +21,7 @@ services:
       - "./compose-network/node1/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node1/output:/opt/hedera/services/output"
     ports:
-      - 50214:50211
+      - 50212:50211
   node_2:
     container_name: node_2
     image: ${REGISTRY_PREFIX}services-node:${TAG}
@@ -32,14 +32,4 @@ services:
       - "./compose-network/node2/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node2/output:/opt/hedera/services/output"
     ports:
-      - 50215:50211
-  postgres:
-    container_name: hedera-postgres
-    image: postgres:10.9-alpine
-    environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=swirlds
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    volumes:
-      - "./compose-network/pgdata:/var/lib/postgresql/data/pgdata"
-      - "./hedera-node/configuration/compose/init.db:/docker-entrypoint-initdb.d"
+      - 50213:50211

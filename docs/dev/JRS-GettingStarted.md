@@ -27,7 +27,6 @@ The Java Regression Suite (JRS) runs on a remote machine. It relies on two types
      - `experiments` experiments to run.
      - `slack` slack details needed to post the results. Use `hedera-regression-test` channel for testing. `hedera-regression`/`hedera-regression-summary` channel needs to be used exclusively for nightly regression results.
      - `result` results folder in the local machine to download the logs after test.  
-     -  `db` postgres information 
      - other minor details.
     
 2. _Experiment configuration JSON :_ It holds specific information on the set up of the experiment and validations to be done to tell if it passed.  It majorly includes 
