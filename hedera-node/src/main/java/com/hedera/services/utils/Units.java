@@ -30,4 +30,6 @@ public final class Units {
 	 * Multiply this value to HBAR amount to get the num of tinybars
 	 */
 	public static final long HBARS_TO_TINYBARS = 100_000_000L;
+
+	public static final int SECS_IN_MINUTE = 60;
 }
