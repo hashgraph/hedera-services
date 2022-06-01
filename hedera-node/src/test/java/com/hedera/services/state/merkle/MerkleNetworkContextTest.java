@@ -90,7 +90,6 @@ class MerkleNetworkContextTest {
 			"012345678901234567890123456789012345678901234567".getBytes(StandardCharsets.UTF_8);
 	private final byte[] otherPreparedUpdateFileHash =
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
-	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private Instant firstConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
@@ -120,7 +119,6 @@ class MerkleNetworkContextTest {
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
 		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
-		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
 		given(seqNo.current()).willReturn(1234L);
@@ -147,7 +145,6 @@ class MerkleNetworkContextTest {
 		subject.setCongestionLevelStarts(congestionStarts());
 		subject.setStateVersion(stateVersion);
 		subject.updateAutoRenewSummaryCounts((int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
-		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
@@ -230,7 +227,6 @@ class MerkleNetworkContextTest {
 		var subjectCopy = subject.copy();
 
 		// expect:
-		assertSame(subjectCopy.lastMidnightBoundaryCheck(), subject.lastMidnightBoundaryCheck());
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
@@ -246,6 +242,9 @@ class MerkleNetworkContextTest {
 		assertNotSame(subject.getBlockHashes(), subjectCopy.getBlockHashes());
 		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
+		assertEquals(subjectCopy.areRewardsActivated(), subject.areRewardsActivated());
+		assertEquals(subjectCopy.getTotalStakedRewardStart(), subject.getTotalStakedRewardStart());
+		assertEquals(subjectCopy.getTotalStakedStart(), subject.getTotalStakedStart());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -287,7 +286,6 @@ class MerkleNetworkContextTest {
 		var subjectCopy = subject.copy();
 
 		// expect:
-		assertSame(subjectCopy.lastMidnightBoundaryCheck(), subject.lastMidnightBoundaryCheck());
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
@@ -315,7 +313,6 @@ class MerkleNetworkContextTest {
 	}
 
 	public static void assertEqualContexts(final MerkleNetworkContext a, final MerkleNetworkContext b) {
-		assertEquals(a.lastMidnightBoundaryCheck(), b.lastMidnightBoundaryCheck());
 		assertEquals(a.getConsensusTimeOfLastHandledTxn(), b.getConsensusTimeOfLastHandledTxn());
 		assertEquals(a.seqNo().current(), b.seqNo().current());
 		assertEquals(a.lastScannedEntity(), b.lastScannedEntity());
@@ -345,7 +342,6 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.updateCongestionStartsFrom(null));
 		assertThrows(MutabilityException.class, () -> subject.updateSnapshotsFrom(null));
 		assertThrows(MutabilityException.class, () -> subject.setStateVersion(1));
-		assertThrows(MutabilityException.class, () -> subject.setLastMidnightBoundaryCheck(null));
 		assertThrows(MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
@@ -386,17 +382,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void canSetLastMidnightBoundaryCheck() {
-		final var newLmbc = lastMidnightBoundaryCheck.plusSeconds(1L);
-
-		// when:
-		subject.setLastMidnightBoundaryCheck(newLmbc);
-
-		// then:
-		assertSame(newLmbc, subject.lastMidnightBoundaryCheck());
-	}
-
-	@Test
 	void syncsWork() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
@@ -421,7 +406,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -431,8 +415,9 @@ class MerkleNetworkContextTest {
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
-
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -453,7 +438,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -465,7 +449,9 @@ class MerkleNetworkContextTest {
 				"  Trailing block hashes are                  :: [{\"num\": 0, \"hash\": " +
 				"\"6162636461626364616263646162636461626364616263646162636461626364\"}, {\"num\": 1, \"hash\": " +
 				"\"6666636466666364666663646666636466666364666663646666636466666364\"}]\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		assertEquals(desired, subject.summarized());
 	}
@@ -486,69 +472,70 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
-
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
-
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
 				"    0 gas used (last decision time <N/A>)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
@@ -581,46 +568,46 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <NONE>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
-
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 		// and:
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: 1970-01-15T06:56:07.000000890Z\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
 				"  Entities touched last consensus second     :: 123\n" +
-				"  Throttle usage snapshots are               ::\n" +
+				"  Throttle usage snapshots are               :: \n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
 				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
-				"  Congestion level start times are           ::\n" +
+				"  Congestion level start times are           :: \n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z\n" +
 				"  Block number is                            :: 0\n" +
 				"  Block timestamp is                         :: 1970-01-15T06:56:07.000013579Z\n" +
 				"  Trailing block hashes are                  :: []\n" +
-				"  Staking Rewards Activated                  ::false";
-
+				"  Staking Rewards Activated                  :: false\n" +
+				"  Total StakedRewardStart is                 :: 0\n" +
+				"  Total StakedStart is                       :: 0";
 
 		// then:
 		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));

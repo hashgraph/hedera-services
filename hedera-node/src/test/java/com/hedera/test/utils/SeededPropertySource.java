@@ -477,7 +477,7 @@ public class SeededPropertySource {
 		);
 	}
 
-	public MerkleNetworkContext nextNetworkContext() {
+	public MerkleNetworkContext next0260NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
@@ -489,7 +489,7 @@ public class SeededPropertySource {
 		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
 		seeded.setStateVersion(nextUnsignedInt());
 		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
-		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
+		nextNullableInstant();
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
@@ -498,6 +498,32 @@ public class SeededPropertySource {
 		for (int i = 0; i < numBlocks; i++) {
 			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
 		}
+		return seeded;
+	}
+
+	public MerkleNetworkContext next0270NetworkContext() {
+		final var numThrottles = 5;
+		final var seeded = new MerkleNetworkContext();
+		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
+		seeded.setSeqNo(nextSeqNo());
+		seeded.updateLastScannedEntity(nextInRangeLong());
+		seeded.setMidnightRates(nextExchangeRates());
+		seeded.setUsageSnapshots(nextUsageSnapshots(numThrottles));
+		seeded.setGasThrottleUsageSnapshot(nextUsageSnapshot());
+		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
+		seeded.setStateVersion(nextUnsignedInt());
+		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
+		seeded.setPreparedUpdateFileNum(nextInRangeLong());
+		seeded.setPreparedUpdateFileHash(nextBytes(48));
+		seeded.setMigrationRecordsStreamed(nextBoolean());
+		final var numBlocks = nextNonZeroInt(16);
+		final var anInstant = nextInstant();
+		for (int i = 0; i < numBlocks; i++) {
+			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
+		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
 		return seeded;
 	}
 

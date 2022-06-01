@@ -21,6 +21,7 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -62,6 +63,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final GlobalDynamicProperties dynamicProperties;
 	private final StakePeriodManager stakePeriodManager;
 	private final StakeInfoManager stakeInfoManager;
+	private final AccountNumbers accountNumbers;
 
 	// The current and new staked id's of the change being previewed
 	private long curStakedId;
@@ -79,7 +81,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
-			final StakeInfoManager stakeInfoManager
+			final StakeInfoManager stakeInfoManager,
+			final AccountNumbers accountNumbers
 	) {
 		super(sideEffectsTracker);
 		this.stakeChangeManager = stakeChangeManager;
@@ -89,6 +92,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		this.dynamicProperties = dynamicProperties;
 		this.stakePeriodManager = stakePeriodManager;
 		this.stakeInfoManager = stakeInfoManager;
+		this.accountNumbers = accountNumbers;
 	}
 
 	@Override
@@ -139,7 +143,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (i < origN) {
 				updateStakedToMeSideEffects(account, stakeChangeScenarios[i], changes, pendingChanges);
 			}
-			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == 800) {
+			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == accountNumbers.stakingRewardAccount()) {
 				newFundingBalance = finalBalanceGiven(account, changes);
 			}
 		}
@@ -158,7 +162,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	) {
 		final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
 		if (rewardsPaid > 0) {
-			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
+			final var rewardAccountI = stakeChangeManager.findOrAdd(
+					accountNumbers.stakingRewardAccount(), pendingChanges);
 			updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
 			// No need to update newFundingBalance because if rewardsPaid > 0, rewards
 			// are already activated, and we don't need to consult newFundingBalance
@@ -277,7 +282,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private void activateStakingRewards() {
 		long todayNumber = stakePeriodManager.currentStakePeriod();
 
-		networkCtx.get().setStakingRewards(true);
+		networkCtx.get().setStakingRewardsActivated(true);
 		stakeInfoManager.clearRewardsHistory();
 		stakeChangeManager.setStakePeriodStart(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");

@@ -89,6 +89,8 @@ class BootstrapPropertiesTest {
 			entry("balances.nodeBalanceWarningThreshold", 0L),
 			entry("accounts.exchangeRatesAdmin", 57L),
 			entry("accounts.feeSchedulesAdmin", 56L),
+			entry("accounts.nodeRewardAccount", 801L),
+			entry("accounts.stakingRewardAccount", 800L),
 			entry("accounts.freezeAdmin", 58L),
 			entry("accounts.systemAdmin", 50L),
 			entry("accounts.systemDeleteAdmin", 59L),
@@ -191,7 +193,6 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
-			entry("rates.midnightCheckInterval", 1L),
 			entry("scheduling.whitelist", Set.of(
 					CryptoTransfer,
 					TokenMint,

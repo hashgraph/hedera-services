@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -92,6 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -170,6 +172,8 @@ class ServicesStateTest {
 	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
 	@Mock
 	private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
+	@Mock
+	private BootstrapProperties bootstrapProperties;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -544,7 +548,8 @@ class ServicesStateTest {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 
-		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(addressBook.getSize()).willReturn(3);
+		given(addressBook.getAddress(anyLong())).willReturn(address);
 		given(address.getMemo()).willReturn(bookMemo);
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
 		given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
@@ -574,6 +579,7 @@ class ServicesStateTest {
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
 		assertNotNull(subject.contractStorage());
+		assertNotNull(subject.stakingInfo());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
@@ -801,6 +807,11 @@ class ServicesStateTest {
 	}
 
 	private void setAllChildren() {
-		subject.createGenesisChildren(addressBook, 0);
+		given(addressBook.getSize()).willReturn(1);
+		given(addressBook.getAddress(0)).willReturn(address);
+		given(address.getId()).willReturn(0L);
+		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(3_000_000_000L);
+		given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+		subject.createGenesisChildren(addressBook, 0, bootstrapProperties);
 	}
 }

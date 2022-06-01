@@ -20,6 +20,7 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -43,6 +44,7 @@ import java.util.Map;
 
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
@@ -62,6 +64,8 @@ class StakeChangesInterceptorTest {
 	private StakePeriodManager stakePeriodManager;
 	@Mock
 	private StakeInfoManager stakeInfoManager;
+	@Mock
+	private AccountNumbers accountNumbers;
 
 	private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> changes;
 	private StakeAwareAccountsCommitsInterceptor subject;
@@ -69,9 +73,10 @@ class StakeChangesInterceptorTest {
 	@BeforeEach
 	void setUp() {
 		changes = new EntityChangeSet<>();
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		subject = new StakeAwareAccountsCommitsInterceptor(
 				sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager);
+				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers);
 	}
 
 	@Test
