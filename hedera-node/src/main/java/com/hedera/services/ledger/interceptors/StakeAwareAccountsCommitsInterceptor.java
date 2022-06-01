@@ -62,16 +62,14 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final StakePeriodManager stakePeriodManager;
 	private final StakeInfoManager stakeInfoManager;
 
-	// The current and new staked id's of the account being processed
+	// The current and new staked id's of the change being previewed
 	private long curStakedId;
 	private long newStakedId;
+	private long newFundingBalance;
 	private boolean rewardsActivated;
-	// boolean to track if the account has been rewarded already with one of the pending changes
+	// Tracks if the account has been rewarded already with one of the pending changes
 	private boolean[] hasBeenRewarded = new boolean[UNREALISTIC_NUM_CHANGES];
 	private StakeChangeScenario[] stakeChangeScenarios = new StakeChangeScenario[UNREALISTIC_NUM_CHANGES];
-
-	private long newFundingBalance;
-
 
 	public StakeAwareAccountsCommitsInterceptor(
 			final SideEffectsTracker sideEffectsTracker,
@@ -116,7 +114,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		// Iterates through the change set again to update node stakes; we do this is in a
 		// separate loop to ensure all stakedToMe fields have their final values
 		updateNodeStakes(pendingChanges);
-		updateFundingRewardBalance(pendingChanges);
+		finalizeRewardBalanceChange(pendingChanges);
 
 		super.preview(pendingChanges);
 
@@ -127,7 +125,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	private void updateAccountStakes(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		final var origN = pendingChanges.size();
-		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+		// We re-compute pendingChanges.size() in the for condition b/c stakeToMe side effects can increase it
+		for (int i = 0; i < pendingChanges.size(); i++) {
 			final var account = pendingChanges.entity(i);
 			final var changes = pendingChanges.changes(i);
 			hasBeenRewarded[i] = false;
@@ -140,9 +139,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			// have changed directly. Furthermore, its balance can only have changed via reward---but if so, it
 			// must be staked to a node; and again staked-to-me side effects are impossible
 			if (i < origN) {
-				n = updateStakedToMeSideEffects(account, stakeChangeScenarios[i], changes, pendingChanges);
+				updateStakedToMeSideEffects(i, account, stakeChangeScenarios[i], changes, pendingChanges);
 			}
-
 			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == 800) {
 				newFundingBalance = finalBalanceGiven(account, changes);
 			}
@@ -157,7 +155,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		return StakeChangeScenario.forCase(curStakedId, newStakedId);
 	}
 
-	private void updateFundingRewardBalance(
+	private void finalizeRewardBalanceChange(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
@@ -192,45 +190,43 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 	}
 
-	int updateStakedToMeSideEffects(
+	@VisibleForTesting
+	void updateStakedToMeSideEffects(
+			final int i,
 			final MerkleAccount account,
 			final StakeChangeScenario scenario,
 			final Map<AccountProperty, Object> changes,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		int n = pendingChanges.size();
 		if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
 			// Common case that deserves performance optimization
 			final var delta = finalBalanceGiven(account, changes) - account.getBalance();
-			n = alterStakedToMe(n, curStakedId, delta, pendingChanges);
+			alterStakedToMe(i, curStakedId, delta, pendingChanges);
 		} else {
 			if (scenario.withdrawsFromAccount()) {
-				n = alterStakedToMe(n, curStakedId, -account.getBalance(), pendingChanges);
+				alterStakedToMe(i, curStakedId, -account.getBalance(), pendingChanges);
 			}
 			if (scenario.awardsToAccount()) {
-				n = alterStakedToMe(n, newStakedId, finalBalanceGiven(account, changes), pendingChanges);
+				alterStakedToMe(i, newStakedId, finalBalanceGiven(account, changes), pendingChanges);
 			}
 		}
-		return n;
 	}
 
-	private int alterStakedToMe(
-			int n,
+	private void alterStakedToMe(
+			final int i,
 			final long accountNum,
 			final long delta,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		if (delta == 0) {
-			return n;
+		if (delta != 0) {
+			final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
+			updateStakedToMe(stakeeI, delta, pendingChanges);
+			if (stakeeI < i && !hasBeenRewarded[stakeeI]) {
+				// If this stakee has already been previewed, and wasn't rewarded, we should
+				// re-check if this stakedToMe change has now made it eligible for a reward
+				payRewardIfRewardable(pendingChanges, stakeeI);
+			}
 		}
-		final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
-		updateStakedToMe(stakeeI, delta, pendingChanges);
-		if (stakeeI == n) {
-			n++;
-		} else if (!hasBeenRewarded[stakeeI]) {
-			payRewardIfRewardable(pendingChanges, stakeeI);
-		}
-		return n;
 	}
 
 	private void payRewardIfRewardable(
@@ -264,6 +260,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	 * 		account property changes
 	 * @return true if rewardable, false otherwise
 	 */
+	@VisibleForTesting
 	boolean isRewardable(
 			@Nullable final MerkleAccount account,
 			@NotNull final Map<AccountProperty, Object> changes

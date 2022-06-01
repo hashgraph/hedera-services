@@ -53,17 +53,17 @@ class StakeChangeScenarioTest {
 
 	@Test
 	void returnsExpectedScenarios() {
-		assertEquals(forCase(0, -1), StakeChangeScenario.FROM_ABSENT_TO_NODE);
-		assertEquals(forCase(1, -1), StakeChangeScenario.FROM_ACCOUNT_TO_NODE);
-		assertEquals(forCase(-1, -1), StakeChangeScenario.FROM_NODE_TO_NODE);
+		assertEquals(StakeChangeScenario.FROM_ABSENT_TO_NODE, forCase(0, -1));
+		assertEquals(StakeChangeScenario.FROM_ACCOUNT_TO_NODE, forCase(1, -1));
+		assertEquals(StakeChangeScenario.FROM_NODE_TO_NODE, forCase(-1, -1));
 
-		assertEquals(forCase(0, 1), StakeChangeScenario.FROM_ABSENT_TO_ACCOUNT);
-		assertEquals(forCase(1, 1), StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT);
-		assertEquals(forCase(-1, 1), StakeChangeScenario.FROM_NODE_TO_ACCOUNT);
+		assertEquals(StakeChangeScenario.FROM_ABSENT_TO_ACCOUNT, forCase(0, 1));
+		assertEquals(StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT, forCase(1, 1));
+		assertEquals(StakeChangeScenario.FROM_NODE_TO_ACCOUNT, forCase(-1, 1));
 
-		assertEquals(forCase(0, 0), StakeChangeScenario.FROM_ABSENT_TO_ABSENT);
-		assertEquals(forCase(1, 0), StakeChangeScenario.FROM_ACCOUNT_TO_ABSENT);
-		assertEquals(forCase(-1, 0), StakeChangeScenario.FROM_NODE_TO_ABSENT);
+		assertEquals(StakeChangeScenario.FROM_ABSENT_TO_ABSENT, forCase(0, 0));
+		assertEquals(StakeChangeScenario.FROM_ACCOUNT_TO_ABSENT, forCase(1, 0));
+		assertEquals(StakeChangeScenario.FROM_NODE_TO_ABSENT, forCase(-1, 0));
 	}
 
 	private void assertSemanticsAre(

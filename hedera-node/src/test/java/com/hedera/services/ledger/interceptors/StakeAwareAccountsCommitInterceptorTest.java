@@ -357,11 +357,12 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		subject.setCurStakedId(1L);
 		subject.setNewStakedId(2L);
-		assertEquals(4, subject.updateStakedToMeSideEffects(
+		subject.updateStakedToMeSideEffects(
+				0,
 				counterparty,
 				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
 				pendingChanges.changes(0),
-				pendingChanges));
+				pendingChanges);
 		assertEquals(-555L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 		assertEquals(100L, pendingChanges.changes(3).get(AccountProperty.STAKED_TO_ME));
 	}
@@ -383,31 +384,31 @@ class StakeAwareAccountsCommitInterceptorTest {
 		map.put(AccountProperty.STAKED_TO_ME, 2000L);
 
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
-		pendingChanges.include(counterpartyId, counterparty, map);
 		pendingChanges.include(partyId, party, stakingFundChanges);
 		pendingChanges.include(stakingFundId, stakingFund, new HashMap<>(stakingFundChanges));
+		pendingChanges.include(counterpartyId, counterparty, map);
 
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
 				stakeInfoManager);
 
 		final var hasBeenRewarded = new boolean[64];
+		hasBeenRewarded[0] = false;
 		hasBeenRewarded[1] = false;
-		hasBeenRewarded[2] = false;
 		subject.setHasBeenRewarded(hasBeenRewarded);
 		subject.setCurStakedId(123L);
 		subject.setNewStakedId(123L);
 		assertEquals(3, pendingChanges.size());
 
-		assertEquals(
-				3,
-				subject.updateStakedToMeSideEffects(
-						counterparty,
-						StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
-						pendingChanges.changes(0),
-						pendingChanges));
-		assertEquals(2000L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
-		assertEquals(1545L, pendingChanges.changes(1).get(AccountProperty.STAKED_TO_ME));
+		subject.updateStakedToMeSideEffects(
+				2,
+				counterparty,
+				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
+				pendingChanges.changes(0),
+				pendingChanges);
+
+		assertEquals(1545L, pendingChanges.changes(0).get(AccountProperty.STAKED_TO_ME));
+		assertEquals(2000L, pendingChanges.changes(1).get(AccountProperty.STAKED_TO_ME));
 		assertEquals(2000L, pendingChanges.changes(2).get(AccountProperty.STAKED_TO_ME));
 	}
 
