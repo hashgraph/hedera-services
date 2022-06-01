@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -464,7 +466,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 		long receivedBalance = 0;
 		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
 			final var id = adjust.getAccountID();
-			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(defaultPayer)) {
+			if (id.getAccountNum() < 100 ||
+					id.equals(sponsor) ||
+					id.equals(defaultPayer) ||
+					id.getAccountNum() == 800 ||
+					id.getAccountNum() == 801) {
 				continue;
 			}
 			receivedBalance = adjust.getAmount();

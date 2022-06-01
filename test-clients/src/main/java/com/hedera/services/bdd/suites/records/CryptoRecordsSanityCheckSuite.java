@@ -112,11 +112,11 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec cryptoCreateRecordSanityChecks() {
 		return defaultHapiSpec("CryptoCreateRecordSanityChecks")
 				.given(
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)
 				).when(
 						cryptoCreate("test").via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of("test", FUNDING, NODE, DEFAULT_PAYER)),
+						validateTransferListForBalances("txn", List.of("test", FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -125,13 +125,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
 				.given(flattened(
 						cryptoCreate("test"),
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "test")
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")
 				)).when(
 						cryptoDelete("test").via("txn").transfer(DEFAULT_PAYER)
 				).then(
 						validateTransferListForBalances(
 								"txn",
-								List.of(FUNDING, NODE, DEFAULT_PAYER, "test"),
+								List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test"),
 								Set.of("test")),
 						validateRecordTransactionFees("txn")
 				);
@@ -141,13 +141,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("CryptoTransferRecordSanityChecks")
 				.given(flattened(
 						cryptoCreate("a").balance(100_000L),
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "a")
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "a")
 				)).when(
 						cryptoTransfer(
 								tinyBarsFromTo(DEFAULT_PAYER, "a", 1_234L)
 						).via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "a")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "a")),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -157,11 +157,11 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						cryptoCreate("test"),
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
-						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "test")
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")
 				)).when(
 						cryptoUpdate("test").key("newKey").via("txn").fee(500_000L).payingWith("test")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -172,7 +172,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						cryptoCreate("payer").balance(BALANCE),
 						cryptoCreate("receiver"),
-						takeBalanceSnapshots(FUNDING, NODE, "payer", "receiver")
+						takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, "payer", "receiver")
 				)).when(
 						cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
 								.payingWith("payer")
@@ -189,7 +189,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				).then(
 						validateTransferListForBalances(
 								List.of("txn1", "txn2"),
-								List.of(FUNDING, NODE, "payer", "receiver"))
+								List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, "payer", "receiver"))
 				);
 	}
 
@@ -225,4 +225,3 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 		return log;
 	}
 }
-

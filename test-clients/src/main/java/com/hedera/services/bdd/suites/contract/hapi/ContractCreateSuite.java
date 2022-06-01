@@ -158,9 +158,61 @@ public class ContractCreateSuite extends HapiApiSuite {
 						autoAssociationSlotsAppearsInInfo(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 //						canCallPendingContractSafely(),
+						createContractWithStakingFields()
 				}
 		);
 	}
+
+	HapiApiSpec createContractWithStakingFields() {
+		final var contract = "CreateTrivial";
+		return defaultHapiSpec("createContractWithStakingFields")
+				.given(
+						uploadInitCode(contract),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged()
+				).when(
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(true)
+								.stakedAccountId("0.0.10"),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakingNodeId()
+										.stakedAccountId("0.0.10"))
+								.logged()
+				).then(
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedNodeId(0),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged(),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedAccountId("0.0.10"),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakingNodeId()
+										.stakedAccountId("0.0.10"))
+								.logged()
+				);
+	}
+
 
 	private HapiApiSpec autoAssociationSlotsAppearsInInfo() {
 		final int maxAutoAssociations = 100;

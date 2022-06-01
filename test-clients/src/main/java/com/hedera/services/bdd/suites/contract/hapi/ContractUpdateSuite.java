@@ -99,8 +99,39 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						eip1014AddressAlwaysHasPriority(),
 						immutableContractKeyFormIsStandard(),
 						updateAutoRenewAccountWorks(),
+						updateStakingFieldsWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec updateStakingFieldsWorks() {
+		final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+		return defaultHapiSpec("updateStakingFieldsWorks")
+				.given(
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged()
+				)
+				.when(
+						contractUpdate(CONTRACT)
+								.newDeclinedReward(false)
+								.newStakedAccountId("0.0.10"),
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakingNodeId()
+										.stakedAccountId("0.0.10"))
+								.logged()
+				)
+				.then(
+				);
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2877
