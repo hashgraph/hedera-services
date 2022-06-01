@@ -133,9 +133,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (!hasBeenRewarded[i] && isRewardable(account, changes)) {
 				payReward(i, account, changes);
 			}
-			// If we are outside the original change set, this is a stakee account; and its stakedToMe cannot
-			// have changed directly. Furthermore, its balance can only have changed via reward---but if so, it
-			// must be staked to a node, and again staked-to-me side effects are impossible
+			// If we are outside the original change set, this is a stakee account; and its stakedId cannot
+			// have changed directly. Furthermore, its balance can only have changed via reward---but if so,
+			// it must be staked to a node, and again staked-to-me side effects are impossible
 			if (i < origN) {
 				updateStakedToMeSideEffects(account, stakeChangeScenarios[i], changes, pendingChanges);
 			}
