@@ -253,6 +253,12 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void zeroRewardHasNoEffect() {
+		subject.trackRewardPayment(1234L, 0);
+		assertEquals(0, subject.getNumRewardedAccounts());
+	}
+
+	@Test
 	void tracksAndResetsRewardsPaidAsExpected() {
 		final var rewardA = 1_000L;
 		final var rewardB = 333L;
@@ -427,7 +433,7 @@ class SideEffectsTrackerTest {
 					put(fungibleAllowanceId, nftAllowance1);
 					put(nftAllowanceId, nftAllowance2);
 				}});
-	}};
+			}};
 	private static final UniqueToken nft1 = new UniqueToken(
 			Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
 	private static final UniqueToken nft2 = new UniqueToken(
