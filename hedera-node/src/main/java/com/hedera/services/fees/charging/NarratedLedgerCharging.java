@@ -83,7 +83,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
-		stakingRewardAccountId = asAccount(EntityId.fromIdentityCode((int) accountNumbers.stakingRewardAccount()));
+		stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
 		nodeRewardAccountId = asAccount(EntityId.fromIdentityCode((int) accountNumbers.nodeRewardAccount()));
 	}
 
