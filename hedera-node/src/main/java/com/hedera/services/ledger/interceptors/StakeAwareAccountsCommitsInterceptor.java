@@ -266,14 +266,11 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			@Nullable final MerkleAccount account,
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
-		Boolean changedDecline = (Boolean) changes.get(DECLINE_REWARD);
 		return account != null
 				&& rewardsActivated
 				&& account.getStakedId() < 0
 				&& hasStakeFieldChanges(changes)
-				&& stakePeriodManager.isRewardable(account.getStakePeriodStart())
-				&& !Boolean.TRUE.equals(changedDecline)
-				&& (!account.isDeclinedReward() || Boolean.FALSE.equals(changedDecline));
+				&& stakePeriodManager.isRewardable(account.getStakePeriodStart());
 	}
 
 	/**
