@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,19 @@ class EntityChangeSetTest {
 		assertEquals(2, subject.size());
 		assertChangeAt(0, 1L, null, oneChanges);
 		assertChangeAt(1, 2L, a, twoChanges);
+	}
+
+	@Test
+	void toStringWorks() {
+		final var desired = "EntityChangeSet{ids=[1, 2], entities=[null, TestAccount{flag=false, thing=java.lang" +
+				".Object@4b168fa9, value=666, tokenThing=42, hbarAllowances=MISSING, fungibleAllowances=MISSING, " +
+				"nftAllowances=MISSING}], changes=[{FLAG=false}, {FLAG=false}], numRetainedChanges=2}";
+
+		final Map<TestAccountProperty, Object> twoChanges = Map.of(TestAccountProperty.FLAG, false);
+		subject.include(1L, null, oneChanges);
+		subject.include(2L, a, twoChanges);
+
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test
@@ -91,5 +104,6 @@ class EntityChangeSetTest {
 		assertEquals(a, subject.entity(i));
 		assertEquals(p, subject.changes(i));
 	}
+
 	private static final Map<TestAccountProperty, Object> oneChanges = Map.of(TestAccountProperty.FLAG, false);
 }
