@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -28,6 +29,9 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,6 +41,9 @@ import java.util.List;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 
 @Singleton
@@ -44,19 +51,26 @@ public class MintLogic {
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public MintLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore) {
+	public MintLogic(
+			OptionValidator validator,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void mint(final Id targetId,
-					 int metaDataCount,
-					 long amount,
-					 List<ByteString> metaDataList,
-					 Instant consensusTime) {
+			int metaDataCount,
+			long amount,
+			List<ByteString> metaDataList,
+			Instant consensusTime) {
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetId);
@@ -80,10 +94,27 @@ public class MintLogic {
 		accountStore.commitAccount(token.getTreasury());
 	}
 
+	public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+		TokenMintTransactionBody op = txn.getTokenMint();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		return validateTokenOpsWith(
+				op.getMetadataCount(),
+				op.getAmount(),
+				dynamicProperties.areNftsEnabled(),
+				INVALID_TOKEN_MINT_AMOUNT,
+				op.getMetadataList(),
+				validator::maxBatchSizeMintCheck,
+				validator::nftMetadataCheck);
+	}
+
 	private void validateMinting(OptionValidator validator,
-								 Token token,
-								 int metaDataCount,
-								 TypedTokenStore tokenStore) {
+			Token token,
+			int metaDataCount,
+			TypedTokenStore tokenStore) {
 		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
 			final var proposedTotal = tokenStore.currentMintedNfts() + metaDataCount;
 			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);

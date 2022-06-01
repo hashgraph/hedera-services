@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,12 +81,28 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	void resultsInNoOpForNoOwnershipChanges() {
 		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
 		var nft = mock(MerkleUniqueToken.class);
-		var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
 
 		given(changes.size()).willReturn(1);
 		given(changes.entity(0)).willReturn(nft);
-		given(changes.changes(0)).willReturn(change);
-		given(change.containsKey(NftProperty.OWNER)).willReturn(false);
+		given(changes.changes(0)).willReturn(Collections.emptyMap());
+
+		subject.preview(changes);
+
+		verifyNoInteractions(uniqueTokensLinkManager);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void resultsInNoOpForSameOwnershipChange() {
+		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
+		var nft = mock(MerkleUniqueToken.class);
+		final long ownerNum = 1111L;
+		final var owner = EntityNum.fromLong(ownerNum);
+
+		given(changes.size()).willReturn(1);
+		given(changes.entity(0)).willReturn(nft);
+		given(changes.changes(0)).willReturn(Map.of(NftProperty.OWNER, owner.toEntityId()));
+		given(nft.getOwner()).willReturn(owner.toEntityId());
 
 		subject.preview(changes);
 

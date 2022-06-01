@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.compose;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,9 +41,10 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PerpetualLocalCalls extends HapiApiSuite {
@@ -92,7 +92,7 @@ public class PerpetualLocalCalls extends HapiApiSuite {
 				var op = contractCallLocal("ChildStorage", "getMyValue")
 								.noLogging()
 								.has(resultWith().resultThruAbi(
-										ContractResources.GET_MY_VALUE_ABI,
+										getABIFor(FUNCTION, "getMyValue", "ChildStorage"),
 										isLiteralResult(new Object[] { BigInteger.valueOf(73) })));
 				var soFar = totalBeforeFailure.getAndIncrement();
 				if (soFar % 1000 == 0) {

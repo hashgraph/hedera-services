@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.autorenew;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_TO_TWO_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -47,7 +45,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -60,6 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -68,6 +66,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.leavingAutoRenewDisabledWith;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -104,17 +104,15 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 	private HapiApiSpec contractCallRestrictionsNotEnforced() {
 		final var civilian = "misc";
 		final var notDetachedAccount = "gone";
-		final var bytecode = "bytecode";
-		final var contract = "doubleSend";
+		final var contract = "DoubleSend";
 		final AtomicInteger detachedNum = new AtomicInteger();
 		final AtomicInteger civilianNum = new AtomicInteger();
 
 		return defaultHapiSpec("ContractCallRestrictionsNotEnforced")
 				.given(
-						fileCreate(bytecode).path(ContractResources.DOUBLE_SEND_BYTECODE_PATH),
+						uploadInitCode(contract),
 						contractCreate(contract)
-								.balance(ONE_HBAR)
-								.bytecode(bytecode),
+								.balance(ONE_HBAR),
 						cryptoCreate(civilian)
 								.balance(0L),
 						cryptoCreate(notDetachedAccount)
@@ -127,7 +125,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 							detachedNum.set((int) spec.registry().getAccountID(notDetachedAccount).getAccountNum());
 							civilianNum.set((int) spec.registry().getAccountID(civilian).getAccountNum());
 						}),
-						sourcing(() -> contractCall(contract, SEND_TO_TWO_ABI, new Object[] {
+						sourcing(() -> contractCall(contract, getABIFor(FUNCTION, "donate", contract), new Object[] {
 								civilianNum.get(), detachedNum.get()
 						}))
 				).then(

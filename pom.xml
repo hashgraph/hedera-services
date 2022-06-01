@@ -209,7 +209,7 @@
 		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
-		<besu.version>21.10.9</besu.version>
+		<besu.version>22.4.1</besu.version>
 		<besu-native.version>0.4.3</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
@@ -228,7 +228,7 @@
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
 		<swirlds.version>0.26.2</swirlds.version>
-		<tuweni.version>2.1.0</tuweni.version>
+		<tuweni.version>2.2.0</tuweni.version>
 
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
@@ -670,7 +670,12 @@
 		<dependency>
 			<groupId>org.apache.tuweni</groupId>
 			<artifactId>tuweni-bytes</artifactId>
-			<version>2.1.0</version>
+			<version>${tuweni.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tuweni</groupId>
+			<artifactId>tuweni-units</artifactId>
+			<version>${tuweni.version}</version>
 		</dependency>
 		<!-- Test dependencies -->
 		<dependency>

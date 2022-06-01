@@ -34,7 +34,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -141,7 +140,7 @@ class CallLocalEvmTxProcessorTest {
 
 		var evmAccount = mock(EvmAccount.class);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
@@ -171,7 +170,7 @@ class CallLocalEvmTxProcessorTest {
 	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-		given(codeCache.getIfPresent(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
 		final MessageFrame.Builder commonInitialFrame =
@@ -179,9 +178,9 @@ class CallLocalEvmTxProcessorTest {
 						.messageFrameStack(mock(Deque.class))
 						.maxStackSize(MAX_STACK_SIZE)
 						.worldUpdater(mock(WorldUpdater.class))
-						.initialGas(mock(Gas.class))
+						.initialGas(1_000_000L)
 						.originator(sender.getId().asEvmAddress())
-						.gasPrice(mock(Wei.class))
+						.gasPrice(Wei.ZERO)
 						.sender(sender.getId().asEvmAddress())
 						.value(Wei.of(transaction.getValue().getAsBigInteger()))
 						.apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
@@ -189,7 +188,7 @@ class CallLocalEvmTxProcessorTest {
 						.depth(0)
 						.completer(__ -> {
 						})
-						.miningBeneficiary(mock(Address.class))
+						.miningBeneficiary(Address.ZERO)
 						.blockHashLookup(h -> null);
 		//when:
 		MessageFrame buildMessageFrame = callLocalEvmTxProcessor.buildInitialFrame(commonInitialFrame,
@@ -207,26 +206,26 @@ class CallLocalEvmTxProcessorTest {
 
 		var evmAccount = mock(EvmAccount.class);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
 				mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.getIfPresent(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
 
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
 		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
 
-		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
 		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
+		given(updater.getSbhRefund()).willReturn(0L);
 	}
 }
