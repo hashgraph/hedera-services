@@ -56,8 +56,7 @@ permissions:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: ubuntu-latest
-    #runs-on: [self-hosted, Linux, platform, standard, ephemeral]
+    runs-on: [self-hosted, Linux]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
