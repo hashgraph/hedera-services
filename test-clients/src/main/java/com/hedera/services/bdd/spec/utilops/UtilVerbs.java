@@ -903,7 +903,9 @@ public class UtilVerbs {
 		return validateRecordTransactionFees(txn,
 				Set.of(
 						HapiPropertySource.asAccount("0.0.3"),
-						HapiPropertySource.asAccount("0.0.98")));
+						HapiPropertySource.asAccount("0.0.98"),
+						HapiPropertySource.asAccount("0.0.800"),
+						HapiPropertySource.asAccount("0.0.801")));
 	}
 
 	public static HapiSpecOperation validateRecordTransactionFees(String txn, Set<AccountID> feeRecipients) {
