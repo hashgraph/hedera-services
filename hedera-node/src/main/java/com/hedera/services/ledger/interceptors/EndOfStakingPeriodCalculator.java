@@ -151,6 +151,8 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	private long stakingRewardsAccountBalance() {
-		return accounts.get().get(EntityNum.fromInt(800)).getBalance();
+		return accounts.get()
+				.get(EntityNum.fromLong(properties.getLongProperty("accounts.stakingRewardAccount")))
+				.getBalance();
 	}
 }

@@ -31,7 +31,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -53,8 +52,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
 	public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
-	public static final List<EntityNum> STAKING_FUND_ACCOUNTS =
-			List.of(EntityNum.fromLong(800L), EntityNum.fromLong(801L));
 
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
@@ -98,8 +95,12 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			}
 		}
 
-		for (final var num : STAKING_FUND_ACCOUNTS) {
-			final var id = num.toGrpcAccountId();
+		final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
+		final var stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
+		final var nodeRewardAccountNum = accountNums.nodeRewardAccount();
+		final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
+		final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
+		for (final var id : stakingFundAccounts) {
 			if (!accounts.contains(id)) {
 				final var stakingFundAccount = new MerkleAccount();
 				customizeAsStakingFund(stakingFundAccount);

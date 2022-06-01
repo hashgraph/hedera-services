@@ -101,6 +101,7 @@ class EndOfStakingPeriodCalculatorTest {
 
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(10_000_000_000L);
+		given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(stakingRewardAccount);
 		given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
 		given(account_800.getBalance()).willReturn(balance_800);
 		given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2, nodeNum3));
@@ -135,6 +136,7 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(expectedMidnightTime, subject.getMidnightTime(consensusTime));
 	}
 
+	final long stakingRewardAccount = 800L;
 	final long minStake = 100L;
 	final long maxStake = 800L;
 	final long stakeToReward1 = 700L;

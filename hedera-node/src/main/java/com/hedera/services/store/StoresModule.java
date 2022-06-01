@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -146,7 +147,8 @@ public interface StoresModule {
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager manager,
 			final StakePeriodManager stakePeriodManager,
-			final StakeInfoManager stakeInfoManager
+			final StakeInfoManager stakeInfoManager,
+			final AccountNumbers accountNumbers
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -155,7 +157,7 @@ public interface StoresModule {
 				new ChangeSummaryManager<>());
 		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker,
 				networkCtx, dynamicProperties, rewardCalculator, manager, stakePeriodManager,
-				stakeInfoManager);
+				stakeInfoManager, accountNumbers);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

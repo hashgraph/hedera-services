@@ -20,6 +20,7 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -92,6 +93,8 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleAccount merkleAccount;
+	@Mock
+	private AccountNumbers accountNumbers;
 
 	private StakeInfoManager stakeInfoManager;
 
@@ -103,13 +106,14 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 	private final EntityNum node0Id = EntityNum.fromLong(0L);
 	private final EntityNum node1Id = EntityNum.fromLong(1L);
+	private final long stakingRewardAccountNum = 800L;
 
 	@BeforeEach
 	void setUp() throws NegativeAccountBalanceException {
 		stakingInfo = buildsStakingInfoMap();
 		stakeInfoManager = new StakeInfoManager(() -> stakingInfo);
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager);
+				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers);
 		reset();
 	}
 
@@ -180,6 +184,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		//rewards are not activated, threshold is less but balance for 0.0.800 is not increased
 		subject.setRewardsActivated(false);
 		given(dynamicProperties.getStakingStartThreshold()).willReturn(20L);
+		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccountNum);
 
 		subject.preview(changes);
 
@@ -254,6 +259,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		given(stakePeriodManager.currentStakePeriod()).willReturn(19132L);
 		given(stakeChangeManager.findOrAdd(eq(800L), any())).willReturn(2);
+		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccountNum);
 
 		// rewardsSumHistory is not cleared
 		assertEquals(5, stakingInfo.get(node0Id).getRewardSumHistory()[0]);
@@ -350,7 +356,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager);
+				stakeInfoManager, accountNumbers);
 
 		final var hasBeenRewarded = new boolean[64];
 		hasBeenRewarded[1] = true;
@@ -386,7 +392,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 
 		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager);
+				stakeInfoManager, accountNumbers);
 
 		final var hasBeenRewarded = new boolean[64];
 		hasBeenRewarded[1] = false;
@@ -410,7 +416,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final StakeChangeManager manager = new StakeChangeManager(stakeInfoManager, () -> accounts);
 		final var subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx,
 				dynamicProperties,
-				rewardCalculator, manager, stakePeriodManager, stakeInfoManager);
+				rewardCalculator, manager, stakePeriodManager, stakeInfoManager, accountNumbers);
 
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 		final var pendingChanges = buildPendingAccountStakeChanges();

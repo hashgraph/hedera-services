@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
@@ -67,20 +68,23 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private EntityNum nodeId;
 	private EntityNum payerId;
 
-	public static final AccountID STAKING_REWARD_FUND_ACCOUNT = asAccount(EntityId.fromIdentityCode(800));
-	private static final AccountID NODE_REWARD_FUND_ACCOUNT = asAccount(EntityId.fromIdentityCode(801));
+	private final AccountID stakingRewardAccountId;
+	private final AccountID nodeRewardAccountId;
 
 	@Inject
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			AccountNumbers accountNumbers
 	) {
 		this.accounts = accounts;
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
+		stakingRewardAccountId = asAccount(EntityId.fromIdentityCode((int) accountNumbers.stakingRewardAccount()));
+		nodeRewardAccountId = asAccount(EntityId.fromIdentityCode((int) accountNumbers.nodeRewardAccount()));
 	}
 
 	@Override
@@ -237,8 +241,8 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		final var fundingAccountFee = totalFee - stakingRewardFee - nodeRewardFee;
 
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAccountFee);
-		ledger.adjustBalance(STAKING_REWARD_FUND_ACCOUNT, stakingRewardFee);
-		ledger.adjustBalance(NODE_REWARD_FUND_ACCOUNT, nodeRewardFee);
+		ledger.adjustBalance(stakingRewardAccountId, stakingRewardFee);
+		ledger.adjustBalance(nodeRewardAccountId, nodeRewardFee);
 	}
 
 	private long calculateStakingRewardFee(long totalFee) {
