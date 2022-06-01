@@ -52,7 +52,6 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 @Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
-	static final long IS_MIDNIGHT_CHECK_RATE_SECS = 1;
 
 	private final int issResetPeriod;
 
@@ -122,29 +121,15 @@ public class NetworkCtxManager {
 	public void advanceConsensusClockTo(Instant consensusTime) {
 		final var networkCtxNow = networkCtx.get();
 		final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
-		final var lastMidnightBoundaryCheck = networkCtxNow.lastMidnightBoundaryCheck();
-
-		if (lastMidnightBoundaryCheck != null) {
-			final long elapsedInterval = consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond();
-
-			/* We only check whether the midnight rates should be updated every intervalSecs in consensus time */
-			if (elapsedInterval >= IS_MIDNIGHT_CHECK_RATE_SECS) {
-				/* If the lastMidnightBoundaryCheck was in a different UTC day, we update the midnight rates
-				* and perform end of staking period calculations */
-				if (isNextDay.test(lastMidnightBoundaryCheck, consensusTime)) {
-					networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
-					endOfStakingPeriodCalculator.updateNodes(consensusTime);
-				}
-				/* And mark this as the last time we checked the midnight boundary */
-				networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
-			}
-		} else {
-			/* The first transaction after genesis will initialize the lastMidnightBoundaryCheck */
-			networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
-		}
 
 		if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
 			consensusSecondJustChanged = true;
+			// We're in a new second, so check if it's the first of a UTC calendar day; there are
+			// some special actions that trigger on the first transaction after midnight
+			if (lastConsensusTime == null || isNextDay.test(lastConsensusTime, consensusTime)) {
+				networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
+				endOfStakingPeriodCalculator.updateNodes(consensusTime);
+			}
 		} else {
 			consensusSecondJustChanged = false;
 		}

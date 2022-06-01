@@ -45,7 +45,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
-import static com.hedera.services.state.logic.NetworkCtxManager.IS_MIDNIGHT_CHECK_RATE_SECS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -57,7 +56,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
@@ -293,6 +291,15 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void relaxesIssInfoIfConsensusTimeOfRecentAlertIsEmpty() {
+		var oldMidnightRates = new ExchangeRates(
+			1, 12, 1_234_567L,
+			1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(issInfo.status()).willReturn(IssEventStatus.ONGOING_ISS);
 		given(issInfo.consensusTimeOfRecentAlert()).willReturn(Optional.empty());
 
@@ -305,6 +312,17 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void doesNothingWithIssInfoIfNotOngoing() {
+		// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
+
 		// when:
 		subject.advanceConsensusClockTo(sometime);
 
@@ -315,14 +333,24 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void advancesClockAsExpectedWhenFirstTxn() {
+	void advancesClockAsExpectedWhenFirstTxn() {// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(null);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		assertEquals(oldMidnightRates, curRates);
 	}
 
 	@Test
@@ -336,11 +364,9 @@ class NetworkCtxManagerTest {
 				1, 150, 2_345_678L);
 		// and:
 		subject.setIsNextDay(shouldUpdateMidnightRates);
-		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(IS_MIDNIGHT_CHECK_RATE_SECS);
 
-		given(shouldUpdateMidnightRates.test(lastBoundaryCheck, sometimeNextDay)).willReturn(true);
+		given(shouldUpdateMidnightRates.test(sometime, sometimeNextDay)).willReturn(true);
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
-		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(lastBoundaryCheck);
 		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -349,7 +375,6 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
 		assertEquals(oldMidnightRates, curRates);
 	}
 
@@ -358,8 +383,6 @@ class NetworkCtxManagerTest {
 		// setup:
 		subject.setIsNextDay(shouldUpdateMidnightRates);
 
-		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((IS_MIDNIGHT_CHECK_RATE_SECS)));
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
@@ -367,42 +390,6 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
-	}
-
-	@Test
-	void doesntPerformMidnightCheckIfNotInInterval() {
-		// setup:
-		subject.setIsNextDay(shouldUpdateMidnightRates);
-
-		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((IS_MIDNIGHT_CHECK_RATE_SECS - 1)));
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.advanceConsensusClockTo(sometimeNextDay);
-
-		// then:
-		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx, never()).setLastMidnightBoundaryCheck(sometimeNextDay);
-		verifyNoInteractions(shouldUpdateMidnightRates);
-	}
-
-	@Test
-	void justUpdatesLastBoundaryCheckWhenItIsNull() {
-		// setup:
-		subject.setIsNextDay(shouldUpdateMidnightRates);
-
-		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(null);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.advanceConsensusClockTo(sometimeNextDay);
-
-		// then:
-		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
-		verifyNoInteractions(shouldUpdateMidnightRates);
 	}
 
 	@Test
@@ -437,6 +424,17 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void recognizesFirstTxnMustBeFirstInSecond() {
+		// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
+
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
 

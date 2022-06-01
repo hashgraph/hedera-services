@@ -90,7 +90,6 @@ class MerkleNetworkContextTest {
 			"012345678901234567890123456789012345678901234567".getBytes(StandardCharsets.UTF_8);
 	private final byte[] otherPreparedUpdateFileHash =
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
-	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private Instant firstConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
@@ -120,7 +119,6 @@ class MerkleNetworkContextTest {
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
 		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
-		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
 		given(seqNo.current()).willReturn(1234L);
@@ -147,7 +145,6 @@ class MerkleNetworkContextTest {
 		subject.setCongestionLevelStarts(congestionStarts());
 		subject.setStateVersion(stateVersion);
 		subject.updateAutoRenewSummaryCounts((int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
-		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
@@ -230,7 +227,6 @@ class MerkleNetworkContextTest {
 		var subjectCopy = subject.copy();
 
 		// expect:
-		assertSame(subjectCopy.lastMidnightBoundaryCheck(), subject.lastMidnightBoundaryCheck());
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
@@ -290,7 +286,6 @@ class MerkleNetworkContextTest {
 		var subjectCopy = subject.copy();
 
 		// expect:
-		assertSame(subjectCopy.lastMidnightBoundaryCheck(), subject.lastMidnightBoundaryCheck());
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
@@ -318,7 +313,6 @@ class MerkleNetworkContextTest {
 	}
 
 	public static void assertEqualContexts(final MerkleNetworkContext a, final MerkleNetworkContext b) {
-		assertEquals(a.lastMidnightBoundaryCheck(), b.lastMidnightBoundaryCheck());
 		assertEquals(a.getConsensusTimeOfLastHandledTxn(), b.getConsensusTimeOfLastHandledTxn());
 		assertEquals(a.seqNo().current(), b.seqNo().current());
 		assertEquals(a.lastScannedEntity(), b.lastScannedEntity());
@@ -348,7 +342,6 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.updateCongestionStartsFrom(null));
 		assertThrows(MutabilityException.class, () -> subject.updateSnapshotsFrom(null));
 		assertThrows(MutabilityException.class, () -> subject.setStateVersion(1));
-		assertThrows(MutabilityException.class, () -> subject.setLastMidnightBoundaryCheck(null));
 		assertThrows(MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
@@ -389,17 +382,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void canSetLastMidnightBoundaryCheck() {
-		final var newLmbc = lastMidnightBoundaryCheck.plusSeconds(1L);
-
-		// when:
-		subject.setLastMidnightBoundaryCheck(newLmbc);
-
-		// then:
-		assertSame(newLmbc, subject.lastMidnightBoundaryCheck());
-	}
-
-	@Test
 	void syncsWork() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
@@ -424,7 +406,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -457,7 +438,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -492,7 +472,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -516,7 +495,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -540,7 +518,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <N/A>\n" +
 				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -591,7 +568,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: <NONE>\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +
@@ -615,7 +591,6 @@ class MerkleNetworkContextTest {
 				"  Pending maintenance                        :: 1970-01-15T06:56:07.000000890Z\n" +
 				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
 				"  Last scanned entity                        :: 1000\n" +
 				"  Entities scanned last consensus second     :: 123456\n" +

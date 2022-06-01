@@ -489,7 +489,7 @@ public class SeededPropertySource {
 		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
 		seeded.setStateVersion(nextUnsignedInt());
 		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
-		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
+		nextNullableInstant();
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
@@ -513,7 +513,6 @@ public class SeededPropertySource {
 		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
 		seeded.setStateVersion(nextUnsignedInt());
 		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
-		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());

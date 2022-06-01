@@ -95,8 +95,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
 	@Nullable
-	private Instant lastMidnightBoundaryCheck = null;
-	@Nullable
 	private Instant consensusTimeOfLastHandledTxn = null;
 	private SequenceNumber seqNo;
 	private long lastScannedEntity;
@@ -146,7 +144,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.stateVersion = that.stateVersion;
 		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
 		this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
-		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
 		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
@@ -228,11 +225,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
-	}
-
-	public void setLastMidnightBoundaryCheck(Instant lastMidnightBoundaryCheck) {
-		throwIfImmutable("Cannot update last midnight boundary check on an immutable context");
-		this.lastMidnightBoundaryCheck = lastMidnightBoundaryCheck;
 	}
 
 	public void setStateVersion(int stateVersion) {
@@ -322,8 +314,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		readCongestionControlData(in);
 		// Added in 0.14
 		whenVersionHigherOrEqualTo0140(in);
-		// Added in 0.15
-		whenVersionHigherOrEqualTo0150(in);
+		// Added in 0.15 and removed in 0.27
+		whenVersionHigherOrEqualTo0150AndLessThan0270(in, version);
 		// Added in 0.19
 		preparedUpdateFileNum = in.readLong();
 		preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
@@ -377,9 +369,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		stateVersion = in.readInt();
 	}
 
-	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
-		final var lastBoundaryCheck = readNullable(in, RichInstant::from);
-		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+	private void whenVersionHigherOrEqualTo0150AndLessThan0270(final SerializableDataInputStream in, final int version) throws IOException {
+		if (version < RELEASE_0270_VERSION) {
+			readNullable(in, RichInstant::from);
+		}
 	}
 
 	@Override
@@ -447,8 +440,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				pendingMaintenanceDesc +
 				"\n  Midnight rate set                          :: " +
 				midnightRates.readableRepr() +
-				"\n  Last midnight boundary check               :: " +
-				reprOf(lastMidnightBoundaryCheck) +
 				"\n  Next entity number                         :: " +
 				seqNo.current() +
 				"\n  Last scanned entity                        :: " +
@@ -573,10 +564,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return midnightRates;
 	}
 
-	public Instant lastMidnightBoundaryCheck() {
-		return lastMidnightBoundaryCheck;
-	}
-
 	public long lastScannedEntity() {
 		return lastScannedEntity;
 	}
@@ -650,7 +637,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(entitiesScannedThisSecond);
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
-		writeNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
 		out.writeLong(preparedUpdateFileNum);
 		out.writeByteArray(preparedUpdateFileHash);
 		out.writeLong(gasThrottleUsageSnapshot.used());
