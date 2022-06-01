@@ -41,6 +41,8 @@ class AccountNumbersTest {
 		given(properties.getLongProperty("accounts.feeSchedulesAdmin")).willReturn(56L);
 		given(properties.getLongProperty("accounts.freezeAdmin")).willReturn(58L);
 		given(properties.getLongProperty("accounts.exchangeRatesAdmin")).willReturn(57L);
+		given(properties.getLongProperty("accounts.nodeRewardAccount")).willReturn(801L);
+		given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(800L);
 		given(properties.getLongProperty("accounts.systemDeleteAdmin")).willReturn(59L);
 		given(properties.getLongProperty("accounts.systemUndeleteAdmin")).willReturn(60L);
 		given(properties.getLongProperty("accounts.systemAdmin")).willReturn(50L);
@@ -60,6 +62,8 @@ class AccountNumbersTest {
 		assertEquals(57, subject.exchangeRatesAdmin());
 		assertEquals(59, subject.systemDeleteAdmin());
 		assertEquals(60, subject.systemUndeleteAdmin());
+		assertEquals(800, subject.stakingRewardAccount());
+		assertEquals(801, subject.nodeRewardAccount());
 	}
 
 	@Test

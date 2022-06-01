@@ -216,7 +216,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 		if (deserializedVersionFromState < RELEASE_0270_VERSION) {
 			// build stakingInfo child
-			setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook()));
+			setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook(), new BootstrapProperties()));
 			// Give the MutableStateChildren up-to-date WeakReferences
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);
@@ -243,7 +243,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		// Create the top-level children in the Merkle tree
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
-		createGenesisChildren(addressBook, seqStart);
+		createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
 		internalInit(platform, bootstrapProps, dualState);
 	}
@@ -486,7 +486,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return deserializedVersion;
 	}
 
-	void createGenesisChildren(AddressBook addressBook, long seqStart) {
+	void createGenesisChildren(AddressBook addressBook, long seqStart, BootstrapProperties bootstrapProperties) {
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
@@ -501,7 +501,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
-		setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook));
+		setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
@@ -544,7 +544,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface StakingInfoBuilder {
-		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook);
+		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook, BootstrapProperties bootstrapProperties);
 	}
 
 	@FunctionalInterface

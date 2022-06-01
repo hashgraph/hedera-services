@@ -59,12 +59,11 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
-	private static final int BALANCE_CHANGES_LENGTH = 64;
-	private static final long[] EMPTY_LONG_ARRAY = new long[0];
+	private static final int MAX_BALANCE_CHANGES = 2048;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private final long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
-	private final long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
+	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
+	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -75,8 +74,8 @@ public class SideEffectsTracker {
 	private long netHbarChange = 0;
 	private int numHbarChangesSoFar = 0;
 	private int numRewardedAccounts = 0;
-	private long[] rewardedAccounts = EMPTY_LONG_ARRAY;
-	private long[] rewardAmounts = EMPTY_LONG_ARRAY;
+	private long[] rewardedAccounts = new long[MAX_BALANCE_CHANGES];
+	private long[] rewardAmounts = new long[MAX_BALANCE_CHANGES];
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -283,24 +282,9 @@ public class SideEffectsTracker {
 	 */
 	public void trackRewardPayment(final long accountNum, final long amount) {
 		if (amount != 0) {
-			if (rewardAmounts.length == 0 || rewardedAccounts.length == 0) {
-				rewardAmounts = new long[BALANCE_CHANGES_LENGTH];
-				rewardedAccounts = new long[BALANCE_CHANGES_LENGTH];
-			}
 			numRewardedAccounts = includeOrderedFungibleChange(
 					rewardedAccounts, rewardAmounts, numRewardedAccounts, accountNum, amount);
 		}
-	}
-
-	/**
-	 * Tracks an account/token association automatically created (either by a {@code TokenCreate}
-	 * or a {@code CryptoTransfer}).
-	 *
-	 * @param association
-	 * 		the auto-association
-	 */
-	public void trackExplicitAutoAssociation(final FcTokenAssociation association) {
-		autoAssociations.add(association);
 	}
 
 	/**
@@ -451,8 +435,6 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
-		rewardedAccounts = EMPTY_LONG_ARRAY;
-		rewardAmounts = EMPTY_LONG_ARRAY;
 	}
 
 	/**

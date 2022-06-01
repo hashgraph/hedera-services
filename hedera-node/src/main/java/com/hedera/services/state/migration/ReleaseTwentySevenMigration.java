@@ -20,6 +20,7 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.AddressBook;
@@ -30,13 +31,18 @@ public final class ReleaseTwentySevenMigration {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook) {
+	public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook, BootstrapProperties bootstrapProperties) {
 		MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
 
 		final var numberOfNodes = addressBook.getSize();
+		final long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
+		final long minStakePerNode = maxStakePerNode / 2;
 		for (int i = 0; i < numberOfNodes; i++) {
 			final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
-			stakingInfo.put(nodeNum, new MerkleStakingInfo());
+			final var info = new MerkleStakingInfo(bootstrapProperties);
+			info.setMinStake(minStakePerNode);
+			info.setMaxStake(maxStakePerNode);
+			stakingInfo.put(nodeNum, info);
 		}
 
 		return stakingInfo;

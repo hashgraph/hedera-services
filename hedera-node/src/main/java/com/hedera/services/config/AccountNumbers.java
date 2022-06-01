@@ -40,6 +40,8 @@ public class AccountNumbers {
 	private long feeSchedulesAdmin = UNKNOWN_NUMBER;
 	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
 	private long systemUndeleteAdmin = UNKNOWN_NUMBER;
+	private long stakingRewardAccount = UNKNOWN_NUMBER;
+	private long nodeRewardAccount = UNKNOWN_NUMBER;
 
 	@Inject
 	public AccountNumbers(@CompositeProps PropertySource properties) {
@@ -100,6 +102,20 @@ public class AccountNumbers {
 			systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
 		}
 		return systemUndeleteAdmin;
+	}
+
+	public long stakingRewardAccount() {
+		if (stakingRewardAccount == UNKNOWN_NUMBER) {
+			stakingRewardAccount = properties.getLongProperty("accounts.stakingRewardAccount");
+		}
+		return stakingRewardAccount;
+	}
+
+	public long nodeRewardAccount() {
+		if (nodeRewardAccount == UNKNOWN_NUMBER) {
+			nodeRewardAccount = properties.getLongProperty("accounts.nodeRewardAccount");
+		}
+		return nodeRewardAccount;
 	}
 
 	public boolean isSuperuser(long num) {

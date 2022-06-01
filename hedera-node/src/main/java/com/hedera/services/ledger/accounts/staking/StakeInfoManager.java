@@ -47,15 +47,15 @@ public class StakeInfoManager {
 		if (currentStakingInfos == null) {
 			currentStakingInfos = new MerkleStakingInfo[stakingInfo.get().size()];
 		}
-
-		if (currentStakingInfos[(int) nodeId] == null && oldStakingInfo == currentStakingInfo) {
-			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
+		final var i = (int) nodeId;
+		if (currentStakingInfos[i] == null && oldStakingInfo == currentStakingInfo) {
+			currentStakingInfos[i] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
 		} else if (oldStakingInfo != currentStakingInfo) {
 			clearCurrentStakingInfos(currentStakingInfos);
 			oldStakingInfo = currentStakingInfo;
-			currentStakingInfos[(int) nodeId] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
+			currentStakingInfos[i] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
 		}
-		return currentStakingInfos[(int) nodeId];
+		return currentStakingInfos[i];
 	}
 
 	public void clearRewardsHistory() {
