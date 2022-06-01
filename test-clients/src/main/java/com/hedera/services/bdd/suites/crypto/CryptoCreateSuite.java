@@ -218,9 +218,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.blankMemo()
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
-								.payingWith("civilian")
-								.via("createTxn"),
-						getTxnRecord("createTxn").logged()
+								.payingWith("civilian"),
+						getTxnRecord(tenAutoAssocSlots).logged()
 				).then(
 						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
 						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
