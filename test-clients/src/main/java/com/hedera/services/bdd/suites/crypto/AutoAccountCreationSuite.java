@@ -420,12 +420,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoCreate(civilian),
 						cryptoCreate(autoCreateSponsor).balance(initialBalance * ONE_HBAR)
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"staking.fees.stakingRewardPercentage", "10",
-										"staking.fees.nodeRewardPercentage", "20"
-								)),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(autoCreateSponsor, "validAlias", ONE_HUNDRED_HBARS)
 						).via("transferTxn").payingWith(civilian)
@@ -470,16 +464,16 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 			final long newAccountFunding
 	) {
 		long receivedBalance = 0;
-		log.info("parent " + parent);
-		log.info("child " + child);
 		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
 			final var id = adjust.getAccountID();
-			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(
-					defaultPayer) || id.getAccountNum() == 800 || id.getAccountNum() == 801) {
+			if (id.getAccountNum() < 100 ||
+					id.equals(sponsor) ||
+					id.equals(defaultPayer) ||
+					id.getAccountNum() == 800 ||
+					id.getAccountNum() == 801) {
 				continue;
 			}
 			receivedBalance = adjust.getAmount();
-			log.info("Received balance " + receivedBalance + " newAccountFunding" + newAccountFunding);
 			break;
 		}
 		final var fee = newAccountFunding - receivedBalance;
