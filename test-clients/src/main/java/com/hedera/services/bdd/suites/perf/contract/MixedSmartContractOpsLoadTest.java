@@ -121,7 +121,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 						contractCreate(LOOKUP_CONTRACT).bytecode(LOOKUP_FILE).adminKey(THRESHOLD),
 
 						/* create a contract that does a transaction to deposit funds */
-						fileCreate(PAYABLE_FILE).path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
+						uploadInitCode(PAYABLE_FILE).path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate(PAYABLE_CONTRACT).bytecode(PAYABLE_FILE).adminKey(THRESHOLD),
 
 						/* get contract info on all contracts created */
