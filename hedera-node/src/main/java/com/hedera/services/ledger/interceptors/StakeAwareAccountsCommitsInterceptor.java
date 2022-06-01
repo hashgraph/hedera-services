@@ -66,7 +66,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private long newFundingBalance;
 
 	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
-	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
 
 	public StakeAwareAccountsCommitsInterceptor(
 			final SideEffectsTracker sideEffectsTracker,

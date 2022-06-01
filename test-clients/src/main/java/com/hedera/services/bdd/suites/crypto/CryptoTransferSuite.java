@@ -462,21 +462,23 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						balanceSnapshot(snapshot800, firstStakingFund),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, firstStakingFund, ONE_HBAR))
 								.signedBy(DEFAULT_PAYER)
-								.exposingFeesTo(feeObs),
+								.exposingFeesTo(feeObs)
+								.logged(),
 						sourcing(() ->
 								getAccountBalance(firstStakingFund)
 										.hasTinyBars(
 												changeFromSnapshot(snapshot800,
-														(long) (ONE_HBAR + (feeObs.get().getNetworkFee() * 0.1))))),
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1))))),
 
 						balanceSnapshot(snapshot801, secondStakingFund),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, secondStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
+								.signedBy(DEFAULT_PAYER)
+								.logged(),
 						sourcing(() ->
 								getAccountBalance(secondStakingFund)
 										.hasTinyBars(
 												changeFromSnapshot(snapshot801,
-														(long) (ONE_HBAR + (feeObs.get().getNetworkFee() * 0.1)))))
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1)))))
 				).then(
 						// Even the treasury cannot withdraw from an immutable contract
 						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))
