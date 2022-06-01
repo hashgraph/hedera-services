@@ -21,6 +21,7 @@ package com.hedera.services.state.migration;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -66,6 +67,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class MigrationRecordsManagerTest {
 	private static final long fundingExpiry = 33197904000L;
+	private static final long stakingRewardAccount = 800;
+	private static final long nodeRewardAccount = 801;
 	private static final ExpirableTxnRecord.Builder pretend800 = ExpirableTxnRecord.newBuilder();
 	private static final ExpirableTxnRecord.Builder pretend801 = ExpirableTxnRecord.newBuilder();
 	private static final Instant now = Instant.ofEpochSecond(1_234_567L);
@@ -90,6 +93,8 @@ class MigrationRecordsManagerTest {
 	private SideEffectsTracker tracker801;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private AccountNumbers accountNumbers;
 
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	@Mock
@@ -106,7 +111,7 @@ class MigrationRecordsManagerTest {
 		accounts.put(EntityNum.fromLong(2L), merkleAccount);
 
 		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx,
-				() -> accounts, factory);
+				() -> accounts, factory, accountNumbers);
 
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}
@@ -118,6 +123,8 @@ class MigrationRecordsManagerTest {
 
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO)).willReturn(pretend800);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO)).willReturn(pretend801);
+		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
+		given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
 
 		subject.publishMigrationRecords(now);
 

@@ -27,11 +27,10 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -102,6 +101,8 @@ class BackedSystemAccountsCreatorTest {
 		given(hederaNums.shard()).willReturn(shard);
 		accountNums = mock(AccountNumbers.class);
 		given(accountNums.treasury()).willReturn(2L);
+		given(accountNums.stakingRewardAccount()).willReturn(800L);
+		given(accountNums.nodeRewardAccount()).willReturn(801L);
 		properties = mock(PropertySource.class);
 		legacyReader = mock(LegacyEd25519KeyReader.class);
 

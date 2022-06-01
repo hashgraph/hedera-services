@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
@@ -49,18 +50,20 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NarratedLedgerChargingTest {
+	private final int stakingRewardPercent = 10;
+	private final int nodeRewardPercent = 20;
+	private final long stakingRewardAccount = 800L;
+	private final long nodeRewardAccount = 801L;
 	private final long submittingNodeId = 0L;
 	private final long nodeFee = 2L, networkFee = 4L, serviceFee = 6L;
 	private final FeeObject fees = new FeeObject(nodeFee, networkFee, serviceFee);
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
 	private final AccountID grpcPayerId = IdUtils.asAccount("0.0.1234");
 	private final AccountID grpcFundingId = IdUtils.asAccount("0.0.98");
-	private final AccountID grpcStakeFundingId = IdUtils.asAccount("0.0.800");
-	private final AccountID grpcNodeFundingId = IdUtils.asAccount("0.0.801");
+	private final AccountID grpcStakeFundingId = IdUtils.asAccount("0.0." + stakingRewardAccount);
+	private final AccountID grpcNodeFundingId = IdUtils.asAccount("0.0." + nodeRewardAccount);
 	private final EntityNum nodeId = EntityNum.fromLong(3L);
 	private final EntityNum payerId = EntityNum.fromLong(1_234L);
-	private final int stakingRewardPercent = 10;
-	private final int nodeRewardPercent = 20;
 
 	@Mock
 	private NodeInfo nodeInfo;
@@ -74,12 +77,16 @@ class NarratedLedgerChargingTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private AccountNumbers accountNumbers;
 
 	private NarratedLedgerCharging subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts);
+		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
+		given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts, accountNumbers);
 		subject.setLedger(ledger);
 	}
 

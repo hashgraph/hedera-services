@@ -165,7 +165,7 @@ public class SerializedForms {
 					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState,
 							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
+					entry(MerkleNetworkContext.class, SeededPropertySource::next0270NetworkContext,
 							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
 					entry(MerkleSchedule.class, SeededPropertySource::nextSchedule,
 							MerkleScheduleSerdeTest.NUM_TEST_CASES),

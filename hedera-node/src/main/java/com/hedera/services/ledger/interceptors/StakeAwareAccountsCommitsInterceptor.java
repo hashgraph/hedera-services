@@ -21,6 +21,7 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -58,6 +59,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final GlobalDynamicProperties dynamicProperties;
 	private final StakePeriodManager stakePeriodManager;
 	private final StakeInfoManager stakeInfoManager;
+	private final AccountNumbers accountNumbers;
 
 	private boolean rewardsActivated;
 	// boolean to track if the account has been rewarded already with one of the pending changes
@@ -66,7 +68,6 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private long newFundingBalance;
 
 	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
-	private static final long STAKING_FUNDING_ACCOUNT_NUMBER = 800L;
 
 	public StakeAwareAccountsCommitsInterceptor(
 			final SideEffectsTracker sideEffectsTracker,
@@ -75,7 +76,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final RewardCalculator rewardCalculator,
 			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
-			final StakeInfoManager stakeInfoManager) {
+			final StakeInfoManager stakeInfoManager,
+			final AccountNumbers accountNumbers) {
 		super(sideEffectsTracker);
 		this.stakeChangeManager = stakeChangeManager;
 		this.networkCtx = networkCtx;
@@ -84,6 +86,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		this.dynamicProperties = dynamicProperties;
 		this.stakePeriodManager = stakePeriodManager;
 		this.stakeInfoManager = stakeInfoManager;
+		this.accountNumbers = accountNumbers;
 	}
 
 	@Override
@@ -100,7 +103,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		// Iterate through the change set, maintaining two invariants:
 		//   1. At the beginning of iteration i, any account that is rewardable due to change in balance or
 		//      stakedAccountId or stakedNodeId or declineRewards fields. Also checks the balance of funding account
-		//      0.0.800 if it has reached the ONE TIME threshold to activate staking.
+		//      0.0.800 [stakingRewardAccount] if it has reached the ONE TIME threshold to activate staking.
 		//      NOTE that this activation happens only once.
 		//   2. Any account whose stakedToMe balance is affected by a change in the [0, i) range has
 		//      been, if not already present, added to the pendingChanges; and its changes include its
@@ -133,7 +136,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			// Update any STAKED_TO_ME side effects of this change
 			n = updateStakedToMeSideEffects(account, changes, pendingChanges);
 
-			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == 800) {
+			if (!rewardsActivated && pendingChanges.id(i).getAccountNum() == accountNumbers.stakingRewardAccount()) {
 				newFundingBalance = finalBalanceGiven(account, changes);
 			}
 		}
@@ -143,7 +146,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
 		if (rewardsPaid > 0) {
-			final var rewardAccountI = stakeChangeManager.findOrAdd(800L, pendingChanges);
+			final var rewardAccountI = stakeChangeManager.findOrAdd(
+					accountNumbers.stakingRewardAccount(), pendingChanges);
 			updateBalance(-rewardsPaid, rewardAccountI, pendingChanges);
 			// no need to update newFundingBalance because if rewardsPaid > 0, we will not be needing newFundingBalance
 			// for rewards activation, since rewards are already activated
@@ -270,7 +274,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private void activateStakingRewards() {
 		long todayNumber = stakePeriodManager.currentStakePeriod();
 
-		networkCtx.get().setStakingRewards(true);
+		networkCtx.get().setStakingRewardsActivated(true);
 		stakeInfoManager.clearRewardsHistory();
 		stakeChangeManager.setStakePeriodStart(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");

@@ -1,6 +1,7 @@
 package com.hedera.services.ledger.accounts.staking;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -44,6 +45,8 @@ public class StakingUtilsTest {
 	private Address address1;
 	@Mock
 	private Address address2;
+	@Mock
+	private BootstrapProperties bootstrapProperties;
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
@@ -130,13 +133,15 @@ public class StakingUtilsTest {
 	}
 
 	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
+		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(2_000_000_000L);
+		given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
 		given(addressBook.getSize()).willReturn(2);
 		given(addressBook.getAddress(0)).willReturn(address1);
 		given(address1.getId()).willReturn(0L);
 		given(addressBook.getAddress(1)).willReturn(address2);
 		given(address2.getId()).willReturn(1L);
 
-		final var info = buildStakingInfoMap(addressBook);
+		final var info = buildStakingInfoMap(addressBook, bootstrapProperties);
 		info.forEach((a, b) -> {
 			b.setStakeToReward(300L);
 			b.setStake(1000L);

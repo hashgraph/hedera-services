@@ -178,7 +178,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(19L, subject.minTxnDuration());
 		assertEquals(23L, subject.defaultContractLifetime());
 		assertEquals(34L, subject.autoRenewGracePeriod());
-		assertEquals(35L, subject.ratesMidnightCheckInterval());
 		assertEquals(44L, subject.maxNftMints());
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
@@ -292,7 +291,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(20L, subject.minTxnDuration());
 		assertEquals(24L, subject.defaultContractLifetime());
 		assertEquals(35L, subject.autoRenewGracePeriod());
-		assertEquals(36L, subject.ratesMidnightCheckInterval());
 		assertEquals(45L, subject.maxNftMints());
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
@@ -367,7 +365,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 31);
 		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 32);
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 33L);
-		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 34L);
 		given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 35);
 		given(properties.getIntProperty("ledger.nftTransfers.maxLen")).willReturn(i + 36);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 37);

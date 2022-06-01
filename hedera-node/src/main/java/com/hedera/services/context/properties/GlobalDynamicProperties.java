@@ -89,7 +89,6 @@ public class GlobalDynamicProperties {
 	private Set<HederaFunctionality> schedulingWhitelist;
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
-	private long ratesMidnightCheckInterval;
 	private boolean areNftsEnabled;
 	private long maxNftMints;
 	private int maxXferBalanceChanges;
@@ -187,7 +186,6 @@ public class GlobalDynamicProperties {
 		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
-		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
 		areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
 		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
@@ -409,10 +407,6 @@ public class GlobalDynamicProperties {
 
 	public int feesMinCongestionPeriod() {
 		return feesMinCongestionPeriod;
-	}
-
-	public long ratesMidnightCheckInterval() {
-		return ratesMidnightCheckInterval;
 	}
 
 	public boolean areNftsEnabled() {

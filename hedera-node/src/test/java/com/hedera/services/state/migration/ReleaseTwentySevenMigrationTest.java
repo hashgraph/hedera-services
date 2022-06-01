@@ -20,6 +20,7 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.Address;
 import com.swirlds.common.system.AddressBook;
@@ -38,6 +39,8 @@ import static org.mockito.Mockito.mock;
 class ReleaseTwentySevenMigrationTest {
 	@Mock
 	AddressBook addressBook;
+	@Mock
+	BootstrapProperties bootstrapProperties;
 
 	@Test
 	void buildsStakingInfoMapAsExpected() {
@@ -46,6 +49,9 @@ class ReleaseTwentySevenMigrationTest {
 		final var address3 = mock(Address.class);
 		final var address4 = mock(Address.class);
 		final var address5 = mock(Address.class);
+		final var totalHbar = 5_000_000_000L;
+		final var expectedMaxStakePerNode = 1_000_000_000L;
+		final var expectedMinStakePerNode = 500_000_000L;
 
 		given(addressBook.getSize()).willReturn(5);
 		given(addressBook.getAddress(0)).willReturn(address1);
@@ -58,13 +64,18 @@ class ReleaseTwentySevenMigrationTest {
 		given(address4.getId()).willReturn(3L);
 		given(addressBook.getAddress(4)).willReturn(address5);
 		given(address5.getId()).willReturn(4L);
+		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(totalHbar);
 
-		var stakingInfoMap = buildStakingInfoMap(addressBook);
+		var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
 
 		assertEquals(5, stakingInfoMap.size());
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(0)));
+		assertEquals(expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMaxStake());
+		assertEquals(expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMinStake());
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(1)));
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(2)));
+		assertEquals(expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMaxStake());
+		assertEquals(expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMinStake());
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(3)));
 		assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(4)));
 	}
