@@ -605,8 +605,69 @@ class SystemOpPoliciesTest {
 		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
-	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {
-		return new SignedTxnAccessor(Transaction.newBuilder().setBodyBytes(txn.build().toByteString()).build());
+	@Test
+	void handlesNullPayerFallback() throws InvalidProtocolBufferException {
+		// given:
+		var selfUpdateTxn = treasuryTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(2)));
+		var otherUpdateTxn = treasuryTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(50)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, null)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, null)));
+	}
+
+	@Test
+	void handlesNullPayerFallbackWithUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var selfUpdateTxn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(2)));
+		var otherUpdateTxn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(50)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, null)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, null)));
+	}
+
+	@Test
+	void handlesDifferentPayer() throws InvalidProtocolBufferException {
+		// given:
+		var selfUpdateTxn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(2)));
+		var otherUpdateTxn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(50)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, account(2))));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, account(2))));
+	}
+
+	private SignedTxnAccessor accessor(TransactionBody.Builder transaction) throws InvalidProtocolBufferException {
+		var txn = TransactionBody.newBuilder().mergeFrom(transaction.build())
+				.clearTransactionID().build();
+		var accessor = new SignedTxnAccessor(Transaction.newBuilder()
+				.setBodyBytes(txn.toByteString()
+				).build());
+		accessor.setPayer(transaction.getTransactionID().getAccountID());
+		return accessor;
+	}
+
+	private SignedTxnAccessor accessorWithPayer(TransactionBody.Builder txn,
+			AccountID payer) throws InvalidProtocolBufferException {
+		var accessor = new SignedTxnAccessor(Transaction.newBuilder().setBodyBytes(txn.build().toByteString()).build());
+		accessor.setPayer(payer);
+		return accessor;
 	}
 
 	private TransactionBody.Builder ethereumTxn() {

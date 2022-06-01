@@ -27,10 +27,8 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -55,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -331,36 +328,16 @@ public class MerkleScheduleTest {
 		assertTrue(subject.isImmutable());
 	}
 
-	@Test
-	void cavWorks() {
-		subject.markDeleted(resolutionTime);
-		subject.markExecuted(resolutionTime);
-		subject.witnessValidSignature(tpk);
-		final var cavSubject = subject.toContentAddressableView();
-
-		assertFalse(cavSubject.isDeleted());
-		assertFalse(cavSubject.isExecuted());
-		assertFalse(cavSubject.hasValidSignatureFor(tpk));
-
-		assertNotEquals(subject.toString(), cavSubject.toString());
-		assertTrue(cavSubject.signatories().isEmpty());
-
-		assertNull(cavSubject.payer());
-		assertEquals(0L, cavSubject.expiry());
-		assertNull(cavSubject.schedulingAccount());
-		assertEquals(entityMemo, cavSubject.memo().get());
-		assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(), cavSubject.grpcAdminKey());
-		assertNull(cavSubject.schedulingTXValidStart());
-		assertEquals(scheduledTxn, cavSubject.scheduledTxn());
-		assertNull(cavSubject.bodyBytes());
-	}
-
 	private String signatoriesToString() {
 		return signatories.stream().map(CommonUtils::hex).collect(Collectors.joining(", "));
 	}
 
 	private static final long fee = 123L;
 	private static final String scheduledTxnMemo = "Wait for me!";
+	private static final TransactionID parentTransactionId = TransactionID.newBuilder()
+					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
+					.setAccountID(schedulingAccount.toGrpcAccountId())
+					.build();
 	private static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
 			.setTransactionFee(fee)
 			.setMemo(scheduledTxnMemo)
@@ -369,7 +346,7 @@ public class MerkleScheduleTest {
 					.setTransferAccountID(IdUtils.asAccount("0.0.75231")))
 			.build();
 
-	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
+	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, parentTransactionId);
 
 	private static final ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
 			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
@@ -378,10 +355,7 @@ public class MerkleScheduleTest {
 			.setScheduledTransactionBody(scheduledTxn)
 			.build();
 	private static final TransactionBody parentTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
-					.setAccountID(schedulingAccount.toGrpcAccountId())
-					.build())
+			.setTransactionID(parentTransactionId)
 			.setScheduleCreate(creation)
 			.build();
 	private static final byte[] bodyBytes = parentTxn.toByteArray();
@@ -396,31 +370,11 @@ public class MerkleScheduleTest {
 						SignedTransaction.newBuilder()
 								.setBodyBytes(
 										TransactionBody.newBuilder()
-												.mergeFrom(MiscUtils.asOrdinary(scheduledTxn))
+												.mergeFrom(MiscUtils.asOrdinary(scheduledTxn, parentTransactionId))
 												.setTransactionID(expectedId)
 												.build().toByteString())
 								.build().toByteString())
 				.build();
 	}
 
-	public static TransactionBody scheduleCreateTxnWith(
-			final Key scheduleAdminKey,
-			final String scheduleMemo,
-			final AccountID payer,
-			final AccountID scheduler,
-			final Timestamp validStart
-	) {
-		final var creation = ScheduleCreateTransactionBody.newBuilder()
-				.setAdminKey(scheduleAdminKey)
-				.setPayerAccountID(payer)
-				.setMemo(scheduleMemo)
-				.setScheduledTransactionBody(scheduledTxn);
-		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(validStart)
-						.setAccountID(scheduler)
-						.build())
-				.setScheduleCreate(creation)
-				.build();
-	}
 }

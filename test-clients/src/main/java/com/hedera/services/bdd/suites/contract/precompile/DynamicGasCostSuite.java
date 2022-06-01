@@ -131,7 +131,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	public static final String ZERO_GAS_COST = "0";
 	public static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
 	public static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
-	public static final String BOOTSTRAP_PROPERTIES = "src/main/resource/bootstrap.properties";
 
 	private static final String SAFE_OPERATIONS_CONTRACT = "SafeOperations";
 
@@ -145,7 +144,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -1184,7 +1183,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("mintDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1250,7 +1250,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("burnDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1306,7 +1307,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("associateDynamicGasDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1366,7 +1368,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("dissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1439,7 +1442,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleAssociateDefaultCostTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1514,7 +1518,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleDissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1591,7 +1596,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1668,7 +1674,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokenTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1754,7 +1761,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokensTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1841,7 +1849,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftsTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(

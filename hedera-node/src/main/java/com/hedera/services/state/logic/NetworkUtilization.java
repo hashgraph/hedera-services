@@ -89,7 +89,7 @@ public class NetworkUtilization {
 
 	private void track(final TxnAccessor accessor, final Instant now) {
 		handleThrottling.shouldThrottleTxn(accessor);
-		feeMultiplierSource.updateMultiplier(now);
+		feeMultiplierSource.updateMultiplier(accessor, now);
 	}
 
 	boolean screenForAvailableCapacity() {

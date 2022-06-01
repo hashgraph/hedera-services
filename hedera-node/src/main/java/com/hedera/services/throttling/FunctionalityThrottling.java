@@ -47,7 +47,7 @@ public interface FunctionalityThrottling {
 	 * @param value
 	 * 		the amount of gas to release
 	 */
-	void leakUnusedGasPreviouslyReserved(long value);
+	void leakUnusedGasPreviouslyReserved(TxnAccessor accessor, long value);
 
 	void rebuildFor(ThrottleDefinitions defs);
 
@@ -58,6 +58,8 @@ public interface FunctionalityThrottling {
 	List<DeterministicThrottle> allActiveThrottles();
 
 	GasLimitDeterministicThrottle gasLimitThrottle();
+
+	void resetUsage();
 
 	/**
 	 * Indicates if the last transaction passed to {@link FunctionalityThrottling#shouldThrottleTxn(TxnAccessor)}

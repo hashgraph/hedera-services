@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -62,13 +63,16 @@ class EntityAutoRenewalTest {
 	private NetworkCtxManager networkCtxManager;
 	@Mock
 	private MerkleNetworkContext networkCtx;
+	@Mock
+	private ConsensusTimeTracker consensusTimeTracker;
 
 	private EntityAutoRenewal subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new EntityAutoRenewal(
-				mockHederaNums, renewalProcess, properties, networkCtxManager, () -> networkCtx, () -> seqNo);
+				mockHederaNums, renewalProcess, properties, networkCtxManager, () -> networkCtx,
+				consensusTimeTracker, () -> seqNo);
 	}
 
 	@Test
@@ -87,6 +91,18 @@ class EntityAutoRenewalTest {
 	}
 
 	@Test
+	void abortsIfNoMoreStandaloneRecordTime() {
+		// setup:
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(false);
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verifyNoInteractions(renewalProcess);
+	}
+
+	@Test
 	void abortsIfNoNonSystemEntities() {
 		// setup:
 		givenWrapNum(mockHederaNums.numReservedSystemEntities() + 1);
@@ -100,6 +116,7 @@ class EntityAutoRenewalTest {
 
 	@Test
 	void resetsSummaryCountsIfNewConsensusSecond() {
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
 		givenWrapNum(aNum + 123);
 		givenLastScanned(aNum - 1);
@@ -114,6 +131,7 @@ class EntityAutoRenewalTest {
 	@Test
 	void scansToExpectedNumWithNothingToTouch() {
 		// setup:
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		long numToScan = properties.autoRenewNumberOfEntitiesToScan();
 
 		givenWrapNum(aNum + numToScan);
@@ -137,6 +155,7 @@ class EntityAutoRenewalTest {
 	void onlyAdvancesScanIfTouchedEntityIsDone() {
 		final var numToScan = 3L;
 
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		givenWrapNum(aNum + numToScan + 1);
 		givenLastScanned(aNum - 1);
 		given(renewalProcess.process(aNum))
@@ -158,6 +177,7 @@ class EntityAutoRenewalTest {
 	void lastEntityScannedDoesntChangeIfTouchedEntityIsntDone() {
 		final var numToScan = 3L;
 
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		givenWrapNum(aNum + numToScan + 1);
 		givenLastScanned(aNum - 1);
 		given(renewalProcess.process(aNum))
@@ -177,6 +197,7 @@ class EntityAutoRenewalTest {
 	@Test
 	void stopsEarlyWhenLotsToTouch() {
 		// setup:
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		long numToScan = properties.autoRenewNumberOfEntitiesToScan();
 
 		givenWrapNum(aNum + numToScan);
@@ -199,8 +220,34 @@ class EntityAutoRenewalTest {
 	}
 
 	@Test
+	void stopsEarlyWhenNoMoreStandaloneRecordTime() {
+		// setup:
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
+		long numToScan = properties.autoRenewNumberOfEntitiesToScan();
+
+		givenWrapNum(aNum + numToScan);
+		givenLastScanned(aNum - 1);
+		given(renewalProcess.process(aNum)).willAnswer(i -> {
+			given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(false);
+			return DONE;
+		});
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verify(renewalProcess).beginRenewalCycle(instantNow);
+		verify(renewalProcess).process(aNum);
+		// and:
+		verify(renewalProcess, never()).process(bNum);
+		verify(renewalProcess).endRenewalCycle();
+		verify(networkCtx).updateLastScannedEntity(aNum);
+	}
+
+	@Test
 	void understandsHowToWrap() {
 		// setup:
+		given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
 		long numToScan = properties.autoRenewNumberOfEntitiesToScan();
 
 		givenWrapNum(aNum + numToScan);

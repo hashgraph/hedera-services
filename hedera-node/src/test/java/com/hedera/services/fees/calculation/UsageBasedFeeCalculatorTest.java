@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -598,7 +599,7 @@ class UsageBasedFeeCalculatorTest {
 
 	private class NestedMultiplierSource implements FeeMultiplierSource {
 		@Override
-		public long currentMultiplier() {
+		public long currentMultiplier(final TxnAccessor accessor) {
 			return suggestedMultiplier.get();
 		}
 
@@ -608,7 +609,7 @@ class UsageBasedFeeCalculatorTest {
 		}
 
 		@Override
-		public void updateMultiplier(Instant consensusNow) {
+		public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
 			/* No-op. */
 		}
 
