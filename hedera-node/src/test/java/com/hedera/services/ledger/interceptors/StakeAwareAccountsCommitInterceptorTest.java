@@ -358,7 +358,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 		subject.setCurStakedId(1L);
 		subject.setNewStakedId(2L);
 		subject.updateStakedToMeSideEffects(
-				0,
 				counterparty,
 				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
 				pendingChanges.changes(0),
@@ -401,7 +400,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 		assertEquals(3, pendingChanges.size());
 
 		subject.updateStakedToMeSideEffects(
-				2,
 				counterparty,
 				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,
 				pendingChanges.changes(0),
