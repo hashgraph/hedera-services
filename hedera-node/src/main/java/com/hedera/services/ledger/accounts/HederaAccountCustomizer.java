@@ -37,7 +37,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
-	public static final String STAKED_ID_NOT_SET_CASE = "STAKED_ID_NOT_SET";
+	public static final String STAKED_ID_NOT_SET_CASE = "STAKEDID_NOT_SET";
 	public static final String STAKED_ACCOUNT_ID_CASE = "STAKED_ACCOUNT_ID";
 	public static final String STAKED_NODE_ID_CASE = "STAKED_NODE_ID";
 
