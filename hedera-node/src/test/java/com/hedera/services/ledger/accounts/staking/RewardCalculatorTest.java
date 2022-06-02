@@ -23,6 +23,7 @@ package com.hedera.services.ledger.accounts.staking;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.Units;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,8 @@ class RewardCalculatorTest {
 	private MerkleStakingInfo merkleStakingInfo;
 	@Mock
 	private MerkleAccount account;
+	@Mock
+	private MerkleNetworkContext networkCtx;
 
 	private RewardCalculator subject;
 	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
@@ -62,7 +65,7 @@ class RewardCalculatorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
+		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager, () -> networkCtx);
 		rewardHistory[0] = 5;
 	}
 
@@ -88,6 +91,7 @@ class RewardCalculatorTest {
 		// resets all fields
 		subject.reset();
 		assertEquals(0, subject.rewardsPaidInThisTxn());
+		verify(networkCtx).decreasePendingRewards(500);
 	}
 
 	@Test

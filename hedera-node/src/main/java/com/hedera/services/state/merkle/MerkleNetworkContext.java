@@ -749,7 +749,20 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void increasePendingRewards(final long amount) {
+		assertAcceptableRewardChange(amount, +1);
 		this.pendingRewards += amount;
+	}
+
+	public void decreasePendingRewards(final long amount) {
+		assertAcceptableRewardChange(amount, -1);
+		this.pendingRewards -= amount;
+	}
+
+	private void assertAcceptableRewardChange(final long amount, final long sigNum) {
+		if (amount < 0 || (pendingRewards + sigNum * amount < 0)) {
+			throw new IllegalArgumentException("Cannot adjust pendingRewards=" + pendingRewards
+					+ " by amount=" + amount);
+		}
 	}
 
 	public void markMigrationRecordsStreamed() {

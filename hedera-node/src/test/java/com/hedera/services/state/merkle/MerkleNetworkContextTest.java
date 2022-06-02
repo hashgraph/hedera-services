@@ -880,11 +880,22 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void canIncreasePendingRewards() {
+	void canIncreaseAndDecreasePendingRewards() {
 		final var localSub = new MerkleNetworkContext();
 		localSub.increasePendingRewards(123);
 		localSub.increasePendingRewards(234);
-		assertEquals(123 + 234, localSub.getPendingRewards());
+		localSub.decreasePendingRewards(99);
+		assertEquals(123 + 234 - 99, localSub.getPendingRewards());
+	}
+
+	@Test
+	void pendingRewardsAdjustmentsAreSanityChecked() {
+		final var localSub = new MerkleNetworkContext();
+		localSub.setPendingRewards(100);
+		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(-1));
+		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(Long.MAX_VALUE));
+		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(-1));
+		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(101));
 	}
 
 	long[] used = new long[] { 100L, 200L, 300L };
