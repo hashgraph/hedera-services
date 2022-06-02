@@ -24,19 +24,22 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import javax.annotation.Nonnull;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RichInstant {
+public class RichInstant implements Comparable<RichInstant> {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
-	private int nanos;
-	private long seconds;
+	private final int nanos;
+	private final long seconds;
 
 	public RichInstant() {
+		nanos = 0;
+		seconds = 0;
 	}
 
 	public RichInstant(long seconds, int nanos) {
@@ -121,5 +124,13 @@ public class RichInstant {
 
 	public boolean isMissing() {
 		return this.equals(MISSING_INSTANT);
+	}
+
+	@Override
+	public int compareTo(@Nonnull RichInstant o) {
+		if (o.seconds == seconds) {
+			return Integer.compare(nanos, o.nanos);
+		}
+		return Long.compare(seconds, o.seconds);
 	}
 }

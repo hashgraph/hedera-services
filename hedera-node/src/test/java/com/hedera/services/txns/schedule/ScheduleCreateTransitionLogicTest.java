@@ -22,13 +22,14 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -60,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,7 +112,7 @@ class ScheduleCreateTransitionLogicTest {
 
 	private OptionValidator validator;
 	private ScheduleStore store;
-	private MerkleSchedule merkleSchedule;
+	private ScheduleVirtualValue scheduleValue;
 	private SignedTxnAccessor accessor;
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
@@ -119,6 +121,8 @@ class ScheduleCreateTransitionLogicTest {
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
 	private SigMapScheduleClassifier classifier;
+	private GlobalDynamicProperties properties;
+	private ScheduleProcessing scheduleProcessing;
 
 	private ScheduleCreateTransitionLogic subject;
 
@@ -130,23 +134,25 @@ class ScheduleCreateTransitionLogicTest {
 		activationHelper = mock(InHandleActivationHelper.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleExecutor.class);
-		merkleSchedule = mock(MerkleSchedule.class);
+		scheduleValue = mock(ScheduleVirtualValue.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		properties = mock(GlobalDynamicProperties.class);
+		scheduleProcessing = mock(ScheduleProcessing.class);
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
 
 		classifier = mock(SigMapScheduleClassifier.class);
 
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(OK, true));
 
-		given(executor.processExecution(any(), any(), any())).willReturn(OK);
+		given(executor.processImmediateExecution(any(), any(), any())).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		subject = new ScheduleCreateTransitionLogic(
-				store, txnCtx, activationHelper, validator, executor, sigImpactHistorian);
+		subject = new ScheduleCreateTransitionLogic(properties,
+				store, txnCtx, activationHelper, validator, executor, sigImpactHistorian, scheduleProcessing);
 
 		subject.signingsWitness = replSigningWitness;
 		subject.classifier = classifier;
@@ -161,46 +167,99 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPath() {
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
+	void followsHappyPath() throws InvalidProtocolBufferException {
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 
 		subject.doStateTransition();
 
 		verify(store).lookupSchedule(bodyBytes);
-		verify(store).createProvisionally(merkleSchedule, RichInstant.fromJava(now));
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
 		verify(store).commitCreation();
-		verify(txnCtx).addExpiringEntities(any());
+		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
+		verify(executor).processImmediateExecution(schedule, store, txnCtx);
 	}
 
 	@Test
-	void followsHappyPathEvenIfNoNewValidSignatures() {
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
+	void followsHappyPathEvenIfNoNewValidSignatures() throws InvalidProtocolBufferException {
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
 
 		subject.doStateTransition();
 
 		verify(store).commitCreation();
-		verify(txnCtx).addExpiringEntities(any());
+		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processImmediateExecution(schedule, store, txnCtx);
+	}
+
+	@Test
+	void doesNotExecuteWhenLongTermEnabledWaitForExpiry() throws InvalidProtocolBufferException {
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
+		givenValidTxnCtx();
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+		given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, true))
+				.willReturn(Pair.of(OK, false));
+
+		subject.doStateTransition();
+
+		verify(store).lookupSchedule(bodyBytes);
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, true);
+		verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(false));
+		verify(store).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
+		verify(executor, never()).processImmediateExecution(schedule, store, txnCtx);
+	}
+
+	@Test
+	void followsHappyPathIfLongTermEnabledNotWaitForExpiry() throws InvalidProtocolBufferException {
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
+		givenValidTxnCtx();
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+
+		subject.doStateTransition();
+
+		verify(store).lookupSchedule(bodyBytes);
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
+		verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(true));
+		verify(store).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
+		verify(executor).processImmediateExecution(schedule, store, txnCtx);
 	}
 
 	@Test
 	void rejectsRecreationOfExistingSchedule() {
 		givenValidTxnCtx();
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, scheduleValue));
 
 		subject.doStateTransition();
 
@@ -215,29 +274,43 @@ class ScheduleCreateTransitionLogicTest {
 	@Test
 	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
 		subject.doStateTransition();
 
-		verify(store).createProvisionally(merkleSchedule, RichInstant.fromJava(now));
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
 		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
-		verify(executor, never()).processExecution(schedule, store, txnCtx);
+		verify(executor, never()).processImmediateExecution(schedule, store, txnCtx);
 	}
 
 	@Test
 	void capturesFailingCreateProvisionally() {
 		givenValidTxnCtx();
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, merkleSchedule));
-		given(store.createProvisionally(merkleSchedule, RichInstant.fromJava(now)))
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, scheduleValue));
+		given(store.createProvisionally(scheduleValue, RichInstant.fromJava(now)))
 				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
 		subject.doStateTransition();
 
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).setStatus(SUCCESS);
+	}
+
+	@Test
+	void capturesFailingThrottleCheck() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+
+		subject.doStateTransition();
+
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
+		verify(store, never()).commitCreation();
+		verify(txnCtx).setStatus(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+		verify(executor, never()).processImmediateExecution(schedule, store, txnCtx);
 	}
 
 	@Test
@@ -343,8 +416,8 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, merkleSchedule));
-		given(store.createProvisionally(merkleSchedule, RichInstant.fromJava(now)))
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, scheduleValue));
+		given(store.createProvisionally(scheduleValue, RichInstant.fromJava(now)))
 				.willReturn(CreationResult.success(schedule));
 	}
 }

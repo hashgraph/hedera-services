@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.function.LongPredicate;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
@@ -46,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class SystemPrecheck {
-	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES = List.of(NetworkGetExecutionTime,
 			GetAccountDetails);
 
@@ -76,10 +74,6 @@ public class SystemPrecheck {
 		final var privilegeStatus = systemOpPolicies.checkAccessor(accessor).asStatus();
 		if (privilegeStatus != OK) {
 			return privilegeStatus;
-		}
-
-		if (IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
-			return OK;
 		}
 
 		return txnThrottling.shouldThrottle(accessor) ? BUSY : OK;

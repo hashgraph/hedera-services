@@ -1,0 +1,42 @@
+{
+    "buckets": [
+        {
+            "name": "A",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "ContractCallLocal"
+                    ],
+                    "opsPerSec": 1
+                }
+            ]
+        },
+        {
+            "name": "A",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoTransfer",
+                        "ConsensusSubmitMessage"
+                    ],
+                    "opsPerSec": 10
+                }
+            ]
+        },
+        {
+            "name": "C",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "ScheduleCreate",
+                        "ScheduleSign"
+                    ],
+                    "opsPerSec": 10000
+                }
+            ]
+        }
+    ]
+}

@@ -25,6 +25,8 @@ import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.utils.accessors.TxnAccessor;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +68,10 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	@Override
-	public long currentMultiplier() {
+	public long currentMultiplier(final TxnAccessor accessor) {
+		if (accessor.congestionExempt()) {
+			return DEFAULT_MULTIPLIER;
+		}
 		return multiplier;
 	}
 
@@ -117,7 +122,11 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	 * That is, the throttle states must be a child of the {@link com.hedera.services.ServicesState}.
 	 */
 	@Override
-	public void updateMultiplier(Instant consensusNow) {
+	public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
+		if (accessor.congestionExempt()) {
+			return;
+		}
+
 		if (ensureConfigUpToDate()) {
 			rebuildState();
 		}

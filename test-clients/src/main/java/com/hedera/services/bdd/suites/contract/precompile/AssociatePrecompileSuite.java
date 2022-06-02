@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -101,7 +100,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -316,7 +315,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
 				.given(
-						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties"),
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas"),
 						newKeyNamed(FREEZE_KEY),
 						newKeyNamed(KYC_KEY),
 						cryptoCreate(ACCOUNT)
@@ -447,6 +447,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
 				.given(
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas"),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
@@ -458,13 +460,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
 						uploadInitCode(THE_CONTRACT),
-						contractCreate(THE_CONTRACT)
+						contractCreate(THE_CONTRACT),
+						UtilVerbs.overriding("tokens.maxPerAccount", "1"),
+						UtilVerbs.overriding("entities.limitTokenAssociations", "true"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true")
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
@@ -507,7 +511,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")
+						UtilVerbs.resetToDefault("tokens.maxPerAccount", "entities.limitTokenAssociations",
+								"contracts.throttle.throttleByGas")
 				);
 	}
 

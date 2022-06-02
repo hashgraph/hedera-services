@@ -34,12 +34,14 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -92,7 +94,7 @@ class StateChildrenSigMetadataLookupTest {
 	@Mock
 	private MerkleToken token;
 	@Mock
-	private MerkleSchedule schedule;
+	private ScheduleVirtualValue schedule;
 	@Mock
 	private MerkleAccount account;
 	@Mock
@@ -106,7 +108,9 @@ class StateChildrenSigMetadataLookupTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
+	private MerkleScheduledTransactions schedules;
+	@Mock
+	private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
@@ -130,6 +134,7 @@ class StateChildrenSigMetadataLookupTest {
 	@Test
 	void recognizesMissingSchedule() {
 		given(stateChildren.schedules()).willReturn(schedules);
+		given(schedules.byId()).willReturn(schedulesById);
 
 		final var result = subject.scheduleSigningMetaFor(unknownSchedule, null);
 
@@ -143,7 +148,8 @@ class StateChildrenSigMetadataLookupTest {
 				.build();
 
 		given(stateChildren.schedules()).willReturn(schedules);
-		given(schedules.get(EntityNum.fromScheduleId(knownSchedule))).willReturn(schedule);
+		given(schedules.byId()).willReturn(schedulesById);
+		given(schedulesById.get(new EntityNumVirtualKey(EntityNum.fromScheduleId(knownSchedule)))).willReturn(schedule);
 		given(schedule.adminKey()).willReturn(Optional.of(simple));
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(mockTxn);
 
@@ -163,7 +169,8 @@ class StateChildrenSigMetadataLookupTest {
 				.build();
 
 		given(stateChildren.schedules()).willReturn(schedules);
-		given(schedules.get(EntityNum.fromScheduleId(knownSchedule))).willReturn(schedule);
+		given(schedules.byId()).willReturn(schedulesById);
+		given(schedulesById.get(new EntityNumVirtualKey(EntityNum.fromScheduleId(knownSchedule)))).willReturn(schedule);
 		given(schedule.hasExplicitPayer()).willReturn(true);
 		given(schedule.payer()).willReturn(explicitPayer);
 		given(schedule.adminKey()).willReturn(Optional.of(simple));

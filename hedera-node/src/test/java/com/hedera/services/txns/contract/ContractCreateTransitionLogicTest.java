@@ -298,7 +298,6 @@ class ContractCreateTransitionLogicTest {
 
 	private void givenInvalidMaxAutoAssociations() {
 		contractCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(
 						ContractCreateTransactionBody.newBuilder()
 								.setMemo("memo")
@@ -331,7 +330,6 @@ class ContractCreateTransitionLogicTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 
@@ -342,6 +340,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		final var result = TransactionProcessingResult.successful(
 				null,
@@ -389,7 +388,6 @@ class ContractCreateTransitionLogicTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 
@@ -400,6 +398,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		final var result = TransactionProcessingResult.successful(
 				null,
@@ -453,7 +452,6 @@ class ContractCreateTransitionLogicTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		final var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 
@@ -466,6 +464,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		final var result = TransactionProcessingResult.successful(
 				null,
@@ -515,6 +514,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
@@ -552,6 +552,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
@@ -674,6 +675,7 @@ class ContractCreateTransitionLogicTest {
 	void rejectsMissingBytecodeFile() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
@@ -688,6 +690,7 @@ class ContractCreateTransitionLogicTest {
 	void rejectsEmptyBytecodeFile() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
@@ -710,10 +713,10 @@ class ContractCreateTransitionLogicTest {
 				.setAdminKey(key);
 
 		var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
 				new InvalidTransactionException(SERIALIZATION_FAILED));
@@ -769,13 +772,16 @@ class ContractCreateTransitionLogicTest {
 			op.setDeclineReward(true);
 		}
 		var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
 		givenValidTxnCtx(true, true, true, false);
+	}
+
+	private AccountID ourAccount() {
+		return senderAccount.getId().asGrpcAccount();
 	}
 
 	private TransactionID ourTxnId() {

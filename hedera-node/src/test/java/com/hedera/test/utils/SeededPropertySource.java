@@ -36,7 +36,7 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -73,7 +73,10 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -244,21 +247,22 @@ public class SeededPropertySource {
 		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
-	public MerkleSchedule nextSchedule() {
-		final var seeded = new MerkleSchedule();
-		seeded.setExpiry(nextUnsignedLong());
-		seeded.setBodyBytes(nextSerializedTransactionBody());
-		if (nextBoolean()) {
-			seeded.markDeleted(nextInstant());
-		} else if (nextBoolean()) {
-			seeded.markExecuted(nextInstant());
-		}
-		final var numSignatures = SEEDED_RANDOM.nextInt(10);
-		for (int i = 0; i < numSignatures; i++) {
-			seeded.witnessValidSignature(nextBytes(nextBoolean() ? 32 : 33));
-		}
-		seeded.setKey(nextNum());
-		return seeded;
+	public byte[] nextSerializedLegacyScheduleCreateTransactionBody() {
+		return TransactionBody.newBuilder()
+				.setTransactionID(nextTxnId().toGrpc())
+				.setMemo(nextString(50))
+				.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+						.setAdminKey(Key.newBuilder().setECDSASecp256K1(
+								ByteString.copyFrom(nextBytes(20))))
+						.setMemo(nextString(20))
+						.setPayerAccountID(nextEntityId().toGrpcAccountId())
+						.setScheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+								.setMemo(nextString(20))
+								.setTransactionFee(nextLong())
+						)
+				)
+				.build()
+				.toByteArray();
 	}
 
 	public MerkleUniqueToken next0260UniqueToken() {
@@ -406,6 +410,11 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextInRangeLong(),
 				nextBoolean());
+	}
+
+	public MerkleScheduledTransactionsState nextScheduledTransactionsState() {
+		return new MerkleScheduledTransactionsState(
+				nextLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -612,6 +621,10 @@ public class SeededPropertySource {
 
 	public int nextInt() {
 		return SEEDED_RANDOM.nextInt();
+	}
+
+	public int nextInt(int bound) {
+		return SEEDED_RANDOM.nextInt(bound);
 	}
 
 	public TxnId nextTxnId() {

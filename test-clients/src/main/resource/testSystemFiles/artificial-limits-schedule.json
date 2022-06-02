@@ -1,0 +1,63 @@
+{
+  "buckets" : [ {
+    "burstPeriod" : 0,
+    "burstPeriodMs" : 3000,
+    "name" : "ThroughputLimits",
+    "throttleGroups" : [ {
+      "opsPerSec" : 10400,
+      "milliOpsPerSec" : 10400000,
+      "operations" : [ "ScheduleCreate", "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords", "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo", "TokenGetNftInfo", "TokenGetInfo", "ScheduleDelete", "ScheduleGetInfo", "FileGetContents", "FileGetInfo", "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", "TransactionGetRecord", "GetVersionInfo", "TokenGetAccountNftInfos", "TokenGetNftInfos", "CryptoApproveAllowance", "CryptoDeleteAllowance" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "ScheduleSign" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "ContractCall", "ContractCreate" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", "TokenUpdate", "TokenFeeScheduleUpdate", "TokenAssociateToAccount", "TokenAccountWipe", "TokenDissociateFromAccount", "TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount", "TokenPause", "TokenUnpause", "EthereumTransaction" ]
+    } ]
+  }, {
+    "burstPeriod" : 0,
+    "burstPeriodMs" : 3000,
+    "name" : "PriorityReservations",
+    "throttleGroups" : [ {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+    } ]
+  }, {
+    "burstPeriod" : 0,
+    "burstPeriodMs" : 10400,
+    "name" : "CreationLimits",
+    "throttleGroups" : [ {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "CryptoCreate" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "ConsensusCreateTopic" ]
+    }, {
+      "opsPerSec" : 10000,
+      "milliOpsPerSec" : 10000000,
+      "operations" : [ "TokenCreate", "TokenAssociateToAccount", "ScheduleCreate" ]
+    } ]
+  }, {
+    "burstPeriod" : 0,
+    "burstPeriodMs" : 1000,
+    "name" : "FreeQueryLimits",
+    "throttleGroups" : [ {
+      "opsPerSec" : 1000000,
+      "milliOpsPerSec" : 1000000000,
+      "operations" : [ "CryptoGetAccountBalance", "TransactionGetReceipt" ]
+    } ]
+  } ]
+}

@@ -24,6 +24,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -60,32 +61,32 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 	}
 
 	@Override
-	public boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn) {
+	public boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn, final AccountID payer) {
 		assertTypeExpectation(fileAppendTxn.hasFileAppend());
-		return opPolicies.checkKnownTxn(fileAppendTxn, FileAppend) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileAppendTxn, FileAppend, payer) == AUTHORIZED;
 	}
 
 	@Override
-	public boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn) {
+	public boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn, final AccountID payer) {
 		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate, payer) == AUTHORIZED;
 	}
 
 	@Override
-	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn) {
-		return isTargetFileWaclWaived(fileUpdateTxn);
+	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn, final AccountID payer) {
+		return isTargetFileWaclWaived(fileUpdateTxn, payer);
 	}
 
 	@Override
-	public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
+	public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
 	}
 
 	@Override
-	public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
+	public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
 		if (!isAuthorized) {
 			return false;
 		} else {

@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -48,25 +49,26 @@ public class RenewalRecordsHelper {
 	private final RecordStreaming recordStreaming;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final ConsensusTimeTracker consensusTimeTracker;
 
-	private int consensusNanosIncr = 0;
-	private Instant cycleStart = null;
+	private boolean inCycle;
 	private AccountID funding = null;
 
 	@Inject
 	public RenewalRecordsHelper(
 			final RecordStreaming recordStreaming,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final ConsensusTimeTracker consensusTimeTracker
 	) {
 		this.recordStreaming = recordStreaming;
 		this.dynamicProperties = dynamicProperties;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.consensusTimeTracker = consensusTimeTracker;
 	}
 
-	public void beginRenewalCycle(final Instant nextAvailConsTime) {
-		cycleStart = nextAvailConsTime;
-		consensusNanosIncr = 0;
+	public void beginRenewalCycle() {
+		inCycle = true;
 		funding = dynamicProperties.fundingAccount();
 	}
 
@@ -76,7 +78,7 @@ public class RenewalRecordsHelper {
 			final List<CurrencyAdjustments> tokenAdjustments
 	) {
 		assertInCycle();
-		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
+		final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
 		final var grpcId = entityNum.toGrpcAccountId();
 		final var memo = "Account " + entityNum.toIdString() + " was automatically deleted.";
 		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
@@ -97,7 +99,7 @@ public class RenewalRecordsHelper {
 	) {
 		assertInCycle();
 
-		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
+		final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
 		final var grpcId = entityNum.toGrpcAccountId();
 		final var payerId = payerForAutoRenew.toGrpcAccountId();
 		final var memo = (isContract ? "Contract " : "Account ") +
@@ -126,8 +128,7 @@ public class RenewalRecordsHelper {
 	}
 
 	public void endRenewalCycle() {
-		cycleStart = null;
-		consensusNanosIncr = 0;
+		inCycle = false;
 	}
 
 	private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
@@ -151,16 +152,12 @@ public class RenewalRecordsHelper {
 				.setConsensusTime(at);
 	}
 
-	int getConsensusNanosIncr() {
-		return consensusNanosIncr;
-	}
-
-	Instant getCycleStart() {
-		return cycleStart;
+	boolean isInCycle() {
+		return inCycle;
 	}
 
 	private void assertInCycle() {
-		if (cycleStart == null) {
+		if (!inCycle) {
 			throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
 		}
 	}

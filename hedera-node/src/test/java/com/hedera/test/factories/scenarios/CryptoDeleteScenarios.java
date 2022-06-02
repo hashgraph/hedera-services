@@ -34,6 +34,13 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get()
+			));
+		}
+	},
 	CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
@@ -59,6 +66,13 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
 					newSignedCryptoDelete(DEFAULT_PAYER_ID, RECEIVER_SIG_ID).get()
+			));
+		}
+	},
+	CRYPTO_DELETE_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID).get()
 			));
 		}
 	},
