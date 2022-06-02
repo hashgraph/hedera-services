@@ -31,6 +31,7 @@ import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +73,6 @@ class StakeChangesInterceptorTest {
 	@BeforeEach
 	void setUp() {
 		changes = new EntityChangeSet<>();
-		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		subject = new StakeAwareAccountsCommitsInterceptor(
 				sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers);
@@ -80,6 +80,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void resizesAuxArraysIfNeeded() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		for (int i = 0; i < 256; i++) {
 			changes.include(
 					AccountID.newBuilder().setAccountNum(i + 1).build(),
@@ -95,6 +96,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void onlyUpdatesNodeStakeFromAbsentToNode() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, unstakedWith(oneBalance), decliningRewardAfter(changingToNode(aNodeNum)));
 
 		subject.preview(changes);
@@ -104,6 +106,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void withdrawsAccountStakeAndAwardsNodeStakeFromAccountToNode() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, accountStakedWith(oneBalance, bob), decliningRewardAfter(changingToNode(aNodeNum)));
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
@@ -118,6 +121,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void withdrawsNodeStakeAndAwardsNodeStakeSwitchingNodes() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, nodeStakedWith(oneBalance, aNodeNum), decliningRewardAfter(changingToNode(bNodeNum)));
 
 		subject.preview(changes);
@@ -128,6 +132,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void withdrawsAndReAwardsStakeWithNewDeclineRewardOnlyChange() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, nodeStakedWith(oneBalance, aNodeNum), decliningRewardAfter(newChanges()));
 
 		subject.preview(changes);
@@ -138,6 +143,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void awardsAccountStakeWhenComingFromAbsent() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, unstakedWith(oneBalance), changingToAccount(bob));
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
@@ -151,6 +157,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void withdrawsFromNodeAndAwardsAccountStakeWhenSwitching() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, nodeStakedWith(oneBalance, aNodeNum, true), changingToAccount(bob));
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
@@ -165,6 +172,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void deductsFromAccountAndAwardsToNewAccountWhenSwitching() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, accountStakedWith(oneBalance, bob), changingToAccount(carol));
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
@@ -183,6 +191,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void justAdjustsStakedToMeWhenBalanceChanges() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, accountStakedWith(oneBalance, bob), toNewBalance(twoBalance));
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
@@ -196,6 +205,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void noEffectOnStakedToMeWhenNoBalanceChanges() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, accountStakedWith(oneBalance, bob), toNewBalance(oneBalance));
 
 		subject.preview(changes);
@@ -205,6 +215,7 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void deductsFromAccountWhenOptingOut() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, accountStakedWith(oneBalance, bob), noLongerStaking());
 		willAnswer(invocationOnMock -> {
 			changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
@@ -218,11 +229,29 @@ class StakeChangesInterceptorTest {
 
 	@Test
 	void withdrawsNodeStakeWhenOptingOut() {
+		given(accountNumbers.stakingRewardAccount()).willReturn(800L);
 		addChange(alice, nodeStakedWith(oneBalance, aNodeNum), noLongerStaking());
 
 		subject.preview(changes);
 
 		verify(stakeChangeManager).withdrawStake(aNodeNum, oneBalance, false);
+	}
+
+	@Test
+	void canAwardStakedToMeSideEffectAccount() {
+		addChange(alice, accountStakedWith(oneBalance, bob), decliningRewardAfter(changingToNode(aNodeNum)));
+		willAnswer(invocationOnMock -> {
+			changes.include(bob, nodeStakedWith(twoBalance, aNodeNum), newChanges());
+			changes.entity(1).setStakePeriodStart(123L);
+			changes.entity(1).setKey(EntityNum.fromAccountId(bob));
+			return 1;
+		}).given(stakeChangeManager).findOrAdd(bob.getAccountNum(), changes);
+		given(stakePeriodManager.isRewardable(123L)).willReturn(true);
+
+		subject.setRewardsActivated(true);
+		subject.preview(changes);
+
+		verify(sideEffectsTracker).trackRewardPayment(bob.getAccountNum(), 0);
 	}
 
 	private Map<AccountProperty, Object> newChanges() {

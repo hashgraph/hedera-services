@@ -319,7 +319,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		}
 		Arrays.fill(stakedToMeUpdates, -1);
 		Arrays.fill(hasBeenRewarded, false);
-		Arrays.fill(finishers, null);
+		// The stakeChangeScenarios and finishers arrays are filled and used left-to-right only
 	}
 
 	private void setCurrentAndNewIds(
