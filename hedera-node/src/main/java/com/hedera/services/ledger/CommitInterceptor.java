@@ -22,6 +22,9 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.ledger.properties.BeanProperty;
 
+import javax.annotation.Nullable;
+import java.util.function.Consumer;
+
 /**
  * Defines an observer to change sets being committed to a {@link TransactionalLedger}. Such an observer
  * might collect information for a record or assert validity of the pending changes, for example.
@@ -53,5 +56,17 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	 */
 	default boolean completesPendingRemovals() {
 		return false;
+	}
+
+	/**
+	 * Returns a consumer to apply to the mutable version of the entity at the given index before
+	 * it is persisted; or null if there is no finishing work to do for the entity.
+	 *
+	 * @param i the index of the entity to get finishing logic for
+	 * @return the finisher if applicable
+	 */
+	@Nullable
+	default Consumer<A> finisherFor(final int i) {
+		return null;
 	}
 }

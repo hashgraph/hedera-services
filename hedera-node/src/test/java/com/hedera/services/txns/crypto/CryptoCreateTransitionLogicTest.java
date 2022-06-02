@@ -277,6 +277,7 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -336,7 +337,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenMissingKey() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setInitialBalance(BALANCE)
@@ -354,7 +354,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenMissingAutoRenewPeriod() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setKey(KEY)
@@ -364,7 +363,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenAbsurdSendThreshold() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
@@ -375,7 +373,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenAbsurdReceiveThreshold() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
@@ -386,7 +383,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenAbsurdInitialBalance() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
@@ -397,7 +393,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenInvalidMaxAutoAssociations() {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setMemo(MEMO)
@@ -418,7 +413,6 @@ class CryptoCreateTransitionLogicTest {
 
 	private void givenValidTxnCtx(final Key toUse) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setMemo(MEMO)
@@ -433,7 +427,12 @@ class CryptoCreateTransitionLogicTest {
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
+	}
+
+	private AccountID ourAccount() {
+		return PAYER;
 	}
 
 	private TransactionID ourTxnId() {

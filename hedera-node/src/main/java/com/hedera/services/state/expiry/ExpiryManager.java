@@ -24,10 +24,8 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -70,11 +68,9 @@ public class ExpiryManager {
 	private final long shard;
 	private final long realm;
 
-	private final ScheduleStore scheduleStore;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
 			new MonotonicFullQueueExpiries<>();
@@ -83,17 +79,13 @@ public class ExpiryManager {
 
 	@Inject
 	public ExpiryManager(
-			final ScheduleStore scheduleStore,
 			final HederaNumbers hederaNums,
 			final SigImpactHistorian sigImpactHistorian,
 			final Map<TransactionID, TxnIdRecentHistory> txnHistories,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
-		this.schedules = schedules;
 		this.txnHistories = txnHistories;
-		this.scheduleStore = scheduleStore;
 		this.sigImpactHistorian = sigImpactHistorian;
 
 		this.shard = hederaNums.shard();
@@ -156,18 +148,6 @@ public class ExpiryManager {
 	 */
 	public void reviewExistingShortLivedEntities() {
 		shortLivedEntityExpiries.reset();
-
-		final var shortLivedExpiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
-		final var currentSchedules = schedules.get();
-		forEach(currentSchedules, (id, schedule) -> {
-			final Consumer<EntityId> consumer = scheduleStore::expire;
-			final var pair = Pair.of(id.longValue(), consumer);
-			shortLivedExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
-		});
-
-		shortLivedExpiries.sort(comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue).
-				thenComparing(entry -> entry.getKey().getKey()));
-		shortLivedExpiries.forEach(entry -> shortLivedEntityExpiries.track(entry.getKey(), entry.getValue()));
 	}
 
 	void trackRecordInState(final AccountID owner, final long expiry) {

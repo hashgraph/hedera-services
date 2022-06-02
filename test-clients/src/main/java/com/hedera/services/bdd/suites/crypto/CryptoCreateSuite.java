@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
@@ -34,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -86,8 +89,50 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
 				maxAutoAssociationSpec(),
-				usdFeeAsExpected()
+				usdFeeAsExpected(),
+				createAnAccountWithStakingFields()
 		);
+	}
+
+	private HapiApiSpec createAnAccountWithStakingFields() {
+		return defaultHapiSpec("createAnAccountWithStakingFields")
+				.given(
+						cryptoCreate("civilianWORewardStakingNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getAccountInfo("civilianWORewardStakingNode").has(accountWith()
+								.isDeclinedReward(true)
+								.noStakedAccountId()
+								.stakedNodeId(0)
+						)
+				).when(
+						cryptoCreate("civilianWORewardStakingAcc")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(true)
+								.stakedAccountId("0.0.10"),
+						getAccountInfo("civilianWORewardStakingAcc").has(accountWith()
+								.isDeclinedReward(true)
+								.noStakingNodeId()
+								.stakedAccountId("0.0.10"))
+				).then(
+						cryptoCreate("civilianWRewardStakingNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedNodeId(0),
+						getAccountInfo("civilianWRewardStakingNode").has(accountWith()
+										.isDeclinedReward(false)
+										.noStakedAccountId()
+										.stakedNodeId(0)),
+						cryptoCreate("civilianWRewardStakingAcc")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedAccountId("0.0.10"),
+						getAccountInfo("civilianWRewardStakingAcc").has(accountWith()
+								.isDeclinedReward(false)
+								.noStakingNodeId()
+								.stakedAccountId("0.0.10"))
+				);
 	}
 
 	private HapiApiSpec maxAutoAssociationSpec() {
@@ -173,9 +218,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.blankMemo()
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
-								.payingWith("civilian")
-								.via("createTxn"),
-						getTxnRecord("createTxn").logged()
+								.payingWith("civilian"),
+						getTxnRecord(tenAutoAssocSlots).logged()
 				).then(
 						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
 						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),

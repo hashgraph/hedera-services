@@ -171,6 +171,8 @@ public class FeesJsonToProtoSerde {
 				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 			case "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES":
 				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+			case "SCHEDULE_CREATE_CONTRACT_CALL":
+				return SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 			default:
 				return SubType.DEFAULT;
 		}

@@ -107,4 +107,14 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 	List<Map<P, Object>> getChanges() {
 		return changes;
 	}
+
+	@Override
+	public String toString() {
+		return "EntityChangeSet{" +
+				"ids=" + ids +
+				", entities=" + entities +
+				", changes=" + changes +
+				", numRetainedChanges=" + numRetainedChanges +
+				'}';
+	}
 }

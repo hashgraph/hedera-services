@@ -224,7 +224,34 @@ class BucketThrottleTest {
 		// and when:
 		subject.reclaimLastAllowedUse();
 		// then:
-		assertEquals(internalCapacity / 2, subject.bucket().capacityFree());
+		assertEquals(internalCapacity, subject.bucket().capacityFree());
+	}
+
+	@Test
+	void canResetReclaimCapacity() {
+		// setup:
+		int mtps = 500;
+		int burstPeriod = 4;
+		long internalCapacity = mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NANO_TXN;
+
+		// given:
+		var subject = BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+
+		// when:
+		var firstDecision = subject.allow(1, 0L);
+		var secondDecision = subject.allow(1, 0L);
+		var thirdDecision = subject.allow(1, 0L);
+
+		// then:
+		assertTrue(firstDecision);
+		assertTrue(secondDecision);
+		assertFalse(thirdDecision);
+		// and when:
+		subject.resetLastAllowedUse();
+		subject.reclaimLastAllowedUse();
+
+		// then:
+		assertEquals(0, subject.bucket().capacityFree());
 	}
 
 	@Test

@@ -47,7 +47,7 @@ import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -273,7 +273,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
+	static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
 			final MutableStateChildren workingState
 	) {
 		return workingState::schedules;

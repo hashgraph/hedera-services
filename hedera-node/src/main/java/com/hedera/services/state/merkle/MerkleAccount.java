@@ -482,7 +482,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getStakePeriodStart();
 	}
 
-	public void setStakePeriodStart(long stakePeriodStart) {
+	public void setStakePeriodStart(final long stakePeriodStart) {
 		throwIfImmutable("Cannot change this account's stakePeriodStart if it's immutable");
 		state().setStakePeriodStart(stakePeriodStart);
 	}

@@ -315,7 +315,10 @@ public class StateView {
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
 					.setSigners(signatoriesList)
-					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
+					.setExpirationTime(Timestamp.newBuilder()
+							.setSeconds(schedule.calculatedExpirationTime().getSeconds())
+							.setNanos(schedule.calculatedExpirationTime().getNanos()))
+					.setWaitForExpiry(schedule.calculatedWaitForExpiry());
 			schedule.memo().ifPresent(info::setMemo);
 			if (schedule.isDeleted()) {
 				info.setDeletionTime(schedule.deletionTime());
@@ -510,9 +513,9 @@ public class StateView {
 			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
 			if (account.mayHavePendingReward()) {
 				final var info = stateChildren.stakingInfo();
-				rewardCalculator.estimatePendingRewards(account,
-						info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId())));
-				stakingInfo.setPendingReward(rewardCalculator.getAccountReward());
+				final var nodeStakingInfo = info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
+				final var pendingReward = rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
+				stakingInfo.setPendingReward(pendingReward);
 			}
 		}
 

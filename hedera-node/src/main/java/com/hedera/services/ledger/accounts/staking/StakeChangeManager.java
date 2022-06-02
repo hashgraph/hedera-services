@@ -40,8 +40,10 @@ public class StakeChangeManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	public StakeChangeManager(final StakeInfoManager stakeInfoManager,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+	public StakeChangeManager(
+			final StakeInfoManager stakeInfoManager,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+	) {
 		this.stakeInfoManager = stakeInfoManager;
 		this.accounts = accounts;
 	}
@@ -56,7 +58,7 @@ public class StakeChangeManager {
 		node.addRewardStake(amount, declinedReward);
 	}
 
-	public void setStakePeriodStart(final long todayNumber) {
+	public void initializeAllStakingStartsTo(final long todayNumber) {
 		final var mutableAccounts = accounts.get();
 		for (var key : mutableAccounts.keySet()) {
 			final var account = mutableAccounts.getForModify(key);
@@ -79,7 +81,7 @@ public class StakeChangeManager {
 		// This account wasn't in the current change set
 		pendingChanges.include(
 				STATIC_PROPERTIES.scopedAccountWith(accountNum),
-				accounts.get().getForModify(EntityNum.fromLong(accountNum)),
+				accounts.get().get(EntityNum.fromLong(accountNum)),
 				new EnumMap<>(AccountProperty.class));
 		return n;
 	}

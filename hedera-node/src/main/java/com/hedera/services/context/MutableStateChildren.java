@@ -25,7 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -59,7 +59,7 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private WeakReference<MerkleScheduledTransactions> schedules;
 	private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
 	private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 	private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
@@ -126,7 +126,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
+	public MerkleScheduledTransactions schedules() {
 		return Objects.requireNonNull(schedules.get());
 	}
 
