@@ -194,7 +194,7 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
-			entry("rates.midnightCheckInterval", 1),
+			entry("rates.midnightCheckInterval", 1L),
 			entry("scheduling.longTermEnabled", true),
 			entry("scheduling.maxTxnPerSecond", 100L),
 			entry("scheduling.maxExpirationFutureSeconds", 5356800L),

@@ -471,6 +471,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.precompile.htsEnableTokenCreate", AS_BOOLEAN),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
+			entry("rates.midnightCheckInterval", AS_LONG),
 			entry("sigs.expandFromLastSignedState", AS_BOOLEAN),
 			entry("scheduling.longTermEnabled", AS_BOOLEAN),
 			entry("scheduling.maxTxnPerSecond", AS_LONG),
