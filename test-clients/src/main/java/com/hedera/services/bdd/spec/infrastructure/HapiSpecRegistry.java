@@ -100,6 +100,8 @@ public class HapiSpecRegistry {
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());
+		saveAccountId(setup.stakingRewardAccountName(), setup.stakingRewardAccount());
+		saveAccountId(setup.nodeRewardAccountName(), setup.nodeRewardAccount());
 
 		saveAccountId(setup.strongControlName(), setup.strongControlAccount());
 		saveKey(setup.strongControlName(), asKeyList(genesisKey));
@@ -771,6 +773,10 @@ public class HapiSpecRegistry {
 			remove(name, TransactionRecord.class);
 		} catch (Exception ignore) {
 		}
+	}
+
+	public boolean hasTransactionRecord(String name) {
+		return has(name, TransactionRecord.class);
 	}
 
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {

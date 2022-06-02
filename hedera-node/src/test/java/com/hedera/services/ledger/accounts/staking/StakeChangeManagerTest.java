@@ -133,7 +133,7 @@ class StakeChangeManagerTest {
 		assertEquals(-1,  accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 
 		subject = new StakeChangeManager(stakeInfoManager, () -> accountsMap);
-		subject.setStakePeriodStart(todayNum);
+		subject.initializeAllStakingStartsTo(todayNum);
 
 		assertEquals(todayNum, counterparty.getStakePeriodStart());
 		assertEquals(-1, party.getStakePeriodStart());

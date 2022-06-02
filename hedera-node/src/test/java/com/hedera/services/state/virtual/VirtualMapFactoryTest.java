@@ -45,11 +45,14 @@ class VirtualMapFactoryTest {
 	void propagatesUncheckedFromBuilder() {
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedIterableStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newScheduleListStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newScheduleTemporalStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newScheduleEqualityStorage());
 	}
 
 	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {
 		@Override
-		public <K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
+		public <K extends VirtualKey<? super K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
 			throw new UncheckedIOException(new IOException("Oops!"));
 		}
 	}

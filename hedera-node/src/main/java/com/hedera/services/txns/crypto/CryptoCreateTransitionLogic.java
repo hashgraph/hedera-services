@@ -106,7 +106,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+			AccountID sponsor = txnCtx.activePayer();
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();

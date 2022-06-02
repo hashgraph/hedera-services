@@ -41,15 +41,14 @@ public class StakingSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	protected Logger getResultsLogger() {
 		return log;
 	}
 
+	@Override
+	public boolean canRunConcurrent() {
+		return true;
+	}
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {

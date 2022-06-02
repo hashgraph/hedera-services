@@ -42,10 +42,16 @@ public class AccessorFactory {
 	}
 
 	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
-			ScheduleID parent) throws InvalidProtocolBufferException {
+			ScheduleID parent, boolean markThrottleExempt, boolean markCongestionExempt) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setScheduleRef(parent);
 		subtype.setPayer(payer);
+		if (markThrottleExempt) {
+			subtype.markThrottleExempt();
+		}
+		if (markCongestionExempt) {
+			subtype.markCongestionExempt();
+		}
 		return subtype;
 	}
 
@@ -56,7 +62,7 @@ public class AccessorFactory {
 	 * @param signedTxnWrapperBytes
 	 * @return
 	 */
-	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+	private SignedTxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		// custom accessors will be defined here in future PR based on the function from functionExtractor
 		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}

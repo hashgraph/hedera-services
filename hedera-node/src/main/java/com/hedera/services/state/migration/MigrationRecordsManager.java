@@ -26,6 +26,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -76,6 +77,7 @@ public class MigrationRecordsManager {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final ConsensusTimeTracker consensusTimeTracker;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 	private final SyntheticTxnFactory syntheticTxnFactory;
@@ -88,6 +90,7 @@ public class MigrationRecordsManager {
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx,
+			final ConsensusTimeTracker consensusTimeTracker,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final AccountNumbers accountNumbers
@@ -95,6 +98,7 @@ public class MigrationRecordsManager {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
 		this.networkCtx = networkCtx;
+		this.consensusTimeTracker = consensusTimeTracker;
 		this.creator = creator;
 		this.accounts = accounts;
 		this.syntheticTxnFactory = syntheticTxnFactory;
@@ -108,10 +112,11 @@ public class MigrationRecordsManager {
 	 * hash is in state).
 	 */
 	public void publishMigrationRecords(final Instant now) {
-		final var curNetworkCtx = networkCtx.get();
-		if (curNetworkCtx.areMigrationRecordsStreamed()) {
+		if (!consensusTimeTracker.unlimitedPreceding()) {
 			return;
 		}
+
+		final var curNetworkCtx = networkCtx.get();
 
 		// After release 0.24.1, we publish creation records for 0.0.800 [stakingRewardAccount] and
 		// 0.0.801 [nodeRewardAccount] _only_ on a network reset

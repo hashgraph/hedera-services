@@ -56,8 +56,6 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
 		optionAccountPropertyMap.put(Option.AUTO_RENEW_ACCOUNT_ID, AccountProperty.AUTO_RENEW_ACCOUNT_ID);
 		optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
-		optionAccountPropertyMap.put(Option.STAKED_TO_ME, AccountProperty.STAKED_TO_ME);
-		optionAccountPropertyMap.put(Option.STAKE_PERIOD_START, AccountProperty.STAKE_PERIOD_START);
 		optionAccountPropertyMap.put(Option.STAKED_ID, AccountProperty.STAKED_ID);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}
@@ -106,7 +104,8 @@ public final class HederaAccountCustomizer extends
 	public void customizeStakedId(
 			final String idCase,
 			final AccountID stakedAccountId,
-			final long stakedNodeId) {
+			final long stakedNodeId
+	) {
 		final var stakedId = getStakedId(idCase, stakedAccountId, stakedNodeId);
 		this.stakedId(stakedId);
 	}

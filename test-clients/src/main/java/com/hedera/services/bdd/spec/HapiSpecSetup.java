@@ -38,6 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
@@ -352,6 +353,10 @@ public class HapiSpecSetup {
 	public long statusWaitTimeoutMs() {
 		return props.getLong("status.wait.timeout.ms");
 	}
+	public AccountID nodeRewardAccount() { return asAccount("0.0.801"); }
+	public AccountID stakingRewardAccount() { return asAccount("0.0.800"); }
+	public String nodeRewardAccountName() { return "NODE_REWARD"; }
+	public String stakingRewardAccountName() { return "STAKING_REWARD"; }
 	public FileID throttleDefinitionsId() {
 		return props.getFile("throttle.definitions.id");
 	}

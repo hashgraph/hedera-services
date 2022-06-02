@@ -55,8 +55,8 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public void leakUnusedGasPreviouslyReserved(long value) {
-		delegate.leakUnusedGasPreviouslyReserved(value);
+	public void leakUnusedGasPreviouslyReserved(TxnAccessor accessor, long value) {
+		delegate.leakUnusedGasPreviouslyReserved(accessor, value);
 	}
 
 	@Override
@@ -72,6 +72,11 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	@Override
 	public GasLimitDeterministicThrottle gasLimitThrottle() {
 		return delegate.gasLimitThrottle();
+	}
+
+	@Override
+	public void resetUsage() {
+		delegate.resetUsage();
 	}
 
 	@Override

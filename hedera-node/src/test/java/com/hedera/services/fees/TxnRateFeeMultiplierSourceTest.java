@@ -23,6 +23,7 @@ package com.hedera.services.fees;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -58,6 +59,8 @@ class TxnRateFeeMultiplierSourceTest {
 
 	@Mock
 	private FunctionalityThrottling throttling;
+	@Mock
+	private TxnAccessor accessor;
 
 	private MockGlobalDynamicProps mockProps;
 
@@ -125,14 +128,14 @@ class TxnRateFeeMultiplierSourceTest {
 	) {
 		final var aThrottle = DeterministicThrottle.withTps(firstTps);
 		final var bThrottle = DeterministicThrottle.withTps(secondTps);
-		aThrottle.allow(firstUsed);
-		bThrottle.allow(secondUsed);
+		aThrottle.allow(firstUsed, Instant.now());
+		bThrottle.allow(secondUsed, Instant.now());
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
 		subject.resetExpectations();
 		subject.resetCongestionLevelStarts(instants(old10XLevelStart, old25XLevelStart, old100XLevelStart));
-		subject.updateMultiplier(Instant.ofEpochSecond(consensusSec));
-		final long actualMultiplier = subject.currentMultiplier();
+		subject.updateMultiplier(accessor, Instant.ofEpochSecond(consensusSec));
+		final long actualMultiplier = subject.currentMultiplier(accessor);
 		final var starts = subject.congestionLevelStarts();
 
 		assertEquals(expectedMultiplier, actualMultiplier);
@@ -152,19 +155,19 @@ class TxnRateFeeMultiplierSourceTest {
 	@Test
 	void adaptsToChangedProperties() {
 		final var aThrottle = DeterministicThrottle.withTps(100);
-		aThrottle.allow(96);
+		aThrottle.allow(96, Instant.now());
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
 
 		subject.resetExpectations();
 		subject.resetCongestionLevelStarts(instants(1L, 1L, 1L));
-		subject.updateMultiplier(consensusNow);
+		subject.updateMultiplier(accessor, consensusNow);
 
-		assertEquals(25, subject.currentMultiplier());
+		assertEquals(25, subject.currentMultiplier(accessor));
 
 		mockProps.useDifferentMultipliers();
-		subject.updateMultiplier(consensusNow);
+		subject.updateMultiplier(accessor, consensusNow);
 
-		assertEquals(26, subject.currentMultiplier());
+		assertEquals(26, subject.currentMultiplier(accessor));
 	}
 
 	@Test
@@ -172,7 +175,7 @@ class TxnRateFeeMultiplierSourceTest {
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(Collections.emptyList());
 
 		assertDoesNotThrow(subject::resetExpectations);
-		assertEquals(1L, subject.currentMultiplier());
+		assertEquals(1L, subject.currentMultiplier(accessor));
 	}
 
 	@Test
@@ -236,6 +239,29 @@ class TxnRateFeeMultiplierSourceTest {
 		subject.resetExpectations();
 
 		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void disabledWhenCongestionExempt() {
+		final var aThrottle = DeterministicThrottle.withTps(100);
+		aThrottle.allow(96, Instant.now());
+		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
+
+		subject.resetExpectations();
+		subject.resetCongestionLevelStarts(instants(1L, 1L, 1L));
+		subject.updateMultiplier(accessor, consensusNow);
+
+		assertEquals(25, subject.currentMultiplier(accessor));
+
+		given(accessor.congestionExempt()).willReturn(true);
+
+		assertEquals(1L, subject.currentMultiplier(accessor));
+
+		subject.updateMultiplier(accessor, consensusNow);
+
+		given(accessor.congestionExempt()).willReturn(false);
+
+		assertEquals(25, subject.currentMultiplier(accessor));
 	}
 
 	private Instant[] instants(final long a, final long b, final long c) {

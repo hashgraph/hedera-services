@@ -29,6 +29,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +61,9 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -85,34 +88,35 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				notIdenticalScheduleIfScheduledTxnChanges(),
-				notIdenticalScheduleIfAdminKeyChanges(),
-				notIdenticalScheduleIfMemoChanges(),
-				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-				rejectsSentinelKeyListAsAdminKey(),
-				rejectsMalformedScheduledTxnMemo(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
-				suiteCleanup(),
-				validateSignersInInfo()
-		});
+		return withAndWithoutLongTermEnabled(() -> List.of(
+			notIdenticalScheduleIfScheduledTxnChanges(),
+			notIdenticalScheduleIfAdminKeyChanges(),
+			notIdenticalScheduleIfMemoChanges(),
+			recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+			rejectsSentinelKeyListAsAdminKey(),
+			rejectsMalformedScheduledTxnMemo(),
+			bodyOnlyCreation(),
+			onlyBodyAndAdminCreation(),
+			onlyBodyAndMemoCreation(),
+			bodyAndSignatoriesCreation(),
+			bodyAndPayerCreation(),
+			rejectsUnresolvableReqSigners(),
+			triggersImmediatelyWithBothReqSimpleSigs(),
+			onlySchedulesWithMissingReqSimpleSigs(),
+			failsWithNonExistingPayerAccountId(),
+			failsWithTooLongMemo(),
+			detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+			doesntTriggerUntilPayerSigns(),
+			requiresExtantPayer(),
+			rejectsFunctionlessTxn(),
+			functionlessTxnBusyWithNonExemptPayer(),
+			whitelistWorks(),
+			preservesRevocationServiceSemanticsForFileDelete(),
+			worksAsExpectedWithDefaultScheduleId(),
+			infoIncludesTxnIdFromCreationReceipt(),
+			suiteCleanup(),
+			validateSignersInInfo()
+		));
 	}
 
 	private HapiApiSpec suiteCleanup() {
@@ -213,6 +217,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.memo("SURPRISE!!!")
 						)
 								.recordingScheduledTxn()
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 								.designatingPayer("payer")
 				).then(
 						getScheduleInfo("onlyBodyAndPayer")
@@ -587,6 +593,17 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given().when().then(
 						scheduleCreateFunctionless("unknown")
 								.hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
+								.payingWith(GENESIS)
+				);
+	}
+
+	public HapiApiSpec functionlessTxnBusyWithNonExemptPayer() {
+		return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
+				.given().when().then(
+						cryptoCreate("sender"),
+						scheduleCreateFunctionless("unknown")
+								.hasPrecheck(BUSY)
+								.payingWith("sender")
 				);
 	}
 
@@ -600,6 +617,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).when(
 						overriding("scheduling.whitelist", "ConsensusCreateTopic"),
 						scheduleCreate("ok", createTopic("neverToBe"))
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 				).then(
 						overriding("scheduling.whitelist", defaultWhitelist)
 				);

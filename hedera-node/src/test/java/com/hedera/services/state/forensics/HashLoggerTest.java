@@ -23,7 +23,7 @@ package com.hedera.services.state.forensics;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -63,7 +63,7 @@ class HashLoggerTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
+	private MerkleScheduledTransactions schedules;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock

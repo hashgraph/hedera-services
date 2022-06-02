@@ -269,7 +269,7 @@ class MerkleNetworkContextTest {
 		gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
 
 		final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
-		someThrottle.allow(1);
+		someThrottle.allow(1, Instant.now());
 		final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
 		final var syncedStarts = new Instant[] { someStart };
 
@@ -687,9 +687,9 @@ class MerkleNetworkContextTest {
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
-		aThrottle.allow(1);
-		bThrottle.allow(1);
-		cThrottle.allow(20);
+		aThrottle.allow(1, Instant.now());
+		bThrottle.allow(1, Instant.now());
+		cThrottle.allow(20, Instant.now());
 		var activeThrottles = List.of(aThrottle, bThrottle, cThrottle);
 		var expectedSnapshots = activeThrottles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
@@ -731,12 +731,12 @@ class MerkleNetworkContextTest {
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
-		aThrottle.allow(1);
-		bThrottle.allow(1);
-		cThrottle.allow(20);
+		aThrottle.allow(1, Instant.now());
+		bThrottle.allow(1, Instant.now());
+		cThrottle.allow(20, Instant.now());
 		// and:
 		var subjectSnapshotA = aThrottle.usageSnapshot();
-		aThrottle.allow(2);
+		aThrottle.allow(2, Instant.now());
 		var subjectSnapshotC = cThrottle.usageSnapshot();
 
 		throttling = mock(FunctionalityThrottling.class);
@@ -763,11 +763,11 @@ class MerkleNetworkContextTest {
 		// setup:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
-		aThrottle.allow(1);
-		bThrottle.allow(1);
+		aThrottle.allow(1, Instant.now());
+		bThrottle.allow(1, Instant.now());
 		// and:
 		var subjectSnapshot = aThrottle.usageSnapshot();
-		aThrottle.allow(2);
+		aThrottle.allow(2, Instant.now());
 
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -791,9 +791,9 @@ class MerkleNetworkContextTest {
 	void warnsIfCannotResetGasLimitUsage() {
 		// setup:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
-		aThrottle.allow(1);
+		aThrottle.allow(1, Instant.now());
 		var subjectSnapshot = aThrottle.usageSnapshot();
-		aThrottle.allow(2);
+		aThrottle.allow(2, Instant.now());
 
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -815,9 +815,9 @@ class MerkleNetworkContextTest {
 	void updatesFromMatchingSnapshotsAsExpected() {
 		// setup:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
-		aThrottle.allow(1);
+		aThrottle.allow(1, Instant.now());
 		var subjectSnapshot = aThrottle.usageSnapshot();
-		aThrottle.allow(2);
+		aThrottle.allow(2, Instant.now());
 
 		throttling = mock(FunctionalityThrottling.class);
 		gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);

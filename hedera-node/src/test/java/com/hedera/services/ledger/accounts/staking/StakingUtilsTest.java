@@ -1,5 +1,25 @@
 package com.hedera.services.ledger.accounts.staking;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -30,7 +50,6 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeF
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,52 +103,66 @@ public class StakingUtilsTest {
 	@Test
 	void updatesStakedToMe() {
 		var changes = randomStakeFieldChanges(100L);
+		final long[] stakedToMeUpdates = new long[] { 2000L };
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		pendingChanges.include(counterpartyId, counterparty, changes);
-		assertEquals(2000L, pendingChanges.changes(0).get(STAKED_TO_ME));
 
-		updateStakedToMe(0, 20L, pendingChanges);
-		assertEquals(2020L, pendingChanges.changes(0).get(STAKED_TO_ME));
-
+		updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
+		assertEquals(2020L, stakedToMeUpdates[0]);
 
 		changes = randomNotStakeFieldChanges();
 		pendingChanges.clear();
 		pendingChanges.include(counterpartyId, counterparty, changes);
+		stakedToMeUpdates[0] = -1;
 
-		assertEquals(null, pendingChanges.changes(0).get(STAKED_TO_ME));
-		updateStakedToMe(0, 20L, pendingChanges);
-		assertEquals(counterparty.getStakedToMe() + 20L, pendingChanges.changes(0).get(STAKED_TO_ME));
+		updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
+		assertEquals(counterparty.getStakedToMe() + 20L, stakedToMeUpdates[0]);
+	}
+
+	@Test
+	void worksAroundStakingToNewlyCreatedAccount() {
+		final var changes = randomNotStakeFieldChanges();
+		final var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		pendingChanges.clear();
+		pendingChanges.include(counterpartyId, null, changes);
+		final var stakedToMeUpdates = new long[] { -1L };
+
+		updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
+		assertEquals(20L, stakedToMeUpdates[0]);
 	}
 
 	@Test
 	void getsFieldsCorrectlyFromChanges() {
 		final var changes = randomStakeFieldChanges(100L);
+		final long[] stakedToMeUpdates = new long[] { 2000L };
 
 		assertEquals(0L, getAccountStakeeNum(changes));
 		assertEquals(-2L, getNodeStakeeNum(changes));
 		assertEquals(100L, finalBalanceGiven(counterparty, changes));
 		assertEquals(true, finalDeclineRewardGiven(counterparty, changes));
-		assertEquals(2000L, finalStakedToMeGiven(counterparty, changes));
+		assertEquals(2000L, finalStakedToMeGiven(0, counterparty, stakedToMeUpdates));
 	}
 
 	@Test
 	void getsFieldsCorrectlyIfNotFromChanges() {
 		final var changes = randomNotStakeFieldChanges();
+		final long[] stakedToMeUpdates = new long[] { -1l };
 
 		assertEquals(0L, getAccountStakeeNum(changes));
 		assertEquals(0L, getNodeStakeeNum(changes));
 		assertEquals(counterpartyBalance, finalBalanceGiven(counterparty, changes));
 		assertEquals(false, finalDeclineRewardGiven(counterparty, changes));
-		assertEquals(counterPartyStake, finalStakedToMeGiven(counterparty, changes));
+		assertEquals(counterPartyStake, finalStakedToMeGiven(0, counterparty, stakedToMeUpdates));
 	}
 
 	@Test
 	void returnsDefaultsWhenAccountIsNull() {
 		final var changes = randomNotStakeFieldChanges();
+		final long[] stakedToMeUpdates = new long[] { -1l };
 
 		assertEquals(0, finalBalanceGiven(null, changes));
 		assertEquals(false, finalDeclineRewardGiven(null, changes));
-		assertEquals(0, finalStakedToMeGiven(null, changes));
+		assertEquals(0, finalStakedToMeGiven(0, null, stakedToMeUpdates));
 	}
 
 	public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
@@ -163,7 +196,6 @@ public class StakingUtilsTest {
 		map.put(BALANCE, newBalance);
 		map.put(AccountProperty.STAKED_ID, -2L);
 		map.put(AccountProperty.DECLINE_REWARD, true);
-		map.put(STAKED_TO_ME, 2000L);
 		return map;
 	}
 

@@ -166,7 +166,8 @@
 	"DEFAULT": 0.0001
   },
   "ScheduleCreate": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.01,
+	"SCHEDULE_CREATE_CONTRACT_CALL": 0.1
   },
   "ScheduleSign": {
 	"DEFAULT": 0.01

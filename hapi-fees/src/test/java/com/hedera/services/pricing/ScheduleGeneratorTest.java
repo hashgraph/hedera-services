@@ -35,8 +35,10 @@ import static com.hedera.services.pricing.ScheduleGenerator.SUPPORTED_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -85,6 +87,7 @@ class ScheduleGeneratorTest {
 			/* Token */
 			Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
 			/* Consensus */
-			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
+			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
+			Pair.of(ScheduleCreate, List.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL))
 	);
 }
