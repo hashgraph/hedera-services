@@ -78,12 +78,25 @@ class StakePeriodManagerTest {
 	}
 
 	@Test
-	void canPreserveStakePeriodStartIfNotRewarded() {
+	void canPreserveStakePeriodStartIfNotRewardedAndStakingToSameNode() {
 		final var finisher = subject.finisherFor(-1, -1, 321, false);
 
 		final var result = getResultOf(finisher, 123L, 12);
 
 		assertEquals(12, result.getStakePeriodStart());
+		assertEquals(321, result.getStakedToMe());
+	}
+
+	@Test
+	void canResetStakePeriodStartIfNotRewardedAndStakingToNewNode() {
+		// UTC day 14
+		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
+
+		final var finisher = subject.finisherFor(-2, -1, 321, false);
+
+		final var result = getResultOf(finisher, 123L, 13);
+
+		assertEquals(14, result.getStakePeriodStart());
 		assertEquals(321, result.getStakedToMe());
 	}
 

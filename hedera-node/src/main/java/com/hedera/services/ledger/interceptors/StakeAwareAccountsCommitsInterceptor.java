@@ -70,7 +70,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private long newStakedId;
 	// If staking is not activated, the new balance of 0.0.800 after the changes
 	private long newFundingBalance;
-	// Whether rewards are no active
+	// Whether rewards are active
 	private boolean rewardsActivated;
 	// The new stakedToMe values of accounts in the change set
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
@@ -130,7 +130,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 		super.preview(pendingChanges);
 
-		if (!rewardsActivated && newFundingBalance > dynamicProperties.getStakingStartThreshold()) {
+		if (!rewardsActivated && newFundingBalance >= dynamicProperties.getStakingStartThreshold()) {
 			activateStakingRewards();
 		}
 	}

@@ -110,6 +110,19 @@ public class StakePeriodManager {
 		return stakePeriodStart;
 	}
 
+	/**
+	 * Given the current and new staked ids for an account, as well as if it received a reward in
+	 * this transaction, returns the new {@code stakePeriodStart} for this account:
+	 * <ol>
+	 *     <li>{@code -1} if the {@code stakePeriodStart} doesn't need to change; or,</li>
+	 *     <li>The value to which the {@code stakePeriodStart} should be changed.</li>
+	 * </ol>
+	 *
+	 * @param curStakedId the id the account was staked to at the beginning of the transaction
+	 * @param newStakedId the id the account was staked to at the end of the transaction
+	 * @param rewarded whether the account was rewarded during the transaction
+	 * @return either -1 for no new stakePeriodStart, or the new value
+	 */
 	private long stakePeriodStartUpdateFor(
 			final long curStakedId,
 			final long newStakedId,
@@ -119,11 +132,21 @@ public class StakePeriodManager {
 		// a node; the value will never be used, since it cannot be eligible for a reward
 		if (newStakedId < 0) {
 			if (curStakedId >= 0) {
-				// We just started staking to a node
+				// We just started staking to a node today
 				return currentStakePeriod();
 			} else {
-				// If we were just rewarded, stake period start is yesterday; otherwise, unchanged
-				return !rewarded ? -1 : currentStakePeriod() - 1;
+				// If we were just rewarded, stake period start is yesterday
+				if (rewarded) {
+					return currentStakePeriod() - 1;
+				} else {
+					// We weren't rewarded, and are still staking to the same node; no change
+					if (curStakedId == newStakedId) {
+						return -1;
+					} else {
+						// We switched nodes before we were eligible for a reward; start period reverts to today
+						return currentStakePeriod();
+					}
+				}
 			}
 		} else {
 			return -1;
