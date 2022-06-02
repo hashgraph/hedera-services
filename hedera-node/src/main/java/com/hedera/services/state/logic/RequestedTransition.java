@@ -21,6 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -36,21 +37,30 @@ public class RequestedTransition {
 	private final SystemOpPolicies opPolicies;
 	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
+	private final HapiOpPermissions hapiOpPermissions;
 
 	@Inject
 	public RequestedTransition(
-			TransitionRunner transitionRunner,
-			SystemOpPolicies opPolicies,
-			TransactionContext txnCtx,
-			NetworkCtxManager networkCtxManager
+			final TransitionRunner transitionRunner,
+			final SystemOpPolicies opPolicies,
+			final TransactionContext txnCtx,
+			final NetworkCtxManager networkCtxManager,
+			final HapiOpPermissions hapiOpPermissions
 	) {
 		this.transitionRunner = transitionRunner;
 		this.opPolicies = opPolicies;
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
+		this.hapiOpPermissions = hapiOpPermissions;
 	}
 
 	void finishFor(TxnAccessor accessor) {
+		final var permissionStatus = hapiOpPermissions.permissibilityOf(accessor.getFunction(),
+				accessor.getPayer());
+		if (permissionStatus != OK) {
+			txnCtx.setStatus(permissionStatus);
+			return;
+		}
 		final var sysAuthStatus = opPolicies.checkAccessor(accessor).asStatus();
 		if (sysAuthStatus != OK) {
 			txnCtx.setStatus(sysAuthStatus);

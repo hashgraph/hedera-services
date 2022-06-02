@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -172,7 +173,7 @@ class NetworkCtxManagerTest {
 		verify(opCounters).countHandled(TokenMint);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
-		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(anyLong());
+		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(any(), anyLong());
 	}
 
 	@Test
@@ -190,7 +191,7 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(opCounters).countHandled(ContractCall);
-		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
+		verify(handleThrottling).leakUnusedGasPreviouslyReserved(txnAccessor, 9_000L);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}
@@ -207,7 +208,7 @@ class NetworkCtxManagerTest {
 		verify(opCounters).countHandled(ContractCall);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
-		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
 	}
 
 	@Test
@@ -223,7 +224,7 @@ class NetworkCtxManagerTest {
 		verify(opCounters).countHandled(ContractCall);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
-		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
 	}
 
 	@Test
@@ -240,7 +241,7 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(opCounters).countHandled(ContractCreate);
-		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
+		verify(handleThrottling).leakUnusedGasPreviouslyReserved(txnAccessor, 9_000L);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}
@@ -258,7 +259,7 @@ class NetworkCtxManagerTest {
 		verify(opCounters).countHandled(ContractCreate);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
-		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
 	}
 
 	@Test
@@ -271,7 +272,7 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(opCounters).countHandled(ContractCreate);
-		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}

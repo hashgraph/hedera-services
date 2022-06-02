@@ -23,7 +23,7 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -53,7 +53,7 @@ public interface StateChildren {
 
 	MerkleMap<EntityNum, MerkleToken> tokens();
 
-	MerkleMap<EntityNum, MerkleSchedule> schedules();
+	MerkleScheduledTransactions schedules();
 
 	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
 

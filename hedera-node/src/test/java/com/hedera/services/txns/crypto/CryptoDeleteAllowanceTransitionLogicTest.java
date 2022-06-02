@@ -89,6 +89,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 
 		subject.doStateTransition();
 
@@ -139,6 +140,10 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();
+	}
+
+	private AccountID ourAccount() {
+		return payerId;
 	}
 
 	private static final TokenID token1 = asToken("0.0.100");

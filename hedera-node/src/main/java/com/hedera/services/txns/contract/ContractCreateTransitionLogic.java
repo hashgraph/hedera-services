@@ -138,7 +138,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
-		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
+		final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
 		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
 	}
 

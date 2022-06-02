@@ -100,7 +100,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
 		doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
 	}
 

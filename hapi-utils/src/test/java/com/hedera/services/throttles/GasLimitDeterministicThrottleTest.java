@@ -100,6 +100,11 @@ class GasLimitDeterministicThrottleTest {
 	}
 
 	@Test
+	void usedReturnsCorrectValue() {
+		assertEquals(0, subject.getUsed());
+	}
+
+	@Test
 	void verifyLeakUnusedGas() {
 		subject.allow(Instant.now(), 100L);
 		assertEquals(999_900L, subject.delegate().bucket().capacityFree());
@@ -120,7 +125,7 @@ class GasLimitDeterministicThrottleTest {
 	}
 
 	@Test
-	void resetsAsExpected() {
+	void resetsUsageToAsExpected() {
 		final long used = DEFAULT_CAPACITY / 2;
 		final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 		final var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
@@ -129,5 +134,57 @@ class GasLimitDeterministicThrottleTest {
 
 		assertEquals(used, subject.delegate().bucket().capacityUsed());
 		assertEquals(snapshot, subject.usageSnapshot());
+	}
+
+	@Test
+	void resetsUsageAsExpected() {
+		// setup:
+		long gasLimitForTX = 100_000;
+		Instant now = Instant.ofEpochSecond(1_234_567L);
+
+		// when:
+		var result = subject.allow(now, gasLimitForTX);
+		subject.resetUsage();
+
+		// then:
+		assertTrue(result);
+		assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
+	}
+
+	@Test
+	void reclaimsLastAllowedUseAsExpected() {
+		// setup:
+		long gasLimitForTX = 100_000;
+		Instant now = Instant.ofEpochSecond(1_234_567L);
+
+		// when:
+		var result = subject.allow(now, gasLimitForTX);
+		subject.resetLastAllowedUse();
+		var result2 = subject.allow(now, gasLimitForTX);
+		subject.reclaimLastAllowedUse();
+
+		// then:
+		assertTrue(result);
+		assertTrue(result2);
+		assertEquals(gasLimitForTX, subject.getUsed());
+		assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
+	}
+
+	@Test
+	void resetsLastAllowedUseAsExpected() {
+		// setup:
+		long gasLimitForTX = 100_000;
+		Instant now = Instant.ofEpochSecond(1_234_567L);
+
+		// when:
+		var result = subject.allow(now, gasLimitForTX);
+		var result2 = subject.allow(now, gasLimitForTX);
+		subject.resetLastAllowedUse();
+		subject.reclaimLastAllowedUse();
+
+		// then:
+		assertTrue(result);
+		assertTrue(result2);
+		assertEquals(DEFAULT_CAPACITY - (gasLimitForTX * 2), subject.delegate().bucket().capacityFree());
 	}
 }

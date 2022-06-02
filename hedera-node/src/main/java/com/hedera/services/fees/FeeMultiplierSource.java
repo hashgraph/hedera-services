@@ -22,9 +22,12 @@ package com.hedera.services.fees;
 
 import java.time.Instant;
 
+import com.hedera.services.utils.accessors.TxnAccessor;
+
+
 public interface FeeMultiplierSource {
-	void updateMultiplier(Instant consensusNow);
-	long currentMultiplier();
+	void updateMultiplier(final TxnAccessor accessor, Instant consensusNow);
+	long currentMultiplier(final TxnAccessor accessor);
 	void resetExpectations();
 
 	void resetCongestionLevelStarts(Instant[] savedStartTimes);
