@@ -65,7 +65,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -373,7 +372,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(285_000L)),
-						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -390,7 +389,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(26_451)),
-						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -403,7 +402,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				).when().then(
 						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
 								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 

@@ -775,6 +775,10 @@ public class HapiSpecRegistry {
 		}
 	}
 
+	public boolean hasTransactionRecord(String name) {
+		return has(name, TransactionRecord.class);
+	}
+
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {
 		return get(name, ContractGetInfoResponse.ContractInfo.class);
 	}

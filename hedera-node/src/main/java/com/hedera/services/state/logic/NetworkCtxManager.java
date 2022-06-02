@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
@@ -165,7 +166,7 @@ public class NetworkCtxManager {
 	 * @param op
 	 * 		the type of transaction just handled
 	 */
-	public void finishIncorporating(HederaFunctionality op) {
+	public void finishIncorporating(@Nonnull HederaFunctionality op) {
 		opCounters.countHandled(op);
 		if (consensusSecondJustChanged) {
 			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
@@ -177,7 +178,7 @@ public class NetworkCtxManager {
 			gasUsedThisConsSec += gasUsed;
 			if (dynamicProperties.shouldThrottleByGas()) {
 				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
-				handleThrottling.leakUnusedGasPreviouslyReserved(excessAmount);
+				handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(), excessAmount);
 			}
 		}
 

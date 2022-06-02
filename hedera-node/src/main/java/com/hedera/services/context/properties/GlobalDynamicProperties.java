@@ -84,8 +84,13 @@ public class GlobalDynamicProperties {
 	private long minAutoRenewDuration;
 	private Duration grpcMinAutoRenewDuration;
 	private int localCallEstRetBytes;
+	private boolean schedulingLongTermEnabled;
+	private long schedulingMaxTxnPerSecond;
+	private long schedulingMaxExpirationFutureSeconds;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
+	private long maxPrecedingRecords;
+	private long maxFollowingRecords;
 	private Set<HederaFunctionality> schedulingWhitelist;
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
@@ -99,8 +104,8 @@ public class GlobalDynamicProperties {
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
+	private long scheduleThrottleMaxGasLimit;
 	private long htsDefaultGasCost;
-	private long triggerTxnWindBackNanos;
 	private int changeHistorianMemorySecs;
 	private boolean autoCreationEnabled;
 	private boolean expandSigsFromLastSignedState;
@@ -182,8 +187,13 @@ public class GlobalDynamicProperties {
 		grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
+		schedulingLongTermEnabled = properties.getBooleanProperty("scheduling.longTermEnabled");
+		schedulingMaxTxnPerSecond = properties.getLongProperty("scheduling.maxTxnPerSecond");
+		schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
+		maxPrecedingRecords = properties.getLongProperty("consensus.handle.maxPrecedingRecords");
+		maxFollowingRecords = properties.getLongProperty("consensus.handle.maxFollowingRecords");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
@@ -197,8 +207,8 @@ public class GlobalDynamicProperties {
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
 		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
-		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
 		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
 		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
@@ -393,8 +403,28 @@ public class GlobalDynamicProperties {
 		return scheduledTxExpiryTimeSecs;
 	}
 
+	public boolean schedulingLongTermEnabled() {
+		return schedulingLongTermEnabled;
+	}
+
+	public long schedulingMaxTxnPerSecond() {
+		return schedulingMaxTxnPerSecond;
+	}
+
+	public long schedulingMaxExpirationFutureSeconds() {
+		return schedulingMaxExpirationFutureSeconds;
+	}
+
 	public int messageMaxBytesAllowed() {
 		return messageMaxBytesAllowed;
+	}
+
+	public long maxPrecedingRecords() {
+		return maxPrecedingRecords;
+	}
+
+	public long maxFollowingRecords() {
+		return maxFollowingRecords;
 	}
 
 	public Set<HederaFunctionality> schedulingWhitelist() {
@@ -449,12 +479,12 @@ public class GlobalDynamicProperties {
 		return consensusThrottleMaxGasLimit;
 	}
 
-	public long htsDefaultGasCost() {
-		return htsDefaultGasCost;
+	public long scheduleThrottleMaxGasLimit() {
+		return scheduleThrottleMaxGasLimit;
 	}
 
-	public long triggerTxnWindBackNanos() {
-		return triggerTxnWindBackNanos;
+	public long htsDefaultGasCost() {
+		return htsDefaultGasCost;
 	}
 
 	public int changeHistorianMemorySecs() {

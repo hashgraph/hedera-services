@@ -69,7 +69,7 @@ public class ThrottleGroup {
 		return milliOpsPerSec;
 	}
 
-	long impliedMilliOpsPerSec() {
+	public long impliedMilliOpsPerSec() {
 		return milliOpsPerSec > 0 ? milliOpsPerSec : 1_000 * opsPerSec;
 	}
 }

@@ -59,6 +59,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newTreasury(CUSTOM_PAYER_ACCOUNT)
+							.get()
+			));
+		}
+	},
 	UPDATE_REPLACING_WITH_MISSING_TREASURY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
@@ -164,6 +175,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(DEFAULT_PAYER)
+							.get()
+			));
+		}
+	},
+	TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newAutoRenew(CUSTOM_PAYER_ACCOUNT)
 							.get()
 			));
 		}

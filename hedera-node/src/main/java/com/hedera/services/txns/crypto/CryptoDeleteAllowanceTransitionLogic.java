@@ -65,7 +65,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final TransactionBody cryptoDeleteAllowanceTxn = txnCtx.accessor().getTxn();
-		final AccountID payer = cryptoDeleteAllowanceTxn.getTransactionID().getAccountID();
+		final AccountID payer = txnCtx.activePayer();
 		final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
 
 		deleteAllowanceLogic.deleteAllowance(op.getNftAllowancesList(),

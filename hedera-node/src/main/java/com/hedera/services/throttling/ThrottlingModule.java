@@ -4,7 +4,7 @@ package com.hedera.services.throttling;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,11 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.throttling.DeterministicThrottling.DeterministicThrottlingMode;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
+import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.swirlds.common.system.AddressBook;
 import dagger.Module;
 import dagger.Provides;
@@ -40,11 +43,33 @@ public final class ThrottlingModule {
 	public static FunctionalityThrottling provideHapiThrottling(
 			final AliasManager aliasManager,
 			final Supplier<AddressBook> addressBook,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final ScheduleStore scheduleStore
 	) {
 		final var delegate = new DeterministicThrottling(
-				() -> addressBook.get().getSize(), aliasManager, dynamicProperties, false);
+				() -> addressBook.get().getSize(), aliasManager, dynamicProperties, DeterministicThrottlingMode.HAPI, scheduleStore);
 		return new HapiThrottling(delegate);
+	}
+
+	@Provides
+	@Singleton
+	@ScheduleThrottle
+	public static TimedFunctionalityThrottling provideTimedScheduleThrottling(
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties,
+			final ScheduleStore scheduleStore
+	) {
+		return new DeterministicThrottling(
+				() -> 1, aliasManager, dynamicProperties, DeterministicThrottlingMode.SCHEDULE, scheduleStore);
+	}
+
+	@Provides
+	@Singleton
+	@ScheduleThrottle
+	public static FunctionalityThrottling provideScheduleThrottling(
+			@ScheduleThrottle final TimedFunctionalityThrottling timedScheduleThrottling
+	) {
+		return timedScheduleThrottling;
 	}
 
 	@Provides
@@ -53,10 +78,11 @@ public final class ThrottlingModule {
 	public static FunctionalityThrottling provideHandleThrottling(
 			final AliasManager aliasManager,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final ScheduleStore scheduleStore
 	) {
 		final var delegate = new DeterministicThrottling(
-				() -> 1, aliasManager, dynamicProperties, true);
+				() -> 1, aliasManager, dynamicProperties, DeterministicThrottlingMode.CONSENSUS, scheduleStore);
 		return new TxnAwareHandleThrottling(txnCtx, delegate);
 	}
 

@@ -61,9 +61,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID
 public class UpgradeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
 
-	private final String pragmatism = "Think of the children!";
-	private final String poeticUpgradeLoc = "testfiles/poeticUpgrade.zip";
-	private final String heavyPoeticUpgradeLoc = "testfiles/heavyPoeticUpgrade.zip";
+	public static final String pragmatism = "Think of the children!";
+	public static final String poeticUpgradeLoc = "testfiles/poeticUpgrade.zip";
+	public static final String heavyPoeticUpgradeLoc = "testfiles/heavyPoeticUpgrade.zip";
 
 	public static void main(String... args) {
 		new UpgradeSuite().runSuiteSync();
@@ -75,8 +75,8 @@ public class UpgradeSuite extends HapiApiSuite {
 	private final byte[] heavyPoeticUpgradeHash;
 	private final byte[] notEvenASha384Hash = "abcdefgh".getBytes(StandardCharsets.UTF_8);
 
-	private final String standardUpdateFile = "0.0.150";
-	private final String standardTelemetryFile = "0.0.159";
+	public static final String standardUpdateFile = "0.0.150";
+	public static final String standardTelemetryFile = "0.0.159";
 
 	public UpgradeSuite() {
 		try {

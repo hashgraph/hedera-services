@@ -295,7 +295,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn)),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
 				);
 	}
 
@@ -762,7 +762,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 									.getContractCreateResult().getGasUsed();
 							assertEquals(285_000L, gasUsed);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -782,7 +782,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 									.getContractCreateResult().getGasUsed();
 							assertTrue(gasUsed > 0L);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -794,7 +794,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when().then(
 						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 
