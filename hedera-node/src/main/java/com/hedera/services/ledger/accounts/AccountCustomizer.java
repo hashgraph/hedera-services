@@ -43,8 +43,6 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_A
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_TO_ME;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKE_PERIOD_START;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static java.util.Collections.unmodifiableMap;
 
@@ -80,8 +78,6 @@ public abstract class AccountCustomizer<
 		ALIAS,
 		AUTO_RENEW_ACCOUNT_ID,
 		DECLINE_REWARD,
-		STAKED_TO_ME,
-		STAKE_PERIOD_START,
 		STAKED_ID
 	}
 
@@ -189,16 +185,6 @@ public abstract class AccountCustomizer<
 
 	public T stakedId(final long option) {
 		changeManager.update(changes, optionProperties.get(STAKED_ID), option);
-		return self();
-	}
-
-	public T stakePeriodStart(final long option) {
-		changeManager.update(changes, optionProperties.get(STAKE_PERIOD_START), option);
-		return self();
-	}
-
-	public T stakedToMe(final long option) {
-		changeManager.update(changes, optionProperties.get(STAKED_TO_ME), option);
 		return self();
 	}
 }

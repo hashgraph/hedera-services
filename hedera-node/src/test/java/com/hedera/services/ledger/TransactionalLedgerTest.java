@@ -22,22 +22,16 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
-import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
@@ -102,16 +97,6 @@ class TransactionalLedgerTest {
 	private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
 	@Mock
 	private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
-	@Mock
-	private MerkleNetworkContext networkCtx;
-	@Mock
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private RewardCalculator rewardCalculator;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
@@ -191,6 +176,24 @@ class TransactionalLedgerTest {
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
 		verify(backingTestAccounts).put(1L, expectedCommit);
 		assertTrue(testLedger.getCreatedKeys().isEmpty());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void committingUsesProvidedFinisherIfPresent() {
+		setupInterceptedTestLedger();
+		final var boop = new AtomicBoolean();
+		given(testInterceptor.finisherFor(0)).willReturn(ignore -> boop.set(true));
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things);
+		testLedger.commit();
+
+		assertTrue(boop.get());
 	}
 
 	@Test
