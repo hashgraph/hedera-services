@@ -66,13 +66,13 @@ class MerkleStakingInfoTest {
 	private final long stakeToNotReward = 155L;
 	private final long stakeRewardStart = 1234L;
 	private final long stake = 500L;
-	private final long[] rewardSumHistory = new long[] {2L, 1L, 0L};
+	private final long[] rewardSumHistory = new long[] { 2L, 1L, 0L };
 	private final EntityNum key = EntityNum.fromInt(number);
 
 	@BeforeEach
 	void setUp() {
-		subject = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake,
-				rewardSumHistory);
+		subject = new MerkleStakingInfo(
+				minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake, rewardSumHistory);
 		subject.setKey(key);
 	}
 
@@ -175,13 +175,38 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
-	void updatesRewardsSumHistoryAsExpected() {
-		final var rewardRate = 1_000_000_000.0;
-		final var totalStakedRewardStart = 1_000L;
+	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
+		final var rewardRate = 1_000_000_000;
+		// Total staked is 1000 hbar
+		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
 		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
-		assertArrayEquals(new long[]{14L, 2L, 1L}, subject.getRewardSumHistory());
+		assertArrayEquals(new long[] { 1_000_002L, 2L, 1L }, subject.getRewardSumHistory());
+	}
+
+	@Test
+	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMaxStake() {
+		final var rewardRate = 1_000_000_000;
+		// Total staked is 1000 hbar
+		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+
+		subject.setStakeToReward(2 * subject.getMaxStake());
+		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+
+		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
+	}
+
+	@Test
+	void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStake() {
+		final var rewardRate = 1_000_000_000;
+		// Total staked is 1000 hbar
+		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+
+		subject.setStakeRewardStart(0);
+		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+
+		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
 	}
 
 	@Test

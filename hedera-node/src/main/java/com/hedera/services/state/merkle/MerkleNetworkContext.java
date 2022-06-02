@@ -115,6 +115,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private boolean stakingRewardsActivated;
 	private long totalStakedRewardStart;
 	private long totalStakedStart;
+	private long pendingRewards;
 
 	public MerkleNetworkContext() {
 		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
@@ -331,13 +332,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			final var firstBlockTime = readNullable(in, RichInstant::from);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
+			if (version >= RELEASE_0270_VERSION) {
+				stakingRewardsActivated = in.readBoolean();
+				totalStakedRewardStart = in.readLong();
+				totalStakedStart = in.readLong();
+				pendingRewards = in.readLong();
+			}
 			blockHashes.clear();
 			in.readSerializable(true, () -> blockHashes);
-		}
-		if (version >= RELEASE_0270_VERSION) {
-			stakingRewardsActivated = in.readBoolean();
-			totalStakedRewardStart = in.readLong();
-			totalStakedStart = in.readLong();
 		}
 	}
 
@@ -379,9 +381,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		serializeNonHashData(out);
 		out.writeSerializable(blockHashes, true);
-		out.writeBoolean(stakingRewardsActivated);
-		out.writeLong(totalStakedRewardStart);
-		out.writeLong(totalStakedStart);
 	}
 
 	@Override
@@ -644,6 +643,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
 		out.writeLong(blockNo);
+		out.writeBoolean(stakingRewardsActivated);
+		out.writeLong(totalStakedRewardStart);
+		out.writeLong(totalStakedStart);
+		out.writeLong(pendingRewards);
 	}
 
 	private void reset(List<DeterministicThrottle> throttles, GasLimitDeterministicThrottle gasLimitThrottle) {
@@ -735,6 +738,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void setPreparedUpdateFileHash(byte[] preparedUpdateFileHash) {
 		throwIfImmutable("Cannot update prepared update file hash on an immutable context");
 		this.preparedUpdateFileHash = preparedUpdateFileHash;
+	}
+
+	public long getPendingRewards() {
+		return pendingRewards;
+	}
+
+	public void setPendingRewards(final long pendingRewards) {
+		this.pendingRewards = pendingRewards;
 	}
 
 	public void markMigrationRecordsStreamed() {

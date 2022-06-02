@@ -20,6 +20,7 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -88,8 +89,7 @@ public class EndOfStakingPeriodCalculator {
 			return;
 		}
 
-		final var rewardRate = Math.min(stakingRewardsAccountBalance(),
-				properties.getLongProperty("staking.rewardRate"));
+		final var rewardRate = effectiveRateForCurrentPeriod();
 
 		long updatedTotalStakedRewardStart = 0L;
 		long updatedTotalStakedStart = 0L;
@@ -137,6 +137,13 @@ public class EndOfStakingPeriodCalculator {
 						NO_CUSTOM_FEES,
 						NO_OTHER_SIDE_EFFECTS,
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
+	}
+
+	@VisibleForTesting
+	long effectiveRateForCurrentPeriod() {
+		return Math.max(0, Math.min(
+				stakingRewardsAccountBalance() - merkleNetworkContextSupplier.get().getPendingRewards(),
+				properties.getLongProperty("staking.rewardRate")));
 	}
 
 	Timestamp getMidnightTime(Instant consensusTime) {

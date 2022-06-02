@@ -533,6 +533,8 @@ public class SeededPropertySource {
 		seeded.setStakingRewardsActivated(nextBoolean());
 		seeded.setTotalStakedRewardStart(nextLong());
 		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
 		return seeded;
 	}
 

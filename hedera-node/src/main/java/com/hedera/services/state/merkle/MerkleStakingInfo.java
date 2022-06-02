@@ -302,7 +302,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		historyHash = null;
 	}
 
-	public void updateRewardSumHistory(final double rewardRate, final long totalStakedRewardStart) {
+	public void updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
 		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length-1];
@@ -310,12 +310,15 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
 		}
 		rewardSumHistory[0] -= droppedRewardSum;
+
 			/*
-				if this node was "active", then it should give rewards for this staking period
-				if (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold)
+				If this node was "active" (assumed so in 0.27), _and_ had at least the minimum stake,
+				then it should give rewards for this staking period. (Future release will check active
+				status based on node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold.)
 			 */
-		rewardSumHistory[0] += totalStakedRewardStart == 0 ? 0 :
-				(long) (rewardRate * stakeRewardStart / totalStakedRewardStart / HBARS_TO_TINYBARS);
+		rewardSumHistory[0] += (totalStakedRewardStart == 0 || stakeRewardStart == 0)
+				? 0
+				: (rewardRate  / (totalStakedRewardStart / HBARS_TO_TINYBARS));
 		// reset the historyHash
 		historyHash = null;
 	}
