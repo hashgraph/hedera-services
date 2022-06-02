@@ -135,7 +135,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			}
 		}
 
-		log.error("Reached maxProcessingLoopIterations reached in processScheduledTransactions, we should never get here!");
+		log.error("maxProcessingLoopIterations reached in processScheduledTransactions, we should never get here!");
 	}
 
 	private void doProcess(

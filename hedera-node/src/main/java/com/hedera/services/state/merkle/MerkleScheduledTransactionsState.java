@@ -30,8 +30,8 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 
 public class MerkleScheduledTransactionsState extends AbstractMerkleLeaf {
-	public static final int RELEASE_0260_VERSION = 1;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	public static final int RELEASE_0270_VERSION = 1;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x174cca55254e7f12L;
 
