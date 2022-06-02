@@ -32,10 +32,8 @@ import java.util.Map;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
 
 public class StakingUtils {
-
 	private StakingUtils() {
 		throw new UnsupportedOperationException("Utility class");
 	}
@@ -75,11 +73,12 @@ public class StakingUtils {
 	}
 
 	public static long finalStakedToMeGiven(
+			final int stakeeI,
 			@Nullable final MerkleAccount account,
-			@NotNull final Map<AccountProperty, Object> changes
+			@NotNull final long[] stakedToMeUpdates
 	) {
-		if (changes.containsKey(STAKED_TO_ME)) {
-			return (long) changes.get(STAKED_TO_ME);
+		if (stakedToMeUpdates[stakeeI] != -1) {
+			return stakedToMeUpdates[stakeeI];
 		} else {
 			return (account == null) ? 0 : account.getStakedToMe();
 		}
@@ -88,15 +87,16 @@ public class StakingUtils {
 	public static void updateStakedToMe(
 			final int stakeeI,
 			final long delta,
+			@NotNull final long[] stakedToMeUpdates,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var mutableChanges = pendingChanges.changes(stakeeI);
-
-		if (mutableChanges.containsKey(STAKED_TO_ME)) {
-			mutableChanges.put(STAKED_TO_ME, (long) mutableChanges.get(STAKED_TO_ME) + delta);
+		if (stakedToMeUpdates[stakeeI] != -1) {
+			stakedToMeUpdates[stakeeI] += delta;
 		} else {
-			final var newStakedToMe = pendingChanges.entity(stakeeI).getStakedToMe() + delta;
-			mutableChanges.put(STAKED_TO_ME, newStakedToMe);
+			// In theory this could be null if a multi-step contract operation created an account and then staked to it
+			final var account = pendingChanges.entity(stakeeI);
+			final var alreadyStaked = account == null ? 0L : account.getStakedToMe();
+			stakedToMeUpdates[stakeeI] = alreadyStaked + delta;
 		}
 	}
 
@@ -115,9 +115,6 @@ public class StakingUtils {
 	}
 
 	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
-		return changes.containsKey(BALANCE) ||
-				changes.containsKey(DECLINE_REWARD) ||
-				changes.containsKey(STAKED_ID) ||
-				changes.containsKey(STAKED_TO_ME);
+		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
 	}
 }

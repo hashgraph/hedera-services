@@ -41,8 +41,6 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_A
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_TO_ME;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKE_PERIOD_START;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
@@ -265,33 +263,6 @@ class AccountCustomizerTest {
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKED_ID)::equals),
 				argThat(stakedId::equals));
 	}
-
-	@Test
-	void changesExpectedStakePeriodStartProperty() {
-		setupWithMockChangeManager();
-		final Long stakePeriodStart = 1000L;
-
-		subject.stakePeriodStart(stakePeriodStart);
-
-		verify(changeManager).update(
-				any(EnumMap.class),
-				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKE_PERIOD_START)::equals),
-				argThat(stakePeriodStart::equals));
-	}
-
-	@Test
-	void changesExpectedStakedToMeProperty() {
-		setupWithMockChangeManager();
-		final Long stakeToMe = 1000L;
-
-		subject.stakedToMe(stakeToMe);
-
-		verify(changeManager).update(
-				any(EnumMap.class),
-				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(STAKED_TO_ME)::equals),
-				argThat(stakeToMe::equals));
-	}
-
 
 	@Test
 	void changesAutoAssociationFieldsAsExpected() {

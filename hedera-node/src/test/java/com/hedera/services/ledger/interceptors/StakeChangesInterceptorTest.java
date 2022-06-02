@@ -42,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.EnumMap;
 import java.util.Map;
 
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_TO_ME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -114,8 +113,7 @@ class StakeChangesInterceptorTest {
 		subject.preview(changes);
 
 		verify(stakeChangeManager).awardStake(aNodeNum, oneBalance, true);
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(0L, finalBobChanges.get(STAKED_TO_ME));
+		assertEquals(0L, subject.getStakedToMeUpdates()[1]);
 	}
 
 	@Test
@@ -148,8 +146,7 @@ class StakeChangesInterceptorTest {
 
 		subject.preview(changes);
 
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(oneBalance, finalBobChanges.get(STAKED_TO_ME));
+		assertEquals(oneBalance, subject.getStakedToMeUpdates()[1]);
 	}
 
 	@Test
@@ -163,8 +160,7 @@ class StakeChangesInterceptorTest {
 		subject.preview(changes);
 
 		verify(stakeChangeManager).withdrawStake(aNodeNum, oneBalance, true);
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(oneBalance, finalBobChanges.get(STAKED_TO_ME));
+		assertEquals(oneBalance, subject.getStakedToMeUpdates()[1]);
 	}
 
 	@Test
@@ -181,10 +177,8 @@ class StakeChangesInterceptorTest {
 
 		subject.preview(changes);
 
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(0L, finalBobChanges.get(STAKED_TO_ME));
-		final var finalCarolChanges = changes.changes(2);
-		assertEquals(oneBalance, finalCarolChanges.get(STAKED_TO_ME));
+		assertEquals(0L, subject.getStakedToMeUpdates()[1]);
+		assertEquals(oneBalance, subject.getStakedToMeUpdates()[2]);
 	}
 
 	@Test
@@ -197,8 +191,7 @@ class StakeChangesInterceptorTest {
 
 		subject.preview(changes);
 
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(twoBalance, finalBobChanges.get(STAKED_TO_ME));
+		assertEquals(twoBalance, subject.getStakedToMeUpdates()[1]);
 	}
 
 	@Test
@@ -220,8 +213,7 @@ class StakeChangesInterceptorTest {
 
 		subject.preview(changes);
 
-		final var finalBobChanges = changes.changes(1);
-		assertEquals(0L, finalBobChanges.get(STAKED_TO_ME));
+		assertEquals(0L, subject.getStakedToMeUpdates()[1]);
 	}
 
 	@Test

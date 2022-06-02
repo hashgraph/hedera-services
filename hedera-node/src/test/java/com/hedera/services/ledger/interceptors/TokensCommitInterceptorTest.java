@@ -21,9 +21,13 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.CommitInterceptor;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.doCallRealMethod;
 
 class TokensCommitInterceptorTest {
 	@Test
@@ -31,5 +35,12 @@ class TokensCommitInterceptorTest {
 		final var subject = new TokensCommitInterceptor(new SideEffectsTracker());
 
 		assertDoesNotThrow(() -> subject.preview(null));
+	}
+
+	@Test
+	void defaultFinisherIsNull() {
+		final var subject = Mockito.mock(CommitInterceptor.class);
+		doCallRealMethod().when(subject).finisherFor(0);
+		assertNull(subject.finisherFor(0));
 	}
 }
