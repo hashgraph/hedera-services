@@ -47,6 +47,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 @Singleton
 public class EndOfStakingPeriodCalculator {
@@ -101,7 +102,8 @@ public class EndOfStakingPeriodCalculator {
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
 			final var lastPeriodRewardRate =
 					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
-			final var rewardsOwedForLastPeriod = merkleStakingInfo.getStakeRewardStart() * lastPeriodRewardRate;
+			final var rewardsOwedForLastPeriod =
+					merkleStakingInfo.getStakeRewardStart() / HBARS_TO_TINYBARS * lastPeriodRewardRate;
 			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
 			final var nextPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromLastPeriodAndRecomputeStakes();

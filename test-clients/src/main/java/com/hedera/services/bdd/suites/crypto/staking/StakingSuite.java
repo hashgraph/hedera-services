@@ -87,7 +87,7 @@ public class StakingSuite extends HapiApiSuite {
 				.given(
 						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
 						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, stakingAccount, 10 * ONE_HBAR))
+								tinyBarsFromTo(GENESIS, stakingAccount, ONE_MILLION_HBARS))
 				).when(
 						cryptoCreate(civilian),
 						cryptoCreate(alice)
@@ -96,6 +96,7 @@ public class StakingSuite extends HapiApiSuite {
 						cryptoCreate(bob).balance(5_000 * ONE_MILLION_HBARS),
 						cryptoCreate(carol).stakedNodeId(0),
 						cryptoUpdate(bob).newStakedNodeId(0),
+						// End of period ONE
 						sleepFor(75_000)
 				).then(
 						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
@@ -103,6 +104,7 @@ public class StakingSuite extends HapiApiSuite {
 								.via(unrewardedTxn),
 						getTxnRecord(unrewardedTxn).andAllChildRecords().logged(),
 						sleepFor(75_000),
+						// rewardSumHistory now: [3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
 								.payingWith(civilian)
 								.via(rewardedTxn),
