@@ -44,7 +44,7 @@ public class StakePeriodManager {
 	private long prevConsensusSecs;
 
 	public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
-	private static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
+	public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
 	@Inject
 	public StakePeriodManager(final TransactionContext txnCtx,

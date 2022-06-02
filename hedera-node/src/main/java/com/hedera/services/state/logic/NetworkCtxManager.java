@@ -21,9 +21,11 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.interceptors.EndOfStakingPeriodCalculator;
@@ -45,6 +47,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -68,6 +71,7 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+	private final PropertySource propertySource;
 	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
@@ -85,7 +89,8 @@ public class NetworkCtxManager {
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final TransactionContext txnCtx,
 			final MiscRunningAvgs runningAvgs,
-			final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator
+			final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator,
+			final @CompositeProps PropertySource propertySource
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -100,6 +105,7 @@ public class NetworkCtxManager {
 		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
 		this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
+		this.propertySource = propertySource;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -126,7 +132,7 @@ public class NetworkCtxManager {
 			consensusSecondJustChanged = true;
 			// We're in a new second, so check if it's the first of a UTC calendar day; there are
 			// some special actions that trigger on the first transaction after midnight
-			if (lastConsensusTime == null || isNextDay.test(lastConsensusTime, consensusTime)) {
+			if (lastConsensusTime == null || isNextPeriod(lastConsensusTime, consensusTime)) {
 				networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
 				endOfStakingPeriodCalculator.updateNodes(consensusTime);
 			}
@@ -143,6 +149,15 @@ public class NetworkCtxManager {
 					issInfo.relax();
 				}
 			}, issInfo::relax);
+		}
+	}
+
+	private boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
+		final var stakingPeriod = propertySource.getLongProperty("staking.periodMins");
+		if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
+			return isNextDay.test(lastConsensusTime, consensusTime);
+		} else {
+			return consensusTime.getEpochSecond() >= lastConsensusTime.getEpochSecond() + (stakingPeriod * 60);
 		}
 	}
 
