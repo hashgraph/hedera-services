@@ -748,6 +748,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.pendingRewards = pendingRewards;
 	}
 
+	public void increasePendingRewards(final long amount) {
+		this.pendingRewards += amount;
+	}
+
 	public void markMigrationRecordsStreamed() {
 		this.migrationRecordsStreamed = true;
 	}

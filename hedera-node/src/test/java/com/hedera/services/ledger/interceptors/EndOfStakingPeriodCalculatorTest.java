@@ -100,7 +100,7 @@ class EndOfStakingPeriodCalculatorTest {
 		final var account_800 = mock(MerkleAccount.class);
 
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
-		given(properties.getLongProperty("staking.rewardRate")).willReturn(10_000_000_000L);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(100L);
 		given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(stakingRewardAccount);
 		given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
 		given(account_800.getBalance()).willReturn(balance_800);
@@ -108,7 +108,7 @@ class EndOfStakingPeriodCalculatorTest {
 		given(stakingInfos.getForModify(nodeNum1)).willReturn(stakingInfo1);
 		given(stakingInfos.getForModify(nodeNum2)).willReturn(stakingInfo2);
 		given(stakingInfos.getForModify(nodeNum3)).willReturn(stakingInfo3);
-		given(merkleNetworkContext.getTotalStakedRewardStart()).willReturn(10_000L);
+		given(merkleNetworkContext.getTotalStakedRewardStart()).willReturn(1_000_000_000L);
 
 		subject.updateNodes(consensusTime);
 
@@ -118,8 +118,8 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(500L, stakingInfo2.getStake());
 		assertEquals(0L, stakingInfo3.getStake());
 		assertArrayEquals(new long[]{16,6,5}, stakingInfo1.getRewardSumHistory());
-		assertArrayEquals(new long[]{8,1,1}, stakingInfo2.getRewardSumHistory());
-		assertArrayEquals(new long[]{103,3,1}, stakingInfo3.getRewardSumHistory());
+		assertArrayEquals(new long[]{11,1,1}, stakingInfo2.getRewardSumHistory());
+		assertArrayEquals(new long[]{13,3,1}, stakingInfo3.getRewardSumHistory());
 	}
 
 	@Test

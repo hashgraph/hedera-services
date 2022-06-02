@@ -17,7 +17,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.Set;
+
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class PendingRewardsManagementTest {
@@ -35,6 +39,8 @@ class PendingRewardsManagementTest {
 	private EntityCreator creator;
 	@Mock
 	private PropertySource properties;
+	@Mock
+	private MerkleStakingInfo info;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -51,6 +57,22 @@ class PendingRewardsManagementTest {
 	}
 
 	@Test
+	void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
+		given800Balance(1_000_000_000_000L);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
+		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
+		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
+		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
+		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
+
+		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
+
+		verify(networkCtx).increasePendingRewards(stakeRewardStart * lastPeriodRewardRate);
+	}
+
+	@Test
 	void rewardRateIsZeroIfPendingRewardsExceed800Balance() {
 		given800Balance(123);
 		given(networkCtx.getPendingRewards()).willReturn(124L);
@@ -63,4 +85,10 @@ class PendingRewardsManagementTest {
 		given(accounts.get(EntityNum.fromLong(800)))
 				.willReturn(MerkleAccountFactory.newAccount().balance(balance).get());
 	}
+
+	private static final long rewardRate = 100_000_000;
+	private static final long stakeRewardStart = 666L;
+	private static final long lastPeriodRewardRate = 100_000L;
+	private static final long totalStakedRewardStart = 100_000_000_000L;
+	private static final EntityNum onlyNodeNum = EntityNum.fromLong(123);
 }

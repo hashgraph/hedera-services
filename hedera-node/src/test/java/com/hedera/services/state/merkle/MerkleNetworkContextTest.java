@@ -879,6 +879,14 @@ class MerkleNetworkContextTest {
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
+	@Test
+	void canIncreasePendingRewards() {
+		final var localSub = new MerkleNetworkContext();
+		localSub.increasePendingRewards(123);
+		localSub.increasePendingRewards(234);
+		assertEquals(123 + 234, localSub.getPendingRewards());
+	}
+
 	long[] used = new long[] { 100L, 200L, 300L };
 	Instant[] lastUseds = new Instant[] {
 			Instant.ofEpochSecond(1L, 100),

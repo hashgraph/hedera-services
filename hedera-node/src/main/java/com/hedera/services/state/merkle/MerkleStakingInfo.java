@@ -74,6 +74,19 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		rewardSumHistory = new long[bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods") + 1];
 	}
 
+	public long reviewElectionsFromLastPeriodAndRecomputeStakes() {
+		final var totalStake = stakeToReward + stakeToNotReward;
+		if (totalStake > maxStake) {
+			setStake(maxStake);
+		} else if (totalStake < minStake) {
+			setStake(0);
+		} else {
+			setStake(totalStake);
+		}
+		stakeRewardStart = Math.min(stakeToReward, stake);
+		return stakeRewardStart;
+	}
+
 	public MerkleStakingInfo(
 			final long minStake,
 			final long maxStake,
@@ -302,25 +315,31 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		historyHash = null;
 	}
 
-	public void updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
+	public long updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
 		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
-		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length-1];
-		for (int i = rewardSumHistory.length-1; i > 0; i--) {
+		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
+		for (int i = rewardSumHistory.length - 1; i > 0; i--) {
 			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
 		}
 		rewardSumHistory[0] -= droppedRewardSum;
 
-			/*
-				If this node was "active" (assumed so in 0.27), _and_ had at least the minimum stake,
-				then it should give rewards for this staking period. (Future release will check active
-				status based on node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold.)
-			 */
-		rewardSumHistory[0] += (totalStakedRewardStart == 0 || stakeRewardStart == 0)
-				? 0
-				: (rewardRate  / (totalStakedRewardStart / HBARS_TO_TINYBARS));
+		final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+		// If this node has received more than max stake, we must "down-scale" its reward rate so
+		// even after all its staking accounts are rewarded, their total payments will be no more
+		// than a node with exactly max stake
+		final var effRewardRate = (stakeToReward <= maxStake)
+				? baseRateForNodeWithNoMoreThanMaxStake
+				: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
+
+		// If this node was "active" (assumed so in 0.27), _and_ had at least the minimum stake,
+		// then it should give rewards for this staking period. (Future release will check active
+		// status based on node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold.)
+		final var pendingRewardRate = (totalStakedRewardStart == 0 || stakeRewardStart == 0) ? 0 : effRewardRate;
+		rewardSumHistory[0] += pendingRewardRate;
 		// reset the historyHash
 		historyHash = null;
+		return pendingRewardRate;
 	}
 
 	private void assertMutable(String proximalField) {

@@ -180,9 +180,10 @@ class MerkleStakingInfoTest {
 		// Total staked is 1000 hbar
 		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
-		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
 		assertArrayEquals(new long[] { 1_000_002L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(1_000_000L, pendingRewardRate);
 	}
 
 	@Test
@@ -192,9 +193,10 @@ class MerkleStakingInfoTest {
 		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
 		subject.setStakeToReward(2 * subject.getMaxStake());
-		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(500_000L, pendingRewardRate);
 	}
 
 	@Test
@@ -204,9 +206,10 @@ class MerkleStakingInfoTest {
 		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
 		subject.setStakeRewardStart(0);
-		subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
 
 		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(0L, pendingRewardRate);
 	}
 
 	@Test

@@ -89,30 +89,24 @@ public class EndOfStakingPeriodCalculator {
 			return;
 		}
 
-		final var rewardRate = effectiveRateForCurrentPeriod();
-
-		long updatedTotalStakedRewardStart = 0L;
 		long updatedTotalStakedStart = 0L;
-		List<NodeStake> nodeStakingInfos = new ArrayList<>();
+		long updatedTotalStakedRewardStart = 0L;
 
+		final var rewardRate = effectiveRateForCurrentPeriod();
+		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
+		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
 		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
 			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
-			merkleStakingInfo.updateRewardSumHistory(rewardRate, merkleNetworkContext.getTotalStakedRewardStart());
+			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
+			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
+			final var lastPeriodRewardRate =
+					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+			final var rewardsOwedForLastPeriod = merkleStakingInfo.getStakeRewardStart() * lastPeriodRewardRate;
+			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
+			final var nextPeriodStakeRewardStart =
+					merkleStakingInfo.reviewElectionsFromLastPeriodAndRecomputeStakes();
 
-			final var totalStake = merkleStakingInfo.getStakeToReward() + merkleStakingInfo.getStakeToNotReward();
-			final var minStake = merkleStakingInfo.getMinStake();
-			final var maxStake = merkleStakingInfo.getMaxStake();
-
-			if (totalStake > maxStake) {
-				merkleStakingInfo.setStake(maxStake);
-			} else if (totalStake < minStake) {
-				merkleStakingInfo.setStake(0);
-			} else {
-				merkleStakingInfo.setStake(totalStake);
-			}
-
-			final var stakedRewardUsed = Math.min(merkleStakingInfo.getStakeToReward(), merkleStakingInfo.getStake());
-			updatedTotalStakedRewardStart += stakedRewardUsed;
+			updatedTotalStakedRewardStart += nextPeriodStakeRewardStart;
 			updatedTotalStakedStart += merkleStakingInfo.getStake();
 
 			nodeStakingInfos.add(NodeStake.newBuilder()
