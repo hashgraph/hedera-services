@@ -49,7 +49,6 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeF
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
-import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 
 public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitInterceptor {
