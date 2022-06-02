@@ -21,9 +21,11 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -49,17 +53,24 @@ class RequestedTransitionTest {
 	@Mock
 	private NetworkCtxManager networkCtxManager;
 	@Mock
+	private AccountID payer;
+	@Mock
 	private TxnAccessor accessor;
+	@Mock
+	private HapiOpPermissions hapiOpPermissions;
 
 	private RequestedTransition subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RequestedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager);
+		subject = new RequestedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
 	}
 
 	@Test
 	void finishesTransitionWithAuthFailure() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
+		given(accessor.getPayer()).willReturn(payer);
+		given(hapiOpPermissions.permissibilityOf(HederaFunctionality.CryptoTransfer, payer)).willReturn(OK);
 		given(opPolicies.checkAccessor(accessor)).willReturn(IMPERMISSIBLE);
 
 		// when:
@@ -71,8 +82,24 @@ class RequestedTransitionTest {
 	}
 
 	@Test
+	void finishesTransitionWithPermissionFailure() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
+		given(accessor.getPayer()).willReturn(payer);
+		given(hapiOpPermissions.permissibilityOf(HederaFunctionality.CryptoTransfer, payer)).willReturn(AUTHORIZATION_FAILED);
+
+		// when:
+		subject.finishFor(accessor);
+
+		// then:
+		verify(txnCtx).setStatus(AUTHORIZATION_FAILED);
+		verify(transitionRunner, never()).tryTransition(accessor);
+	}
+
+	@Test
 	void incorporatesAfterFinishingWithSuccess() {
 		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
+		given(accessor.getPayer()).willReturn(payer);
+		given(hapiOpPermissions.permissibilityOf(HederaFunctionality.CryptoTransfer, payer)).willReturn(OK);
 		given(opPolicies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 		given(transitionRunner.tryTransition(accessor)).willReturn(true);
 
@@ -86,6 +113,9 @@ class RequestedTransitionTest {
 
 	@Test
 	void doesntIncorporateAfterFailedTransition() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
+		given(accessor.getPayer()).willReturn(payer);
+		given(hapiOpPermissions.permissibilityOf(HederaFunctionality.CryptoTransfer, payer)).willReturn(OK);
 		given(opPolicies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 
 		// when:

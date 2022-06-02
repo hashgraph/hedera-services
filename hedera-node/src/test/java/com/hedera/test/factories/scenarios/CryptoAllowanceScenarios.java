@@ -39,6 +39,18 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_APPROVE_ALLOWANCE_SELF_OWNER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedApproveAllowance()
+							.withCryptoAllowances(cryptoSelfOwnerAllowanceList)
+							.withNftAllowances(nftSelfOwnerAllowanceList)
+							.withTokenAllowances(tokenSelfOwnerAllowanceList)
+							.nonPayerKts(OWNER_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
 	CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
@@ -112,6 +124,16 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withNftAllowances(nftDeleteAllowanceList)
+							.nonPayerKts(OWNER_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	CRYPTO_DELETE_ALLOWANCE_SELF_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedDeleteAllowance()
+							.withNftAllowances(nftDeleteAllowanceListSelf)
 							.nonPayerKts(OWNER_ACCOUNT_KT)
 							.get()
 			));

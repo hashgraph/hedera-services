@@ -118,20 +118,25 @@ class TxnAwareHandleThrottlingTest {
 		var all = subject.allActiveThrottles();
 		var onlyXfer = subject.activeThrottlesFor(HederaFunctionality.CryptoTransfer);
 		subject.rebuildFor(defs);
+		subject.resetUsage();
 
 		// then:
 		verify(delegate).rebuildFor(defs);
+		verify(delegate).resetUsage();
 		assertSame(whatever, all);
 		assertSame(whatever, onlyXfer);
 	}
 
 	@Test
 	void leakUnusedGasCallsDelegateLeakMethod() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
 		//when:
-		subject.leakUnusedGasPreviouslyReserved(12345L);
+		subject.leakUnusedGasPreviouslyReserved(accessor, 12345L);
 
 		//then:
-		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+		verify(delegate).leakUnusedGasPreviouslyReserved(accessor, 12345L);
 	}
 
 	@Test

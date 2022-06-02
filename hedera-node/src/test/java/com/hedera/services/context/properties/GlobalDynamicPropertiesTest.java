@@ -182,7 +182,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(44L, subject.maxNftMints());
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
-		assertEquals(51L, subject.triggerTxnWindBackNanos());
+		assertEquals(66L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(67L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(69L, subject.maxPrecedingRecords());
+		assertEquals(70L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -224,6 +228,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
+		assertTrue(subject.schedulingLongTermEnabled());
 	}
 
 	@Test
@@ -293,8 +298,12 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(45L, subject.maxNftMints());
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
-		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(70L, subject.maxPrecedingRecords());
+		assertEquals(71L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -345,6 +354,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.localCall.estRetBytes")).willReturn(i + 26);
 		given(properties.getIntProperty("ledger.schedule.txExpiryTimeSecs")).willReturn(i + 27);
 		given(properties.getIntProperty("consensus.message.maxBytesAllowed")).willReturn(i + 28);
+		given(properties.getBooleanProperty("scheduling.longTermEnabled")).willReturn(i % 2 == 0);
 		given(properties.getFunctionsProperty("scheduling.whitelist")).willReturn(i % 2 == 0
 				? Set.of(HederaFunctionality.CryptoCreate)
 				: Set.of(HederaFunctionality.CryptoTransfer));
@@ -375,7 +385,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
 		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
-		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
 		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i + 52L);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
@@ -401,6 +410,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
 		given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost")).willReturn(i + 64L);
+		given(properties.getLongProperty("scheduling.maxTxnPerSecond")).willReturn(i + 65L);
+		given(properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit")).willReturn(i + 66L);
+		given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds")).willReturn(i + 67L);
+		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
+		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

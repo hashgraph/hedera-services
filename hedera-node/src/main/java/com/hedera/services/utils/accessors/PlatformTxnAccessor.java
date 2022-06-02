@@ -199,6 +199,16 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
+	public boolean throttleExempt() {
+		return delegate.throttleExempt();
+	}
+
+	@Override
+	public boolean congestionExempt() {
+		return delegate.congestionExempt();
+	}
+
+	@Override
 	public ScheduleID getScheduleRef() {
 		return delegate.getScheduleRef();
 	}

@@ -262,7 +262,7 @@ public class SStoreSuite extends HapiApiSuite {
 							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 

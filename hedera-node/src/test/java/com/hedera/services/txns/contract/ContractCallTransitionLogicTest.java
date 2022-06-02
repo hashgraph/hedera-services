@@ -37,11 +37,10 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -102,7 +101,6 @@ class ContractCallTransitionLogicTest {
 	private EntityAccess entityAccess;
 
 	private TransactionBody contractCallTxn;
-	private final Instant consensusTime = Instant.now();
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account relayerAccount = new Account(new Id(0, 0, 1003));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
@@ -131,6 +129,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		given(accessor.getTxn()).willReturn(contractCallTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
@@ -192,6 +191,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		given(accessor.getTxn()).willReturn(contractCallTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		// and:
 		given(entityAccess.isTokenAccount(any())).willReturn(true);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -223,7 +223,6 @@ class ContractCallTransitionLogicTest {
 		// setup:
 		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
 		var op = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCall(
 						ContractCallTransactionBody.newBuilder()
 								.setGas(gas)
@@ -233,6 +232,7 @@ class ContractCallTransitionLogicTest {
 		contractCallTxn = op.build();
 		// and:
 		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -329,7 +329,6 @@ class ContractCallTransitionLogicTest {
 
 	private void givenValidTxnCtx() {
 		var op = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
 				.setContractCall(
 						ContractCallTransactionBody.newBuilder()
 								.setGas(gas)
@@ -338,11 +337,7 @@ class ContractCallTransitionLogicTest {
 		contractCallTxn = op.build();
 	}
 
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(senderAccount.getId().asGrpcAccount())
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
-				.build();
+	private AccountID ourAccount() {
+		return senderAccount.getId().asGrpcAccount();
 	}
 }

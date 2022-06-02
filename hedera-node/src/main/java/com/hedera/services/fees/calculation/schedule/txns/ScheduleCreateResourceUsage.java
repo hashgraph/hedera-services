@@ -51,7 +51,18 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var op = txn.getScheduleCreate();
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, dynamicProperties.scheduledTxExpiryTimeSecs());
+
+		final long lifetimeSecs;
+
+		if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
+			lifetimeSecs = Math.max(0L,
+					op.getExpirationTime().getSeconds() - txn.getTransactionID().getTransactionValidStart().getSeconds());
+		} else {
+			lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
+		}
+
+		return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
 	}
 }

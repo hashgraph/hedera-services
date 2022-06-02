@@ -58,14 +58,6 @@ public class ThrottleReqsManager {
 			allPassed &= passedReq[i];
 		}
 
-		if (!allPassed) {
-			for (int i = 0; i < passedReq.length; i++) {
-				if (passedReq[i]) {
-					allReqs.get(i).getLeft().reclaimLastAllowedUse();
-				}
-			}
-		}
-
 		return allPassed;
 	}
 
