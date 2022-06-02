@@ -100,7 +100,7 @@ public class TransferLogic {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator, nftsLedger);
+		scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
 	}
 
 	public void doZeroSum(final List<BalanceChange> changes) {

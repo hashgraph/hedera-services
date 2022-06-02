@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
@@ -170,5 +171,14 @@ class ContractControllerTest {
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, SystemUndelete);
+	}
+
+	@Test
+	void forwardsCallEthereum() {
+		// when:
+		subject.callEthereum(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, EthereumTransaction);
 	}
 }

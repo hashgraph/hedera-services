@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -156,7 +157,7 @@ class BasicFcfsUsagePricesTest {
 
 	@Test
 	void returnsExpectedPriceSequence() {
-		// given:
+		// 00+00
 		subject.loadPriceSchedules();
 
 		// when:
@@ -353,7 +354,8 @@ class BasicFcfsUsagePricesTest {
 				TOKEN_FUNGIBLE_COMMON,
 				TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
 				TOKEN_NON_FUNGIBLE_UNIQUE,
-				TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+				TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
+				SCHEDULE_CREATE_CONTRACT_CALL);
 		final Map<SubType, FeeData> pricesMap = new EnumMap<>(SubType.class);
 
 		// when:
@@ -362,7 +364,8 @@ class BasicFcfsUsagePricesTest {
 				TOKEN_FUNGIBLE_COMMON,
 				TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
 				TOKEN_NON_FUNGIBLE_UNIQUE,
-				TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
+				TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
+				SCHEDULE_CREATE_CONTRACT_CALL
 		));
 
 		// then:

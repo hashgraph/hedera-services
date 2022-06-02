@@ -23,7 +23,9 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
@@ -237,9 +239,9 @@ public class SyntheticTxnFactory {
 					.build());
 		} else {
 			final var op = NftAllowance.newBuilder()
-					.setTokenId(approveWrapper.token())
-					.setSpender(approveWrapper.spender())
-					.addSerialNumbers(approveWrapper.serialNumber().longValue());
+							.setTokenId(approveWrapper.token())
+							.setSpender(approveWrapper.spender())
+							.addSerialNumbers(approveWrapper.serialNumber().longValue());
 			if (ownerId != null) {
 				op.setOwner(ownerId.toGrpcAccountId());
 				if (!ownerId.equals(operatorId)) {

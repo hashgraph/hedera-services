@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -58,7 +60,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -103,12 +105,19 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 								.gas(GAS_TO_OFFER)
 								.via("associateMethodCall")
 				).then(
-						childRecordsCheck("associateMethodCall",
-								SUCCESS,
+						childRecordsCheck("associateMethodCall", SUCCESS,
 								recordWith()
-										.status(SUCCESS),
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS))),
 								recordWith()
-										.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
+										.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
 						getAccountInfo(theAccount).hasToken(relationshipWith(token)),
 						cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(SUCCESS)

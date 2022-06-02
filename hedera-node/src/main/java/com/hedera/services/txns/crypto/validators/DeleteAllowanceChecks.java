@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -46,15 +47,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  */
 @Singleton
 public class DeleteAllowanceChecks extends AllowanceChecks {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	@Inject
 	public DeleteAllowanceChecks(
 			final GlobalDynamicProperties dynamicProperties,
-			final OptionValidator validator) {
+			final OptionValidator validator
+	) {
 		super(dynamicProperties);
-		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
 
@@ -73,7 +73,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	public ResponseCodeEnum deleteAllowancesValidation(
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
-			final StateView view) {
+			final StateView view
+	) {
 		// feature flag for allowances
 		if (!isEnabled()) {
 			return NOT_SUPPORTED;
@@ -83,19 +84,12 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		if (validity != OK) {
 			return validity;
 		}
-
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),
 				view.asReadOnlyAssociationStore());
-
-		validity = validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
-		if (validity != OK) {
-			return validity;
-		}
-
-		return OK;
+		return validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
 	}
 
 	/**
@@ -116,26 +110,28 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
 			final AccountStore accountStore,
-			final ReadOnlyTokenStore tokenStore) {
+			final ReadOnlyTokenStore tokenStore
+	) {
 		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
-
-		for (var allowance : nftAllowances) {
+		for (final var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var serialNums = allowance.getSerialNumbersList();
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
-
+			final Token token;
+			try {
+				token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
+			} catch (InvalidTransactionException e) {
+				return e.getResponseCode();
+			}
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
-
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 			final var ownerAccount = fetchResult.getLeft();
-
 			if (!tokenStore.hasAssociation(token, ownerAccount)) {
 				return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 			}
@@ -144,19 +140,17 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 				return validity;
 			}
 		}
-
 		return OK;
 	}
 
 	ResponseCodeEnum validateDeleteSerialNums(
 			final List<Long> serialNums,
 			final Token token,
-			final ReadOnlyTokenStore tokenStore) {
-
+			final ReadOnlyTokenStore tokenStore
+	) {
 		if (serialNums.isEmpty()) {
 			return EMPTY_ALLOWANCES;
 		}
-
 		return validateSerialNums(serialNums, token, tokenStore);
 	}
 

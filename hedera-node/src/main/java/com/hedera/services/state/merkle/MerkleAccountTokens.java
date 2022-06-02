@@ -24,8 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;

@@ -24,7 +24,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -37,6 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
@@ -67,9 +67,9 @@ class HederaExtCodeCopyOperationTest {
 	final private Address ETH_ADDRESS_INSTANCE = Address.fromHexString(ETH_ADDRESS);
 	final private Bytes MEM_OFFSET = Bytes.of(5);
 	final private Bytes NUM_BYTES = Bytes.of(10);
-	final private Gas OPERATION_COST = Gas.of(1_000L);
-	final private Gas WARM_READ_COST = Gas.of(100L);
-	final private Gas ACTUAL_COST = OPERATION_COST.plus(WARM_READ_COST);
+	final private long OPERATION_COST = 1_000L;
+	final private long WARM_READ_COST = 100L;
+	final private long ACTUAL_COST = OPERATION_COST + WARM_READ_COST;
 	final private Account account = new SimpleAccount(ETH_ADDRESS_INSTANCE, 0, Wei.ONE);
 
 	@BeforeEach
@@ -92,7 +92,7 @@ class HederaExtCodeCopyOperationTest {
 
 		// then:
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 
 	@Test
@@ -113,7 +113,7 @@ class HederaExtCodeCopyOperationTest {
 				.willReturn(MEM_OFFSET)
 				.willReturn(NUM_BYTES);
 		given(mf.warmUpAddress(ETH_ADDRESS_INSTANCE)).willReturn(true);
-		given(mf.getRemainingGas()).willReturn(Gas.of(2000));
+		given(mf.getRemainingGas()).willReturn(2000L);
 		given(mf.getWorldUpdater()).willReturn(worldUpdater);
 		// and:
 		given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES))).willReturn(OPERATION_COST);
@@ -125,6 +125,6 @@ class HederaExtCodeCopyOperationTest {
 
 		// then:
 		assertEquals(Optional.empty(), opResult.getHaltReason());
-		assertEquals(Optional.of(ACTUAL_COST), opResult.getGasCost());
+		assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
 	}
 }

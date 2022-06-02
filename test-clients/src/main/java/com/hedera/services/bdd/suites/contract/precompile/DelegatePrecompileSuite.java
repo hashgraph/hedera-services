@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -59,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class DelegatePrecompileSuite extends HapiApiSuite {
@@ -82,7 +85,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -154,8 +157,12 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("delegateTransferCallWithDelegateContractKeyTxn", SUCCESS,
-								recordWith().status(SUCCESS)
-						),
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))),
 						getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0),
 						getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1)
 
@@ -200,10 +207,16 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 				)
 				.then(
 						childRecordsCheck("delegateBurnCallWithDelegateContractKeyTxn", SUCCESS,
-								recordWith().status(SUCCESS).newTotalSupply(1)
-						),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1)
-				);
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BURN)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1)))
+										.newTotalSupply(1)),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1));
 	}
 
 	private HapiApiSpec delegateCallForMint() {
@@ -240,16 +253,22 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 						)
 				)
 				.then(
-						childRecordsCheck("delegateBurnCallWithDelegateContractKeyTxn", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										changingFungibleBalances()
-												.including(VANILLA_TOKEN, TOKEN_TREASURY, 1)
-								)
-								.newTotalSupply(51)
-						),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51)
-				);
+						childRecordsCheck("delegateBurnCallWithDelegateContractKeyTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(51)
+																.withSerialNumbers()))
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(VANILLA_TOKEN, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51)),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51));
 	}
 
 

@@ -25,11 +25,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
@@ -75,12 +78,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -88,13 +90,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -327,6 +328,14 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation resetToDefault(String... properties) {
+		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Arrays.stream(properties)
+						.collect(Collectors.toMap(v -> v, defaultNodeProps::get)));
+	}
+
 	public static HapiSpecOperation overridingTwo(
 			final String aProperty,
 			final String aValue,
@@ -338,32 +347,6 @@ public class UtilVerbs {
 				.overridingProps(Map.of(
 						aProperty, aValue,
 						bProperty, bValue));
-	}
-
-	public static HapiSpecOperation resetAppPropertiesTo(String path) {
-		return fileUpdate(APP_PROPERTIES)
-				.payingWith(ADDRESS_BOOK_CONTROL)
-				.overridingProps(readPropertyFile(path));
-	}
-
-	private static Map<String, String> readPropertyFile(String path) {
-		Properties properties = null;
-
-		try (InputStream input = new FileInputStream(path)) {
-			properties = new Properties();
-			properties.load(input);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		Map<String, String> resultMap = new HashMap<>();
-
-		for (String key : properties.stringPropertyNames()) {
-			resultMap.put(key, properties.getProperty(key));
-		}
-
-		return resultMap;
 	}
 
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
@@ -1081,6 +1064,38 @@ public class UtilVerbs {
 
 		return Tuple.of(account32, receiver32,
 				serialNumber);
+	}
+
+	public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
+		final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
+		for (final var op : ops) {
+			if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+				convertedOps.add(new HapiEthereumCall(callOp));
+			} else {
+				convertedOps.add(op);
+			}
+		}
+		return convertedOps;
+	}
+
+	public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
+		var key = spec.registry().getKey(privateKeyRef);
+		final var privateKey = spec.keys().getPrivateKey(
+				com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
+
+		byte[] privateKeyByteArray;
+		byte[] dByteArray = ((BCECPrivateKey) privateKey).getD().toByteArray();
+		if (dByteArray.length < 32) {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
+		} else if (dByteArray.length == 32) {
+			privateKeyByteArray = dByteArray;
+		} else {
+			privateKeyByteArray = new byte[32];
+			System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
+		}
+
+		return privateKeyByteArray;
 	}
 
 	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {

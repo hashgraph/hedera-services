@@ -24,6 +24,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
+import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 
 import javax.inject.Inject;
@@ -35,16 +36,19 @@ public class ThrottlesCallback {
 	private final FeeMultiplierSource multiplierSource;
 	private final FunctionalityThrottling hapiThrottling;
 	private final FunctionalityThrottling handleThrottling;
+	private final FunctionalityThrottling scheduleThrottling;
 
 	@Inject
 	public ThrottlesCallback(
 			FeeMultiplierSource multiplierSource,
 			@HapiThrottle FunctionalityThrottling hapiThrottling,
-			@HandleThrottle FunctionalityThrottling handleThrottling
+			@HandleThrottle FunctionalityThrottling handleThrottling,
+			@ScheduleThrottle FunctionalityThrottling scheduleThrottling
 	) {
 		this.multiplierSource = multiplierSource;
 		this.hapiThrottling = hapiThrottling;
 		this.handleThrottling = handleThrottling;
+		this.scheduleThrottling = scheduleThrottling;
 	}
 
 	public Consumer<ThrottleDefinitions> throttlesCb() {
@@ -52,6 +56,7 @@ public class ThrottlesCallback {
 			var defs = com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions.fromProto(throttles);
 			hapiThrottling.rebuildFor(defs);
 			handleThrottling.rebuildFor(defs);
+			scheduleThrottling.rebuildFor(defs);
 			multiplierSource.resetExpectations();
 		};
 	}

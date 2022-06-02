@@ -26,8 +26,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import java.time.Instant;
 

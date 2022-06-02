@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -53,13 +54,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 	private static final String CONTRACT = "CreateTrivial";
+	private static final String TOKEN = "TestToken";
+	private static final String SYMBOL = "ħT";
+	private static final int DECIMALS = 13;
 
 	public static void main(String... args) {
 		new ContractCallLocalSuite().runSuiteSync();
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -71,6 +75,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						impureCallFails(),
 						insufficientFeeFails(),
 						lowBalanceFails(),
+						erc20Query(),
 						vanillaSuccess()
 				}
 		);
@@ -176,6 +181,22 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						getAccountBalance("payer").logged(),
 						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
+				);
+	}
+
+	private HapiApiSpec erc20Query() {
+		final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\"," +
+								"\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false," +
+								"\"type\": \"function\"},";
+
+		return defaultHapiSpec("erc20Queries")
+				.given(
+						tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract()
+				).when(
+				).then(
+						contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
+								.has(resultWith().resultThruAbi(decimalsABI,
+										isLiteralResult(new Object[] { BigInteger.valueOf(DECIMALS) })))
 				);
 	}
 

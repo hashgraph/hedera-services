@@ -244,7 +244,7 @@ public class BookEntryPojo {
 		try {
 			var crtBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
 			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
-			return com.swirlds.common.CommonUtils.hex(crtHash);
+			return com.swirlds.common.utility.CommonUtils.hex(crtHash);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
@@ -253,7 +253,7 @@ public class BookEntryPojo {
 	static String asHexEncodedDerPubKey(String baseDir, long nodeId) {
 		try {
 			var pubKeyBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
-			return com.swirlds.common.CommonUtils.hex(pubKeyBytes);
+			return com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}

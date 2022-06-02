@@ -41,7 +41,7 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -303,9 +303,11 @@ class RecordCacheTest {
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		willCallRealMethod().given(factory).triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		willCallRealMethod().given(factory).triggeredTxn(
+				signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
 
-		final var accessor = factory.triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		final var accessor = factory.triggeredTxn(
+				signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())

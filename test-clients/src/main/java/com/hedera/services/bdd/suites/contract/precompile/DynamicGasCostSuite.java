@@ -27,7 +27,13 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,32 +45,79 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiPropertySource.*;
+import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
-import static com.hedera.services.bdd.suites.contract.Utils.*;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
+import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.aliasContractIdKey;
+import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContractKey;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.CommonUtils.hex;
-import static com.swirlds.common.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
@@ -78,7 +131,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	public static final String ZERO_GAS_COST = "0";
 	public static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
 	public static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
-	public static final String BOOTSTRAP_PROPERTIES = "src/main/resource/bootstrap.properties";
 
 	private static final String SAFE_OPERATIONS_CONTRACT = "SafeOperations";
 
@@ -92,7 +144,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -117,6 +169,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
+						canAssociateInConstructor(),
 						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
 				}
 		);
@@ -281,6 +334,31 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec canAssociateInConstructor() {
+		final var token = "token";
+		final var contract = "SelfAssociating";
+		final var creation = "creation";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("CanAssociateInConstructor")
+				.given(
+						uploadInitCode(contract),
+						tokenCreate(token)
+								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id)))))
+				).when(
+						sourcing(() -> contractCreate(
+								contract, tokenMirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.omitAdminKey()
+								.gas(4_000_000)
+								.via(creation))
+				).then(
+//						tokenDissociate(contract, token)
+						getContractInfo(contract).logged()
+				);
+	}
+
 	// https://github.com/hashgraph/hedera-services/issues/2867
 	// https://github.com/hashgraph/hedera-services/issues/2868
 	private HapiApiSpec create2FactoryWorksAsExpected() {
@@ -293,6 +371,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var replAdminKey = "replAdminKey";
 		final var entityMemo = "JUST DO IT";
 		final var customAutoRenew = 7776001L;
+		final var autoRenewAccountID = "autoRenewAccount";
 		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
 		final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
 		final AtomicReference<String> expectedMirrorAddress = new AtomicReference<>();
@@ -307,14 +386,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
+						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
+								.autoRenewAccountId(autoRenewAccountID)
 								.via(creation2)
-								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))
+								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+						getContractInfo(contract).has(contractWith().autoRenewAccountId(autoRenewAccountID)).logged()
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
@@ -416,8 +498,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								/* Cannot repeat CREATE2 with same args without destroying the existing contract */
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
 						// https://github.com/hashgraph/hedera-services/issues/2874
+						// autoRenewAccountID is inherited from the sender
 						sourcing(() -> getContractInfo(expectedCreate2Address.get())
-								.has(contractWith().addressOrAlias(expectedCreate2Address.get()))),
+								.has(contractWith()
+										.addressOrAlias(expectedCreate2Address.get())
+										.autoRenewAccountId(autoRenewAccountID))
+								.logged()),
 						sourcing(() -> contractCallLocalWithFunctionAbi(
 								expectedCreate2Address.get(),
 								getABIFor(FUNCTION, "getBalance", testContract)
@@ -426,10 +512,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.has(resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "getBalance", testContract),
 										isLiteralResult(new Object[]{BigInteger.valueOf(tcValue)})))),
+						// autoRenewAccountID is inherited from the sender
 						sourcing(() -> getContractInfo(expectedMirrorAddress.get())
 								.has(contractWith()
 										.adminKey(replAdminKey)
-										.addressOrAlias(expectedCreate2Address.get()))),
+										.addressOrAlias(expectedCreate2Address.get())
+										.autoRenewAccountId(autoRenewAccountID)
+								)
+								.logged()),
 						sourcing(() -> contractCallWithFunctionAbi(expectedCreate2Address.get(),
 								getABIFor(FUNCTION, "vacateAddress", testContract))
 								.payingWith(GENESIS)),
@@ -469,6 +559,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation2),
 						captureOneChildCreate2MetaFor(
 								"Precompile user", creation2, userMirrorAddr, userAliasAddr),
+						sourcing(() -> getAliasedContractBalance(userAliasAddr.get())
+								.hasId(accountIdFromHexedMirrorAddress(userMirrorAddr.get()))),
 						withOpContext((spec, opLog) ->
 								userLiteralId.set(
 										asContractString(
@@ -658,14 +750,35 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck(helperMintFail, SUCCESS,
 								/* First record is of helper creation */
-								recordWith().status(SUCCESS),
-								recordWith().status(INVALID_SIGNATURE)),
+								recordWith()
+										.status(SUCCESS),
+								recordWith()
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withTotalSupply(0)
+																.withSerialNumbers()
+																.withStatus(INVALID_SIGNATURE)))),
 						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith().status(REVERTED_SUCCESS),
-								recordWith().status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
 						childRecordsCheck(nftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith().status(REVERTED_SUCCESS),
-								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(ACCOUNT_STILL_OWNS_NFTS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(ACCOUNT_STILL_OWNS_NFTS)))),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
 						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id)
@@ -1070,7 +1183,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("mintDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1136,7 +1250,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("burnDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1192,7 +1307,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("associateDynamicGasDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1252,7 +1368,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("dissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1325,7 +1442,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleAssociateDefaultCostTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1400,7 +1518,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleDissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1477,7 +1596,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1554,7 +1674,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokenTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1640,7 +1761,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokensTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1727,7 +1849,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftsTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(

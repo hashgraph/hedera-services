@@ -73,7 +73,7 @@ class EncodingFacadeTest {
 	private static final Bytes RETURN_DECIMALS_10 = Bytes.fromHexString(
 			"0x000000000000000000000000000000000000000000000000000000000000000a");
 
-	private static final Bytes RETURN_BALANCE_3 = Bytes.fromHexString(
+	private static final Bytes RETURN_3 = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000003");
 
 	private static final Bytes RETURN_TOKEN_URI_FIRST = Bytes.fromHexString(
@@ -88,10 +88,10 @@ class EncodingFacadeTest {
 			"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000" +
 					"00000000000000000000000014600000000000000000000000000000000000000000000000000000000000000");
 
-	private static final Bytes RETURN_TRANSFER_TRUE = Bytes.fromHexString(
+	private static final Bytes RETURN_TRUE = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000001");
 
-	private static final Bytes RETURN_OWNER = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008");
+	private static final Bytes RETURN_ADDRESS = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008");
 
     private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
@@ -158,7 +158,7 @@ class EncodingFacadeTest {
 	@Test
 	void decodeReturnResultForBalance() {
 		final var decodedResult = subject.encodeBalance(3);
-		assertEquals(RETURN_BALANCE_3, decodedResult);
+		assertEquals(RETURN_3, decodedResult);
 	}
 
 	@Test
@@ -182,13 +182,37 @@ class EncodingFacadeTest {
 	@Test
 	void decodeReturnResultForTransfer() {
 		final var decodedResult = subject.encodeEcFungibleTransfer(true);
-		assertEquals(RETURN_TRANSFER_TRUE, decodedResult);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForApprove() {
+		final var decodedResult = subject.encodeApprove(true);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForIsApprovedForAll() {
+		final var decodedResult = subject.encodeIsApprovedForAll(true);
+		assertEquals(RETURN_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForAllowance() {
+		final var decodedResult = subject.encodeAllowance(3);
+		assertEquals(RETURN_3, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForGetApproved() {
+		final var decodedResult = subject.encodeGetApproved(senderAddress);
+		assertEquals(RETURN_ADDRESS, decodedResult);
 	}
 
 	@Test
 	void decodeReturnResultForOwner() {
 		final var decodedResult = subject.encodeOwner(senderAddress);
-		assertEquals(RETURN_OWNER, decodedResult);
+		assertEquals(RETURN_ADDRESS, decodedResult);
 	}
 
 	@Test

@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,11 +52,13 @@ import static com.hedera.services.utils.MiscUtils.synthFromBody;
  */
 @Singleton
 public class TxnAwareRecordsHistorian implements RecordsHistorian {
+	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
 	public static final int DEFAULT_SOURCE_ID = 0;
 
 	private final RecordCache recordCache;
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
+	private final ConsensusTimeTracker consensusTimeTracker;
 	private final List<RecordStreamObject> precedingChildStreamObjs = new ArrayList<>();
 	private final List<RecordStreamObject> followingChildStreamObjs = new ArrayList<>();
 	private final List<InProgressChildRecord> precedingChildRecords = new ArrayList<>();
@@ -64,23 +68,32 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	private int nextSourceId = 1;
 	private EntityCreator creator;
 
-	private ExpirableTxnRecord topLevelRecord;
+	private RecordStreamObject topLevelStreamObj;
 
 	@Inject
-	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
+	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries,
+			ConsensusTimeTracker consensusTimeTracker) {
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 		this.recordCache = recordCache;
+		this.consensusTimeTracker = consensusTimeTracker;
 	}
 
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
+
+		if (!consensusTimeTracker.isAllowableFollowingOffset(1L + followingChildRecords.size())) {
+			log.error("Cannot create more following child consensus times! currentCount={} consensusTimeTracker={}",
+					followingChildRecords.size(), consensusTimeTracker);
+			throw new IllegalStateException("Cannot create more following child consensus times!");
+		}
+
 		return txnCtx.consensusTime().plusNanos(1L + followingChildRecords.size());
 	}
 
 	@Override
-	public ExpirableTxnRecord lastCreatedTopLevelRecord() {
-		return topLevelRecord;
+	public RecordStreamObject getTopLevelRecord() {
+		return topLevelStreamObj;
 	}
 
 	@Override
@@ -92,18 +105,21 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	public void saveExpirableTransactionRecords() {
 		final var consensusNow = txnCtx.consensusTime();
 		final var topLevel = txnCtx.recordSoFar();
+		final var accessor = txnCtx.accessor();
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
-		topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
+		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
+		topLevelStreamObj = new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow);
 
 		final var effPayer = txnCtx.effectivePayer();
-		final var accessor = txnCtx.accessor();
 		final var submittingMember = txnCtx.submittingSwirldsMember();
 
 		save(precedingChildStreamObjs, effPayer, submittingMember);
 		save(topLevelRecord, effPayer, accessor.getTxnId(), submittingMember, consensusNow.getEpochSecond());
 		save(followingChildStreamObjs, effPayer, submittingMember);
+
+		consensusTimeTracker.setActualFollowingRecordsCount(followingChildStreamObjs.size());
 	}
 
 	@Override
@@ -146,6 +162,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final TransactionBody.Builder syntheticBody,
 			final ExpirableTxnRecord.Builder recordSoFar
 	) {
+		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L)) {
+			log.error("Cannot create more following records! currentCount={} consensusTimeTracker={}",
+					followingChildRecords.size(), consensusTimeTracker);
+			throw new IllegalStateException("Cannot create more following records!");
+		}
+
 		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar);
 		followingChildRecords.add(inProgress);
 	}
@@ -156,6 +178,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final TransactionBody.Builder syntheticTxn,
 			final ExpirableTxnRecord.Builder recordSoFar
 	) {
+		if (!consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L)) {
+			log.error("Cannot create more preceding records! currentCount={} consensusTimeTracker={}",
+					precedingChildRecords.size(), consensusTimeTracker);
+			throw new IllegalStateException("Cannot create more preceding records!");
+		}
+
 		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
 		precedingChildRecords.add(inProgress);
 	}

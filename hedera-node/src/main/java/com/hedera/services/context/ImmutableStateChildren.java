@@ -24,20 +24,20 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.AddressBook;
+import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -57,9 +57,9 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private final WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private final WeakReference<MerkleScheduledTransactions> schedules;
 	private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-	private final WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
+	private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
 	private final WeakReference<MerkleNetworkContext> networkCtx;
 	private final WeakReference<AddressBook> addressBook;
@@ -112,12 +112,12 @@ public class ImmutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return Objects.requireNonNull(contractStorage.get());
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
+	public MerkleScheduledTransactions schedules() {
 		return Objects.requireNonNull(schedules.get());
 	}
 

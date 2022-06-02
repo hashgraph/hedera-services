@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,118 +54,118 @@ class PolicyBasedSigWaiversTest {
 	@Test
 	void waivesWaclSigForSuperuserSystemFileAppend() {
 		// setup:
-		final var txn = fileAppendTxn(treasury, entityNumbers.files().addressBook());
+		final var txn = fileAppendTxn(entityNumbers.files().addressBook());
 
 		// expect:
-		assertTrue(subject.isAppendFileWaclWaived(txn));
+		assertTrue(subject.isAppendFileWaclWaived(txn, treasury));
 	}
 
 	@Test
 	void waivesWaclSigForAuthorizedAppend() {
 		// setup:
-		final var txn = fileAppendTxn(addressBookAdmin, entityNumbers.files().addressBook());
+		final var txn = fileAppendTxn(entityNumbers.files().addressBook());
 
 		// expect:
-		assertTrue(subject.isAppendFileWaclWaived(txn));
+		assertTrue(subject.isAppendFileWaclWaived(txn, addressBookAdmin));
 	}
 
 	@Test
 	void doesntWaivesWaclSigForSuperuserNonSystemFileAppend() {
 		// setup:
-		final var txn = fileAppendTxn(treasury, 1234L);
+		final var txn = fileAppendTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isAppendFileWaclWaived(txn));
+		assertFalse(subject.isAppendFileWaclWaived(txn, treasury));
 	}
 
 	@Test
 	void doesntWaivesWaclSigForCivilianAppend() {
 		// setup:
-		final var txn = fileAppendTxn(civilian, 1234L);
+		final var txn = fileAppendTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isAppendFileWaclWaived(txn));
+		assertFalse(subject.isAppendFileWaclWaived(txn, civilian));
 	}
 
 	@Test
 	void waivesWaclSigForSuperuserSystemFileUpdate() {
 		// setup:
-		final var txn = fileUpdateTxn(treasury, entityNumbers.files().addressBook());
+		final var txn = fileUpdateTxn(entityNumbers.files().addressBook());
 
 		// expect:
-		assertTrue(subject.isTargetFileWaclWaived(txn));
+		assertTrue(subject.isTargetFileWaclWaived(txn, treasury));
 	}
 
 	@Test
 	void waivesWaclSigForAuthorizedUpdate() {
 		// setup:
-		final var txn = fileUpdateTxn(addressBookAdmin, entityNumbers.files().addressBook());
+		final var txn = fileUpdateTxn(entityNumbers.files().addressBook());
 
 		// expect:
-		assertTrue(subject.isTargetFileWaclWaived(txn));
+		assertTrue(subject.isTargetFileWaclWaived(txn, addressBookAdmin));
 	}
 
 	@Test
 	void doesntWaivesWaclSigForSuperuserNonSystemFileUpdate() {
 		// setup:
-		final var txn = fileUpdateTxn(treasury, 1234L);
+		final var txn = fileUpdateTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isTargetFileWaclWaived(txn));
+		assertFalse(subject.isTargetFileWaclWaived(txn, treasury));
 	}
 
 	@Test
 	void doesntWaivesWaclSigForCivilianUpdate() {
 		// setup:
-		final var txn = fileUpdateTxn(civilian, 1234L);
+		final var txn = fileUpdateTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isTargetFileWaclWaived(txn));
+		assertFalse(subject.isTargetFileWaclWaived(txn, civilian));
 	}
 
 	@Test
 	void waivesTargetSigForTreasuryUpdateOfNonTreasurySystemAccount() {
 		// setup:
-		final var txn = cryptoUpdateTxn(treasury, entityNumbers.accounts().systemAdmin());
+		final var txn = cryptoUpdateTxn(entityNumbers.accounts().systemAdmin());
 
 		// expect:
-		assertTrue(subject.isTargetAccountKeyWaived(txn));
+		assertTrue(subject.isTargetAccountKeyWaived(txn, treasury));
 	}
 
 	@Test
 	void waivesNewKeySigForTreasuryUpdateOfNonTreasurySystemAccount() {
 		// setup:
-		final var txn = cryptoUpdateTxn(treasury, entityNumbers.accounts().systemAdmin());
+		final var txn = cryptoUpdateTxn(entityNumbers.accounts().systemAdmin());
 
 		// expect:
-		assertTrue(subject.isNewAccountKeyWaived(txn));
+		assertTrue(subject.isNewAccountKeyWaived(txn, treasury));
 	}
 
 	@Test
 	void doesntWaiveNewKeySigForTreasuryUpdateOfTreasurySystemAccount() {
 		// setup:
-		final var txn = cryptoUpdateTxn(treasury, entityNumbers.accounts().treasury());
+		final var txn = cryptoUpdateTxn(entityNumbers.accounts().treasury());
 
 		// expect:
-		assertFalse(subject.isNewAccountKeyWaived(txn));
+		assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
 	}
 
 	@Test
 	void doesntWaiveNewKeySigForTreasuryUpdateOfNonSystemAccount() {
 		// setup:
-		final var txn = cryptoUpdateTxn(treasury, 1234L);
+		final var txn = cryptoUpdateTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isNewAccountKeyWaived(txn));
+		assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
 	}
 
 	@Test
 	void doesntWaivesNewKeySigForCivilianUpdate() {
 		// setup:
-		final var txn = cryptoUpdateTxn(civilian, 1234L);
+		final var txn = cryptoUpdateTxn(1234L);
 
 		// expect:
-		assertFalse(subject.isNewAccountKeyWaived(txn));
+		assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
 	}
 
 	@Test
@@ -174,15 +173,15 @@ class PolicyBasedSigWaiversTest {
 		final var txn = TransactionBody.getDefaultInstance();
 		// expect:
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isAppendFileWaclWaived(txn));
+				subject.isAppendFileWaclWaived(txn, null));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetAccountKeyWaived(txn));
+				subject.isTargetAccountKeyWaived(txn, null));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewAccountKeyWaived(txn));
+				subject.isNewAccountKeyWaived(txn, null));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetFileWaclWaived(txn));
+				subject.isTargetFileWaclWaived(txn, null));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewFileWaclWaived(txn));
+				subject.isNewFileWaclWaived(txn, null));
 	}
 
 	private final AccountID treasury = IdUtils.asAccount("0.0.2");
@@ -192,32 +191,26 @@ class PolicyBasedSigWaiversTest {
 			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			.build();
 
-	private TransactionBody cryptoUpdateTxn(AccountID payer, long targetNum) {
+	private TransactionBody cryptoUpdateTxn(long targetNum) {
 		final var op = CryptoUpdateTransactionBody.newBuilder()
 				.setAccountIDToUpdate(AccountID.newBuilder().setAccountNum(targetNum));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(payer))
 				.setCryptoUpdateAccount(op)
 				.build();
 	}
 
-	private TransactionBody fileAppendTxn(AccountID payer, long targetNum) {
+	private TransactionBody fileAppendTxn(long targetNum) {
 		final var op = FileAppendTransactionBody.newBuilder()
 				.setFileID(FileID.newBuilder().setFileNum(targetNum));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(payer))
 				.setFileAppend(op)
 				.build();
 	}
 
-	private TransactionBody fileUpdateTxn(AccountID payer, long targetNum) {
+	private TransactionBody fileUpdateTxn( long targetNum) {
 		final var op = FileUpdateTransactionBody.newBuilder()
 				.setFileID(FileID.newBuilder().setFileNum(targetNum));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(payer))
 				.setFileUpdate(op)
 				.build();
 	}

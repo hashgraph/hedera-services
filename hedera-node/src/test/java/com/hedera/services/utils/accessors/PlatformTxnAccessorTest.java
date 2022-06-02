@@ -38,12 +38,13 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.apache.commons.codec.binary.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
@@ -73,6 +74,16 @@ class PlatformTxnAccessorTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
+
+	@Test
+	void delegatesSettingSpanMap() {
+		final var delegate = mock(TxnAccessor.class);
+		given(delegate.getSigMap()).willReturn(SignatureMap.getDefaultInstance());
+		final var subject = new PlatformTxnAccessor(delegate, new SwirldTransaction());
+		final var newMap = Map.of("1", new Object());
+		subject.setRationalizedSpanMap(newMap);
+		verify(delegate).setRationalizedSpanMap(newMap);
+	}
 
 	@Test
 	void hasSpanMap() throws InvalidProtocolBufferException {
@@ -331,8 +342,10 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 		final var aliasManager = mock(AliasManager.class);
 
+		var signedAccessor = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
 		final var delegate = subject.getDelegate();
 
 		// then:
@@ -400,6 +413,11 @@ class PlatformTxnAccessorTest {
 
 		subject.countAutoCreationsWith(aliasManager);
 
+		signedAccessor.markCongestionExempt();
+		signedAccessor.markThrottleExempt();
+		assertTrue(subject.congestionExempt());
+		assertTrue(subject.throttleExempt());
+
 	}
 
 	@Test
@@ -421,7 +439,7 @@ class PlatformTxnAccessorTest {
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(onePairSigMap)
 				.build();
-		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);

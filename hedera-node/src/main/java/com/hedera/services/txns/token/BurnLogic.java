@@ -20,25 +20,43 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+
 @Singleton
 public class BurnLogic {
+	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public BurnLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
+	public BurnLogic(
+			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties
+	) {
+		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void burn(
@@ -62,5 +80,21 @@ public class BurnLogic {
 		tokenStore.commitTokenRelationships(List.of(treasuryRel));
 		tokenStore.commitTrackers(ownershipTracker);
 		accountStore.commitAccount(token.getTreasury());
+	}
+
+	public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+		TokenBurnTransactionBody op = txn.getTokenBurn();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		return validateTokenOpsWith(
+				op.getSerialNumbersCount(),
+				op.getAmount(),
+				dynamicProperties.areNftsEnabled(),
+				INVALID_TOKEN_BURN_AMOUNT,
+				op.getSerialNumbersList(),
+				validator::maxBatchSizeBurnCheck);
 	}
 }

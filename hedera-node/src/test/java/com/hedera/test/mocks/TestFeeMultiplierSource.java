@@ -21,6 +21,7 @@ package com.hedera.test.mocks;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.utils.accessors.TxnAccessor;
 
 import java.time.Instant;
 
@@ -28,12 +29,12 @@ public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	MULTIPLIER_SOURCE;
 
 	@Override
-	public void updateMultiplier(Instant consensusNow) {
+	public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
 		/* No-op */
 	}
 
 	@Override
-	public long currentMultiplier() {
+	public long currentMultiplier(final TxnAccessor accessor) {
 		return 1L;
 	}
 

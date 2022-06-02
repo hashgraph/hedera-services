@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -47,8 +47,8 @@ import java.nio.file.Path;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
-import static com.swirlds.common.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -84,6 +84,13 @@ public class Utils {
 		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
 		return solidityAddress;
+	}
+
+	public static byte[] asAddressInTopic(final byte[] solidityAddress) {
+		final byte[] topicAddress = new byte[32];
+
+		arraycopy(solidityAddress, 0, topicAddress, 12, 20);
+		return topicAddress;
 	}
 
 	public static ByteString extractByteCode(String path) {

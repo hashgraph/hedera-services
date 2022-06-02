@@ -22,13 +22,13 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.fcqueue.FCQueue;
@@ -68,7 +68,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	public static final int CURRENT_VERSION = 2;
 
 	private final Map<FileID, byte[]> hashCache;
-	private final Map<FileID, FCQueue<FilePart>> fileContents;
+	private final Map<FileID, FCQueue<BytesElement>> fileContents;
 
 	private static Supplier<ByteArrayOutputStream> baosSupplier = ByteArrayOutputStream::new;
 
@@ -128,7 +128,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 			return NO_CONTENTS;
 		}
 		final var baos = baosSupplier.get();
-		for (final FilePart part : fileByParts) {
+		for (final BytesElement part : fileByParts) {
 			try {
 				baos.write(part.getData());
 			} catch (IOException e) {
@@ -166,7 +166,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 			update(fid, extraContents);
 			return;
 		}
-		fileByParts.add(new FilePart(extraContents));
+		fileByParts.add(new BytesElement(extraContents));
 		hashCache.remove(fid);
 	}
 
@@ -196,7 +196,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 				final var contents = in.readByteArray(Integer.MAX_VALUE);
 				fileContents.put(STATIC_PROPERTIES.scopedFileWith(fidNum), newFcqWith(contents));
 			} else {
-				final FCQueue<FilePart> fileByParts = in.readSerializable();
+				final FCQueue<BytesElement> fileByParts = in.readSerializable();
 				fileContents.put(STATIC_PROPERTIES.scopedFileWith(fidNum), fileByParts);
 			}
 		}
@@ -275,14 +275,14 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 				CryptoFactory.getInstance().digestSync(get(missingFid)).getValue());
 	}
 
-	private FCQueue<FilePart> newFcqWith(byte[] initialContents) {
-		final var fileByParts = new FCQueue<FilePart>();
-		fileByParts.add(new FilePart(initialContents));
+	private FCQueue<BytesElement> newFcqWith(byte[] initialContents) {
+		final var fileByParts = new FCQueue<BytesElement>();
+		fileByParts.add(new BytesElement(initialContents));
 		return fileByParts;
 	}
 
 	/* --- Only used by unit tests --- */
-	Map<FileID, FCQueue<FilePart>> getFileContents() {
+	Map<FileID, FCQueue<BytesElement>> getFileContents() {
 		return fileContents;
 	}
 

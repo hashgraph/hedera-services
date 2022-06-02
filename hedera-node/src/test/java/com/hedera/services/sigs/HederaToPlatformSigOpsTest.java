@@ -20,7 +20,6 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
@@ -51,6 +50,7 @@ import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_R
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -72,7 +73,6 @@ class HederaToPlatformSigOpsTest {
 	private PubKeyToSigBytes allSigBytes;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements keyOrdering;
-	private AliasManager aliasManager;
 
 	@BeforeAll
 	private static void setupAll() throws Throwable {
@@ -87,19 +87,14 @@ class HederaToPlatformSigOpsTest {
 	private void setup() throws Throwable {
 		allSigBytes = mock(PubKeyToSigBytes.class);
 		keyOrdering = mock(SigRequirements.class);
-		aliasManager = mock(AliasManager.class);
 		platformTxn = PlatformTxnAccessor.from(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 	}
 
 	@SuppressWarnings("unchecked")
 	private void wellBehavedOrdersAndSigSources() throws Exception {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
 				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
@@ -125,7 +120,7 @@ class HederaToPlatformSigOpsTest {
 
 	@Test
 	void returnsImmediatelyOnPayerKeyOrderFailure() {
-		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
 		expandIn(platformTxn, keyOrdering, allSigBytes);
@@ -135,9 +130,9 @@ class HederaToPlatformSigOpsTest {
 
 	@Test
 	void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
-		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
 				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
@@ -174,7 +169,7 @@ class HederaToPlatformSigOpsTest {
 
 	@Test
 	void stopImmediatelyOnPayerKeyOrderFailure() {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY, null, DEFAULT_PAYER))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 		final var rationalization = new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
 
@@ -186,7 +181,7 @@ class HederaToPlatformSigOpsTest {
 	@Test
 	void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
 		wellBehavedOrdersAndSigSources();
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY, null, DEFAULT_PAYER))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 		final var rationalization = new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
 
@@ -198,9 +193,9 @@ class HederaToPlatformSigOpsTest {
 	@Test
 	void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
 		final var mockAccessor = mock(PlatformTxnAccessor.class);
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY, null, DEFAULT_PAYER))
 				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY, null, DEFAULT_PAYER))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
@@ -252,12 +247,19 @@ class HederaToPlatformSigOpsTest {
 		final SyncVerifier syncVerifier = l -> {
 			throw new AssertionError("All sigs were verified async!");
 		};
+		final var mockAccessor = mock(PlatformTxnAccessor.class);
+		final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
+		givenMirrorMock(mockAccessor, platformTxn);
+
 		final var rationalization = new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(platformTxn);
+		rationalization.performFor(mockAccessor);
 
 		assertFalse(rationalization.usedSyncVerification());
 		assertEquals(OK, rationalization.finalStatus());
+		verify(mockAccessor).setSigMeta(captor.capture());
+		final var sigMeta = captor.getValue();
+		platformTxn.setSigMeta(sigMeta);
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn()).hasClearBeenCalled());
@@ -292,6 +294,7 @@ class HederaToPlatformSigOpsTest {
 		given(mock.getPkToSigsFn()).willReturn(allSigBytes);
 		given(mock.getPlatformTxn()).willReturn(real.getPlatformTxn());
 		given(mock.getTxn()).willReturn(real.getTxn());
+		given(mock.getPayer()).willReturn(real.getPayer());
 		given(mock.getTxnBytes()).willReturn(real.getTxnBytes());
 	}
 }

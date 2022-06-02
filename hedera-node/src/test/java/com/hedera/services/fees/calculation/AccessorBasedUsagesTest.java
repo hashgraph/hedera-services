@@ -410,7 +410,7 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
 		given(txnAccessor.getSpanMapAccessor().getCryptoApproveMeta(any())).willReturn(opMeta);
-		given(opUsageCtxHelper.ctxForCryptoAllowance(any())).willReturn(cryptoContext);
+		given(opUsageCtxHelper.ctxForCryptoAllowance(txnAccessor)).willReturn(cryptoContext);
 
 		subject.assess(sigUsage, txnAccessor, accumulator);
 

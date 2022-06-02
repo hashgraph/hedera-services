@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -40,9 +41,9 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -61,7 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ContractUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
@@ -79,13 +80,13 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						updateWithBothMemoSettersWorks(),
 						updatingExpiryWorks(),
 						rejectsExpiryTooFarInTheFuture(),
@@ -96,7 +97,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						fridayThe13thSpec(),
 						updateDoesNotChangeBytecode(),
 						eip1014AddressAlwaysHasPriority(),
-						immutableContractKeyFormIsStandard()
+						immutableContractKeyFormIsStandard(),
+						updateAutoRenewAccountWorks(),
 				}
 		);
 	}
@@ -126,22 +128,23 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeNormalCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeStaticCall").via(staticcallTxn),
 						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeStaticCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
-						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
-								resultWith().resultThruAbi(
-										getABIFor(FUNCTION, "makeDelegateCall", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						sourcing(
+								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+										resultWith().resultThruAbi(
+												getABIFor(FUNCTION, "makeDelegateCall", contract),
+												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, "makeCallCode").via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeCallCode", contract),
-										isLiteralResult(new Object[]{unhex(childEip1014.get())})))))
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
 				);
 	}
 
@@ -223,6 +226,38 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec updateAutoRenewAccountWorks() {
+		final var autoRenewAccount = "autoRenewAccount";
+		final var newAutoRenewAccount = "newAutoRenewAccount";
+		return defaultHapiSpec("UpdateAutoRenewAccountWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						cryptoCreate(autoRenewAccount),
+						cryptoCreate(newAutoRenewAccount),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
+								.autoRenewAccountId(autoRenewAccount),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+								.logged()
+				)
+				.when(
+						contractUpdate(CONTRACT)
+								.newAutoRenewAccount(newAutoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate(CONTRACT)
+								.newAutoRenewAccount(newAutoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount)
+				)
+				.then(
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
+								.logged()
+				);
+	}
+
 	private HapiApiSpec updateAdminKeyWorks() {
 		return defaultHapiSpec("UpdateAdminKeyWorks")
 				.given(
@@ -250,7 +285,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT).immutable()
-				).when( ).then(
+				).when().then(
 						getContractInfo(CONTRACT)
 								.has(contractWith().immutableContractKey(CONTRACT))
 				);

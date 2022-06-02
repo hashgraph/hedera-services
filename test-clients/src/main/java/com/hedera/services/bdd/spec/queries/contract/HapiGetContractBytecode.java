@@ -41,7 +41,7 @@ import java.util.function.Consumer;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode> {
 	static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);

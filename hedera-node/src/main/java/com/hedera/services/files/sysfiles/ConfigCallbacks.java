@@ -23,14 +23,17 @@ package com.hedera.services.files.sysfiles;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
+import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Singleton
 public class ConfigCallbacks {
@@ -39,20 +42,26 @@ public class ConfigCallbacks {
 	private final GlobalDynamicProperties dynamicProps;
 	private final FunctionalityThrottling hapiThrottling;
 	private final FunctionalityThrottling handleThrottling;
+	private final FunctionalityThrottling scheduleThrottling;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
 	public ConfigCallbacks(
-			HapiOpPermissions hapiOpPermissions,
-			GlobalDynamicProperties dynamicProps,
-			PropertySources propertySources,
-			@HapiThrottle FunctionalityThrottling hapiThrottling,
-			@HandleThrottle FunctionalityThrottling handleThrottling
+			final HapiOpPermissions hapiOpPermissions,
+			final GlobalDynamicProperties dynamicProps,
+			final PropertySources propertySources,
+			final @HapiThrottle FunctionalityThrottling hapiThrottling,
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final @ScheduleThrottle FunctionalityThrottling scheduleThrottling,
+			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.dynamicProps = dynamicProps;
 		this.propertySources = propertySources;
 		this.hapiOpPermissions = hapiOpPermissions;
 		this.hapiThrottling = hapiThrottling;
 		this.handleThrottling = handleThrottling;
+		this.scheduleThrottling = scheduleThrottling;
+		this.networkCtx = networkCtx;
 	}
 
 	public Consumer<ServicesConfigurationList> propertiesCb() {
@@ -61,6 +70,8 @@ public class ConfigCallbacks {
 			dynamicProps.reload();
 			hapiThrottling.applyGasConfig();
 			handleThrottling.applyGasConfig();
+			scheduleThrottling.applyGasConfig();
+			networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
 		};
 	}
 

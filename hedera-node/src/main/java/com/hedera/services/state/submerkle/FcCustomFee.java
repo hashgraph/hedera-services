@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;

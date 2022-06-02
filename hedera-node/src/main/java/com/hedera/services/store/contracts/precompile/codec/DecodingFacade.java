@@ -65,7 +65,8 @@ public class DecodingFacade {
 	public static final String UINT256_RAW_TYPE = "(uint256)";
 
 	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
-	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
+	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS =
+			Collections.emptyList();
 
 	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function(
 			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT_OUTPUT);
@@ -286,8 +287,12 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeErcTransfer(final Bytes input, final TokenID token,
-														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
+	public List<TokenTransferWrapper> decodeERCTransfer(
+			final Bytes input,
+			final TokenID token,
+			final AccountID caller,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
 		final var recipient = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
@@ -385,7 +390,7 @@ public class DecodingFacade {
 	}
 
 	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input,
-															final UnaryOperator<byte[]> aliasResolver) {
+			final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, SET_APPROVAL_FOR_ALL_SELECTOR,
 				SET_APPROVAL_FOR_ALL_DECODER);
 
@@ -412,7 +417,8 @@ public class DecodingFacade {
 		}
 	}
 
-	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));

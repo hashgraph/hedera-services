@@ -25,6 +25,7 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.BytesKey;
 import org.apache.tuweni.bytes.Bytes;
+import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
@@ -34,12 +35,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class CodeCacheTest {
@@ -52,7 +55,7 @@ class CodeCacheTest {
 
 	@BeforeEach
 	void setup() {
-		codeCache = new CodeCache(properties, entityAccess);
+		codeCache = new CodeCache(100, entityAccess);
 	}
 
 	@Test
@@ -75,6 +78,28 @@ class CodeCacheTest {
 		Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
 		assertTrue(code.getBytes().isEmpty());
+	}
+
+	@Test
+	void returnsCachedValue() {
+		Address demoAddress = Address.fromHexString("aaa");
+		BytesKey key = new BytesKey(demoAddress.toArray());
+		Code code = Code.EMPTY;
+		
+		codeCache.cacheValue(key, code);
+
+		Code codeResult = codeCache.getIfPresent(demoAddress);
+
+		assertEquals(code, codeResult);
+		verifyNoInteractions(entityAccess);
+	}
+
+	@Test
+	void getTokenCodeReturnsRedirectCode() {
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+
+		assertEquals(proxyBytecodeFor(Address.fromHexString("0xabc")), codeCache.getIfPresent(Address.fromHexString(
+				"0xabc")).getBytes());
 	}
 
 	@Test

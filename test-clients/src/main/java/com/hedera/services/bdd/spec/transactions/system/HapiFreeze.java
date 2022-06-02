@@ -40,7 +40,7 @@ import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.time.temporal.ChronoUnit.SECONDS;
 

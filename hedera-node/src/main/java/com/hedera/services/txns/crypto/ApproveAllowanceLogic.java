@@ -3,9 +3,9 @@ package com.hedera.services.txns.crypto;
 /*-
  * ‌
  * Hedera Services Node
- *
+ * ​
  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,8 +53,8 @@ public class ApproveAllowanceLogic {
 
 	@Inject
 	public ApproveAllowanceLogic(final AccountStore accountStore,
-								 final TypedTokenStore tokenStore,
-								 final GlobalDynamicProperties dynamicProperties
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -124,8 +124,8 @@ public class ApproveAllowanceLogic {
 	}
 
 	private void removeEntity(final Map<EntityNum, Long> cryptoMap,
-							  final Id spender,
-							  final Account accountToApprove) {
+			final Id spender,
+			final Account accountToApprove) {
 		cryptoMap.remove(spender.asEntityNum());
 		accountToApprove.setCryptoAllowances(cryptoMap);
 		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -216,3 +216,4 @@ public class ApproveAllowanceLogic {
 		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
 }
+

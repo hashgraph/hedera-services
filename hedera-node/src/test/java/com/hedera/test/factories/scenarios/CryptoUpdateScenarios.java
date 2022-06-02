@@ -37,6 +37,13 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_UPDATE_NO_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedCryptoUpdate(CUSTOM_PAYER_ACCOUNT_ID).get()
+			));
+		}
+	},
 	CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
@@ -81,6 +88,15 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
 					newSignedCryptoUpdate(DEFAULT_PAYER_ID)
+							.newAccountKt(NEW_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_WITH_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedCryptoUpdate(CUSTOM_PAYER_ACCOUNT_ID)
 							.newAccountKt(NEW_ACCOUNT_KT)
 							.get()
 			));

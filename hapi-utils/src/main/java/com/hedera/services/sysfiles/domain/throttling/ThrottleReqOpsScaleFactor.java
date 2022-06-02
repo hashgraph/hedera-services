@@ -21,22 +21,19 @@ package com.hedera.services.sysfiles.domain.throttling;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.sysfiles.ParsingUtils;
 
 public record ThrottleReqOpsScaleFactor(int numerator, int denominator) {
 	public static ThrottleReqOpsScaleFactor from(String literal) {
-		final var splitIndex = literal.indexOf(':');
-		if (splitIndex == -1) {
-			throw new IllegalArgumentException("Missing ':' in scale literal '" + literal + "'");
-		}
-		final var n = Integer.parseInt(literal.substring(0, splitIndex));
-		final var d = Integer.parseInt(literal.substring(splitIndex + 1));
-		if (n < 0 || d < 0) {
-			throw new IllegalArgumentException("Negative number in scale literal '" + literal + "'");
-		}
-		if (d == 0) {
-			throw new IllegalArgumentException("Division by zero in scale literal '" + literal + "'");
-		}
-		return new ThrottleReqOpsScaleFactor(n, d);
+		return ParsingUtils.fromTwoPartDelimited(
+				literal, ":", (n, d) -> {
+					if (n < 0 || d < 0) {
+						throw new IllegalArgumentException("Negative number in scale literal '" + literal + "'");
+					}
+					if (d == 0) {
+						throw new IllegalArgumentException("Division by zero in scale literal '" + literal + "'");
+					}
+				}, Integer::parseInt, Integer::parseInt, ThrottleReqOpsScaleFactor::new);
 	}
 
 	public int scaling(int nominalOps) {

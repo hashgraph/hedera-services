@@ -1,5 +1,3 @@
-package com.hedera.services.ledger.interceptors;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -19,17 +17,3 @@ package com.hedera.services.ledger.interceptors;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.context.SideEffectsTracker;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-class UniqueTokensCommitInterceptorTest {
-	@Test
-	void everythingNoopForNow() {
-		final var subject = new UniqueTokensCommitInterceptor(new SideEffectsTracker());
-
-		assertDoesNotThrow(() -> subject.preview(null));
-	}
-}

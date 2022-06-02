@@ -35,6 +35,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -141,7 +142,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
 		return functionResultBuilder()
-				.forFunction(FunctionType.MINT)
+				.forFunction(MINT)
 				.withStatus(SUCCESS.getNumber())
 				.withTotalSupply(totalSupply)
 				.withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
@@ -150,7 +151,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintFailure(final ResponseCodeEnum status) {
 		return functionResultBuilder()
-				.forFunction(FunctionType.MINT)
+				.forFunction(MINT)
 				.withStatus(status.getNumber())
 				.withTotalSupply(0L)
 				.withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)

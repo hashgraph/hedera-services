@@ -49,6 +49,8 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -91,18 +93,19 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class DissociatePrecompilesTest {
-	@Mock
-	private Bytes pretendArguments;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -169,6 +172,10 @@ class DissociatePrecompilesTest {
 	private CreateChecks createChecks;
 	@Mock
 	private InfrastructureFactory infrastructureFactory;
+	@Mock
+	private ApproveAllowanceChecks allowanceChecks;
+	@Mock
+	private DeleteAllowanceChecks deleteAllowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -179,14 +186,14 @@ class DissociatePrecompilesTest {
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfersMarshal,
 				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory);
+				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 	}
 
 	@Test
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -219,7 +226,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
 		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
@@ -236,30 +243,27 @@ class DissociatePrecompilesTest {
 				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
+		given(dissociateLogic.validateSyntax(any())).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+		given(creator.createUnsuccessfulSyntheticRecord(TOKEN_ID_REPEATED_IN_TOKEN_LIST))
+				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		subject.computeInternal(frame);
 
 		// then:
-		assertEquals(successResult, result);
-		// and:
-		verify(dissociateLogic).dissociate(accountId, singletonList(nonFungible));
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		verify(wrappedLedgers, never()).commit();
 	}
 
 	@Test
 	void computeMultiDissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS);
 
 		given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
 				.willReturn(multiDissociateOp);
@@ -283,10 +287,11 @@ class DissociatePrecompilesTest {
 				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
+		given(dissociateLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 

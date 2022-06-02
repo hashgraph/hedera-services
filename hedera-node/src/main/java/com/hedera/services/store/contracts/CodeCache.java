@@ -32,6 +32,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.TimeUnit;
 
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 /**
@@ -66,13 +67,24 @@ public class CodeCache {
         final var cacheKey = new BytesKey(address.toArray());
 
         var code = cache.getIfPresent(cacheKey);
-        if (code == null) {
-            final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
-            if (bytecode != null) {
-                code = new Code(bytecode, Hash.hash(bytecode));
-                cache.put(cacheKey, code);
-            }
+
+        if (code != null) {
+            return code;
         }
+
+        if (entityAccess.isTokenAccount(address)) {
+            final var interpolatedBytecode = proxyBytecodeFor(address);
+            code = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
+            cache.put(cacheKey, code);
+            return code;
+        }
+
+        final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
+        if (bytecode != null) {
+                code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
+            cache.put(cacheKey, code);
+        }
+
         return code;
     }
 
@@ -85,5 +97,9 @@ public class CodeCache {
     /* --- Only used by unit tests --- */
     Cache<BytesKey, Code> getCache() {
         return cache;
+    }
+
+    void cacheValue(BytesKey key, Code value) {
+        cache.put(key, value);
     }
 }

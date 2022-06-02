@@ -23,6 +23,7 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
@@ -50,6 +51,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.store.contracts.WorldLedgers.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -86,6 +90,7 @@ public class Account {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private int numTreasuryTitles;
+	private long ethereumNonce;
 
 	public Account(Id id) {
 		this.id = id;
@@ -97,6 +102,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		this.ethereumNonce = ethereumNonce;
+	}
+
+	public void incrementEthereumNonce() {
+		this.ethereumNonce++;
+	}
+
+	public long getEthereumNonce() {
+		return ethereumNonce;
 	}
 
 	public long getOwnedNfts() {
@@ -136,7 +153,14 @@ public class Account {
 		if (alias.isEmpty()) {
 			return id.asEvmAddress();
 		} else {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			if (alias.size() == EVM_ADDRESS_SIZE) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+				var addressBytes = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				return addressBytes == null ? id.asEvmAddress() : Address.wrap(Bytes.wrap(addressBytes));
+			} else {
+				return id.asEvmAddress();
+			}
 		}
 	}
 
@@ -305,6 +329,7 @@ public class Account {
 				.add("approveForAllNfts", approveForAllNfts)
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 
@@ -427,8 +452,6 @@ public class Account {
 	}
 
 	public int getTotalAllowances() {
-		return cryptoAllowances.size() +
-				fungibleTokenAllowances.size() +
-				approveForAllNfts.size();
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
 	}
 }

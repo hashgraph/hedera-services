@@ -20,8 +20,10 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +50,10 @@ class GlobalDynamicPropertiesTest {
 			"/opt/hgcapp/HapiApp2.0/data/upgrade",
 			"data/upgrade"
 	};
+
+	private static final String literalBlockValues =
+			"c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+	private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
 	private PropertySource properties;
 
@@ -115,9 +122,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(20, subject.minValidityBuffer());
-		assertEquals(22, subject.getChainId());
+		assertEquals(22, subject.chainId());
+		assertArrayEquals(Integers.toBytes(22), subject.chainIdBytes());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.minAutoRenewDuration());
+		assertEquals(26, subject.typedMinAutoRenewDuration().getSeconds());
 		assertEquals(27, subject.localCallEstRetBytes());
 		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
 		assertEquals(29, subject.messageMaxBytesAllowed());
@@ -151,6 +160,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(53, subject.maxAggregateContractKvPairs());
 		assertEquals(54, subject.maxIndividualContractKvPairs());
 		assertEquals(55, subject.maxNumQueryableRecords());
+		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
+		assertEquals(64, subject.getMaxReturnedNftsPerTouch());
 	}
 
 	@Test
@@ -171,7 +182,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(44L, subject.maxNftMints());
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
-		assertEquals(51L, subject.triggerTxnWindBackNanos());
+		assertEquals(66L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(67L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(69L, subject.maxPrecedingRecords());
+		assertEquals(70L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -213,6 +228,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
+		assertTrue(subject.schedulingLongTermEnabled());
 	}
 
 	@Test
@@ -282,8 +298,12 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(45L, subject.maxNftMints());
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
-		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(70L, subject.maxPrecedingRecords());
+		assertEquals(71L, subject.maxFollowingRecords());
 	}
 
 	@Test
@@ -300,6 +320,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(evenCongestion, subject.congestionMultipliers());
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
+		assertEquals(blockValues, subject.knownBlockValues());
+		assertEquals(66L, subject.exchangeRateGasReq());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -332,6 +354,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.localCall.estRetBytes")).willReturn(i + 26);
 		given(properties.getIntProperty("ledger.schedule.txExpiryTimeSecs")).willReturn(i + 27);
 		given(properties.getIntProperty("consensus.message.maxBytesAllowed")).willReturn(i + 28);
+		given(properties.getBooleanProperty("scheduling.longTermEnabled")).willReturn(i % 2 == 0);
 		given(properties.getFunctionsProperty("scheduling.whitelist")).willReturn(i % 2 == 0
 				? Set.of(HederaFunctionality.CryptoCreate)
 				: Set.of(HederaFunctionality.CryptoTransfer));
@@ -362,7 +385,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
 		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
-		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
 		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i + 52L);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
@@ -381,9 +403,18 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
 		given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
-		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("entities.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
+		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
+		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
+		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
+		given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost")).willReturn(i + 64L);
+		given(properties.getLongProperty("scheduling.maxTxnPerSecond")).willReturn(i + 65L);
+		given(properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit")).willReturn(i + 66L);
+		given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds")).willReturn(i + 67L);
+		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
+		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
@@ -396,7 +427,7 @@ class GlobalDynamicPropertiesTest {
 		}
 	}
 
-	private AccountID accountWith(long shard, long realm, long num) {
+	private AccountID accountWith(final long shard, final long realm, final long num) {
 		return AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)

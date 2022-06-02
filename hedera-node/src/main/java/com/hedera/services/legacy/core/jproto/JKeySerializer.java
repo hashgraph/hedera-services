@@ -21,8 +21,8 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.hedera.services.state.serdes.IoUtils;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -80,7 +80,7 @@ public class JKeySerializer {
 		});
 	}
 
-	public static <T> T deserialize(DataInputStream stream) throws IOException {
+	public static <T> T deserialize(SerializableDataInputStream stream) throws IOException {
 		final var version = stream.readLong();
 		if (version == LEGACY_VERSION) {
 			throw new IllegalArgumentException("Pre-OA serialization format no longer supported");
@@ -155,7 +155,7 @@ public class JKeySerializer {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
+	static <T> T unpack(SerializableDataInputStream stream, JObjectType type, long length) throws IOException {
 		if (JObjectType.FC_ED25519_KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);

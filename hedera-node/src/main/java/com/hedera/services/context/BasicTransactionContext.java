@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -292,6 +293,16 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
+	public void updateForEvmCall(final EthTxData callContext, EntityId senderId) {
+		this.evmFnResult.updateForEvmCall(callContext, senderId);
+		var wrappedRecordConfig = recordConfig;
+		recordConfig = expiringRecord -> {
+			wrappedRecordConfig.accept(expiringRecord);
+			expiringRecord.setEthereumHash(callContext.getEthereumHash());
+		};
+	}
+
+	@Override
 	public void setCreateResult(final EvmFnResult result) {
 		this.evmFnResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(result);
@@ -311,6 +322,9 @@ public class BasicTransactionContext implements TransactionContext {
 	public void trigger(final TxnAccessor scopedAccessor) {
 		if (accessor().isTriggeredTxn()) {
 			throw new IllegalStateException("Unable to trigger txns in triggered txns");
+		}
+		if (triggeredTxn != null && (triggeredTxn != scopedAccessor)) {
+			throw new IllegalStateException("Unable to trigger more than one txn.");
 		}
 		triggeredTxn = scopedAccessor;
 	}

@@ -30,6 +30,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -130,6 +131,35 @@ class AccountTest {
 	}
 
 	@Test
+	void canonicalAddressIsEVMAddressIfCorrectAlias() {
+		// default truffle address #0
+		subject.setAlias(ByteString.copyFrom(
+				Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+		assertEquals(Address.wrap(Bytes.fromHexString("627306090abaB3A6e1400e9345bC60c78a8BEf57")),
+				subject.canonicalAddress());
+	}
+
+	@Test
+	void invalidCanonicalAddresses() {
+		Address untranslatedAddress = Address.wrap(Bytes.fromHexString("0000000000000000000000000000000000003039"));
+
+		// bogus alias
+		subject.setAlias(ByteString.copyFromUtf8("This alias is invalid"));
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
+		// incorrect starting bytes for ECDSA
+		subject.setAlias(ByteString.copyFrom(
+				Hex.decode("ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
+		// incorrect ECDSA key
+		subject.setAlias(ByteString.copyFrom(
+				Hex.decode("3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+		assertEquals(untranslatedAddress, subject.canonicalAddress());
+
+	}
+
+	@Test
 	void objectContractWorks() {
 		final var TEST_KEY = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		final var TEST_LONG_VALUE = 1L;
@@ -171,7 +201,8 @@ class AccountTest {
 	void toStringAsExpected() {
 		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5, " +
 				"alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=, cryptoAllowances=null, " +
-				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=2}";
+				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=2, " +
+				"ethereumNonce=0}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

@@ -22,6 +22,7 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -40,6 +41,8 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -75,7 +78,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			return true;
 		}
 
-		final var accountKey = (JKey) worldLedgers.accounts().get(accountId, AccountProperty.KEY);
+		final var accountKey = (JKey) worldLedgers.accounts().get(accountId, KEY);
 		return accountKey != null && isActiveInFrame(accountKey, isDelegateCall,
 				activeContract,
 				worldLedgers.aliases());
@@ -144,9 +147,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
-		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
-		 * called  with each primitive key in the top-level Hedera key of interest, along with
-		 * that key's verified cryptographic signature (if any was available in the sigMap). */
+		// Note that when this observer is used directly above in isActiveInFrame(), it will be
+		// called  with each primitive key in the top-level Hedera key of interest, along with
+		// that key's verified cryptographic signature (if any was available in the sigMap)
 		return (key, sig) -> {
 			if (key.hasDelegatableContractId() || key.hasDelegatableContractAlias()) {
 				final var controllingId = key.hasDelegatableContractId()
@@ -162,20 +165,25 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 				final var controllingContract = aliases.currentAddress(controllingId);
 				return !isDelegateCall && controllingContract.equals(activeContract);
 			} else {
-				/* Otherwise apply the standard cryptographic validity test */
+				// Otherwise, apply the standard cryptographic validity test
 				return cryptoValidity.test(key, sig);
 			}
 		};
 	}
 
 	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
-		final var merkleAccount = worldLedgers.accounts() != null ?
-				Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
-				Optional.empty();
+		final var accounts = worldLedgers.accounts();
+		if (accounts == null) {
+			// This must be a static call, hence cannot contain value and cannot require a signature
+			return Optional.empty();
+		}
+		return isReceiverSigExempt(id, accounts) ? Optional.empty() : Optional.ofNullable((JKey) accounts.get(id, KEY));
+	}
 
-		return merkleAccount
-				.filter(account -> !((MerkleAccount)account).isSmartContract())
-				.filter(account -> ((MerkleAccount)account).isReceiverSigRequired())
-				.map(account -> ((MerkleAccount)account).getAccountKey());
+	private boolean isReceiverSigExempt(
+			final AccountID id,
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts
+	) {
+		return !accounts.contains(id) || !(boolean) accounts.get(id, IS_RECEIVER_SIG_REQUIRED);
 	}
 }

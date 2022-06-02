@@ -23,6 +23,8 @@ package com.hedera.services.files.sysfiles;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,29 +33,39 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigCallbacksTest {
-	@Mock
-	GlobalDynamicProperties dynamicProps;
-	@Mock
-	PropertySources propertySources;
-	@Mock
-	HapiOpPermissions hapiOpPermissions;
-	@Mock
-	FunctionalityThrottling functionalityThrottling;
+	private static final String literalBlockValues =
+			"c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+	private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
-	ConfigCallbacks subject;
+	@Mock
+	private GlobalDynamicProperties dynamicProps;
+	@Mock
+	private PropertySources propertySources;
+	@Mock
+	private HapiOpPermissions hapiOpPermissions;
+	@Mock
+	private FunctionalityThrottling functionalityThrottling;
+	@Mock
+	private MerkleNetworkContext networkCtx;
+
+	private ConfigCallbacks subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, functionalityThrottling, functionalityThrottling);
+		subject = new ConfigCallbacks(
+				hapiOpPermissions, dynamicProps,
+				propertySources, functionalityThrottling, functionalityThrottling, functionalityThrottling, () -> networkCtx);
 	}
 
 	@Test
 	void propertiesCbAsExpected() {
+		given(dynamicProps.knownBlockValues()).willReturn(blockValues);
 		var config = ServicesConfigurationList.getDefaultInstance();
 
 		// when:
@@ -62,7 +74,8 @@ class ConfigCallbacksTest {
 		// then:
 		verify(propertySources).reloadFrom(config);
 		verify(dynamicProps).reload();
-		verify(functionalityThrottling, times(2)).applyGasConfig();
+		verify(functionalityThrottling, times(3)).applyGasConfig();
+		verify(networkCtx).renumberBlocksToMatch(blockValues);
 	}
 
 	@Test

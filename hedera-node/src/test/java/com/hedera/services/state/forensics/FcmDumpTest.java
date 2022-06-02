@@ -22,7 +22,7 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -34,8 +34,8 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.merkle.io.MerkleDataOutputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class FcmDumpTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
+	private MerkleScheduledTransactions scheduleTxs;
 	@Mock
 	private FcmDump.DirectoryCreation directoryCreation;
 

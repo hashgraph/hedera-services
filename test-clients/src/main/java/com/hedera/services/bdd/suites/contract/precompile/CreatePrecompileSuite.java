@@ -24,10 +24,15 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,15 +45,51 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.keys.KeyShape.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.*;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+//Some of the test cases cannot be converted to use eth calls,
+//since they use admin keys, which are held by the txn payer.
+//In the case of an eth txn, we revoke the payers keys and the txn would fail.
+//The only way an eth account to create a token is the admin key to be of a contractId type.
 public class CreatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
@@ -66,13 +107,14 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private static final String ED25519KEY = "ed25519key";
 	private static final String ECDSA_KEY = "ecdsa";
 	private final String EXISTING_TOKEN = "EXISTING_TOKEN";
+	private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
 
 	public static void main(String... args) {
 		new CreatePrecompileSuite().runSuiteSync();
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -86,18 +128,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				fungibleTokenCreateHappyPath(),
 				fungibleTokenCreateWithFeesHappyPath(),
 				nonFungibleTokenCreateHappyPath(),
 				nonFungibleTokenCreateWithFeesHappyPath(),
 				fungibleTokenCreateThenQueryAndTransfer(),
-				nonFungibleTokenCreateThenQuery()
-		);
+				nonFungibleTokenCreateThenQuery(),
+				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+				inheritsSenderAutoRenewAccountForTokenCreate(),
+				createTokenWithDefaultExpiryAndEmptyKeys()
+		});
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				tokenCreateWithEmptyKeysReverts(),
 				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
 				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
@@ -109,7 +154,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				createTokenWithInvalidFeeCollector(),
 				createTokenWithInsufficientValueSent(),
 				delegateCallTokenCreateFails()
-		);
+		});
 	}
 
 	// TEST-001
@@ -122,12 +167,14 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
 		return defaultHapiSpec("fungibleTokenCreateHappyPath")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
 						newKeyNamed(contractAdminKey),
 						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ED25519KEY),
 						cryptoCreate(ACCOUNT2)
@@ -139,6 +186,12 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
 								.adminKey(contractAdminKey)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
+
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -147,7 +200,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -158,9 +212,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
-															final var res = (byte[])result[0];
+															final var res = (byte[]) result[0];
 															createTokenNum.set(new BigInteger(res).longValueExact());
 														}),
 												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -184,28 +239,28 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						sourcing(() -> getAccountInfo(ACCOUNT_TO_ASSOCIATE).logged().hasTokenRelationShipCount(1)),
 						sourcing(() -> getTokenInfo(asTokenString(
 								TokenID.newBuilder().setTokenNum(createTokenNum.get()).build()))
-									.logged()
-									.hasTokenType(TokenType.FUNGIBLE_COMMON)
-									.hasSymbol(TOKEN_SYMBOL)
-									.hasName(TOKEN_NAME)
-									.hasDecimals(8)
-									.hasTotalSupply(100)
-									.hasEntityMemo(MEMO)
-									.hasTreasury(ACCOUNT)
-									.hasAutoRenewAccount(ACCOUNT)
-									.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-									.hasSupplyType(TokenSupplyType.INFINITE)
-									.searchKeysGlobally()
-									.hasAdminKey(ED25519KEY)
-									.hasKycKey(ED25519KEY)
-									.hasFreezeKey(ECDSA_KEY)
-									.hasWipeKey(ECDSA_KEY)
-									.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-									.hasFeeScheduleKey(tokenCreateContractAsKeyDelegate)
-									.hasPauseKey(contractAdminKey)
-									.hasPauseStatus(TokenPauseStatus.Unpaused)),
-						cryptoDelete(ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+								.logged()
+								.hasTokenType(TokenType.FUNGIBLE_COMMON)
+								.hasSymbol(TOKEN_SYMBOL)
+								.hasName(TOKEN_NAME)
+								.hasDecimals(8)
+								.hasTotalSupply(100)
+								.hasEntityMemo(MEMO)
+								.hasTreasury(ACCOUNT)
+								// Token doesn't inherit contract's auto-renew account if set in tokenCreate
+								.hasAutoRenewAccount(ACCOUNT)
+								.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+								.searchKeysGlobally()
+								.hasAdminKey(ED25519KEY)
+								.hasKycKey(ED25519KEY)
+								.hasFreezeKey(ECDSA_KEY)
+								.hasWipeKey(ECDSA_KEY)
+								.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+								.hasFeeScheduleKey(tokenCreateContractAsKeyDelegate)
+								.hasPauseKey(contractAdminKey)
+								.hasPauseStatus(TokenPauseStatus.Unpaused)),
+						cryptoDelete(ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY)
 				);
 	}
 
@@ -215,10 +270,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var feeCollector = "feeCollector";
 		return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
@@ -232,8 +286,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithAllCustomFeesAvailable",
-														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createTokenWithAllCustomFeesAvailable",
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														asAddress(spec.registry().getAccountID(feeCollector)),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -242,9 +298,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
-															final var res = (byte[])result[0];
+															final var res = (byte[]) result[0];
 															createdTokenNum.set(new BigInteger(res).longValueExact());
 														}),
 												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -281,9 +338,136 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.hasCustom(fixedHtsFeeInSchedule(1, EXISTING_TOKEN, feeCollector))
 									.hasCustom(fixedHbarFeeInSchedule(2, feeCollector))
 									.hasCustom(fixedHtsFeeInSchedule(4, newToken, feeCollector))
-									.hasCustom(fractionalFeeInSchedule(4, 5, 10, OptionalLong.of(30), true, feeCollector));
-						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+									.hasCustom(
+											fractionalFeeInSchedule(4, 5, 10, OptionalLong.of(30), true, feeCollector));
+						})
+				);
+	}
+
+	private HapiApiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+		final var createdNftTokenNum = new AtomicLong();
+		return defaultHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
+				.given(
+						newKeyNamed(ED25519KEY).shape(ED25519),
+						newKeyNamed(ECDSA_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED25519KEY),
+						uploadInitCode(TOKEN_CREATE_CONTRACT)
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(TOKEN_CREATE_CONTRACT)
+														.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+														.gas(GAS_TO_OFFER)
+										)
+						),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var subop2 = contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
+									asAddress(spec.registry().getAccountID(ACCOUNT)),
+									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
+									new byte[] { },
+									AUTO_RENEW_PERIOD
+							).via(FIRST_CREATE_TXN)
+									.gas(GAS_TO_OFFER)
+									.payingWith(ACCOUNT)
+									.sending(DEFAULT_AMOUNT_TO_SEND)
+									.refusingEthConversion()
+									.exposingResultTo(result -> {
+										log.info("Explicit create result is {}", result[0]);
+										final var res = (byte[]) result[0];
+										createdNftTokenNum.set(new BigInteger(res).longValueExact());
+									})
+									.hasKnownStatus(SUCCESS);
+
+							allRunFor(spec, subop1, subop2, childRecordsCheck(FIRST_CREATE_TXN, SUCCESS,
+									TransactionRecordAsserts.recordWith().status(SUCCESS)));
+
+							final var nftInfo = getTokenInfo(
+									asTokenString(TokenID.newBuilder().setTokenNum(createdNftTokenNum.get()).build()))
+									.hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+									.logged();
+
+							allRunFor(spec, nftInfo);
+						})
+				);
+	}
+
+
+	private HapiApiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
+		final var createTokenNum = new AtomicLong();
+		final var contractAdminKey = "contractAdminKey";
+		final var ACCOUNT_TO_ASSOCIATE = "account3";
+		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
+		return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
+				.given(
+						newKeyNamed(ED25519KEY).shape(ED25519),
+						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+						newKeyNamed(contractAdminKey),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(ACCOUNT_TO_ASSOCIATE)
+								.key(ACCOUNT_TO_ASSOCIATE_KEY),
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						contractCreate(TOKEN_CREATE_CONTRACT)
+								.gas(GAS_TO_OFFER)
+								.adminKey(contractAdminKey)
+								.autoRenewAccountId(
+										AUTO_RENEW_ACCOUNT) // inherits if the tokenCreateOp doesn't have
+								// autoRenewAccount
+								.signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
+														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
+														new byte[] { }, // set empty autoRenewAccount
+														AUTO_RENEW_PERIOD,
+														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.refusingEthConversion()
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[]) result[0];
+															createTokenNum.set(new BigInteger(res).longValueExact());
+														})
+										)
+						)
+				).then(
+						sourcing(() -> getTokenInfo(asTokenString(
+								TokenID.newBuilder().setTokenNum(createTokenNum.get()).build()))
+								.logged()
+								.hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+								.hasPauseStatus(TokenPauseStatus.Unpaused))
 				);
 	}
 
@@ -292,12 +476,12 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var createdTokenNum = new AtomicLong();
 		return defaultHapiSpec("nonFungibleTokenCreateHappyPath")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
-						uploadInitCode(TOKEN_CREATE_CONTRACT)
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -309,8 +493,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE,  ACCOUNT);
-							final var subop2 = contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
+							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var subop2 = contractCall(
+									TOKEN_CREATE_CONTRACT,
+									"createNFTTokenWithKeysAndExpiry",
 									asAddress(spec.registry().getAccountID(ACCOUNT)),
 									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 									asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -321,9 +507,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.sending(DEFAULT_AMOUNT_TO_SEND)
 									.exposingResultTo(result -> {
 										log.info("Explicit create result is {}", result[0]);
-										final var res = (byte[])result[0];
+										final var res = (byte[]) result[0];
 										createdTokenNum.set(new BigInteger(res).longValueExact());
 									})
+									.refusingEthConversion()
 									.hasKnownStatus(SUCCESS);
 							final var subop3 = getTxnRecord(FIRST_CREATE_TXN);
 							allRunFor(spec, subop1, subop2, subop3,
@@ -331,8 +518,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 											TransactionRecordAsserts.recordWith().status(SUCCESS)));
 
 							final var delta = subop3.getResponseRecord().getTransactionFee();
-							final var subop4 = getAccountBalance(ACCOUNT).hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE,
-									-(delta+DEFAULT_AMOUNT_TO_SEND)));
+							final var effectivePayer = ACCOUNT;
+							final var subop4 = getAccountBalance(effectivePayer)
+									.hasTinyBars(changeFromSnapshot(
+											ACCOUNT_BALANCE,
+											-(delta + DEFAULT_AMOUNT_TO_SEND)));
 							final var contractBalanceCheck =
 									getContractInfo(TOKEN_CREATE_CONTRACT)
 											.has(ContractInfoAsserts.contractWith()
@@ -364,9 +554,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.hasWipeKey(ED25519KEY)
 									.hasPauseStatus(TokenPauseStatus.Unpaused)
 									.logged();
-							allRunFor(spec, subop4, getAccountTokenBalance, tokenInfo,  contractBalanceCheck);
-						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+							allRunFor(spec, subop4, getAccountTokenBalance, tokenInfo, contractBalanceCheck);
+						})
 				);
 	}
 
@@ -377,11 +566,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
 		return defaultHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						newKeyNamed(treasuryAndFeeCollectorKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.key(treasuryAndFeeCollectorKey)
@@ -396,7 +584,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createNonFungibleTokenWithCustomFees",
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createNonFungibleTokenWithCustomFees",
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getAccountID(feeCollector)),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
@@ -410,7 +599,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(treasuryAndFeeCollectorKey)
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
-															final var res = (byte[])result[0];
+															final var res = (byte[]) result[0];
 															createTokenNum.set(new BigInteger(res).longValueExact());
 														}),
 												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -449,8 +638,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.hasCustom(royaltyFeeWithFallbackInTokenInSchedule(4, 5, 10, EXISTING_TOKEN,
 											feeCollector))
 									.hasCustom(royaltyFeeWithoutFallbackInSchedule(4, 5, feeCollector));
-						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						})
 				);
 	}
 
@@ -459,10 +647,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var createdTokenNum = new AtomicLong();
 		return defaultHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY)
 								.maxAutomaticTokenAssociations(1),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -482,9 +669,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
-															final var res = (byte[])result[0];
+															final var res = (byte[]) result[0];
 															createdTokenNum.set(new BigInteger(res).longValueExact());
 														}),
 												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -508,23 +696,22 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								asTokenString(TokenID.newBuilder().setTokenNum(createdTokenNum.get()).build()), 10)),
 						sourcing(() -> getTokenInfo(
 								asTokenString(TokenID.newBuilder().setTokenNum(createdTokenNum.get()).build()))
-									.hasTokenType(TokenType.FUNGIBLE_COMMON)
-									.hasSymbol(TOKEN_SYMBOL)
-									.hasName(TOKEN_NAME)
-									.hasDecimals(8)
-									.hasTotalSupply(30)
-									.hasEntityMemo(MEMO)
-									.hasTreasury(TOKEN_CREATE_CONTRACT)
-									.hasAutoRenewAccount(ACCOUNT)
-									.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-									.hasSupplyType(TokenSupplyType.INFINITE)
-									.searchKeysGlobally()
-									.hasAdminKey(ED25519KEY)
-									.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-									.hasPauseKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-									.hasPauseStatus(TokenPauseStatus.Unpaused)
-									.logged()),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+								.hasTokenType(TokenType.FUNGIBLE_COMMON)
+								.hasSymbol(TOKEN_SYMBOL)
+								.hasName(TOKEN_NAME)
+								.hasDecimals(8)
+								.hasTotalSupply(30)
+								.hasEntityMemo(MEMO)
+								.hasTreasury(TOKEN_CREATE_CONTRACT)
+								.hasAutoRenewAccount(ACCOUNT)
+								.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+								.searchKeysGlobally()
+								.hasAdminKey(ED25519KEY)
+								.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+								.hasPauseKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
+								.logged())
 				);
 	}
 
@@ -533,9 +720,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var createdTokenNum = new AtomicLong();
 		return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -555,7 +741,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
-															final var res = (byte[])result[0];
+															final var res = (byte[]) result[0];
 															createdTokenNum.set(new BigInteger(res).longValueExact());
 														}),
 												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -576,22 +762,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								asTokenString(TokenID.newBuilder().setTokenNum(createdTokenNum.get()).build()), 0)),
 						sourcing(() -> getTokenInfo(
 								asTokenString(TokenID.newBuilder().setTokenNum(createdTokenNum.get()).build()))
-									.hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-									.hasSymbol(TOKEN_SYMBOL)
-									.hasName(TOKEN_NAME)
-									.hasDecimals(0)
-									.hasTotalSupply(0)
-									.hasEntityMemo(MEMO)
-									.hasTreasury(TOKEN_CREATE_CONTRACT)
-									.hasAutoRenewAccount(ACCOUNT)
-									.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-									.hasSupplyType(TokenSupplyType.INFINITE)
-									.searchKeysGlobally()
-									.hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-									.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-									.hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
-									.logged()),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+								.hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.hasSymbol(TOKEN_SYMBOL)
+								.hasName(TOKEN_NAME)
+								.hasDecimals(0)
+								.hasTotalSupply(0)
+								.hasEntityMemo(MEMO)
+								.hasTreasury(TOKEN_CREATE_CONTRACT)
+								.hasAutoRenewAccount(ACCOUNT)
+								.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+								.searchKeysGlobally()
+								.hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+								.hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+								.hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+								.logged())
 				);
 	}
 
@@ -599,10 +784,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec tokenCreateWithEmptyKeysReverts() {
 		return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
-						uploadInitCode(TOKEN_CREATE_CONTRACT)
+								.balance(ONE_MILLION_HBARS),
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -614,28 +799,33 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var balanceSnapshot = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var balanceSnapshot =
+									balanceSnapshot(ACCOUNT_BALANCE, spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT);
 							final var hapiContractCall =
 									contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithEmptyKeysArray",
-										asAddress(spec.registry().getAccountID(ACCOUNT)),
-										AUTO_RENEW_PERIOD)
-									.via(FIRST_CREATE_TXN)
-									.gas(GAS_TO_OFFER)
-									.sending(DEFAULT_AMOUNT_TO_SEND)
-									.payingWith(ACCOUNT)
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+											asAddress(spec.registry().getAccountID(ACCOUNT)),
+											AUTO_RENEW_PERIOD)
+											.via(FIRST_CREATE_TXN)
+											.gas(GAS_TO_OFFER)
+											.sending(DEFAULT_AMOUNT_TO_SEND)
+											.payingWith(ACCOUNT)
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 							final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
 							allRunFor(spec, balanceSnapshot, hapiContractCall, txnRecord,
 									getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L),
-									emptyChildRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
-							final var changeFromSnapshot =
-									getAccountBalance(ACCOUNT).hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
+									emptyChildRecordsCheck(FIRST_CREATE_TXN,
+											ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
+							final var delta =
+									spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS :
+									txnRecord.getResponseRecord().getTransactionFee();
+							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
+							final var changeFromSnapshot = getAccountBalance(effectivePayer)
+									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
 							allRunFor(spec, changeFromSnapshot);
 						}),
 						getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-						getAccountBalance(ACCOUNT).logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						getAccountBalance(ACCOUNT).logged()
 				);
 	}
 
@@ -643,9 +833,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
 		return defaultHapiSpec("tokenCreateWithKeyWithMultipleKeyValuesReverts")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -654,15 +843,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeyWithMultipleValues",
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createTokenWithKeyWithMultipleValues",
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
 												)
-													.via(FIRST_CREATE_TXN)
-													.gas(GAS_TO_OFFER)
-													.sending(DEFAULT_AMOUNT_TO_SEND)
-													.payingWith(ACCOUNT)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
 				).then(
@@ -670,8 +860,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).logged(),
 						getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
-						emptyChildRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						emptyChildRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 				);
 	}
 
@@ -679,10 +868,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
 		return defaultHapiSpec("tokenCreateWithFixedFeeWithMultiplePaymentsReverts")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -692,16 +880,17 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithInvalidFixedFee",
-														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
 												)
-													.via(FIRST_CREATE_TXN)
-													.gas(GAS_TO_OFFER)
-													.sending(DEFAULT_AMOUNT_TO_SEND)
-													.payingWith(ACCOUNT)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 
 										)
 						)
@@ -710,8 +899,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).logged(),
 						getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
-						emptyChildRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						emptyChildRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 				);
 	}
 
@@ -719,9 +907,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec createTokenWithEmptyTokenStruct() {
 		return defaultHapiSpec("createTokenWithEmptyTokenStruct")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
 						withOpContext(
@@ -734,7 +921,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var accountSnapshot = balanceSnapshot(ACCOUNT_BALANCE,  ACCOUNT);
+							final var accountSnapshot = spec.isUsingEthCalls()
+									? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
+									: balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
 							final var contractCall = contractCall(TOKEN_CREATE_CONTRACT,
 									"createTokenWithEmptyTokenStruct")
 									.via(FIRST_CREATE_TXN)
@@ -743,22 +932,25 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.sending(DEFAULT_AMOUNT_TO_SEND)
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 							final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
-							allRunFor(spec, accountSnapshot, contractCall, txnRecord, childRecordsCheck(FIRST_CREATE_TXN,
-									CONTRACT_REVERT_EXECUTED,
-									TransactionRecordAsserts.recordWith()
-											.status(MISSING_TOKEN_SYMBOL)
-											.contractCallResult(
-													ContractFnResultAsserts.resultWith()
-															.error(MISSING_TOKEN_SYMBOL.name()))));
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
-							final var accountBalance =
-									getAccountBalance(ACCOUNT).hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
+							allRunFor(spec, accountSnapshot, contractCall, txnRecord,
+									childRecordsCheck(FIRST_CREATE_TXN,
+											CONTRACT_REVERT_EXECUTED,
+											TransactionRecordAsserts.recordWith()
+													.status(MISSING_TOKEN_SYMBOL)
+													.contractCallResult(
+															ContractFnResultAsserts.resultWith()
+																	.error(MISSING_TOKEN_SYMBOL.name()))));
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
+							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
+							final var accountBalance = getAccountBalance(effectivePayer)
+									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
 							allRunFor(spec, accountBalance, getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L));
 						}),
 						getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
 						getAccountBalance(ACCOUNT).logged(),
-						getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						getAccountBalance(TOKEN_CREATE_CONTRACT).logged()
 				);
 	}
 
@@ -766,10 +958,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec createTokenWithInvalidExpiry() {
 		return defaultHapiSpec("createTokenWithInvalidExpiry")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed("ecdsa").shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.gas(GAS_TO_OFFER)
@@ -782,11 +973,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
 												)
-													.via(FIRST_CREATE_TXN)
-													.gas(GAS_TO_OFFER)
-													.sending(DEFAULT_AMOUNT_TO_SEND)
-													.payingWith(ACCOUNT)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 
 										)
 						)
@@ -799,8 +990,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								TransactionRecordAsserts.recordWith()
 										.status(INVALID_EXPIRATION_TIME)
 										.contractCallResult(ContractFnResultAsserts.resultWith()
-												.error(INVALID_EXPIRATION_TIME.name()))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												.error(INVALID_EXPIRATION_TIME.name())))
 				);
 	}
 
@@ -812,12 +1002,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
 		return defaultHapiSpec("createTokenWithInvalidRoyaltyFee")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						newKeyNamed(contractAdminKey),
 						newKeyNamed(treasuryAndFeeCollectorKey),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.key(treasuryAndFeeCollectorKey)
@@ -833,7 +1022,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createNonFungibleTokenWithInvalidRoyaltyFee",
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createNonFungibleTokenWithInvalidRoyaltyFee",
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getAccountID(feeCollector)),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
@@ -858,8 +1048,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.status(CUSTOM_FEE_MUST_BE_POSITIVE)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(CUSTOM_FEE_MUST_BE_POSITIVE.name()))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+														.error(CUSTOM_FEE_MUST_BE_POSITIVE.name())))
 				);
 	}
 
@@ -867,10 +1056,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec createTokenWithInvalidTreasury() {
 		return defaultHapiSpec("createTokenWithInvalidTreasury")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
@@ -881,16 +1069,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-														Utils.asSolidityAddress(0, 0, 1543L),
+														Utils.asSolidityAddress(0, 0, 999_999_999L),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
 												)
-													.via(FIRST_CREATE_TXN)
-													.gas(GAS_TO_OFFER)
-													.sending(DEFAULT_AMOUNT_TO_SEND)
-													.payingWith(ACCOUNT)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
 				).then(
@@ -903,8 +1091,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.status(INVALID_ACCOUNT_ID)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(INVALID_ACCOUNT_ID.name()))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+														.error(INVALID_ACCOUNT_ID.name())))
 				);
 	}
 
@@ -913,10 +1100,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final String feeCollector = "account2";
 		return defaultHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
@@ -931,8 +1117,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithAllCustomFeesAvailable",
-														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createTokenWithAllCustomFeesAvailable",
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														asAddress(spec.registry().getAccountID(feeCollector)),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -941,6 +1129,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
@@ -954,8 +1143,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.status(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON.name()))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+														.error(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON.name())))
 				);
 	}
 
@@ -963,10 +1151,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec createTokenWithInvalidFeeCollector() {
 		return defaultHapiSpec("createTokenWithInvalidFeeCollector")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ECDSA_KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
@@ -977,8 +1164,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithAllCustomFeesAvailable",
-														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+												contractCall(TOKEN_CREATE_CONTRACT,
+														"createTokenWithAllCustomFeesAvailable",
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														Utils.asSolidityAddress(0, 0, 15252L),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
@@ -987,6 +1176,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.refusingEthConversion()
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
@@ -1000,8 +1190,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.status(INVALID_CUSTOM_FEE_COLLECTOR)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(INVALID_CUSTOM_FEE_COLLECTOR.name()))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+														.error(INVALID_CUSTOM_FEE_COLLECTOR.name())))
 				);
 	}
 
@@ -1009,11 +1198,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec createTokenWithInsufficientValueSent() {
 		return defaultHapiSpec("createTokenWithInsufficientValueSent")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
 								.key(ED25519KEY)
-								.balance(ONE_HUNDRED_HBARS),
+								.balance(ONE_MILLION_HBARS),
 						uploadInitCode(TOKEN_CREATE_CONTRACT)
 				).when(
 						withOpContext(
@@ -1026,7 +1214,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						withOpContext((spec, ignore) -> {
-							final var balanceSnapshot = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+							final var balanceSnapshot = spec.isUsingEthCalls()
+									? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
+									: balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
 							final long sentAmount = ONE_HBAR / 100;
 							final var hapiContractCall =
 									contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
@@ -1035,29 +1225,31 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 											asAddress(spec.registry().getAccountID(ACCOUNT)),
 											AUTO_RENEW_PERIOD
 									)
-										.via(FIRST_CREATE_TXN)
-										.gas(GAS_TO_OFFER)
-										.sending(sentAmount)
-										.payingWith(ACCOUNT)
-										.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+											.via(FIRST_CREATE_TXN)
+											.gas(GAS_TO_OFFER)
+											.sending(sentAmount)
+											.payingWith(ACCOUNT)
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 							final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
 							allRunFor(spec, balanceSnapshot, hapiContractCall, txnRecord,
 									getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L),
 									childRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
-									TransactionRecordAsserts.recordWith()
-											.status(INSUFFICIENT_TX_FEE)
-											.contractCallResult(
-													ContractFnResultAsserts.resultWith()
-															.error(INSUFFICIENT_TX_FEE.name())))
-									);
-							final var delta = txnRecord.getResponseRecord().getTransactionFee();
-							var changeFromSnapshot =
-									getAccountBalance(ACCOUNT).hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
+											TransactionRecordAsserts.recordWith()
+													.status(INSUFFICIENT_TX_FEE)
+													.contractCallResult(
+															ContractFnResultAsserts.resultWith()
+																	.error(INSUFFICIENT_TX_FEE.name())))
+							);
+							final var delta = spec.isUsingEthCalls()
+									? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+									: txnRecord.getResponseRecord().getTransactionFee();
+							final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
+							var changeFromSnapshot = getAccountBalance(effectivePayer)
+									.hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
 							allRunFor(spec, changeFromSnapshot);
 						}),
 						getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-						getAccountBalance(ACCOUNT).logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						getAccountBalance(ACCOUNT).logged()
 				);
 	}
 
@@ -1065,10 +1257,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec delegateCallTokenCreateFails() {
 		return defaultHapiSpec("delegateCallTokenCreateFails")
 				.given(
-						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS)
+								.balance(ONE_MILLION_HBARS)
 								.key(ED25519KEY),
 						uploadInitCode(TOKEN_CREATE_CONTRACT),
 						contractCreate(TOKEN_CREATE_CONTRACT)
@@ -1083,10 +1274,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
 												)
-													.via(FIRST_CREATE_TXN)
-													.gas(GAS_TO_OFFER)
-													.payingWith(ACCOUNT)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.payingWith(ACCOUNT)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
 				).then(
@@ -1099,8 +1290,68 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										.status(INSUFFICIENT_TX_FEE)
 										.contractCallResult(ContractFnResultAsserts.resultWith()
 												.error(INSUFFICIENT_TX_FEE.name()))
-						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						)
+				);
+	}
+
+	private HapiApiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+		final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
+		final var createTokenNum = new AtomicLong();
+		final var ACCOUNT2 = "account2";
+		final var contractAdminKey = "contractAdminKey";
+		final var ACCOUNT_TO_ASSOCIATE = "account3";
+		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
+		return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
+				.given(
+						newKeyNamed(ED25519KEY).shape(ED25519),
+						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+						newKeyNamed(contractAdminKey),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(AUTO_RENEW_ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ED25519KEY),
+						cryptoCreate(ACCOUNT2)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ECDSA_KEY),
+						cryptoCreate(ACCOUNT_TO_ASSOCIATE)
+								.key(ACCOUNT_TO_ASSOCIATE_KEY),
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						contractCreate(TOKEN_CREATE_CONTRACT)
+								.gas(GAS_TO_OFFER)
+								.adminKey(contractAdminKey)
+								.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+								.signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
+
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithDefaultExpiryAndEmptyKeys")
+														.via(FIRST_CREATE_TXN)
+														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[]) result[0];
+															createTokenNum.set(new BigInteger(res).longValueExact());
+														}),
+												newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
+														.shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
+												newKeyNamed(tokenCreateContractAsKeyDelegate)
+														.shape(DELEGATE_CONTRACT.signedWith(TOKEN_CREATE_CONTRACT))
+										)
+						)
+				).then(
+						getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged()
 				);
 	}
 

@@ -164,7 +164,7 @@ public class TokenCreateWrapper {
 		this.royaltyFees = royaltyFees;
 	}
 
-	public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+	void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
 		for (final var tokenKey : tokenKeys) {
 			if (tokenKey.key.isShouldInheritAccountKeySet()) {
 				tokenKey.key.setInheritedKey(JKey.mapJKey(senderKey));
@@ -178,7 +178,7 @@ public class TokenCreateWrapper {
 				.findFirst();
 	}
 
-	public boolean hasAutoRenewAccount() {
+	boolean hasAutoRenewAccount() {
 		return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
 	}
 

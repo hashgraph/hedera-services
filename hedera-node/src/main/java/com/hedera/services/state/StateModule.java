@@ -26,6 +26,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -45,7 +47,7 @@ import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -56,11 +58,12 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -68,14 +71,14 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -89,6 +92,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -165,6 +169,12 @@ public interface StateModule {
 	@Singleton
 	static Supplier<NotificationEngine> provideNotificationEngine() {
 		return NotificationFactory::getEngine;
+	}
+
+	@Provides
+	@Singleton
+	static Function<EthTxData, EthTxSigs> provideSigsFunction() {
+		return EthTxSigs::extractSignatures;
 	}
 
 	@Provides
@@ -254,7 +264,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
+	static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
 			final MutableStateChildren workingState
 	) {
 		return workingState::schedules;
@@ -278,7 +288,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+	static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
 			final MutableStateChildren workingState
 	) {
 		return workingState::contractStorage;
@@ -290,6 +300,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::networkCtx;
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
+			final MutableStateChildren workingState
+	) {
+		return workingState::runningHashLeaf;
 	}
 
 	@Provides

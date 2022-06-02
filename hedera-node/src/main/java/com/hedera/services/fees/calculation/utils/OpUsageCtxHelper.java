@@ -51,7 +51,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -131,7 +131,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 					.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 					.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-					.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
+					.setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -149,8 +149,8 @@ public class OpUsageCtxHelper {
 		return cryptoContext;
 	}
 
-	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
-		final var id = txn.getTransactionID().getAccountID();
+	public ExtantCryptoContext ctxForCryptoAllowance(TxnAccessor accessor) {
+		final var id = accessor.getPayer();
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -166,11 +166,11 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 					.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 					.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-					.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
+					.setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
-					.setCurrentExpiry(txn.getTransactionID().getTransactionValidStart().getSeconds())
+					.setCurrentExpiry(accessor.getTxn().getTransactionID().getTransactionValidStart().getSeconds())
 					.setCurrentMemo(DEFAULT_MEMO)
 					.setCurrentKey(Key.getDefaultInstance())
 					.setCurrentlyHasProxy(false)
