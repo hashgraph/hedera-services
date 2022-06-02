@@ -54,7 +54,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -106,7 +106,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private StakeAwareAccountsCommitsInterceptor subject;
 
 	private static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-			zoneUTC).toEpochDay() - 1;
+			ZONE_UTC).toEpochDay() - 1;
 
 	private final EntityNum node0Id = EntityNum.fromLong(0L);
 	private final EntityNum node1Id = EntityNum.fromLong(1L);

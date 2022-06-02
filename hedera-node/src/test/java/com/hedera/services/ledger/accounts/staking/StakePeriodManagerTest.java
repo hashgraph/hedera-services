@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts.staking;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.ledger.accounts.staking;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.function.Consumer;
 
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -46,12 +47,14 @@ class StakePeriodManagerTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private MerkleNetworkContext networkContext;
+	@Mock
+	private PropertySource properties;
 
 	private StakePeriodManager subject;
 
 	@BeforeEach
 	public void setUp() {
-		subject = new StakePeriodManager(txnCtx, () -> networkContext);
+		subject = new StakePeriodManager(txnCtx, () -> networkContext, properties);
 	}
 
 	@Test
@@ -66,6 +69,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void canBeginStakePeriodStart() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		// UTC day 14
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
@@ -89,6 +93,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void canResetStakePeriodStartIfNotRewardedAndStakingToNewNode() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		// UTC day 14
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
@@ -102,6 +107,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void canUpdateStakePeriodStartToYesterdayIfRewarded() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		// UTC day 14
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
@@ -120,10 +126,11 @@ class StakePeriodManagerTest {
 
 	@Test
 	void givesCurrentStakePeriod() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		final var instant = Instant.ofEpochSecond(12345L);
 		given(txnCtx.consensusTime()).willReturn(instant);
 		final var period = subject.currentStakePeriod();
-		final var expectedPeriod = LocalDate.ofInstant(instant, zoneUTC).toEpochDay();
+		final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay();
 		assertEquals(expectedPeriod, period);
 		assertEquals(expectedPeriod, subject.estimatedCurrentStakePeriod());
 
@@ -137,6 +144,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void calculatesIfRewardShouldBeEarned() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		final var instant = Instant.ofEpochSecond(123456789L);
 		given(txnCtx.consensusTime()).willReturn(instant);
 		final var todayNumber = subject.currentStakePeriod() - 1;
@@ -160,8 +168,9 @@ class StakePeriodManagerTest {
 
 	@Test
 	void calculatesOnlyOncePerSecond() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		var consensusTime = Instant.ofEpochSecond(12345678L);
-		var expectedStakePeriod = LocalDate.ofInstant(consensusTime, zoneUTC).toEpochDay();
+		var expectedStakePeriod = LocalDate.ofInstant(consensusTime, ZONE_UTC).toEpochDay();
 
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
@@ -169,7 +178,7 @@ class StakePeriodManagerTest {
 
 		final var newConsensusTime = Instant.ofEpochSecond(12345679L);
 		given(txnCtx.consensusTime()).willReturn(newConsensusTime);
-		expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, zoneUTC).toEpochDay();
+		expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, ZONE_UTC).toEpochDay();
 
 		assertEquals(expectedStakePeriod, subject.currentStakePeriod());
 		assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
@@ -177,6 +186,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void validatesIfStartPeriodIsWithinRange() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		final var instant = Instant.ofEpochSecond(12345678910L);
 		given(txnCtx.consensusTime()).willReturn(instant);
 		given(networkContext.areRewardsActivated()).willReturn(true);
@@ -189,6 +199,7 @@ class StakePeriodManagerTest {
 
 	@Test
 	void givesEffectivePeriodCorrectly() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		final var delta = 500;
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(12345678910L));
 
@@ -196,7 +207,7 @@ class StakePeriodManagerTest {
 		final var period = subject.effectivePeriod(stakePeriod - delta);
 
 		final var expectedEffectivePeriod = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-				zoneUTC).toEpochDay();
+				ZONE_UTC).toEpochDay();
 		assertEquals(expectedEffectivePeriod - 365, period);
 		assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
 	}
@@ -218,5 +229,22 @@ class StakePeriodManagerTest {
 		ans.setStakePeriodStart(initStakePeriodStart);
 		finisher.accept(ans);
 		return ans;
+	}
+	@Test
+	void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
+		final var instant = Instant.ofEpochSecond(12345L);
+		final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay() / 2;
+
+		given(properties.getLongProperty("staking.periodMins")).willReturn(2880L);
+		given(txnCtx.consensusTime()).willReturn(instant);
+
+		final var period = subject.currentStakePeriod();
+
+		assertEquals(expectedPeriod, period);
+
+		given(properties.getLongProperty("staking.periodMins")).willReturn(10L);
+		given(txnCtx.consensusTime()).willReturn(instant.plusSeconds(12345L));
+
+		assertEquals(41L, subject.currentStakePeriod());
 	}
 }

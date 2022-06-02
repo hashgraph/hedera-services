@@ -213,6 +213,19 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
+	void updatesRewardsSumHistoryAsExpectedForTotalStakeLessThanOneHbar() {
+		final var rewardRate = 1_000_000_000;
+		// Total staked is less than an hbar
+		final var totalStakedRewardStart = 100_000_000L - 1;
+
+		subject.setStakeRewardStart(Long.MAX_VALUE);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+
+		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(0L, pendingRewardRate);
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void logsAtErrorIfSomehowHashComputationFails() {
 		final var mockedStatic = mockStatic(ByteUtils.class);

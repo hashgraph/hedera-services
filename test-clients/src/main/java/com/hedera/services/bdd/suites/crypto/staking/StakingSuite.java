@@ -28,10 +28,15 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 public class StakingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(StakingSuite.class);
@@ -49,12 +54,63 @@ public class StakingSuite extends HapiApiSuite {
 	public boolean canRunConcurrent() {
 		return true;
 	}
+
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						enabledRewards()
+//						enabledRewards(),
+						previewnetPlannedTest(),
+//						sendToCarol(),
 				}
 		);
+	}
+
+	private HapiApiSpec sendToCarol() {
+		return defaultHapiSpec("SendToCarol")
+				.given(
+//						getAccountInfo("0.0.1001").logged()
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, "0.0.1001", 1))
+				).when().then(
+				);
+	}
+
+	private HapiApiSpec previewnetPlannedTest() {
+		final var alice = "alice";
+		final var bob = "bob";
+		final var carol = "carol";
+		final var civilian = "civilian";
+		final var stakingAccount = "0.0.800";
+		final var unrewardedTxn = "unrewardedTxn";
+		final var rewardedTxn = "rewardedTxn";
+		return defaultHapiSpec("PreviewnetPlannedTest")
+				.given(
+						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, stakingAccount, 10 * ONE_HBAR))
+				).when(
+						cryptoCreate(civilian),
+						cryptoCreate(alice)
+								.stakedNodeId(0)
+								.balance(20_000 * ONE_MILLION_HBARS),
+						cryptoCreate(bob).balance(5_000 * ONE_MILLION_HBARS),
+						cryptoCreate(carol).stakedNodeId(0),
+						cryptoUpdate(bob).newStakedNodeId(0),
+						sleepFor(75_000)
+				).then(
+						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
+								.payingWith(civilian)
+								.via(unrewardedTxn),
+						getTxnRecord(unrewardedTxn).andAllChildRecords().logged(),
+						sleepFor(75_000),
+						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
+								.payingWith(civilian)
+								.via(rewardedTxn),
+						getTxnRecord(rewardedTxn).andAllChildRecords().logged(),
+						getAccountBalance(alice).logged(),
+						getAccountBalance(bob).logged(),
+						getAccountBalance(carol).logged()
+				);
 	}
 
 	private HapiApiSpec enabledRewards() {
@@ -77,10 +133,13 @@ public class StakingSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, "account", ONE_HBAR)
 						).via("shouldSendRewards")
-						// for now testing with the logs, once RewardCalculator is implemented this test will be complete.
+						// for now testing with the logs, once RewardCalculator is implemented this test will be
+						// complete.
 						// tested
-						// 1. Only on the last cryptoTransfer the following log is written `Staking rewards is activated and rewardSumHistory is cleared`
-						// 2. that restarting from freeze, shows `Staking Rewards Activated ::true` from MerkleNetworkContext log
+						// 1. Only on the last cryptoTransfer the following log is written `Staking rewards is
+						// activated and rewardSumHistory is cleared`
+						// 2. that restarting from freeze, shows `Staking Rewards Activated ::true` from
+						// MerkleNetworkContext log
 				).then(
 				);
 	}

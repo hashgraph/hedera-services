@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.interceptors.EndOfStakingPeriodCalculator;
@@ -93,6 +94,8 @@ class NetworkCtxManagerTest {
 	private MiscRunningAvgs runningAvgs;
 	@Mock
 	private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+	@Mock
+	private PropertySource propertySource;
 
 	private NetworkCtxManager subject;
 
@@ -112,7 +115,8 @@ class NetworkCtxManagerTest {
 				() -> networkCtx,
 				txnCtx,
 				runningAvgs,
-				endOfStakingPeriodCalculator);
+				endOfStakingPeriodCalculator,
+				propertySource);
 	}
 
 	@Test
@@ -282,6 +286,8 @@ class NetworkCtxManagerTest {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 		given(issInfo.status()).willReturn(IssEventStatus.ONGOING_ISS);
 		given(issInfo.consensusTimeOfRecentAlert()).willReturn(Optional.of(sometime));
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
+
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeSameDay);
@@ -370,6 +376,7 @@ class NetworkCtxManagerTest {
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
 		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
@@ -385,6 +392,7 @@ class NetworkCtxManagerTest {
 		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
@@ -415,6 +423,7 @@ class NetworkCtxManagerTest {
 		final var sometimePlusOneSecond = sometime.plusSeconds(1);
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometimePlusSomeNanos);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimePlusOneSecond);
@@ -446,6 +455,7 @@ class NetworkCtxManagerTest {
 	@Test
 	void advancesClockAsExpectedWhenNotPassingMidnight() {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeSameDay);

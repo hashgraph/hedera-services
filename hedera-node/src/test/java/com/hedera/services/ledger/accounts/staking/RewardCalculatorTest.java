@@ -36,7 +36,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.zoneUTC;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -60,7 +60,7 @@ class RewardCalculatorTest {
 
 	private RewardCalculator subject;
 	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-			zoneUTC).toEpochDay();
+			ZONE_UTC).toEpochDay();
 	private static final long[] rewardHistory = new long[366];
 
 	@BeforeEach

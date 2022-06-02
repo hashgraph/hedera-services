@@ -324,19 +324,23 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 		rewardSumHistory[0] -= droppedRewardSum;
 
-		final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
-		// If this node has received more than max stake, we must "down-scale" its reward rate so
-		// even after all its staking accounts are rewarded, their total payments will be no more
-		// than a node with exactly max stake
-		final var effRewardRate = (stakeToReward <= maxStake)
-				? baseRateForNodeWithNoMoreThanMaxStake
-				: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
-
-		// If this node was "active" (assumed so in 0.27), _and_ had at least the minimum stake,
-		// then it should give rewards for this staking period. (Future release will check active
-		// status based on node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold.)
-		final var pendingRewardRate = (totalStakedRewardStart == 0 || stakeRewardStart == 0) ? 0 : effRewardRate;
+		final long pendingRewardRate;
+		// In a future release, a node judged inactive based on
+		//    node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold
+		// will also have zero pendingRewardRate
+		if (totalStakedRewardStart < HBARS_TO_TINYBARS || stakeRewardStart == 0) {
+			pendingRewardRate = 0L;
+		} else {
+			final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+			// If this node has received more than max stake, we must "down-scale" its reward rate so
+			// even after all its staking accounts are rewarded, their total payments will be no more
+			// than a node with exactly max stake
+			pendingRewardRate = (stakeToReward <= maxStake)
+					? baseRateForNodeWithNoMoreThanMaxStake
+					: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
+		}
 		rewardSumHistory[0] += pendingRewardRate;
+		System.out.println("rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
 		// reset the historyHash
 		historyHash = null;
 		return pendingRewardRate;
