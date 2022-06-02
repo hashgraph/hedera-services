@@ -89,7 +89,6 @@ public class RewardCalculator {
 				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
 		networkCtx.get().decreasePendingRewards(rewardOffered);
 		return account.isDeclinedReward() ? 0 : rewardOffered;
-
 	}
 
 	private long computeRewardFromDetails(

@@ -26,6 +26,8 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+
 public final class ReleaseTwentySevenMigration {
 	private ReleaseTwentySevenMigration() {
 		throw new UnsupportedOperationException("Utility class");
@@ -35,8 +37,12 @@ public final class ReleaseTwentySevenMigration {
 		MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
 
 		final var numberOfNodes = addressBook.getSize();
-		final long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
-		final long minStakePerNode = maxStakePerNode / 2;
+		long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
+		long minStakePerNode = maxStakePerNode / 2;
+		final long stakingPeriod = bootstrapProperties.getLongProperty("staking.periodMins");
+		if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
+			minStakePerNode = 0L;
+		}
 		for (int i = 0; i < numberOfNodes; i++) {
 			final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
 			final var info = new MerkleStakingInfo(bootstrapProperties);

@@ -36,6 +36,8 @@ import java.time.ZoneId;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.Units.SECS_IN_MINUTE;
+
 @Singleton
 public class StakePeriodManager {
 	private final TransactionContext txnCtx;
@@ -85,7 +87,7 @@ public class StakePeriodManager {
 
 			final long stakingPeriod = properties.getLongProperty("staking.periodMins");
 			if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
-				currentStakePeriod = currentConsensusSecs / (stakingPeriod * 60);
+				currentStakePeriod = currentConsensusSecs / (stakingPeriod * SECS_IN_MINUTE);
 			} else {
 				currentStakePeriod = LocalDate.ofInstant(txnCtx.consensusTime(), ZONE_UTC).toEpochDay();
 			}
