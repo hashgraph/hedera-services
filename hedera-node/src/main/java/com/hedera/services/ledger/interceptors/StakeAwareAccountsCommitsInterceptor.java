@@ -79,8 +79,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	// The stake change scenario for each account in the change set
 	private StakeChangeScenario[] stakeChangeScenarios = new StakeChangeScenario[INITIAL_CHANGE_CAPACITY];
 	// Function objects to be used by the ledger to apply final staking changes to a mutable account
-	@SuppressWarnings("unchecked")
-	private Consumer<MerkleAccount>[] finishers = (Consumer<MerkleAccount>[]) new Consumer[INITIAL_CHANGE_CAPACITY];
+	private Consumer<MerkleAccount>[] finishers = new Consumer[INITIAL_CHANGE_CAPACITY];
 
 	public StakeAwareAccountsCommitsInterceptor(
 			final SideEffectsTracker sideEffectsTracker,
@@ -316,7 +315,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			hasBeenRewarded = new boolean[maxImpliedChanges];
 			stakedToMeUpdates = new long[maxImpliedChanges];
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
-			finishers = (Consumer<MerkleAccount>[]) new Consumer[maxImpliedChanges];
+			finishers = new Consumer[maxImpliedChanges];
 		}
 		Arrays.fill(stakedToMeUpdates, -1);
 		Arrays.fill(hasBeenRewarded, false);
