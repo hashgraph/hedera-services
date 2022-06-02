@@ -68,6 +68,17 @@ public class AbiConstants {
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
 	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
+	//allowance(address token, address owner, address spender)
+	protected static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
+	//approve(address token, address spender, uint256 amount)
+	//approve(address token, address to, uint256 tokenId)
+	protected static final int ABI_ID_APPROVE = 0x95ea7b3;
+	//setApprovalForAll(address token, address operator, bool approved)
+	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
+	//getApproved(address token, uint256 tokenId)
+	protected static final int ABI_ID_GET_APPROVED = 0x081812fc;
+	//isApprovedForAll(address token, address owner, address operator)
+	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
 	//ownerOf(uint256 tokenId)
 	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
@@ -76,6 +87,13 @@ public class AbiConstants {
 	//Transfer(address indexed from, address indexed to, uint256 value)
 	public static final Bytes TRANSFER_EVENT = Bytes.fromHexString(
 			"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+	//Approval(address indexed owner, address indexed spender, uint256 value)
+	//Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
+	public static final Bytes APPROVAL_EVENT = Bytes.fromHexString(
+			"8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925");
+	//ApprovalForAll(address indexed owner, address indexed operator, bool approved)
+	public static final Bytes APPROVAL_FOR_ALL_EVENT = Bytes.fromHexString(
+			"17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31");
 
 	// **** HIP-358 function selectors ****
 	//createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)

@@ -42,17 +42,23 @@ public class EncodingFacade {
 	public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final String STRING_RETURN_TYPE = "(string)";
+	public static final String UINT256_RETURN_TYPE = "(uint256)";
+	public static final String BOOL_RETURN_TYPE = "(bool)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
-	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
+	private static final TupleType getApprovedType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType ercTransferType = TupleType.parse("(bool)");
+	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
 
 	@Inject
 	public EncodingFacade() {
@@ -91,10 +97,31 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeGetApproved(final Address approved) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_APPROVED)
+				.withApproved(approved)
+				.build();
+	}
+
 	public Bytes encodeBalance(final long balance) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.BALANCE)
 				.withBalance(balance)
+				.build();
+	}
+
+	public Bytes encodeAllowance(final long allowance) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.ALLOWANCE)
+				.withAllowance(allowance)
+				.build();
+	}
+
+	public Bytes encodeApprove(final boolean approve) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.APPROVE)
+				.withApprove(approve)
 				.build();
 	}
 
@@ -169,8 +196,15 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeIsApprovedForAll(final boolean isApprovedForAllStatus) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.IS_APPROVED_FOR_ALL)
+				.withIsApprovedForAllStatus(isApprovedForAllStatus)
+				.build();
+	}
+
 	protected enum FunctionType {
-		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -183,11 +217,15 @@ public class EncodingFacade {
 		private int status;
 		private Address newTokenAddress;
 		private boolean ercFungibleTransferStatus;
+		private boolean isApprovedForAllStatus;
 		private long totalSupply;
 		private long balance;
+		private long allowance;
+		private boolean approve;
 		private long[] serialNumbers;
 		private int decimals;
 		private Address owner;
+		private Address approved;
 		private String name;
 		private String symbol;
 		private String metadata;
@@ -205,6 +243,10 @@ public class EncodingFacade {
 				case SYMBOL -> symbolType;
 				case TOKEN_URI -> tokenUriType;
 				case ERC_TRANSFER -> ercTransferType;
+				case ALLOWANCE -> allowanceOfType;
+				case APPROVE -> approveOfType;
+				case GET_APPROVED -> getApprovedType;
+				case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
 			};
 
 			this.functionType = functionType;
@@ -241,8 +283,23 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withAllowance(final long allowance) {
+			this.allowance = allowance;
+			return this;
+		}
+
+		private FunctionResultBuilder withApprove(final boolean approve) {
+			this.approve = approve;
+			return this;
+		}
+
 		private FunctionResultBuilder withOwner(final Address address) {
 			this.owner = address;
+			return this;
+		}
+
+		private FunctionResultBuilder withApproved(final Address approved) {
+			this.approved = approved;
 			return this;
 		}
 
@@ -266,6 +323,11 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withIsApprovedForAllStatus(final boolean isApprovedForAllStatus) {
+			this.isApprovedForAllStatus = isApprovedForAllStatus;
+			return this;
+		}
+
 		private Bytes build() {
 			final var result = switch (functionType) {
 				case CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
@@ -279,6 +341,10 @@ public class EncodingFacade {
 				case SYMBOL -> Tuple.of(symbol);
 				case TOKEN_URI -> Tuple.of(metadata);
 				case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
+				case ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
+				case APPROVE -> Tuple.of(approve);
+				case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(approved));
+				case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
 			};
 
 			return Bytes.wrap(tupleType.encode(result).array());
@@ -339,7 +405,7 @@ public class EncodingFacade {
 		}
 
 		private static LogTopic generateLogTopic(final Object param) {
-			byte[] array = new byte[] { };
+			byte[] array = new byte[]{};
 			if (param instanceof Address address) {
 				array = address.toArray();
 			} else if (param instanceof BigInteger numeric) {
@@ -347,7 +413,7 @@ public class EncodingFacade {
 			} else if (param instanceof Long numeric) {
 				array = BigInteger.valueOf(numeric).toByteArray();
 			} else if (param instanceof Boolean bool) {
-				array = new byte[] { (byte) (Boolean.TRUE.equals(bool) ? 1 : 0) };
+				array = new byte[]{(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
 			} else if (param instanceof Bytes bytes) {
 				array = bytes.toArray();
 			}
@@ -368,13 +434,12 @@ public class EncodingFacade {
 		private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 			byte[] expandedArray = new byte[32];
 
-			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length,
-					bytesToExpand.length);
+			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 			return expandedArray;
 		}
 	}
 
-	public static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
+	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
 		return com.esaulpaugh.headlong.abi.Address.wrap(
 				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
 	}

@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -177,6 +178,14 @@ public class TokenCreateWrapper {
 				.findFirst();
 	}
 
+	public boolean hasAutoRenewAccount() {
+		return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
+	}
+
+	public void inheritAutoRenewAccount(final EntityId parentAutoRenewId) {
+		expiry.setAutoRenewAccount(parentAutoRenewId.toGrpcAccountId());
+	}
+
 	/* ------------------ */
 
 	public record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
@@ -262,7 +271,7 @@ public class TokenCreateWrapper {
 		}
 
 		private boolean isEcdsaSecp256k1KeySet() {
-			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 		}
 
 		private void setInheritedKey(final Key key) {

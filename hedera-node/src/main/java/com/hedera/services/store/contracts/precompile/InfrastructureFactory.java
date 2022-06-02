@@ -43,6 +43,8 @@ import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculato
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
@@ -171,5 +173,19 @@ public class InfrastructureFactory {
 			final RedirectGasCalculator gasCalculator
 	) {
 		return new RedirectViewExecutor(input, frame, encoder, decoder, gasCalculator);
+	}
+
+	public ApproveAllowanceLogic newApproveAllowanceLogic(
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore
+	) {
+		return new ApproveAllowanceLogic(accountStore, tokenStore, dynamicProperties);
+	}
+
+	public DeleteAllowanceLogic newDeleteAllowanceLogic(
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore
+	) {
+		return new DeleteAllowanceLogic(accountStore, tokenStore);
 	}
 }
