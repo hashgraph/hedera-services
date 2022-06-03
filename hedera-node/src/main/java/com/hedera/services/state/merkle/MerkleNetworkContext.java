@@ -754,13 +754,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void increasePendingRewards(final long amount) {
 //		assertAcceptableRewardChange(amount, +1);
 		this.pendingRewards += amount;
-		System.out.println("After increase, now pending rewards are: " + pendingRewards);
+		System.out.println("pending rewards ⬆️ to " + pendingRewards);
 	}
 
 	public void decreasePendingRewards(final long amount) {
 //		assertAcceptableRewardChange(amount, -1);
 		this.pendingRewards -= amount;
-		System.out.println("After decrease, now pending rewards are: " + pendingRewards);
+		System.out.println("pending rewards ⬇️ to " + pendingRewards);
 	}
 
 	private void assertAcceptableRewardChange(final long amount, final long sigNum) {

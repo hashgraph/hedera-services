@@ -101,6 +101,7 @@ class NetworkCtxManagerTest {
 
 	@BeforeEach
 	void setUp() {
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 		given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
 		subject = new NetworkCtxManager(
@@ -286,8 +287,6 @@ class NetworkCtxManagerTest {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 		given(issInfo.status()).willReturn(IssEventStatus.ONGOING_ISS);
 		given(issInfo.consensusTimeOfRecentAlert()).willReturn(Optional.of(sometime));
-		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
-
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeSameDay);
@@ -376,7 +375,6 @@ class NetworkCtxManagerTest {
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
 		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
@@ -392,7 +390,6 @@ class NetworkCtxManagerTest {
 		subject.setIsNextDay(shouldUpdateMidnightRates);
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
@@ -423,7 +420,6 @@ class NetworkCtxManagerTest {
 		final var sometimePlusOneSecond = sometime.plusSeconds(1);
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometimePlusSomeNanos);
-		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimePlusOneSecond);
@@ -455,7 +451,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void advancesClockAsExpectedWhenNotPassingMidnight() {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeSameDay);
@@ -487,5 +482,35 @@ class NetworkCtxManagerTest {
 		// then:
 		assertFalse(updateTest.test(now, thenSameDay));
 		assertTrue(updateTest.test(now, thenNextDay));
+	}
+
+	@Test
+	void nonDefaultPeriodShouldUpdateOnlyTrueOnDifferentMinutes() {
+		// setup:
+		final var now = Instant.parse("2021-06-07T23:59:58.369613Z");
+		final var thenSameMinute = now.plusSeconds(1);
+		final var thenNextMinute = now.plusSeconds(61);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1L);
+		given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
+
+		subject = new NetworkCtxManager(
+				issInfo,
+				nodeLocalProperties,
+				opCounters,
+				exchange,
+				systemFilesManager,
+				feeMultiplierSource,
+				mockDynamicProps,
+				handleThrottling,
+				() -> networkCtx,
+				txnCtx,
+				runningAvgs,
+				endOfStakingPeriodCalculator,
+				propertySource);
+
+		final BiPredicate<Instant, Instant> updateTest = subject::isNextPeriod;
+
+		assertFalse(updateTest.test(now, thenSameMinute));
+		assertTrue(updateTest.test(now, thenNextMinute));
 	}
 }

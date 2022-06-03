@@ -279,7 +279,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	) {
 		final var reward = rewardCalculator.computeAndApplyReward(account, changes);
 		System.out.println("Paying " + reward + " to account 0.0."
-				+ account.getKey().longValue() + " (stakePeriodStart = " + account.getStakePeriodStart() + ")");
+				+ account.getKey().longValue()
+				+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
+						+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 		sideEffectsTracker.trackRewardPayment(account.number(), reward);
 		hasBeenRewarded[accountI] = true;
 	}

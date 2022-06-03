@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -50,6 +51,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -153,11 +155,13 @@ public class NetworkCtxManager {
 		}
 	}
 
-	private boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
+	@VisibleForTesting
+	boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
 		if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
 			return isNextDay.test(lastConsensusTime, consensusTime);
 		} else {
-			return consensusTime.getEpochSecond() >= lastConsensusTime.getEpochSecond() + (stakingPeriod * 60);
+			return getPeriod(consensusTime, stakingPeriod * 60_000L)
+					!= getPeriod(lastConsensusTime, stakingPeriod * 60_000L);
 		}
 	}
 

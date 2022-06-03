@@ -33,6 +33,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
@@ -82,7 +83,9 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	public void updateNodes(final Instant consensusTime) {
-		System.out.println("- Need to process end of period: " + (consensusTime.getEpochSecond() / 60 - 1));
+		final var thisPeriod = LinkedObjectStreamUtilities.getPeriod(consensusTime, 60_000);
+		final var lastPeriod = thisPeriod - 1;
+		System.out.println("Processing end of period " + lastPeriod + ", beginning " + thisPeriod);
 		final var stakingInfo = stakingInfoSupplier.get();
 		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
 
@@ -96,7 +99,7 @@ public class EndOfStakingPeriodCalculator {
 
 		final var rewardRate = effectiveRateForCurrentPeriod();
 		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
-		System.out.println("- totalStakedRewardStart for that period: " + totalStakedRewardStart);
+		System.out.println("  - totalStakedRewardStart for last period: " + totalStakedRewardStart);
 		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
 		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
 			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);

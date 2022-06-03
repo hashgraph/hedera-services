@@ -59,8 +59,8 @@ public class StakingSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						enabledRewards(),
-						previewnetPlannedTest(),
-//						sendToCarol(),
+//						previewnetPlannedTest(),
+						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
 				}
 		);
@@ -69,10 +69,14 @@ public class StakingSuite extends HapiApiSuite {
 	private HapiApiSpec sendToCarol() {
 		return defaultHapiSpec("SendToCarol")
 				.given(
-//						getAccountInfo("0.0.1003").logged()
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1002", 1)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1003", 1)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1))
+//						getAccountBalance("0.0.1006").logged()
+//						getAccountInfo("0.0.1006").logged()
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1005", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1006", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1005", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1006", 1))
 				).when().then(
 				);
 	}

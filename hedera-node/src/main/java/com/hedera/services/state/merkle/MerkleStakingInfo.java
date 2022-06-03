@@ -342,7 +342,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 					: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
 		}
 		rewardSumHistory[0] += pendingRewardRate;
-		System.out.println("rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
+		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
 		// reset the historyHash
 		historyHash = null;
 		return pendingRewardRate;
