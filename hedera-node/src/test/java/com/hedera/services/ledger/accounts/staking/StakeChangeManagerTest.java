@@ -69,54 +69,42 @@ class StakeChangeManagerTest {
 
 	@Test
 	void withdrawsStakeCorrectly() {
-		assertEquals(1_00_000_000, stakingInfo.get(node0Id).getStake());
-		assertEquals(3_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
-		subject.withdrawStake(0L, 1_00_000_000L, false);
+		subject.withdrawStake(0L, 100L, false);
 
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(2_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(200L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 
-		subject.withdrawStake(0L, 1_00_000_000L, true);
+		subject.withdrawStake(0L, 100L, true);
 
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(2_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(3_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
-
-		subject.withdrawStake(0L, 10000030, false);
-
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(2_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(3_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(200L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToNotReward());
 	}
 
 	@Test
 	void awardsStakeCorrectly() {
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(3_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(300L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(stakingInfo.get(node0Id));
 
-		subject.awardStake(0L, 1_00_000_000L, false);
+		subject.awardStake(0L, 100L, false);
 
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToNotReward());
 
-		subject.awardStake(0L, 1_00_000_000L, true);
+		subject.awardStake(0L, 100L, true);
 
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(5_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
-
-		subject.awardStake(0L, 10000030, false);
-
-		assertEquals(1_00_000_000L, stakingInfo.get(node0Id).getStake());
-		assertEquals(4_00_000_000L, stakingInfo.get(node0Id).getStakeToReward());
-		assertEquals(5_00_000_000L, stakingInfo.get(node0Id).getStakeToNotReward());
+		assertEquals(1000L, stakingInfo.get(node0Id).getStake());
+		assertEquals(400L, stakingInfo.get(node0Id).getStakeToReward());
+		assertEquals(500L, stakingInfo.get(node0Id).getStakeToNotReward());
 	}
 
 	@Test
@@ -164,9 +152,9 @@ class StakeChangeManagerTest {
 
 		final var info = buildStakingInfoMap(addressBook, bootstrapProperties);
 		info.forEach((a, b) -> {
-			b.setStakeToReward(3_00_000_000L);
-			b.setStake(1_00_000_000L);
-			b.setStakeToNotReward(4_00_000_000L);
+			b.setStakeToReward(300L);
+			b.setStake(1000L);
+			b.setStakeToNotReward(400L);
 		});
 		return info;
 	}
