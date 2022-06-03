@@ -190,7 +190,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 //						canUseEip1014AliasesForXfers(),
 //						cannotTransferFromImmutableAccounts(),
 //						nftTransfersHaveTransitiveClosure(),
-						endOfStakingPeriodRecTest()
 				}
 		);
 	}
@@ -198,43 +197,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunConcurrent() {
 		return true;
-	}
-
-
-
-	private HapiApiSpec endOfStakingPeriodRecTest() {
-		return defaultHapiSpec("EndOfStakingPeriodRecTest")
-				.given(
-						cryptoCreate("a1")
-								.balance(ONE_HUNDRED_HBARS)
-								.stakedNodeId(0),
-						cryptoCreate("a2")
-								.balance(ONE_HUNDRED_HBARS)
-								.stakedNodeId(0),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.800", ONE_MILLION_HBARS)) // will trigger staking
-				)
-				.when(
-						sleepFor(70_000)
-				)
-				.then(
-						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
-								.via("trigger"),
-						getTxnRecord("trigger")
-								.logged()
-								.hasChildRecordCount(1),
-						sleepFor(70_000),
-						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
-								.via("transfer"),
-						getTxnRecord("transfer")
-								.andAllChildRecords()
-								.logged(),
-						sleepFor(70_000),
-						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
-								.via("transfer1"),
-						getTxnRecord("transfer1")
-								.andAllChildRecords()
-								.logged()
-				);
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2875
