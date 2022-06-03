@@ -69,7 +69,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
 
 	public static void main(String... args) {
-		new ValidateCongestionPricingAfterReconnect().runSuiteSync();
+		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
 	}
 
 	@Override
@@ -130,7 +130,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()),
-						blockingOrder(IntStream.range(0, 20).mapToObj(i -> new HapiSpecOperation[] {
+						blockingOrder(IntStream.range(0, 110).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn1" + i).payerId(civilianAccount),
 								uncheckedSubmit(
 										contractCall(oneContract)
@@ -139,7 +139,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.sending(ONE_HBAR)
 												.txnId("uncheckedTxn1" + i)
 								)
-										.payingWith(GENESIS)
+										.payingWith(GENESIS),
+								sleepFor(50)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new))
 				).then(
 						withLiveNode(reconnectingNode)
@@ -152,7 +153,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						// then we can send more transactions. Otherwise, transactions may be pending for too long
 						// and we will get UNKNOWN status
 						sleepFor(30000),
-						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
+						blockingOrder(IntStream.range(0, 22).mapToObj(i -> new HapiSpecOperation[] {
 								usableTxnIdNamed("uncheckedTxn2" + i).payerId(civilianAccount),
 								uncheckedSubmit(
 										contractCall(oneContract)
@@ -162,7 +163,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.txnId("uncheckedTxn2" + i)
 								)
 										.payingWith(GENESIS)
-										.setNode(reconnectingNode)
+										.setNode(reconnectingNode),
+								sleepFor(50)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
