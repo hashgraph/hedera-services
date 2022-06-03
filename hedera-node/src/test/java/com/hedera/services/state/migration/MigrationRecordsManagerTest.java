@@ -25,6 +25,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -83,6 +84,8 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private RecordsHistorian recordsHistorian;
 	@Mock
+	private ConsensusTimeTracker consensusTimeTracker;
+	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
 	private SideEffectsTracker tracker800;
@@ -106,7 +109,7 @@ class MigrationRecordsManagerTest {
 		accounts.put(EntityNum.fromLong(2L), merkleAccount);
 
 		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx,
-				() -> accounts, factory);
+				consensusTimeTracker, () -> accounts, factory);
 
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}
@@ -116,6 +119,7 @@ class MigrationRecordsManagerTest {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		final var synthBody = expectedSyntheticCreate();
 
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO)).willReturn(pretend800);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO)).willReturn(pretend801);
 
@@ -143,6 +147,7 @@ class MigrationRecordsManagerTest {
 		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry,
 				contract2Id.toGrpcAccountId()).build();
 
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 		given(merkleAccount.isSmartContract()).willReturn(true);
 		given(merkleAccount.getExpiry()).willReturn(contract1Expiry).willReturn(contract2Expiry);
@@ -170,6 +175,7 @@ class MigrationRecordsManagerTest {
 
 	@Test
 	void ifExpiryNotJustEnabledThenContractRenewRecordsAreNotStreamed() {
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 
 		subject.publishMigrationRecords(now);
@@ -189,16 +195,18 @@ class MigrationRecordsManagerTest {
 
 	@Test
 	void doesNothingIfRecordsAlreadyStreamed() {
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(true);
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(false);
 
 		subject.publishMigrationRecords(now);
 
 		verifyNoInteractions(sigImpactHistorian);
 		verifyNoInteractions(recordsHistorian);
+		verifyNoInteractions(networkCtx);
 	}
 
 	@Test
 	void doesntStreamRewardAccountCreationIfNotGenesis() {
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
 
 		subject.publishMigrationRecords(now);

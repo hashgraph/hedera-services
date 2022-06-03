@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -53,8 +54,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -74,12 +74,15 @@ class RenewalRecordsHelperTest {
 	private RecordStreaming recordStreaming;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private ConsensusTimeTracker consensusTimeTracker;
 
 	private RenewalRecordsHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalRecordsHelper(recordStreaming, syntheticTxnFactory, new MockGlobalDynamicProps());
+		subject = new RenewalRecordsHelper(recordStreaming, syntheticTxnFactory, new MockGlobalDynamicProps(),
+				consensusTimeTracker);
 	}
 
 	@Test
@@ -104,16 +107,17 @@ class RenewalRecordsHelperTest {
 				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 0);
 
 		given(syntheticTxnFactory.synthAccountAutoRemove(expiredNum)).willReturn(mockBody);
+		given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-		subject.beginRenewalCycle(instantNow);
+		subject.beginRenewalCycle();
 		subject.streamCryptoRemoval(expiredNum, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
 		verify(recordStreaming).streamSystemRecord(rso);
+		verify(consensusTimeTracker).nextStandaloneRecordTime();
 
 		subject.endRenewalCycle();
-		assertNull(subject.getCycleStart());
-		assertEquals(0, subject.getConsensusNanosIncr());
+		assertFalse(subject.isInCycle());
 	}
 
 	@Test
@@ -123,16 +127,17 @@ class RenewalRecordsHelperTest {
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, false),
 				0);
 		given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+		given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
-		subject.beginRenewalCycle(instantNow);
+		subject.beginRenewalCycle();
 		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
 		// then:
+		verify(consensusTimeTracker).nextStandaloneRecordTime();
 		verify(recordStreaming).streamSystemRecord(rso);
 
 		subject.endRenewalCycle();
-		assertNull(subject.getCycleStart());
-		assertEquals(0, subject.getConsensusNanosIncr());
+		assertFalse(subject.isInCycle());
 	}
 
 	@Test
@@ -142,16 +147,17 @@ class RenewalRecordsHelperTest {
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, true),
 				0);
 		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry, expiredNum.toGrpcAccountId())).willReturn(mockBody);
+		given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
-		subject.beginRenewalCycle(instantNow);
+		subject.beginRenewalCycle();
 		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
 		// then:
+		verify(consensusTimeTracker).nextStandaloneRecordTime();
 		verify(recordStreaming).streamSystemRecord(rso);
 
 		subject.endRenewalCycle();
-		assertNull(subject.getCycleStart());
-		assertEquals(0, subject.getConsensusNanosIncr());
+		assertFalse(subject.isInCycle());
 	}
 
 	static List<EntityId> tokensFrom(final List<TokenTransferList> ttls) {

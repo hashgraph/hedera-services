@@ -26,13 +26,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
+import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -101,6 +102,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
+	/**
+	 * For scheduled transaction migration we need to initialize the new scheduled transactions' storage
+	 * _before_ the {@link #migrate()} call. There are things that call {@link #scheduleTxs()} before
+	 * {@link #migrate()} is called, like initializationFlow, which would cause casting and other issues if
+	 * not handled.
+	 *
+	 * Remove this once we no longer need to handle migrations from pre-0.26
+	 */
+	private MerkleScheduledTransactions migrationSchedules;
+
 	public ServicesState() {
 		/* RuntimeConstructable */
 	}
@@ -144,7 +155,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokens().size());
 		log.info("  (@ {}) # scheduled txns     = {}",
 				StateChildIndices.SCHEDULE_TXS,
-				scheduleTxs().size());
+				scheduleTxs().getNumSchedules());
 		log.info("  (@ {}) # contract K/V pairs = {}",
 				StateChildIndices.CONTRACT_STORAGE,
 				contractStorage().size());
@@ -210,6 +221,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final var app = getMetadata().app();
 			app.workingState().updatePrimitiveChildrenFrom(this);
 		}
+
+		// we know for a fact that we need to migrate scheduled transactions if they are a MerkleMap, the version
+		// doesn't really matter.
+		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
+			scheduledTxnsMigrator.accept(this);
+		}
+
 		log.info("Migration completed.");
 		logStateChildrenSizes();
 	}
@@ -221,6 +239,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+
+		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
+			migrationSchedules = new MerkleScheduledTransactions(
+					((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
+		}
 
 		internalInit(platform, new BootstrapProperties(), dualState);
 	}
@@ -303,7 +326,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		topics().archive();
 		tokens().archive();
 		accounts().archive();
-		scheduleTxs().archive();
 		uniqueTokens().archive();
 		tokenAssociations().archive();
 	}
@@ -372,8 +394,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	public MerkleMap<EntityNum, MerkleSchedule> scheduleTxs() {
-		return getChild(StateChildIndices.SCHEDULE_TXS);
+	public MerkleScheduledTransactions scheduleTxs() {
+		MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
+		if (scheduledTxns instanceof MerkleMap) {
+			return migrationSchedules;
+		}
+		return (MerkleScheduledTransactions) scheduledTxns;
 	}
 
 	public MerkleNetworkContext networkCtx() {
@@ -481,7 +507,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
 		setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
-		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
+		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
@@ -508,6 +534,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
 	private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory = VirtualMapFactory::new;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
+	private static Consumer<ServicesState> scheduledTxnsMigrator = LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
 	@FunctionalInterface
 	interface TokenRelsLinkMigrator {
@@ -591,5 +618,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@VisibleForTesting
 	static void setExpiryJustEnabled(final boolean expiryJustEnabled) {
 		ServicesState.expiryJustEnabled = expiryJustEnabled;
+	}
+
+	static void setScheduledTransactionsMigrator(final Consumer<ServicesState> scheduledTxnsMigrator) {
+		ServicesState.scheduledTxnsMigrator = scheduledTxnsMigrator;
 	}
 }

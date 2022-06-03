@@ -24,7 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.verification.NodeSignatureVerifier;
-import com.hedera.services.recordstreaming.RecordStreamFileParser;
+import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.lang3.tuple.Pair;
@@ -81,10 +81,10 @@ public class RecordFileChecker extends UtilOp {
                     ), recordFileName + "_sig");
 
 
-            final var signatureFile = RecordStreamFileParser.readRecordStreamSignatureFile(pathToSig.toString());
+            final var signatureFile = RecordStreamingUtils.readSignatureFile(pathToSig.toString());
             Assertions.assertTrue(signatureFile.isPresent(), SIGNATURE_FILE_MISSING_ERROR);
 
-            final var recordFileVersionAndProto = RecordStreamFileParser.readRecordStreamFile(pathToFile.toString());
+            final var recordFileVersionAndProto = RecordStreamingUtils.readRecordStreamFile(pathToFile.toString());
             var recordStreamFileOptional = recordFileVersionAndProto.getRight();
 
             Assertions.assertTrue(

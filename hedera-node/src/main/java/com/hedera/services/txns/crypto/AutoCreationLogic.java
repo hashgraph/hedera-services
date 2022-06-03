@@ -176,6 +176,8 @@ public class AutoCreationLogic {
 		change.setNewBalance(change.getAggregatedUnits());
 
 		final var sideEffects = new SideEffectsTracker();
+		// tbd - this is not correct, syntheticCreation.getTransactionID().getAccountID() is always the default account id instance
+		// and it only works because the fields we extract from the account id here should always be 0
 		final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
 		accountsLedger.create(newId);
 		change.replaceAliasWith(newId);

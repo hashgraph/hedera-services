@@ -111,10 +111,6 @@ public class DeterministicThrottle {
 		return nTransactions * BucketThrottle.capacityUnitsPerTxn();
 	}
 
-	public boolean allow(final int n) {
-		return allow(n, Instant.now());
-	}
-
 	public boolean allow(final int n, final Instant now) {
 		long elapsedNanos = 0L;
 		if (lastDecisionTime != NEVER) {
@@ -131,6 +127,9 @@ public class DeterministicThrottle {
 
 	public void reclaimLastAllowedUse() {
 		delegate.reclaimLastAllowedUse();
+	}
+	public void resetLastAllowedUse() {
+		delegate.resetLastAllowedUse();
 	}
 
 	public String name() {
@@ -158,6 +157,13 @@ public class DeterministicThrottle {
 		final var bucket = delegate.bucket();
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
+	}
+
+	public void resetUsage() {
+		resetLastAllowedUse();
+		final var bucket = delegate.bucket();
+		bucket.resetUsed(0L);
+		lastDecisionTime = NEVER;
 	}
 
 	/* NOTE: The Object methods below are only overridden to improve

@@ -67,7 +67,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -130,7 +130,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -174,7 +174,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(143))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -217,7 +217,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -251,7 +251,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 										)
 
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -296,7 +296,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -339,7 +339,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -382,7 +382,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(524))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -415,7 +415,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(524))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -458,7 +458,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 										)
 
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -505,7 +505,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -546,7 +546,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
+						tearDown()
 				);
 	}
 
@@ -561,6 +561,10 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 				contractB,
 				contractC
 		};
+	}
+
+	private HapiSpecOperation tearDown() {
+		return UtilVerbs.resetToDefault("contracts.enableTraceability");
 	}
 
 	private HapiContractCreate createContractWithSlotValues(final String contract,

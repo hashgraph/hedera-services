@@ -20,6 +20,7 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -39,16 +40,18 @@ public class LivePricesSource {
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
 	private final FeeMultiplierSource feeMultiplierSource;
+	private final TransactionContext txnCtx;
 
 	@Inject
 	public LivePricesSource(
 			final HbarCentExchange exchange,
 			final UsagePricesProvider usagePrices,
-			final FeeMultiplierSource feeMultiplierSource
-	) {
+			final FeeMultiplierSource feeMultiplierSource,
+			final TransactionContext txnCtx) {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.feeMultiplierSource = feeMultiplierSource;
+		this.txnCtx = txnCtx;
 	}
 
 	public long currentGasPrice(final Instant now, final HederaFunctionality function) {
@@ -73,7 +76,7 @@ public class LivePricesSource {
 		final var unscaledPrice = Math.max(1L, feeInTinyBars);
 
 		final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
-		final var curMultiplier = feeMultiplierSource.currentMultiplier();
+		final var curMultiplier = feeMultiplierSource.currentMultiplier(txnCtx.accessor());
 		if (curMultiplier > maxMultiplier) {
 			return Long.MAX_VALUE;
 		} else {

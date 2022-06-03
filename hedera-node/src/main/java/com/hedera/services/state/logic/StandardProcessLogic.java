@@ -22,16 +22,16 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.SwirldTransaction;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,14 +45,14 @@ public class StandardProcessLogic implements ProcessLogic {
 
 	private final ExpiryManager expiries;
 	private final InvariantChecks invariantChecks;
-	private final RecordsHistorian recordsHistorian;
+	private final ConsensusTimeTracker consensusTimeTracker;
 	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
-	private final GlobalDynamicProperties dynamicProperties;
+	private final ScheduleProcessing scheduleProcessing;
 	private final RecordStreaming recordStreaming;
 
 	@Inject
@@ -60,24 +60,24 @@ public class StandardProcessLogic implements ProcessLogic {
 			final ExpiryManager expiries,
 			final InvariantChecks invariantChecks,
 			final ExpandHandleSpan expandHandleSpan,
-			final RecordsHistorian recordsHistorian,
+			final ConsensusTimeTracker consensusTimeTracker,
 			final EntityAutoRenewal autoRenewal,
 			final ServicesTxnManager txnManager,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
+			final ScheduleProcessing scheduleProcessing,
 			final ExecutionTimeTracker executionTimeTracker,
-			final GlobalDynamicProperties dynamicProperties,
 			final RecordStreaming recordStreaming
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
 		this.expandHandleSpan = expandHandleSpan;
 		this.executionTimeTracker = executionTimeTracker;
-		this.recordsHistorian = recordsHistorian;
+		this.consensusTimeTracker = consensusTimeTracker;
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
-		this.dynamicProperties = dynamicProperties;
+		this.scheduleProcessing = scheduleProcessing;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordStreaming = recordStreaming;
 	}
@@ -86,24 +86,27 @@ public class StandardProcessLogic implements ProcessLogic {
 	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			final var accessor = expandHandleSpan.accessorFor(platformTxn);
-			Instant effectiveConsensusTime = consensusTime;
-			if (accessor.canTriggerTxn()) {
-				final var offset = dynamicProperties.triggerTxnWindBackNanos();
-				effectiveConsensusTime = consensusTime.minusNanos(offset);
-			}
 
-			if (!invariantChecks.holdFor(accessor, effectiveConsensusTime, submittingMember)) {
+			if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
 				return;
 			}
 
-			sigImpactHistorian.setChangeTime(effectiveConsensusTime);
-			expiries.purge(effectiveConsensusTime.getEpochSecond());
+			consensusTimeTracker.reset(consensusTime);
+
+			sigImpactHistorian.setChangeTime(consensusTime);
+			expiries.purge(consensusTime.getEpochSecond());
 			sigImpactHistorian.purge();
 			recordStreaming.resetBlockNo();
 
-			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
+			doProcess(submittingMember, consensusTimeTracker.isFirstUsed()
+					? consensusTimeTracker.nextTransactionTime(true)
+					: consensusTimeTracker.firstTransactionTime(), accessor);
 
-			autoRenewal.execute(recordsHistorian.nextFollowingChildConsensusTime());
+			if (scheduleProcessing.shouldProcessScheduledTransactions(consensusTime)) {
+				processScheduledTransactions(consensusTime, submittingMember);
+			}
+
+			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		} catch (Exception internal) {
@@ -111,17 +114,42 @@ public class StandardProcessLogic implements ProcessLogic {
 		}
 	}
 
+	private void processScheduledTransactions(Instant consensusTime, long submittingMember) {
+		TxnAccessor triggeredAccessor = null;
+
+		for (int i = 0; i < scheduleProcessing.getMaxProcessingLoopIterations(); ++i) {
+
+			boolean hasMore = consensusTimeTracker.hasMoreTransactionTime(false);
+
+			triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
+					consensusTime, triggeredAccessor, !hasMore);
+
+			if (triggeredAccessor != null) {
+				doProcess(submittingMember, consensusTimeTracker.nextTransactionTime(false), triggeredAccessor);
+			} else {
+				hasMore = false;
+			}
+
+			if (!hasMore) {
+				return;
+			}
+		}
+
+		log.error("Reached maxProcessingLoopIterations reached in processScheduledTransactions, we should never get here!");
+	}
+
 	private void doProcess(
 			final long submittingMember,
 			final Instant consensusTime,
-			final Instant effectiveConsensusTime,
-			final SwirldsTxnAccessor accessor
+			final TxnAccessor accessor
 	) {
 		executionTimeTracker.start();
-		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
+		txnManager.process(accessor, consensusTime, submittingMember);
 		final var triggeredAccessor = txnCtx.triggeredTxn();
 		if (triggeredAccessor != null) {
-			txnManager.process(triggeredAccessor, consensusTime, submittingMember);
+			txnManager.process(triggeredAccessor,
+					consensusTimeTracker.nextTransactionTime(false),
+					submittingMember);
 		}
 		executionTimeTracker.stop();
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -32,7 +33,7 @@ public interface SignatureWaivers {
 	 * @param fileAppendTxn a file append transaction
 	 * @return whether the target file's WACL must sign
 	 */
-	boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn);
+	boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn, final AccountID payer);
 
 	/**
 	 * Advises if the target file's WACL must sign a given file update.
@@ -40,7 +41,7 @@ public interface SignatureWaivers {
 	 * @param fileUpdateTxn a file update transaction
 	 * @return whether the target file's WACL must sign
 	 */
-	boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn);
+	boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn, final AccountID payer);
 
 	/**
 	 * Advises if the new WACL in a given file update transaction must sign.
@@ -48,7 +49,7 @@ public interface SignatureWaivers {
 	 * @param fileUpdateTxn a file update transaction
 	 * @return whether the new WACL from the transaction must sign
 	 */
-	boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn);
+	boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn, final AccountID payer);
 
 	/**
 	 * Advises if the target account's key must sign a given crypto update.
@@ -56,7 +57,7 @@ public interface SignatureWaivers {
 	 * @param cryptoUpdateTxn a crypto update transaction
 	 * @return whether the target account's key must sign
 	 */
-	boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn);
+	boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer);
 
 	/**
 	 * Advises if the new key for an account must sign a given crypto update.
@@ -64,5 +65,5 @@ public interface SignatureWaivers {
 	 * @param cryptoUpdateTxn a crypto update transaction
 	 * @return whether the new key from the transaction must sign
 	 */
-	boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn);
+	boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer);
 }

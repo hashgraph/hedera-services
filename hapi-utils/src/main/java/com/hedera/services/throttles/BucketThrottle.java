@@ -139,12 +139,17 @@ public class BucketThrottle {
 		}
 
 		bucket.useCapacity(requiredUnits);
-		lastAllowedUnits = requiredUnits;
+		lastAllowedUnits += requiredUnits;
 		return true;
+	}
+
+	void resetLastAllowedUse() {
+		lastAllowedUnits = 0;
 	}
 
 	void reclaimLastAllowedUse() {
 		bucket.leak(lastAllowedUnits);
+		lastAllowedUnits = 0;
 	}
 
 	DiscreteLeakyBucket bucket() {
