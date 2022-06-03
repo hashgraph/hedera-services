@@ -50,14 +50,14 @@ class CurrentRecordStreamTypeTest {
 			.setPre("zeta.123")
 			.setBuild("2b26be40")
 			.build();
-	private static final int[] expectedHeader = new int[] {
-			RecordStreamType.RECORD_VERSION,
+	private static final int[] expectedV5Header = new int[] {
+			5,
 			pretendSemVer.getMajor(),
 			pretendSemVer.getMinor(),
 			pretendSemVer.getPatch()
 	};
 	private static final int[] expectedV6Header = new int[] {
-			RecordStreamType.RECORD_VERSION + 1,
+			6,
 			pretendSemVer.getMajor(),
 			pretendSemVer.getMinor(),
 			pretendSemVer.getPatch()
@@ -84,9 +84,11 @@ class CurrentRecordStreamTypeTest {
 	void returnsCurrentStreamTypeFromResource() {
 		given(semanticVersions.getDeployed()).willReturn(activeVersions);
 		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
+		given(dynamicProperties.recordStreamVersion()).willReturn(5);
+
 
 		final var header = subject.getFileHeader();
-		assertArrayEquals(expectedHeader, header);
+		assertArrayEquals(expectedV5Header, header);
 		assertSame(header, subject.getFileHeader());
 	}
 
@@ -94,7 +96,7 @@ class CurrentRecordStreamTypeTest {
 	void returnsCurrentStreamTypeFromResourceV6() {
 		given(semanticVersions.getDeployed()).willReturn(activeVersions);
 		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
-		given(dynamicProperties.isRecordStreamV6Enabled()).willReturn(true);
+		given(dynamicProperties.recordStreamVersion()).willReturn(6);
 
 		final var header = subject.getFileHeader();
 
@@ -110,5 +112,14 @@ class CurrentRecordStreamTypeTest {
 		subject.getFileHeader();
 
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Failed to load")));
+	}
+
+	@Test
+	void sigFileHeaderReturnsVersionFromDynamicProperties() {
+		given(dynamicProperties.recordStreamVersion()).willReturn(6);
+
+		final var header = subject.getSigFileHeader();
+
+		assertArrayEquals(new byte[] {6}, header);
 	}
 }

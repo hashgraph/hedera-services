@@ -93,7 +93,6 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
-		assertTrue(subject.isRecordStreamV6Enabled());
 	}
 
 	@Test
@@ -134,6 +133,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(30, subject.feesMinCongestionPeriod());
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(66, subject.recordStreamVersion());
 	}
 
 	@Test
@@ -225,7 +225,6 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
-		assertFalse(subject.isRecordStreamV6Enabled());
 	}
 
 	@Test
@@ -275,6 +274,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxIndividualContractKvPairs());
 		assertEquals(57, subject.maxAllowanceLimitPerTransaction());
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
+		assertEquals(67, subject.recordStreamVersion());
 	}
 
 	@Test
@@ -403,7 +403,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
 		given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost")).willReturn(i + 64L);
-		given(properties.getBooleanProperty("hedera.recordStream.isV6Enabled")).willReturn( (i + 65L) % 2 == 0);
+		given(properties.getIntProperty("hedera.recordStream.version")).willReturn((i + 65));
 	}
 
 	private Set<EntityType> typesFor(final int i) {

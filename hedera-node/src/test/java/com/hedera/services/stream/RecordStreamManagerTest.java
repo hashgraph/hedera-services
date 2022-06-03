@@ -114,7 +114,7 @@ public class RecordStreamManagerTest {
 				streamType,
 				globalDynamicProperties);
 
-		given(globalDynamicProperties.isRecordStreamV6Enabled()).willReturn(false);
+		given(globalDynamicProperties.recordStreamVersion()).willReturn(5);
 		enableV5StreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,
@@ -124,7 +124,7 @@ public class RecordStreamManagerTest {
 				streamType,
 				globalDynamicProperties);
 
-		given(globalDynamicProperties.isRecordStreamV6Enabled()).willReturn(true);
+		given(globalDynamicProperties.recordStreamVersion()).willReturn(6);
 		enableV6StreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,

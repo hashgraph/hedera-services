@@ -133,7 +133,7 @@ public class RecordStreamManager {
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
-			if (globalDynamicProperties.isRecordStreamV6Enabled()) {
+			if (globalDynamicProperties.recordStreamVersion() >= 6) {
 				protobufStreamFileWriter = new RecordStreamFileWriter<>(
 						nodeScopedRecordLogDir,
 						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,

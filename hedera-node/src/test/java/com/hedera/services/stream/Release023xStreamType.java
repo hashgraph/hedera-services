@@ -29,4 +29,9 @@ public enum Release023xStreamType implements RecordStreamType {
 	public int[] getFileHeader() {
 		return RELEASE_023x_FILE_HEADER;
 	}
+
+	@Override
+	public byte[] getSigFileHeader() {
+		return new byte[] { (byte) RELEASE_023x_FILE_HEADER[0]};
+	}
 }

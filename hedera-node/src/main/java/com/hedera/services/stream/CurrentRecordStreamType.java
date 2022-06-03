@@ -54,7 +54,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 				log.error("Failed to load HAPI proto versions, record stream files may be unusable");
 			}
 			fileHeader = new int[] {
-					getRecordStreamVersion(),
+					dynamicProperties.recordStreamVersion(),
 					protoSemVer.getMajor(),
 					protoSemVer.getMinor(),
 					protoSemVer.getPatch()
@@ -64,7 +64,8 @@ public class CurrentRecordStreamType implements RecordStreamType {
 		return fileHeader;
 	}
 
-	private int getRecordStreamVersion() {
-		return !dynamicProperties.isRecordStreamV6Enabled() ? RECORD_VERSION : RECORD_VERSION + 1;
+	@Override
+	public byte[] getSigFileHeader() {
+		return new byte[] { (byte) dynamicProperties.recordStreamVersion()};
 	}
 }
