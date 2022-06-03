@@ -64,7 +64,6 @@ class PendingRewardsManagementTest {
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
-		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
 		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsFromLastPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
