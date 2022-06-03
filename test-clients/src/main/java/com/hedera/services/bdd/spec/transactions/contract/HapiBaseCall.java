@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -53,17 +54,30 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
 
     protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
         byte[] callData = new byte[] { };
-        var abiFunction = DEFAULT_MAPPER.readValue(abi, HapiBaseCall.AbiFunction.class);
-        final var signatureParameters = getParametersForSignature(abi);
-        final var signature = abiFunction.getName() + signatureParameters;
-        final var argumentTypes = signatureParameters.replace(
-                ADDRESS_ABI_TYPE,
-                ADDRESS_ENCODE_TYPE);
-        final var paramsAsTuple = Tuple.of(params);
+        Function function = Function.fromJson(abi);
 
-        final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
-                argumentTypes);
-        callData = ByteUtil.merge(callData, tupleEncoded);
+        final var signature = function.getName() + function.getInputs().getCanonicalType();
+
+        final var argumentTypes = function.getInputs().toString();
+
+        Tuple paramsAsTuple;
+        if (params.length > 0 && params[0] instanceof Tuple) {
+            paramsAsTuple = (Tuple) params[0];
+        } else {
+            paramsAsTuple = Tuple.of(params);
+        }
+
+//        asHeadlongAddress(paramsAsTuple.get(0));
+
+        //We have inputs -> signature prop - done
+        //We have args -> paramsAsTuple
+
+        final TupleType tupleType = TupleType.parse(argumentTypes);
+        var encodedReturn =  tupleType.encode(paramsAsTuple).array();
+
+        callData = ByteUtil.merge(callData, encodedReturn);
+
+//        function.encodeCallWithArgs();
 
         return ByteUtil.merge(encodeSignature(signature), callData);
     }

@@ -709,9 +709,9 @@ public class EthereumSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																SECP_256K1_SOURCE_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getAccountID(feeCollector)),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(RELAYER)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(RELAYER))),
 														8_000_000L)
 														.via(firstTxn)
 														.gasLimit(GAS_LIMIT)

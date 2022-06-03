@@ -20,13 +20,14 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
-import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,7 +36,6 @@ import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -44,6 +44,7 @@ import java.util.Random;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.transactions.contract.util.DecodingUtil.decodeResult;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
@@ -59,8 +60,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	public ContractFnResultAsserts resultThruAbi(
 			String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		registerProvider((spec, o) -> {
-			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
-			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+			Tuple actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+			Optional<Throwable> error = provider.apply(spec).apply(actualObjs.toList().toArray());
 			if (error.isPresent()) {
 				throw error.get();
 			}
@@ -77,8 +78,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 														 final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
 		registerProvider((spec, o) -> {
-			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
-			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+			Tuple actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+			Optional<Throwable> error = provider.apply(spec).apply(actualObjs.toList().toArray());
 			if (error.isPresent()) {
 				throw error.get();
 			}
@@ -86,9 +87,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
-	public static Object[] viaAbi(String abi, byte[] bytes) {
-		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
-		return function.decodeResult(bytes);
+	public static Tuple viaAbi(String abi, byte[] bytes) {
+		return decodeResult(bytes, abi);
 	}
 
 	public ContractFnResultAsserts contract(String contract) {

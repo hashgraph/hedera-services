@@ -31,7 +31,10 @@ import com.swirlds.common.utility.CommonUtils;
 import org.ethereum.core.CallTransaction;
 
 import java.util.*;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
+import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,7 +46,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	protected List<String> otherSigs = Collections.emptyList();
 	private Optional<Long> gas = Optional.empty();
 	private Optional<String> details = Optional.empty();
-	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<java.util.function.Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 	private Optional<Long> valueSent = Optional.of(0L);
@@ -81,7 +84,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		this.contract = contract;
 	}
 
-	public HapiContractCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
+	public HapiContractCall(String abi, String contract, java.util.function.Function<HapiApiSpec, Object[]> fn) {
 		this(abi, contract);
 		paramsFn = Optional.of(fn);
 	}
@@ -175,7 +178,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return valueSent;
 	}
 
-	public Optional<Function<Transaction, Transaction>> getFiddler() {
+	public Optional<java.util.function.Function<Transaction, Transaction>> getFiddler() {
 		return fiddler;
 	}
 
@@ -216,7 +219,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	}
 
 	@Override
-	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+	protected java.util.function.Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
 	}
 
@@ -246,8 +249,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 			if (tupleExist) {
 				callData = encodeParametersWithTuple(params);
 			} else {
-				callData = (!abi.equals(FALLBACK_ABI))
-						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+				callData = encodeParametersWithTuple(params);
+//				asHeadlongAddress(params);
+//				callData = Function.fromJson(abi).encodeCallWithArgs(params).array();
 			}
 		}
 
@@ -286,8 +290,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	}
 
 	@Override
-	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+	protected List<java.util.function.Function<HapiApiSpec, Key>> defaultSigners() {
+		final var signers = new ArrayList<java.util.function.Function<HapiApiSpec, Key>>();
 		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 		for (final var added : otherSigs) {
 			signers.add(spec -> spec.registry().getKey(added));

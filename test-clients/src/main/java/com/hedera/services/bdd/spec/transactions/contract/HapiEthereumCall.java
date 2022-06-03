@@ -284,8 +284,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             if (tupleExist) {
                 callData = encodeParametersWithTuple(params);
             } else {
-                callData = (!abi.equals(FALLBACK_ABI))
-                        ? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+                callData = encodeParametersWithTuple(params);
             }
         }
 
