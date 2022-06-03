@@ -57,10 +57,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
 
 	private int number;
-	// The account balance changes in this period, across all accounts that contributed to stakeRewardStart; needed
-	// to property estimate pendingRewards in the EndOfStakingPeriodCalculator (since if an account changes its
-	// balance in some period, our reward liability for that account in that period _also_ changes)
-	private long pendingRewardHbarAdjustment;
 	private long minStake;
 	private long maxStake;
 	private long stakeToReward;
@@ -118,7 +114,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		this.stakeToNotReward = that.stakeToNotReward;
 		this.stakeRewardStart = that.stakeRewardStart;
 		this.stake = that.stake;
-		this.pendingRewardHbarAdjustment = that.pendingRewardHbarAdjustment;
 		this.rewardSumHistory = that.rewardSumHistory;
 	}
 
@@ -139,7 +134,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		stakeToNotReward = in.readLong();
 		stakeRewardStart = in.readLong();
 		stake = in.readLong();
-		pendingRewardHbarAdjustment = in.readLong();
 		rewardSumHistory = in.readLongArray(MAX_REWARD_HISTORY);
 	}
 
@@ -186,7 +180,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				this.stakeToNotReward == that.stakeToNotReward &&
 				this.stakeRewardStart == that.stakeRewardStart &&
 				this.stake == that.stake &&
-				this.pendingRewardHbarAdjustment == that.pendingRewardHbarAdjustment &&
 				Arrays.equals(this.rewardSumHistory, that.rewardSumHistory);
 	}
 
@@ -213,7 +206,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				.add("stakeToNotReward", stakeToNotReward)
 				.add("stakeRewardStart", stakeRewardStart)
 				.add("stake", stake)
-				.add("pendingRewardHbarAdjustment", pendingRewardHbarAdjustment)
 				.add("rewardSumHistory", rewardSumHistory)
 				.toString();
 	}
@@ -245,7 +237,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		out.writeLong(stakeToNotReward);
 		out.writeLong(stakeRewardStart);
 		out.writeLong(stake);
-		out.writeLong(pendingRewardHbarAdjustment);
 	}
 
 	private void ensureHistoryHashIsKnown() {
@@ -372,7 +363,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 			this.stakeToNotReward -= amount;
 		} else {
 			this.stakeToReward -= amount;
-			updatePendingRewardAdjustment(-amount);
 		}
 	}
 
@@ -381,26 +371,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 			this.stakeToNotReward += amount;
 		} else {
 			this.stakeToReward += amount;
-			updatePendingRewardAdjustment(amount);
 		}
-	}
-
-	/**
-	 * Given a change in the whole hbar balance of an account staking to this node, stores this information for use in
-	 * the end-of-period {@code pendingReward} calculation.
-	 *
-	 * @param hbarDelta the change in
-	 */
-	public void updatePendingRewardAdjustment(final long hbarDelta) {
-		pendingRewardHbarAdjustment += hbarDelta;
-	}
-
-	public long getPendingRewardHbarAdjustment() {
-		return pendingRewardHbarAdjustment;
-	}
-
-	@VisibleForTesting
-	public void setPendingRewardHbarAdjustment(long pendingRewardHbarAdjustment) {
-		this.pendingRewardHbarAdjustment = pendingRewardHbarAdjustment;
 	}
 }

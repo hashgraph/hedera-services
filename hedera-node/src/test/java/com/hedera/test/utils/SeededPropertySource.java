@@ -483,7 +483,6 @@ public class SeededPropertySource {
 				nextLong(),
 				nextLong(),
 				nextLongs(MAX_REWARD_HISTORY));
-		ans.setPendingRewardHbarAdjustment(nextLong());
 		return ans;
 	}
 
