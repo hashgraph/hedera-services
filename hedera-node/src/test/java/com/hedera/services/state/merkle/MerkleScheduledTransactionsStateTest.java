@@ -89,7 +89,7 @@ class MerkleScheduledTransactionsStateTest {
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleScheduledTransactionsState.RELEASE_0260_VERSION, subject.getVersion());
+		assertEquals(MerkleScheduledTransactionsState.RELEASE_0270_VERSION, subject.getVersion());
 		assertEquals(MerkleScheduledTransactionsState.CURRENT_VERSION, subject.getVersion());
 		assertEquals(MerkleScheduledTransactionsState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());

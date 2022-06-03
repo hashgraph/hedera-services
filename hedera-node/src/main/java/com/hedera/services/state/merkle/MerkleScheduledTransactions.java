@@ -45,8 +45,8 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 
 	static Runnable stackDump = Thread::dumpStack;
 
-	public static final int RELEASE_0260_VERSION = 1;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	public static final int RELEASE_0270_VERSION = 1;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x451acf2156692908L;
 
