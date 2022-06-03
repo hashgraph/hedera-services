@@ -59,9 +59,9 @@ public class StakingSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						enabledRewards(),
-//						previewnetPlannedTest(),
+						previewnetPlannedTest(),
 //						sendToCarol(),
-						endOfStakingPeriodRecTest(),
+//						endOfStakingPeriodRecTest(),
 				}
 		);
 	}
@@ -115,10 +115,12 @@ public class StakingSuite extends HapiApiSuite {
 		final var alice = "alice";
 		final var bob = "bob";
 		final var carol = "carol";
+		final var debbie = "debbie";
 		final var civilian = "civilian";
 		final var stakingAccount = "0.0.800";
 		final var unrewardedTxn = "unrewardedTxn";
 		final var rewardedTxn = "rewardedTxn";
+		final var rewardedTxn2 = "rewardedTxn2";
 		return defaultHapiSpec("PreviewnetPlannedTest")
 				.given(
 						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
@@ -131,6 +133,7 @@ public class StakingSuite extends HapiApiSuite {
 								.balance(20_000 * ONE_MILLION_HBARS),
 						cryptoCreate(bob).balance(5_000 * ONE_MILLION_HBARS),
 						cryptoCreate(carol).stakedNodeId(0),
+						cryptoCreate(debbie).balance(5 * ONE_HBAR  + 90_000_000L),
 						cryptoUpdate(bob).newStakedNodeId(0),
 						// End of period ONE
 						sleepFor(75_000)
@@ -148,6 +151,14 @@ public class StakingSuite extends HapiApiSuite {
 						getAccountBalance(alice).logged(),
 						getAccountBalance(bob).logged(),
 						getAccountBalance(carol).logged()
+//						cryptoUpdate(debbie).newStakedAccountId(carol),
+//						getAccountInfo(carol).logged(),
+//						cryptoTransfer(movingHbar(ONE_HBAR + 90_000_000L).between(GENESIS, debbie)),
+//						getAccountBalance(carol).logged(),
+//						sleepFor(75_000),
+//						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
+//								.payingWith(civilian)
+//								.via(rewardedTxn2)
 				);
 	}
 

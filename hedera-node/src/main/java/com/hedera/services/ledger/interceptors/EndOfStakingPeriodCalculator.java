@@ -102,8 +102,9 @@ public class EndOfStakingPeriodCalculator {
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
 			final var lastPeriodRewardRate =
 					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+			System.out.println("Nodes reward start is : " + merkleStakingInfo.getStakeRewardStart());
 			final var rewardsOwedForLastPeriod =
-					merkleStakingInfo.getStakeRewardStart() / HBARS_TO_TINYBARS * lastPeriodRewardRate;
+					(merkleStakingInfo.getStakeRewardStart() / HBARS_TO_TINYBARS) * lastPeriodRewardRate;
 			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
 			final var nextPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromLastPeriodAndRecomputeStakes();

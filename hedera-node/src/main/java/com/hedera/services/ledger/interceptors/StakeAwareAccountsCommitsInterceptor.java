@@ -219,17 +219,19 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final Map<AccountProperty, Object> changes,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
-		final var roundedInitialBalance = roundedToHbar(account.getBalance());
 		if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
+			final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
+			final var roundedInitialBalance = roundedToHbar(account.getBalance());
 			// Common case that deserves performance optimization
 			final var delta = roundedFinalBalance - roundedInitialBalance;
 			alterStakedToMe(curStakedId, delta, pendingChanges);
 		} else {
 			if (scenario.withdrawsFromAccount()) {
+				final var roundedInitialBalance = roundedToHbar(account.getBalance());
 				alterStakedToMe(curStakedId, -roundedInitialBalance, pendingChanges);
 			}
 			if (scenario.awardsToAccount()) {
+				final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
 				alterStakedToMe(newStakedId, roundedFinalBalance, pendingChanges);
 			}
 		}
