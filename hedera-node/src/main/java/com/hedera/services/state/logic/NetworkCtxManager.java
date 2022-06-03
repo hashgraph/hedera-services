@@ -62,6 +62,7 @@ public class NetworkCtxManager {
 	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
+	private final long stakingPeriod;
 	private final IssEventInfo issInfo;
 	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
@@ -72,7 +73,6 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
-	private final PropertySource propertySource;
 	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
@@ -106,7 +106,7 @@ public class NetworkCtxManager {
 		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
 		this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
-		this.propertySource = propertySource;
+		this.stakingPeriod = propertySource.getLongProperty("staking.periodMins");
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -154,7 +154,6 @@ public class NetworkCtxManager {
 	}
 
 	private boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
-		final var stakingPeriod = propertySource.getLongProperty("staking.periodMins");
 		if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
 			return isNextDay.test(lastConsensusTime, consensusTime);
 		} else {
