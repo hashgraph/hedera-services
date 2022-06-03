@@ -65,6 +65,7 @@ import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -892,10 +893,14 @@ class MerkleNetworkContextTest {
 	void pendingRewardsAdjustmentsAreSanityChecked() {
 		final var localSub = new MerkleNetworkContext();
 		localSub.setPendingRewards(100);
-		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(-1));
-		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(Long.MAX_VALUE));
-		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(-1));
-		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(101));
+//		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(-1));
+//		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(Long.MAX_VALUE));
+//		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(-1));
+//		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(101));
+		assertDoesNotThrow(() -> localSub.increasePendingRewards(-1));
+		assertDoesNotThrow(() -> localSub.increasePendingRewards(Long.MAX_VALUE));
+		assertDoesNotThrow(() -> localSub.decreasePendingRewards(-1));
+		assertDoesNotThrow(() -> localSub.decreasePendingRewards(101));
 	}
 
 	long[] used = new long[] { 100L, 200L, 300L };
