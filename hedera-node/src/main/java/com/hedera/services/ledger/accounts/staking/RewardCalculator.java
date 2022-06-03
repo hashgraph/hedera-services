@@ -103,8 +103,20 @@ public class RewardCalculator {
 		final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();
 		// stakedNode.rewardSumHistory[0] is the reward for all periods up to and including the full staking period
 		// (currentStakePeriod - 1); since this period is not finished yet, we do not know how to reward for it
+		System.out.println("  * Subtracted rewardSumHistory[" +
+				(int) (currentStakePeriod - 1 - (effectiveStart)) + "]=" +
+				rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart))]);
+		// For example, if we call currentStakePeriod "today", and Alice's effectiveStart is [currentStakePeriod - 2]
+		// (two days ago), then we should reward Alice for exactly [currentStakePeriod - 1] (yesterday). This reward
+		// rate is the difference in the cumulative rates between yesterday and two days ago; that is,
+		// 		rate = rewardSumHistory[0] - rewardSumHistory[1]
+		// This is equivalent to,
+		//      rate = rewardSumHistory[0] - rewardSumHistory[(currentStakePeriod - 1) - effectiveStart]
+		// because,
+		//      (currentStakePeriod - 1) - effectiveStart = (currentStakePeriod - 1) - (currentStakePeriod - 2)
+		//                                                = -1 + 2 = 1
 		return (account.getBalance() / HBARS_TO_TINYBARS)
-						* (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
+						* (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - effectiveStart)]);
 	}
 
 	@VisibleForTesting

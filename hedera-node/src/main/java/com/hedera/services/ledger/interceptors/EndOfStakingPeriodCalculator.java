@@ -33,6 +33,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
