@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.function.Consumer;
@@ -42,20 +43,20 @@ import static com.hedera.services.utils.Units.SECS_IN_MINUTE;
 public class StakePeriodManager {
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleNetworkContext> networkCtx;
-	private final PropertySource properties;
 	private long currentStakePeriod;
 	private long prevConsensusSecs;
-
+	final long stakingPeriod;
 	public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
 	public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
 	@Inject
 	public StakePeriodManager(final TransactionContext txnCtx,
 			final Supplier<MerkleNetworkContext> networkCtx,
-			final @CompositeProps PropertySource properties) {
+			final @CompositeProps PropertySource properties
+	) {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
-		this.properties = properties;
+		this.stakingPeriod = properties.getLongProperty("staking.periodMins");
 	}
 
 	@Nullable
@@ -63,9 +64,11 @@ public class StakePeriodManager {
 			final long curStakedId,
 			final long newStakedId,
 			final long stakedToMeUpdate,
-			final boolean rewarded
+			final boolean rewarded,
+			boolean stakeMetaChanged
 	) {
-		final long stakePeriodStartUpdate = stakePeriodStartUpdateFor(curStakedId, newStakedId, rewarded);
+		final long stakePeriodStartUpdate = stakePeriodStartUpdateFor(
+				curStakedId, newStakedId, rewarded, stakeMetaChanged);
 		if (stakedToMeUpdate == -1 && stakePeriodStartUpdate == -1) {
 			return null;
 		} else {
@@ -84,8 +87,6 @@ public class StakePeriodManager {
 		final var currentConsensusSecs = txnCtx.consensusTime().getEpochSecond();
 		if (prevConsensusSecs != currentConsensusSecs) {
 			prevConsensusSecs = currentConsensusSecs;
-
-			final long stakingPeriod = properties.getLongProperty("staking.periodMins");
 			if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
 				currentStakePeriod = currentConsensusSecs / (stakingPeriod * SECS_IN_MINUTE);
 			} else {
@@ -96,7 +97,12 @@ public class StakePeriodManager {
 	}
 
 	public long estimatedCurrentStakePeriod() {
-		return currentStakePeriod;
+		if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
+			final var thisSecond = Instant.now().getEpochSecond();
+			return thisSecond / (stakingPeriod * SECS_IN_MINUTE);
+		} else {
+			return LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
+		}
 	}
 
 	public long firstNonRewardableStakePeriod() {
@@ -133,15 +139,20 @@ public class StakePeriodManager {
 	 *     <li>The value to which the {@code stakePeriodStart} should be changed.</li>
 	 * </ol>
 	 *
-	 * @param curStakedId the id the account was staked to at the beginning of the transaction
-	 * @param newStakedId the id the account was staked to at the end of the transaction
-	 * @param rewarded whether the account was rewarded during the transaction
+	 * @param curStakedId
+	 * 		the id the account was staked to at the beginning of the transaction
+	 * @param newStakedId
+	 * 		the id the account was staked to at the end of the transaction
+	 * @param rewarded
+	 * 		whether the account was rewarded during the transaction
+	 * @param stakeMetaChanged
 	 * @return either -1 for no new stakePeriodStart, or the new value
 	 */
 	private long stakePeriodStartUpdateFor(
 			final long curStakedId,
 			final long newStakedId,
-			final boolean rewarded
+			final boolean rewarded,
+			boolean stakeMetaChanged
 	) {
 		// There's no reason to update stakedPeriodStart for an account not staking to
 		// a node; the value will never be used, since it cannot be eligible for a reward
@@ -154,13 +165,10 @@ public class StakePeriodManager {
 				if (rewarded) {
 					return currentStakePeriod() - 1;
 				} else {
-					// We weren't rewarded, and are still staking to the same node; no change
-					if (curStakedId == newStakedId) {
-						return -1;
-					} else {
-						// We switched nodes before we were eligible for a reward; start period reverts to today
+					if (stakeMetaChanged) {
 						return currentStakePeriod();
 					}
+					return -1;
 				}
 			}
 		} else {

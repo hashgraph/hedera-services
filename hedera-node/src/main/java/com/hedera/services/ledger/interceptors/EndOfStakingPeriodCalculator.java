@@ -82,6 +82,7 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	public void updateNodes(final Instant consensusTime) {
+		System.out.println("- Need to process end of period: " + (consensusTime.getEpochSecond() / 60 - 1));
 		final var stakingInfo = stakingInfoSupplier.get();
 		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
 
@@ -95,6 +96,7 @@ public class EndOfStakingPeriodCalculator {
 
 		final var rewardRate = effectiveRateForCurrentPeriod();
 		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
+		System.out.println("- totalStakedRewardStart for that period: " + totalStakedRewardStart);
 		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
 		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
 			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
@@ -102,12 +104,19 @@ public class EndOfStakingPeriodCalculator {
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
 			final var lastPeriodRewardRate =
 					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
-			System.out.println("Nodes reward start is : " + merkleStakingInfo.getStakeRewardStart());
-			final var rewardsOwedForLastPeriod =
-					(merkleStakingInfo.getStakeRewardStart() / HBARS_TO_TINYBARS) * lastPeriodRewardRate;
-			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
+			System.out.println("  (A) Node0 stakedRewardStart is : " + merkleStakingInfo.getStakeRewardStart());
 			final var nextPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromLastPeriodAndRecomputeStakes();
+			System.out.println("  (B) Node0 nextPeriodStakedRewardStart is : " + nextPeriodStakeRewardStart);
+
+			// We update pending rewards based on the updated stake reward start because there are two cases:
+			//   (1) If an account staking to this node did not change in the period, its contribution to
+			//       stakeRewardStart and nextPeriodStakeRewardStart is the same
+			//   (2) If an account staking to this node changed during this period, its ultimate reward for
+			//       this period will be based on its contribution to nextPeriodStakeRewardStart
+			final var pendingRewardHbars = nextPeriodStakeRewardStart / HBARS_TO_TINYBARS;
+			final var rewardsOwedForLastPeriod = pendingRewardHbars * lastPeriodRewardRate;
+			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
 
 			updatedTotalStakedRewardStart += nextPeriodStakeRewardStart;
 			updatedTotalStakedStart += merkleStakingInfo.getStake();

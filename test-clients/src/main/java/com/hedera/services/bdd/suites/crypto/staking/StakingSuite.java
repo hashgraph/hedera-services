@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -59,8 +59,8 @@ public class StakingSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						enabledRewards(),
-						previewnetPlannedTest(),
-//						sendToCarol(),
+//						previewnetPlannedTest(),
+						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
 				}
 		);
@@ -69,9 +69,10 @@ public class StakingSuite extends HapiApiSuite {
 	private HapiApiSpec sendToCarol() {
 		return defaultHapiSpec("SendToCarol")
 				.given(
-//						getAccountInfo("0.0.1001").logged()
-						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, "0.0.1001", 1))
+//						getAccountInfo("0.0.1003").logged()
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1002", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1003", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1))
 				).when().then(
 				);
 	}
@@ -141,24 +142,26 @@ public class StakingSuite extends HapiApiSuite {
 						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
 								.payingWith(civilian)
 								.via(unrewardedTxn),
+//						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR)).via(unrewardedTxn),
 						getTxnRecord(unrewardedTxn).andAllChildRecords().logged(),
 						sleepFor(75_000),
 						// rewardSumHistory now: [3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
 								.payingWith(civilian)
 								.via(rewardedTxn),
+//						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR)).via(rewardedTxn),
 						getTxnRecord(rewardedTxn).andAllChildRecords().logged(),
-						getAccountBalance(alice).logged(),
-						getAccountBalance(bob).logged(),
-						getAccountBalance(carol).logged()
-//						cryptoUpdate(debbie).newStakedAccountId(carol),
-//						getAccountInfo(carol).logged(),
-//						cryptoTransfer(movingHbar(ONE_HBAR + 90_000_000L).between(GENESIS, debbie)),
-//						getAccountBalance(carol).logged(),
-//						sleepFor(75_000),
-//						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
-//								.payingWith(civilian)
-//								.via(rewardedTxn2)
+						cryptoUpdate(debbie).newStakedAccountId(carol),
+//						cryptoUpdate(alice).newStakedAccountId(debbie),
+//						cryptoUpdate(bob).newStakedAccountId(debbie),
+//						cryptoUpdate(carol).newStakedAccountId(debbie)
+						getAccountInfo(carol).logged(),
+						cryptoTransfer(movingHbar(ONE_HBAR + 90_000_000L).between(GENESIS, debbie)),
+						getAccountInfo(carol).logged(),
+						sleepFor(75_000),
+						cryptoTransfer(movingHbar(ONE_HBAR).distributing(carol, alice, bob))
+								.payingWith(civilian)
+								.via(rewardedTxn2)
 				);
 	}
 

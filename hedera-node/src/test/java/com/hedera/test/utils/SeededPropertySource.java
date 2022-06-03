@@ -475,15 +475,16 @@ public class SeededPropertySource {
 
 	public MerkleStakingInfo nextStakingInfo() {
 		final var MAX_REWARD_HISTORY = 366;
-		return new MerkleStakingInfo(
+		final var ans = new MerkleStakingInfo(
 				nextLong(),
 				nextLong(),
 				nextLong(),
 				nextLong(),
 				nextLong(),
 				nextLong(),
-				nextLongs(MAX_REWARD_HISTORY)
-		);
+				nextLongs(MAX_REWARD_HISTORY));
+		ans.setPendingRewardHbarAdjustment(nextLong());
+		return ans;
 	}
 
 	public MerkleNetworkContext next0260NetworkContext() {

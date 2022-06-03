@@ -126,7 +126,7 @@ public class SerializedForms {
 	}
 
 	private static void generateSerializedData() {
-		GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+		GENERATOR_MAPPING.get(MerkleStakingInfo.class).run();
 //		for (var entry : GENERATOR_MAPPING.entrySet()) {
 //			entry.getValue().run();
 //		}

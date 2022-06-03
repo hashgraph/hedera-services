@@ -322,9 +322,9 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-		given(stakePeriodManager.finisherFor(-1L, 2L, 100 * HBARS_TO_TINYBARS, true))
+		given(stakePeriodManager.finisherFor(-1L, 2L, 100 * HBARS_TO_TINYBARS, true, true))
 				.willReturn(noopFinisherOne);
-		given(stakePeriodManager.finisherFor(0L, 0L, -1, false))
+		given(stakePeriodManager.finisherFor(0L, 0L, -1, false, true))
 				.willReturn(noopFinisherTwo);
 
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());

@@ -81,7 +81,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
-	private Optional<AccountID> newStakedAccountId = Optional.empty();
+	private Optional<String> newStakee = Optional.empty();
 	private Optional<Long> newStakedNodeId = Optional.empty();
 	private Optional<Boolean> isDeclinedReward = Optional.empty();
 
@@ -155,8 +155,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		return this;
 	}
 
-	public HapiCryptoUpdate newStakedAccountId(String idLit) {
-		newStakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+	public HapiCryptoUpdate newStakedAccountId(String stakee) {
+		newStakee = Optional.of(stakee);
 		return this;
 	}
 
@@ -225,8 +225,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 
-							if (newStakedAccountId.isPresent()) {
-								builder.setStakedAccountId(newStakedAccountId.get());
+							if (newStakee.isPresent()) {
+								builder.setStakedAccountId(TxnUtils.asId(newStakee.get(), spec));
 							} else if (newStakedNodeId.isPresent()) {
 								builder.setStakedNodeId(newStakedNodeId.get());
 							}

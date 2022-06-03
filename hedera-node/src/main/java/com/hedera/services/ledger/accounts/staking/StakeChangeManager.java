@@ -49,17 +49,13 @@ public class StakeChangeManager {
 	}
 
 	public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
-		System.out.println("Withdrawing " + amount + " (declinedReward=" + declinedReward + ") stake from " + curNodeId);
 		final var node = stakeInfoManager.mutableStakeInfoFor(curNodeId);
 		node.removeRewardStake(amount, declinedReward);
-		System.out.println("Total node reward stake now is : " + node.getStakeToReward());
 	}
 
 	public void awardStake(final long newNodeId, final long amount, final boolean declinedReward) {
-		System.out.println("Awarding " + amount + " (declinedReward=" + declinedReward + ") stake from " + newNodeId);
 		final var node = stakeInfoManager.mutableStakeInfoFor(newNodeId);
 		node.addRewardStake(amount, declinedReward);
-		System.out.println("Total node reward stake now is : " + node.getStakeToReward());
 	}
 
 	public void initializeAllStakingStartsTo(final long todayNumber) {

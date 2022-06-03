@@ -77,6 +77,38 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
+	void canUpdatePendingRewardAdjustment() {
+		subject.updatePendingRewardAdjustment(123);
+		assertEquals(123, subject.getPendingRewardHbarAdjustment());
+	}
+
+	@Test
+	void awardingStakeAdjustsPendingsRewardsIfIsNotDecline() {
+		subject.addRewardStake(123, false);
+		assertEquals(123, subject.getPendingRewardHbarAdjustment());
+	}
+
+	@Test
+	void doesntAdjustPendingsRewardsOnRewardIfDecline() {
+		subject.addRewardStake(123, true);
+		assertEquals(0, subject.getPendingRewardHbarAdjustment());
+	}
+
+	@Test
+	void withdrawingStakeAdjustsPendingsRewardsIfIsNotDecline() {
+		subject.setPendingRewardHbarAdjustment(123);
+		subject.removeRewardStake(123, false);
+		assertEquals(0, subject.getPendingRewardHbarAdjustment());
+	}
+
+	@Test
+	void doesntAdjustPendingsRewardsOnWithdrawalIfDecline() {
+		subject.setPendingRewardHbarAdjustment(123);
+		subject.removeRewardStake(123, true);
+		assertEquals(123, subject.getPendingRewardHbarAdjustment());
+	}
+
+	@Test
 	void objectContractsWork() {
 		final long otherMinStake = 101L;
 		final long otherMaxStake = 10_001L;

@@ -66,10 +66,11 @@ class PendingRewardsManagementTest {
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
 		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
+		given(info.reviewElectionsFromLastPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 
-		verify(networkCtx).increasePendingRewards(stakeRewardStart / 100_000_000 * lastPeriodRewardRate);
+		verify(networkCtx).increasePendingRewards((updatedStakeRewardStart / 100_000_000) * lastPeriodRewardRate);
 	}
 
 	@Test
@@ -88,6 +89,7 @@ class PendingRewardsManagementTest {
 
 	private static final long rewardRate = 100_000_000;
 	private static final long stakeRewardStart = 666L * 100_000_000L;
+	private static final long updatedStakeRewardStart = 777L * 100_000_000L;
 	private static final long lastPeriodRewardRate = 100_000L;
 	private static final long totalStakedRewardStart = 100_000_000_000L;
 	private static final EntityNum onlyNodeNum = EntityNum.fromLong(123);

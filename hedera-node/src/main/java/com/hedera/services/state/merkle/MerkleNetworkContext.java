@@ -155,6 +155,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.stakingRewardsActivated = that.stakingRewardsActivated;
 		this.totalStakedRewardStart = that.totalStakedRewardStart;
 		this.totalStakedStart = that.totalStakedStart;
+		this.pendingRewards = that.pendingRewards;
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -751,20 +752,21 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void increasePendingRewards(final long amount) {
-		assertAcceptableRewardChange(amount, +1);
+//		assertAcceptableRewardChange(amount, +1);
 		this.pendingRewards += amount;
 		System.out.println("After increase, now pending rewards are: " + pendingRewards);
 	}
 
 	public void decreasePendingRewards(final long amount) {
-		assertAcceptableRewardChange(amount, -1);
+//		assertAcceptableRewardChange(amount, -1);
 		this.pendingRewards -= amount;
 		System.out.println("After decrease, now pending rewards are: " + pendingRewards);
 	}
 
 	private void assertAcceptableRewardChange(final long amount, final long sigNum) {
 		if (amount < 0 || (pendingRewards + sigNum * amount < 0)) {
-			throw new IllegalArgumentException("Cannot adjust pendingRewards=" + pendingRewards
+			throw new IllegalArgumentException("Cannot " + (sigNum < 0 ? "decrease " : "increase ")
+					+ "pendingRewards=" + pendingRewards
 					+ " by amount=" + amount);
 		}
 	}

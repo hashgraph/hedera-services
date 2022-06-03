@@ -533,7 +533,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			final var finisher = commitInterceptor.finisherFor(i);
 			if (finisher != null) {
 				finisher.accept(entity);
-				System.out.println(entity);
 			}
 		}
 		createdKeys.clear();

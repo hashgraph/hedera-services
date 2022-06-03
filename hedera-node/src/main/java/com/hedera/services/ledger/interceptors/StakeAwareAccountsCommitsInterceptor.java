@@ -71,12 +71,16 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private long newStakedId;
 	// If staking is not activated, the new balance of 0.0.800 after the changes
 	private long newFundingBalance;
+	// Whether the currently processed account has a stake metadata change
+	private boolean stakeMetaChanged;
 	// Whether rewards are active
 	private boolean rewardsActivated;
 	// The new stakedToMe values of accounts in the change set
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
 	// Whether each account in the change set has been rewarded yet
 	private boolean[] hasBeenRewarded = new boolean[INITIAL_CHANGE_CAPACITY];
+	// Whether each account in the change set has been rewarded yet
+	private boolean[] wasStakeMetaChanged = new boolean[INITIAL_CHANGE_CAPACITY];
 	// The stake change scenario for each account in the change set
 	private StakeChangeScenario[] stakeChangeScenarios = new StakeChangeScenario[INITIAL_CHANGE_CAPACITY];
 	// Function objects to be used by the ledger to apply final staking changes to a mutable account
@@ -153,6 +157,9 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 			if (!hasBeenRewarded[i] && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
 				payReward(i, account, changes);
+				wasStakeMetaChanged[i] = true;
+			} else if (!hasBeenRewarded[i]) {
+				wasStakeMetaChanged[i] = stakeMetaChanged;
 			}
 			// If we are outside the original change set, this is a stakee account; and its stakedId cannot
 			// have changed directly. Furthermore, its balance can only have changed via reward---but if so,
@@ -208,7 +215,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			}
 			// This will be null if the stake period manager determines there is no metadata to set
 			finishers[i] = stakePeriodManager.finisherFor(
-					curStakedId, newStakedId, stakedToMeUpdates[i], hasBeenRewarded[i]);
+					curStakedId, newStakedId, stakedToMeUpdates[i], hasBeenRewarded[i], wasStakeMetaChanged[i]);
 		}
 	}
 
@@ -262,6 +269,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		if (isRewardSituation(account, stakedToMeUpdates[stakeeI], changes)) {
 			payReward(stakeeI, account, changes);
 		}
+		wasStakeMetaChanged[stakeeI] = stakeMetaChanged;
 	}
 
 	private void payReward(
@@ -270,6 +278,8 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
 		final var reward = rewardCalculator.computeAndApplyReward(account, changes);
+		System.out.println("Paying " + reward + " to account 0.0."
+				+ account.getKey().longValue() + " (stakePeriodStart = " + account.getStakePeriodStart() + ")");
 		sideEffectsTracker.trackRewardPayment(account.number(), reward);
 		hasBeenRewarded[accountI] = true;
 	}
@@ -292,10 +302,11 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final long stakedToMeUpdate,
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
+		stakeMetaChanged = (stakedToMeUpdate != -1 || hasStakeFieldChanges(changes));
 		return account != null
 				&& rewardsActivated
 				&& account.getStakedId() < 0
-				&& (stakedToMeUpdate != -1 || hasStakeFieldChanges(changes))
+				&& stakeMetaChanged
 				&& stakePeriodManager.isRewardable(account.getStakePeriodStart());
 	}
 
@@ -318,12 +329,14 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		final var maxImpliedChanges = 3 * n + 1;
 		if (hasBeenRewarded.length < maxImpliedChanges) {
 			hasBeenRewarded = new boolean[maxImpliedChanges];
+			wasStakeMetaChanged = new boolean[maxImpliedChanges];
 			stakedToMeUpdates = new long[maxImpliedChanges];
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
 			finishers = new Consumer[maxImpliedChanges];
 		}
 		Arrays.fill(stakedToMeUpdates, -1);
 		Arrays.fill(hasBeenRewarded, false);
+		Arrays.fill(wasStakeMetaChanged, false);
 		// The stakeChangeScenarios and finishers arrays are filled and used left-to-right only
 	}
 
