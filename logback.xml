@@ -9,4 +9,3 @@
         <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
-
