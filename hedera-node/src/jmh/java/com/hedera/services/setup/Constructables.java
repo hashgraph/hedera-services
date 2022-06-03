@@ -1,4 +1,4 @@
-package com.hedera.hashgraph.setup;
+package com.hedera.services.setup;
 
 /*-
  * ‌
@@ -50,15 +50,19 @@ public class Constructables {
 		throw new UnsupportedOperationException();
 	}
 
-	public static void registerForAccounts() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleAccountTokens.class, MerkleAccountTokens::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCQueue .class, FCQueue::new));
+	public static void registerForAccounts() {
+		try {
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleAccountTokens.class, MerkleAccountTokens::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(FCQueue .class, FCQueue::new));
+		} catch (ConstructableRegistryException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public static void registerForContractStorage() throws ConstructableRegistryException {
@@ -74,15 +78,19 @@ public class Constructables {
 				new ClassConstructorPair(IterableContractValueSupplier.class, IterableContractValueSupplier::new));
 	}
 
-	public static void registerForMerkleMap() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+	public static void registerForMerkleMap() {
+		try {
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+			ConstructableRegistry.registerConstructable(
+					new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		} catch (ConstructableRegistryException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public static void registerForVirtualMap() throws ConstructableRegistryException {
