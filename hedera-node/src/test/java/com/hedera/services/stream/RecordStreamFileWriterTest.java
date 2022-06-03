@@ -2,7 +2,7 @@ package com.hedera.services.stream;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.recordstreaming.RecordStreamFileParser;
+import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -105,16 +105,15 @@ class RecordStreamFileWriterTest {
 		final var startRunningHash = new Hash(messageDigest.digest());
 		subject.setRunningHash(startRunningHash);
 
-		// send RSOs for block 1
+		// when
 		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
-		firstBlockRSOs.forEach(subject::addObject);
-		// send RSOs for block 2
 		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(8, 2,
 				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
-		secondBlockRSOs.forEach(subject::addObject);
-		// send single RSO for block 3 in order to finish block 2 and create its files
-		generateNRecordStreamObjectsForBlockMStartingFromT(1, 3, firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000))
-				.forEach(subject::addObject);
+		final var thirdBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(1, 3,
+				firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000));
+		Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
+						.flatMap(Collection::stream)
+						.forEach(subject::addObject);
 
 		// then
 		assertRecordStreamFiles(
@@ -149,15 +148,14 @@ class RecordStreamFileWriterTest {
 		subject.setRunningHash(startRunningHash);
 		subject.setStartWriteAtCompleteWindow(true);
 
-		// send RSOs for block 1
+		// when
 		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(2, 1, firstTransactionInstant);
-		firstBlockRSOs.forEach(subject::addObject);
-		// send RSOs for block 2
 		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(5, 2,
 				firstTransactionInstant.plusSeconds(logPeriodMs / 1000));
-		secondBlockRSOs.forEach(subject::addObject);
-		// send single RSO for block 3 in order to finish block 2 and create its files
-		generateNRecordStreamObjectsForBlockMStartingFromT(1, 3, firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000))
+		final var thirdBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(1, 3,
+				firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000));
+		Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
+				.flatMap(Collection::stream)
 				.forEach(subject::addObject);
 
 		// then
@@ -212,7 +210,7 @@ class RecordStreamFileWriterTest {
 		final var recordStreamFilePath =
 				subject.generateStreamFilePath(
 						Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
-		final var recordStreamFilePair = RecordStreamFileParser.readRecordStreamFile(recordStreamFilePath);
+		final var recordStreamFilePair = RecordStreamingUtils.readRecordStreamFile(recordStreamFilePath);
 
 		assertEquals(RECORD_STREAM_VERSION, recordStreamFilePair.getLeft());
 		final var recordStreamFileOptional = recordStreamFilePair.getRight();
@@ -287,7 +285,7 @@ class RecordStreamFileWriterTest {
 	) throws IOException, NoSuchAlgorithmException {
 		final var recordStreamFile = new File(streamFilePath);
 		final var signatureFilePath = generateSigFilePath(recordStreamFile);
-		final var signatureFileOptional = RecordStreamFileParser.readRecordStreamSignatureFile(signatureFilePath);
+		final var signatureFileOptional = RecordStreamingUtils.readSignatureFile(signatureFilePath);
 		assertTrue(signatureFileOptional.isPresent());
 		final var signatureFile = signatureFileOptional.get();
 
