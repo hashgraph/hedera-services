@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -44,9 +45,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
@@ -66,7 +69,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
 
 	public static void main(String... args) {
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
+		new ValidateCongestionPricingAfterReconnect().runSuiteSync();
 	}
 
 	@Override
@@ -146,15 +149,20 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						// then we can send more transactions. Otherwise, transactions may be pending for too long
 						// and we will get UNKNOWN status
 						sleepFor(30000),
-						blockingOrder(
-								IntStream.range(0, 10).mapToObj(i ->
+						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn" + i).payerId(civilianAccount),
+								uncheckedSubmit(
 										contractCall(oneContract)
-												.payingWith(GENESIS)
+												.signedBy(civilianAccount)
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
-												.setNode(reconnectingNode))
-										.toArray(HapiSpecOperation[]::new)
-						),
+												.setNode(reconnectingNode)
+												.txnId("uncheckedTxn" + i)
+								)
+										.payingWith(GENESIS)
+										.setNode(reconnectingNode),
+								sleepFor(125)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
 								.fee(ONE_HUNDRED_HBARS)
