@@ -14,17 +14,6 @@
         </filter>
     </appender>
 
-    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
-        <!-- Don't discard INFO, DEBUG, TRACE events in case of queue is 80% full -->
-        <discardingThreshold>0</discardingThreshold>
-        <!-- Default is 256 -->
-        <!-- Logger will block incoming events (log calls) until queue will free some space -->
-        <!-- (the smaller value -> flush occurs often) -->
-        <queueSize>100</queueSize>
-
-        <appender-ref ref="FILE" />
-    </appender>
-
     <root level="OFF">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="ASYNC"/>
