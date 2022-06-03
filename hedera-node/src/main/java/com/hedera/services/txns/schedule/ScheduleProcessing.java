@@ -106,7 +106,7 @@ public class ScheduleProcessing {
 			}
 		}
 
-		log.error("Reached maxProcessingLoopIterations reached in expire, we should never get here!");
+		log.error("maxProcessingLoopIterations reached in expire, we should never get here!");
 	}
 
 	/**
@@ -201,7 +201,7 @@ public class ScheduleProcessing {
 
 		}
 
-		log.error("Reached maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded, we should never get here!");
+		log.error("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded, we should never get here!");
 
 		return null;
 	}
