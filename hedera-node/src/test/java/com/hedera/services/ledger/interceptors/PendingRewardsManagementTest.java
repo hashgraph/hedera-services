@@ -73,6 +73,24 @@ class PendingRewardsManagementTest {
 	}
 
 	@Test
+	void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStartAndRoundedOff() {
+		given800Balance(1_000_000_000_000L);
+		final var newStakeRewardStart = stakeRewardStart - 5_560_000L;
+		final long expectedStakeRewardStart = 665L * 100_000_000L;
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
+		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
+		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
+		given(info.getStakeRewardStart()).willReturn(newStakeRewardStart);
+		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
+
+		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
+
+		verify(networkCtx).increasePendingRewards(expectedStakeRewardStart / 100_000_000 * lastPeriodRewardRate);
+	}
+
+	@Test
 	void rewardRateIsZeroIfPendingRewardsExceed800Balance() {
 		given800Balance(123);
 		given(networkCtx.getPendingRewards()).willReturn(124L);

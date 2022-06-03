@@ -102,8 +102,8 @@ public class EndOfStakingPeriodCalculator {
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
 			final var lastPeriodRewardRate =
 					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
-			final var rewardsOwedForLastPeriod =
-					merkleStakingInfo.getStakeRewardStart() / HBARS_TO_TINYBARS * lastPeriodRewardRate;
+			final var rewardsOwedForLastPeriod = roundOffToNearestHbarInTinybars(merkleStakingInfo.getStakeRewardStart())
+					/ HBARS_TO_TINYBARS * lastPeriodRewardRate;
 			merkleNetworkContext.increasePendingRewards(rewardsOwedForLastPeriod);
 			final var nextPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromLastPeriodAndRecomputeStakes();
@@ -133,6 +133,10 @@ public class EndOfStakingPeriodCalculator {
 						NO_CUSTOM_FEES,
 						NO_OTHER_SIDE_EFFECTS,
 						END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
+	}
+
+	private long roundOffToNearestHbarInTinybars(final long amount) {
+		return (amount / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
 	}
 
 	@VisibleForTesting
