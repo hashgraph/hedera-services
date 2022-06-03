@@ -130,14 +130,17 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()),
-						blockingOrder(
-								IntStream.range(0, 20).mapToObj(i ->
+						blockingOrder(IntStream.range(0, 20).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn1" + i).payerId(civilianAccount),
+								uncheckedSubmit(
 										contractCall(oneContract)
-												.payingWith(GENESIS)
+												.signedBy(civilianAccount)
 												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR))
-										.toArray(HapiSpecOperation[]::new)
-						)
+												.sending(ONE_HBAR)
+												.txnId("uncheckedTxn1" + i)
+								)
+										.payingWith(GENESIS)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new))
 				).then(
 						withLiveNode(reconnectingNode)
 								.within(5 * 60, TimeUnit.SECONDS)
@@ -150,18 +153,16 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						// and we will get UNKNOWN status
 						sleepFor(30000),
 						blockingOrder(IntStream.range(0, 10).mapToObj(i -> new HapiSpecOperation[] {
-								usableTxnIdNamed("uncheckedTxn" + i).payerId(civilianAccount),
+								usableTxnIdNamed("uncheckedTxn2" + i).payerId(civilianAccount),
 								uncheckedSubmit(
 										contractCall(oneContract)
 												.signedBy(civilianAccount)
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
-												.setNode(reconnectingNode)
-												.txnId("uncheckedTxn" + i)
+												.txnId("uncheckedTxn2" + i)
 								)
 										.payingWith(GENESIS)
-										.setNode(reconnectingNode),
-								sleepFor(125)
+										.setNode(reconnectingNode)
 						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
