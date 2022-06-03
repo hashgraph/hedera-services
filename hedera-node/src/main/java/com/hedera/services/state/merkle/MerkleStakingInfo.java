@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
@@ -359,19 +358,17 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void removeRewardStake(final long amount, final boolean declinedReward) {
 		if (declinedReward) {
-			this.stakeToNotReward = stakeToNotReward - roundedToHbar(amount);
+			this.stakeToNotReward -= amount;
 		} else {
-			this.stakeToReward = stakeToReward - roundedToHbar(amount);
+			this.stakeToReward -= amount;
 		}
 	}
 
 	public void addRewardStake(final long amount, final boolean declinedReward) {
 		if (declinedReward) {
-			this.stakeToNotReward = stakeToNotReward + amount;
+			this.stakeToNotReward += amount;
 		} else {
-			this.stakeToReward = stakeToReward + amount;
+			this.stakeToReward += amount;
 		}
-		stakeToReward = roundedToHbar(stakeToReward);
-		stakeToNotReward = roundedToHbar(stakeToNotReward);
 	}
 }

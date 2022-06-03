@@ -55,7 +55,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
@@ -759,7 +758,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void decreasePendingRewards(final long amount) {
 		assertAcceptableRewardChange(amount, -1);
-		this.pendingRewards -= roundedToHbar(amount);
+		this.pendingRewards -= amount;
 		System.out.println("After decrease, now pending rewards are: " + pendingRewards);
 	}
 

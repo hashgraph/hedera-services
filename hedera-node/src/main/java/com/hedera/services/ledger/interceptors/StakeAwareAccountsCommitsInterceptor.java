@@ -47,6 +47,7 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBala
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
@@ -196,13 +197,13 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (scenario.withdrawsFromNode()) {
 				stakeChangeManager.withdrawStake(
 						-curStakedId - 1,
-						account.getBalance() + account.getStakedToMe(),
+						roundedToHbar(account.getBalance() + account.getStakedToMe()),
 						account.isDeclinedReward());
 			}
 			if (scenario.awardsToNode()) {
 				stakeChangeManager.awardStake(
 						-newStakedId - 1,
-						finalBalanceGiven(account, changes) + finalStakedToMeGiven(i, account, stakedToMeUpdates),
+						roundedToHbar(finalBalanceGiven(account, changes) + finalStakedToMeGiven(i, account, stakedToMeUpdates)),
 						finalDeclineRewardGiven(account, changes));
 			}
 			// This will be null if the stake period manager determines there is no metadata to set
@@ -218,16 +219,18 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final Map<AccountProperty, Object> changes,
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
+		final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
+		final var roundedInitialBalance = roundedToHbar(account.getBalance());
 		if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
 			// Common case that deserves performance optimization
-			final var delta = finalBalanceGiven(account, changes) - account.getBalance();
+			final var delta = roundedFinalBalance - roundedInitialBalance;
 			alterStakedToMe(curStakedId, delta, pendingChanges);
 		} else {
 			if (scenario.withdrawsFromAccount()) {
-				alterStakedToMe(curStakedId, -account.getBalance(), pendingChanges);
+				alterStakedToMe(curStakedId, -roundedInitialBalance, pendingChanges);
 			}
 			if (scenario.awardsToAccount()) {
-				alterStakedToMe(newStakedId, finalBalanceGiven(account, changes), pendingChanges);
+				alterStakedToMe(newStakedId, roundedFinalBalance, pendingChanges);
 			}
 		}
 	}
