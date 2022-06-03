@@ -32,6 +32,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class StakingUtils {
 	private StakingUtils() {
@@ -116,5 +117,9 @@ public class StakingUtils {
 
 	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
 		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
+	}
+
+	public static long roundedToHbar(long value) {
+		return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
 	}
 }
