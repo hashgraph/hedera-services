@@ -81,6 +81,10 @@ public class RewardCalculator {
 		return account.isDeclinedReward() ? 0 : rewardOffered;
 	}
 
+	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
+		return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
+	}
+
 	private long computePendingRewards(final MerkleAccount account) {
 		final var rewardOffered = computeRewardFromDetails(
 				account,

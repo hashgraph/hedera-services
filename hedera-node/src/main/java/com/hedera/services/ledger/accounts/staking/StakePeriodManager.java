@@ -34,20 +34,25 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.Units.SECS_IN_MINUTE;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.hedera.services.utils.Units.MINUTES_TO_SECONDS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 @Singleton
 public class StakePeriodManager {
-	private final TransactionContext txnCtx;
-	private final Supplier<MerkleNetworkContext> networkCtx;
-	private long currentStakePeriod;
-	private long prevConsensusSecs;
-	final long stakingPeriod;
 	public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
 	public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
+
+	private final long stakingPeriodMins;
+	private final TransactionContext txnCtx;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+
+	private long currentStakePeriod;
+	private long prevConsensusSecs;
 
 	@Inject
 	public StakePeriodManager(final TransactionContext txnCtx,
@@ -56,7 +61,7 @@ public class StakePeriodManager {
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
-		this.stakingPeriod = properties.getLongProperty("staking.periodMins");
+		this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
 	}
 
 	@Nullable
@@ -67,8 +72,7 @@ public class StakePeriodManager {
 			final boolean rewarded,
 			boolean stakeMetaChanged
 	) {
-		final long stakePeriodStartUpdate = stakePeriodStartUpdateFor(
-				curStakedId, newStakedId, rewarded, stakeMetaChanged);
+		final long stakePeriodStartUpdate = startUpdateFor(curStakedId, newStakedId, rewarded, stakeMetaChanged);
 		if (stakedToMeUpdate == -1 && stakePeriodStartUpdate == -1) {
 			return null;
 		} else {
@@ -83,25 +87,34 @@ public class StakePeriodManager {
 		}
 	}
 
+	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
+		if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
+			return LocalDate.ofEpochDay(stakePeriod).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+		} else {
+			return stakePeriod * stakingPeriodMins * MINUTES_TO_SECONDS;
+		}
+	}
+
 	public long currentStakePeriod() {
-		final var currentConsensusSecs = txnCtx.consensusTime().getEpochSecond();
+		final var now = txnCtx.consensusTime();
+		final var currentConsensusSecs = now.getEpochSecond();
 		if (prevConsensusSecs != currentConsensusSecs) {
 			prevConsensusSecs = currentConsensusSecs;
-			if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
-				currentStakePeriod = currentConsensusSecs / (stakingPeriod * SECS_IN_MINUTE);
-			} else {
+			if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
 				currentStakePeriod = LocalDate.ofInstant(txnCtx.consensusTime(), ZONE_UTC).toEpochDay();
+			} else {
+				currentStakePeriod = getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
 			}
 		}
 		return currentStakePeriod;
 	}
 
 	public long estimatedCurrentStakePeriod() {
-		if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
-			final var thisSecond = Instant.now().getEpochSecond();
-			return thisSecond / (stakingPeriod * SECS_IN_MINUTE);
+		final var now = Instant.now();
+		if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
+			return LocalDate.ofInstant(now, ZONE_UTC).toEpochDay();
 		} else {
-			return LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
+			return getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
 		}
 	}
 
@@ -148,7 +161,7 @@ public class StakePeriodManager {
 	 * @param stakeMetaChanged
 	 * @return either -1 for no new stakePeriodStart, or the new value
 	 */
-	private long stakePeriodStartUpdateFor(
+	private long startUpdateFor(
 			final long curStakedId,
 			final long newStakedId,
 			final boolean rewarded,

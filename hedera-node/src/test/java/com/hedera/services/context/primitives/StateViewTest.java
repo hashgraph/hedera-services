@@ -38,7 +38,6 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -720,8 +719,8 @@ class StateViewTest {
 						.build())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo,
-				rewardCalculator);
+		final var actualResponse = subject.infoForAccount(
+				tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
 		assertEquals(expectedResponse, actualResponse.get());
 		mockedStatic.close();
@@ -729,13 +728,15 @@ class StateViewTest {
 
 	@Test
 	void stakingInfoReturnedCorrectly() {
+		final var startPeriod = 10000L;
 		tokenAccount = MerkleAccountFactory.newAccount()
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
 		tokenAccount.setStakedId(-10L);
 		tokenAccount.setDeclineReward(false);
-		tokenAccount.setStakePeriodStart(10000L);
+		tokenAccount.setStakePeriodStart(startPeriod);
+		given(rewardCalculator.epochSecondAtStartOfPeriod(startPeriod)).willReturn(1_234_567L);
 
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
@@ -747,11 +748,11 @@ class StateViewTest {
 		final var expectedResponse = StakingInfo.newBuilder()
 				.setDeclineReward(false)
 				.setStakedNodeId(9L)
-				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(10000L))
+				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(1_234_567L))
 				.build();
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo,
-				rewardCalculator);
+		final var actualResponse = subject.infoForAccount(
+				tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
 		assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
 		mockedStatic.close();

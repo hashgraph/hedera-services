@@ -70,6 +70,12 @@ class RewardCalculatorTest {
 	}
 
 	@Test
+	void delegatesEpochSecondAtStartOfPeriod() {
+		given(stakePeriodManager.epochSecondAtStartOfPeriod(123)).willReturn(456L);
+		assertEquals(456L, subject.epochSecondAtStartOfPeriod(123));
+	}
+
+	@Test
 	void updatesRewardsAsExpected() {
 		final var changes = new HashMap<AccountProperty, Object>();
 		setUpMocks();

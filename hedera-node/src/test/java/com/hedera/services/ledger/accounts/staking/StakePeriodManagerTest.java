@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.utils.Units;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
@@ -51,6 +53,27 @@ class StakePeriodManagerTest {
 
 	private StakePeriodManager subject;
 
+	@Test
+	void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {
+		givenProdManager();
+
+		final var then = Instant.parse("2021-06-07T23:59:58.369613Z");
+		final var dateThen = LocalDate.ofInstant(then, ZONE_UTC);
+		final var prodPeriod = dateThen.toEpochDay();
+		final var midnight = dateThen.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+
+		assertEquals(midnight, subject.epochSecondAtStartOfPeriod(prodPeriod));
+	}
+
+	@Test
+	void stakePeriodStartForNonProdSettingIsPeriodTimesSeconds() {
+		given(properties.getLongProperty("staking.periodMins")).willReturn(2L);
+		subject = new StakePeriodManager(txnCtx, () -> networkContext, properties);
+
+		final var somePeriod = 1_234_567L;
+
+		assertEquals(somePeriod * 2 * Units.MINUTES_TO_SECONDS, subject.epochSecondAtStartOfPeriod(somePeriod));
+	}
 
 	@Test
 	void canFinalizeJustStakeToMeUpdate() {
