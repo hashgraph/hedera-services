@@ -69,10 +69,14 @@ public class StakePeriodManager {
 			final long rewardOffered,
 			final long stakedToMeUpdate,
 			final long stakePeriodStartUpdate,
-			final MerkleAccount account
+			final long balanceAtStartOfLastRewardedPeriod,
+			final MerkleAccount mutableAccount
 	) {
 		if (rewardOffered != -1) {
 			networkCtx.get().decreasePendingRewards(rewardOffered);
+		}
+		if (balanceAtStartOfLastRewardedPeriod != -1) {
+			mutableAccount.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
 		}
 		// TODO - how to update other implications for pending rewards?
 	}

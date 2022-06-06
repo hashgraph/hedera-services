@@ -57,7 +57,7 @@ class StakePeriodManagerTest {
 	void doesntUpdatePendingRewardsIfNothingOffered() {
 		givenAgnosticManager();
 		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(-1, -1, -1, account);
+		subject.updatePendingRewardsGiven(-1, -1, -1, -1, account);
 		verifyNoInteractions(networkCtx);
 	}
 
@@ -65,8 +65,16 @@ class StakePeriodManagerTest {
 	void updatesPendingRewardsIfSomethingOffered() {
 		givenAgnosticManager();
 		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(123, -1, -1, account);
+		subject.updatePendingRewardsGiven(123, -1, -1, -1, account);
 		verify(networkCtx).decreasePendingRewards(123);
+	}
+
+	@Test
+	void updatesBalanceAtStartOfLastRewardedPeriodIfOffered() {
+		givenAgnosticManager();
+		final var account = MerkleAccountFactory.newAccount().get();
+		subject.updatePendingRewardsGiven(-1, -1, -1, 123, account);
+		assertEquals(123, account.getBalanceAtStartOfLastRewardedPeriod());
 	}
 
 	@Test

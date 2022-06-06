@@ -157,11 +157,12 @@ class StakingAccountsCommitInterceptorTest {
 		subject.getRewardsEarned()[2] = 123L;
 		subject.getStakedToMeUpdates()[2] = 234L;
 		subject.getStakePeriodStartUpdates()[2] = 345L;
+		subject.getBalanceAtStartOfLastRewardedPeriodUpdates()[2] = 456L;
 		final var mockAccount = mock(MerkleAccount.class);
 
 		subject.finish(2, mockAccount);
 
-		verify(stakePeriodManager).updatePendingRewardsGiven(123L, 234L, 345L, mockAccount);
+		verify(stakePeriodManager).updatePendingRewardsGiven(123L, 234L, 345L, 456L, mockAccount);
 	}
 
 	@Test
