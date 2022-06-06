@@ -33,6 +33,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -47,11 +49,11 @@ public class RecordFileChecker extends UtilOp {
 
 
     private final String recordFileName;
-    private final TransactionRecord transactionRecord;
+    private final List<TransactionRecord> transactionRecord;
 
-    public RecordFileChecker(String recordFileName, TransactionRecord transactionRecord) {
+    public RecordFileChecker(String recordFileName, TransactionRecord... transactionRecord) {
         this.recordFileName = recordFileName;
-        this.transactionRecord = transactionRecord;
+        this.transactionRecord = Arrays.asList(transactionRecord);
     }
 
     @Override
@@ -105,7 +107,9 @@ public class RecordFileChecker extends UtilOp {
                     .map(RSI -> Pair.of(RSI.getTransaction(), RSI.getRecord()))
                     .toList();
 
-            Assertions.assertEquals(actualRecordsInFile.get(0).getRight(), transactionRecord, TRANSACTION_RECORD_ERROR_MESSAGE);
+            for (int i = 0; i < transactionRecord.size(); i++) {
+                Assertions.assertEquals(actualRecordsInFile.get(i).getRight(), transactionRecord.get(i), TRANSACTION_RECORD_ERROR_MESSAGE);
+            }
 
         }
 

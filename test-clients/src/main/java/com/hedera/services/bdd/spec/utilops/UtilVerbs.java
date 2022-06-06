@@ -365,7 +365,7 @@ public class UtilVerbs {
 		return new RecordStreamVerification(baseDir);
 	}
 
-	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, TransactionRecord transactionRecord) {
+	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, TransactionRecord... transactionRecord) {
 		var recordFileName = generateStreamFileNameFromInstant(
 				Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
 
