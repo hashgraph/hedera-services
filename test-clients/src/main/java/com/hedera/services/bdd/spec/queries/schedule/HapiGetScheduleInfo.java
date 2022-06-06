@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -32,6 +31,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -44,13 +44,11 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.getRelativeExpiry;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
-
-	private static final long defaultWindBackNanos =
-			HapiSpecSetup.getDefaultNodeProps().getLong("scheduling.triggerTxn.windBackNanos");
 
 	String schedule;
 
@@ -60,18 +58,19 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	boolean shouldBeExecuted = false;
 	boolean shouldNotBeExecuted = false;
-	boolean shouldBeDeleted = false;
+	boolean shouldNotBeDeleted = false;
 	boolean checkForRecordedScheduledTxn = false;
 	Optional<String> deletionTxn = Optional.empty();
 	Optional<String> executionTxn = Optional.empty();
 	Optional<String> expectedScheduleId = Optional.empty();
+	Optional<Boolean> expectedWaitForExpiry = Optional.empty();
+	Optional<Pair<String, Long>> expectedExpirationTimeRelativeTo = Optional.empty();
 	Optional<String> expectedCreatorAccountID = Optional.empty();
 	Optional<String> expectedPayerAccountID = Optional.empty();
 	Optional<String> expectedScheduledTxnId = Optional.empty();
 	Optional<String> expectedAdminKey = Optional.empty();
 	Optional<String> expectedEntityMemo = Optional.empty();
 	Optional<List<String>> expectedSignatories = Optional.empty();
-	Optional<Boolean> expectedExpiry = Optional.empty();
 
 	public HapiGetScheduleInfo hasScheduledTxnIdSavedBy(String creation) {
 		expectedScheduledTxnId = Optional.of(creation);
@@ -88,6 +87,11 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		return this;
 	}
 
+	public HapiGetScheduleInfo isNotDeleted() {
+		shouldNotBeDeleted = true;
+		return this;
+	}
+
 	public HapiGetScheduleInfo wasDeletedAtConsensusTimeOf(String txn) {
 		deletionTxn = Optional.of(txn);
 		return this;
@@ -100,6 +104,21 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	public HapiGetScheduleInfo hasScheduleId(String s) {
 		expectedScheduleId = Optional.of(s);
+		return this;
+	}
+
+	public HapiGetScheduleInfo hasWaitForExpiry() {
+		expectedWaitForExpiry = Optional.of(true);
+		return this;
+	}
+
+	public HapiGetScheduleInfo hasWaitForExpiry(boolean value) {
+		expectedWaitForExpiry = Optional.of(value);
+		return this;
+	}
+
+	public HapiGetScheduleInfo hasRelativeExpiry(String txnId, long offsetSeconds) {
+		this.expectedExpirationTimeRelativeTo = Optional.of(Pair.of(txnId, offsetSeconds));
 		return this;
 	}
 
@@ -130,11 +149,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	public HapiGetScheduleInfo hasSignatories(String... s) {
 		expectedSignatories = Optional.of(List.of(s));
-		return this;
-	}
-
-	public HapiGetScheduleInfo hasValidExpirationTime() {
-		expectedExpiry = Optional.of(true);
 		return this;
 	}
 
@@ -177,6 +191,10 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 			Assertions.assertFalse(actualInfo.hasExecutionTime(), "Was already executed!");
 		}
 
+		if (shouldNotBeDeleted) {
+			Assertions.assertFalse(actualInfo.hasDeletionTime(), "Was already deleted!");
+		}
+
 		if (deletionTxn.isPresent()) {
 			assertTimestampMatches(
 					deletionTxn.get(),
@@ -185,21 +203,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 					"Wrong consensus deletion time!",
 					spec);
 		}
-		if (executionTxn.isPresent()) {
-			assertTimestampMatches(
-					executionTxn.get(),
-					(int) defaultWindBackNanos,
-					actualInfo.getExecutionTime(),
-					"Wrong consensus execution time!",
-					spec);
-		}
-
-		assertFor(
-				actualInfo.getExpirationTime(),
-				expectedExpiry,
-				(n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(schedule)).build(),
-				"Wrong schedule expiry!",
-				spec.registry());
 
 		var registry = spec.registry();
 
@@ -215,12 +218,19 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 					"Wrong signatories!");
 		});
 
-		assertFor(
-				actualInfo.getScheduleID(),
-				expectedScheduleId,
-				(n, r) -> r.getScheduleId(n),
-				"Wrong schedule id!",
-				registry);
+		expectedExpirationTimeRelativeTo.ifPresent(stringLongPair ->
+				Assertions.assertEquals(
+						getRelativeExpiry(spec,
+								stringLongPair.getKey(),
+								stringLongPair.getValue()),
+						actualInfo.getExpirationTime(),
+						"Wrong Expiration Time!"
+				)
+		);
+
+		expectedWaitForExpiry.ifPresent(aBoolean ->
+				Assertions.assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
+
 		assertFor(
 				actualInfo.getAdminKey(),
 				expectedAdminKey,

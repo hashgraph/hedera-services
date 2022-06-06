@@ -30,12 +30,15 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -135,6 +138,17 @@ class BaseOperationUsageTest {
 	}
 
 	@Test
+	void picksAppropriateScheduleOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(ScheduleCreate, DEFAULT);
+		verify(mock).scheduleCreate();
+
+		mock.baseUsageFor(ScheduleCreate, SCHEDULE_CREATE_CONTRACT_CALL);
+		verify(mock).scheduleCreateWithContractCall();
+	}
+
+	@Test
 	void failsOnUnrecognizedTokenTypes() {
 		final var subject = new BaseOperationUsage();
 
@@ -165,5 +179,16 @@ class BaseOperationUsageTest {
 
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.baseUsageFor(FileAppend, UNRECOGNIZED));
+	}
+
+	@Test
+	void failsOnUnrecognizedScheduleTypes() {
+		final var subject = new BaseOperationUsage();
+
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.baseUsageFor(ScheduleCreate, UNRECOGNIZED));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.baseUsageFor(ScheduleSign, DEFAULT));
 	}
 }

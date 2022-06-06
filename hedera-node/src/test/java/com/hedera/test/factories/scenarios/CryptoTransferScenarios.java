@@ -96,6 +96,16 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_TRANSFER_CUSTOM_PAYER_SENDER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromTo(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
+							.get()
+			));
+		}
+	},
 	CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(

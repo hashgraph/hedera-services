@@ -42,12 +42,14 @@ class ThrottlesCallbackTest {
 	FunctionalityThrottling hapiThrottling;
 	@Mock
 	FunctionalityThrottling handleThrottling;
+	@Mock
+	FunctionalityThrottling scheduleThrottling;
 
 	ThrottlesCallback subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ThrottlesCallback(multiplierSource, hapiThrottling, handleThrottling);
+		subject = new ThrottlesCallback(multiplierSource, hapiThrottling, handleThrottling, scheduleThrottling);
 	}
 
 	@Test
@@ -60,6 +62,7 @@ class ThrottlesCallbackTest {
 		// then:
 		verify(hapiThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
 		verify(handleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
+		verify(scheduleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
 		verify(multiplierSource).resetExpectations();
 	}
 }

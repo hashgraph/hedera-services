@@ -126,7 +126,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -607,8 +607,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ERC_20_CONTRACT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(nestedContract)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
 				);
 	}
 
@@ -769,7 +768,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										.logged()
 						),
 						getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_A, 1000),
-						getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_A, 8500)
+						getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_A, 8500),
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
 				);
 	}
 
@@ -3313,7 +3313,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(nameTxn).andAllChildRecords().logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.redirectTokenCalls", "contracts.precompile.exportRecordResults")
 				);
 	}
 
@@ -3389,7 +3389,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						),
 						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.redirectTokenCalls", "contracts.precompile.exportRecordResults")
 				);
 	}
 
@@ -3446,7 +3446,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.redirectTokenCalls", "contracts.precompile.exportRecordResults")
 				);
 	}
 

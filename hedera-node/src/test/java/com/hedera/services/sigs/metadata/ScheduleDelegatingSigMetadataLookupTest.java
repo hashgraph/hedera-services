@@ -21,10 +21,9 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.sigs.order.KeyOrderingFailure;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
+import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTest.scheduleCreateTxnWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -47,14 +47,14 @@ class ScheduleDelegatingSigMetadataLookupTest {
     ScheduleID id = IdUtils.asSchedule("1.2.666");
 
     String memo = "Hey there!";
-    MerkleSchedule schedule;
+    ScheduleVirtualValue schedule;
     ScheduleStore scheduleStore;
 
     Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> subject;
 
     @BeforeEach
     void setup() {
-        schedule = MerkleSchedule.from(MerkleScheduleTest.scheduleCreateTxnWith(
+        schedule = ScheduleVirtualValue.from(scheduleCreateTxnWith(
                 TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
                 memo,
                 IdUtils.asAccount("0.0.2"),

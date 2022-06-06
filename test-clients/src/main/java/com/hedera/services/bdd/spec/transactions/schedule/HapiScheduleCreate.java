@@ -34,12 +34,15 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,8 +53,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -72,6 +77,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
+	private Optional<Boolean> waitForExpiry = Optional.empty();
+	private Optional<Pair<String, Long>> expirationTimeRelativeTo = Optional.empty();
 	private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
 	private AtomicReference<SchedulableTransactionBody> scheduledTxn = new AtomicReference<>();
 
@@ -142,6 +149,21 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
+	public HapiScheduleCreate<T> waitForExpiry() {
+		this.waitForExpiry = Optional.of(true);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> waitForExpiry(boolean value) {
+		this.waitForExpiry = Optional.of(value);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> withRelativeExpiry(String txnId, long offsetSeconds) {
+		this.expirationTimeRelativeTo = Optional.of(Pair.of(txnId, offsetSeconds));
+		return this;
+	}
+
 	@Override
 	protected HapiScheduleCreate<T> self() {
 		return this;
@@ -176,6 +198,17 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							} else {
 								adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							}
+
+							waitForExpiry.ifPresent(b::setWaitForExpiry);
+
+							if (expirationTimeRelativeTo.isPresent()) {
+								var expiry = getRelativeExpiry(spec,
+										expirationTimeRelativeTo.get().getKey(),
+										expirationTimeRelativeTo.get().getValue());
+
+								b.setExpirationTime(expiry);
+							}
+
 							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
 								var payer = TxnUtils.asId(a, spec);
@@ -184,6 +217,22 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 						}
 				);
 		return b -> b.setScheduleCreate(opBody);
+	}
+
+	public static Timestamp getRelativeExpiry(final HapiApiSpec spec, final String txnId, final Long relative) {
+		if (!spec.registry().hasTransactionRecord(txnId)) {
+			var createTxn = getTxnRecord(txnId).saveTxnRecordToRegistry(txnId);
+			allRunFor(spec, createTxn);
+		}
+
+		var consensus = spec.registry().getTransactionRecord(txnId).getConsensusTimestamp();
+
+		var expiry = Instant.ofEpochSecond(consensus.getSeconds(),
+				consensus.getNanos()).plusSeconds(relative);
+
+		return Timestamp.newBuilder()
+				.setSeconds(expiry.getEpochSecond())
+				.setNanos(expiry.getNano()).build();
 	}
 
 
@@ -224,7 +273,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		}
 		var registry = spec.registry();
 		registry.saveScheduleId(scheduleEntity, lastReceipt.getScheduleID());
-		registry.saveExpiry(scheduleEntity, (long) defaultScheduleTxnExpiry);
 		adminKey.ifPresent(k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
 		if (saveExpectedScheduledTxnId) {
 			if (verboseLoggingOn) {

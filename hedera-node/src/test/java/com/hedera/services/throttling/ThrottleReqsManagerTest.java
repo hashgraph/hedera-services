@@ -102,7 +102,8 @@ class ThrottleReqsManagerTest {
 		assertFalse(result);
 		// and:
 		assertEquals(
-				aReq * BucketThrottle.capacityUnitsPerTxn() - nanosSinceLastDecision * aTps * 1_000,
+				(aReq * BucketThrottle.capacityUnitsPerTxn() - nanosSinceLastDecision * aTps * 1_000)
+						+ (aReq * BucketThrottle.capacityUnitsPerTxn()),
 				a.usageSnapshot().used());
 		assertEquals(bReq * BucketThrottle.capacityUnitsPerTxn() - nanosSinceLastDecision * bTps * 1_000,
 				b.usageSnapshot().used());

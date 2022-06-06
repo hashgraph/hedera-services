@@ -26,7 +26,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -52,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,69 +65,38 @@ class ExpiryManagerTest {
 	private final EntityNum aKey = EntityNum.fromAccountId(aGrpcId);
 	private final EntityNum bKey = EntityNum.fromAccountId(bGrpcId);
 	private final MerkleAccount anAccount = new MerkleAccount();
-	private final MerkleSchedule aSchedule = new MerkleSchedule();
-	private final MerkleSchedule bSchedule = new MerkleSchedule();
 
 	private MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
-	private MerkleMap<EntityNum, MerkleSchedule> liveSchedules = new MerkleMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
 	private final HederaNumbers nums = new MockHederaNumbers();
 
-	@Mock
-	private ScheduleStore mockScheduleStore;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> mockAccounts;
-	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> mockSchedules;
 
 	private ExpiryManager subject;
 
 	@Test
 	void rebuildsExpectedSchedulesFromState() {
 		subject = new ExpiryManager(
-				mockScheduleStore, nums, sigImpactHistorian, mockTxnHistories, () -> mockAccounts, () -> liveSchedules);
-		aSchedule.setExpiry(firstThen);
-		bSchedule.setExpiry(secondThen);
-		liveSchedules.put(aKey, aSchedule);
-		liveSchedules.put(bKey, bSchedule);
+				nums, sigImpactHistorian, mockTxnHistories, () -> mockAccounts);
 
 		subject.reviewExistingShortLivedEntities();
 		final var resultingExpiries = subject.getShortLivedEntityExpiries();
-		final var firstExpiry = resultingExpiries.expireNextAt(now);
+		assertThrows(IllegalStateException.class, () -> resultingExpiries.expireNextAt(now));
 
 		// then:
-		assertEquals(aKey.longValue(), firstExpiry.getLeft());
-		assertEquals(1, resultingExpiries.getAllExpiries().size());
-	}
-
-	@Test
-	void expiresSchedulesAsExpected() {
-		subject = new ExpiryManager(
-				mockScheduleStore, nums, sigImpactHistorian, mockTxnHistories, () -> mockAccounts, () -> mockSchedules);
-
-		// given:
-		subject.trackExpirationEvent(Pair.of(aKey.longValue(),
-				entityId -> mockScheduleStore.expire(entityId)), firstThen);
-		subject.trackExpirationEvent(Pair.of(bKey.longValue(),
-				entityId -> mockScheduleStore.expire(entityId)), secondThen);
-
-		subject.purge(now);
-
-		// then:
-		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.longValue()));
-		verify(sigImpactHistorian).markEntityChanged(aKey.longValue());
-		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
+		assertEquals(0, resultingExpiries.getAllExpiries().size());
 	}
 
 	@Test
 	void rebuildsExpectedRecordsFromState() {
 		subject = new ExpiryManager(
-				mockScheduleStore, nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+				nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
 		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -146,7 +115,7 @@ class ExpiryManagerTest {
 	@Test
 	void expiresRecordsAsExpected() {
 		subject = new ExpiryManager(
-				mockScheduleStore, nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+				nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		liveAccounts.put(aKey, anAccount);
 
@@ -169,7 +138,7 @@ class ExpiryManagerTest {
 	@Test
 	void expiresLoneRecordAsExpected() {
 		subject = new ExpiryManager(
-				mockScheduleStore, nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+				nums, sigImpactHistorian, liveTxnHistories, () -> liveAccounts);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		liveAccounts.put(aKey, anAccount);
 

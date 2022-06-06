@@ -37,15 +37,20 @@ import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -53,6 +58,8 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -64,6 +71,8 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,6 +82,7 @@ import java.util.List;
 
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -99,6 +109,14 @@ public class BaseOperationUsage {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
 					.setEd25519(CANONICAL_SIG))
 			.build();
+	private static final SignatureMap TWO_PAIR_SIG_MAP = SignatureMap.newBuilder()
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+					.setEd25519(CANONICAL_SIG))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("b"))
+					.setEd25519(CANONICAL_SIG))
+			.build();
 	private static final SignatureMap FOUR_PAIR_SIG_MAP = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
@@ -115,6 +133,9 @@ public class BaseOperationUsage {
 			.build();
 	private static final SigUsage SINGLE_SIG_USAGE = new SigUsage(
 			1, ONE_PAIR_SIG_MAP.getSerializedSize(), 1
+	);
+	private static final SigUsage DUAL_SIG_USAGE = new SigUsage(
+			2, TWO_PAIR_SIG_MAP.getSerializedSize(), 1
 	);
 	private static final SigUsage QUAD_SIG_USAGE = new SigUsage(
 			4, FOUR_PAIR_SIG_MAP.getSerializedSize(), 1
@@ -133,6 +154,7 @@ public class BaseOperationUsage {
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
 	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
 	private static final FileOpsUsage FILE_OPS_USAGE = new FileOpsUsage();
+	private static final ScheduleOpsUsage SCHEDULE_OPS_USAGE = new ScheduleOpsUsage();
 
 	/**
 	 * Returns the total resource usage in the new {@link UsageAccumulator} process
@@ -225,6 +247,13 @@ public class BaseOperationUsage {
 					return uniqueTokenBurn();
 				} else if (type == TOKEN_FUNGIBLE_COMMON) {
 					return fungibleCommonTokenBurn();
+				}
+				break;
+			case ScheduleCreate:
+				if (type == SCHEDULE_CREATE_CONTRACT_CALL) {
+					return scheduleCreateWithContractCall();
+				} else if (type == DEFAULT) {
+					return scheduleCreate();
 				}
 				break;
 			case TokenFreezeAccount:
@@ -655,5 +684,66 @@ public class BaseOperationUsage {
 		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 
 		return into;
+	}
+
+	UsageAccumulator scheduleCreate() {
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setNanos(1).setSeconds(1).build())
+						.setAccountID(AN_ACCOUNT)
+						.build())
+				.setNodeAccountID(AN_ACCOUNT)
+				.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+						.setAdminKey(A_KEY)
+						.setScheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+								.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+										.setTransfers(TransferList.newBuilder()
+												.addAccountAmounts(AccountAmount.newBuilder()
+														.setAmount(-1_000_000_000)
+														.setAccountID(AN_ACCOUNT))
+												.addAccountAmounts(AccountAmount.newBuilder()
+														.setAmount(+1_000_000_000)
+														.setAccountID(AN_ACCOUNT))
+										)
+								)
+								.setMemo("")
+								.setTransactionFee(100_000_000L)
+								.build())
+				).build();
+		var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, DUAL_SIG_USAGE, 1800);
+		return UsageAccumulator.fromGrpc(feeData);
+	}
+
+	UsageAccumulator scheduleCreateWithContractCall() {
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setNanos(1).setSeconds(1).build())
+						.setAccountID(AN_ACCOUNT)
+						.build())
+				.setNodeAccountID(AN_ACCOUNT)
+				.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+						.setAdminKey(A_KEY)
+						.setScheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+								.setContractCall(ContractCallTransactionBody.newBuilder()
+										.setContractID(ContractID.newBuilder()
+												.setShardNum(1)
+												.setRealmNum(1)
+												.setContractNum(1)
+												.build())
+										.setGas(10_000L)
+										.setFunctionParameters(ByteString.copyFrom(new byte[] {
+												1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
+												21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,
+												38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,
+												56,57,58,59,60,61,62,63,64,65,66,67,68
+										}))
+
+								)
+								.setMemo("")
+								.setTransactionFee(100_000_000L)
+								.build())
+				).build();
+		var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, SINGLE_SIG_USAGE, 1800);
+		return UsageAccumulator.fromGrpc(feeData);
 	}
 }

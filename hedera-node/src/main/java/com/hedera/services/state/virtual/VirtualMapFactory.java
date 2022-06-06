@@ -4,7 +4,7 @@ package com.hedera.services.state.virtual;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,23 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySupplier;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier;
+import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValueSupplier;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValueSupplier;
+import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
+import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
+import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -33,14 +46,20 @@ public class VirtualMapFactory {
 
 	private static final long MAX_BLOBS = 50_000_000;
 	private static final long MAX_STORAGE_ENTRIES = 500_000_000;
+	private static final long MAX_SCHEDULES = 1_000_000_000L;
+	private static final long MAX_SCHEDULE_SECONDS = 500_000_000;
 	private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
+	private static final boolean PREFER_DISK_BASED_INDICIES = false;
 
 	private static final String BLOBS_VM_NAME = "fileStore";
 	private static final String ITERABLE_STORAGE_VM_NAME = "smartContractIterableKvStore";
+	private static final String SCHEDULE_LIST_STORAGE_VM_NAME = "scheduleListStore";
+	private static final String SCHEDULE_TEMPORAL_STORAGE_VM_NAME = "scheduleTemporalStore";
+	private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";
 
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory {
-		<K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
+		<K extends VirtualKey<? super K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
 	}
 
 	private final JasperDbBuilderFactory jdbBuilderFactory;
@@ -69,7 +88,7 @@ public class VirtualMapFactory {
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 				.keySerializer(blobKeySerializer)
 				.maxNumOfKeys(MAX_BLOBS)
-				.preferDiskBasedIndexes(false)
+				.preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
 		return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
 	}
@@ -94,8 +113,83 @@ public class VirtualMapFactory {
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 				.keySerializer(storageKeySerializer)
 				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
-				.preferDiskBasedIndexes(false)
+				.preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
 		return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
+	}
+
+	public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> newScheduleListStorage() {
+		final var keySerializer = new EntityNumVirtualKeySerializer();
+		final VirtualLeafRecordSerializer<EntityNumVirtualKey, ScheduleVirtualValue> storageLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						CURRENT_SERIALIZATION_VERSION,
+						DigestType.SHA_384,
+						CURRENT_SERIALIZATION_VERSION,
+						keySerializer.getSerializedSize(),
+						new EntityNumVirtualKeySupplier(),
+						CURRENT_SERIALIZATION_VERSION,
+						DataFileCommon.VARIABLE_DATA_SIZE,
+						new ScheduleVirtualValueSupplier(),
+						false);
+
+		final JasperDbBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
+				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
+				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+				.keySerializer(keySerializer)
+				.maxNumOfKeys(MAX_SCHEDULES)
+				.preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+		return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
+	}
+
+	public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> newScheduleTemporalStorage() {
+		final var keySerializer = new SecondSinceEpocVirtualKeySerializer();
+		final VirtualLeafRecordSerializer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> storageLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						CURRENT_SERIALIZATION_VERSION,
+						DigestType.SHA_384,
+						CURRENT_SERIALIZATION_VERSION,
+						keySerializer.getSerializedSize(),
+						new SecondSinceEpocVirtualKeySupplier(),
+						CURRENT_SERIALIZATION_VERSION,
+						DataFileCommon.VARIABLE_DATA_SIZE,
+						new ScheduleSecondVirtualValueSupplier(),
+						false);
+
+		final JasperDbBuilder<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
+				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
+				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+				.keySerializer(keySerializer)
+				.maxNumOfKeys(MAX_SCHEDULE_SECONDS)
+				.preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+		return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
+	}
+
+	public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> newScheduleEqualityStorage() {
+		final var keySerializer = new ScheduleEqualityVirtualKeySerializer();
+		final VirtualLeafRecordSerializer<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> storageLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						CURRENT_SERIALIZATION_VERSION,
+						DigestType.SHA_384,
+						CURRENT_SERIALIZATION_VERSION,
+						keySerializer.getSerializedSize(),
+						new ScheduleEqualityVirtualKeySupplier(),
+						CURRENT_SERIALIZATION_VERSION,
+						DataFileCommon.VARIABLE_DATA_SIZE,
+						new ScheduleEqualityVirtualValueSupplier(),
+						false);
+
+		final JasperDbBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
+				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
+				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+				.keySerializer(keySerializer)
+				.maxNumOfKeys(MAX_SCHEDULES)
+				.preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+		return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
 	}
 }

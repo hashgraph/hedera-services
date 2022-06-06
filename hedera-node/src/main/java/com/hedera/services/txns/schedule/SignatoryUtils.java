@@ -22,7 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -49,7 +49,8 @@ public class SignatoryUtils {
 				ScheduleID id,
 				ScheduleStore store,
 				Optional<List<JKey>> validScheduleKeys,
-				InHandleActivationHelper activationHelper);
+				InHandleActivationHelper activationHelper,
+				boolean noExecute);
 	}
 
 	/**
@@ -68,27 +69,35 @@ public class SignatoryUtils {
 	 * 		transaction (if absent, a linked primitive key was expanded to an invalid signature)
 	 * @param activationHelper
 	 * 		an information source on primitive keys prerequisite to the relevant schedule
+	 * @param noExecute
+	 * 		true if we do not want to execute the transaction, just add signatures.
 	 * @return a pair whose left element is the status result, right element is the ready-to-execute flag
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessScoped(
-			ScheduleID id,
-			ScheduleStore store,
-			Optional<List<JKey>> validScheduleKeys,
-			InHandleActivationHelper activationHelper
+			final ScheduleID id,
+			final ScheduleStore store,
+			final Optional<List<JKey>> validScheduleKeys,
+			final InHandleActivationHelper activationHelper,
+			final boolean noExecute
 	) {
 		if (validScheduleKeys.isEmpty()) {
 			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
 		}
 		var status = witnessNonTriviallyScoped(validScheduleKeys.get(), id, store);
 		var updatedSchedule = store.get(id);
-		var isReadyToExecute = isReady(updatedSchedule, activationHelper);
-		if (isReadyToExecute) {
-			status = OK;
+
+		var isReadyToExecute = false;
+		if (!noExecute) {
+			isReadyToExecute = isReady(updatedSchedule, activationHelper);
+			if (isReadyToExecute) {
+				status = OK;
+			}
 		}
+
 		return Pair.of(status, isReadyToExecute);
 	}
 
-	static boolean isReady(final MerkleSchedule schedule, final InHandleActivationHelper activationHelper) {
+	static boolean isReady(final ScheduleVirtualValue schedule, final InHandleActivationHelper activationHelper) {
 		return activationHelper.areScheduledPartiesActive(
 				schedule.ordinaryViewOfScheduledTxn(),
 				(key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
