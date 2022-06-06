@@ -49,6 +49,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
@@ -176,6 +177,8 @@ class HTSPrecompiledContractTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private DeleteAllowanceChecks deleteAllowanceChecks;
+	@Mock
+	private RedirectViewExecutor redirectViewExecutor;
 
 	private HTSPrecompiledContract subject;
 
@@ -494,6 +497,7 @@ class HTSPrecompiledContractTest {
 		given(messageFrame.isStatic()).willReturn(true);
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.hasMutableLedgers()).willReturn(false);
+		given(infrastructureFactory.newRedirectExecutor(any(), any(), any())).willReturn(redirectViewExecutor);
 
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall,

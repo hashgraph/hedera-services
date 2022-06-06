@@ -107,7 +107,7 @@ public class PrecompilePricingUtils {
 				getCanonicalPriceInTinyCents(gasCostType));
 	}
 
-	public long gasFeeInTinybars(final TransactionBody.Builder txBody,
+	public static long gasFeeInTinybars(final TransactionBody.Builder txBody,
 								  final Instant consensusTime,
 								  final Precompile precompile,
 								  final Provider<FeeCalculator> feeCalculator,

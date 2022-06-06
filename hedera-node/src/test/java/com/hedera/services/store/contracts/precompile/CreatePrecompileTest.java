@@ -428,6 +428,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -481,6 +482,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -535,6 +537,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -749,6 +752,7 @@ class CreatePrecompileTest {
 				.willReturn(typedTokenStore);
 		given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore))
 				.willReturn(createLogic);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 		given(recordsHistorian.nextFollowingChildConsensusTime())
 				.willReturn(pendingChildConsTime);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))

@@ -386,8 +386,8 @@ class AssociatePrecompileTest {
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-//		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-//		given(mockFeeObject.getServiceFee()).willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee()).willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 

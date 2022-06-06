@@ -94,6 +94,7 @@ import java.util.function.UnaryOperator;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.gasFeeInTinybars;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -239,7 +240,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				blockTimestamp).build();
 		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-		final long calculatedFeeInTinybars = precompilePricingUtils.gasFeeInTinybars(
+		final long calculatedFeeInTinybars = gasFeeInTinybars(
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()),
 				Instant.ofEpochSecond(blockTimestamp),

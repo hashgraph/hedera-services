@@ -449,6 +449,8 @@ class ERC721PrecompilesTest {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
 		given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances,
 				new Account(accountId), stateView))
@@ -510,6 +512,8 @@ class ERC721PrecompilesTest {
 				APPROVE_WRAPPER);
 		given(infrastructureFactory.newApproveAllowanceLogic(any(), any()))
 				.willReturn(approveAllowanceLogic);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 		willThrow(new InvalidTransactionException(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO))
 				.given(approveAllowanceLogic)
 				.approveAllowance(any(), any(), any(), any());
@@ -569,6 +573,8 @@ class ERC721PrecompilesTest {
 		given(infrastructureFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
 		// when:
 		subject.prepareFields(frame);
@@ -625,6 +631,8 @@ class ERC721PrecompilesTest {
 				APPROVE_WRAPPER_0);
 		given(encoder.encodeApprove(true)).willReturn(successResult);
 		given(infrastructureFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
 		// when:
 		subject.prepareFields(frame);
@@ -707,6 +715,8 @@ class ERC721PrecompilesTest {
 		given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(Collections.emptyList());
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
 		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
 				APPROVE_WRAPPER_0);
@@ -753,6 +763,8 @@ class ERC721PrecompilesTest {
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
 		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 		given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -810,6 +822,7 @@ class ERC721PrecompilesTest {
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 		given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
 
 		given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances,
 				new Account(accountId), stateView))
