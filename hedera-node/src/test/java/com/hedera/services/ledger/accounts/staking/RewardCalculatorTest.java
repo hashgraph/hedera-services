@@ -23,7 +23,6 @@ package com.hedera.services.ledger.accounts.staking;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.Units;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,8 +58,6 @@ class RewardCalculatorTest {
 	private MerkleStakingInfo merkleStakingInfo;
 	@Mock
 	private MerkleAccount account;
-	@Mock
-	private MerkleNetworkContext networkCtx;
 
 	private RewardCalculator subject;
 	private static final long todayNumber =
@@ -69,7 +66,7 @@ class RewardCalculatorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager, () -> networkCtx);
+		subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
 		rewardHistory[0] = 5;
 	}
 
@@ -102,7 +99,6 @@ class RewardCalculatorTest {
 		// resets all fields
 		subject.reset();
 		assertEquals(0, subject.rewardsPaidInThisTxn());
-		verify(networkCtx).decreasePendingRewards(500);
 	}
 
 	@Test
@@ -155,6 +151,7 @@ class RewardCalculatorTest {
 		merkleAccount.setStakePeriodStart(expectedStakePeriodStart - 500);
 		merkleAccount.setStakedId(-3L);
 		merkleAccount.setBalance(100 * Units.HBARS_TO_TINYBARS);
+		merkleAccount.setStakedToMe(100 * Units.HBARS_TO_TINYBARS);
 
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
@@ -164,7 +161,7 @@ class RewardCalculatorTest {
 		final var reward = subject.computePendingReward(merkleAccount);
 		subject.applyReward(reward, merkleAccount, changes);
 
-		assertEquals(500, reward);
+		assertEquals(1000, reward);
 		assertEquals(merkleAccount.getBalance() + reward, changes.get(AccountProperty.BALANCE));
 		assertEquals(reward, subject.rewardsPaidInThisTxn());
 	}
@@ -186,7 +183,6 @@ class RewardCalculatorTest {
 
 	@Test
 	void estimatesPendingRewardsForStateView() {
-		final var changes = new HashMap<AccountProperty, Object>();
 		final var todayNum = 300L;
 
 		given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
@@ -203,7 +199,6 @@ class RewardCalculatorTest {
 		assertEquals(500, reward);
 
 		// no changes to state
-		assertFalse(changes.containsKey(AccountProperty.BALANCE));
 		assertEquals(100, subject.rewardsPaidInThisTxn());
 
 		// if declinedReward
