@@ -108,8 +108,8 @@ public class DeletionLogic {
 	private AccountID obtainerOf(final ContractDeleteTransactionBody op) {
 		validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
 		if (op.hasTransferAccountID()) {
-			final var obtainer = op.getTransferAccountID();
-			final var obtainerExpired = ledger.exists(obtainer) && ledger.isDetached(obtainer);
+			final var obtainerId = op.getTransferAccountID();
+			final var obtainerExpired = ledger.exists(obtainerId) && ledger.isDetached(obtainerId);
 			validateFalse(obtainerExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return op.getTransferAccountID();
 		} else {

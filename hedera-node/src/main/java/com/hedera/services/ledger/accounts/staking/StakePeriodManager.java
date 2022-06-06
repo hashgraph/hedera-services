@@ -25,6 +25,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 
 import javax.inject.Inject;
@@ -62,6 +63,18 @@ public class StakePeriodManager {
 		this.networkCtx = networkCtx;
 		this.numStoredPeriods = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
 		this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
+	}
+
+	public void updatePendingRewardsGiven(
+			final long rewardOffered,
+			final long stakedToMeUpdate,
+			final long stakePeriodStartUpdate,
+			final MerkleAccount account
+	) {
+		if (rewardOffered != -1) {
+			networkCtx.get().decreasePendingRewards(rewardOffered);
+		}
+		// TODO - how to update other implications for pending rewards?
 	}
 
 	public long epochSecondAtStartOfPeriod(final long stakePeriod) {

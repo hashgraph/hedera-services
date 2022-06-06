@@ -65,17 +65,46 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	private long stake;
 	private long[] rewardSumHistory;
 	@Nullable
-	byte[] historyHash;
+	private byte[] historyHash;
 
 	public MerkleStakingInfo() {
-
+		// RuntimeConstructable
 	}
 
-	public MerkleStakingInfo(BootstrapProperties bootstrapProperties) {
-		rewardSumHistory = new long[bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods") + 1];
+	public MerkleStakingInfo(final BootstrapProperties properties) {
+		final var numRewardablePeriods = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+		rewardSumHistory = new long[numRewardablePeriods + 1];
 	}
 
-	public long reviewElectionsFromLastPeriodAndRecomputeStakes() {
+	public MerkleStakingInfo(final MerkleStakingInfo that) {
+		this.number = that.number;
+		this.minStake = that.minStake;
+		this.maxStake = that.maxStake;
+		this.stakeToReward = that.stakeToReward;
+		this.stakeToNotReward = that.stakeToNotReward;
+		this.stakeRewardStart = that.stakeRewardStart;
+		this.stake = that.stake;
+		this.rewardSumHistory = that.rewardSumHistory;
+		this.historyHash = that.historyHash;
+	}
+
+	public void removeRewardStake(final long amount, final boolean declinedReward) {
+		if (declinedReward) {
+			this.stakeToNotReward -= amount;
+		} else {
+			this.stakeToReward -= amount;
+		}
+	}
+
+	public void addRewardStake(final long amount, final boolean declinedReward) {
+		if (declinedReward) {
+			this.stakeToNotReward += amount;
+		} else {
+			this.stakeToReward += amount;
+		}
+	}
+
+	public long reviewElectionsFromJustFinishedPeriodAndRecomputeStakes() {
 		final var totalStake = stakeToReward + stakeToNotReward;
 		if (totalStake > maxStake) {
 			setStake(maxStake);
@@ -88,41 +117,113 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		return stakeRewardStart;
 	}
 
-	@VisibleForTesting
-	public MerkleStakingInfo(
-			final long minStake,
-			final long maxStake,
-			final long stakeToReward,
-			final long stakeToNotReward,
-			final long stakeRewardStart,
-			final long stake,
-			final long[] rewardSumHistory) {
+	public long getMinStake() {
+		return minStake;
+	}
+
+	public void setMinStake(final long minStake) {
+		assertMutable("minStake");
 		this.minStake = minStake;
+	}
+
+	public long getMaxStake() {
+		return maxStake;
+	}
+
+	public void setMaxStake(final long maxStake) {
+		assertMutable("maxStake");
 		this.maxStake = maxStake;
+	}
+
+	public long getStakeToReward() {
+		return stakeToReward;
+	}
+
+	public void setStakeToReward(final long stakeToReward) {
+		assertMutable("stakeToReward");
 		this.stakeToReward = stakeToReward;
+	}
+
+	public long getStakeToNotReward() {
+		return stakeToNotReward;
+	}
+
+	public void setStakeToNotReward(final long stakeToNotReward) {
+		assertMutable("stakeToNotReward");
 		this.stakeToNotReward = stakeToNotReward;
+	}
+
+	public long getStakeRewardStart() {
+		return stakeRewardStart;
+	}
+
+	public void setStakeRewardStart(final long stakeRewardStart) {
+		assertMutable("stakeRewardStart");
 		this.stakeRewardStart = stakeRewardStart;
+	}
+
+	public long getStake() {
+		return stake;
+	}
+
+	public void setStake(final long stake) {
+		assertMutable("stake");
 		this.stake = stake;
+	}
+
+	public long[] getRewardSumHistory() {
+		return rewardSumHistory;
+	}
+
+	public void setRewardSumHistory(final long[] rewardSumHistory) {
+		assertMutableRewardSumHistory();
 		this.rewardSumHistory = rewardSumHistory;
 	}
 
-	public MerkleStakingInfo(MerkleStakingInfo that) {
-		this.number = that.number;
-		this.minStake = that.minStake;
-		this.maxStake = that.maxStake;
-		this.stakeToReward = that.stakeToReward;
-		this.stakeToNotReward = that.stakeToNotReward;
-		this.stakeRewardStart = that.stakeRewardStart;
-		this.stake = that.stake;
-		this.rewardSumHistory = that.rewardSumHistory;
+	public void clearRewardSumHistory() {
+		assertMutableRewardSumHistory();
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		// reset rewardSumHistory array.
+		Arrays.fill(rewardSumHistory, 0);
+		// reset the historyHash
+		historyHash = null;
+	}
+
+	public long updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
+		assertMutableRewardSumHistory();
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
+		for (int i = rewardSumHistory.length - 1; i > 0; i--) {
+			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
+		}
+		rewardSumHistory[0] -= droppedRewardSum;
+
+		final long pendingRewardRate;
+		// In a future release, a node that is judged inactive based on,
+		//    node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold
+		// will _also_ have zero pendingRewardRate.
+		if (totalStakedRewardStart < HBARS_TO_TINYBARS || stakeRewardStart == 0) {
+			pendingRewardRate = 0L;
+		} else {
+			final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+			// If this node has received more than max stake, we must "down-scale" its reward rate so
+			// even after all its staking accounts are rewarded, their total payments will be no more
+			// than a node with exactly max stake
+			pendingRewardRate = (stakeToReward <= maxStake)
+					? baseRateForNodeWithNoMoreThanMaxStake
+					: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
+		}
+		rewardSumHistory[0] += pendingRewardRate;
+		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
+		// reset the historyHash
+		historyHash = null;
+		return pendingRewardRate;
 	}
 
 	@Override
 	public MerkleStakingInfo copy() {
 		setImmutable(true);
-		final var copy = new MerkleStakingInfo(this);
-		copy.historyHash = this.historyHash;
-		return copy;
+		return new MerkleStakingInfo(this);
 	}
 
 	@Override
@@ -229,6 +330,17 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		return new Hash(noThrowSha384HashOf(baos.toByteArray()), DigestType.SHA_384);
 	}
 
+	// Internal helpers
+	private void assertMutable(String proximalField) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
+		}
+	}
+
+	private void assertMutableRewardSumHistory() {
+		assertMutable("rewardSumHistory");
+	}
+
 	private void serializeNonHistoryData(final SerializableDataOutputStream out) throws IOException {
 		out.writeInt(number);
 		out.writeLong(minStake);
@@ -245,132 +357,28 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 	}
 
-	public long getMinStake() {
-		return minStake;
-	}
-
-	public void setMinStake(final long minStake) {
-		assertMutable("minStake");
+	@VisibleForTesting
+	public MerkleStakingInfo(
+			final long minStake,
+			final long maxStake,
+			final long stakeToReward,
+			final long stakeToNotReward,
+			final long stakeRewardStart,
+			final long stake,
+			final long[] rewardSumHistory
+	) {
 		this.minStake = minStake;
-	}
-
-	public long getMaxStake() {
-		return maxStake;
-	}
-
-	public void setMaxStake(final long maxStake) {
-		assertMutable("maxStake");
 		this.maxStake = maxStake;
-	}
-
-	public long getStakeToReward() {
-		return stakeToReward;
-	}
-
-	public void setStakeToReward(final long stakeToReward) {
-		assertMutable("stakeToReward");
 		this.stakeToReward = stakeToReward;
-	}
-
-	public long getStakeToNotReward() {
-		return stakeToNotReward;
-	}
-
-	public void setStakeToNotReward(final long stakeToNotReward) {
-		assertMutable("stakeToNotReward");
 		this.stakeToNotReward = stakeToNotReward;
-	}
-
-	public long getStakeRewardStart() {
-		return stakeRewardStart;
-	}
-
-	public void setStakeRewardStart(final long stakeRewardStart) {
-		assertMutable("stakeRewardStart");
 		this.stakeRewardStart = stakeRewardStart;
-	}
-
-	public long getStake() {
-		return stake;
-	}
-
-	public void setStake(final long stake) {
-		assertMutable("stake");
 		this.stake = stake;
-	}
-
-	public long[] getRewardSumHistory() {
-		return rewardSumHistory;
-	}
-
-	public void setRewardSumHistory(final long[] rewardSumHistory) {
-		assertMutableRewardSumHistory();
 		this.rewardSumHistory = rewardSumHistory;
 	}
 
-	public void clearRewardSumHistory() {
-		assertMutableRewardSumHistory();
-		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
-		// reset rewardSumHistory array.
-		Arrays.fill(rewardSumHistory, 0);
-		// reset the historyHash
-		historyHash = null;
-	}
-
-	public long updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
-		assertMutableRewardSumHistory();
-		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
-		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
-		for (int i = rewardSumHistory.length - 1; i > 0; i--) {
-			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
-		}
-		rewardSumHistory[0] -= droppedRewardSum;
-
-		final long pendingRewardRate;
-		// In a future release, a node judged inactive based on
-		//    node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold
-		// will also have zero pendingRewardRate
-		if (totalStakedRewardStart < HBARS_TO_TINYBARS || stakeRewardStart == 0) {
-			pendingRewardRate = 0L;
-		} else {
-			final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
-			// If this node has received more than max stake, we must "down-scale" its reward rate so
-			// even after all its staking accounts are rewarded, their total payments will be no more
-			// than a node with exactly max stake
-			pendingRewardRate = (stakeToReward <= maxStake)
-					? baseRateForNodeWithNoMoreThanMaxStake
-					: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
-		}
-		rewardSumHistory[0] += pendingRewardRate;
-		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
-		// reset the historyHash
-		historyHash = null;
-		return pendingRewardRate;
-	}
-
-	private void assertMutable(String proximalField) {
-		if (isImmutable()) {
-			throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
-		}
-	}
-
-	private void assertMutableRewardSumHistory() {
-		assertMutable("rewardSumHistory");
-	}
-
-	public void removeRewardStake(final long amount, final boolean declinedReward) {
-		if (declinedReward) {
-			this.stakeToNotReward -= amount;
-		} else {
-			this.stakeToReward -= amount;
-		}
-	}
-
-	public void addRewardStake(final long amount, final boolean declinedReward) {
-		if (declinedReward) {
-			this.stakeToNotReward += amount;
-		} else {
-			this.stakeToReward += amount;
-		}
+	@Nullable
+	@VisibleForTesting
+	byte[] getHistoryHash() {
+		return historyHash;
 	}
 }

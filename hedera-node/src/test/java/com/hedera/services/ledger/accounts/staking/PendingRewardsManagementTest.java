@@ -65,7 +65,7 @@ class PendingRewardsManagementTest {
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
-		given(info.reviewElectionsFromLastPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+		given(info.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 

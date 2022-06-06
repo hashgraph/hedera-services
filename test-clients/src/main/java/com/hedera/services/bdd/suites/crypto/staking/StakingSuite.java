@@ -60,10 +60,10 @@ public class StakingSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						enabledRewards(),
-//						previewnetPlannedTest(),
+						previewnetPlannedTest(),
 //						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
-						rewardsOfDeletedAreRedirectedToBeneficiary(),
+//						rewardsOfDeletedAreRedirectedToBeneficiary(),
 				}
 		);
 	}

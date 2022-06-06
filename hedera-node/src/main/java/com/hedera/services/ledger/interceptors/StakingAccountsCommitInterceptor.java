@@ -142,6 +142,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
 			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
 		}
+		stakePeriodManager.updatePendingRewardsGiven(
+				rewardsEarned[i], stakedToMeUpdates[i], stakePeriodStartUpdates[i], mutableAccount);
 	}
 
 	/**
@@ -259,7 +261,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	private void alterStakedToMe(
 			final long accountNum,
 			final long delta,
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
+			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		if (delta != 0) {
 			final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
@@ -274,7 +276,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 	private void payRewardIfRewardable(
 			final int i,
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
+			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var account = pendingChanges.entity(i);
 		final var changes = pendingChanges.changes(i);
@@ -359,7 +361,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		long todayNumber = stakePeriodManager.currentStakePeriod();
 
 		networkCtx.get().setStakingRewardsActivated(true);
-		stakeInfoManager.clearRewardsHistory();
+		stakeInfoManager.clearAllRewardHistory();
 		stakeChangeManager.initializeAllStakingStartsTo(todayNumber);
 		log.info("Staking rewards is activated and rewardSumHistory is cleared");
 	}

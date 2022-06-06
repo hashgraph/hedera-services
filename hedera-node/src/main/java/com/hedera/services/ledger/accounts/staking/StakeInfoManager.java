@@ -28,13 +28,15 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 @Singleton
 public class StakeInfoManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
-	private MerkleStakingInfo[] currentStakingInfos;
-	private MerkleMap<EntityNum, MerkleStakingInfo> oldStakingInfo;
+
+	private MerkleStakingInfo[] cache;
+	private MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfo;
 
 	@Inject
 	public StakeInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
@@ -42,23 +44,22 @@ public class StakeInfoManager {
 	}
 
 	public MerkleStakingInfo mutableStakeInfoFor(long nodeId) {
-		final var currentStakingInfo = stakingInfo.get();
-
-		if (currentStakingInfos == null) {
-			currentStakingInfos = new MerkleStakingInfo[stakingInfo.get().size()];
+		final var curStakingInfo = stakingInfo.get();
+		if (cache == null) {
+			cache = new MerkleStakingInfo[stakingInfo.get().size()];
 		}
 		final var i = (int) nodeId;
-		if (currentStakingInfos[i] == null && oldStakingInfo == currentStakingInfo) {
-			currentStakingInfos[i] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
-		} else if (oldStakingInfo != currentStakingInfo) {
-			clearCurrentStakingInfos(currentStakingInfos);
-			oldStakingInfo = currentStakingInfo;
-			currentStakingInfos[i] = currentStakingInfo.getForModify(EntityNum.fromLong(nodeId));
+		if (cache[i] == null && curStakingInfo == prevStakingInfo) {
+			cache[i] = curStakingInfo.getForModify(EntityNum.fromLong(nodeId));
+		} else if (curStakingInfo != prevStakingInfo) {
+			clearCache();
+			prevStakingInfo = curStakingInfo;
+			cache[i] = curStakingInfo.getForModify(EntityNum.fromLong(nodeId));
 		}
-		return currentStakingInfos[i];
+		return cache[i];
 	}
 
-	public void clearRewardsHistory() {
+	public void clearAllRewardHistory() {
 		final var mutableStakingInfo = stakingInfo.get();
 		for (var key : mutableStakingInfo.keySet()) {
 			final var info = mutableStakingInfo.getForModify(key);
@@ -66,26 +67,22 @@ public class StakeInfoManager {
 		}
 	}
 
-	private void clearCurrentStakingInfos(final MerkleStakingInfo[] currentStakingInfos) {
-		for (int i = 0; i < currentStakingInfos.length; i++) {
-			currentStakingInfos[i] = null;
-		}
-	}
-
-
-	@VisibleForTesting
-	public MerkleStakingInfo[] getCurrentStakingInfos() {
-		return currentStakingInfos;
+	private void clearCache() {
+		Arrays.fill(cache, null);
 	}
 
 	@VisibleForTesting
-	public void setOldStakingInfo(
-			final MerkleMap<EntityNum, MerkleStakingInfo> oldStakingInfo) {
-		this.oldStakingInfo = oldStakingInfo;
+	MerkleStakingInfo[] getCache() {
+		return cache;
 	}
 
 	@VisibleForTesting
-	public void setCurrentStakingInfos(final MerkleStakingInfo[] currentStakingInfos) {
-		this.currentStakingInfos = currentStakingInfos;
+	void setPrevStakingInfo(final MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfo) {
+		this.prevStakingInfo = prevStakingInfo;
+	}
+
+	@VisibleForTesting
+	void setCache(final MerkleStakingInfo[] cache) {
+		this.cache = cache;
 	}
 }

@@ -529,8 +529,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			final var id = pendingChanges.id(i);
 			final var cachedEntity = pendingChanges.entity(i);
 			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
-			entities.put(id, finalized(id, entity, pendingChanges.changes(i)));
+			final var changes = pendingChanges.changes(i);
 			commitInterceptor.finish(i, entity);
+			entities.put(id, finalized(id, entity, changes));
 		}
 		createdKeys.clear();
 		changedKeys.clear();
