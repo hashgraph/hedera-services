@@ -1547,6 +1547,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
+            git checkout -b 02146-D-TransactionHistory-NDReconnect-1-16m origin/02146-D-TransactionHistory-NDReconnect-1-16m 
             ./mvnw clean install
 
       - run:
