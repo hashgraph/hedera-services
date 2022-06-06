@@ -46,7 +46,7 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDecl
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getAccountStakeeNum;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.getNodeStakeeNum;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeMetaChanges;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -78,8 +78,8 @@ public class StakingUtilsTest {
 
 	@Test
 	void validatesIfAnyStakedFieldChanges() {
-		assertTrue(hasStakeFieldChanges(randomStakeFieldChanges(100L)));
-		assertFalse(hasStakeFieldChanges(randomNotStakeFieldChanges()));
+		assertTrue(hasStakeMetaChanges(randomStakeFieldChanges(100L)));
+		assertFalse(hasStakeMetaChanges(randomNotStakeFieldChanges()));
 	}
 
 	@Test

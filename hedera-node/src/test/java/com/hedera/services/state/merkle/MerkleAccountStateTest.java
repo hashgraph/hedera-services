@@ -464,6 +464,13 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void resetBalanceAtStartOfLastRewardedPeriodIfRewardedSinceLastMetadataChange() {
+		final var otherSubject = subject.copy();
+		otherSubject.setRewardedSinceLastMetadataChange(true);
+		assertEquals(-1, otherSubject.getBalanceAtStartOfLastRewardedPeriod());
+	}
+
+	@Test
 	void merkleMethodsWork() {
 		assertEquals(MerkleAccountState.RELEASE_0270_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());

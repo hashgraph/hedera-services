@@ -821,6 +821,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setRewardedSinceLastMetadataChange(final boolean rewardedSinceLastMetadataChange) {
 		assertMutable("rewardedSinceLastMetadataChange");
 		this.rewardedSinceLastMetadataChange = rewardedSinceLastMetadataChange;
+		if (rewardedSinceLastMetadataChange) {
+			this.balanceAtStartOfLastRewardedPeriod = -1;
+		}
 	}
 
 	private void assertMutable(String proximalField) {

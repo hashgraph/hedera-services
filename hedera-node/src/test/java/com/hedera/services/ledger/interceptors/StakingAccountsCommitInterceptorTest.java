@@ -354,7 +354,7 @@ class StakingAccountsCommitInterceptorTest {
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		given(stakePeriodManager.startUpdateFor(-1L, 2L, true, true))
 				.willReturn(13L);
-		given(stakePeriodManager.startUpdateFor(0L, 0L, false, true))
+		given(stakePeriodManager.startUpdateFor(0L, 0L, false, false))
 				.willReturn(666L);
 		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
 

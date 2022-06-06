@@ -75,9 +75,6 @@ public class StakePeriodManager {
 		if (rewardOffered != -1) {
 			networkCtx.get().decreasePendingRewards(rewardOffered);
 		}
-		if (balanceAtStartOfLastRewardedPeriod != -1) {
-			mutableAccount.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
-		}
 		// TODO - how to update other implications for pending rewards?
 	}
 

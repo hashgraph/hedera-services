@@ -46,11 +46,12 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeFieldChanges;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeMetaChanges;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
@@ -144,6 +145,15 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
 			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
 		}
+		if (wasStakeMetaChanged[i]) {
+			// This account will NOT be eligible to receive a reward in this staking period;
+			// so a two-step reward computation would be wrong
+			mutableAccount.setRewardedSinceLastMetadataChange(true);
+		} else {
+			if (balanceAtStartOfLastRewardedPeriodUpdates[i] != -1) {
+				mutableAccount.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriodUpdates[i]);
+			}
+		}
 		stakePeriodManager.updatePendingRewardsGiven(
 				rewardsEarned[i],
 				stakedToMeUpdates[i],
@@ -174,10 +184,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final var changes = pendingChanges.changes(i);
 			stakeChangeScenarios[i] = scenarioFor(account, changes);
 
-			if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
-				payReward(i, account, changes, pendingChanges);
-				wasStakeMetaChanged[i] = true;
-			} else if (!hasBeenRewarded(i)) {
+			if (!hasBeenRewarded(i)) {
+				if(isRewardSituation(account, stakedToMeUpdates[i], changes)) {
+					payReward(i, account, changes, pendingChanges);
+				}
 				wasStakeMetaChanged[i] = stakeMetaChanged;
 			}
 			// If we are outside the original change set, this is a "stakee" account; and its stakedId cannot
@@ -353,10 +363,11 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final long stakedToMeUpdate,
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
-		stakeMetaChanged = (stakedToMeUpdate != -1 || hasStakeFieldChanges(changes));
+		stakeMetaChanged = (stakedToMeUpdate != -1 || hasStakeMetaChanges(changes));
+		final var hasRewardableChanges = changes.containsKey(BALANCE) || stakeMetaChanged;
 		return account != null
 				&& rewardsActivated
-				&& stakeMetaChanged
+				&& hasRewardableChanges
 				&& account.getStakedId() < 0
 				&& stakePeriodManager.isRewardable(account.getStakePeriodStart());
 	}

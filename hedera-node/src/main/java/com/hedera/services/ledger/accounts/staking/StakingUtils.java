@@ -115,8 +115,8 @@ public class StakingUtils {
 		}
 	}
 
-	public static boolean hasStakeFieldChanges(@NotNull final Map<AccountProperty, Object> changes) {
-		return changes.containsKey(BALANCE) || changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
+	public static boolean hasStakeMetaChanges(@NotNull final Map<AccountProperty, Object> changes) {
+		return changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
 	}
 
 	public static long roundedToHbar(long value) {
