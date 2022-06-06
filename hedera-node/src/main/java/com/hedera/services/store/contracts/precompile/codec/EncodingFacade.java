@@ -35,7 +35,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton

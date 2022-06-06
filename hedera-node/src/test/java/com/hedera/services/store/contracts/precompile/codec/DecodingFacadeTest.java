@@ -265,7 +265,7 @@ class DecodingFacadeTest {
 
 		assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
 		assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
-		assertTrue(fungibleTransfer.get(1).isApproval);
+		assertTrue(fungibleTransfer.get(1).isApproval());
 		assertEquals(5, fungibleTransfer.get(0).amount());
 	}
 
@@ -276,10 +276,10 @@ class DecodingFacadeTest {
 				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, fromOp);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
-		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
-		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
-		assertFalse(fungibleTransfer.get(1).isApproval);
-		assertEquals(5, fungibleTransfer.get(0).amount);
+		assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
+		assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
+		assertFalse(fungibleTransfer.get(1).isApproval());
+		assertEquals(5, fungibleTransfer.get(0).amount());
 	}
 
 	@Test

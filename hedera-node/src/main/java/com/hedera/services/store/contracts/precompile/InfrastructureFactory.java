@@ -100,7 +100,7 @@ public class InfrastructureFactory {
 	}
 
 	public AccountStore newAccountStore(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-		return new AccountStore(validator, dynamicProperties, accounts);
+		return new AccountStore(validator, accounts);
 	}
 
 	public TypedTokenStore newTokenStore(
@@ -124,11 +124,11 @@ public class InfrastructureFactory {
 	}
 
 	public BurnLogic newBurnLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
-		return new BurnLogic(tokenStore, accountStore);
+		return new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
 	}
 
 	public MintLogic newMintLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
-		return new MintLogic(validator, tokenStore, accountStore);
+		return new MintLogic(validator, tokenStore, accountStore, dynamicProperties);
 	}
 
 	public AssociateLogic newAssociateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
@@ -141,11 +141,10 @@ public class InfrastructureFactory {
 
 	public CreateLogic newTokenCreateLogic(
 			final AccountStore accountStore,
-			final TypedTokenStore tokenStore,
-			final SideEffectsTracker sideEffects
+			final TypedTokenStore tokenStore
 	) {
 		return new CreateLogic(
-				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, sideEffects, ids, validator);
+				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
 	}
 
 	public TransferLogic newTransferLogic(

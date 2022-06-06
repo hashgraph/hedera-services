@@ -151,8 +151,7 @@ class InfrastructureFactoryTest {
 		final var accountStore = subject.newAccountStore(accounts);
 		assertInstanceOf(CreateLogic.class, subject.newTokenCreateLogic(
 				accountStore,
-				subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels),
-				subject.newSideEffects()));
+				subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
 	}
 
 	@Test

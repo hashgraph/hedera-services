@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -51,6 +50,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
@@ -92,7 +92,7 @@ class RedirectViewExecutorTest {
 
 	private static final long timestamp = 10L;
 	private static final Timestamp resultingTimestamp = Timestamp.newBuilder().setSeconds(timestamp).build();
-	private static final Gas gas = Gas.of(100L);
+	private static final long gas = 100L;
 	private static final Bytes answer = Bytes.of(1);
 
 	RedirectViewExecutor subject;

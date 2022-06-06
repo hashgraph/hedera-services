@@ -100,7 +100,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.log.Log;
@@ -127,6 +126,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -196,7 +196,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
 	private final Provider<FeeCalculator> feeCalculator;
-	private Gas gasRequirement = Gas.ZERO;
+	private long gasRequirement = 0;
 	private final StateView currentView;
 	private SideEffectsTracker sideEffectsTracker;
 	private final PrecompilePricingUtils precompilePricingUtils;
@@ -244,7 +244,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.deleteAllowanceChecks = deleteAllowanceChecks;
 	}
 
-	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
+	public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
 		if (frame.isStatic()) {
 			if (!isTokenProxyRedirect(input)) {
 				frame.setRevertReason(STATIC_CALL_REVERT_REASON);
@@ -263,7 +263,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@Override
-	public Gas gasRequirement(final Bytes bytes) {
+	public long gasRequirement(final Bytes bytes) {
 		return gasRequirement;
 	}
 
@@ -282,7 +282,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		if (isTokenReadOnlyTransaction) {
 			computeViewFunctionGasRequirement(now);
 		} else if (precompile instanceof TokenCreatePrecompile) {
-			gasRequirement = Gas.of(precompile.getMinimumFeeInTinybars(Timestamp.newBuilder().setSeconds(now).build()));
+			gasRequirement = precompile.getMinimumFeeInTinybars(Timestamp.newBuilder().setSeconds(now).build());
 		} else {
 			computeGasRequirement(now);
 		}
@@ -294,12 +294,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.sideEffectsTracker = infrastructureFactory.newSideEffects();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
 
-		final var unaliasedSenderAddress = updater.unaliased(frame.getSenderAddress().toArray());
-		if (unaliasedSenderAddress != null) {
-			this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-		} else {
-			this.senderAddress = frame.getSenderAddress();
-		}
+		final var unaliasedSenderAddress = updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -315,10 +311,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
 		// convert to gas cost
-		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+		final Long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+		gasRequirement = baseGasCost + (baseGasCost/5L);
 	}
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
@@ -326,7 +322,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		gasRequirement = computeViewFunctionGas(now, precompile.getMinimumFeeInTinybars(now));
 	}
 
-	Gas computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
+	long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
 		final var calculator = feeCalculator.get();
 		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
 		final var fees = calculator.estimatePayment(
@@ -337,10 +333,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
 		// convert to gas cost
-		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		return baseGasCost.plus((baseGasCost.dividedBy(5)));
+		return baseGasCost + (baseGasCost/5L);
 	}
 
 	void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -348,7 +344,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.transactionBody = null;
 
 		this.functionId = input.getInt(0);
-		this.gasRequirement = null;
+		this.gasRequirement = 0L;
 
 		this.precompile =
 				switch (functionId) {
@@ -480,7 +476,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
+			validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
 			precompile.handleSentHbars(frame);
 			precompile.customizeTrackingLedgers(ledgers);
@@ -534,15 +530,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
 					errorStatus.map(ResponseCodeEnum::name).orElse(null),
 					EvmFnResult.EMPTY,
-					this.gasRequirement.toLong(),
+					this.gasRequirement,
 					Collections.emptyList(),
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
-							EvmFnResult.EMPTY);
+							EvmFnResult.EMPTY,
+					null);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -651,7 +648,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = infrastructureFactory.newTokenStore(
 					accountStore, sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
 			final var tokenCreateLogic = infrastructureFactory.newTokenCreateLogic(
-					accountStore, tokenStore, sideEffectsTracker);
+					accountStore, tokenStore);
 
 			/* --- Execute the transaction and capture its results --- */
 			tokenCreateLogic.create(creationTime.getEpochSecond(), EntityIdUtils.accountIdFromEvmAddress(senderAddress),
@@ -1038,6 +1035,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = infrastructureFactory.newTokenStore(
 					accountStore, sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
 			final var burnLogic = infrastructureFactory.newBurnLogic(accountStore, tokenStore);
+			final var validity = burnLogic.validateSyntax(transactionBody.build());
+			validateTrue(validity == OK, validity);
 
 			/* --- Execute the transaction and capture its results --- */
 			if (burnOp.type() == NON_FUNGIBLE_UNIQUE) {
@@ -1086,11 +1085,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return null;
-		}
-
-		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
 		}
@@ -1118,7 +1112,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID,
+				case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenID,
 						callerAccountID,
 						aliasResolver);
 				case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
@@ -1287,6 +1281,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final var nftsLedger = ledgers.nfts();
+			validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 			final var owner = ledgers.ownerOf(nftId);
 			final var priorityAddress = ledgers.canonicalAddress(owner);
 			return encoder.encodeOwner(priorityAddress);
@@ -1592,8 +1588,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private Gas defaultGas() {
-		return Gas.of(dynamicProperties.htsDefaultGasCost());
+	private long defaultGas() {
+		return dynamicProperties.htsDefaultGasCost();
 	}
 
 	private long gasFeeInTinybars(final TransactionBody.Builder txBody, final Instant consensusTime) {

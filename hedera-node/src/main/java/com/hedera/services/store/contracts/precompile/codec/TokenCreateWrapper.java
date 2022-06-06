@@ -164,7 +164,7 @@ public class TokenCreateWrapper {
 		this.royaltyFees = royaltyFees;
 	}
 
-	void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+	public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
 		for (final var tokenKey : tokenKeys) {
 			if (tokenKey.key.isShouldInheritAccountKeySet()) {
 				tokenKey.key.setInheritedKey(JKey.mapJKey(senderKey));
@@ -178,7 +178,7 @@ public class TokenCreateWrapper {
 				.findFirst();
 	}
 
-	boolean hasAutoRenewAccount() {
+	public boolean hasAutoRenewAccount() {
 		return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
 	}
 
@@ -332,9 +332,6 @@ public class TokenCreateWrapper {
 				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 			};
 		}
-	}
-
-	public record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) {
 	}
 
 	public static final class FixedFeeWrapper {

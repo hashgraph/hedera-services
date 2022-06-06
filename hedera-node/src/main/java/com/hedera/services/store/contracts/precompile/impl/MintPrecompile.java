@@ -33,6 +33,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class MintPrecompile implements Precompile {
@@ -48,6 +49,7 @@ public class MintPrecompile implements Precompile {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final InfrastructureFactory infrastructureFactory;
 	private final PrecompilePricingUtils pricingUtils;
+	private TransactionBody.Builder transactionBody;
 
 	private MintWrapper mintOp;
 
@@ -77,8 +79,10 @@ public class MintPrecompile implements Precompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		this.transactionBody = null;
 		mintOp = decoder.decodeMint(input);
-		return syntheticTxnFactory.createMint(mintOp);
+		transactionBody = syntheticTxnFactory.createMint(mintOp);
+		return transactionBody;
 	}
 
 	@Override
@@ -94,6 +98,9 @@ public class MintPrecompile implements Precompile {
 		final var tokenStore = infrastructureFactory.newTokenStore(
 				accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
 		final var mintLogic = infrastructureFactory.newMintLogic(accountStore, tokenStore);
+
+		final var validity = mintLogic.validateSyntax(transactionBody.build());
+		validateTrue(validity == OK, validity);
 
 		/* --- Execute the transaction and capture its results --- */
 		if (mintOp.type() == NON_FUNGIBLE_UNIQUE) {

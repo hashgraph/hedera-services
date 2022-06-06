@@ -25,6 +25,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -32,7 +33,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.F
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.TokenKeyWrapper;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;

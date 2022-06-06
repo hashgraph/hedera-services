@@ -75,7 +75,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -224,7 +223,7 @@ class CreatePrecompileTest {
 		// given
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -248,7 +247,7 @@ class CreatePrecompileTest {
 		// then
 		assertEquals(
 				subject.getPrecompile().getMinimumFeeInTinybars(timestamp),
-				subject.gasRequirement(pretendArguments).toLong()
+				subject.gasRequirement(pretendArguments)
 		);
 		final var tinyBarsRequirement =
 				EXPECTED_TINYBARS_REQUIREMENT - subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
@@ -449,7 +448,7 @@ class CreatePrecompileTest {
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
 		givenValidGasCalculation();
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
@@ -505,7 +504,7 @@ class CreatePrecompileTest {
 		givenMinimalFrameContext();
 		givenValidGasCalculation();
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
@@ -748,7 +747,7 @@ class CreatePrecompileTest {
 		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
 		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(typedTokenStore);
-		given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore, sideEffects))
+		given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore))
 				.willReturn(createLogic);
 		given(recordsHistorian.nextFollowingChildConsensusTime())
 				.willReturn(pendingChildConsTime);
@@ -802,7 +801,7 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

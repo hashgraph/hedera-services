@@ -42,6 +42,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils
+
 	) {
 		this.ledgers = ledgers;
 		this.aliases = aliases;
@@ -51,6 +52,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 		this.pricingUtils = pricingUtils;
 		this.decoder = decoder;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+
 	}
 
 	@Override
@@ -72,6 +74,9 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 
 		/* --- Execute the transaction and capture its results --- */
 		final var dissociateLogic = infrastructureFactory.newDissociateLogic(accountStore, tokenStore);
+		//TODO add txn body for this check
+//		final var validity = dissociateLogic.validateSyntax(transactionBody.build());
+//		validateTrue(validity == OK, validity);
 		dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 	}
 

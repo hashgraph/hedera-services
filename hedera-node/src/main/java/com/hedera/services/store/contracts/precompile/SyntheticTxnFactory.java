@@ -404,6 +404,22 @@ public class SyntheticTxnFactory {
 			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(
 					isApproval).build();
 		}
+
+		public AccountID sender() {
+			return sender;
+		}
+
+		public AccountID receiver() {
+			return receiver;
+		}
+
+		public long amount() {
+			return amount;
+		}
+
+		public boolean isApproval() {
+			return isApproval;
+		}
 	}
 
 	public static class FungibleTokenTransfer extends HbarTransfer {

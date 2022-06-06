@@ -69,6 +69,9 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
 		// --- Execute the transaction and capture its results ---
 		final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
+		//TODO enable this after txn body is added
+//		final var validity = associateLogic.validateSyntax(transactionBody.build());
+//		validateTrue(validity == OK, validity);
 		associateLogic.associate(accountId, associateOp.tokenIds());
 	}
 
