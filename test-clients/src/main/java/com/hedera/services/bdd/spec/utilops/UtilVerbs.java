@@ -80,6 +80,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
@@ -365,11 +366,11 @@ public class UtilVerbs {
 		return new RecordStreamVerification(baseDir);
 	}
 
-	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, TransactionRecord... transactionRecord) {
+	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, List<Transaction> transactions, TransactionRecord... transactionRecord) {
 		var recordFileName = generateStreamFileNameFromInstant(
 				Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
 
-		return new RecordFileChecker(recordFileName, transactionRecord);
+		return new RecordFileChecker(recordFileName, transactions, transactionRecord);
 	}
 
 	/* Some more complicated ops built from primitive sub-ops */

@@ -2,9 +2,11 @@ package com.hedera.services.bdd.suites.recordfile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -63,8 +65,11 @@ public class RecordFileSuite extends HapiApiSuite {
                             final var txnRecord3 = getTxnRecord(thirdTxn);
                             allRunFor(spec, txnRecord, txnRecord2, txnRecord3);
 
+                           var transaction =  Transaction.parseFrom(spec.registry().getBytes(firstTxn));
+                           var transaction2 = Transaction.parseFrom(spec.registry().getBytes(secondTxn));
+
                             final var timestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-                            verifyRecordFile(timestamp, txnRecord.getResponseRecord(), txnRecord2.getResponseRecord())
+                            verifyRecordFile(timestamp, Arrays.asList(transaction, transaction2), txnRecord.getResponseRecord(), txnRecord2.getResponseRecord())
                                     .execFor(spec);
                         })
                 );

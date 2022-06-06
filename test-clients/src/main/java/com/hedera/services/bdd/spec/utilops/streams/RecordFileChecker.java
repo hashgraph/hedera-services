@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.verification.NodeSignatureVerifier;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -44,16 +45,19 @@ public class RecordFileChecker extends UtilOp {
 
     private static final String PATH_TO_LOCAL_STREAMS = "../hedera-node/data/recordstreams/record%d.%d.%d";
     private static final String ERROR_MESSAGE = "Record file %s could not be read in node %d.%d.%d stream files.";
-    public static final String TRANSACTION_RECORD_ERROR_MESSAGE = "Transaction record validation from file failed. ";
-    public static final String SIGNATURE_FILE_MISSING_ERROR = "Missing signature file.";
+    private static final String TRANSACTION_RECORD_ERROR_MESSAGE = "Transaction record validation from file failed. ";
+    private static final String TRANSACTION_ERROR_MESSAGE = "Transaction validation from file failed";
+    private static final String SIGNATURE_FILE_MISSING_ERROR = "Missing signature file.";
 
 
     private final String recordFileName;
     private final List<TransactionRecord> transactionRecord;
+    private final List<Transaction> transactions;
 
-    public RecordFileChecker(String recordFileName, TransactionRecord... transactionRecord) {
+    public RecordFileChecker(String recordFileName, List<Transaction> transactions, TransactionRecord... transactionRecord) {
         this.recordFileName = recordFileName;
         this.transactionRecord = Arrays.asList(transactionRecord);
+        this.transactions = transactions;
     }
 
     @Override
@@ -107,8 +111,9 @@ public class RecordFileChecker extends UtilOp {
                     .map(RSI -> Pair.of(RSI.getTransaction(), RSI.getRecord()))
                     .toList();
 
-            for (int i = 0; i < transactionRecord.size(); i++) {
+            for (int i = 0; i < actualRecordsInFile.size(); i++) {
                 Assertions.assertEquals(actualRecordsInFile.get(i).getRight(), transactionRecord.get(i), TRANSACTION_RECORD_ERROR_MESSAGE);
+                Assertions.assertEquals(actualRecordsInFile.get(i).getLeft(), transactions.get(i), TRANSACTION_ERROR_MESSAGE);
             }
 
         }
