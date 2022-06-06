@@ -98,6 +98,8 @@ class MerkleAccountTest {
 	private static final long stakePeriodStart = 786L;
 	private static final long stakedNum = 1111L;
 	private static final boolean declinedReward = false;
+	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+	private static final boolean rewardedSinceLastMetadataChange = true;
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -154,7 +156,9 @@ class MerkleAccountTest {
 				stakedToMe,
 				stakePeriodStart,
 				stakedNum,
-				declinedReward);
+				declinedReward,
+				balanceAtStartOfLastRewardedPeriod,
+				rewardedSinceLastMetadataChange);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
@@ -272,6 +276,8 @@ class MerkleAccountTest {
 		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
 		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
 		assertEquals(state.getStakedNum(), subject.getStakedId());
+		assertEquals(state.getBalanceAtStartOfLastRewardedPeriod(), subject.getBalanceAtStartOfLastRewardedPeriod());
+		assertEquals(state.isRewardedSinceLastMetadataChange(), subject.isRewardedSinceLastMetadataChange());
 	}
 
 	@Test
@@ -315,6 +321,8 @@ class MerkleAccountTest {
 		subject.setStakePeriodStart(stakePeriodStart);
 		subject.setDeclineReward(declinedReward);
 		subject.setStakedId(-stakedNum);
+		subject.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+		subject.setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -342,6 +350,8 @@ class MerkleAccountTest {
 		verify(delegate).setStakedToMe(stakedToMe);
 		verify(delegate).setStakePeriodStart(stakePeriodStart);
 		verify(delegate).setDeclineReward(declinedReward);
+		verify(delegate).setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+		verify(delegate).setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		subject.setStakedId(stakedNum);
 		verify(delegate).setStakedNum(stakedNum);

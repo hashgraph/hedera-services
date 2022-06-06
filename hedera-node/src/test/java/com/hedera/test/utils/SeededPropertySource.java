@@ -363,6 +363,8 @@ public class SeededPropertySource {
 				0,
 				-1,
 				0,
+				false,
+				0,
 				false);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
@@ -409,6 +411,8 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextUnsignedLong(),
 				nextInRangeLong(),
+				nextBoolean(),
+				nextUnsignedLong(),
 				nextBoolean());
 	}
 
