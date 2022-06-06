@@ -25,17 +25,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -67,29 +64,6 @@ public class StakePeriodManager {
 		this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
 	}
 
-	@Nullable
-	public Consumer<MerkleAccount> finisherFor(
-			final long curStakedId,
-			final long newStakedId,
-			final long stakedToMeUpdate,
-			final boolean rewarded,
-			boolean stakeMetaChanged
-	) {
-		final long stakePeriodStartUpdate = startUpdateFor(curStakedId, newStakedId, rewarded, stakeMetaChanged);
-		if (stakedToMeUpdate == -1 && stakePeriodStartUpdate == -1) {
-			return null;
-		} else {
-			return account -> {
-				if (stakePeriodStartUpdate != -1) {
-					account.setStakePeriodStart(stakePeriodStartUpdate);
-				}
-				if (stakedToMeUpdate != -1) {
-					account.setStakedToMe(stakedToMeUpdate);
-				}
-			};
-		}
-	}
-
 	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
 		if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
 			return LocalDate.ofEpochDay(stakePeriod).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
@@ -102,12 +76,12 @@ public class StakePeriodManager {
 		final var now = txnCtx.consensusTime();
 		final var currentConsensusSecs = now.getEpochSecond();
 		if (prevConsensusSecs != currentConsensusSecs) {
-			prevConsensusSecs = currentConsensusSecs;
 			if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
 				currentStakePeriod = LocalDate.ofInstant(txnCtx.consensusTime(), ZONE_UTC).toEpochDay();
 			} else {
 				currentStakePeriod = getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
 			}
+			prevConsensusSecs = currentConsensusSecs;
 		}
 		return currentStakePeriod;
 	}
@@ -157,11 +131,11 @@ public class StakePeriodManager {
 	 * 		whether the account's stake metadata changed
 	 * @return either -1 for no new stakePeriodStart, or the new value
 	 */
-	private long startUpdateFor(
+	public long startUpdateFor(
 			final long curStakedId,
 			final long newStakedId,
 			final boolean rewarded,
-			boolean stakeMetaChanged
+			final boolean stakeMetaChanged
 	) {
 		// There's no reason to update stakedPeriodStart for an account not staking to
 		// a node; the value will never be used, since it cannot be eligible for a reward

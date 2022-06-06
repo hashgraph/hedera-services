@@ -113,7 +113,7 @@ public class RewardCalculator {
 		System.out.println("  * Subtracted rewardSumHistory[" +
 				(int) (currentStakePeriod - 1 - (effectiveStart)) + "]=" +
 				rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart))]);
-		// Recall that rewardSumHistory[0] is the reward for all periods up to and including the full staking period
+		// Recall that rewardSumHistory[0] is the cumulative reward rate for all periods up to and including
 		// [currentStakePeriod - 1]; since the current period is not finished, we do not know how to reward for it.
 		// Now suppose we call currentStakePeriod "today", and Alice's effectiveStart is [currentStakePeriod - 2]
 		// (two days ago), so we should reward Alice for exactly [currentStakePeriod - 1] (yesterday). This reward

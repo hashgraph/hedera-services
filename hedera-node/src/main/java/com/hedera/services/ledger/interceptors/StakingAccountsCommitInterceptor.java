@@ -41,7 +41,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
@@ -79,16 +78,16 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	private boolean stakeMetaChanged;
 	// Whether rewards are active
 	private boolean rewardsActivated;
+	// The rewards earned by accounts in the change set
+	private long[] rewardsEarned = new long[INITIAL_CHANGE_CAPACITY];
 	// The new stakedToMe values of accounts in the change set
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
-	// Whether each account in the change set has been rewarded yet
-	private boolean[] hasBeenRewarded = new boolean[INITIAL_CHANGE_CAPACITY];
-	// Whether each account in the change set has been rewarded yet
+	// The new stakePeriodStart values of accounts in the change set
+	private long[] stakePeriodStartUpdates = new long[INITIAL_CHANGE_CAPACITY];
+	// Whether each account in the change set has had its stake metadata changed
 	private boolean[] wasStakeMetaChanged = new boolean[INITIAL_CHANGE_CAPACITY];
 	// The stake change scenario for each account in the change set
 	private StakeChangeScenario[] stakeChangeScenarios = new StakeChangeScenario[INITIAL_CHANGE_CAPACITY];
-	// Function objects to be used by the ledger to apply final staking changes to a mutable account
-	private Consumer<MerkleAccount>[] finishers = new Consumer[INITIAL_CHANGE_CAPACITY];
 
 	public StakingAccountsCommitInterceptor(
 			final SideEffectsTracker sideEffectsTracker,
@@ -132,8 +131,17 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	}
 
 	@Override
-	public Consumer<MerkleAccount> finisherFor(int i) {
-		return finishers[i];
+	public void finish(final int i, final MerkleAccount mutableAccount) {
+		if (stakedToMeUpdates[i] != -1L) {
+			System.out.println("Updating 0.0." + mutableAccount.number()
+					+ " stakedToMe=" + stakedToMeUpdates[i]);
+			mutableAccount.setStakedToMe(stakedToMeUpdates[i]);
+		}
+		if (stakePeriodStartUpdates[i] != -1L) {
+			System.out.println("Updating 0.0." + mutableAccount.number()
+					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
+			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
+		}
 	}
 
 	/**
@@ -158,15 +166,15 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final var changes = pendingChanges.changes(i);
 			stakeChangeScenarios[i] = scenarioFor(account, changes);
 
-			if (!hasBeenRewarded[i] && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
+			if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
 				payReward(i, account, changes, pendingChanges);
 				wasStakeMetaChanged[i] = true;
-			} else if (!hasBeenRewarded[i]) {
+			} else if (!hasBeenRewarded(i)) {
 				wasStakeMetaChanged[i] = stakeMetaChanged;
 			}
-			// If we are outside the original change set, this is a stakee account; and its stakedId cannot
-			// have changed directly. Furthermore, its balance can only have changed via reward---but if so,
-			// it must be staked to a node, and again staked-to-me side effects are impossible
+			// If we are outside the original change set, this is a "stakee" account; and its stakedId cannot
+			// have changed directly. Furthermore, its balance can only have changed via reward---but if so, it
+			// must be staked to a node, and again staked-to-me side effects are impossible
 			if (i < origN) {
 				updateStakedToMeSideEffects(account, stakeChangeScenarios[i], changes, pendingChanges);
 			}
@@ -211,14 +219,15 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 						account.isDeclinedReward());
 			}
 			if (scenario.awardsToNode()) {
+				final var stakeToAward = finalBalanceGiven(account, changes)
+						+ finalStakedToMeGiven(i, account, stakedToMeUpdates);
 				stakeChangeManager.awardStake(
 						-newStakedId - 1,
-						roundedToHbar(finalBalanceGiven(account, changes) + finalStakedToMeGiven(i, account, stakedToMeUpdates)),
+						roundedToHbar(stakeToAward),
 						finalDeclineRewardGiven(account, changes));
 			}
-			// This will be null if the stake period manager determines there is no metadata to set
-			finishers[i] = stakePeriodManager.finisherFor(
-					curStakedId, newStakedId, stakedToMeUpdates[i], hasBeenRewarded[i], wasStakeMetaChanged[i]);
+			stakePeriodStartUpdates[i] = stakePeriodManager.startUpdateFor(
+					curStakedId, newStakedId, hasBeenRewarded(i), wasStakeMetaChanged[i]);
 		}
 	}
 
@@ -255,7 +264,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		if (delta != 0) {
 			final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
 			updateStakedToMe(stakeeI, delta, stakedToMeUpdates, pendingChanges);
-			if (!hasBeenRewarded[stakeeI]) {
+			if (!hasBeenRewarded(stakeeI)) {
 				// If this stakee has already been previewed, and wasn't rewarded, we should
 				// re-check if this stakedToMe change has now made it eligible for a reward
 				payRewardIfRewardable(stakeeI, pendingChanges);
@@ -283,7 +292,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	) {
 		final var reward = rewardCalculator.computePendingReward(account);
 		var receiverNum = numFromCode(account.number());
-		// We cannot reward a deleted account, so keep redirecting to the beneficiary of deleted
+		// We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
 		// accounts until we find a non-deleted account to reward
 		if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
 			var j = 1;
@@ -301,6 +310,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 				changes = pendingChanges.changes(redirectI);
 			} while (Boolean.TRUE.equals(changes.get(IS_DELETED)));
 		}
+		// The final beneficiary might still decline the reward
 		if (rewardCalculator.applyReward(reward, account, changes)) {
 			System.out.println("Paid " + reward + " to account 0.0."
 					+ account.getKey().longValue()
@@ -308,7 +318,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
 		}
-		hasBeenRewarded[i] = true;
+		rewardsEarned[i] = reward;
+	}
+
+	@VisibleForTesting
+	boolean hasBeenRewarded(final int i) {
+		return rewardsEarned[i] != -1;
 	}
 
 	/**
@@ -332,8 +347,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		stakeMetaChanged = (stakedToMeUpdate != -1 || hasStakeFieldChanges(changes));
 		return account != null
 				&& rewardsActivated
-				&& account.getStakedId() < 0
 				&& stakeMetaChanged
+				&& account.getStakedId() < 0
 				&& stakePeriodManager.isRewardable(account.getStakePeriodStart());
 	}
 
@@ -354,17 +369,17 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		// Each pending change could potentially affect stakedToMe of two accounts not yet included in the
 		// change set; and if rewards were paid without 0.0.800 in the change set, it will be included too
 		final var maxImpliedChanges = 3 * n + 1;
-		if (hasBeenRewarded.length < maxImpliedChanges) {
-			hasBeenRewarded = new boolean[maxImpliedChanges];
-			wasStakeMetaChanged = new boolean[maxImpliedChanges];
+		if (rewardsEarned.length < maxImpliedChanges) {
+			rewardsEarned = new long[maxImpliedChanges];
 			stakedToMeUpdates = new long[maxImpliedChanges];
+			wasStakeMetaChanged = new boolean[maxImpliedChanges];
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
-			finishers = new Consumer[maxImpliedChanges];
+			stakePeriodStartUpdates = new long[maxImpliedChanges];
 		}
+		Arrays.fill(rewardsEarned, -1);
 		Arrays.fill(stakedToMeUpdates, -1);
-		Arrays.fill(hasBeenRewarded, false);
 		Arrays.fill(wasStakeMetaChanged, false);
-		// The stakeChangeScenarios and finishers arrays are filled and used left-to-right only
+		// The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used left-to-right only
 	}
 
 	private void setCurrentAndNewIds(
@@ -375,15 +390,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
 	}
 
-	/* only used for unit tests */
+	// Only used for unit tests
 	@VisibleForTesting
 	public void setRewardsActivated(final boolean rewardsActivated) {
 		this.rewardsActivated = rewardsActivated;
-	}
-
-	@VisibleForTesting
-	boolean[] getHasBeenRewarded() {
-		return hasBeenRewarded;
 	}
 
 	@VisibleForTesting
@@ -397,11 +407,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	}
 
 	@VisibleForTesting
-	void setHasBeenRewarded(final boolean[] hasBeenRewarded) {
-		this.hasBeenRewarded = hasBeenRewarded;
-	}
-
-	@VisibleForTesting
 	void setCurStakedId(long curStakedId) {
 		this.curStakedId = curStakedId;
 	}
@@ -409,5 +414,15 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	@VisibleForTesting
 	void setNewStakedId(long newStakedId) {
 		this.newStakedId = newStakedId;
+	}
+
+	@VisibleForTesting
+	long[] getStakePeriodStartUpdates() {
+		return stakePeriodStartUpdates;
+	}
+
+	@VisibleForTesting
+	long[] getRewardsEarned() {
+		return rewardsEarned;
 	}
 }

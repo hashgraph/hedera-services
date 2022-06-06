@@ -63,7 +63,6 @@ import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.bu
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,6 +75,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
@@ -130,6 +130,29 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void setsNothingIfUpdateIsSentinel() {
+		subject.getStakedToMeUpdates()[2] = -1;
+		subject.getStakePeriodStartUpdates()[2] = -1;
+		final var mockAccount = mock(MerkleAccount.class);
+
+		subject.finish(2, mockAccount);
+
+		verifyNoInteractions(mockAccount);
+	}
+
+	@Test
+	void setsGivenNonSentinelUpdate() {
+		subject.getStakedToMeUpdates()[2] = 100 * HBARS_TO_TINYBARS;
+		subject.getStakePeriodStartUpdates()[2] = 123;
+		final var mockAccount = mock(MerkleAccount.class);
+
+		subject.finish(2, mockAccount);
+
+		verify(mockAccount).setStakedToMe(100 * HBARS_TO_TINYBARS);
+		verify(mockAccount).setStakePeriodStart(123);
+	}
+
+	@Test
 	void calculatesRewardIfNeeded() {
 		final var changes = buildChanges();
 		final var rewardPayment = 1L;
@@ -154,8 +177,8 @@ class StakingAccountsCommitInterceptorTest {
 		verify(stakeChangeManager).awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE),
 				false);
 
-		assertFalse(subject.getHasBeenRewarded()[0]);
-		assertTrue(subject.getHasBeenRewarded()[1]);
+		assertFalse(subject.hasBeenRewarded(0));
+		assertTrue(subject.hasBeenRewarded(1));
 	}
 
 	@Test
@@ -308,7 +331,6 @@ class StakingAccountsCommitInterceptorTest {
 	void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
 		final Consumer<MerkleAccount> noopFinisherOne = a -> {};
 		final Consumer<MerkleAccount> noopFinisherTwo = a -> {};
-		final var inorderSP = inOrder(stakePeriodManager);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 		final var rewardPayment = HBARS_TO_TINYBARS + 100;
@@ -317,10 +339,10 @@ class StakingAccountsCommitInterceptorTest {
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-		given(stakePeriodManager.finisherFor(-1L, 2L, 100 * HBARS_TO_TINYBARS, true, true))
-				.willReturn(noopFinisherOne);
-		given(stakePeriodManager.finisherFor(0L, 0L, -1, false, true))
-				.willReturn(noopFinisherTwo);
+		given(stakePeriodManager.startUpdateFor(-1L, 2L, true, true))
+				.willReturn(13L);
+		given(stakePeriodManager.startUpdateFor(0L, 0L, false, true))
+				.willReturn(666L);
 		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
 
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
@@ -339,8 +361,9 @@ class StakingAccountsCommitInterceptorTest {
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager, never()).awardStake(2L, 0L, false);
 
-		assertSame(noopFinisherOne, subject.finisherFor(0));
-		assertSame(noopFinisherTwo, subject.finisherFor(1));
+		final var updatedStakePeriodStarts = subject.getStakePeriodStartUpdates();
+		assertEquals(13L, updatedStakePeriodStarts[0]);
+		assertEquals(666L, updatedStakePeriodStarts[1]);
 	}
 
 	@Test
@@ -471,10 +494,8 @@ class StakingAccountsCommitInterceptorTest {
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
 				stakeInfoManager, accountNumbers, txnCtx);
 
-		final var hasBeenRewarded = new boolean[64];
-		hasBeenRewarded[1] = true;
-		hasBeenRewarded[2] = true;
-		subject.setHasBeenRewarded(hasBeenRewarded);
+		subject.getRewardsEarned()[1] = 0;
+		subject.getRewardsEarned()[2] = 1;
 		assertEquals(2, pendingChanges.size());
 
 		subject.setCurStakedId(1L);
@@ -519,10 +540,8 @@ class StakingAccountsCommitInterceptorTest {
 				accountNumbers,
 				txnCtx);
 
-		final var hasBeenRewarded = new boolean[64];
-		hasBeenRewarded[0] = false;
-		hasBeenRewarded[1] = false;
-		subject.setHasBeenRewarded(hasBeenRewarded);
+		subject.getRewardsEarned()[0] = -1;
+		subject.getRewardsEarned()[1] = -1;
 		subject.setCurStakedId(partyId.getAccountNum());
 		subject.setNewStakedId(partyId.getAccountNum());
 		assertEquals(3, pendingChanges.size());

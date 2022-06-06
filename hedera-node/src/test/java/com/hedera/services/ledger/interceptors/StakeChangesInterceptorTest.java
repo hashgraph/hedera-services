@@ -95,7 +95,7 @@ class StakeChangesInterceptorTest {
 
 		subject.preview(changes);
 
-		assertEquals(3 * 256 + 1, subject.getHasBeenRewarded().length);
+		assertEquals(3 * 256 + 1, subject.getRewardsEarned().length);
 		assertEquals(3 * 256 + 1, subject.getStakeChangeScenarios().length);
 	}
 

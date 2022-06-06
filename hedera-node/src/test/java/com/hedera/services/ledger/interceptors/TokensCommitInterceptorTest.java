@@ -22,12 +22,14 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.state.merkle.MerkleToken;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class TokensCommitInterceptorTest {
 	@Test
@@ -38,9 +40,11 @@ class TokensCommitInterceptorTest {
 	}
 
 	@Test
-	void defaultFinisherIsNull() {
-		final var subject = Mockito.mock(CommitInterceptor.class);
-		doCallRealMethod().when(subject).finisherFor(0);
-		assertNull(subject.finisherFor(0));
+	void defaultFinishIsNoop() {
+		final var entity = mock(MerkleToken.class);
+		final var subject = mock(CommitInterceptor.class);
+		doCallRealMethod().when(subject).finish(0, entity);
+		subject.finish(0, entity);
+		verifyNoInteractions(entity);
 	}
 }
