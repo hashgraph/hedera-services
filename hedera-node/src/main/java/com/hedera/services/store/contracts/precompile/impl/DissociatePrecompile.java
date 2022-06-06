@@ -32,6 +32,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		dissociateOp = decoder.decodeDissociate(input, aliasResolver);
-		return syntheticTxnFactory.createDissociate(dissociateOp);
+		transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
+		return transactionBody;
 	}
 }

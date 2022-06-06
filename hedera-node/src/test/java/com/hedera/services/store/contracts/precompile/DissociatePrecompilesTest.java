@@ -66,7 +66,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -183,8 +182,8 @@ class DissociatePrecompilesTest {
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				infrastructureFactory);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -221,8 +220,6 @@ class DissociatePrecompilesTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
-	//TODO enable the test after the validate syntax check is added in the run method in dissociate precompile
-	@Disabled
 	@Test
 	void dissociateTokenHappyPathWorks() {
 		givenFrameContext();
@@ -260,8 +257,6 @@ class DissociatePrecompilesTest {
 		verify(wrappedLedgers, never()).commit();
 	}
 
-	//TODO enable the test after the validate syntax check is added in the run method in dissociate precompile
-	@Disabled
 	@Test
 	void computeMultiDissociateTokenHappyPathWorks() {
 		givenFrameContext();

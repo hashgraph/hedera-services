@@ -20,19 +20,30 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeBuilder;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -94,6 +105,25 @@ public class PrecompilePricingUtils {
 	public long getMinimumPriceInTinybars(GasCostType gasCostType, Timestamp timestamp) {
 		return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp),
 				getCanonicalPriceInTinyCents(gasCostType));
+	}
+
+	public long gasFeeInTinybars(final TransactionBody.Builder txBody,
+								  final Instant consensusTime,
+								  final Precompile precompile,
+								  final Provider<FeeCalculator> feeCalculator,
+								  final StateView currentView) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txBody.build().toByteString())
+				.setSigMap(SignatureMap.getDefaultInstance())
+				.build();
+		final var txn = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
+
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		precompile.addImplicitCostsIn(accessor);
+		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
 	public enum GasCostType {

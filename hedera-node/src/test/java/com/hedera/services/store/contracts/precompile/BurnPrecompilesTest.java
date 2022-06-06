@@ -191,8 +191,8 @@ class BurnPrecompilesTest {
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				infrastructureFactory);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -217,6 +217,8 @@ class BurnPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -247,6 +249,8 @@ class BurnPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
 		given(encoder.encodeBurnFailure(FAIL_INVALID)).willReturn(failInvalidResult);
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);

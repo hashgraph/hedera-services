@@ -13,6 +13,7 @@ import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.Objects;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {
@@ -30,6 +32,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 	private final InfrastructureFactory infrastructureFactory;
 	private final PrecompilePricingUtils pricingUtils;
 
+
+	protected TransactionBody.Builder transactionBody;
 	protected Association associateOp;
 	protected final DecodingFacade decoder;
 	protected final SyntheticTxnFactory syntheticTxnFactory;
@@ -69,9 +73,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
 		// --- Execute the transaction and capture its results ---
 		final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
-		//TODO enable this after txn body is added
-//		final var validity = associateLogic.validateSyntax(transactionBody.build());
-//		validateTrue(validity == OK, validity);
+		final var validity = associateLogic.validateSyntax(transactionBody.build());
+		validateTrue(validity == OK, validity);
 		associateLogic.associate(accountId, associateOp.tokenIds());
 	}
 

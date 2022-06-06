@@ -32,6 +32,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		associateOp = decoder.decodeAssociation(input, aliasResolver);
-		return syntheticTxnFactory.createAssociate(associateOp);
+		transactionBody = syntheticTxnFactory.createAssociate(associateOp);
+		return transactionBody;
 	}
 }

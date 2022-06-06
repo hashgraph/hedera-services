@@ -253,8 +253,8 @@ class ERC721PrecompilesTest {
                 dynamicProperties, gasCalculator,
                 recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-                infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+                infrastructureFactory);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);

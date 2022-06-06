@@ -42,10 +42,13 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
@@ -194,8 +197,8 @@ class HTSPrecompiledContractTest {
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				infrastructureFactory);
 	}
 
 	@Test
@@ -537,7 +540,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
+		assertTrue(subject.getPrecompile() instanceof TransferPrecompile);
 	}
 
 	@Test
@@ -554,7 +557,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
+		assertTrue(subject.getPrecompile() instanceof TransferPrecompile);
 	}
 
 	@Test
@@ -571,7 +574,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
+		assertTrue(subject.getPrecompile() instanceof TransferPrecompile);
 	}
 
 	@Test
@@ -588,7 +591,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
+		assertTrue(subject.getPrecompile() instanceof TransferPrecompile);
 	}
 
 	@Test
@@ -605,7 +608,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
+		assertTrue(subject.getPrecompile() instanceof TransferPrecompile);
 	}
 
 	@Test
@@ -637,7 +640,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.BurnPrecompile);
+		assertTrue(subject.getPrecompile() instanceof BurnPrecompile);
 	}
 
 	@Test
@@ -738,7 +741,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, a -> a);
 
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TokenCreatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof TokenCreatePrecompile);
 		verify(tokenCreateWrapper).inheritAutoRenewAccount(autoRenewId);
 	}
 
@@ -778,7 +781,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, a -> a);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TokenCreatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof TokenCreatePrecompile);
 	}
 
 	@Test

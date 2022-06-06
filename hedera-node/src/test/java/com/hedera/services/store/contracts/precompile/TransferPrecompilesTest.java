@@ -213,8 +213,8 @@ class TransferPrecompilesTest {
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				infrastructureFactory);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}

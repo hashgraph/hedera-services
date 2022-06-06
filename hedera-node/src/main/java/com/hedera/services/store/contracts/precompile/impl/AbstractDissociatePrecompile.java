@@ -13,6 +13,7 @@ import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.Objects;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public abstract class AbstractDissociatePrecompile implements Precompile {
 	private final WorldLedgers ledgers;
@@ -29,6 +31,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 	private final InfrastructureFactory infrastructureFactory;
 	private final PrecompilePricingUtils pricingUtils;
 
+	protected TransactionBody.Builder transactionBody;
 	protected Dissociation dissociateOp;
 	protected final DecodingFacade decoder;
 	protected final SyntheticTxnFactory syntheticTxnFactory;
@@ -74,9 +77,8 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 
 		/* --- Execute the transaction and capture its results --- */
 		final var dissociateLogic = infrastructureFactory.newDissociateLogic(accountStore, tokenStore);
-		//TODO add txn body for this check
-//		final var validity = dissociateLogic.validateSyntax(transactionBody.build());
-//		validateTrue(validity == OK, validity);
+		final var validity = dissociateLogic.validateSyntax(transactionBody.build());
+		validateTrue(validity == OK, validity);
 		dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 	}
 

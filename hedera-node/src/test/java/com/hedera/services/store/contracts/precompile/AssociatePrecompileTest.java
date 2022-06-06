@@ -66,7 +66,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -187,8 +186,8 @@ class AssociatePrecompileTest {
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
-				infrastructureFactory, deleteAllowanceChecks, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				infrastructureFactory);
 
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -262,8 +261,6 @@ class AssociatePrecompileTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
-	//TODO enable the test after the validate syntax check is added in the run method in associate precompile
-	@Disabled
 	@Test
 	void computeAssociateTokenHappyPathWorksWithDelegateCall() {
 		given(frame.getContractAddress()).willReturn(contractAddress);
@@ -319,8 +316,6 @@ class AssociatePrecompileTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
-	//TODO enable the test after the validate syntax check is added in the run method in associate precompile
-	@Disabled
 	@Test
 	void computeAssociateTokenBadSyntax() {
 		given(frame.getContractAddress()).willReturn(contractAddress);
@@ -387,11 +382,12 @@ class AssociatePrecompileTest {
 		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
 		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee()).willReturn(1L);
+//		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+//		given(mockFeeObject.getServiceFee()).willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
@@ -424,6 +420,7 @@ class AssociatePrecompileTest {
 		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
 		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -466,6 +463,7 @@ class AssociatePrecompileTest {
 		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
 		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -508,6 +506,7 @@ class AssociatePrecompileTest {
 		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
 		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
