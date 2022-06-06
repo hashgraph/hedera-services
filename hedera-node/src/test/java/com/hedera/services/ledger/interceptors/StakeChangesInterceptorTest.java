@@ -45,6 +45,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
@@ -250,6 +252,7 @@ class StakeChangesInterceptorTest {
 			return 1;
 		}).given(stakeChangeManager).findOrAdd(bob.getAccountNum(), changes);
 		given(stakePeriodManager.isRewardable(123L)).willReturn(true);
+		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
 
 		subject.setRewardsActivated(true);
 		subject.preview(changes);
