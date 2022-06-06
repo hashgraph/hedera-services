@@ -117,7 +117,8 @@ class SystemPrecheckTest {
 	}
 
 	@Test
-	void doesntThrottleSystemAccounts() {
+	void throttlesSystemAccounts() {
+		givenNoSystemCapacity();
 		givenPermissible(systemPayer);
 		givenPriviliged();
 
@@ -125,14 +126,14 @@ class SystemPrecheckTest {
 		var actual = subject.screen(systemXferAccessor);
 
 		// then:
-		assertEquals(OK, actual);
+		assertEquals(BUSY, actual);
 	}
 
 	@Test
 	void okIfAllScreensPass() {
 		givenPermissible(civilianPayer);
 		givenPriviliged();
-		givenCapacity();
+		givenCivilianCapacity();
 
 		// when:
 		var actual = subject.screen(civilianXferAccessor);
@@ -141,8 +142,11 @@ class SystemPrecheckTest {
 		assertEquals(OK, actual);
 	}
 
-	private void givenCapacity() {
+	private void givenCivilianCapacity() {
 		given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(false);
+	}
+	private void givenNoSystemCapacity() {
+		given(txnThrottling.shouldThrottle(systemXferAccessor)).willReturn(true);
 	}
 
 	private void givenPermissible(AccountID payer) {

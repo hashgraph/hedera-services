@@ -111,7 +111,7 @@ class RenewalProcessTest {
 		subject.beginRenewalCycle(instantNow);
 
 		// then:
-		verify(recordsHelper).beginRenewalCycle(instantNow);
+		verify(recordsHelper).beginRenewalCycle();
 	}
 
 	@Test
@@ -258,7 +258,7 @@ class RenewalProcessTest {
 		final var result = subject.process(brokeExpiredContractNum);
 
 		assertEquals(STILL_MORE_TO_DO, result);
-		verify(recordsHelper).beginRenewalCycle(instantNow);
+		verify(recordsHelper).beginRenewalCycle();
 		verifyNoMoreInteractions(accountGC, recordsHelper);
 	}
 

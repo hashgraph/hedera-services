@@ -149,6 +149,8 @@ class BasicTransactionContextTest {
 	@Mock
 	private SignedTxnAccessor accessor;
 	@Mock
+	private SignedTxnAccessor accessor2;
+	@Mock
 	private SwirldsTxnAccessor swirldsTxnAccessor;
 	@Mock
 	private TransactionBody txn;
@@ -623,6 +625,13 @@ class BasicTransactionContextTest {
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void throwsOnMoreThanOneTrigger() {
+		subject.trigger(accessor);
+		subject.trigger(accessor);
+		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor2));
 	}
 
 	@Test

@@ -27,7 +27,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -93,7 +93,7 @@ class StateInitializationFlowTest {
 	@Mock
 	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
+	private MerkleScheduledTransactions schedules;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock

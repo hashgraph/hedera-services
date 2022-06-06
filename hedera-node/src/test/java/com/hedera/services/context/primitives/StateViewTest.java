@@ -36,7 +36,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -49,6 +48,7 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -98,9 +98,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTest.scheduleCreateTxnWith;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
@@ -199,7 +199,7 @@ class StateViewTest {
 
 	private MerkleToken token;
 	private MerkleToken nft;
-	private MerkleSchedule schedule;
+	private ScheduleVirtualValue schedule;
 	private MerkleAccount contract;
 	private MerkleAccount tokenAccount;
 	private MerkleSpecialFiles specialFiles;
@@ -308,7 +308,7 @@ class StateViewTest {
 						creatorAccountID,
 						MiscUtils.asTimestamp(now.toJava())
 				);
-		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
+		schedule = ScheduleVirtualValue.from(parentScheduleCreate.toByteArray(), expiry);
 		schedule.witnessValidSignature("01234567890123456789012345678901".getBytes());
 		schedule.witnessValidSignature("_123456789_123456789_123456789_1".getBytes());
 		schedule.witnessValidSignature("_o23456789_o23456789_o23456789_o".getBytes());

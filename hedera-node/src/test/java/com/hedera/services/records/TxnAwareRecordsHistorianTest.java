@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
@@ -119,12 +120,14 @@ class TxnAwareRecordsHistorianTest {
 	private TxnAccessor accessor;
 	@Mock
 	private RecordStreamObject rso;
+	@Mock
+	private ConsensusTimeTracker consensusTimeTracker;
 
 	private RecordsHistorian subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, expiries);
+		subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, expiries, consensusTimeTracker);
 		subject.setCreator(creator);
 	}
 
@@ -155,6 +158,11 @@ class TxnAwareRecordsHistorianTest {
 
 	@Test
 	void revertsRecordsFromGivenSourceOnly() {
+		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+		given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
+		given(consensusTimeTracker.isAllowablePrecedingOffset(1)).willReturn(true);
+		given(consensusTimeTracker.isAllowablePrecedingOffset(2)).willReturn(true);
+
 		final var followingRecordFrom1 = mock(ExpirableTxnRecord.Builder.class);
 		final var followingRecordFrom2 = mock(ExpirableTxnRecord.Builder.class);
 		final var precedingRecordFrom1 = mock(ExpirableTxnRecord.Builder.class);
@@ -180,6 +188,7 @@ class TxnAwareRecordsHistorianTest {
 		final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
 		given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
+		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
 
 		givenTopLevelContext();
 		given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
@@ -201,12 +210,14 @@ class TxnAwareRecordsHistorianTest {
 		subject.saveExpirableTransactionRecords();
 		final var followingRsos = subject.getFollowingChildRecords();
 		assertTrue(followingRsos.isEmpty());
+		verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
 	}
 
 	@Test
 	void customizesMatchingSuccessor() {
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
 		given(txnCtx.consensusTime()).willReturn(topLevelNow);
+		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
@@ -258,6 +269,9 @@ class TxnAwareRecordsHistorianTest {
 		given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 		given(followingBuilder.build()).willReturn(mockFollowingRecord);
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
+		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+		given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
+		given(consensusTimeTracker.isAllowablePrecedingOffset(1)).willReturn(true);
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
 		given(creator.saveExpiringRecord(
@@ -295,6 +309,7 @@ class TxnAwareRecordsHistorianTest {
 		verify(precedingBuilder).setConsensusTime(RichInstant.fromJava(expectedPrecedingTime));
 		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
 		verify(followingBuilder).setTxnId(expectedFollowingChildId);
+		verify(consensusTimeTracker).setActualFollowingRecordsCount(1L);
 		assertEquals(1, followingRsos.size());
 		assertEquals(1, precedingRsos.size());
 
@@ -353,6 +368,7 @@ class TxnAwareRecordsHistorianTest {
 				ResponseCodeEnum.valueOf(builtFinal.getReceipt().getStatus()),
 				payerRecord);
 		verify(creator).saveExpiringRecord(effPayer, builtFinal, nows, submittingMember);
+		verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
 		// and:
 		final var topLevelRso = subject.getTopLevelRecord();
 		final var topLevel = topLevelRso.getExpirableTransactionRecord();
@@ -365,6 +381,8 @@ class TxnAwareRecordsHistorianTest {
 	void hasStreamableChildrenOnlyAfterSaving() {
 		assertFalse(subject.hasPrecedingChildRecords());
 		assertFalse(subject.hasFollowingChildRecords());
+		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+		given(consensusTimeTracker.isAllowablePrecedingOffset(1)).willReturn(true);
 
 		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
 		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
@@ -423,6 +441,31 @@ class TxnAwareRecordsHistorianTest {
 		verify(expiringEntity, never()).expiry();
 		// and:
 		verify(expiries, never()).trackExpirationEvent(any(), anyLong());
+	}
+
+	@Test
+	void nextFollowingChildConsensusTimeErrorsOnTooManyChildTimes() {
+		assertThrows(IllegalStateException.class, () -> subject.nextFollowingChildConsensusTime());
+
+		verify(consensusTimeTracker).isAllowableFollowingOffset(1);
+	}
+
+	@Test
+	void trackChildRecordsErrorsOnTooManyChildren() {
+		assertFalse(subject.hasPrecedingChildRecords());
+		assertFalse(subject.hasFollowingChildRecords());
+
+		final var txn = TransactionBody.newBuilder();
+		final var rec = ExpirableTxnRecord.newBuilder();
+
+		assertThrows(IllegalStateException.class, () ->
+				subject.trackFollowingChildRecord(1, txn, rec));
+		assertThrows(IllegalStateException.class, () ->
+				subject.trackPrecedingChildRecord(1, txn, rec));
+
+		verify(consensusTimeTracker).isAllowableFollowingOffset(1);
+		verify(consensusTimeTracker).isAllowablePrecedingOffset(1);
+
 	}
 
 	private void givenTopLevelContext() {

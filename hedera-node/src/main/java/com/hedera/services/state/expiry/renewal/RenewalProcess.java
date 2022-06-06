@@ -64,10 +64,10 @@ public class RenewalProcess {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void beginRenewalCycle(final Instant nextAvailConsTime) {
+	public void beginRenewalCycle(final Instant currentConsTime) {
 		assertNotInCycle();
-		cycleTime = nextAvailConsTime;
-		recordsHelper.beginRenewalCycle(nextAvailConsTime);
+		cycleTime = currentConsTime;
+		recordsHelper.beginRenewalCycle();
 	}
 
 	public void endRenewalCycle() {

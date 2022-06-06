@@ -24,6 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.system.AddressBook;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -43,15 +44,24 @@ class ThrottlingModuleTest {
 	private AliasManager aliasManager;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private ScheduleStore scheduleStore;
 
 	@Test
 	void constructsHapiAndHandleThrottlesAsExpected() {
 		final var hapiThrottle = ThrottlingModule.provideHapiThrottling(
-				aliasManager, () -> addressBook, dynamicProperties);
+				aliasManager, () -> addressBook, dynamicProperties, scheduleStore);
 		final var handleThrottle = ThrottlingModule.provideHandleThrottling(
-				aliasManager, txnCtx, dynamicProperties);
+				aliasManager, txnCtx, dynamicProperties, scheduleStore);
+		final var timedScheduleThrottling = ThrottlingModule.provideTimedScheduleThrottling(
+				aliasManager, dynamicProperties, scheduleStore);
+		final var scheduleThrottling = ThrottlingModule.provideScheduleThrottling(
+				timedScheduleThrottling);
 
 		assertThat(hapiThrottle, Matchers.instanceOf(HapiThrottling.class));
 		assertThat(handleThrottle, Matchers.instanceOf(TxnAwareHandleThrottling.class));
+		assertThat(timedScheduleThrottling, Matchers.instanceOf(DeterministicThrottling.class));
+		assertThat(scheduleThrottling, Matchers.instanceOf(DeterministicThrottling.class));
+		assertThat(scheduleThrottling, Matchers.equalTo(timedScheduleThrottling));
 	}
 }

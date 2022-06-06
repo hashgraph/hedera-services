@@ -20,10 +20,12 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -39,6 +41,7 @@ import java.time.Instant;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 
@@ -68,12 +71,17 @@ class LivePricesSourceTest {
 	private UsagePricesProvider usagePrices;
 	@Mock
 	private FeeMultiplierSource feeMultiplierSource;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
 
 	private LivePricesSource subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource);
+		given(txnCtx.accessor()).willReturn(accessor);
+		subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
 	}
 
 	@Test
@@ -104,6 +112,6 @@ class LivePricesSourceTest {
 	private void givenCollabsWithMultiplier(final long multiplier) {
 		given(exchange.rate(timeNow)).willReturn(activeRate);
 		given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
-		given(feeMultiplierSource.currentMultiplier()).willReturn(multiplier);
+		given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
 	}
 }

@@ -46,9 +46,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.hedera.services.txns.submission.SystemPrecheck.IS_THROTTLE_EXEMPT;
 import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.IS_THROTTLE_EXEMPT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
