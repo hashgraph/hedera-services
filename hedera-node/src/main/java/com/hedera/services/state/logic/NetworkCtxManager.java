@@ -29,7 +29,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.ledger.interceptors.EndOfStakingPeriodCalculator;
+import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;

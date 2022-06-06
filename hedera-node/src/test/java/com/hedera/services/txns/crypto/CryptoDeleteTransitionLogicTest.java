@@ -153,6 +153,7 @@ class CryptoDeleteTransitionLogicTest {
 
 		// then:
 		verify(ledger).delete(target, payer);
+		verify(txnCtx).recordBeneficiaryOfDeleted(target.getAccountNum(), payer.getAccountNum());
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
 	}

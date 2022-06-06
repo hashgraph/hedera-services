@@ -34,9 +34,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -59,8 +63,8 @@ class RewardCalculatorTest {
 	private MerkleNetworkContext networkCtx;
 
 	private RewardCalculator subject;
-	private static final long todayNumber = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-			ZONE_UTC).toEpochDay();
+	private static final long todayNumber =
+			LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
 	private static final long[] rewardHistory = new long[366];
 
 	@BeforeEach
@@ -88,7 +92,8 @@ class RewardCalculatorTest {
 		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
 		subject.setRewardsPaidInThisTxn(100L);
-		final var reward = subject.computeAndApplyReward(account, changes);
+		final var reward = subject.computePendingReward(account);
+		subject.applyReward(reward, account, changes);
 
 		assertEquals(500, reward);
 		assertEquals(account.getBalance() + reward, changes.get(AccountProperty.BALANCE));
@@ -111,7 +116,8 @@ class RewardCalculatorTest {
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 
 		subject.setRewardsPaidInThisTxn(100L);
-		final var reward = subject.computeAndApplyReward(account, changes);
+		final var reward = subject.computePendingReward(account);
+		subject.applyReward(reward, account, changes);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, reward);
@@ -128,7 +134,8 @@ class RewardCalculatorTest {
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
-		final var reward = subject.computeAndApplyReward(account, changes);
+		final var reward = subject.computePendingReward(account);
+		subject.applyReward(reward, account, changes);
 
 		verify(account, never()).setStakePeriodStart(anyLong());
 		assertEquals(0, reward);
@@ -154,11 +161,27 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(expectedStakePeriodStart - 365);
 		given(stakeInfoManager.mutableStakeInfoFor(2L)).willReturn(merkleStakingInfo);
 
-		final var reward = subject.computeAndApplyReward(merkleAccount, changes);
+		final var reward = subject.computePendingReward(merkleAccount);
+		subject.applyReward(reward, merkleAccount, changes);
 
 		assertEquals(500, reward);
 		assertEquals(merkleAccount.getBalance() + reward, changes.get(AccountProperty.BALANCE));
 		assertEquals(reward, subject.rewardsPaidInThisTxn());
+	}
+
+	@Test
+	void onlyAppliesRewardIfNotDeclined() {
+		given(account.isDeclinedReward()).willReturn(true);
+
+		assertDoesNotThrow(() -> subject.applyReward(123, account, Collections.emptyMap()));
+	}
+
+	@Test
+	void doesntApplyRedirectedRewardToNewlyCreatedAccountWithExpectedDecline() {
+		final Map<AccountProperty, Object> changes = new EnumMap<>(AccountProperty.class);
+		changes.put(AccountProperty.DECLINE_REWARD, Boolean.TRUE);
+		subject.applyReward(123, null, changes);
+		assertEquals(1, changes.size());
 	}
 
 	@Test

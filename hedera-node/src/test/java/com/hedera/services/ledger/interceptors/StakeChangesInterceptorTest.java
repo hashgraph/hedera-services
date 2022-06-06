@@ -22,6 +22,7 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -66,16 +67,18 @@ class StakeChangesInterceptorTest {
 	private StakeInfoManager stakeInfoManager;
 	@Mock
 	private AccountNumbers accountNumbers;
+	@Mock
+	private TransactionContext txnCtx;
 
 	private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> changes;
-	private StakeAwareAccountsCommitsInterceptor subject;
+	private StakingAccountsCommitInterceptor subject;
 
 	@BeforeEach
 	void setUp() {
 		changes = new EntityChangeSet<>();
-		subject = new StakeAwareAccountsCommitsInterceptor(
+		subject = new StakingAccountsCommitInterceptor(
 				sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers);
+				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx);
 	}
 
 	@Test

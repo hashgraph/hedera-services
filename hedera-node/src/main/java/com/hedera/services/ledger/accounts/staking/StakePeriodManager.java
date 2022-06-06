@@ -47,6 +47,7 @@ public class StakePeriodManager {
 	public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
 	public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
+	private final int numStoredPeriods;
 	private final long stakingPeriodMins;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleNetworkContext> networkCtx;
@@ -55,12 +56,14 @@ public class StakePeriodManager {
 	private long prevConsensusSecs;
 
 	@Inject
-	public StakePeriodManager(final TransactionContext txnCtx,
+	public StakePeriodManager(
+			final TransactionContext txnCtx,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final @CompositeProps PropertySource properties
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
+		this.numStoredPeriods = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
 		this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
 	}
 
@@ -121,25 +124,17 @@ public class StakePeriodManager {
 	public long firstNonRewardableStakePeriod() {
 		// The earliest period by which an account can have started staking, _without_ becoming
 		// eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
-		// no account can ever be eligible
+		// no account can ever be eligible.
 		return networkCtx.get().areRewardsActivated() ? currentStakePeriod() - 1 : Long.MIN_VALUE;
 	}
 
 	public boolean isRewardable(final long stakePeriodStart) {
-		// firstNonRewardableStakePeriod is currentStakePeriod -1.
-		// if stakePeriodStart = -1 then it is not staked or staked to an account
-		// If it equals currentStakePeriod, that means the staking changed today (later than the start of today),
-		// so it had no effect on consensus weights today, and should never be rewarded for helping consensus
-		// throughout today.  If it equals currentStakePeriod-1, that means it either started yesterday or has already
-		// been rewarded for yesterday. Either way, it might be rewarded for today after today ends, but shouldn't yet be
-		// rewarded for today, because today hasn't finished yet.
 		return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod();
 	}
 
 	public long effectivePeriod(final long stakePeriodStart) {
-		// currentStakePeriod will be already set before calling this method in RewardCalculator
-		if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - 365) {
-			return currentStakePeriod - 365;
+		if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - numStoredPeriods) {
+			return currentStakePeriod - numStoredPeriods;
 		}
 		return stakePeriodStart;
 	}
@@ -159,6 +154,7 @@ public class StakePeriodManager {
 	 * @param rewarded
 	 * 		whether the account was rewarded during the transaction
 	 * @param stakeMetaChanged
+	 * 		whether the account's stake metadata changed
 	 * @return either -1 for no new stakePeriodStart, or the new value
 	 */
 	private long startUpdateFor(

@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.interceptors;
+package com.hedera.services.ledger.accounts.staking;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;

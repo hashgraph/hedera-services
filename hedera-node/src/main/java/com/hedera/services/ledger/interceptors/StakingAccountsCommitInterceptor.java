@@ -23,6 +23,7 @@ package com.hedera.services.ledger.interceptors;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -51,11 +52,13 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedTo
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
-public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitInterceptor {
+public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor {
 	private static final int INITIAL_CHANGE_CAPACITY = 32;
-	private static final Logger log = LogManager.getLogger(StakeAwareAccountsCommitsInterceptor.class);
+	private static final Logger log = LogManager.getLogger(StakingAccountsCommitInterceptor.class);
 
 	private final StakeChangeManager stakeChangeManager;
 	private final Supplier<MerkleNetworkContext> networkCtx;
@@ -65,6 +68,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	private final StakePeriodManager stakePeriodManager;
 	private final StakeInfoManager stakeInfoManager;
 	private final AccountNumbers accountNumbers;
+	private final TransactionContext txnCtx;
 
 	// The current and new staked ids of the account being processed
 	private long curStakedId;
@@ -86,7 +90,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 	// Function objects to be used by the ledger to apply final staking changes to a mutable account
 	private Consumer<MerkleAccount>[] finishers = new Consumer[INITIAL_CHANGE_CAPACITY];
 
-	public StakeAwareAccountsCommitsInterceptor(
+	public StakingAccountsCommitInterceptor(
 			final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final GlobalDynamicProperties dynamicProperties,
@@ -94,9 +98,11 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
 			final StakeInfoManager stakeInfoManager,
-			final AccountNumbers accountNumbers
+			final AccountNumbers accountNumbers,
+			final TransactionContext txnCtx
 	) {
 		super(sideEffectsTracker);
+		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
 		this.accountNumbers = accountNumbers;
 		this.stakeInfoManager = stakeInfoManager;
@@ -109,30 +115,15 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		final var n = pendingChanges.size();
-		if (n == 0) {
-			return;
-		}
-		prepareAuxiliaryArraysFor(n);
-
+		prepareAuxiliaryArraysFor(pendingChanges.size());
 		// Once rewards are activated, they remain activated
 		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
-		// Will only be updated and consulted if rewards are not active
+		// Only updated and consulted if rewards are not activated
 		newFundingBalance = -1;
 
-		// Iterates through the change set, maintaining two invariants:
-		//   1. At the beginning of iteration i, any account in the [0, i) range that was reward-able due to
-		//      a change in balance, stakedAccountId, stakedNodeId, or declineRewards fields has been rewarded.
-		//      (IMPORTANT: this reward could be zero if the effective declineRewards is true.)
-		//   2. Any account whose stakedToMe balance was affected by one or more changes in the [0, i) range
-		//      has been, if not already present, added to the pendingChanges; and its updated stakedToMe is
-		//      reflected in stakedToMeUpdates.
 		updateRewardsAndElections(pendingChanges);
-		// Updates node stakes and constructs any finishers the ledger will use to set stakedToMe and
-		// stakePeriodStart fields on the mutable account instances
 		finalizeStakeMetadata(pendingChanges);
 		finalizeRewardBalance(pendingChanges);
-
 		super.preview(pendingChanges);
 
 		if (!rewardsActivated && newFundingBalance >= dynamicProperties.getStakingStartThreshold()) {
@@ -145,6 +136,18 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 		return finishers[i];
 	}
 
+	/**
+	 * Iterates through the change set, maintaining two invariants:
+	 * <ol>
+	 *    <li>At the beginning of iteration {@code i}, any account in the {@code [0, i)} range that was reward-able
+	 *    due to a change in {@code balance}, {@code stakedAccountId}, {@code stakedNodeId}, or {@code declineReward}
+	 *    fields has been rewarded.
+	 *    <li>Any account whose {@code stakedToMe} balance was affected by one or more changes in the {@code [0, i)}
+	 *    range has been, if not already present, added to the {@code pendingChanges}; and its updated {@code stakedToMe}
+	 *    is reflected in {@code stakedToMeUpdates}.</li>
+	 * </ol>
+	 * @param pendingChanges the changes to iterate, preserving the above invariants
+	 */
 	private void updateRewardsAndElections(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
@@ -156,7 +159,7 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			stakeChangeScenarios[i] = scenarioFor(account, changes);
 
 			if (!hasBeenRewarded[i] && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
-				payReward(i, account, changes);
+				payReward(i, account, changes, pendingChanges);
 				wasStakeMetaChanged[i] = true;
 			} else if (!hasBeenRewarded[i]) {
 				wasStakeMetaChanged[i] = stakeMetaChanged;
@@ -255,35 +258,57 @@ public class StakeAwareAccountsCommitsInterceptor extends AccountsCommitIntercep
 			if (!hasBeenRewarded[stakeeI]) {
 				// If this stakee has already been previewed, and wasn't rewarded, we should
 				// re-check if this stakedToMe change has now made it eligible for a reward
-				payRewardIfRewardable(pendingChanges, stakeeI);
+				payRewardIfRewardable(stakeeI, pendingChanges);
 			}
 		}
 	}
 
 	private void payRewardIfRewardable(
-			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges,
-			final int stakeeI
+			final int i,
+			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var account = pendingChanges.entity(stakeeI);
-		final var changes = pendingChanges.changes(stakeeI);
-		if (isRewardSituation(account, stakedToMeUpdates[stakeeI], changes)) {
-			payReward(stakeeI, account, changes);
+		final var account = pendingChanges.entity(i);
+		final var changes = pendingChanges.changes(i);
+		if (isRewardSituation(account, stakedToMeUpdates[i], changes)) {
+			payReward(i, account, changes, pendingChanges);
 		}
-		wasStakeMetaChanged[stakeeI] = stakeMetaChanged;
+		wasStakeMetaChanged[i] = stakeMetaChanged;
 	}
 
 	private void payReward(
-			final int accountI,
-			@NotNull final MerkleAccount account,
-			@NotNull final Map<AccountProperty, Object> changes
+			final int i,
+			@NotNull MerkleAccount account,
+			@NotNull Map<AccountProperty, Object> changes,
+			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var reward = rewardCalculator.computeAndApplyReward(account, changes);
-		System.out.println("Paying " + reward + " to account 0.0."
-				+ account.getKey().longValue()
-				+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
-						+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
-		sideEffectsTracker.trackRewardPayment(account.number(), reward);
-		hasBeenRewarded[accountI] = true;
+		final var reward = rewardCalculator.computePendingReward(account);
+		var receiverNum = numFromCode(account.number());
+		// We cannot reward a deleted account, so keep redirecting to the beneficiary of deleted
+		// accounts until we find a non-deleted account to reward
+		if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
+			var j = 1;
+			var maxRedirects= txnCtx.numDeletedAccountsAndContracts();
+			do {
+				if (j++ > maxRedirects)	{
+					log.error(
+							"With {} accounts deleted, last redirect in {} led to deleted beneficiary 0.0.{}",
+							maxRedirects, changes, receiverNum);
+					throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
+				}
+				receiverNum = txnCtx.getBeneficiaryOfDeleted(receiverNum);
+				final var redirectI = stakeChangeManager.findOrAdd(receiverNum, pendingChanges);
+				account = pendingChanges.entity(redirectI);
+				changes = pendingChanges.changes(redirectI);
+			} while (Boolean.TRUE.equals(changes.get(IS_DELETED)));
+		}
+		if (rewardCalculator.applyReward(reward, account, changes)) {
+			System.out.println("Paid " + reward + " to account 0.0."
+					+ account.getKey().longValue()
+					+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
+					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
+			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
+		}
+		hasBeenRewarded[i] = true;
 	}
 
 	/**

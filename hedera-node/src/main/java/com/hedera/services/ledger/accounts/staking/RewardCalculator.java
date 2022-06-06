@@ -25,7 +25,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
@@ -58,14 +60,33 @@ public class RewardCalculator {
 		rewardsPaid = 0;
 	}
 
-	public long computeAndApplyReward(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
-		final var reward = computePendingRewards(account);
+	public long computePendingReward(final MerkleAccount account) {
+		final var rewardOffered = computeRewardFromDetails(
+				account,
+				stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
+				stakePeriodManager.currentStakePeriod(),
+				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+		networkCtx.get().decreasePendingRewards(rewardOffered);
+		return account.isDeclinedReward() ? 0 : rewardOffered;
+	}
+
+	public boolean applyReward(
+			final long reward,
+			@Nullable final MerkleAccount account,
+			@NotNull final Map<AccountProperty, Object> changes
+	) {
 		if (reward > 0) {
+			final var isDeclined = (account != null)
+					? account.isDeclinedReward()
+					: (boolean) changes.getOrDefault(AccountProperty.DECLINE_REWARD, false);
+			if (isDeclined) {
+				return false;
+			}
 			final var balance = finalBalanceGiven(account, changes);
 			changes.put(BALANCE, balance + reward);
+			rewardsPaid += reward;
 		}
-		rewardsPaid += reward;
-		return reward;
+		return true;
 	}
 
 	public long rewardsPaidInThisTxn() {
@@ -83,16 +104,6 @@ public class RewardCalculator {
 
 	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
 		return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
-	}
-
-	private long computePendingRewards(final MerkleAccount account) {
-		final var rewardOffered = computeRewardFromDetails(
-				account,
-				stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
-				stakePeriodManager.currentStakePeriod(),
-				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
-		networkCtx.get().decreasePendingRewards(rewardOffered);
-		return account.isDeclinedReward() ? 0 : rewardOffered;
 	}
 
 	private long computeRewardFromDetails(

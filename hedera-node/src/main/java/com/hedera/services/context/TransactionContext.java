@@ -305,4 +305,36 @@ public interface TransactionContext {
 	 * @return long - the amount of gas used for the TX execution
 	 */
 	long getGasUsedForContractTxn();
+
+
+	/**
+	 * Records the beneficiary of an account (or contract) deleted in the current transaction.
+	 *
+	 * @param accountNum
+	 * 		the number of a deleted account
+	 * @param beneficiaryNum
+	 * 		the number of its beneficiary
+	 */
+	void recordBeneficiaryOfDeleted(long accountNum, long beneficiaryNum);
+
+	/**
+	 * Given the number of an account (or contract) deleted in the current transaction, returns the
+	 * number of its designated beneficiary. Used by the
+	 * {@link com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor}
+	 * to redirect reward payments that would have otherwise been received by deleted accounts.
+	 *
+	 * @param accountNum
+	 * 		the number of a deleted account
+	 * @return the number of its beneficiary
+	 * @throws IllegalArgumentException
+	 * 		if the given account number has no recorded beneficiary
+	 */
+	long getBeneficiaryOfDeleted(long accountNum);
+
+	/**
+	 * Gives the number of accounts (or contracts) deleted in the current transaction.
+	 *
+	 * @return the number of deleted entities
+	 */
+	int numDeletedAccountsAndContracts();
 }

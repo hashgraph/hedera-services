@@ -28,15 +28,15 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
+import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
-import com.hedera.services.ledger.interceptors.StakeAwareAccountsCommitsInterceptor;
-import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
+import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -55,7 +55,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -143,21 +142,28 @@ public interface StoresModule {
 			final SideEffectsTracker sideEffectsTracker,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final RewardCalculator rewardCalculator,
-			final StakeChangeManager manager,
+			final StakeChangeManager stakeChangeManager,
 			final StakePeriodManager stakePeriodManager,
 			final StakeInfoManager stakeInfoManager,
-			final AccountNumbers accountNumbers
+			final AccountNumbers accountNumbers,
+			final TransactionContext txnCtx
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker,
-				networkCtx, dynamicProperties, rewardCalculator, manager, stakePeriodManager,
-				stakeInfoManager, accountNumbers);
+		final var accountsCommitInterceptor = new StakingAccountsCommitInterceptor(
+				sideEffectsTracker,
+				networkCtx,
+				dynamicProperties,
+				rewardCalculator,
+				stakeChangeManager,
+				stakePeriodManager,
+				stakeInfoManager,
+				accountNumbers,
+				txnCtx);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

@@ -282,6 +282,7 @@ class StakePeriodManagerTest {
 	}
 
 	private void givenProdManager() {
+		given(properties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(365);
 		given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
 		subject = new StakePeriodManager(txnCtx, () -> networkContext, properties);
 	}

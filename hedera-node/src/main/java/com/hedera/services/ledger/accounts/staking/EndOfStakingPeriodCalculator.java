@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.interceptors;
+package com.hedera.services.ledger.accounts.staking;
 
 /*-
  * ‌
@@ -71,7 +71,7 @@ public class EndOfStakingPeriodCalculator {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final RecordsHistorian recordsHistorian,
 			final EntityCreator creator,
-			@CompositeProps PropertySource properties
+			final @CompositeProps PropertySource properties
 	) {
 		this.accounts = accounts;
 		this.stakingInfoSupplier = stakingInfoSupplier;
@@ -83,9 +83,12 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	public void updateNodes(final Instant consensusTime) {
+		// --- BEGIN DEBUG-ONLY CODE ---
 		final var thisPeriod = LinkedObjectStreamUtilities.getPeriod(consensusTime, 60_000);
 		final var lastPeriod = thisPeriod - 1;
 		System.out.println("Processing end of period " + lastPeriod + ", beginning " + thisPeriod);
+		// --- END DEBUG-ONLY CODE ---
+
 		final var stakingInfo = stakingInfoSupplier.get();
 		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
 
