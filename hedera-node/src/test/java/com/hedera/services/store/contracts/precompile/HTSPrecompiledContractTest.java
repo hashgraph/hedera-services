@@ -52,9 +52,6 @@ import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -75,7 +72,6 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -168,17 +164,9 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private FeeObject mockFeeObject;
 	@Mock
-	private CreateChecks createChecks;
-	@Mock
 	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private ApproveAllowanceChecks allowanceChecks;
-	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
-	@Mock
-	private DeleteAllowanceChecks deleteAllowanceChecks;
-	@Mock
-	private RedirectViewExecutor redirectViewExecutor;
 
 	private HTSPrecompiledContract subject;
 
@@ -487,8 +475,6 @@ class HTSPrecompiledContractTest {
 		assertNull(result.getValue());
 	}
 
-	//TODO investigate why this test is failing
-	@Disabled
 	@Test
 	void computeCostedWorks() {
 		given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
@@ -497,8 +483,10 @@ class HTSPrecompiledContractTest {
 		given(messageFrame.isStatic()).willReturn(true);
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.hasMutableLedgers()).willReturn(false);
-		given(infrastructureFactory.newRedirectExecutor(any(), any(), any())).willReturn(redirectViewExecutor);
 
+		final var redirectViewExecutor = new RedirectViewExecutor
+				(input, messageFrame, encoder, decoder, subject::computeViewFunctionGas);
+		given(infrastructureFactory.newRedirectExecutor(any(), any(), any())).willReturn(redirectViewExecutor);
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall,
 				Timestamp.newBuilder().setSeconds(viewTimestamp).build()))

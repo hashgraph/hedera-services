@@ -25,7 +25,7 @@ import org.apache.tuweni.bytes.Bytes;
 /**
  * All ABI constants used by {@link Precompile} implementations, in one place for easy review.
  */
-public class AbiConstants {
+public final class AbiConstants {
 
 	private AbiConstants() {
 		throw new IllegalStateException("Utility class");
@@ -74,16 +74,16 @@ public class AbiConstants {
 	//transferFrom(address from, address to, uint256 tokenId)
 	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
 	//allowance(address token, address owner, address spender)
-	protected static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
+	public static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
 	//approve(address token, address spender, uint256 amount)
 	//approve(address token, address to, uint256 tokenId)
-	protected static final int ABI_ID_APPROVE = 0x95ea7b3;
+	public static final int ABI_ID_APPROVE = 0x95ea7b3;
 	//setApprovalForAll(address token, address operator, bool approved)
-	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
+	public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
 	//getApproved(address token, uint256 tokenId)
-	protected static final int ABI_ID_GET_APPROVED = 0x081812fc;
+	public static final int ABI_ID_GET_APPROVED = 0x081812fc;
 	//isApprovedForAll(address token, address owner, address operator)
-	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
+	public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
 	//ownerOf(uint256 tokenId)
 	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)

@@ -48,11 +48,11 @@ import java.math.BigInteger;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class ERCTransferPrecompile extends TransferPrecompile {
-	private static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	private final TokenID tokenID;
 	private final AccountID callerAccountID;
 	private final boolean isFungible;

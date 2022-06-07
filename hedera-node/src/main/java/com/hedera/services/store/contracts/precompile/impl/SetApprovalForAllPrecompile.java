@@ -45,12 +45,12 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class SetApprovalForAllPrecompile implements Precompile {
-	private static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	private final TokenID tokenId;
 	private final WorldLedgers ledgers;
 	private final DecodingFacade decoder;

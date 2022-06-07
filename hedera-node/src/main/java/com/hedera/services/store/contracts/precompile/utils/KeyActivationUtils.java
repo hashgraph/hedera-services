@@ -31,7 +31,7 @@ import java.util.Optional;
 
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
-public class KeyActivationUtils {
+public final class KeyActivationUtils {
 
 	private KeyActivationUtils() {
 		throw new IllegalStateException("Utility class");

@@ -51,6 +51,7 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
@@ -59,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 public class ApprovePrecompile implements Precompile {
-	private static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	private final TokenID tokenId;
 	private final boolean isFungible;
 	private final WorldLedgers ledgers;
