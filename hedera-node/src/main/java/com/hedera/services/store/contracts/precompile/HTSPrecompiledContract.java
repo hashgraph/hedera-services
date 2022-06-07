@@ -417,8 +417,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> (dynamicProperties.isHTSPrecompileCreateEnabled())
 							? new TokenCreatePrecompile(
 									ledgers, decoder, encoder, updater, sigsVerifier, recordsHistorian,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
-							functionId, senderAddress, dynamicProperties.fundingAccount(), feeCalculator, currentView)
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, functionId, senderAddress,
+							dynamicProperties.fundingAccount(), feeCalculator, currentView)
 							: null;
 					default -> null;
 				};

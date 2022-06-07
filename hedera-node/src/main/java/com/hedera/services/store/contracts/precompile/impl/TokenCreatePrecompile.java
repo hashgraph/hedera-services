@@ -43,7 +43,6 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
@@ -145,7 +144,6 @@ public class TokenCreatePrecompile implements Precompile {
 	private final SideEffectsTracker sideEffects;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
 	private final int functionId;
 	private final Address senderAddress;
 	private final AccountID fundingAccount;
@@ -164,7 +162,6 @@ public class TokenCreatePrecompile implements Precompile {
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
 			final Address senderAddress,
 			final AccountID fundingAccount,
@@ -180,7 +177,6 @@ public class TokenCreatePrecompile implements Precompile {
 		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
 		this.functionId = functionId;
 		this.senderAddress = senderAddress;
 		this.fundingAccount = fundingAccount;
