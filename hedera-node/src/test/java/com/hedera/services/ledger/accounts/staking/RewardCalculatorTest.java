@@ -84,6 +84,7 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
+		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
@@ -172,6 +173,9 @@ class RewardCalculatorTest {
 		reward = subject.computePendingReward(account);
 
 		assertEquals(270, reward);
+		rewardHistory[0] = 5;
+		rewardHistory[1] = 0;
+		rewardHistory[2] = 0;
 	}
 
 	@Test
@@ -222,6 +226,7 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
+		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 		given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);

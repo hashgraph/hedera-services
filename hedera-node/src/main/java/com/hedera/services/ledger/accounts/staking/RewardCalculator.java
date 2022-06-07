@@ -136,6 +136,10 @@ public class RewardCalculator {
 			final long effectiveStart) {
 		final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
 
+		if (rewardFrom == 0) {
+			return 0;
+		}
+
 		if (account.getStakeAtStartOfLastRewardedPeriod() != -1) {
 			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
 					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]) +
