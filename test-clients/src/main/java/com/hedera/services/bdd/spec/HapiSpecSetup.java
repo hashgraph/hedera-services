@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -80,7 +81,7 @@ public class HapiSpecSetup {
 	public static HapiSpecSetup getDefaultInstance() {
 		return DEFAULT_INSTANCE;
 	}
-	private final HapiPropertySource props;
+	private HapiPropertySource props;
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
@@ -88,6 +89,16 @@ public class HapiSpecSetup {
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
+	}
+
+	/**
+	 * Add new properties that would merge with existing ones, if a property already
+	 * exist then override it with new value
+	 * @param props
+	 * 		A map of new properties
+	 */
+	public void addOverrides(final Map<String, Object> props) {
+		this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
 	}
 
 	public FileID addressBookId() {
