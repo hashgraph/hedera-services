@@ -32,6 +32,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
@@ -100,6 +101,8 @@ class ContractCallTransitionLogicTest {
 	private AliasManager aliasManager;
 	@Mock
 	private EntityAccess entityAccess;
+	@Mock
+	private HTSPrecompiledContract htsPrecompiledContract;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -112,7 +115,7 @@ class ContractCallTransitionLogicTest {
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
+				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess,htsPrecompiledContract);
 	}
 
 	@Test

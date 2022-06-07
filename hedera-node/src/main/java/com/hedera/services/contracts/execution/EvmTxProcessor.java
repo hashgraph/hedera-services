@@ -360,9 +360,30 @@ abstract class EvmTxProcessor {
 		return gasUsedByTransaction;
 	}
 
-	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
+	public long calculateGasUsedByTokenCallTX(final long txGasLimit, final long remainingGas) {
+		long gasUsedByTransaction = txGasLimit - remainingGas;
+		/* Return leftover gas */ //since we don't have frame I'm not sure about the commented rows below.
+//		final long selfDestructRefund =
+//				gasCalculator.getSelfDestructRefundAmount() *
+//						Math.min(
+//								initialFrame.getSelfDestructs().size(),
+//								gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+//
+//		gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
+
+		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
+
+		return gasUsedByTransaction;
+	}
+
+	public long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
 		return livePricesSource.currentGasPrice(consensusTime,
 				isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+	}
+
+	public long getIntrinsicGasCost(Bytes bytes, boolean b){
+		return gasCalculator.transactionIntrinsicGasCost(bytes,b);
 	}
 
 	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {

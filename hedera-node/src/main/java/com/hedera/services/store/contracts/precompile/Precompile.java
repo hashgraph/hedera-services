@@ -88,7 +88,7 @@ interface Precompile {
 	}
 
 	// Change the world state through the given frame
-	void run(MessageFrame frame);
+	void run(InfoProvider infoProvider);
 
 	default void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
 		// No-op
