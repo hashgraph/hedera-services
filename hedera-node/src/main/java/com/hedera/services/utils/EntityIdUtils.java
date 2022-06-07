@@ -346,8 +346,7 @@ public final class EntityIdUtils {
 			final var alias = idOrAlias.getEvmAddress();
 			final var evmAddress = alias.toByteArray();
 			if (aliasManager.isMirror(evmAddress)) {
-				final var contractNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
-				return EntityNum.fromLong(contractNum);
+				return EntityNum.fromLong(numOfMirror(evmAddress));
 			}
 			if (aliasObs != null) {
 				aliasObs.accept(alias);
@@ -356,5 +355,9 @@ public final class EntityIdUtils {
 		} else {
 			return EntityNum.fromContractId(idOrAlias);
 		}
+	}
+
+	public static long numOfMirror(final byte[] evmAddress) {
+		return Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
 	}
 }

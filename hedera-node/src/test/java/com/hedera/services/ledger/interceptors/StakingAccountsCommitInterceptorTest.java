@@ -22,6 +22,7 @@ package com.hedera.services.ledger.interceptors;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
@@ -50,16 +51,19 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -69,11 +73,12 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
-class StakeAwareAccountsCommitInterceptorTest {
+class StakingAccountsCommitInterceptorTest {
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
@@ -100,11 +105,13 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private MerkleAccount merkleAccount;
 	@Mock
 	private AccountNumbers accountNumbers;
+	@Mock
+	private TransactionContext txnCtx;
 
 	private StakeInfoManager stakeInfoManager;
 
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-	private StakeAwareAccountsCommitsInterceptor subject;
+	private StakingAccountsCommitInterceptor subject;
 
 	private static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
 			ZONE_UTC).toEpochDay() - 1;
@@ -117,23 +124,44 @@ class StakeAwareAccountsCommitInterceptorTest {
 	void setUp() throws NegativeAccountBalanceException {
 		stakingInfo = buildsStakingInfoMap();
 		stakeInfoManager = new StakeInfoManager(() -> stakingInfo);
-		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers);
+		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx);
 		reset();
 	}
 
 	@Test
-	void noChangesAreNoop() {
-		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+	void setsNothingIfUpdateIsSentinel() {
+		subject.getStakedToMeUpdates()[2] = -1;
+		subject.getStakePeriodStartUpdates()[2] = -1;
+		final var mockAccount = mock(MerkleAccount.class);
 
-		subject.preview(changes);
+		subject.finish(2, mockAccount);
 
-		verifyNoInteractions(sideEffectsTracker);
-		verifyNoInteractions(stakeChangeManager);
-		verifyNoInteractions(stakePeriodManager);
-		verifyNoInteractions(rewardCalculator);
-		verifyNoInteractions(networkCtx);
-		verifyNoInteractions(dynamicProperties);
+		verifyNoInteractions(mockAccount);
+	}
+
+	@Test
+	void setsGivenNonSentinelUpdate() {
+		subject.getStakedToMeUpdates()[2] = 100 * HBARS_TO_TINYBARS;
+		subject.getStakePeriodStartUpdates()[2] = 123;
+		final var mockAccount = mock(MerkleAccount.class);
+
+		subject.finish(2, mockAccount);
+
+		verify(mockAccount).setStakedToMe(100 * HBARS_TO_TINYBARS);
+		verify(mockAccount).setStakePeriodStart(123);
+	}
+
+	@Test
+	void usesFinishToUpdatePendingRewards() {
+		subject.getRewardsEarned()[2] = 123L;
+		subject.getStakedToMeUpdates()[2] = 234L;
+		subject.getStakePeriodStartUpdates()[2] = 345L;
+		final var mockAccount = mock(MerkleAccount.class);
+
+		subject.finish(2, mockAccount);
+
+		verify(stakePeriodManager).updatePendingRewardsGiven(123L, 234L, 345L, mockAccount);
 	}
 
 	@Test
@@ -143,13 +171,14 @@ class StakeAwareAccountsCommitInterceptorTest {
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		given(rewardCalculator.computeAndApplyReward(counterparty, changes.changes(1))).willReturn(rewardPayment);
+		given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
+		given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1))).willReturn(true);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		subject.preview(changes);
 
-		verify(rewardCalculator).computeAndApplyReward(counterparty, changes.changes(1));
+		verify(rewardCalculator).applyReward(rewardPayment, counterparty, changes.changes(1));
 		verify(sideEffectsTracker).trackRewardPayment(counterpartyId.getAccountNum(), rewardPayment);
 
 		verify(stakeChangeManager).awardStake(1, (long) changes.changes(0).get(AccountProperty.BALANCE),
@@ -160,8 +189,8 @@ class StakeAwareAccountsCommitInterceptorTest {
 		verify(stakeChangeManager).awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE),
 				false);
 
-		assertFalse(subject.getHasBeenRewarded()[0]);
-		assertTrue(subject.getHasBeenRewarded()[1]);
+		assertFalse(subject.hasBeenRewarded(0));
+		assertTrue(subject.hasBeenRewarded(1));
 	}
 
 	@Test
@@ -295,8 +324,9 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
-		given(rewardCalculator.computeAndApplyReward(any(), any())).willReturn(10L);
+		given(rewardCalculator.computePendingReward(any())).willReturn(10L);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(rewardCalculator.applyReward(10L, counterparty, pendingChanges.changes(0))).willReturn(true);
 		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
 		stakingFund.setStakePeriodStart(-1);
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
@@ -313,7 +343,6 @@ class StakeAwareAccountsCommitInterceptorTest {
 	void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
 		final Consumer<MerkleAccount> noopFinisherOne = a -> {};
 		final Consumer<MerkleAccount> noopFinisherTwo = a -> {};
-		final var inorderSP = inOrder(stakePeriodManager);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 		final var rewardPayment = HBARS_TO_TINYBARS + 100;
@@ -322,14 +351,15 @@ class StakeAwareAccountsCommitInterceptorTest {
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
 		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-		given(stakePeriodManager.finisherFor(-1L, 2L, 100 * HBARS_TO_TINYBARS, true, true))
-				.willReturn(noopFinisherOne);
-		given(stakePeriodManager.finisherFor(0L, 0L, -1, false, true))
-				.willReturn(noopFinisherTwo);
+		given(stakePeriodManager.startUpdateFor(-1L, 2L, true, true))
+				.willReturn(13L);
+		given(stakePeriodManager.startUpdateFor(0L, 0L, false, true))
+				.willReturn(666L);
+		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
 
 		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
-		given(rewardCalculator.computeAndApplyReward(any(), any())).willReturn(rewardPayment);
+		given(rewardCalculator.computePendingReward(any())).willReturn(rewardPayment);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
 		stakingFund.setStakePeriodStart(-1);
@@ -343,8 +373,118 @@ class StakeAwareAccountsCommitInterceptorTest {
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager, never()).awardStake(2L, 0L, false);
 
-		assertSame(noopFinisherOne, subject.finisherFor(0));
-		assertSame(noopFinisherTwo, subject.finisherFor(1));
+		final var updatedStakePeriodStarts = subject.getStakePeriodStartUpdates();
+		assertEquals(13L, updatedStakePeriodStarts[0]);
+		assertEquals(666L, updatedStakePeriodStarts[1]);
+	}
+
+	@Test
+	void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
+		final var tbdReward = 1_234L;
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
+
+		final var pendingChanges = buildPendingNodeStakeChanges();
+		pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
+		pendingChanges.changes(0).put(BALANCE, 0L);
+
+		final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
+		firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
+		pendingChanges.include(partyId, party, firstBeneficiaryChanges);
+
+		final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance + beneficiaryBalance);
+		pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
+
+		given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
+		given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
+		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
+		given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
+		given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
+		given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2))).willReturn(true);
+
+		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
+				stakeInfoManager, accountNumbers, txnCtx);
+
+		subject.preview(pendingChanges);
+		verify(rewardCalculator, times(2))
+				.applyReward(tbdReward, beneficiary, pendingChanges.changes(2));
+		verify(sideEffectsTracker, times(2))
+				.trackRewardPayment(beneficiaryId.getAccountNum(), tbdReward);
+	}
+
+	@Test
+	void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
+		final var tbdReward = 1_234L;
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
+
+		final var pendingChanges = buildPendingNodeStakeChanges();
+		pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
+		pendingChanges.changes(0).put(BALANCE, 0L);
+
+		final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
+		firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
+		pendingChanges.include(partyId, party, firstBeneficiaryChanges);
+
+		final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance + beneficiaryBalance);
+		pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
+
+		given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
+		given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
+		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
+		given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
+		given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
+		given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2)))
+				.willReturn(false).willReturn(true);
+
+		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
+				stakeInfoManager, accountNumbers, txnCtx);
+
+		subject.preview(pendingChanges);
+		verify(rewardCalculator, times(2))
+				.applyReward(tbdReward, beneficiary, pendingChanges.changes(2));
+		verify(sideEffectsTracker, times(1))
+				.trackRewardPayment(beneficiaryId.getAccountNum(), tbdReward);
+	}
+
+	@Test
+	void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
+
+		final var pendingChanges = buildPendingNodeStakeChanges();
+		pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
+		pendingChanges.changes(0).put(BALANCE, 0L);
+
+		final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
+		firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
+		pendingChanges.include(partyId, party, firstBeneficiaryChanges);
+
+		final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
+		secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance + beneficiaryBalance);
+		pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
+
+		given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
+		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(1);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
+
+		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
+				stakeInfoManager, accountNumbers, txnCtx);
+
+		assertThrows(IllegalStateException.class, () -> subject.preview(pendingChanges));
 	}
 
 	@Test
@@ -362,14 +502,12 @@ class StakeAwareAccountsCommitInterceptorTest {
 		given(accounts.get(EntityNum.fromLong(2L))).willReturn(merkleAccount);
 		given(merkleAccount.getStakedToMe()).willReturn(0L);
 
-		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
+		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers);
+				stakeInfoManager, accountNumbers, txnCtx);
 
-		final var hasBeenRewarded = new boolean[64];
-		hasBeenRewarded[1] = true;
-		hasBeenRewarded[2] = true;
-		subject.setHasBeenRewarded(hasBeenRewarded);
+		subject.getRewardsEarned()[1] = 0;
+		subject.getRewardsEarned()[2] = 1;
 		assertEquals(2, pendingChanges.size());
 
 		subject.setCurStakedId(1L);
@@ -403,14 +541,19 @@ class StakeAwareAccountsCommitInterceptorTest {
 		pendingChanges.include(stakingFundId, stakingFund, new HashMap<>(stakingFundChanges));
 		pendingChanges.include(counterpartyId, counterparty, map);
 
-		subject = new StakeAwareAccountsCommitsInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers);
+		subject = new StakingAccountsCommitInterceptor(
+				sideEffectsTracker,
+				() -> networkCtx,
+				dynamicProperties,
+				rewardCalculator,
+				new StakeChangeManager(stakeInfoManager, () -> accounts),
+				stakePeriodManager,
+				stakeInfoManager,
+				accountNumbers,
+				txnCtx);
 
-		final var hasBeenRewarded = new boolean[64];
-		hasBeenRewarded[0] = false;
-		hasBeenRewarded[1] = false;
-		subject.setHasBeenRewarded(hasBeenRewarded);
+		subject.getRewardsEarned()[0] = -1;
+		subject.getRewardsEarned()[1] = -1;
 		subject.setCurStakedId(partyId.getAccountNum());
 		subject.setNewStakedId(partyId.getAccountNum());
 		assertEquals(3, pendingChanges.size());
@@ -429,7 +572,7 @@ class StakeAwareAccountsCommitInterceptorTest {
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {
-		var changes = randomStakedNodeChanges(100L);
+		var changes = randomStakedNodeChanges(0L);
 		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		pendingChanges.include(counterpartyId, counterparty, changes);
 		return pendingChanges;
@@ -499,8 +642,10 @@ class StakeAwareAccountsCommitInterceptorTest {
 	private static final long amount = HBARS_TO_TINYBARS;
 	private static final long partyBalance = 111 * HBARS_TO_TINYBARS;
 	private static final long counterpartyBalance = 555L * HBARS_TO_TINYBARS;
+	private static final long beneficiaryBalance = 666L * HBARS_TO_TINYBARS;
 	private static final AccountID partyId = AccountID.newBuilder().setAccountNum(123).build();
 	private static final AccountID counterpartyId = AccountID.newBuilder().setAccountNum(321).build();
+	private static final AccountID beneficiaryId = AccountID.newBuilder().setAccountNum(456).build();
 	private static final AccountID stakingFundId = AccountID.newBuilder().setAccountNum(800).build();
 	private static final MerkleAccount party = MerkleAccountFactory.newAccount()
 			.number(EntityNum.fromAccountId(partyId))
@@ -510,6 +655,12 @@ class StakeAwareAccountsCommitInterceptorTest {
 			.stakedId(-1)
 			.number(EntityNum.fromAccountId(counterpartyId))
 			.balance(counterpartyBalance)
+			.get();
+
+	private static final MerkleAccount beneficiary = MerkleAccountFactory.newAccount()
+			.stakedId(-1)
+			.number(EntityNum.fromAccountId(beneficiaryId))
+			.balance(beneficiaryBalance)
 			.get();
 	private static final MerkleAccount stakingFund = MerkleAccountFactory.newAccount()
 			.number(EntityNum.fromAccountId(stakingFundId))

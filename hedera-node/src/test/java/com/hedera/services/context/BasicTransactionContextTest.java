@@ -189,6 +189,17 @@ class BasicTransactionContextTest {
 	}
 
 	@Test
+	void throwIaeIfNoRecordedDeletionsOrDeletionNotRecorded() {
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		subject.recordBeneficiaryOfDeleted(124L, 356L);
+		subject.recordBeneficiaryOfDeleted(125L, 357L);
+		assertEquals(2, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		assertEquals(356L, subject.getBeneficiaryOfDeleted(124L));
+	}
+
+	@Test
 	void throwsIseIfNoPayerActive() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.activePayer());
@@ -269,6 +280,7 @@ class BasicTransactionContextTest {
 		subject.setTargetedContract(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.setAssessedCustomFees(Collections.emptyList());
+		subject.recordBeneficiaryOfDeleted(1L, 2L);
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -276,6 +288,8 @@ class BasicTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(1L));
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
 		// and:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();

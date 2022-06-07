@@ -30,6 +30,8 @@ import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
 @Singleton
 public class HederaNumbers {
+	private static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
+
 	private final PropertySource properties;
 
 	private long realm = UNKNOWN_NUMBER;
@@ -56,9 +58,6 @@ public class HederaNumbers {
 	}
 
 	public long numReservedSystemEntities() {
-		if (numReservedSystemEntities == UNKNOWN_NUMBER) {
-			numReservedSystemEntities = properties.getLongProperty("hedera.numReservedSystemEntities");
-		}
-		return numReservedSystemEntities;
+		return NUM_RESERVED_SYSTEM_ENTITIES;
 	}
 }

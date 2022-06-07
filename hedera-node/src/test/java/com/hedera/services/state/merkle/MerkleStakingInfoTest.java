@@ -256,8 +256,8 @@ class MerkleStakingInfoTest {
 		final var expected = CommonUtils.noThrowSha384HashOf(baos.toByteArray());
 		final var actual = subject.getHash();
 
-		assertNotNull(subject.historyHash);
-		assertArrayEquals(rewardSumHistoryHash, subject.historyHash);
+		assertNotNull(subject.getHistoryHash());
+		assertArrayEquals(rewardSumHistoryHash, subject.getHistoryHash());
 		assertArrayEquals(expected, actual.getValue());
 
 	}

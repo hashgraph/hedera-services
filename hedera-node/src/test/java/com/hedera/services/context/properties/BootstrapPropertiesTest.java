@@ -134,7 +134,6 @@ class BootstrapPropertiesTest {
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
 			entry("hedera.exportAccountsOnStartup", false),
 			entry("hedera.firstUserEntity", 1001L),
-			entry("hedera.numReservedSystemEntities", 750L),
 			entry("hedera.prefetch.queueCapacity", 10000),
 			entry("hedera.prefetch.threadPoolSize", 2),
 			entry("hedera.prefetch.codeCacheTtlSecs", 120),

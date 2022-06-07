@@ -64,6 +64,8 @@ public class SideEffectsTracker {
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
 	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];
+	private final long[] rewardedAccounts = new long[MAX_BALANCE_CHANGES];
+	private final long[] rewardAmounts = new long[MAX_BALANCE_CHANGES];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -74,12 +76,10 @@ public class SideEffectsTracker {
 	private long netHbarChange = 0;
 	private int numHbarChangesSoFar = 0;
 	private int numRewardedAccounts = 0;
-	private long[] rewardedAccounts = new long[MAX_BALANCE_CHANGES];
-	private long[] rewardAmounts = new long[MAX_BALANCE_CHANGES];
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
-	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
+	// Either the key-derived alias for an auto-created account, or the EVM address of a created contract
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 

@@ -87,6 +87,13 @@ class EntityIdUtilsTest {
 	}
 
 	@Test
+	void extractsMirrorNum() {
+		final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+
+		assertEquals(0x9abcdefabcdefbbbL, EntityIdUtils.numOfMirror(mockAddr));
+	}
+
+	@Test
 	void returnsResolvedContractIdIfNonMirro() {
 		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 		final var extantNum = EntityNum.fromLong(1_234_567L);

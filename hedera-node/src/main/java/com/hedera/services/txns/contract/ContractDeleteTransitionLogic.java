@@ -50,6 +50,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 		final var deleted = deletionLogic.performFor(op);
 
 		txnCtx.setTargetedContract(deleted);
+		txnCtx.recordBeneficiaryOfDeleted(deleted.getContractNum(), deletionLogic.getLastObtainer().getAccountNum());
 	}
 
 	@Override
