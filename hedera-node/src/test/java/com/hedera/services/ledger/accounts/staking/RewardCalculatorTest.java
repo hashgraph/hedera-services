@@ -141,6 +141,40 @@ class RewardCalculatorTest {
 	}
 
 	@Test
+	void calculatesRewardsAppropriatelyIfBalanceAtStartOfLastRewardedPeriodIsSet() {
+		rewardHistory[0] = 6;
+		rewardHistory[1] = 3;
+		rewardHistory[2] = 1;
+		setUpMocks();
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
+		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
+		given(account.getStakedNodeAddressBookId()).willReturn(0L);
+		given(account.isDeclinedReward()).willReturn(false);
+		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(90 * Units.HBARS_TO_TINYBARS);
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 4);
+		// 100 * (6-1) + 90 * (1-0) = 590;
+		var reward = subject.computePendingReward(account);
+
+		assertEquals(590, reward);
+
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 3);
+		// 100 * (6-3) + 90 * (3-1) = 480;
+		reward = subject.computePendingReward(account);
+
+		assertEquals(480, reward);
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
+		// 100 * (6-6) + 90 * (6-3) = 270;
+		reward = subject.computePendingReward(account);
+
+		assertEquals(270, reward);
+	}
+
+	@Test
 	void adjustsEffectiveStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		setUpMocks();
 		final var changes = new HashMap<AccountProperty, Object>();

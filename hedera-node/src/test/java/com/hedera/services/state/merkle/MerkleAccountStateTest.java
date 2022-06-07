@@ -250,7 +250,7 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setStakedNum(otherStakedNum));
 		assertThrows(MutabilityException.class, () -> subject.setDeclineReward(otherDeclinedReward));
 		assertThrows(MutabilityException.class, () -> subject.setRewardedSinceLastMetadataChange(otherRewardedSinceLastMetadataChange));
-		assertThrows(MutabilityException.class, () -> subject.setBalanceAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
+		assertThrows(MutabilityException.class, () -> subject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
 	}
 
 	@Test
@@ -452,7 +452,7 @@ class MerkleAccountStateTest {
 	@Test
 	void equalsWorksForBalanceAtStartOfLastRewardedPeriod() {
 		final var otherSubject = subject.copy();
-		otherSubject.setBalanceAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
+		otherSubject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
 		assertNotEquals(subject, otherSubject);
 	}
 
@@ -467,7 +467,7 @@ class MerkleAccountStateTest {
 	void resetBalanceAtStartOfLastRewardedPeriodIfRewardedSinceLastMetadataChange() {
 		final var otherSubject = subject.copy();
 		otherSubject.setRewardedSinceLastMetadataChange(true);
-		assertEquals(-1, otherSubject.getBalanceAtStartOfLastRewardedPeriod());
+		assertEquals(-1, otherSubject.getStakeAtStartOfLastRewardedPeriod());
 	}
 
 	@Test

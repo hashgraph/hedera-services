@@ -82,7 +82,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	// The rewards earned by accounts in the change set
 	private long[] rewardsEarned = new long[INITIAL_CHANGE_CAPACITY];
 	// The balance at the start of this reward period for accounts in the change set
-	private long[] balanceAtStartOfLastRewardedPeriodUpdates = new long[INITIAL_CHANGE_CAPACITY];
+	private long[] stakeAtStartOfLastRewardedPeriodUpdates = new long[INITIAL_CHANGE_CAPACITY];
 	// The new stakedToMe values of accounts in the change set
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
 	// The new stakePeriodStart values of accounts in the change set
@@ -150,15 +150,15 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			// so a two-step reward computation would be wrong
 			mutableAccount.setRewardedSinceLastMetadataChange(true);
 		} else {
-			if (balanceAtStartOfLastRewardedPeriodUpdates[i] != -1) {
-				mutableAccount.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriodUpdates[i]);
+			if (stakeAtStartOfLastRewardedPeriodUpdates[i] != -1) {
+				mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
 			}
 		}
 		stakePeriodManager.updatePendingRewardsGiven(
 				rewardsEarned[i],
 				stakedToMeUpdates[i],
 				stakePeriodStartUpdates[i],
-				balanceAtStartOfLastRewardedPeriodUpdates[i],
+				stakeAtStartOfLastRewardedPeriodUpdates[i],
 				mutableAccount);
 	}
 
@@ -335,7 +335,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
 					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
-			balanceAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance();
+			stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
 		}
 		rewardsEarned[i] = reward;
 	}
@@ -391,14 +391,14 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		final var maxImpliedChanges = 3 * n + 1;
 		if (rewardsEarned.length < maxImpliedChanges) {
 			rewardsEarned = new long[maxImpliedChanges];
-			balanceAtStartOfLastRewardedPeriodUpdates = new long[maxImpliedChanges];
+			stakeAtStartOfLastRewardedPeriodUpdates = new long[maxImpliedChanges];
 			stakedToMeUpdates = new long[maxImpliedChanges];
 			wasStakeMetaChanged = new boolean[maxImpliedChanges];
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
 			stakePeriodStartUpdates = new long[maxImpliedChanges];
 		}
 		Arrays.fill(rewardsEarned, -1);
-		Arrays.fill(balanceAtStartOfLastRewardedPeriodUpdates, -1);
+		Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, -1);
 		Arrays.fill(stakedToMeUpdates, -1);
 		Arrays.fill(wasStakeMetaChanged, false);
 		// The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used left-to-right only
@@ -444,12 +444,17 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	}
 
 	@VisibleForTesting
-	long[] getBalanceAtStartOfLastRewardedPeriodUpdates() {
-		return balanceAtStartOfLastRewardedPeriodUpdates;
+	long[] getStakeAtStartOfLastRewardedPeriodUpdates() {
+		return stakeAtStartOfLastRewardedPeriodUpdates;
 	}
 
 	@VisibleForTesting
 	long[] getRewardsEarned() {
 		return rewardsEarned;
+	}
+
+	@VisibleForTesting
+	boolean[] getWasStakeMetaChanged() {
+		return wasStakeMetaChanged;
 	}
 }

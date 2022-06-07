@@ -115,7 +115,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	// When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
 	private long stakedNum;
 	private boolean declineReward;
-	private long balanceAtStartOfLastRewardedPeriod;
+	private long stakeAtStartOfLastRewardedPeriod;
 	private boolean rewardedSinceLastMetadataChange;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
@@ -163,7 +163,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.stakePeriodStart = that.stakePeriodStart;
 		this.stakedNum = that.stakedNum;
 		this.declineReward = that.declineReward;
-		this.balanceAtStartOfLastRewardedPeriod = that.balanceAtStartOfLastRewardedPeriod;
+		this.stakeAtStartOfLastRewardedPeriod = that.stakeAtStartOfLastRewardedPeriod;
 		this.rewardedSinceLastMetadataChange = that.rewardedSinceLastMetadataChange;
 	}
 
@@ -200,7 +200,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final long stakePeriodStart,
 			final long stakedNum,
 			final boolean declineReward,
-			final long balanceAtStartOfLastRewardedPeriod,
+			final long stakeAtStartOfLastRewardedPeriod,
 			final boolean rewardedSinceLastMetadataChange
 	) {
 		this.key = key;
@@ -235,7 +235,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.stakePeriodStart = stakePeriodStart;
 		this.stakedNum = stakedNum;
 		this.declineReward = declineReward;
-		this.balanceAtStartOfLastRewardedPeriod = balanceAtStartOfLastRewardedPeriod;
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
 		this.rewardedSinceLastMetadataChange = rewardedSinceLastMetadataChange;
 	}
 
@@ -316,7 +316,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			stakePeriodStart = in.readLong();
 			stakedNum = in.readLong();
 			declineReward = in.readBoolean();
-			balanceAtStartOfLastRewardedPeriod = in.readLong();
+			stakeAtStartOfLastRewardedPeriod = in.readLong();
 			rewardedSinceLastMetadataChange = in.readBoolean();
 		}
 	}
@@ -356,7 +356,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeLong(stakePeriodStart);
 		out.writeLong(stakedNum);
 		out.writeBoolean(declineReward);
-		out.writeLong(balanceAtStartOfLastRewardedPeriod);
+		out.writeLong(stakeAtStartOfLastRewardedPeriod);
 		out.writeBoolean(rewardedSinceLastMetadataChange);
 	}
 
@@ -408,7 +408,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.stakePeriodStart == that.stakePeriodStart &&
 				this.stakedNum == that.stakedNum &&
 				this.declineReward == that.declineReward &&
-				this.balanceAtStartOfLastRewardedPeriod == that.balanceAtStartOfLastRewardedPeriod &&
+				this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod &&
 				this.rewardedSinceLastMetadataChange == that.rewardedSinceLastMetadataChange;
 	}
 
@@ -445,7 +445,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				stakePeriodStart,
 				stakedNum,
 				declineReward,
-				balanceAtStartOfLastRewardedPeriod,
+				stakeAtStartOfLastRewardedPeriod,
 				rewardedSinceLastMetadataChange);
 	}
 
@@ -484,7 +484,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("stakePeriodStart", stakePeriodStart)
 				.add("stakedNum", stakedNum)
 				.add("declineReward", declineReward)
-				.add("balanceAtStartOfLastRewardedPeriod", balanceAtStartOfLastRewardedPeriod)
+				.add("balanceAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
 				.add("rewardedSinceLastMetadataChange", rewardedSinceLastMetadataChange)
 				.toString();
 	}
@@ -805,13 +805,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.declineReward = declineReward;
 	}
 
-	public long getBalanceAtStartOfLastRewardedPeriod() {
-		return balanceAtStartOfLastRewardedPeriod;
+	public long getStakeAtStartOfLastRewardedPeriod() {
+		return stakeAtStartOfLastRewardedPeriod;
 	}
 
-	public void setBalanceAtStartOfLastRewardedPeriod(final long balanceAtStartOfLastRewardedPeriod) {
+	public void setStakeAtStartOfLastRewardedPeriod(final long stakeAtStartOfLastRewardedPeriod) {
 		assertMutable("balanceAtStartOfLastRewardedPeriod");
-		this.balanceAtStartOfLastRewardedPeriod = balanceAtStartOfLastRewardedPeriod;
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
 	}
 
 	public boolean isRewardedSinceLastMetadataChange() {
@@ -822,7 +822,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		assertMutable("rewardedSinceLastMetadataChange");
 		this.rewardedSinceLastMetadataChange = rewardedSinceLastMetadataChange;
 		if (rewardedSinceLastMetadataChange) {
-			this.balanceAtStartOfLastRewardedPeriod = -1;
+			this.stakeAtStartOfLastRewardedPeriod = -1;
 		}
 	}
 

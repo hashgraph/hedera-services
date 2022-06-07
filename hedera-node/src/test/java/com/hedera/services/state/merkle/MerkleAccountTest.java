@@ -276,7 +276,7 @@ class MerkleAccountTest {
 		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
 		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
 		assertEquals(state.getStakedNum(), subject.getStakedId());
-		assertEquals(state.getBalanceAtStartOfLastRewardedPeriod(), subject.getBalanceAtStartOfLastRewardedPeriod());
+		assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.getStakeAtStartOfLastRewardedPeriod());
 		assertEquals(state.isRewardedSinceLastMetadataChange(), subject.isRewardedSinceLastMetadataChange());
 	}
 
@@ -321,7 +321,7 @@ class MerkleAccountTest {
 		subject.setStakePeriodStart(stakePeriodStart);
 		subject.setDeclineReward(declinedReward);
 		subject.setStakedId(-stakedNum);
-		subject.setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+		subject.setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
 		subject.setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		verify(delegate).setExpiry(otherExpiry);
@@ -350,7 +350,7 @@ class MerkleAccountTest {
 		verify(delegate).setStakedToMe(stakedToMe);
 		verify(delegate).setStakePeriodStart(stakePeriodStart);
 		verify(delegate).setDeclineReward(declinedReward);
-		verify(delegate).setBalanceAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+		verify(delegate).setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
 		verify(delegate).setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		subject.setStakedId(stakedNum);

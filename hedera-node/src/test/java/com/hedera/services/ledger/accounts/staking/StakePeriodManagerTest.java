@@ -70,14 +70,6 @@ class StakePeriodManagerTest {
 	}
 
 	@Test
-	void updatesBalanceAtStartOfLastRewardedPeriodIfOffered() {
-		givenAgnosticManager();
-		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(-1, -1, -1, 123, account);
-		assertEquals(123, account.getBalanceAtStartOfLastRewardedPeriod());
-	}
-
-	@Test
 	void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {
 		givenProdManager();
 

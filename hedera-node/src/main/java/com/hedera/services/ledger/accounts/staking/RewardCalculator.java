@@ -126,8 +126,25 @@ public class RewardCalculator {
 		//                                                = -1 + 2
 		//                                                = 1
 		// It follows by induction the same difference is correct for all earlier values of effectiveStart.
-		return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
-						* (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - effectiveStart)]);
+		return rewardFor(account, rewardSumHistory, currentStakePeriod, effectiveStart);
+	}
+
+	private long rewardFor(
+			final MerkleAccount account,
+			final long[] rewardSumHistory,
+			final long currentStakePeriod,
+			final long effectiveStart) {
+		final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
+
+		if (account.getStakeAtStartOfLastRewardedPeriod() != -1) {
+			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
+					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]) +
+					((account.getStakeAtStartOfLastRewardedPeriod()) / HBARS_TO_TINYBARS)
+							* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom]);
+		} else {
+			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
+					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
+		}
 	}
 
 	@VisibleForTesting
