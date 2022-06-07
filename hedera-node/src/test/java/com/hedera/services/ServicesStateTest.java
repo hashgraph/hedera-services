@@ -38,7 +38,6 @@ import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
-import com.hedera.services.state.migration.UniqueTokensMigrator;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -100,7 +99,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -179,6 +177,8 @@ class ServicesStateTest {
 	private Consumer<ServicesState> scheduledTxnsMigrator;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyNftStorage;
+	@Mock
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> nftStorage;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -241,8 +241,8 @@ class ServicesStateTest {
 		inOrder.verify(titleCountsMigrator).accept(subject);
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
-		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 		inOrder.verify(scheduledTxnsMigrator).accept(subject);
+		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 
 		verifyNoInteractions(autoRenewalMigrator);
 
@@ -283,8 +283,8 @@ class ServicesStateTest {
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
 		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
-		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 		inOrder.verify(scheduledTxnsMigrator).accept(subject);
+		inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 
 		unmockMigrators();
 	}
@@ -430,7 +430,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(5)).archive();
+		verify(mockMm, times(4)).archive();
 	}
 
 	@Test
@@ -846,8 +846,9 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, nftStorage);
 		subject.setMetadata(metadata);
-		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE);
+		subject.setDeserializedVersion(StateVersions.CURRENT_VERSION);
 
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
@@ -868,7 +869,6 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		subject.setMetadata(metadata);
-		subject.setDeserializedVersion(UniqueTokensMigrator.TARGET_RELEASE - 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);

@@ -37,8 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 public class UniqueTokensMigrator {
-	public static final int TARGET_RELEASE = StateVersions.RELEASE_0270_VERSION;
-
 	private static final Logger log = LogManager.getLogger(UniqueTokensMigrator.class);
 
 	/**

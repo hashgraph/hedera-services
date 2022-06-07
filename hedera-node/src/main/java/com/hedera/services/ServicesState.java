@@ -84,6 +84,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_025X_VERSION;
@@ -142,7 +143,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	 */
 	 private void logStateChildrenSizes(int version) {
 		 final var numUniqueTokens =
-				 version < UniqueTokensMigrator.TARGET_RELEASE
+				 getChild(UNIQUE_TOKENS) instanceof MerkleMap
 						 ? legacyUniqueTokens().size()
 						 : uniqueTokens().size();
 		log.info("  (@ {}) # NFTs               = {}",
@@ -238,7 +239,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			scheduledTxnsMigrator.accept(this);
 		}
 
-		if (deserializedVersionFromState < UniqueTokensMigrator.TARGET_RELEASE) {
+		if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap) {
 			UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
 		}
 		runPostMigrationTasks();
