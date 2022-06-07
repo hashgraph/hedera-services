@@ -117,6 +117,7 @@ public class GlobalDynamicProperties {
 	private boolean enableAllowances;
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
+	private boolean enableDirectHTSTokenCalls;
 	private int maxPurgedKvPairsPerTouch;
 	private KnownBlockValues knownBlockValues;
 	private int maxReturnedNftsPerTouch;
@@ -209,6 +210,7 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		enableDirectHTSTokenCalls = properties.getBooleanProperty("contracts.enableDirectTokenCalls");
 		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
 		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
@@ -520,6 +522,8 @@ public class GlobalDynamicProperties {
 	public boolean isHTSPrecompileCreateEnabled() {
 		return enableHTSPrecompileCreate;
 	}
+
+	public boolean isDirectHTSTokenCall(){return enableDirectHTSTokenCalls;}
 
 	public int getMaxPurgedKvPairsPerTouch() {
 		return maxPurgedKvPairsPerTouch;

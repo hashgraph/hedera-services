@@ -137,7 +137,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		// --- Do the business logic ---
 		TransactionProcessingResult result = null;
-		if (isTokenAccount) {//TODO feature flag -> properties.isDirectHTSTokenCall()
+		if (isTokenAccount && properties.isDirectHTSTokenCall()) {
 			var updater = (HederaWorldState.Updater) worldState.updater();
 			var htsResult = htsPrecompiledContract.callHtsDirectly(
 					callData, updater.updater(),

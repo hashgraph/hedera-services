@@ -102,6 +102,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
 			entry("contracts.enableTraceability", true),
+			entry("contracts.enableDirectTokenCalls", true),
 			entry("contracts.throttle.throttleByGas", true),
 			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
