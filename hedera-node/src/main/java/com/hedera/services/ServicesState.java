@@ -141,7 +141,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/**
 	 * Log out the sizes the state children.
 	 */
-	 private void logStateChildrenSizes(int version) {
+	 private void logStateChildrenSizes() {
 		 final var numUniqueTokens =
 				 getChild(UNIQUE_TOKENS) instanceof MerkleMap
 						 ? legacyUniqueTokens().size()
@@ -245,7 +245,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		runPostMigrationTasks();
 
 		log.info("Migration completed.");
-		logStateChildrenSizes(CURRENT_VERSION);
+		logStateChildrenSizes();
 	}
 
 	/* --- SwirldState --- */
@@ -509,7 +509,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
 			// Log state before migration.
-			logStateChildrenSizes(stateVersion);
+			logStateChildrenSizes();
 			final Runnable initTask = () -> {
 				// This updates the working state accessor with our children
 				app.initializationFlow().runWith(this);
