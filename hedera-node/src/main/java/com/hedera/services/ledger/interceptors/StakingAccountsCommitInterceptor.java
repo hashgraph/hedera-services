@@ -184,10 +184,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final var changes = pendingChanges.changes(i);
 			stakeChangeScenarios[i] = scenarioFor(account, changes);
 
-			if (!hasBeenRewarded(i)) {
-				if(isRewardSituation(account, stakedToMeUpdates[i], changes)) {
-					payReward(i, account, changes, pendingChanges);
-				}
+			if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
+				payReward(i, account, changes, pendingChanges);
+				wasStakeMetaChanged[i] = true;
+			} else if (!hasBeenRewarded(i)) {
 				wasStakeMetaChanged[i] = stakeMetaChanged;
 			}
 			// If we are outside the original change set, this is a "stakee" account; and its stakedId cannot
