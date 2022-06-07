@@ -64,214 +64,214 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class ContractCallTransitionLogic implements PreFetchableTransition {
-    private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
-    private final AccountStore accountStore;
-    private final TransactionContext txnCtx;
-    private final HederaMutableWorldState worldState;
-    private final TransactionRecordService recordService;
-    private final CallEvmTxProcessor evmTxProcessor;
-    private final GlobalDynamicProperties properties;
-    private final CodeCache codeCache;
-    private final AliasManager aliasManager;
-    private final SigImpactHistorian sigImpactHistorian;
-    private final EntityAccess entityAccess;
-    private final HTSPrecompiledContract htsPrecompiledContract;
+	private final AccountStore accountStore;
+	private final TransactionContext txnCtx;
+	private final HederaMutableWorldState worldState;
+	private final TransactionRecordService recordService;
+	private final CallEvmTxProcessor evmTxProcessor;
+	private final GlobalDynamicProperties properties;
+	private final CodeCache codeCache;
+	private final AliasManager aliasManager;
+	private final SigImpactHistorian sigImpactHistorian;
+	private final EntityAccess entityAccess;
+	private final HTSPrecompiledContract htsPrecompiledContract;
 
-    @Inject
-    public ContractCallTransitionLogic(
-            final TransactionContext txnCtx,
-            final AccountStore accountStore,
-            final HederaWorldState worldState,
-            final TransactionRecordService recordService,
-            final CallEvmTxProcessor evmTxProcessor,
-            final GlobalDynamicProperties properties,
-            final CodeCache codeCache,
-            final SigImpactHistorian sigImpactHistorian,
-            final AliasManager aliasManager,
-            final EntityAccess entityAccess,
-            final HTSPrecompiledContract htsPrecompiledContract
-    ) {
-        this.txnCtx = txnCtx;
-        this.aliasManager = aliasManager;
-        this.worldState = worldState;
-        this.accountStore = accountStore;
-        this.recordService = recordService;
-        this.evmTxProcessor = evmTxProcessor;
-        this.properties = properties;
-        this.codeCache = codeCache;
-        this.sigImpactHistorian = sigImpactHistorian;
-        this.entityAccess = entityAccess;
-        this.htsPrecompiledContract = htsPrecompiledContract;
-    }
+	@Inject
+	public ContractCallTransitionLogic(
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final HederaWorldState worldState,
+			final TransactionRecordService recordService,
+			final CallEvmTxProcessor evmTxProcessor,
+			final GlobalDynamicProperties properties,
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian,
+			final AliasManager aliasManager,
+			final EntityAccess entityAccess,
+			final HTSPrecompiledContract htsPrecompiledContract
+	) {
+		this.txnCtx = txnCtx;
+		this.aliasManager = aliasManager;
+		this.worldState = worldState;
+		this.accountStore = accountStore;
+		this.recordService = recordService;
+		this.evmTxProcessor = evmTxProcessor;
+		this.properties = properties;
+		this.codeCache = codeCache;
+		this.sigImpactHistorian = sigImpactHistorian;
+		this.entityAccess = entityAccess;
+		this.htsPrecompiledContract = htsPrecompiledContract;
+	}
 
-    @Override
-    public void doStateTransition() {
-        // --- Translate from gRPC types ---
-        var contractCallTxn = txnCtx.accessor().getTxn();
-        final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-        doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
-    }
+	@Override
+	public void doStateTransition() {
+		// --- Translate from gRPC types ---
+		var contractCallTxn = txnCtx.accessor().getTxn();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
+	}
 
-    public void doStateTransitionOperation(
-            final TransactionBody contractCallTxn,
-            final Id senderId,
-            final Id relayerId,
-            final long maxGasAllowanceInTinybars,
-            final BigInteger offeredGasPrice
-    ) {
-        var op = contractCallTxn.getContractCall();
-        final var target = targetOf(op);
-        final var targetId = target.toId();
-        // --- Load the model objects ---
-        final var sender = accountStore.loadAccount(senderId);
-        final var isTokenAccount = entityAccess.isTokenAccount(targetId.asEvmAddress());
+	public void doStateTransitionOperation(
+			final TransactionBody contractCallTxn,
+			final Id senderId,
+			final Id relayerId,
+			final long maxGasAllowanceInTinybars,
+			final BigInteger offeredGasPrice
+	) {
+		var op = contractCallTxn.getContractCall();
+		final var target = targetOf(op);
+		final var targetId = target.toId();
+		// --- Load the model objects ---
+		final var sender = accountStore.loadAccount(senderId);
+		final var isTokenAccount = entityAccess.isTokenAccount(targetId.asEvmAddress());
 
-        Account receiver = isTokenAccount ?
-                new Account(targetId) :
-                accountStore.loadContract(targetId);
+		Account receiver = isTokenAccount ?
+				new Account(targetId) :
+				accountStore.loadContract(targetId);
 
-        final var callData = !op.getFunctionParameters().isEmpty()
-                ? Bytes.wrap(op.getFunctionParameters().toByteArray())
-                : Bytes.EMPTY;
+		final var callData = !op.getFunctionParameters().isEmpty()
+				? Bytes.wrap(op.getFunctionParameters().toByteArray())
+				: Bytes.EMPTY;
 
-        // --- Do the business logic ---
-        TransactionProcessingResult result = null;
-        if (isTokenAccount) {//TODO feature flag -> properties.isDirectHTSTokenCall()
-            var updater = (HederaWorldState.Updater) worldState.updater();
-            var htsResult = htsPrecompiledContract.callHtsDirectly(
-                    callData, updater.updater(),
-                    targetId, sender.canonicalAddress(), entityAccess.worldLedgers(),
-                    txnCtx.consensusTime().getEpochSecond());
-            result = constructResultLocally(receiver, op, htsResult, updater);
-        } else {
-            if (relayerId == null) {
-                result = evmTxProcessor.execute(
-                        sender,
-                        receiver.canonicalAddress(),
-                        op.getGas(),
-                        op.getAmount(),
-                        callData,
-                        txnCtx.consensusTime());
-            } else {
-                sender.incrementEthereumNonce();
-                accountStore.commitAccount(sender);
+		// --- Do the business logic ---
+		TransactionProcessingResult result = null;
+		if (isTokenAccount) {//TODO feature flag -> properties.isDirectHTSTokenCall()
+			var updater = (HederaWorldState.Updater) worldState.updater();
+			var htsResult = htsPrecompiledContract.callHtsDirectly(
+					callData, updater.updater(),
+					targetId, sender.canonicalAddress(), entityAccess.worldLedgers(),
+					txnCtx.consensusTime().getEpochSecond());
+			result = constructResultLocally(receiver, op, htsResult, updater);
+		} else {
+			if (relayerId == null) {
+				result = evmTxProcessor.execute(
+						sender,
+						receiver.canonicalAddress(),
+						op.getGas(),
+						op.getAmount(),
+						callData,
+						txnCtx.consensusTime());
+			} else {
+				sender.incrementEthereumNonce();
+				accountStore.commitAccount(sender);
 
-                result = evmTxProcessor.executeEth(
-                        sender,
-                        receiver.canonicalAddress(),
-                        op.getGas(),
-                        op.getAmount(),
-                        callData,
-                        txnCtx.consensusTime(),
-                        offeredGasPrice,
-                        accountStore.loadAccount(relayerId),
-                        maxGasAllowanceInTinybars);
-            }
-        }
-        // --- Persist changes into state ---
-        final var createdContracts = worldState.getCreatedContractIds();
-        result.setCreatedContracts(createdContracts);
+				result = evmTxProcessor.executeEth(
+						sender,
+						receiver.canonicalAddress(),
+						op.getGas(),
+						op.getAmount(),
+						callData,
+						txnCtx.consensusTime(),
+						offeredGasPrice,
+						accountStore.loadAccount(relayerId),
+						maxGasAllowanceInTinybars);
+			}
+		}
+		// --- Persist changes into state ---
+		final var createdContracts = worldState.getCreatedContractIds();
+		result.setCreatedContracts(createdContracts);
 
-        /* --- Externalise result --- */
-        txnCtx.setTargetedContract(target.toGrpcContractID());
-        for (final var createdContract : createdContracts) {
-            sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
-        }
-        recordService.externaliseEvmCallTransaction(result);
-    }
+		/* --- Externalise result --- */
+		txnCtx.setTargetedContract(target.toGrpcContractID());
+		for (final var createdContract : createdContracts) {
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+		}
+		recordService.externaliseEvmCallTransaction(result);
+	}
 
-    private TransactionProcessingResult constructResultLocally(Account receiver, ContractCallTransactionBody op,
-                                                               Pair<Long, Bytes> htsCallResult, HederaWorldState.Updater updater) {
-        final var output = htsCallResult.getValue();
-        //Any idea how to evaluate the status, since there are is no messageFrame's states?
-        var isSuccessful = !output.isEmpty() && !output.isZero();
-        final var requiredGas = htsCallResult.getKey();
-        final var gasPrice = evmTxProcessor.gasPriceTinyBarsGiven(txnCtx.consensusTime(), false);
-        final var intrinsicGas = evmTxProcessor.getIntrinsicGasCost(Bytes.EMPTY, false);
-        final var gasAvailable = op.getGas() - intrinsicGas;
+	private TransactionProcessingResult constructResultLocally(Account receiver, ContractCallTransactionBody op,
+															   Pair<Long, Bytes> htsCallResult, HederaWorldState.Updater updater) {
+		final var output = htsCallResult.getValue();
+		//Any idea how to evaluate the status, since there are is no messageFrame's states?
+		var isSuccessful = !output.isEmpty() && !output.isZero();
+		final var requiredGas = htsCallResult.getKey();
+		final var gasPrice = evmTxProcessor.gasPriceTinyBarsGiven(txnCtx.consensusTime(), false);
+		final var intrinsicGas = evmTxProcessor.getIntrinsicGasCost(Bytes.EMPTY, false);
+		final var gasAvailable = op.getGas() - intrinsicGas;
 
-        final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-        //How to get the used gas?
-        if (properties.shouldEnableTraceability()) {
-            stateChanges = updater.getFinalStateChanges();
-        } else {
-            stateChanges = Map.of();
-        }
-        if (gasAvailable < requiredGas) {
-            //A custom exception or ransactionProcessingResult.failed?
-            isSuccessful = false;
-        }
-        final var gasUsedByTransaction = evmTxProcessor.calculateGasUsedByTokenCallTX(op.getGas(), gasAvailable);
-        if (isSuccessful) {
-            return TransactionProcessingResult.successful(
-                    new ArrayList<>(),
-                    gasUsedByTransaction,
-                    0,
-                    gasPrice,
-                    output,
-                    receiver.canonicalAddress(),
-                    stateChanges);
-        } else {
-            //revertReason and haltReason any idea her?
-            return TransactionProcessingResult.failed(
-                    gasUsedByTransaction,
-                    0,
-                    gasPrice,
-                    Optional.empty(),
-                    Optional.empty(),
-                    stateChanges
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+		//How to get the used gas?
+		if (properties.shouldEnableTraceability()) {
+			stateChanges = updater.getFinalStateChanges();
+		} else {
+			stateChanges = Map.of();
+		}
+		if (gasAvailable < requiredGas) {
+			//A custom exception or ransactionProcessingResult.failed?
+			isSuccessful = false;
+		}
+		final var gasUsedByTransaction = evmTxProcessor.calculateGasUsedByTokenCallTX(op.getGas(), gasAvailable);
+		if (isSuccessful) {
+			return TransactionProcessingResult.successful(
+					new ArrayList<>(),
+					gasUsedByTransaction,
+					0,
+					gasPrice,
+					output,
+					receiver.canonicalAddress(),
+					stateChanges);
+		} else {
+			//revertReason and haltReason any idea her?
+			return TransactionProcessingResult.failed(
+					gasUsedByTransaction,
+					0,
+					gasPrice,
+					Optional.empty(),
+					Optional.empty(),
+					stateChanges
 
-            );
-        }
+			);
+		}
 
-    }
+	}
 
-    @Override
-    public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasContractCall;
-    }
+	@Override
+	public Predicate<TransactionBody> applicability() {
+		return TransactionBody::hasContractCall;
+	}
 
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-        return this::validateSemantics;
-    }
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+		return this::validateSemantics;
+	}
 
-    private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
-        var op = transactionBody.getContractCall();
+	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
+		var op = transactionBody.getContractCall();
 
-        if (op.getGas() < 0) {
-            return CONTRACT_NEGATIVE_GAS;
-        }
-        if (op.getAmount() < 0) {
-            return CONTRACT_NEGATIVE_VALUE;
-        }
-        if (op.getGas() > properties.maxGas()) {
-            return MAX_GAS_LIMIT_EXCEEDED;
-        }
-        return OK;
-    }
+		if (op.getGas() < 0) {
+			return CONTRACT_NEGATIVE_GAS;
+		}
+		if (op.getAmount() < 0) {
+			return CONTRACT_NEGATIVE_VALUE;
+		}
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
+		}
+		return OK;
+	}
 
-    @Override
-    public void preFetch(final TxnAccessor accessor) {
-        final var op = accessor.getTxn().getContractCall();
-        preFetchOperation(op);
-    }
+	@Override
+	public void preFetch(final TxnAccessor accessor) {
+		final var op = accessor.getTxn().getContractCall();
+		preFetchOperation(op);
+	}
 
-    public void preFetchOperation(final ContractCallTransactionBody op) {
-        final var id = targetOf(op);
-        final var address = id.toEvmAddress();
+	public void preFetchOperation(final ContractCallTransactionBody op) {
+		final var id = targetOf(op);
+		final var address = id.toEvmAddress();
 
-        try {
-            codeCache.getIfPresent(address);
-        } catch (Exception e) {
-            log.warn("Exception while attempting to pre-fetch code for {}", address, e);
-        }
-    }
+		try {
+			codeCache.getIfPresent(address);
+		} catch (Exception e) {
+			log.warn("Exception while attempting to pre-fetch code for {}", address, e);
+		}
+	}
 
-    private EntityNum targetOf(final ContractCallTransactionBody op) {
-        final var idOrAlias = op.getContractID();
-        return EntityIdUtils.unaliased(idOrAlias, aliasManager);
-    }
+	private EntityNum targetOf(final ContractCallTransactionBody op) {
+		final var idOrAlias = op.getContractID();
+		return EntityIdUtils.unaliased(idOrAlias, aliasManager);
+	}
 }
 
