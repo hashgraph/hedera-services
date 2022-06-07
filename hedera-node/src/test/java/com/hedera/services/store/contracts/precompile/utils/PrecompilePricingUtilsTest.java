@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class PrecompilePricingUtilsTest {
+class PrecompilePricingUtilsTest {
 
 	private static final long COST = 36;
 	private static final int CENTS_RATE = 12;

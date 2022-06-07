@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
@@ -61,7 +60,6 @@ public class BurnPrecompile implements Precompile {
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
-	private final RecordsHistorian recordsHistorian;
 	private final SideEffectsTracker sideEffects;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final InfrastructureFactory infrastructureFactory;
@@ -75,7 +73,6 @@ public class BurnPrecompile implements Precompile {
 			final EncodingFacade encoder,
 			final ContractAliases aliases,
 			final EvmSigsVerifier sigsVerifier,
-			final RecordsHistorian recordsHistorian,
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
@@ -87,7 +84,6 @@ public class BurnPrecompile implements Precompile {
 		this.aliases = aliases;
 		this.sigsVerifier = sigsVerifier;
 		this.sideEffects = sideEffects;
-		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.infrastructureFactory = infrastructureFactory;
 		this.pricingUtils = pricingUtils;

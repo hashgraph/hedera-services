@@ -32,6 +32,11 @@ import java.util.Optional;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public class KeyActivationUtils {
+
+	private KeyActivationUtils() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	/**
 	 * Checks if a key implicit in a target address is active in the current frame using a {@link
 	 * KeyActivationTest}.

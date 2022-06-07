@@ -70,6 +70,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_A
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.gasFeeInTinybars;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -252,7 +253,7 @@ public class TokenCreatePrecompile implements Precompile {
 		final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 		final var gasPriceInTinybars = feeCalculator.get()
 				.estimatedGasPriceInTinybars(ContractCall, timestamp);
-		final var calculatedFeeInTinybars = pricingUtils.gasFeeInTinybars(
+		final var calculatedFeeInTinybars = gasFeeInTinybars(
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()),
 				Instant.ofEpochSecond(timestampSeconds),

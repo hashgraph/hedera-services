@@ -231,6 +231,7 @@ public class DecodingFacade {
 
 	@Inject
 	public DecodingFacade() {
+		//empty constructor
 	}
 
 	public List<TokenTransferWrapper> decodeCryptoTransfer(

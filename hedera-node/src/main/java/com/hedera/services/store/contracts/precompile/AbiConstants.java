@@ -26,6 +26,11 @@ import org.apache.tuweni.bytes.Bytes;
  * All ABI constants used by {@link Precompile} implementations, in one place for easy review.
  */
 public class AbiConstants {
+
+	private AbiConstants() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	// **** HIP-206 function selectors ****
 	//cryptoTransfer(TokenTransferList[] memory tokenTransfers)
 	public static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;

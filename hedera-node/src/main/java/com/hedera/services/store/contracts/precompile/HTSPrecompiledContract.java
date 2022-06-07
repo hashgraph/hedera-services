@@ -135,7 +135,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final InfrastructureFactory infrastructureFactory;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
-	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
 	private final Provider<FeeCalculator> feeCalculator;
@@ -252,7 +251,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
 		// convert to gas cost
-		final Long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
 		gasRequirement = baseGasCost + (baseGasCost/5L);
@@ -284,7 +283,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.precompile = null;
 		this.transactionBody = null;
 
-		this.functionId = input.getInt(0);
+		int functionId = input.getInt(0);
 		this.gasRequirement = 0L;
 
 		this.precompile =
@@ -300,7 +299,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_BURN_TOKEN -> new BurnPrecompile(
-							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
+							ledgers, decoder, encoder, updater.aliases(), sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier,

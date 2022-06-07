@@ -36,7 +36,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 	protected final DecodingFacade decoder;
 	protected final SyntheticTxnFactory syntheticTxnFactory;
 
-	public AbstractDissociatePrecompile(
+	protected AbstractDissociatePrecompile(
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final ContractAliases aliases,
