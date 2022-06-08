@@ -1,21 +1,22 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.8.7;
 
 contract TransferringContract {
 
     constructor() public payable {}
 
-    function() external payable {}
+    fallback() external payable {}
 
     function transferToAddress(address payable _address, uint256 _amount) public payable {
         _address.transfer(_amount);
     }
 
     function transferToCaller(uint256 _amount) public payable {
-        msg.sender.transfer(_amount);
+        address payable recipient = payable(msg.sender);
+        recipient.transfer(_amount);
     }
 
     function transferToAddressNegativeAmount(address payable _address, uint256 _amount) public payable {
-        _address.transfer(-_amount);
+        _address.transfer(_amount & (~_amount + 1));
     }
 
     function transferToAddressMultipleTimes(address payable _address, uint256 _amount) public payable {

@@ -23,13 +23,17 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
-import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -73,23 +77,11 @@ public class Utils {
 	}
 
 	public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(byte[] address) {
-		boolean ADDRESS_TYPE = true;
-
-		Address besuAddress = null;
-		if (ADDRESS_TYPE) {
-			besuAddress = Address.wrap(Bytes.wrap(address));
-
-		}
+		final var besuAddress = org.hyperledger.besu.datatypes.Address.wrap(Bytes.wrap(address));
 		return convertBesuAddressToHeadlongAddress(besuAddress);
-
-//		else {
-//			var hexedAddress = new String(address);
-//
-//			return convertHexedEvmAddressToHeadlongAddress(hexedAddress);
-//		}
 	}
 
-	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
+	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final org.hyperledger.besu.datatypes.Address address) {
 		return com.esaulpaugh.headlong.abi.Address.wrap(
 				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
 	}

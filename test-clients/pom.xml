@@ -22,6 +22,7 @@
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.30</snakeyaml.version>
+    <besu.version>22.4.1</besu.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -276,6 +277,11 @@
     <dependency>
         <groupId>org.hyperledger.besu.internal</groupId>
         <artifactId>crypto</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu</groupId>
+      <artifactId>besu-datatypes</artifactId>
+      <version>${besu.version}</version>
     </dependency>
     <dependency>
       <groupId>org.json</groupId>
