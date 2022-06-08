@@ -75,6 +75,13 @@ public class UmbrellaRedux extends HapiApiSuite {
 	private HapiApiSpec umbrellaRedux() {
 		return defaultHapiSpec("UmbrellaRedux")
 				.given(
+						withOpContext((spec, opLog) -> {
+							configureFromCi(spec);
+							// use ci property statusTimeoutSecs to overwrite default value of status.wait.timeout.ms
+							spec.addOverrideProperties(
+									Map.of("status.wait.timeout.ms",
+											Integer.toString(1_000 * statusTimeoutSecs.get())));
+						}),
 						cryptoCreate(UNIQUE_PAYER_ACCOUNT)
 								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
 								.withRecharging()
@@ -83,13 +90,6 @@ public class UmbrellaRedux extends HapiApiSuite {
 				).when(
 						getTxnRecord("createUniquePayer").logged()
 				).then(
-						withOpContext((spec, opLog) -> {
-							configureFromCi(spec);
-							// use ci property statusTimeoutSecs to overwrite default value of status.wait.timeout.ms
-							spec.addOverrideProperties(
-									Map.of("status.wait.timeout.ms",
-											Integer.toString(1_000 * statusTimeoutSecs.get())));
-						}),
 						sourcing( () -> runWithProvider(factoryFrom(props::get))
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
