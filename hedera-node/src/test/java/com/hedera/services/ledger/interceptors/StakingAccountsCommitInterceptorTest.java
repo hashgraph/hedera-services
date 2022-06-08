@@ -75,7 +75,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
@@ -138,7 +137,11 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject.finish(2, mockAccount);
 
-		verifyNoInteractions(mockAccount);
+		verify(mockAccount).setRewardedSinceLastMetadataChange(false);
+		verify(mockAccount, never()).setStakedToMe(subject.getStakedToMeUpdates()[2]);
+		verify(mockAccount, never()).setStakePeriodStart(subject.getStakePeriodStartUpdates()[2]);
+		verify(mockAccount, never())
+				.setStakeAtStartOfLastRewardedPeriod(subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2]);
 	}
 
 	@Test
@@ -216,6 +219,8 @@ class StakingAccountsCommitInterceptorTest {
 
 		assertFalse(subject.hasBeenRewarded(0));
 		assertTrue(subject.hasBeenRewarded(1));
+		assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
 	}
 
 	@Test
@@ -362,6 +367,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager).awardStake(1L, 0, false);
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test

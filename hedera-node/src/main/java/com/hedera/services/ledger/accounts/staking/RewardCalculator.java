@@ -141,11 +141,26 @@ public class RewardCalculator {
 		}
 
 		if (account.getStakeAtStartOfLastRewardedPeriod() != -1) {
-			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
-					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]) +
-					((account.getStakeAtStartOfLastRewardedPeriod()) / HBARS_TO_TINYBARS)
-							* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom]);
+			// This account claimed a (possibly zero) reward in day stakePeriodStart + 1, and may have
+			// changed its stake in the process. So we need to reward it for that day based on the
+			// stake we remember it had at the start of the day, not the stake that it has now. (To
+			// see why the rewardSumHistory indices are correct, again start with the base case that
+			// stakePeriodStart = todayNumber - 2, so that once more we want to reward only for
+			// todayNumber - 1 via rewardSumHistory[0] - rewardSumHistory[1].)
+			return ((account.getStakeAtStartOfLastRewardedPeriod()) / HBARS_TO_TINYBARS)
+					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom]) +
+					// And now we need to _also_ reward it for the (possibly empty) set of days from
+					// stakePeriodStart + 2 up to todayNumber - 1, for which it is guaranteed to have held its
+					// current stake.
+					((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
+							* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
 		} else {
+			// This account's stake has not changed since day stakePeriodStart, when it first started
+			// staking to a node but was not eligible to earn a reward. So we can reward it based on
+			// its current stake as below. (To see why the second rewardSumHistory index is correct, note
+			// it clearly holds for the base case that stakePeriodStart = todayNumber - 2, since then we
+			// want to reward for only day todayNumber - 1 via rewardSumHistory[0] - rewardSumHistory[1].
+			// Smaller values of stakePeriodStart follow by induction.)
 			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
 					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
 		}

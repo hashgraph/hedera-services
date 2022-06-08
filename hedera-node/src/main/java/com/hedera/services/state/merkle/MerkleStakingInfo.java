@@ -45,7 +45,6 @@ import java.util.Objects;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
@@ -113,7 +112,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		} else {
 			setStake(totalStake);
 		}
-		stakeRewardStart = Math.min(stakeToReward, stake);
+		stakeRewardStart = stakeToReward;
 		return stakeRewardStart;
 	}
 
@@ -189,7 +188,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		historyHash = null;
 	}
 
-	public long updateRewardSumHistory(final long rewardRate, final long totalStakedRewardStart) {
+	public long updateRewardSumHistory(final long perHbarRate) {
 		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -198,26 +197,29 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 		rewardSumHistory[0] -= droppedRewardSum;
 
-		final long pendingRewardRate;
+		long perHbarRateThisNode = 0;
+
 		// In a future release, a node that is judged inactive based on,
 		//    node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold
 		// will _also_ have zero pendingRewardRate.
-		if (totalStakedRewardStart < HBARS_TO_TINYBARS || stakeRewardStart == 0) {
-			pendingRewardRate = 0L;
-		} else {
-			final var baseRateForNodeWithNoMoreThanMaxStake = rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
-			// If this node has received more than max stake, we must "down-scale" its reward rate so
-			// even after all its staking accounts are rewarded, their total payments will be no more
-			// than a node with exactly max stake
-			pendingRewardRate = (stakeToReward <= maxStake)
-					? baseRateForNodeWithNoMoreThanMaxStake
-					: baseRateForNodeWithNoMoreThanMaxStake * maxStake / stakeToReward;
+		// If this node was "active", and it had non-zero stakedReward at the start of the ending staking period,
+		// then it should give rewards for this staking period
+		if ( //node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold &&
+				Math.min(stakeRewardStart, stake) > 0) {
+			perHbarRateThisNode = perHbarRate;
+			// But if the node received more the maximum stakeToReward, "down-scale" its reward rate to
+			// ensure accounts staking to this node will receive a fraction of the total rewards that does
+			// not exceed node.stakedRewardStart / totalStakedRewardedStart
+			if (stakeToReward > maxStake) {
+				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeToReward;
+			}
 		}
-		rewardSumHistory[0] += pendingRewardRate;
+		rewardSumHistory[0] += perHbarRateThisNode;
+
 		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
 		// reset the historyHash
 		historyHash = null;
-		return pendingRewardRate;
+		return perHbarRateThisNode;
 	}
 
 	@Override

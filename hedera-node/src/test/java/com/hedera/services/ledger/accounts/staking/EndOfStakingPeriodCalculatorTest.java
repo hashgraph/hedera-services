@@ -112,7 +112,7 @@ class EndOfStakingPeriodCalculatorTest {
 
 		subject.updateNodes(consensusTime);
 
-		verify(merkleNetworkContext).setTotalStakedRewardStart(1000L);
+		verify(merkleNetworkContext).setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
 		verify(merkleNetworkContext).setTotalStakedStart(1300L);
 		assertEquals(800L, stakingInfo1.getStake());
 		assertEquals(500L, stakingInfo2.getStake());

@@ -150,6 +150,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			// so a two-step reward computation would be wrong
 			mutableAccount.setRewardedSinceLastMetadataChange(true);
 		} else {
+			// TODO get clarification on usage of this boolean
+			mutableAccount.setRewardedSinceLastMetadataChange(false);
 			if (stakeAtStartOfLastRewardedPeriodUpdates[i] != -1) {
 				mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
 			}
