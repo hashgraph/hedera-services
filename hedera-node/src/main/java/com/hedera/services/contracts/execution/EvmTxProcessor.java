@@ -148,17 +148,28 @@ abstract class EvmTxProcessor {
 	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
 	 * TransactionProcessingResult}
 	 *
-	 * @param sender           The origin {@link Account} that initiates the transaction
-	 * @param receiver         the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the newly created address
-	 * @param gasPrice         GasPrice to use for gas calculations
-	 * @param gasLimit         Externally provided gas limit
-	 * @param value            Evm transaction value (HBars)
-	 * @param payload          Transaction payload. For Create transactions, the bytecode + constructor arguments
-	 * @param contractCreation Whether or not this is a contract creation transaction
-	 * @param consensusTime    Current consensus time
-	 * @param isStatic         Whether the execution is static
-	 * @param expiryOracle     the oracle to use when determining the expiry of newly allocated storage
-	 * @param mirrorReceiver   the mirror form of the receiving {@link Address}; or the newly created address
+	 * @param sender
+	 * 		The origin {@link Account} that initiates the transaction
+	 * @param receiver
+	 * 		the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the newly created address
+	 * @param gasPrice
+	 * 		GasPrice to use for gas calculations
+	 * @param gasLimit
+	 * 		Externally provided gas limit
+	 * @param value
+	 * 		Evm transaction value (HBars)
+	 * @param payload
+	 * 		Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation
+	 * 		Whether or not this is a contract creation transaction
+	 * @param consensusTime
+	 * 		Current consensus time
+	 * @param isStatic
+	 * 		Whether the execution is static
+	 * @param expiryOracle
+	 * 		the oracle to use when determining the expiry of newly allocated storage
+	 * @param mirrorReceiver
+	 * 		the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(
@@ -349,30 +360,9 @@ abstract class EvmTxProcessor {
 		return gasUsedByTransaction;
 	}
 
-	public long calculateGasUsedByTokenCallTX(final long txGasLimit, final long remainingGas) {
-		long gasUsedByTransaction = txGasLimit - remainingGas;
-		/* Return leftover gas */ //since we don't have frame I'm not sure about the commented rows below.
-//		final long selfDestructRefund =
-//				gasCalculator.getSelfDestructRefundAmount() *
-//						Math.min(
-//								initialFrame.getSelfDestructs().size(),
-//								gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
-//
-//		gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
-
-		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
-
-		return gasUsedByTransaction;
-	}
-
-	public long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
+	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
 		return livePricesSource.currentGasPrice(consensusTime,
 				isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
-	}
-
-	public long getIntrinsicGasCost(Bytes bytes, boolean b) {
-		return gasCalculator.transactionIntrinsicGasCost(bytes, b);
 	}
 
 	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
@@ -401,4 +391,3 @@ abstract class EvmTxProcessor {
 		}
 	}
 }
-

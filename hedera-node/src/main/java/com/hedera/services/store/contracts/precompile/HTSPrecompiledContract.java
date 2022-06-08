@@ -109,7 +109,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -389,8 +388,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		prepareFields(frame);
-		prepareComputation(input, updater::unaliased);
-		infoProvider = new InfoProvider(Optional.of(frame), ledgers, updater);
+		prepareComputation(input, evmAddress -> updater.unaliased(evmAddress));
+		infoProvider = new InfoProvider(frame, ledgers, updater);
 		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {
 			frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
@@ -489,18 +488,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	public Pair<Long, Bytes> callHtsDirectly(Bytes input, WorldUpdater updater, Id tokenId, Address senderAddress,
-											 WorldLedgers ledgers, long now) {
-		this.updater = (HederaStackedWorldStateUpdater) updater;
-		this.sideEffectsTracker = sideEffectsFactory.get();
-		this.ledgers = ledgers;
-		this.senderAddress = senderAddress;
-		infoProvider = new InfoProvider(ledgers, Optional.of(senderAddress), this.updater);
-		final var tokenRedirectBytes = infoProvider.getRedirectBytes(input, tokenId.num());
-
+	public void callHtsDirectly(Bytes tokenRedirectBytes, PrecompileMessage provider, long now) {
+		this.ledgers = provider.getLedgers();
+		this.senderAddress = provider.getSenderAddress();
+		infoProvider = new InfoProvider(true, senderAddress, ledgers);
 		precompile = tokenRedirectCase(tokenRedirectBytes);
 		if (precompile != null) {
-			decodeInput(tokenRedirectBytes, this.updater::unaliased);
+			decodeInput(tokenRedirectBytes, provider::unaliased);
 		}
 
 		if (isTokenReadOnlyTransaction) {
@@ -511,7 +505,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		var record = creator.createSuccessfulSyntheticRecord(
 				precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 
-		return Pair.of(gasRequirement, precompile.getSuccessResultFor(record));
+		provider.setGasRequired(gasRequirement);
+		provider.setHtsOutputResult(precompile.getSuccessResultFor(record));
 	}
 
 	private Precompile tokenRedirectCase(Bytes input) {
@@ -811,12 +806,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected Association associateOp;
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
+		public void run(final InfoProvider provider) {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			final var hasRequiredSigs = infoProvider.validateKey(accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
+			final var hasRequiredSigs = provider.validateKey(accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -836,51 +831,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
 		}
 	}
-
-//    protected class EVMInfoProvider extends InfoProvider {
-//        private MessageFrame messageFrame;
-//
-//        public EVMInfoProvider(MessageFrame messageFrame, WorldLedgers ledgers) {
-//            super(ledgers);
-//            this.messageFrame = messageFrame;
-//        }
-//
-//
-//        @Override
-//        public boolean validateKey(Address target, ContractActivationTest activationTest) {
-//            final var aliases = updater.aliases();
-//            final var recipient = aliases.resolveForEvm(messageFrame
-//                    .getRecipientAddress());
-//            final var sender = aliases.resolveForEvm(messageFrame.getSenderAddress());
-//            if (messageFrame == null) {
-//                return activationTest.apply(false, target, sender, ledgers);
-//            } else if (isDelegateCall(messageFrame) && !isToken(messageFrame, recipient)) {
-//                return activationTest.apply(true, target, recipient, ledgers);
-//            } else {
-//                final var parentFrame = getParentFrame(messageFrame);
-//                return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender,
-//                        ledgers);
-//            }
-//        }
-//    }
-
-//    protected class DirectCallInfoProvider extends InfoProvider {
-//
-//        public DirectCallInfoProvider(WorldLedgers ledgers) {
-//            super(ledgers);
-//        }
-//
-//        @Override
-//        public long balanceOf(AccountID accountId, TokenID tokenId) {
-//            return 0;
-//        }
-//
-//        @Override
-//        public boolean validateKey(Address target, ContractActivationTest activationTest) {
-//            return activationTest.apply(false, target, senderAddress, ledgers);
-//        }
-//
-//    }
 
 	protected class AssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
@@ -903,13 +853,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(
-				final InfoProvider infoProvider
+				final InfoProvider provider
 		) {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs = infoProvider.validateKey(accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
+			final var hasRequiredSigs = provider.validateKey(accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -956,12 +906,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
+		public void run(final InfoProvider provider) {
 			Objects.requireNonNull(mintOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
-			final var hasRequiredSigs = infoProvider.validateKey(tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+			final var hasRequiredSigs = provider.validateKey(tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -1088,7 +1038,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
+		public void run(final InfoProvider provider) {
 			Objects.requireNonNull(tokenCreateOp);
 
 			/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
@@ -1098,9 +1048,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
-			final var treasuryHasSigned = infoProvider.validateKey(treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey);
+			final var treasuryHasSigned = provider.validateKey(treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
-			tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(infoProvider, key), INVALID_SIGNATURE));
+			tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(provider, key),
+					INVALID_SIGNATURE));
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
@@ -1219,17 +1170,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		private boolean validateAdminKey(
-				final InfoProvider infoProvider,
+				final InfoProvider provider,
 				final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 		) {
 			final var key = tokenKeyWrapper.key();
 			return switch (key.getKeyValueType()) {
-				case INHERIT_ACCOUNT_KEY -> infoProvider.validateKey(senderAddress, sigsVerifier::hasActiveKey);
-				case CONTRACT_ID -> infoProvider.validateKey(asTypedEvmAddress(key.getContractID()),
+				case INHERIT_ACCOUNT_KEY -> provider.validateKey(senderAddress, sigsVerifier::hasActiveKey);
+				case CONTRACT_ID -> provider.validateKey(asTypedEvmAddress(key.getContractID()),
 						sigsVerifier::hasActiveKey);
-				case DELEGATABLE_CONTRACT_ID ->
-						infoProvider.validateKey(asTypedEvmAddress(key.getDelegatableContractID()),
-								sigsVerifier::hasActiveKey);
+				case DELEGATABLE_CONTRACT_ID -> provider.validateKey(asTypedEvmAddress(key.getDelegatableContractID()),
+						sigsVerifier::hasActiveKey);
 				case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
 						sigsVerifier::cryptoKeyIsActive);
 				case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
@@ -1309,7 +1259,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(
-				final InfoProvider infoProvider
+				final InfoProvider provider
 		) {
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
@@ -1317,7 +1267,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (impliedValidity != OK) {
 				throw new InvalidTransactionException(impliedValidity);
 			}
-			final var frame = infoProvider.getMessageFrame();
+			final var frame = provider.getMessageFrame();
 			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
 			final var numExplicitChanges = explicitChanges.size();
 			final var assessmentStatus = impliedTransfers.getMeta().code();
@@ -1342,7 +1292,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						// Signing requirements are skipped for changes to be authorized via an allowance
 						continue;
 					}
-					final var hasSenderSig = infoProvider.validateKey(
+					final var hasSenderSig = provider.validateKey(
 							change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
@@ -1353,10 +1303,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
 					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
-					hasReceiverSigIfReq = infoProvider.validateKey(counterPartyAddress,
+					hasReceiverSigIfReq = provider.validateKey(counterPartyAddress,
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {
-					hasReceiverSigIfReq = infoProvider.validateKey(change.getAccount().asEvmAddress(),
+					hasReceiverSigIfReq = provider.validateKey(change.getAccount().asEvmAddress(),
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
@@ -1486,12 +1436,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
+		public void run(final InfoProvider provider) {
 			Objects.requireNonNull(burnOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
-			final var hasRequiredSigs = infoProvider.validateKey(
+			final var hasRequiredSigs = provider.validateKey(
 					tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -1545,7 +1495,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
+		public void run(final InfoProvider provider) {
 			// No changes to state to apply
 		}
 
@@ -1591,8 +1541,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
-			final var frame = infoProvider.getMessageFrame();
+		public void run(final InfoProvider provider) {
+			final var frame = provider.getMessageFrame();
 			if (!isFungible) {
 				final var nftExchange = transferOp.get(0).nftExchanges().get(0);
 				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
@@ -1600,7 +1550,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			}
 			try {
-				super.run(infoProvider);
+				super.run(provider);
 			} catch (InvalidTransactionException e) {
 				throw InvalidTransactionException.fromReverting(e.getResponseCode());
 			}
@@ -1670,7 +1620,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var name = infoProvider.nameOf(tokenId);
+			final var name = ledgers.nameOf(tokenId);
 			return encoder.encodeName(name);
 		}
 	}
@@ -1682,7 +1632,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var symbol = infoProvider.symbolOf(tokenId);
+			final var symbol = ledgers.symbolOf(tokenId);
 			return encoder.encodeSymbol(symbol);
 		}
 	}
@@ -1694,7 +1644,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var decimals = infoProvider.decimalsOf(tokenId);
+			final var decimals = ledgers.decimalsOf(tokenId);
 			return encoder.encodeDecimals(decimals);
 		}
 	}
@@ -1706,7 +1656,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final var totalSupply = infoProvider.totalSupplyOf(tokenId);
+			final var totalSupply = ledgers.totalSupplyOf(tokenId);
 			return encoder.encodeTotalSupply(totalSupply);
 		}
 	}
@@ -1727,7 +1677,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var metadata = infoProvider.metadataOd(nftId);
+			final var metadata = ledgers.metadataOf(nftId);
 			return encoder.encodeTokenUri(metadata);
 		}
 	}
@@ -1772,7 +1722,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var balance = infoProvider.balanceOf(balanceWrapper.accountId(), tokenId);
+			final var balance = ledgers.balanceOf(balanceWrapper.accountId(), tokenId);
 			return encoder.encodeBalance(balance);
 		}
 	}
@@ -1842,8 +1792,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final InfoProvider infoProvider) {
-			final var frame = infoProvider.getMessageFrame();
+		public void run(final InfoProvider provider) {
+			final var frame = provider.getMessageFrame();
 			Objects.requireNonNull(approveOp);
 
 			validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -1952,7 +1902,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(InfoProvider infoProvider) {
+		public void run(InfoProvider provider) {
 			Objects.requireNonNull(setApprovalForAllWrapper);
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var accountStore = createAccountStore();
@@ -1969,7 +1919,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrueOrRevert(status == OK, status);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var frame = infoProvider.getMessageFrame();
+			final var frame = provider.getMessageFrame();
 			final var hasValidFrame = frame != null;
 			final var sender = hasValidFrame ? frame.getSenderAddress() : senderAddress;
 			final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(

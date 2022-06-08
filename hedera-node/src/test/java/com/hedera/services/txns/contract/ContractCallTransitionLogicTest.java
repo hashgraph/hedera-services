@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
+import com.hedera.services.contracts.execution.EvmTxProcessorSimulator;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -102,7 +103,7 @@ class ContractCallTransitionLogicTest {
 	@Mock
 	private EntityAccess entityAccess;
 	@Mock
-	private HTSPrecompiledContract htsPrecompiledContract;
+	EvmTxProcessorSimulator evmTxProcessorSimulator;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -115,7 +116,8 @@ class ContractCallTransitionLogicTest {
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess,htsPrecompiledContract);
+				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess,
+				evmTxProcessorSimulator);
 	}
 
 	@Test

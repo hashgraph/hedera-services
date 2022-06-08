@@ -523,7 +523,7 @@ public class GlobalDynamicProperties {
 		return enableHTSPrecompileCreate;
 	}
 
-	public boolean isDirectHTSTokenCall(){return enableDirectHTSTokenCalls;}
+	public boolean enableDirectHTSTokenCalls(){return enableDirectHTSTokenCalls;}
 
 	public int getMaxPurgedKvPairsPerTouch() {
 		return maxPurgedKvPairsPerTouch;
