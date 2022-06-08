@@ -90,6 +90,30 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 					.toByteArray();
 		}
 	},
+	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER_SELF {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleSign()
+							.signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF)
+							.get()
+			));
+		}
+
+		@Override
+		public byte[] extantSchedulingBodyBytes() throws Throwable {
+			var accessor = new SignedTxnAccessor(newSignedCryptoTransfer()
+					.sansTxnId()
+					.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
+					.get());
+			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+			return TransactionBody.newBuilder()
+					.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+							.setScheduledTransactionBody(scheduled))
+					.build()
+					.toByteArray();
+		}
+	},
 	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {

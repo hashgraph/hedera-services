@@ -22,12 +22,13 @@ package com.hedera.services.fees.calculation.schedule.txns;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ class ScheduleCreateResourceUsageTest {
     int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-    GlobalDynamicProperties props = new MockGlobalDynamicProps();
+    MockGlobalDynamicProps props = new MockGlobalDynamicProps();
     FeeData expected;
 
     @BeforeEach
@@ -81,6 +82,59 @@ class ScheduleCreateResourceUsageTest {
     @Test
     void delegatesToCorrectEstimate() throws Exception {
         // expect:
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
+
+    @Test
+    void handlesExpirationTime() throws Exception {
+        props.enableSchedulingLongTerm();
+
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0)).build());
+
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1L).setNanos(0)).build());
+
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L))
+                .willReturn(expected);
+
+
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
+
+    @Test
+    void ignoresExpirationTimeLongTermDisabled() throws Exception {
+
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0)).build());
+
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1L).setNanos(0)).build());
+
+
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
+
+    @Test
+    void handlesPastExpirationTime() throws Exception {
+        props.enableSchedulingLongTerm();
+
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0)).build());
+
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(5L).setNanos(0)).build());
+
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L))
+                .willReturn(expected);
+
+
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
 }

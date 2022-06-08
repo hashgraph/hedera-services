@@ -22,7 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.TransitionLogic;
@@ -100,7 +100,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
 			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
+		} catch (MissingEntityException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException dae) {
 			txnCtx.setStatus(ACCOUNT_DELETED);

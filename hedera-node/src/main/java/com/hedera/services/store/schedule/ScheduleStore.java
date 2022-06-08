@@ -20,9 +20,9 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -30,24 +30,38 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
 
 /**
  * Defines a type able to manage Scheduled entities.
  */
-public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
+public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
 
-	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
+	void apply(ScheduleID id, Consumer<ScheduleVirtualValue> change);
 	ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime);
 
-	CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime);
+	CreationResult<ScheduleID> createProvisionally(ScheduleVirtualValue candidate, RichInstant consensusTime);
 
-	Pair<ScheduleID, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
+	Pair<ScheduleID, ScheduleVirtualValue> lookupSchedule(byte[] bodyBytes);
+	ResponseCodeEnum preMarkAsExecuted(ScheduleID id);
 	ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
-	void expire(EntityId id);
+	void expire(ScheduleID id);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
 	}
+
+	ScheduleVirtualValue getNoError(ScheduleID id);
+
+	List<ScheduleID> nextSchedulesToExpire(Instant consensusTime);
+
+	@Nullable
+	ScheduleID nextScheduleToEvaluate(Instant consensusTime);
+
+	@Nullable
+	ScheduleSecondVirtualValue getBySecond(long second);
 }

@@ -32,6 +32,7 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.transaction.SwirldTransaction;
@@ -82,6 +83,8 @@ class RationalizationTest {
 	private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private AccountID payer;
 	@Mock
 	private LinkedRefs linkedRefs;
 
@@ -156,8 +159,9 @@ class RationalizationTest {
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
+		given(txnAccessor.getPayer()).willReturn(payer);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
-		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(generalError);
+		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY, null, payer)).willReturn(generalError);
 
 		// when:
 		subject.performFor(txnAccessor);
@@ -177,10 +181,11 @@ class RationalizationTest {
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
+		given(txnAccessor.getPayer()).willReturn(payer);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
 		given(mockOrderResult.getPayerKey()).willReturn(payerKey);
-		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(mockOrderResult);
-		given(keyOrderer.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(othersError);
+		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY, null, payer)).willReturn(mockOrderResult);
+		given(keyOrderer.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY, null, payer)).willReturn(othersError);
 
 		// when:
 		subject.performFor(txnAccessor);

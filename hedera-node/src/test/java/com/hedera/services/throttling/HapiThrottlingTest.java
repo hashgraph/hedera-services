@@ -118,12 +118,27 @@ class HapiThrottlingTest {
 	}
 
 	@Test
+	void delegatesResetUsage() {
+		// setup:
+		ThrottleDefinitions defs = new ThrottleDefinitions();
+
+		// when:
+		subject.resetUsage();
+
+		// then:
+		verify(delegate).resetUsage();
+	}
+
+	@Test
 	void leakUnusedGasCallsDelegateLeakMethod() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
 		//when:
-		subject.leakUnusedGasPreviouslyReserved(12345L);
+		subject.leakUnusedGasPreviouslyReserved(accessor, 12345L);
 
 		//then:
-		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+		verify(delegate).leakUnusedGasPreviouslyReserved(accessor, 12345L);
 	}
 
 	@Test

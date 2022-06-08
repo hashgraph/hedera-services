@@ -22,7 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -455,7 +455,7 @@ class TransactionalLedgerTest {
 
 		testLedger.begin();
 
-		assertThrows(MissingAccountException.class, () -> testLedger.set(0L, OBJ, things[0]));
+		assertThrows(MissingEntityException.class, () -> testLedger.set(0L, OBJ, things[0]));
 	}
 
 	@Test

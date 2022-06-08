@@ -91,10 +91,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	private long submitTime = 0L;
 	private TxnObs stats;
-	private boolean deferStatusResolution = false;
 	private boolean ensureResolvedStatusIsntFromDuplicate = false;
 	private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
+	protected boolean deferStatusResolution = false;
 	protected boolean acceptAnyStatus = false;
 	protected boolean acceptAnyPrecheck = false;
 	protected boolean acceptAnyKnownStatus = false;

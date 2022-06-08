@@ -1,1 +1,0 @@
-[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"getX","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32","name":"_x","type":"uint32"}],"name":"setX","outputs":[],"stateMutability":"nonpayable","type":"function"}]

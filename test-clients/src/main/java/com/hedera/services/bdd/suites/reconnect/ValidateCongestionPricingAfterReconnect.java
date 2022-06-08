@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.reconnect;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -44,10 +44,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
@@ -85,7 +87,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 		String tmpMinCongestionPeriodInSecs = "5";
 		String civilianAccount = "civilian";
-		String oneContract = "contract";
+		String oneContract = "Multipurpose";
 
 		AtomicLong normalPrice = new AtomicLong();
 		AtomicLong tenXPrice = new AtomicLong();
@@ -100,11 +102,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						cryptoCreate(civilianAccount)
 								.payingWith(GENESIS)
 								.balance(ONE_MILLION_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
+						uploadInitCode(oneContract),
 						contractCreate(oneContract)
-								.bytecode("bytecode")
 								.payingWith(GENESIS)
 								.logging(),
 						contractCall(oneContract)
@@ -131,14 +130,18 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()),
-						blockingOrder(
-								IntStream.range(0, 20).mapToObj(i ->
+						blockingOrder(IntStream.range(0, 110).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn1" + i).payerId(civilianAccount),
+								uncheckedSubmit(
 										contractCall(oneContract)
-												.payingWith(GENESIS)
+												.signedBy(civilianAccount)
 												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR))
-										.toArray(HapiSpecOperation[]::new)
-						)
+												.sending(ONE_HBAR)
+												.txnId("uncheckedTxn1" + i)
+								)
+										.payingWith(GENESIS),
+								sleepFor(50)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new))
 				).then(
 						withLiveNode(reconnectingNode)
 								.within(5 * 60, TimeUnit.SECONDS)
@@ -150,15 +153,19 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						// then we can send more transactions. Otherwise, transactions may be pending for too long
 						// and we will get UNKNOWN status
 						sleepFor(30000),
-						blockingOrder(
-								IntStream.range(0, 10).mapToObj(i ->
+						blockingOrder(IntStream.range(0, 110).mapToObj(i -> new HapiSpecOperation[] {
+								usableTxnIdNamed("uncheckedTxn2" + i).payerId(civilianAccount),
+								uncheckedSubmit(
 										contractCall(oneContract)
-												.payingWith(GENESIS)
+												.signedBy(civilianAccount)
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
-												.setNode(reconnectingNode))
-										.toArray(HapiSpecOperation[]::new)
-						),
+												.txnId("uncheckedTxn2" + i)
+								)
+										.payingWith(GENESIS)
+										.setNode(reconnectingNode),
+								sleepFor(50)
+						}).flatMap(Arrays::stream).toArray(HapiSpecOperation[]::new)),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
 								.fee(ONE_HUNDRED_HBARS)

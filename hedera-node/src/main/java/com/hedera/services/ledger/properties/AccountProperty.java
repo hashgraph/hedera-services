@@ -271,17 +271,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNumPositiveBalances;
 		}
 	},
-	HEAD_TOKEN_NUM {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadTokenId((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadTokenId;
-		}
-	},
 	FIRST_CONTRACT_STORAGE_KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -315,26 +304,4 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getAutoRenewAccount;
 		}
 	},
-	HEAD_NFT_ID {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadNftId((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadNftId;
-		}
-	},
-	HEAD_NFT_SERIAL_NUM {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadNftSerialNum((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadNftSerialNum;
-		}
-	}
 }

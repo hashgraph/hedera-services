@@ -78,6 +78,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.autoRenew(CUSTOM_PAYER_ACCOUNT)
+							.get()
+			));
+		}
+	},
 	TOKEN_CREATE_WITH_MISSING_AUTO_RENEW {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
@@ -227,6 +237,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate()
 							.missingAdmin()
 							.treasury(DEFAULT_PAYER)
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.treasury(CUSTOM_PAYER_ACCOUNT)
 							.get()
 			));
 		}

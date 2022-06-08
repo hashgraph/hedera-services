@@ -26,6 +26,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -59,9 +60,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -274,6 +273,14 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation resetToDefault(String... properties) {
+		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Arrays.stream(properties)
+						.collect(Collectors.toMap(v -> v, defaultNodeProps::get)));
+	}
+
 	public static HapiSpecOperation overridingTwo(
 			final String aProperty,
 			final String aValue,
@@ -285,32 +292,6 @@ public class UtilVerbs {
 				.overridingProps(Map.of(
 						aProperty, aValue,
 						bProperty, bValue));
-	}
-
-	public static HapiSpecOperation resetAppPropertiesTo(String path) {
-		return fileUpdate(APP_PROPERTIES)
-				.payingWith(ADDRESS_BOOK_CONTROL)
-				.overridingProps(readPropertyFile(path));
-	}
-
-	private static Map<String, String> readPropertyFile(String path) {
-		Properties properties = null;
-
-		try (InputStream input = new FileInputStream(path)) {
-			properties = new Properties();
-			properties.load(input);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		Map<String, String> resultMap = new HashMap<>();
-
-		for (String key : properties.stringPropertyNames()) {
-			resultMap.put(key, properties.getProperty(key));
-		}
-
-		return resultMap;
 	}
 
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {

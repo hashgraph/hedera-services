@@ -34,8 +34,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_CHILD_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.GET_CHILD_RESULT_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -79,6 +77,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -99,6 +98,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	private final EnumSet<Utils.ServiceType> ServiceTypes;
 	private StringBuilder feeTableBuilder;
 	private String serviceBorder;
+	private String contract = "CreateTrivial";
 
 	public CostOfEveryThingSuite(final Map<String, String> specConfig,
 			final StringBuilder feeTableBuilder, final String serviceBorder, final String[] services) {
@@ -138,10 +138,11 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.balance(10_000_000_000L),
 						fileCreate("contractFile")
 								.payingWith("payer")
-								.fromResource("contract/bytecodes/CreateTrivial.bin")
+								.fromResource("contract/contracts/CreateTrivial/CreateTrivial.bin")
 				)
 				.when(
-						contractCreate("testContract")
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.blankMemo()
 								.entityMemo("")
 								.bytecode("contractFile")
@@ -151,30 +152,30 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.hasKnownStatus(SUCCESS)
 								.via("canonicalContractCreate"),
-						contractUpdate("testContract")
+						contractUpdate(contract)
 								.newMemo("")
 								.blankMemo()
 								.payingWith("payer")
 								.newKey("key")
 								.newExpirySecs(THREE_MONTHS_IN_SECONDS)
 								.via("canonicalContractUpdate"),
-						contractCall("testContract", CREATE_CHILD_ABI)
+						contractCall(contract, "create")
 								.blankMemo()
 								.payingWith("payer")
 								.gas(100000)
 								.via("canonicalContractCall"),
-						getContractInfo("testContract")
+						getContractInfo(contract)
 								.payingWith("payer")
 								.via("canonicalGetContractInfo"),
-						contractCallLocal("testContract", GET_CHILD_RESULT_ABI)
+						contractCallLocal(contract, "getIndirect")
 								.payingWith("payer")
 								.nodePayment(100_000_000)
 								.gas(50000)
 								.via("canonicalContractCallLocal"),
-						getContractBytecode("testContract")
+						getContractBytecode(contract)
 								.payingWith("payer")
 								.via("canonicalGetContractByteCode"),
-						contractDelete("testContract")
+						contractDelete(contract)
 								.blankMemo()
 								.payingWith("payer")
 								.via("canonicalContractDelete")

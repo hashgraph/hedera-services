@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -48,6 +47,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndel
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.ENTITY_NUM_KEY;
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.EXPECTED_LUCKY_NO;
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.FUSE_BYTECODE;
@@ -145,10 +146,10 @@ public final class DiverseStateValidation extends HapiApiSuite {
 				sourcing(() -> getContractBytecode(idLiteralWith(entityNums.get().get(FUSE_CONTRACT)))
 						.hasBytecode(CommonUtils.unhex(hexedBytecode.get().get(FUSE_BYTECODE)))),
 				sourcing(() -> contractCallLocal(idLiteralWith(entityNums.get().get(MULTI_CONTRACT)),
-								LUCKY_NO_LOOKUP_ABI)
+								"pick")
 								.has(resultWith()
 										.resultThruAbi(
-												LUCKY_NO_LOOKUP_ABI,
+												getABIFor(FUNCTION, "pick", MULTI_CONTRACT),
 												isLiteralResult(
 														new Object[] { BigInteger.valueOf(EXPECTED_LUCKY_NO) }))))
 		);

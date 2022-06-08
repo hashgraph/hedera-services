@@ -324,6 +324,87 @@
       } ]
     }
   }, {
+    "transactionFeeSchedule" : {
+      "hederaFunctionality" : "ScheduleCreate",
+      "fees" : [ {
+        "subType" : "DEFAULT",
+        "nodedata" : {
+          "constant" : 2182553692,
+          "bpt" : 96924,
+          "vpt" : 242308980,
+          "rbh" : 65,
+          "sbh" : 5,
+          "gas" : 646,
+          "bpr" : 96924,
+          "sbpr" : 2423,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 43651073832,
+          "bpt" : 1938472,
+          "vpt" : 4846179597,
+          "rbh" : 1292,
+          "sbh" : 97,
+          "gas" : 12923,
+          "bpr" : 1938472,
+          "sbpr" : 48462,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 43651073832,
+          "bpt" : 1938472,
+          "vpt" : 4846179597,
+          "rbh" : 1292,
+          "sbh" : 97,
+          "gas" : 12923,
+          "bpr" : 1938472,
+          "sbpr" : 48462,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      }, {
+        "subType" : "SCHEDULE_CREATE_CONTRACT_CALL",
+        "nodedata" : {
+          "constant" : 22946919652,
+          "bpt" : 1019035,
+          "vpt" : 2547586670,
+          "rbh" : 679,
+          "sbh" : 51,
+          "gas" : 6794,
+          "bpr" : 1019035,
+          "sbpr" : 25476,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 458938393039,
+          "bpt" : 20380693,
+          "vpt" : 50951733401,
+          "rbh" : 13587,
+          "sbh" : 1019,
+          "gas" : 135871,
+          "bpr" : 20380693,
+          "sbpr" : 509517,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 458938393039,
+          "bpt" : 20380693,
+          "vpt" : 50951733401,
+          "rbh" : 13587,
+          "sbh" : 1019,
+          "gas" : 135871,
+          "bpr" : 20380693,
+          "sbpr" : 509517,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      } ]
+    }
+  }, {
     "expiryTime" : 1633132800
   } ]
 }, {
@@ -646,6 +727,87 @@
           "gas" : 1590,
           "bpr" : 238547,
           "sbpr" : 5964,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      } ]
+    }
+  },{
+    "transactionFeeSchedule" : {
+      "hederaFunctionality" : "ScheduleCreate",
+      "fees" : [ {
+        "subType" : "DEFAULT",
+        "nodedata" : {
+          "constant" : 2182553692,
+          "bpt" : 96924,
+          "vpt" : 242308980,
+          "rbh" : 65,
+          "sbh" : 5,
+          "gas" : 646,
+          "bpr" : 96924,
+          "sbpr" : 2423,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 43651073832,
+          "bpt" : 1938472,
+          "vpt" : 4846179597,
+          "rbh" : 1292,
+          "sbh" : 97,
+          "gas" : 12923,
+          "bpr" : 1938472,
+          "sbpr" : 48462,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 43651073832,
+          "bpt" : 1938472,
+          "vpt" : 4846179597,
+          "rbh" : 1292,
+          "sbh" : 97,
+          "gas" : 12923,
+          "bpr" : 1938472,
+          "sbpr" : 48462,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      }, {
+        "subType" : "SCHEDULE_CREATE_CONTRACT_CALL",
+        "nodedata" : {
+          "constant" : 22946919652,
+          "bpt" : 1019035,
+          "vpt" : 2547586670,
+          "rbh" : 679,
+          "sbh" : 51,
+          "gas" : 6794,
+          "bpr" : 1019035,
+          "sbpr" : 25476,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 458938393039,
+          "bpt" : 20380693,
+          "vpt" : 50951733401,
+          "rbh" : 13587,
+          "sbh" : 1019,
+          "gas" : 135871,
+          "bpr" : 20380693,
+          "sbpr" : 509517,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 458938393039,
+          "bpt" : 20380693,
+          "vpt" : 50951733401,
+          "rbh" : 13587,
+          "sbh" : 1019,
+          "gas" : 135871,
+          "bpr" : 20380693,
+          "sbpr" : 509517,
           "min" : 0,
           "max" : 1000000000000000
         }

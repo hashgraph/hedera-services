@@ -98,6 +98,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
 				return;
 			}
+			// tbd : handle custom payer here
 			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
 					transactionBody.getTransactionID().getAccountID())) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
@@ -114,6 +115,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(
+					// tbd : handle custom payer here
 					transactionBody.getTransactionID().getAccountID(),
 					op.getMessage().toByteArray(),
 					op.getTopicID(),

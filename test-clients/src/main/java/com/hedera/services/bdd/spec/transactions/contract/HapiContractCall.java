@@ -218,6 +218,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return privateKeyRef;
 	}
 
+	public boolean getDeferStatusResolution() {
+		return deferStatusResolution;
+	}
+
 	@Override
 	protected java.util.function.Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;

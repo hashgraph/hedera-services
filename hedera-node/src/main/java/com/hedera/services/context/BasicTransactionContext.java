@@ -323,6 +323,9 @@ public class BasicTransactionContext implements TransactionContext {
 		if (accessor().isTriggeredTxn()) {
 			throw new IllegalStateException("Unable to trigger txns in triggered txns");
 		}
+		if (triggeredTxn != null && (triggeredTxn != scopedAccessor)) {
+			throw new IllegalStateException("Unable to trigger more than one txn.");
+		}
 		triggeredTxn = scopedAccessor;
 	}
 

@@ -69,6 +69,16 @@ public interface TxnAccessor {
 
 	boolean isTriggeredTxn();
 
+	/**
+	 * @return true if the transaction should be affected by throttles
+	 */
+	boolean throttleExempt();
+
+	/**
+	 * @return true if the transaction should not be charged congestion pricing.
+	 */
+	boolean congestionExempt();
+
 	TransactionBody getTxn();
 
 	long getGasLimitForContractTx();

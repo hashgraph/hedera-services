@@ -65,7 +65,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
-		final AccountID payer = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
+		final AccountID payer = txnCtx.activePayer();
 		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
 		approveAllowanceLogic.approveAllowance(op.getCryptoAllowancesList(),

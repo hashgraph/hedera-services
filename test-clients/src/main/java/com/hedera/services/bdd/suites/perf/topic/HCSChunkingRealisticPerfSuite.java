@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.perf.topic;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -52,7 +51,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
 	private static final Logger log = LogManager.getLogger(HCSChunkingRealisticPerfSuite.class);
 	private static final int CHUNK_SIZE = 150;
-	private static final String LARGE_FILE = ContractResources.EMIT_EVENT_BYTECODE_PATH;
+	private static final String LARGE_FILE = "src/main/resource/contract/contracts/EmitEvent/EmitEvent.bin";
 	private static final String PAYER = "payer";
 	private static final String TOPIC = "topic";
 	public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;

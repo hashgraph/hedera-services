@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.misc;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -60,12 +59,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -146,18 +148,16 @@ public class R5BugChecks extends HapiApiSuite {
 	private HapiApiSpec contractCannotTransferToReceiverSigRequired() {
 		return defaultHapiSpec("ContractCannotTransferToReceiverSigRequired")
 				.given(
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
-						contractCreate("sponsor")
-								.bytecode("bytecode")
+						uploadInitCode("Multipurpose"),
+						contractCreate("Multipurpose")
 								.balance(1)
 				).when(
 						cryptoCreate("sr")
 								.receiverSigRequired(true)
 				).then(
 						contractCall(
-								"sponsor",
-								ContractResources.CONSPICUOUS_DONATION_ABI,
+								"Multipurpose",
+								"donate",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("sr").getAccountNum(),
 										"Hey, Ma!"
@@ -166,6 +166,7 @@ public class R5BugChecks extends HapiApiSuite {
 	}
 
 	private HapiApiSpec enforcesSigRequirements() {
+		final var contract = "LastTrackingSender";
 		KeyShape complexSrShape = listOf(SIMPLE, threshOf(1, 3));
 		SigControl activeSig = complexSrShape.signedWith(sigs(ON, sigs(OFF, OFF, ON)));
 		SigControl inactiveSig = complexSrShape.signedWith(sigs(OFF, sigs(ON, ON, ON)));
@@ -173,10 +174,8 @@ public class R5BugChecks extends HapiApiSuite {
 		return defaultHapiSpec("EnforcesSigRequirements")
 				.given(
 						newKeyNamed("srKey").shape(complexSrShape),
-						fileCreate("bytecode")
-								.path(ContractResources.LAST_TRACKING_SENDER_BYTECODE_PATH),
-						contractCreate("sponsor")
-								.bytecode("bytecode")
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.balance(10),
 						cryptoCreate("noSr")
 								.balance(0L),
@@ -186,43 +185,43 @@ public class R5BugChecks extends HapiApiSuite {
 								.receiverSigRequired(true)
 				).when(
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("sr").getAccountNum(),
 										5
 								}).hasKnownStatus(INVALID_SIGNATURE),
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("sr").getAccountNum(),
 										5
 								}).signedBy(GENESIS, "sr")
 								.sigControl(ControlForKey.forKey("sr", inactiveSig))
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractCallLocal("sponsor", ContractResources.HOW_MUCH_ABI).has(
-								resultWith().resultThruAbi(ContractResources.HOW_MUCH_ABI,
+						contractCallLocal(contract, "howMuch").has(
+								resultWith().resultThruAbi(getABIFor(FUNCTION, "howMuch", contract),
 										isLiteralResult(new Object[] { BigInteger.valueOf(0) }))),
 						getAccountBalance("sr").hasTinyBars(0L)
 				).then(
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("noSr").getAccountNum(),
 										1
 								}),
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("sr").getAccountNum(),
 										5
 								}).signedBy(GENESIS, "sr")
 								.sigControl(ControlForKey.forKey("sr", activeSig)),
-						contractCallLocal("sponsor", ContractResources.HOW_MUCH_ABI).has(
-								resultWith().resultThruAbi(ContractResources.HOW_MUCH_ABI,
+						contractCallLocal(contract, "howMuch").has(
+								resultWith().resultThruAbi(getABIFor(FUNCTION, "howMuch", contract),
 										isLiteralResult(new Object[] { BigInteger.valueOf(5) }))),
 						getAccountBalance("sr").hasTinyBars(5L),
 						getAccountBalance("noSr").hasTinyBars(1L)
@@ -231,18 +230,17 @@ public class R5BugChecks extends HapiApiSuite {
 
 
 	private HapiApiSpec cannotTransferToDeleted() {
+		final var contract = "LastTrackingSender";
 		return defaultHapiSpec("CannotTransferToDeleted")
 				.given(
 						cryptoCreate("tbd"),
-						fileCreate("bytecode")
-								.path(ContractResources.LAST_TRACKING_SENDER_BYTECODE_PATH),
-						contractCreate("sponsor")
-								.bytecode("bytecode")
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.balance(10)
 				).when(
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("tbd").getAccountNum(),
 										1
@@ -250,8 +248,8 @@ public class R5BugChecks extends HapiApiSuite {
 						cryptoDelete("tbd")
 				).then(
 						contractCall(
-								"sponsor",
-								ContractResources.TRACKING_SEND_ABI,
+								contract,
+								"uncheckedTransfer",
 								spec -> new Object[] {
 										(int) spec.registry().getAccountID("tbd").getAccountNum(),
 										2
@@ -292,9 +290,11 @@ public class R5BugChecks extends HapiApiSuite {
 
 	/* Run from clean local environment to test need for state migration vis-a-vis JContractFunctionResult. */
 	private HapiApiSpec genRecordWithCreations() {
+		final var contract = "Fuse";
 		return defaultHapiSpec("CreateRecordViaExpensiveSubmit")
 				.given(
-						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH)
+						uploadInitCode(contract),
+						contractCreate(contract)
 				).when(
 						contractCreate("fuse").bytecode("bytecode")
 				).then(

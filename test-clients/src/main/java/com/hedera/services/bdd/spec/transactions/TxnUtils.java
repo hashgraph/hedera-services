@@ -61,7 +61,11 @@ import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -599,5 +603,17 @@ public class TxnUtils {
 		return "body=" + TextFormat.shortDebugString(body) + "; sigs="
 				+ TextFormat.shortDebugString(
 				com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
+	}
+
+	public static String bytecodePath(String contractName) {
+		return String.format("src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
+	}
+
+	public static ByteString literalInitcodeFor(final String contract) {
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(bytecodePath(contract))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

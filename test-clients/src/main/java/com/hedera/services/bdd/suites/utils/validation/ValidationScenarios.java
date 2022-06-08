@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -118,6 +117,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -155,6 +155,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.CONSENSUS;
@@ -280,7 +282,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							withOpContext((spec, opLog) -> {
 								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
 									var bytecodeCreate = fileCreate("unusedName")
-											.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH);
+											.path(bytecodePath("Multipurpose"));
 									allRunFor(spec, bytecodeCreate);
 									feeSnapshots.getOpsConfig().setBytecode(bytecodeCreate.numOfCreatedFile());
 								}
@@ -480,7 +482,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.sending(1L),
-							contractCallLocal("contractTbd", ContractResources.LUCKY_NO_LOOKUP_ABI),
+							contractCallLocal("contractTbd", "pick"),
 							contractUpdate("contractTbd")
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
@@ -1231,7 +1233,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.sending(1L),
-							contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.CONSPICUOUS_DONATION_ABI,
+							contractCall(PERSISTENT_CONTRACT_NAME, "donate",
 									donationArgs)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
@@ -1316,11 +1318,11 @@ public class ValidationScenarios extends HapiApiSuite {
 				allRunFor(spec, bytecodeCheck);
 
 				Object[] expected = new Object[] { BigInteger.valueOf(luckyNo) };
-				var luckyNoCheck = contractCallLocal(literal, ContractResources.LUCKY_NO_LOOKUP_ABI)
+				var luckyNoCheck = contractCallLocal(literal, "pick")
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.has(resultWith()
 								.resultThruAbi(
-										ContractResources.LUCKY_NO_LOOKUP_ABI,
+										getABIFor(FUNCTION, "pick", literal),
 										isLiteralResult(expected)));
 				allRunFor(spec, luckyNoCheck);
 
@@ -1366,7 +1368,7 @@ public class ValidationScenarios extends HapiApiSuite {
 
 				Integer numberToUse = (luckyNo == null) ? DEFAULT_LUCKY_NUMBER : luckyNo;
 				Object[] args = new Object[] { Integer.valueOf(numberToUse) };
-				var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.BELIEVE_IN_ABI, args);
+				var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, "believeIn", args);
 				allRunFor(spec, setLucky);
 
 				var createdNo = create.numOfCreatedContract();

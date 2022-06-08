@@ -66,6 +66,14 @@ public enum ConsensusUpdateTopicScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID).adminKey(UPDATE_TOPIC_ADMIN_KT)
+							.autoRenewAccountId(CUSTOM_PAYER_ACCOUNT_ID).get()
+			));
+		}
+	},
 	CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(

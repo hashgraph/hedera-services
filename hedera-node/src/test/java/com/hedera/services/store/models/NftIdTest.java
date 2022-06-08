@@ -28,14 +28,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class NftIdTest {
-	private long shard = 1;
-	private long realm = 2;
-	private long num = 3;
-	private long serialNo = 4;
-	private long bShard = 2;
-	private long bRealm = 3;
-	private long bNum = 4;
-	private long bSerialNo = 5;
+	private final long shard = 1;
+	private final long realm = 2;
+	private final long num = 3;
+	private final long serialNo = 4;
+	private final long bShard = 2;
+	private final long bRealm = 3;
+	private final long bNum = 4;
+	private final long bSerialNo = 5;
+
+	@Test
+	void ordersAsExpected() {
+		final var a = new NftId(shard + 1, realm + 1, num, serialNo + 1);
+		final var b = new NftId(shard, realm, num + 1, serialNo);
+		assertEquals(-1, Integer.signum(a.compareTo(b)));
+		final var c = new NftId(shard + 1, realm, num, serialNo + 1);
+		assertEquals(+1, Integer.signum(a.compareTo(c)));
+		final var d = new NftId(shard + 1, realm + 1, num, serialNo);
+		assertEquals(+1, Integer.signum(a.compareTo(d)));
+		final var e = new NftId(shard, realm + 1, num, serialNo + 1);
+		assertEquals(+1, Integer.signum(a.compareTo(e)));
+	}
 
 	@Test
 	void objectContractWorks() {

@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
@@ -42,6 +41,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;
 
 public class HapiSpecSetup {
@@ -150,7 +150,7 @@ public class HapiSpecSetup {
 		return props.getLong("default.contract.balance.tinyBars");
 	}
 	public String defaultContractPath() {
-		return ContractResources.bytecodePath(props.get("default.contract.bytecode"));
+		return bytecodePath(props.get("default.contract.bytecode"));
 	}
 	public long defaultCreateGas() {
 		return props.getLong("default.create.gas");
