@@ -23,17 +23,13 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
+import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -47,8 +43,8 @@ import java.nio.file.Path;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -65,25 +61,47 @@ public class Utils {
 	}
 
 	public static byte[] asAddress(final TokenID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+		return asUtilAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
 	public static byte[] asAddress(final AccountID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+		return asUtilAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
 	public static byte[] asAddress(final ContractID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		return asUtilAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
-	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-		final byte[] solidityAddress = new byte[20];
+	public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(byte[] address) {
+		boolean ADDRESS_TYPE = true;
 
-		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+		Address besuAddress = null;
+		if (ADDRESS_TYPE) {
+			besuAddress = Address.wrap(Bytes.wrap(address));
 
-		return solidityAddress;
+		}
+		return convertBesuAddressToHeadlongAddress(besuAddress);
+
+//		else {
+//			var hexedAddress = new String(address);
+//
+//			return convertHexedEvmAddressToHeadlongAddress(hexedAddress);
+//		}
+	}
+
+	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
+		return com.esaulpaugh.headlong.abi.Address.wrap(
+				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
+	}
+
+	public static byte[] asUtilAddress(final int shard, final long realm, final long num) {
+		final byte[] address = new byte[20];
+
+		arraycopy(Ints.toByteArray(shard), 0, address, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, address, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, address, 12, 8);
+
+		return address;
 	}
 
 	public static byte[] asAddressInTopic(final byte[] solidityAddress) {

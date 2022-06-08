@@ -44,7 +44,7 @@ import java.util.Random;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.contract.util.DecodingUtil.decodeResult;
+import static com.hedera.services.bdd.spec.util.DecodingUtil.decodeResult;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {

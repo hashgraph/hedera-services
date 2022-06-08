@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -39,6 +38,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.util.EncodingUtil.encodeParametersWithTuple;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
@@ -244,15 +244,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		if (explicitHexedParams.isPresent()) {
 			callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
 		} else {
-			final var paramsList = Arrays.asList(params);
-			final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-			if (tupleExist) {
-				callData = encodeParametersWithTuple(params);
-			} else {
-				callData = encodeParametersWithTuple(params);
-//				asHeadlongAddress(params);
-//				callData = Function.fromJson(abi).encodeCallWithArgs(params).array();
-			}
+			callData = encodeParametersWithTuple(abi, params);
 		}
 
 		ContractCallTransactionBody opBody = spec

@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.transactions.contract.util;
+package com.hedera.services.bdd.spec.util;
 /*-
  * ‌
  * Hedera Services Node
@@ -32,7 +32,7 @@ public class DecodingUtil {
     static ResultType resultType = ResultType.NOT_SPECIFIED;
 
     public static Tuple decodeResult(byte[] encodedReturn, String json) {
-        //Additional check to avoid casting errors
+
         if (json.contains("address")) {
             json = json.replaceAll("address", "bytes32");
         }

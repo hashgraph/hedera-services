@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -31,43 +30,23 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.ObjLongConsumer;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.function.*;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.util.EncodingUtil.encodeParametersWithTuple;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
@@ -279,13 +258,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         if (explicitHexedParams.isPresent()) {
             callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
         } else {
-            final var paramsList = Arrays.asList(params);
-            final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-            if (tupleExist) {
-                callData = encodeParametersWithTuple(params);
-            } else {
-                callData = encodeParametersWithTuple(params);
-            }
+            callData = encodeParametersWithTuple(abi, params);
         }
 
         final byte[] to;

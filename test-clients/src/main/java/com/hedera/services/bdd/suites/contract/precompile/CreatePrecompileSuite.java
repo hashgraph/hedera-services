@@ -1061,7 +1061,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-														Utils.asSolidityAddress(0, 0, 999_999_999L),
+														Utils.asUtilAddress(0, 0, 999_999_999L),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD
@@ -1159,7 +1159,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														Utils.asSolidityAddress(0, 0, 15252L),
+														Utils.asUtilAddress(0, 0, 15252L),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
 														AUTO_RENEW_PERIOD)

@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -31,7 +30,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -43,17 +41,11 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.util.DecodingUtil.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -349,20 +341,12 @@ public class CreateOperationSuite extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
 							var resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
-									getABIFor(FUNCTION, "getIndirect", contract));
+							var funcJson = getABIFor(FUNCTION, "getIndirect", contract);
+							var contractCallValue = decodeResult(resultBytes, funcJson);
+							final int contractCallInt = ((BigInteger) contractCallValue.get(0)).intValue();
 
-							var contractCallReturnVal = 0;
-							if (resultBytes != null && resultBytes.length > 0) {
-								final var retResults = function.decodeResult(resultBytes);
-								if (retResults != null && retResults.length > 0) {
-									final var retBi = (BigInteger) retResults[0];
-									contractCallReturnVal = retBi.intValue();
-								}
-							}
-
-							ctxLog.info("This contract call contract return value {}", contractCallReturnVal);
-							Assertions.assertEquals(CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal,
+							ctxLog.info("This contract call contract return value {}", contractCallInt);
+							Assertions.assertEquals(CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallInt,
 									"This contract call contract return value should be 7");
 
 
@@ -372,17 +356,16 @@ public class CreateOperationSuite extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, subop3);
 
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");
+							funcJson = getABIFor(FUNCTION, "getAddress", contract);
 
-							function = CallTransaction.Function.fromJsonInterface(
-									getABIFor(FUNCTION, "getAddress", contract));
+							final var retResults = decodeResult(resultBytes, funcJson);
 
-							final var retResults = function.decodeResult(resultBytes);
 							String contractIDString = null;
-							if (retResults != null && retResults.length > 0) {
-								final var retVal = (byte[]) retResults[0];
+							if (retResults != null && retResults.size() > 0) {
+								final var retVal = Arrays.copyOfRange((byte[]) retResults.get(0), 12, 32);
 
-								final var realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
-								final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));
+								final var realm = realmFromEvmAddress(retVal);
+								final var accountNum = numFromEvmAddress(retVal);
 								contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
 							}
 							ctxLog.info("The created contract ID {}", contractIDString);

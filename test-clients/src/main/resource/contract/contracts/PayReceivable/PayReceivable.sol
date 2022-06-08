@@ -26,7 +26,7 @@ contract PayReceivable {
 
     }
 
-    function deposit(uint256 amount) payable public {
+    function deposit(uint32 amount) payable public {
 
         require(msg.value == amount);
 

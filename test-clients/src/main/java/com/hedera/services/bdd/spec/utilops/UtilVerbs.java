@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -37,23 +38,10 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.*;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
-import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
-import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
-import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
-import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
-import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
-import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
-import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
-import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
-import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.inventory.*;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
@@ -66,17 +54,7 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
@@ -89,16 +67,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,43 +83,18 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
-import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
-import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
-import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
-import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.lang.System.arraycopy;
+import static com.hederahashgraph.api.proto.java.FreezeType.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
@@ -1013,7 +957,7 @@ public class UtilVerbs {
 
 	public static class TokenTransferListBuilder {
 		private Tuple tokenTransferList;
-		private byte[] token;
+		private Address token;
 		private boolean isSingleList = true;
 
 		public TokenTransferListBuilder isSingleList(final boolean isSingleList) {
@@ -1022,7 +966,7 @@ public class UtilVerbs {
 		}
 
 		public TokenTransferListBuilder forToken(final TokenID token) {
-			this.token = getAddressWithFilledEmptyBytes(asAddress(token));
+			this.token = asHeadlongAddress(asAddress(token));
 			return this;
 		}
 
@@ -1070,7 +1014,7 @@ public class UtilVerbs {
 	public static Tuple accountAmount(
 			final AccountID account,
 			final Long amount) {
-		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
+		final Address account32 = asHeadlongAddress(asAddress(account));
 
 		return Tuple.of(account32,
 				amount);
@@ -1079,8 +1023,8 @@ public class UtilVerbs {
 	public static Tuple nftTransfer(
 			final AccountID sender, final AccountID receiver,
 			final Long serialNumber) {
-		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
-		final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
+		final Address account32 = asHeadlongAddress(asAddress(sender));
+		final Address receiver32 = asHeadlongAddress(asAddress(receiver));
 
 		return Tuple.of(account32, receiver32,
 				serialNumber);
@@ -1118,9 +1062,9 @@ public class UtilVerbs {
 		return privateKeyByteArray;
 	}
 
-	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
-		final var address32 = new byte[32];
-		arraycopy(address20, 0, address32, 12, 20);
-		return address32;
-	}
+//	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
+//		final var address32 = new byte[32];
+//		arraycopy(address20, 0, address32, 12, 20);
+//		return address32;
+//	}
 }

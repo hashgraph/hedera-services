@@ -55,42 +55,15 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.contract.Utils.*;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EthereumSuite extends HapiApiSuite {
@@ -115,20 +88,20 @@ public class EthereumSuite extends HapiApiSuite {
 		return Stream.concat(
 				feePaymentMatrix().stream(),
 				Stream.of(
-						invalidTxData(),
-						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-						ETX_008_contractCreateExecutesWithExpectedRecord(),
-						ETX_009_callsToTokenAddresses(),
-						ETX_010_transferToCryptoAccountSucceeds(),
-						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-						ETX_014_contractCreateInheritsSignerProperties(),
-						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-						ETX_009_callsToTokenAddresses(),
-						originAndSenderAreEthereumSigner(),
-						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
+//						invalidTxData(),
+						ETX_007_fungibleTokenCreateWithFeesHappyPath()
+//						ETX_008_contractCreateExecutesWithExpectedRecord(),
+//						ETX_009_callsToTokenAddresses(),
+//						ETX_010_transferToCryptoAccountSucceeds(),
+//						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+//						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+//						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+//						ETX_014_contractCreateInheritsSignerProperties(),
+//						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+//						ETX_009_callsToTokenAddresses(),
+//						originAndSenderAreEthereumSigner(),
+//						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+//						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
 				)).toList();
 	}
 
@@ -189,16 +162,16 @@ public class EthereumSuite extends HapiApiSuite {
 		final long ninteyPercentFee = gasPrice * 9 / 10;
 
 		return Stream.of(
-				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
-				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
-				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
-				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
-				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
-				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
-				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
-				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
-				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
+//				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
+//				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
+//				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
+//				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
+//				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
+//				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
+//				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
+//				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
+//				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
+//				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
 				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
 				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
 		).map(params ->

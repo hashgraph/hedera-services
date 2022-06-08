@@ -33,9 +33,9 @@
     "constant": false,
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint32",
         "name": "amount",
-        "type": "uint256"
+        "type": "uint32"
       }
     ],
     "name": "deposit",
