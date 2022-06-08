@@ -56,9 +56,12 @@ public class NonBlockingHandoff {
 
 	private void handoff() {
 		while (!timeToStop.get()) {
-			final var rso = queue.poll();
-			if (rso != null) {
-				recordStreamManager.addRecordStreamObject(rso);
+			try {
+				recordStreamManager.addRecordStreamObject(queue.take());
+			} catch (final InterruptedException e) {
+				// Thread interrupted because of shutdown.
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 	}
