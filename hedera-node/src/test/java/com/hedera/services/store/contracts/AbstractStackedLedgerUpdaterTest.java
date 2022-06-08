@@ -33,14 +33,17 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -50,6 +53,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -75,6 +80,8 @@ class AbstractStackedLedgerUpdaterTest {
 	private HederaWorldState worldState;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private RecordsHistorian recordsHistorian;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
@@ -163,6 +170,38 @@ class AbstractStackedLedgerUpdaterTest {
 		assertDoesNotThrow(subject::commit);
 
 		verify(proxyAccountWrapper, never()).getBalance();
+	}
+
+	@Test
+	void commitsSourceIdIfKnown() {
+		final var mySourceId = 666;
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+
+		subject.commit();
+
+		assertEquals(List.of(mySourceId), wrapped.getCommittedRecordSourceIds());
+		assertSame(recordsHistorian, wrapped.getRecordsHistorian());
+	}
+
+	@Test
+	void alsoCommitsChildSourceIdsIfKnown() {
+		final var firstChildId = 444;
+		final var secondChildId = 555;
+		final var mySourceId = 666;
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		subject.addCommittedRecordSourceId(firstChildId, recordsHistorian);
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+		subject.addCommittedRecordSourceId(secondChildId, recordsHistorian);
+
+		subject.commit();
+
+		assertEquals(List.of(mySourceId, firstChildId, secondChildId), wrapped.getCommittedRecordSourceIds());
+		assertSame(recordsHistorian, wrapped.getRecordsHistorian());
 	}
 
 	@Test
