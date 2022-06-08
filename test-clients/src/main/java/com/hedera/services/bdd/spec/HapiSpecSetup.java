@@ -99,6 +99,8 @@ public class HapiSpecSetup {
 	 */
 	public void addOverrides(final Map<String, Object> props) {
 		this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
+		System.out.println("addOverrides = " + this.props);
+
 	}
 
 	public FileID addressBookId() {
