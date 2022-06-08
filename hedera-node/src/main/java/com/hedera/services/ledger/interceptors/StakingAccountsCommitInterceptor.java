@@ -87,8 +87,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
 	// The new stakePeriodStart values of accounts in the change set
 	private long[] stakePeriodStartUpdates = new long[INITIAL_CHANGE_CAPACITY];
-	// Whether each account in the change set has had its stake metadata changed
-	private boolean[] wasStakeMetaChanged = new boolean[INITIAL_CHANGE_CAPACITY];
 	// The stake change scenario for each account in the change set
 	private StakeChangeScenario[] stakeChangeScenarios = new StakeChangeScenario[INITIAL_CHANGE_CAPACITY];
 
@@ -145,23 +143,11 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
 			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
 		}
-		if (wasStakeMetaChanged[i]) {
-			// This account will NOT be eligible to receive a reward in this staking period;
-			// so a two-step reward computation would be wrong
-			mutableAccount.setRewardedSinceLastMetadataChange(true);
-		} else {
-			// TODO get clarification on usage of this boolean
-			mutableAccount.setRewardedSinceLastMetadataChange(false);
-			if (stakeAtStartOfLastRewardedPeriodUpdates[i] != -1) {
-				mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
-			}
+		if (stakeAtStartOfLastRewardedPeriodUpdates[i] != Long.MIN_VALUE) {
+			System.out.println("Updating 0.0." + mutableAccount.number()
+					+ " stakeAtStartOfLastRewardedPeriodUpdates=" + stakeAtStartOfLastRewardedPeriodUpdates[i]);
+			mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
 		}
-		stakePeriodManager.updatePendingRewardsGiven(
-				rewardsEarned[i],
-				stakedToMeUpdates[i],
-				stakePeriodStartUpdates[i],
-				stakeAtStartOfLastRewardedPeriodUpdates[i],
-				mutableAccount);
 	}
 
 	/**
@@ -188,10 +174,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 			if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
 				payReward(i, account, changes, pendingChanges);
-				wasStakeMetaChanged[i] = true;
-			} else if (!hasBeenRewarded(i)) {
-				wasStakeMetaChanged[i] = stakeMetaChanged;
 			}
+
 			// If we are outside the original change set, this is a "stakee" account; and its stakedId cannot
 			// have changed directly. Furthermore, its balance can only have changed via reward---but if so, it
 			// must be staked to a node, and again staked-to-me side effects are impossible
@@ -246,8 +230,16 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 						roundedToHbar(stakeToAward),
 						finalDeclineRewardGiven(account, changes));
 			}
+			stakeMetaChanged = hasStakeMetaChanges(changes);
+			if (stakeMetaChanged) {
+				stakeAtStartOfLastRewardedPeriodUpdates[i] = -1;
+			} else if (rewardsEarned[i] > 0 ||
+					(rewardsEarned[i] == 0 && account.getStakeAtStartOfLastRewardedPeriod() == -1
+							&& stakePeriodManager.currentStakePeriod() > account.getStakePeriodStart())) {
+				stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
+			}
 			stakePeriodStartUpdates[i] = stakePeriodManager.startUpdateFor(
-					curStakedId, newStakedId, hasBeenRewarded(i), wasStakeMetaChanged[i]);
+					curStakedId, newStakedId, rewardsEarned[i] > 0, stakeMetaChanged);
 		}
 	}
 
@@ -301,7 +293,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		if (isRewardSituation(account, stakedToMeUpdates[i], changes)) {
 			payReward(i, account, changes, pendingChanges);
 		}
-		wasStakeMetaChanged[i] = stakeMetaChanged;
 	}
 
 	private void payReward(
@@ -311,6 +302,14 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
 		final var reward = rewardCalculator.computePendingReward(account);
+		rewardsEarned[i] = reward;
+
+		if (reward > 0) {
+			networkCtx.get().decreasePendingRewards(reward);
+		} else {
+			return;
+		}
+
 		var receiverNum = numFromCode(account.number());
 		// We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
 		// accounts until we find a non-deleted account to reward
@@ -337,9 +336,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 					+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
 					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
-			stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
 		}
-		rewardsEarned[i] = reward;
 	}
 
 	@VisibleForTesting
@@ -365,13 +362,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final long stakedToMeUpdate,
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
-		stakeMetaChanged = (stakedToMeUpdate != -1 || hasStakeMetaChanges(changes));
-		final var hasRewardableChanges = changes.containsKey(BALANCE) || stakeMetaChanged;
+		stakeMetaChanged = hasStakeMetaChanges(changes);
+		final var hasRewardableChanges = changes.containsKey(BALANCE) || stakeMetaChanged || stakedToMeUpdate != -1;
 		return account != null
 				&& rewardsActivated
 				&& hasRewardableChanges
-				&& account.getStakedId() < 0
-				&& stakePeriodManager.isRewardable(account.getStakePeriodStart());
+				&& account.getStakedId() < 0;
 	}
 
 	/**
@@ -395,14 +391,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			rewardsEarned = new long[maxImpliedChanges];
 			stakeAtStartOfLastRewardedPeriodUpdates = new long[maxImpliedChanges];
 			stakedToMeUpdates = new long[maxImpliedChanges];
-			wasStakeMetaChanged = new boolean[maxImpliedChanges];
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
 			stakePeriodStartUpdates = new long[maxImpliedChanges];
 		}
 		Arrays.fill(rewardsEarned, -1);
-		Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, -1);
+		Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, Long.MIN_VALUE);
 		Arrays.fill(stakedToMeUpdates, -1);
-		Arrays.fill(wasStakeMetaChanged, false);
 		// The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used left-to-right only
 	}
 
@@ -453,10 +447,5 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	@VisibleForTesting
 	long[] getRewardsEarned() {
 		return rewardsEarned;
-	}
-
-	@VisibleForTesting
-	boolean[] getWasStakeMetaChanged() {
-		return wasStakeMetaChanged;
 	}
 }

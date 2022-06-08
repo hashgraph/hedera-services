@@ -110,22 +110,6 @@ public class RewardCalculator {
 			return 0L;
 		}
 		final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();
-		System.out.println("  * Subtracted rewardSumHistory[" +
-				(int) (currentStakePeriod - 1 - (effectiveStart)) + "]=" +
-				rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart))]);
-		// Recall that rewardSumHistory[0] is the cumulative reward rate for all periods up to and including
-		// [currentStakePeriod - 1]; since the current period is not finished, we do not know how to reward for it.
-		// Now suppose we call currentStakePeriod "today", and Alice's effectiveStart is [currentStakePeriod - 2]
-		// (two days ago), so we should reward Alice for exactly [currentStakePeriod - 1] (yesterday). This reward
-		// rate is the difference in the cumulative rates between yesterday and two days ago; that is,
-		// 		rate = rewardSumHistory[0] - rewardSumHistory[1]
-		// This is equivalent to,
-		//      rate = rewardSumHistory[0] - rewardSumHistory[(currentStakePeriod - 1) - effectiveStart]
-		// because,
-		//      (currentStakePeriod - 1) - effectiveStart = (currentStakePeriod - 1) - (currentStakePeriod - 2)
-		//                                                = -1 + 2
-		//                                                = 1
-		// It follows by induction the same difference is correct for all earlier values of effectiveStart.
 		return rewardFor(account, rewardSumHistory, currentStakePeriod, effectiveStart);
 	}
 
@@ -141,26 +125,16 @@ public class RewardCalculator {
 		}
 
 		if (account.getStakeAtStartOfLastRewardedPeriod() != -1) {
-			// This account claimed a (possibly zero) reward in day stakePeriodStart + 1, and may have
-			// changed its stake in the process. So we need to reward it for that day based on the
-			// stake we remember it had at the start of the day, not the stake that it has now. (To
-			// see why the rewardSumHistory indices are correct, again start with the base case that
-			// stakePeriodStart = todayNumber - 2, so that once more we want to reward only for
-			// todayNumber - 1 via rewardSumHistory[0] - rewardSumHistory[1].)
+			System.out.println("Indexes we are playing with : " + (rewardFrom-1) + " " + rewardFrom + " 0");
 			return ((account.getStakeAtStartOfLastRewardedPeriod()) / HBARS_TO_TINYBARS)
 					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom]) +
-					// And now we need to _also_ reward it for the (possibly empty) set of days from
-					// stakePeriodStart + 2 up to todayNumber - 1, for which it is guaranteed to have held its
-					// current stake.
+
 					((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
 							* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
 		} else {
-			// This account's stake has not changed since day stakePeriodStart, when it first started
-			// staking to a node but was not eligible to earn a reward. So we can reward it based on
-			// its current stake as below. (To see why the second rewardSumHistory index is correct, note
-			// it clearly holds for the base case that stakePeriodStart = todayNumber - 2, since then we
-			// want to reward for only day todayNumber - 1 via rewardSumHistory[0] - rewardSumHistory[1].
-			// Smaller values of stakePeriodStart follow by induction.)
+			System.out.println("  * Subtracted rewardSumHistory[" +
+					rewardFrom + "]=" +
+					rewardSumHistory[rewardFrom]);
 			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
 					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
 		}

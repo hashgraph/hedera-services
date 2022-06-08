@@ -24,7 +24,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.Units;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class StakePeriodManagerTest {
@@ -52,22 +49,6 @@ class StakePeriodManagerTest {
 	private PropertySource properties;
 
 	private StakePeriodManager subject;
-
-	@Test
-	void doesntUpdatePendingRewardsIfNothingOffered() {
-		givenAgnosticManager();
-		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(-1, -1, -1, -1, account);
-		verifyNoInteractions(networkCtx);
-	}
-
-	@Test
-	void updatesPendingRewardsIfSomethingOffered() {
-		givenAgnosticManager();
-		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(123, -1, -1, -1, account);
-		verify(networkCtx).decreasePendingRewards(123);
-	}
 
 	@Test
 	void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {

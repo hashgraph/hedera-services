@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 
 import javax.inject.Inject;
@@ -63,19 +62,6 @@ public class StakePeriodManager {
 		this.networkCtx = networkCtx;
 		this.numStoredPeriods = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
 		this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
-	}
-
-	public void updatePendingRewardsGiven(
-			final long rewardOffered,
-			final long stakedToMeUpdate,
-			final long stakePeriodStartUpdate,
-			final long balanceAtStartOfLastRewardedPeriod,
-			final MerkleAccount mutableAccount
-	) {
-		if (rewardOffered != -1) {
-			networkCtx.get().decreasePendingRewards(rewardOffered);
-		}
-		// TODO - how to update other implications for pending rewards?
 	}
 
 	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
@@ -154,7 +140,7 @@ public class StakePeriodManager {
 		// There's no reason to update stakedPeriodStart for an account not staking to
 		// a node; the value will never be used, since it cannot be eligible for a reward
 		if (newStakedId < 0) {
-			if (curStakedId >= 0) {
+			if (curStakedId >= 0 || stakeMetaChanged) {
 				// We just started staking to a node today
 				return currentStakePeriod();
 			} else {
@@ -162,9 +148,6 @@ public class StakePeriodManager {
 				if (rewarded) {
 					return currentStakePeriod() - 1;
 				} else {
-					if (stakeMetaChanged) {
-						return currentStakePeriod();
-					}
 					return -1;
 				}
 			}

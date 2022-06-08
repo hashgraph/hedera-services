@@ -145,29 +145,6 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
-	void setsStakeAtStartOfLastRewardedPeriodIfStakeMetaIsNotChanged() {
-		subject.getWasStakeMetaChanged()[2] = false;
-		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = 123;
-		final var mockAccount = mock(MerkleAccount.class);
-
-		subject.finish(2, mockAccount);
-
-		verify(mockAccount).setStakeAtStartOfLastRewardedPeriod(123);
-	}
-
-	@Test
-	void resetsStakeAtStartOfLastRewardedPeriodIfStakeMetaIsChanged() {
-		subject.getWasStakeMetaChanged()[2] = true;
-		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = 123;
-		final var account = MerkleAccountFactory.newAccount().get();
-
-		subject.finish(2, account);
-
-		assertTrue(account.isRewardedSinceLastMetadataChange());
-		assertEquals(-1, account.getStakeAtStartOfLastRewardedPeriod());
-	}
-
-	@Test
 	void setsGivenNonSentinelUpdate() {
 		subject.getStakedToMeUpdates()[2] = 100 * HBARS_TO_TINYBARS;
 		subject.getStakePeriodStartUpdates()[2] = 123;
@@ -177,19 +154,6 @@ class StakingAccountsCommitInterceptorTest {
 
 		verify(mockAccount).setStakedToMe(100 * HBARS_TO_TINYBARS);
 		verify(mockAccount).setStakePeriodStart(123);
-	}
-
-	@Test
-	void usesFinishToUpdatePendingRewards() {
-		subject.getRewardsEarned()[2] = 123L;
-		subject.getStakedToMeUpdates()[2] = 234L;
-		subject.getStakePeriodStartUpdates()[2] = 345L;
-		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = 456L;
-		final var mockAccount = mock(MerkleAccount.class);
-
-		subject.finish(2, mockAccount);
-
-		verify(stakePeriodManager).updatePendingRewardsGiven(123L, 234L, 345L, 456L, mockAccount);
 	}
 
 	@Test
