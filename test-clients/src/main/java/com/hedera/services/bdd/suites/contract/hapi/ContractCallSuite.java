@@ -1470,7 +1470,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							var receiverAccountId = accountIdFromHexedMirrorAddress(receiverAddr);
 							var receiver = asHeadlongAddress(asAddress(receiverAccountId));
 							final var transferCall = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
-									receiver, BigInteger.valueOf(10)
+									receiver, 10
 							)
 									.payingWith(ACCOUNT)
 									.logged();
