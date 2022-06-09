@@ -257,7 +257,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 			public List<HapiSpecOperation> suggestedInitializers() {
 				final List<HapiSpecOperation> inits = new ArrayList<>();
 				inits.add(uploadInitCode(CONTRACT));
-				inits.add(cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS));
+				inits.add(cryptoCreate(civilian).balance(200 * ONE_MILLION_HBARS).payingWith(GENESIS));
 				return inits;
 			}
 
