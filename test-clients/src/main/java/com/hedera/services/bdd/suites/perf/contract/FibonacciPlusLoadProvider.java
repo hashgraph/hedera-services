@@ -339,63 +339,6 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 		gasUsed.addAndGet(gas);
 	}
 
-	private HapiApiSpec justDoOne() {
-		final var civilian = "civilian";
-		final var bytecode = "bytecode";
-		final var contract = "fibPlus";
-		final int[] firstTargets = {19, 24};
-		final int[] secondTargets = {30, 31};
-		final var firstCallTxn = "firstCall";
-		final var secondCallTxn = "secondCall";
-		final var createTxn = "creation";
-
-		final AtomicReference<Instant> callStart = new AtomicReference<>();
-		final AtomicReference<Instant> createStart = new AtomicReference<>();
-
-		return defaultHapiSpec("JustDoOne")
-				.given(
-						uploadInitCode(CONTRACT),
-						cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS)
-				).when(
-						contractCreate(CONTRACT, 32)
-								.payingWith(civilian)
-								.balance(0L)
-								.gas(300_000L)
-								.exposingGasTo((code, gas) -> {
-									log.info("Got {} for creation using {} gas", code, gas);
-									this.observeExposedGas(gas);
-								}).via(createTxn),
-						getExecTime(createTxn).logged()
-				).then(
-						sourcing(() -> {
-							callStart.set(Instant.now());
-							return noOp();
-						}),
-						contractCall(CONTRACT, "addNthFib", firstTargets, FIBONACCI_NUM_TO_USE)
-								.payingWith(civilian)
-								.gas(300_000L)
-								.exposingGasTo((code, gas) -> {
-									final var done = Instant.now();
-									log.info("Called FIRST in {}ms using {} gas --> {}",
-											Duration.between(callStart.get(), done).toMillis(),
-											gas, code);
-									callStart.set(done);
-								}).via(firstCallTxn),
-						getExecTime(firstCallTxn).logged(),
-						contractCall(CONTRACT, "addNthFib", secondTargets, FIBONACCI_NUM_TO_USE)
-								.payingWith(civilian)
-								.gas(300_000L)
-								.exposingGasTo((code, gas) -> {
-									final var done = Instant.now();
-									log.info("Called SECOND in {}ms using {} gas --> {}",
-											Duration.between(callStart.get(), done).toMillis(),
-											gas, code);
-								}).via(secondCallTxn),
-						getExecTime(secondCallTxn).logged()
-				);
-	}
-
-
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
