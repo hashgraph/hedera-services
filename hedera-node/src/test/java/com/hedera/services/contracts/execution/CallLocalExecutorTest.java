@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -69,7 +70,8 @@ class CallLocalExecutorTest {
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 	Id callerID = new Id(0, 0, 123);
 	Id contractID = new Id(0, 0, 456);
-
+	Id senderID = new Id(0, 0, 789);
+	
 	ContractCallLocalQuery query;
 
 	@Mock
@@ -99,7 +101,37 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
 						callerID.asEvmAddress(), new TreeMap<>());
-		final var expected = response(OK, transactionProcessingResult);
+		final var expected = response(OK,
+				transactionProcessingResult, gas, params.toByteArray(),	Id.DEFAULT.asGrpcAccount());
+
+		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
+
+		// when:
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+
+		// then:
+		assertEquals(expected, result);
+	}
+
+	@Test
+	void processingSuccessfulWithAccountAlias() {
+		// setup:
+		final var senderAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+		final var sender = AccountID.newBuilder()
+				.setAlias(ByteString.copyFrom(senderAlias))
+				.build();
+		query = localCallQuery(contractID.asGrpcContract(), sender, ANSWER_ONLY);
+		given(aliasManager.lookupIdBy(sender.getAlias())).willReturn(EntityNum.fromLong(senderID.num()));
+
+		final var transactionProcessingResult = TransactionProcessingResult
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
+						callerID.asEvmAddress(), new TreeMap<>());
+		final var expected = response(OK, 
+				transactionProcessingResult, gas, params.toByteArray(),	senderID.asGrpcAccount());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
@@ -120,7 +152,8 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
 						Collections.emptyMap());
-		final var expected = response(OK, transactionProcessingResult);
+		final var expected = response(OK,
+				transactionProcessingResult, gas, params.toByteArray(),	Id.DEFAULT.asGrpcAccount());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -141,7 +174,8 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
 						Collections.emptyMap());
-		final var expected = response(OK, transactionProcessingResult);
+		final var expected = response(OK,
+				transactionProcessingResult, gas, params.toByteArray(),	Id.DEFAULT.asGrpcAccount());
 
 		given(entityAccess.isTokenAccount(any())).willReturn(true);
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
@@ -161,7 +195,8 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
 						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), Collections.emptyMap());
-		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
+		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, 
+				transactionProcessingResult, gas, params.toByteArray(), Id.DEFAULT.asGrpcAccount());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -182,7 +217,8 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
 						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap());
-		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
+		final var expected = response(INVALID_SOLIDITY_ADDRESS,
+				transactionProcessingResult, gas, params.toByteArray(),	Id.DEFAULT.asGrpcAccount());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -203,7 +239,8 @@ class CallLocalExecutorTest {
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())),
 						Optional.empty(), Collections.emptyMap());
-		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
+		final var expected = response(CONTRACT_REVERT_EXECUTED,
+				transactionProcessingResult, gas, params.toByteArray(),	Id.DEFAULT.asGrpcAccount());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -232,10 +269,14 @@ class CallLocalExecutorTest {
 		verifyNoInteractions(evmTxProcessor);
 	}
 
-	private ContractCallLocalResponse response(ResponseCodeEnum status, TransactionProcessingResult result) {
+	private ContractCallLocalResponse response(ResponseCodeEnum status, TransactionProcessingResult result, long gas,
+			byte[] params, AccountID senderId) {
 		return ContractCallLocalResponse.newBuilder()
 				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
-				.setFunctionResult(result.toGrpc())
+				.setFunctionResult(result.toGrpc().toBuilder()
+						.setGas(gas)
+						.setFunctionParameters(ByteString.copyFrom(params))
+						.setSenderId(senderId))
 				.build();
 	}
 
@@ -254,6 +295,18 @@ class CallLocalExecutorTest {
 				.setHeader(QueryHeader.newBuilder()
 						.setResponseType(type)
 						.build())
+				.build();
+	}
+
+	private ContractCallLocalQuery localCallQuery(ContractID id, AccountID sender, ResponseType type) {
+		return ContractCallLocalQuery.newBuilder()
+				.setContractID(id)
+				.setGas(gas)
+				.setFunctionParameters(params)
+				.setHeader(QueryHeader.newBuilder()
+						.setResponseType(type)
+						.build())
+				.setSenderId(sender)
 				.build();
 	}
 }

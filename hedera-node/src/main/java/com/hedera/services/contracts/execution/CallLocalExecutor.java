@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
@@ -32,6 +33,7 @@ import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -102,10 +104,14 @@ public class CallLocalExecutor {
 			final var responseHeader = RequestBuilder.getResponseHeader(status, 0L,
 					ANSWER_ONLY, ByteString.EMPTY);
 
+			var evmFnResult = EvmFnResult.fromCall(result);
+			evmFnResult.setGas(op.getGas());
+			evmFnResult.setFunctionParameters(op.getFunctionParameters().toByteArray());
+			evmFnResult.setSenderId(senderId.asEntityId());
 			return ContractCallLocalResponse
 					.newBuilder()
 					.setHeader(responseHeader)
-					.setFunctionResult(result.toGrpc())
+					.setFunctionResult(evmFnResult.toGrpc())
 					.build();
 		} catch (InvalidTransactionException ite) {
 			final var responseHeader = RequestBuilder.getResponseHeader(ite.getResponseCode(), 0L,

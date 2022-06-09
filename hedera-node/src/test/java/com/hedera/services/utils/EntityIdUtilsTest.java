@@ -97,6 +97,35 @@ class EntityIdUtilsTest {
 	}
 
 	@Test
+	void echoesUnaliasedAccountId() {
+		final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
+
+		assertEquals(EntityNum.fromLong(1234), unaliased(literalId, aliasManager));
+		assertEquals(EntityNum.MISSING_NUM, unaliased(AccountID.getDefaultInstance(), aliasManager));
+	}
+
+	@Test
+	void useAliasDirectlyIfMirror() {
+		final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+		final var num = Longs.fromByteArray(Arrays.copyOfRange(mockAddr, 12, 20));
+		final var expectedId = EntityNum.fromLong(num);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+
+		given(aliasManager.isMirror(mockAddr)).willReturn(true);
+		assertEquals(expectedId, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void returnsResolvedAccountIdIfNonMirro() {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var extantNum = EntityNum.fromLong(1_234_567L);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
+
+		assertEquals(extantNum, unaliased(input, aliasManager));
+	}
+
+	@Test
 	void correctLiteral() {
 		assertEquals("1.2.3", asLiteralString(asAccount("1.2.3")));
 		assertEquals("11.22.33", asLiteralString(IdUtils.asFile("11.22.33")));
