@@ -66,7 +66,7 @@ public class EvmTxProcessorSimulator {
 			long tokenId, WorldLedgers ledgers) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 		final boolean isStatic = false;
-
+		final var redirectBytes = constructRedirectBytes(payload, tokenId);
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
@@ -126,22 +126,27 @@ public class EvmTxProcessorSimulator {
 		final var valueAsWei = Wei.of(value);
 
 		//construct the PrecompileMessage here
-		PrecompileMessage provider = new PrecompileMessage(ledgers, sender.canonicalAddress());
-
+		PrecompileMessage message = new PrecompileMessage.Builder()
+				.setLedgers(ledgers)
+				.setSenderAddress(sender.canonicalAddress())
+				.setValue(valueAsWei)
+				.setConsensusTime(consensusTime.getEpochSecond())
+				.setGasAvailable(gasAvailable)
+				.setInputData(redirectBytes)
+				.build();
 		//call the hts
-		final var redirectBytes = constructRedirectBytes(payload, tokenId);
-		htsPrecompiledContract.callHtsDirectly(redirectBytes, provider, consensusTime.getEpochSecond());
-		final var gasRequirement = provider.getGasRequired();
+		htsPrecompiledContract.callHtsDirectly(message);
+		final var gasRequirement = message.getGasRequired();
 
 		//check gasAvailable < requiredGas
 		if (gasAvailable < gasRequirement) {
 			gasAvailable -= 0;
-			provider.setState(EXCEPTIONAL_HALT);
-		} else if (provider.getHtsOutputResult() != null) {
+			message.setState(EXCEPTIONAL_HALT);
+		} else if (message.getHtsOutputResult() != null) {
 			gasAvailable -= gasRequirement;
-			provider.setState(COMPLETED_SUCCESS);
+			message.setState(COMPLETED_SUCCESS);
 		} else {
-			provider.setState(EXCEPTIONAL_HALT);
+			message.setState(EXCEPTIONAL_HALT);
 		}
 
 		//and calculate the gas used for the hts call
@@ -186,13 +191,13 @@ public class EvmTxProcessorSimulator {
 			// Commit top level updater
 			//updater.commit();
 		}
-		if (provider.getState() == COMPLETED_SUCCESS) {
+		if (message.getState() == COMPLETED_SUCCESS) {
 			return TransactionProcessingResult.successful(
 					new ArrayList<>(),
 					gasUsedByTransaction,
 					0,
 					gasPrice,
-					provider.getHtsOutputResult(),
+					message.getHtsOutputResult(),
 					mirrorReceiver,
 					stateChanges);
 		} else {
@@ -213,8 +218,7 @@ public class EvmTxProcessorSimulator {
 		var redirectBytes = Bytes.fromHexString(
 				TOKEN_CALL_REDIRECT_HEX
 						.concat(Long.toHexString(tokenId))
-						.concat(input.toHexString()
-								.replace("0x", "")));
+						.concat(input.toUnprefixedHexString()));
 		return redirectBytes;
 	}
 

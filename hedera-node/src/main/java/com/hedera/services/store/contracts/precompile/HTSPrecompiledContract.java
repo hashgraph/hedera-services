@@ -404,7 +404,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} else {
 			computeGasRequirement(now);
 		}
-		return computeInternal(frame);
+		return computeInternal(infoProvider);
 	}
 
 	void prepareFields(final MessageFrame frame) {
@@ -488,25 +488,31 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	public void callHtsDirectly(Bytes tokenRedirectBytes, PrecompileMessage provider, long now) {
-		this.ledgers = provider.getLedgers();
-		this.senderAddress = provider.getSenderAddress();
-		infoProvider = new InfoProvider(true, senderAddress, ledgers);
-		precompile = tokenRedirectCase(tokenRedirectBytes);
-		if (precompile != null) {
-			decodeInput(tokenRedirectBytes, provider::unaliased);
-		}
+	public void callHtsDirectly(PrecompileMessage message) {
+		final var inputData = message.getInputData();
+		final var now = message.getConsensusTime();
+		sideEffectsTracker = sideEffectsFactory.get();
+		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
+		senderAddress = message.getSenderAddress();
+		infoProvider = new InfoProvider(true, message, ledgers);
+		precompile = tokenRedirectCase(inputData);
 
+		if (precompile != null) {
+			decodeInput(inputData, message::unaliased);
+		}
 		if (isTokenReadOnlyTransaction) {
 			computeViewFunctionGasRequirement(now);
 		} else {
 			computeGasRequirement(now);
 		}
-		var record = creator.createSuccessfulSyntheticRecord(
-				precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 
-		provider.setGasRequired(gasRequirement);
-		provider.setHtsOutputResult(precompile.getSuccessResultFor(record));
+		message.setGasRequired(gasRequirement);
+		message.setHtsOutputResult(computeInternal(infoProvider));
+//		var record = creator.createSuccessfulSyntheticRecord(
+//				precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
+//
+//		message.setGasRequired(gasRequirement);
+//		message.setHtsOutputResult(precompile.getSuccessResultFor(record));
 	}
 
 	private Precompile tokenRedirectCase(Bytes input) {
@@ -615,13 +621,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected Bytes computeInternal(final MessageFrame frame) {
+	protected Bytes computeInternal(final InfoProvider provider) {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
+			validateTrue(provider.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-			precompile.handleSentHbars(frame);
+			precompile.handleSentHbars(infoProvider);
 			precompile.customizeTrackingLedgers(ledgers);
 			precompile.run(infoProvider);
 
@@ -632,22 +638,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = creator.createSuccessfulSyntheticRecord(
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 			result = precompile.getSuccessResultFor(childRecord);
-			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
+			addContractCallResultToRecord(childRecord, result, Optional.empty(), infoProvider);
 		} catch (final InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
-			addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
+			addContractCallResultToRecord(childRecord, result, Optional.of(status), infoProvider);
 			if (e.isReverting()) {
-				frame.setState(MessageFrame.State.REVERT);
-				frame.setRevertReason(e.getRevertReason());
+				provider.setState(MessageFrame.State.REVERT);
+				provider.setRevertReason(e.getRevertReason());
 			}
 		} catch (final Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
-			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), infoProvider);
 		}
+		if (provider.isDirectTokenCall())
+			return splitter(result, childRecord);
 
 		// This should always have a parent stacked updater
 		final var parentUpdater = updater.parentUpdater();
@@ -665,8 +673,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
 			final Optional<ResponseCodeEnum> errorStatus,
-			final MessageFrame messageFrame
+			final InfoProvider provider
 	) {
+
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
@@ -678,13 +687,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
+					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getRemainingGas() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getValue().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getInputData().toArrayUnsafe() :
 							EvmFnResult.EMPTY,
 					null);
 			childRecord.setContractCallResult(evmFnResult);
 		}
+	}
+
+	private Bytes splitter(Bytes result, ExpirableTxnRecord.Builder childRecord) {
+		recordsHistorian.trackFollowingChildRecord(recordsHistorian.nextChildRecordSourceId(), transactionBody, childRecord);
+		return result;
 	}
 
 	/* --- Constructor functional interfaces for mocking --- */
@@ -1073,8 +1087,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void handleSentHbars(final MessageFrame frame) {
-			final var timestampSeconds = frame.getBlockValues().getTimestamp();
+		public void handleSentHbars(final InfoProvider provider) {
+			final var timestampSeconds = provider.getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 			final var gasPriceInTinybars = feeCalculator.get()
 					.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -1085,7 +1099,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
 					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
 
-			validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
+			validateTrue(provider.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
 			updater.getAccount(senderAddress).getMutable()
 					.decrementBalance(Wei.of(tinybarsRequirement));

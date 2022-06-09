@@ -94,10 +94,10 @@ interface Precompile {
 		// No-op
 	}
 
-	default void handleSentHbars(MessageFrame frame) {
-		if (!Objects.equals(Wei.ZERO, frame.getValue())) {
-			frame.setRevertReason(INVALID_TRANSFER);
-			frame.setState(REVERT);
+	default void handleSentHbars(InfoProvider provider) {
+		if (!Objects.equals(Wei.ZERO, provider.getValue())) {
+			provider.setRevertReason(INVALID_TRANSFER);
+			provider.setState(REVERT);
 
 			throw new InvalidTransactionException(INVALID_FEE_SUBMITTED);
 		}

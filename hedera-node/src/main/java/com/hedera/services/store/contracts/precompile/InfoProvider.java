@@ -2,7 +2,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.Optional;
@@ -11,14 +13,16 @@ import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_P
 
 public class InfoProvider {
 	private MessageFrame messageFrame;
+	private PrecompileMessage precompileMessage;
 	private boolean isDirectTokenCall;
 	private Address senderAddress;
 	private WorldLedgers ledgers;
 	private HederaStackedWorldStateUpdater updater;
 
-	public InfoProvider(boolean isDirectTokenCall, Address senderAddress, WorldLedgers ledgers) {
+	public InfoProvider(boolean isDirectTokenCall, PrecompileMessage precompileMessage, WorldLedgers ledgers) {
 		this.isDirectTokenCall = isDirectTokenCall;
-		this.senderAddress = senderAddress;
+		this.precompileMessage = precompileMessage;
+		this.senderAddress = precompileMessage.getSenderAddress();
 		this.ledgers = ledgers;
 	}
 
@@ -30,6 +34,48 @@ public class InfoProvider {
 
 	public MessageFrame getMessageFrame() {
 		return messageFrame;
+	}
+
+	public PrecompileMessage getPrecompileMessage() {
+		return precompileMessage;
+	}
+
+	public Wei getValue() {
+		return isDirectTokenCall ? precompileMessage.getValue()
+				: messageFrame.getValue();
+	}
+
+	public long getRemainingGas() {
+		return isDirectTokenCall ? precompileMessage.getRemainingGas()
+				: messageFrame.getRemainingGas();
+	}
+
+	public boolean isDirectTokenCall() {
+		return isDirectTokenCall;
+	}
+
+	public long getTimestamp() {
+		return isDirectTokenCall ? precompileMessage.getConsensusTime()
+				: messageFrame.getBlockValues().getTimestamp();
+	}
+
+	public Bytes getInputData() {
+		return isDirectTokenCall ? precompileMessage.getInputData()
+				: messageFrame.getInputData();
+	}
+
+	public void setState(MessageFrame.State state) {
+		if (isDirectTokenCall) {
+			//TODO
+		} else {
+			messageFrame.setState(state);
+		}
+	}
+
+	public void setRevertReason(Bytes revertReason) {
+		//TODO
+		if (messageFrame != null)
+			messageFrame.setRevertReason(revertReason);
 	}
 
 	public boolean validateKey(final Address target, final HTSPrecompiledContract.ContractActivationTest activationTest) {
@@ -83,4 +129,5 @@ public class InfoProvider {
 
 		return Optional.of(parentFrame);
 	}
+
 }
