@@ -137,6 +137,13 @@ class StakePeriodManagerTest {
 	}
 
 	@Test
+	void estimatesBasedOnInstantNowForProdProperty() {
+		givenProdManager();
+		final var expected = LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
+		assertEquals(expected, subject.estimatedCurrentStakePeriod());
+	}
+
+	@Test
 	void calculatesIfRewardShouldBeEarned() {
 		givenProdManager();
 		final var instant = Instant.ofEpochSecond(123456789L);

@@ -329,6 +329,58 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChanges() {
+		final var inorderST = inOrder(sideEffectsTracker);
+		final var inorderM = inOrder(stakeChangeManager);
+
+		final var pendingChanges = changesWithNoStakingMetaUpdates();
+		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+
+		given(rewardCalculator.computePendingReward(any())).willReturn(10L);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(rewardCalculator.applyReward(10L, counterparty, pendingChanges.changes(0))).willReturn(true);
+		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		subject.preview(pendingChanges);
+
+		inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, 10L);
+
+		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
+		inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
+		// StakingMeta changes
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+	}
+
+	@Test
+	void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+		final var inorderST = inOrder(sideEffectsTracker);
+		final var inorderM = inOrder(stakeChangeManager);
+
+		final var pendingChanges = changesWithNoStakingMetaUpdates();
+		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
+		final var stakePeriodStart = 12345678L;
+		counterparty.setStakePeriodStart(stakePeriodStart);
+
+		given(rewardCalculator.computePendingReward(any())).willReturn(0L);
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart+1);
+		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+		stakingFund.setStakePeriodStart(-1);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		subject.preview(pendingChanges);
+
+		inorderST.verify(sideEffectsTracker, never()).trackRewardPayment(anyLong(), anyLong());
+
+		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
+		inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
+		// StakingMeta changes
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+	}
+
+	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
 		final Consumer<MerkleAccount> noopFinisherOne = a -> {};
 		final Consumer<MerkleAccount> noopFinisherTwo = a -> {};
@@ -553,6 +605,14 @@ class StakingAccountsCommitInterceptorTest {
 
 		assertEquals(2 * HBARS_TO_TINYBARS, stakedToMeUpdates[0]);
 		assertEquals(counterpartyBalance + 2 * HBARS_TO_TINYBARS, stakedToMeUpdates[1]);
+	}
+
+	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> changesWithNoStakingMetaUpdates() {
+		final var changes = new HashMap<AccountProperty, Object>();
+		changes.put(AccountProperty.BALANCE, 10L);
+		var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		pendingChanges.include(counterpartyId, counterparty, changes);
+		return pendingChanges;
 	}
 
 	public EntityChangeSet<AccountID, MerkleAccount, AccountProperty> buildPendingNodeStakeChanges() {

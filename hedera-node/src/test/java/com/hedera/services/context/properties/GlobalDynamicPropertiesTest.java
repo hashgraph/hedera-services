@@ -277,9 +277,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxIndividualContractKvPairs());
 		assertEquals(57, subject.maxAllowanceLimitPerTransaction());
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
-		assertEquals(67, subject.getNodeRewardPercent());
-		assertEquals(68, subject.getStakingRewardPercent());
-		assertEquals(69, subject.getStakingActiveThreshold());
+		assertEquals(73, subject.getNodeRewardPercent());
+		assertEquals(74, subject.getStakingRewardPercent());
+		assertEquals(75, subject.getStakingActiveThreshold());
 	}
 
 	@Test
@@ -300,10 +300,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(54L, subject.htsDefaultGasCost());
-		assertEquals(66L, subject.getStakingStartThreshold());
+		assertEquals(72L, subject.getStakingStartThreshold());
 		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
 		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
 		assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
+		assertEquals(76L, subject.getStakingRewardRate());
 		assertEquals(70L, subject.maxPrecedingRecords());
 		assertEquals(71L, subject.maxFollowingRecords());
 	}
@@ -416,11 +417,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds")).willReturn(i + 67L);
 		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
 		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
-		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 64L);
-		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 65);
-		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 66);
-		given(properties.getIntProperty("staking.activeThreshold")).willReturn(i + 67);
-		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 68L);
+		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 70L);
+		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 71);
+		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 72);
+		given(properties.getIntProperty("staking.activeThreshold")).willReturn(i + 73);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

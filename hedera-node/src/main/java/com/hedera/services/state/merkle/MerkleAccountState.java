@@ -115,7 +115,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	// When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
 	private long stakedNum;
 	private boolean declineReward;
-	private long stakeAtStartOfLastRewardedPeriod;
+	private long stakeAtStartOfLastRewardedPeriod = -1;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
