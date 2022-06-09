@@ -22,8 +22,14 @@ plugins {
     id("me.champeau.jmh")
 }
 
+val includesRegex: String by project
 jmh {
     jmhVersion.set("1.35")
+    includes.set(listOf(includesRegex))
+}
+
+tasks.jmh {
+    outputs.upToDateWhen { false }
 }
 
 tasks.jmhJar {

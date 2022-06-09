@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -199,9 +200,19 @@ class MigrationRecordsManagerTest {
 
 		subject.publishMigrationRecords(now);
 
+		given(networkCtx.areMigrationRecordsStreamed()).willReturn(true);
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+
+		subject.publishMigrationRecords(now);
+
+		given(consensusTimeTracker.unlimitedPreceding()).willReturn(false);
+
+		subject.publishMigrationRecords(now);
+
 		verifyNoInteractions(sigImpactHistorian);
 		verifyNoInteractions(recordsHistorian);
-		verifyNoInteractions(networkCtx);
+		verify(networkCtx, never()).consensusTimeOfLastHandledTxn();
+		verify(networkCtx, never()).markMigrationRecordsStreamed();
 	}
 
 	@Test

@@ -52,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -147,8 +146,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 			if (!store.associationExists(newTreasury, id)) {
-				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-				return;
+				outcome = store.autoAssociate(newTreasury, id);
+				if (outcome != OK) {
+					abortWith(outcome);
+					return;
+				}
 			}
 			var existingTreasury = token.treasury().toGrpcAccountId();
 			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {

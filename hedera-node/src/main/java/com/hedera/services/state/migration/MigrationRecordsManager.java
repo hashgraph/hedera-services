@@ -108,11 +108,11 @@ public class MigrationRecordsManager {
 	 * hash is in state).
 	 */
 	public void publishMigrationRecords(final Instant now) {
-		if (!consensusTimeTracker.unlimitedPreceding()) {
+		final var curNetworkCtx = networkCtx.get();
+
+		if ((!consensusTimeTracker.unlimitedPreceding()) || curNetworkCtx.areMigrationRecordsStreamed()) {
 			return;
 		}
-
-		final var curNetworkCtx = networkCtx.get();
 
 		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
