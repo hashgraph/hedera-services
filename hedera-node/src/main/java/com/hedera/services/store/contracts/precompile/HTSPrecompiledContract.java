@@ -388,7 +388,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		prepareFields(frame);
-		prepareComputation(input, evmAddress -> updater.unaliased(evmAddress));
+		prepareComputation(input, updater::unaliased);
 		infoProvider = new InfoProvider(frame, ledgers, updater);
 		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {

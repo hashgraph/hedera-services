@@ -138,28 +138,23 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		// --- Do the business logic ---
 		TransactionProcessingResult result;
-		final var isEthTx = relayerId != null;
+		final var isDirectTokenCall = isTokenAccount && properties.enableDirectHTSTokenCalls();
 
-		if (isTokenAccount && properties.enableDirectHTSTokenCalls()) {
-			final var mirrorReceiver = isEthTx ? aliasManager.resolveForEvm(receiver.canonicalAddress()) : null;
-			final var relayer = isEthTx ? accountStore.loadAccount(relayerId) : null;
-			result = evmTxSimulator.execute(
-					sender,
-					receiver.canonicalAddress(),
-					op.getGas(),
-					op.getAmount(),
-					callData,
-					txnCtx.consensusTime(),
-					null,
-					mirrorReceiver,
-					offeredGasPrice,
-					maxGasAllowanceInTinybars,
-					relayer,
-					targetId.num(),
-					entityAccess.worldLedgers()
-			);
-		} else {
-			if (relayerId == null) {
+		if (relayerId == null) {
+			if (isDirectTokenCall) {
+				result = evmTxSimulator.execute(
+						sender,
+						op.getGas(),
+						op.getAmount(),
+						callData,
+						txnCtx.consensusTime(),
+						aliasManager.resolveForEvm(receiver.canonicalAddress()),
+						offeredGasPrice,
+						maxGasAllowanceInTinybars,
+						null,
+						targetId.num(),
+						entityAccess.worldLedgers());
+			} else {
 				result = evmTxProcessor.execute(
 						sender,
 						receiver.canonicalAddress(),
@@ -167,10 +162,24 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 						op.getAmount(),
 						callData,
 						txnCtx.consensusTime());
+			}
+		} else {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+			if (isDirectTokenCall) {
+				result = evmTxSimulator.execute(
+						sender,
+						op.getGas(),
+						op.getAmount(),
+						callData,
+						txnCtx.consensusTime(),
+						aliasManager.resolveForEvm(receiver.canonicalAddress()),
+						offeredGasPrice,
+						maxGasAllowanceInTinybars,
+						accountStore.loadAccount(relayerId),
+						targetId.num(),
+						entityAccess.worldLedgers());
 			} else {
-				sender.incrementEthereumNonce();
-				accountStore.commitAccount(sender);
-				//if (isTokenAccount && properties.enableDirectHTSTokenCalls())
 				result = evmTxProcessor.executeEth(
 						sender,
 						receiver.canonicalAddress(),

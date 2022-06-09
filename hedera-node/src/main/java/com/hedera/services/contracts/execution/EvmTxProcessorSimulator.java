@@ -9,7 +9,6 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,12 +55,10 @@ public class EvmTxProcessorSimulator {
 
 	public TransactionProcessingResult execute(
 			final Account sender,
-			final Address receiver,
 			final long gasLimit,
 			final long value,
 			final Bytes payload,
 			final Instant consensusTime,
-			final StorageExpiry.Oracle expiryOracle,
 			final Address mirrorReceiver,
 			final BigInteger userOfferedGasPrice,
 			final long maxGasAllowanceInTinybars,
@@ -196,7 +193,7 @@ public class EvmTxProcessorSimulator {
 					0,
 					gasPrice,
 					provider.getHtsOutputResult(),
-					receiver,
+					mirrorReceiver,
 					stateChanges);
 		} else {
 			//revertReason and haltReason any idea here?
