@@ -341,12 +341,12 @@ class RecordStreamFileWriterTest {
 			// digest startRunningHash
 			outputStream.writeSerializable(
 					new Hash(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384),
-					true
+					false
 			);
 			// digest endRunningHash
 			outputStream.writeSerializable(
 					new Hash(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384),
-					true
+					false
 			);
 			// digest block number
 			outputStream.writeLong(recordStreamFile.getBlockNumber());
