@@ -91,6 +91,8 @@ public interface Precompile {
 	// Change the world state through the given frame
 	void run(MessageFrame frame);
 
+	long getGasRequirement(long blockTimestamp);
+
 	default void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
 		// No-op
 	}

@@ -21,7 +21,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
@@ -31,6 +33,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 
+import javax.inject.Provider;
 import java.util.function.UnaryOperator;
 
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
@@ -42,11 +45,12 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils
+			final PrecompilePricingUtils pricingUtils,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
 	) {
-		super(
-				ledgers, decoder, aliases, sigsVerifier,
-				sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
+		super(ledgers, decoder, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
+				pricingUtils, feeCalculator, currentView);
 	}
 
 	@Override
@@ -54,5 +58,10 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 		associateOp = decoder.decodeAssociation(input, aliasResolver);
 		transactionBody = syntheticTxnFactory.createAssociate(associateOp);
 		return transactionBody;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
 	}
 }

@@ -20,13 +20,20 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
+
+import javax.inject.Provider;
 
 public class SymbolPrecompile extends ERCReadOnlyAbstractPrecompile {
 	public SymbolPrecompile(
@@ -34,9 +41,19 @@ public class SymbolPrecompile extends ERCReadOnlyAbstractPrecompile {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
-			final DecodingFacade decoder
+			final DecodingFacade decoder,
+			final Provider<FeeCalculator> feeCalculator,
+			final UsagePricesProvider resourceCosts,
+			final StateView currentView,
+			final PrecompilePricingUtils pricingUtils
 	) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator, resourceCosts, currentView, pricingUtils);
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now), feeCalculator, resourceCosts, currentView);
 	}
 
 	@Override

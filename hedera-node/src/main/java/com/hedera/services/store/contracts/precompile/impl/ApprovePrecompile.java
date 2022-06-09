@@ -23,12 +23,12 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -45,6 +45,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 import javax.annotation.Nullable;
+import javax.inject.Provider;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -59,17 +60,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
-public class ApprovePrecompile implements Precompile {
+public class ApprovePrecompile extends ERCWriteAbstractPrecompile {
 	private final TokenID tokenId;
 	private final boolean isFungible;
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
 	private final EncodingFacade encoder;
-	private final StateView currentView;
-	private final SideEffectsTracker sideEffects;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
 	private final Address senderAddress;
 
 	private TransactionBody.Builder transactionBody;
@@ -91,18 +85,13 @@ public class ApprovePrecompile implements Precompile {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
-			final Address senderAddress
+			final Address senderAddress,
+			final Provider<FeeCalculator> feeCalculator
 	) {
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
 		this.tokenId = tokenId;
 		this.isFungible = isFungible;
-		this.ledgers = ledgers;
-		this.decoder = decoder;
 		this.encoder = encoder;
-		this.currentView = currentView;
-		this.sideEffects = sideEffects;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
 		this.senderAddress = senderAddress;
 	}
 
@@ -201,6 +190,11 @@ public class ApprovePrecompile implements Precompile {
 	@Override
 	public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 		return encoder.encodeApprove(true);
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
 	}
 
 	private boolean isNftApprovalRevocation() {

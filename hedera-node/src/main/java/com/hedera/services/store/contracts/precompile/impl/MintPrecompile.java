@@ -22,13 +22,14 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.inject.Provider;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -56,19 +58,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class MintPrecompile implements Precompile {
+public class MintPrecompile extends ERCWriteAbstractPrecompile {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
-
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
 	private final RecordsHistorian recordsHistorian;
-	private final SideEffectsTracker sideEffects;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
 	private TransactionBody.Builder transactionBody;
 
 	private MintWrapper mintOp;
@@ -83,18 +78,15 @@ public class MintPrecompile implements Precompile {
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils
+			final PrecompilePricingUtils pricingUtils,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
 	) {
-		this.ledgers = ledgers;
-		this.decoder = decoder;
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
 		this.encoder = encoder;
 		this.aliases = aliases;
 		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
 		this.recordsHistorian = recordsHistorian;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
 	}
 
 	@Override
@@ -150,5 +142,10 @@ public class MintPrecompile implements Precompile {
 	@Override
 	public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 		return encoder.encodeMintFailure(status);
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
 	}
 }

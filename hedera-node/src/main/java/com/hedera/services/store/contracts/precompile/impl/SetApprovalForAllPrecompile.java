@@ -22,10 +22,10 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -41,6 +41,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+import javax.inject.Provider;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -50,15 +51,8 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class SetApprovalForAllPrecompile implements Precompile {
+public class SetApprovalForAllPrecompile extends ERCWriteAbstractPrecompile {
 	private final TokenID tokenId;
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
-	private final StateView currentView;
-	private final SideEffectsTracker sideEffects;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
 	private final Address senderAddress;
 	private TransactionBody.Builder transactionBody;
 	private SetApprovalForAllWrapper setApprovalForAllWrapper;
@@ -72,16 +66,11 @@ public class SetApprovalForAllPrecompile implements Precompile {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
-			final Address senderAddress
+			final Address senderAddress,
+			final Provider<FeeCalculator> feeCalculator
 	) {
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
 		this.tokenId = tokenId;
-		this.ledgers = ledgers;
-		this.decoder = decoder;
-		this.currentView = currentView;
-		this.sideEffects = sideEffects;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
 		this.senderAddress = senderAddress;
 	}
 
@@ -124,6 +113,11 @@ public class SetApprovalForAllPrecompile implements Precompile {
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 		frame.addLog(getLogForSetApprovalForAll(precompileAddress));
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
 	}
 
 	@Override

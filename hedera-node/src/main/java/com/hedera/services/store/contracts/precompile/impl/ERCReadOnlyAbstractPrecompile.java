@@ -20,17 +20,22 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.inject.Provider;
 import java.util.function.UnaryOperator;
 
 public abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
@@ -39,19 +44,31 @@ public abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
 	protected final WorldLedgers ledgers;
 	protected final EncodingFacade encoder;
 	protected final DecodingFacade decoder;
+	protected final Provider<FeeCalculator> feeCalculator;
+	protected final UsagePricesProvider resourceCosts;
+	protected final StateView currentView;
+	protected final PrecompilePricingUtils pricingUtils;
 
 	protected ERCReadOnlyAbstractPrecompile(
 			final TokenID tokenId,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
-			final DecodingFacade decoder
+			final DecodingFacade decoder,
+			final Provider<FeeCalculator> feeCalculator,
+			final UsagePricesProvider resourceCosts,
+			final StateView currentView,
+			final PrecompilePricingUtils pricingUtils
 	) {
 		this.tokenId = tokenId;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.ledgers = ledgers;
 		this.encoder = encoder;
 		this.decoder = decoder;
+		this.feeCalculator = feeCalculator;
+		this.resourceCosts = resourceCosts;
+		this.currentView = currentView;
+		this.pricingUtils = pricingUtils;
 	}
 
 	@Override

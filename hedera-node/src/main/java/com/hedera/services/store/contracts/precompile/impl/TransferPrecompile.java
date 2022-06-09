@@ -21,8 +21,10 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
@@ -31,7 +33,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
@@ -50,6 +51,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -62,15 +64,9 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class TransferPrecompile implements Precompile {
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
+public class TransferPrecompile extends ERCWriteAbstractPrecompile {
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
-	private final SideEffectsTracker sideEffects;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
 	private final int functionId;
 	private final Address senderAddress;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -92,16 +88,13 @@ public class TransferPrecompile implements Precompile {
 			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
 			final Address senderAddress,
-			final ImpliedTransfersMarshal impliedTransfersMarshal
+			final ImpliedTransfersMarshal impliedTransfersMarshal,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
 	) {
-		this.ledgers = ledgers;
-		this.decoder = decoder;
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
 		this.updater = updater;
 		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
 		this.functionId = functionId;
 		this.senderAddress = senderAddress;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
@@ -300,6 +293,11 @@ public class TransferPrecompile implements Precompile {
 			accumulatedCost += transfer.nftExchanges().size() * nftHalfTxCost;
 		}
 		return accumulatedCost;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, syntheticTxn);
 	}
 
 }

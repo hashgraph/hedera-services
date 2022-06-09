@@ -21,8 +21,10 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -44,6 +46,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+import javax.inject.Provider;
 import java.math.BigInteger;
 import java.util.function.UnaryOperator;
 
@@ -56,10 +59,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	private final TokenID tokenID;
 	private final AccountID callerAccountID;
 	private final boolean isFungible;
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
 	private final EncodingFacade encoder;
-	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	public ERCTransferPrecompile(
 			final TokenID tokenID,
@@ -75,25 +75,24 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
-			final ImpliedTransfersMarshal impliedTransfersMarshal
-			) {
+			final ImpliedTransfersMarshal impliedTransfersMarshal,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
+	) {
 		super(ledgers, decoder, updater, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
-				pricingUtils,functionId, callerAccount, impliedTransfersMarshal);
+				pricingUtils,functionId, callerAccount, impliedTransfersMarshal, feeCalculator, currentView);
 		this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 		this.tokenID = tokenID;
 		this.isFungible = isFungible;
-		this.ledgers = ledgers;
-		this.decoder = decoder;
 		this.encoder = encoder;
-		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		super.initializeHederaTokenStore();
+		initializeHederaTokenStore();
 
 		final var nestedInput = input.slice(24);
-		super.transferOp = switch (nestedInput.getInt(0)) {
+		transferOp = switch (nestedInput.getInt(0)) {
 			case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenID,
 					callerAccountID,
 					aliasResolver);
@@ -104,9 +103,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			}
 			default -> null;
 		};
-		super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
-		super.extrapolateDetailsFromSyntheticTxn();
-		return super.syntheticTxn;
+		syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+		extrapolateDetailsFromSyntheticTxn();
+		return syntheticTxn;
 	}
 
 	@Override
@@ -132,7 +131,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	}
 
 	private Log getLogForFungibleTransfer(final Address logger) {
-		final var fungibleTransfers = super.transferOp.get(0).fungibleTransfers();
+		final var fungibleTransfers = transferOp.get(0).fungibleTransfers();
 		Address sender = null;
 		Address receiver = null;
 		BigInteger amount = BigInteger.ZERO;
@@ -154,7 +153,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	}
 
 	private Log getLogForNftExchange(final Address logger) {
-		final var nftExchanges = super.transferOp.get(0).nftExchanges();
+		final var nftExchanges = transferOp.get(0).nftExchanges();
 		final var nftExchange = nftExchanges.get(0).asGrpc();
 		final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
 		final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
@@ -175,5 +174,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 		} else {
 			return Bytes.EMPTY;
 		}
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, syntheticTxn);
 	}
 }

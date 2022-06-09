@@ -21,7 +21,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
@@ -36,6 +38,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.inject.Provider;
 import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -50,13 +53,13 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 	private final EvmSigsVerifier sigsVerifier;
 	private final SideEffectsTracker sideEffects;
 	private final InfrastructureFactory infrastructureFactory;
-	private final PrecompilePricingUtils pricingUtils;
-
-
+	protected final PrecompilePricingUtils pricingUtils;
 	protected TransactionBody.Builder transactionBody;
 	protected Association associateOp;
 	protected final DecodingFacade decoder;
 	protected final SyntheticTxnFactory syntheticTxnFactory;
+	protected final Provider<FeeCalculator> feeCalculator;
+	protected final StateView currentView;
 
 	protected AbstractAssociatePrecompile(
 			final WorldLedgers ledgers,
@@ -66,7 +69,9 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils
+			final PrecompilePricingUtils pricingUtils,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
 	) {
 		this.decoder = decoder;
 		this.ledgers = ledgers;
@@ -76,6 +81,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 		this.pricingUtils = pricingUtils;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.infrastructureFactory = infrastructureFactory;
+		this.feeCalculator = feeCalculator;
+		this.currentView = currentView;
 	}
 
 	@Override

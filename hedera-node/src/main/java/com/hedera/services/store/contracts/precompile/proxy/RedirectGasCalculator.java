@@ -20,9 +20,18 @@ package com.hedera.services.store.contracts.precompile.proxy;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.Timestamp;
+
+import javax.inject.Provider;
 
 @FunctionalInterface
 public interface RedirectGasCalculator {
-	long compute(final Timestamp now, final long minimumTinybarCost);
+	long compute(final Timestamp now,
+				 final long minimumTinybarCost,
+				 final Provider<FeeCalculator> feeCalculator,
+				 final UsagePricesProvider resourceCosts,
+				 final StateView currentView);
 }

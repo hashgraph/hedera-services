@@ -70,10 +70,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,7 +84,6 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -94,15 +91,11 @@ import java.util.function.UnaryOperator;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.gasFeeInTinybars;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -189,7 +182,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 				if (!proxyUpdater.hasMutableLedgers()) {
 					final var executor = infrastructureFactory.newRedirectExecutor(
-							input, frame, this::computeViewFunctionGas);
+							input, frame, precompilePricingUtils::computeViewFunctionGas);
 					return executor.computeCosted();
 				}
 			}
@@ -215,13 +208,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		final var now = frame.getBlockValues().getTimestamp();
-		if (isTokenReadOnlyTransaction) {
-			computeViewFunctionGasRequirement(now);
-		} else if (precompile instanceof TokenCreatePrecompile) {
-			gasRequirement = precompile.getMinimumFeeInTinybars(Timestamp.newBuilder().setSeconds(now).build());
-		} else {
-			computeGasRequirement(now);
-		}
+		gasRequirement = precompile.getGasRequirement(now);
+
 		return computeInternal(frame);
 	}
 
@@ -232,51 +220,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		final var unaliasedSenderAddress = updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
 		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-	}
-
-	void computeGasRequirement(final long blockTimestamp) {
-		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
-				blockTimestamp).build();
-		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
-
-		final long calculatedFeeInTinybars = gasFeeInTinybars(
-				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
-						timestamp).build()),
-				Instant.ofEpochSecond(blockTimestamp),
-				precompile,
-				feeCalculator,
-				currentView);
-
-		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
-
-		// convert to gas cost
-		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
-
-		// charge premium
-		gasRequirement = baseGasCost + (baseGasCost/5L);
-	}
-
-	void computeViewFunctionGasRequirement(final long blockTimestamp) {
-		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		gasRequirement = computeViewFunctionGas(now, precompile.getMinimumFeeInTinybars(now));
-	}
-
-	long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
-		final var calculator = feeCalculator.get();
-		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
-		final var fees = calculator.estimatePayment(
-				SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
-
-		final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
-		final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
-		final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
-
-		// convert to gas cost
-		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
-
-		// charge premium
-		return baseGasCost + (baseGasCost/5L);
 	}
 
 	void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -294,25 +237,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile(
 									ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
-							infrastructureFactory, precompilePricingUtils, functionId, senderAddress, impliedTransfersMarshal);
+							infrastructureFactory, precompilePricingUtils, functionId, senderAddress,
+							impliedTransfersMarshal, feeCalculator, currentView);
 					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_BURN_TOKEN -> new BurnPrecompile(
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
 						final var target = DescriptorUtils.getRedirectTarget(input);
 						final var tokenId = target.tokenId();
@@ -322,37 +272,44 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						final var nestedFunctionSelector = target.descriptor();
 						if (AbiConstants.ABI_ID_NAME == nestedFunctionSelector) {
 							nestedPrecompile = new NamePrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_SYMBOL == nestedFunctionSelector) {
 							nestedPrecompile = new SymbolPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_DECIMALS == nestedFunctionSelector) {
 							if (!isFungibleToken) {
 								throw new InvalidTransactionException(
 										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
 							nestedPrecompile = new DecimalsPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new TotalSupplyPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new BalanceOfPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(
 										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
 							nestedPrecompile = new OwnerOfPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(
 										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
 							nestedPrecompile = new TokenURIPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_ERC_TRANSFER == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
 							if (!isFungibleToken) {
@@ -362,7 +319,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							nestedPrecompile = new ERCTransferPrecompile( tokenId, senderAddress, isFungibleToken,
 									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
-									impliedTransfersMarshal);
+									impliedTransfersMarshal, feeCalculator, currentView);
 						} else if (AbiConstants.ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
@@ -371,13 +328,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							nestedPrecompile = new ERCTransferPrecompile( tokenId, senderAddress, isFungibleToken,
 									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
-									impliedTransfersMarshal);
+									impliedTransfersMarshal, feeCalculator, currentView);
 						} else if (AbiConstants.ABI_ID_ALLOWANCE == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new AllowancePrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator,
+									resourceCosts, currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_APPROVE == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
@@ -385,26 +343,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ApprovePrecompile(
 									tokenId, isFungibleToken, ledgers, decoder, encoder, currentView, sideEffectsTracker,
-									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress);
+									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress,
+									feeCalculator);
 						} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new SetApprovalForAllPrecompile(
 									tokenId, ledgers, decoder, currentView, sideEffectsTracker, syntheticTxnFactory,
-									infrastructureFactory, precompilePricingUtils, senderAddress);
+									infrastructureFactory, precompilePricingUtils, senderAddress, feeCalculator);
 						} else if (AbiConstants.ABI_ID_GET_APPROVED == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new GetApprovedPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator, resourceCosts,
+									currentView, precompilePricingUtils);
 						} else if (AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new IsApprovedForAllPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder);
+									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator, resourceCosts,
+									currentView, precompilePricingUtils);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
@@ -418,7 +379,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							? new TokenCreatePrecompile(
 									ledgers, decoder, encoder, updater, sigsVerifier, recordsHistorian,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, functionId, senderAddress,
-							dynamicProperties.fundingAccount(), feeCalculator, currentView)
+							dynamicProperties.fundingAccount(), feeCalculator, currentView, precompilePricingUtils)
 							: null;
 					default -> null;
 				};

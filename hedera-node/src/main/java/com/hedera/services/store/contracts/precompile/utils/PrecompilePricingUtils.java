@@ -23,16 +23,20 @@ package com.hedera.services.store.contracts.precompile.utils;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 
 import javax.inject.Inject;
@@ -45,13 +49,16 @@ import java.util.Map;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -59,6 +66,9 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
 public class PrecompilePricingUtils {
+	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
+			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
+			.build();
 
 	static class CanonicalOperationsUnloadableException extends RuntimeException {
 		public CanonicalOperationsUnloadableException(Exception e) {
@@ -107,7 +117,7 @@ public class PrecompilePricingUtils {
 				getCanonicalPriceInTinyCents(gasCostType));
 	}
 
-	public static long gasFeeInTinybars(final TransactionBody.Builder txBody,
+	public long gasFeeInTinybars(final TransactionBody.Builder txBody,
 								  final Instant consensusTime,
 								  final Precompile precompile,
 								  final Provider<FeeCalculator> feeCalculator,
@@ -124,6 +134,54 @@ public class PrecompilePricingUtils {
 		precompile.addImplicitCostsIn(accessor);
 		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+	}
+
+	public long computeViewFunctionGas(final Timestamp now,
+									   final long minimumTinybarCost,
+									   final Provider<FeeCalculator> feeCalculator,
+									   final UsagePricesProvider resourceCosts,
+									   final StateView currentView) {
+		final var calculator = feeCalculator.get();
+		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
+		final var fees = calculator.estimatePayment(
+				SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
+
+		final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
+		final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
+		final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
+
+		// convert to gas cost
+		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+
+		// charge premium
+		return baseGasCost + (baseGasCost/5L);
+	}
+
+	public long computeGasRequirement(final long blockTimestamp,
+											 final Provider<FeeCalculator> feeCalculator,
+											 final StateView currentView,
+											 final Precompile precompile,
+											 final TransactionBody.Builder transactionBody) {
+		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+				blockTimestamp).build();
+		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+
+		final long calculatedFeeInTinybars = gasFeeInTinybars(
+				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+						timestamp).build()),
+				Instant.ofEpochSecond(blockTimestamp),
+				precompile,
+				feeCalculator,
+				currentView);
+
+		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+
+		// convert to gas cost
+		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+
+		// charge premium
+		return baseGasCost + (baseGasCost/5L);
 	}
 
 	public enum GasCostType {

@@ -37,12 +37,12 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
@@ -69,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_A
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.gasFeeInTinybars;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -134,21 +133,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *     	</li>
  * </ol>
  */
-public class TokenCreatePrecompile implements Precompile {
-	private final WorldLedgers ledgers;
-	private final DecodingFacade decoder;
+public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
 	private final EncodingFacade encoder;
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
 	private final RecordsHistorian recordsHistorian;
-	private final SideEffectsTracker sideEffects;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final InfrastructureFactory infrastructureFactory;
 	private final int functionId;
 	private final Address senderAddress;
 	private final AccountID fundingAccount;
-	private final Provider<FeeCalculator> feeCalculator;
-	private final StateView currentView;
 	private TransactionBody.Builder transactionBody;
 	private TokenCreateWrapper tokenCreateOp;
 
@@ -166,22 +158,17 @@ public class TokenCreatePrecompile implements Precompile {
 			final Address senderAddress,
 			final AccountID fundingAccount,
 			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
+			final StateView currentView,
+			final PrecompilePricingUtils pricingUtils
 	) {
-		this.ledgers = ledgers;
-		this.decoder = decoder;
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
 		this.encoder = encoder;
 		this.updater = updater;
 		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
 		this.recordsHistorian = recordsHistorian;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
 		this.functionId = functionId;
 		this.senderAddress = senderAddress;
 		this.fundingAccount = fundingAccount;
-		this.feeCalculator = feeCalculator;
-		this.currentView = currentView;
 	}
 
 	@Override
@@ -239,6 +226,11 @@ public class TokenCreatePrecompile implements Precompile {
 	}
 
 	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return getMinimumFeeInTinybars(Timestamp.newBuilder().setSeconds(blockTimestamp).build());
+	}
+
+	@Override
 	public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
 		worldLedgers.customizeForAutoAssociatingOp(sideEffects);
 	}
@@ -249,7 +241,7 @@ public class TokenCreatePrecompile implements Precompile {
 		final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 		final var gasPriceInTinybars = feeCalculator.get()
 				.estimatedGasPriceInTinybars(ContractCall, timestamp);
-		final var calculatedFeeInTinybars = gasFeeInTinybars(
+		final var calculatedFeeInTinybars = pricingUtils.gasFeeInTinybars(
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()),
 				Instant.ofEpochSecond(timestampSeconds),
