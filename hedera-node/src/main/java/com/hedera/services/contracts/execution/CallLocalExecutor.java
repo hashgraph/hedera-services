@@ -26,7 +26,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

@@ -45,6 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -123,6 +124,18 @@ class EntityIdUtilsTest {
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
 		assertEquals(extantNum, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void observesUnalising() {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var extantNum = EntityNum.fromLong(1_234_567L);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
+
+		AtomicReference<ByteString> observer = new AtomicReference<>();
+		unaliased(input, aliasManager, observer::set);
+		assertEquals(ByteString.copyFrom(mockAddr), observer.get()); 
 	}
 
 	@Test
