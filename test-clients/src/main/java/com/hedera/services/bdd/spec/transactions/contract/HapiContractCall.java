@@ -261,7 +261,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		if (explicitHexedParams.isPresent()) {
 			callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
 		} else {
-			callData = encodeParametersWithTuple(abi, params);
+			callData = (!abi.equals(FALLBACK_ABI))
+					? encodeParametersWithTuple(abi, params) : new byte[] { };
 		}
 
 		ContractCallTransactionBody opBody = spec

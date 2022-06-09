@@ -88,20 +88,20 @@ public class EthereumSuite extends HapiApiSuite {
 		return Stream.concat(
 				feePaymentMatrix().stream(),
 				Stream.of(
-//						invalidTxData(),
-						ETX_007_fungibleTokenCreateWithFeesHappyPath()
-//						ETX_008_contractCreateExecutesWithExpectedRecord(),
-//						ETX_009_callsToTokenAddresses(),
-//						ETX_010_transferToCryptoAccountSucceeds(),
-//						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-//						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-//						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-//						ETX_014_contractCreateInheritsSignerProperties(),
-//						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-//						ETX_009_callsToTokenAddresses(),
-//						originAndSenderAreEthereumSigner(),
-//						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-//						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
+						invalidTxData(),
+						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+						ETX_008_contractCreateExecutesWithExpectedRecord(),
+						ETX_009_callsToTokenAddresses(),
+						ETX_010_transferToCryptoAccountSucceeds(),
+						ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+						ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+						ETX_014_contractCreateInheritsSignerProperties(),
+						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+						ETX_009_callsToTokenAddresses(),
+						originAndSenderAreEthereumSigner(),
+						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
 				)).toList();
 	}
 
@@ -162,8 +162,8 @@ public class EthereumSuite extends HapiApiSuite {
 		final long ninteyPercentFee = gasPrice * 9 / 10;
 
 		return Stream.of(
-//				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
-//				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
+				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
+				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment }
 //				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
 //				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
 //				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
@@ -172,8 +172,8 @@ public class EthereumSuite extends HapiApiSuite {
 //				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
 //				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
 //				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
+//				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
+//				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
 		).map(params ->
 				// [0] - success
 				// [1] - sender gas price

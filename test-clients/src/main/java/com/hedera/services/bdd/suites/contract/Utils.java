@@ -23,12 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -84,6 +79,12 @@ public class Utils {
 	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final org.hyperledger.besu.datatypes.Address address) {
 		return com.esaulpaugh.headlong.abi.Address.wrap(
 				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
+	}
+
+	public static com.esaulpaugh.headlong.abi.Address convertAliasToHeadlongAddress(String address) {
+		var result = Bytes.fromHexStringLenient(address).toArray();
+		var besuAddress = org.hyperledger.besu.datatypes.Address.wrap(Bytes.wrap(result));
+		return convertBesuAddressToHeadlongAddress(besuAddress);
 	}
 
 	public static byte[] asUtilAddress(final int shard, final long realm, final long num) {

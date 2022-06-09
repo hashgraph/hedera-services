@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.bdd.suites.contract.Utils.convertAliasToHeadlongAddress;
 import static org.ethereum.crypto.HashUtil.sha3;
 
 public class EncodingUtil {
@@ -21,10 +22,12 @@ public class EncodingUtil {
 
         var argumentTypes = function.getInputs().toString();
 
-        Tuple paramsAsTuple;
+        convertAddressToHeadlong(params);
+
+        Tuple paramsAsTuple = Tuple.EMPTY;
         if (params.length > 0 && params[0] instanceof Tuple) {
             paramsAsTuple = (Tuple) params[0];
-        } else {
+        } else if (params.length > 0){
             argumentTypes = convertArgumentTypes(argumentTypes, params);
             paramsAsTuple = Tuple.of(params);
         }
@@ -43,9 +46,9 @@ public class EncodingUtil {
 
         final var convertedArgumentTypes = new String[splittedArgumentTypes.length];
         for(int i = 0; i < params.length; i++) {
-            if(params[i] instanceof Integer && !("uint8".equals(splittedArgumentTypes[i]) || "int8".equals(splittedArgumentTypes[i]))) {
-                convertedArgumentTypes[i] = "uint8";
-            } else if(params[i] instanceof Long && !"int64".equals(splittedArgumentTypes[i])) {
+            if(params[i] instanceof Integer && !("uint32".equals(splittedArgumentTypes[i]))) {
+                convertedArgumentTypes[i] = "uint32";
+            } else if((params[i] instanceof Long && !"int64".equals(splittedArgumentTypes[i])) || "int32".equals(splittedArgumentTypes[i])) {
                 convertedArgumentTypes[i] = "int64";
             } else if(params[i] instanceof BigInteger && !("uint64".equals(splittedArgumentTypes[i])) || "int128".equals(splittedArgumentTypes[i])
                     || "uint128".equals(splittedArgumentTypes[i]) || "int256".equals(splittedArgumentTypes[i]) || "uint256".equals(splittedArgumentTypes[i])) {
@@ -56,6 +59,18 @@ public class EncodingUtil {
         }
 
         return "("  + Arrays.stream(convertedArgumentTypes).collect(Collectors.joining(",")).concat(")");
+    }
+
+    private static Object[] convertAddressToHeadlong(final Object[] params) {
+
+        for (int i = 0; i < params.length; i++) {
+            if(params[i] instanceof String){
+                params[i] = convertAliasToHeadlongAddress((String) params[i]);
+            }
+        }
+
+
+        return params;
     }
 
     private static String getSignature(Function function) {
