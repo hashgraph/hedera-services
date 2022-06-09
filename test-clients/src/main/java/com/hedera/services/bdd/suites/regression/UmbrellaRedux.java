@@ -126,7 +126,6 @@ public class UmbrellaRedux extends HapiApiSuite {
 		if (ciProps.has("secondsWaitingServerUp")) {
 			statusTimeoutSecs.set(ciProps.getInteger("secondsWaitingServerUp"));
 		}
-		System.out.println("statusTimeoutSecs = " + statusTimeoutSecs);
 	}
 
 	@Override
