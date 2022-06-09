@@ -151,7 +151,7 @@ class ToStringAccountsExporterTest {
 				"firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0, headTokenId=0, " +
 				"numTreasuryTitles=0, ethereumNonce=2, autoRenewAccount=null, headNftId=0, headNftSerialNum=0, " +
 				"stakedToMe=0, stakePeriodStart=-1, stakedNum=0, declineReward=false, " +
-				"balanceAtStartOfLastRewardedPeriod=0	}, # records=0}\n";
+				"balanceAtStartOfLastRewardedPeriod=0}, # records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
