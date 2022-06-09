@@ -81,7 +81,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FibonacciPlusLoadProvider.class);
 
-	private static final int CALL_TPS = 200;
+	private static final int CALL_TPS = 100;
 	private static final int SMALLEST_NUM_SLOTS = 32;
 	private static final int SLOTS_PER_CALL = 12;
 	private static final int APPROX_NUM_CONTRACTS = 1000;
