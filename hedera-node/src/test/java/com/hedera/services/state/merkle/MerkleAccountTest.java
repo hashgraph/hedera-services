@@ -99,7 +99,6 @@ class MerkleAccountTest {
 	private static final long stakedNum = 1111L;
 	private static final boolean declinedReward = false;
 	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
-	private static final boolean rewardedSinceLastMetadataChange = true;
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -157,8 +156,7 @@ class MerkleAccountTest {
 				stakePeriodStart,
 				stakedNum,
 				declinedReward,
-				balanceAtStartOfLastRewardedPeriod,
-				rewardedSinceLastMetadataChange);
+				balanceAtStartOfLastRewardedPeriod);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
@@ -277,7 +275,6 @@ class MerkleAccountTest {
 		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
 		assertEquals(state.getStakedNum(), subject.getStakedId());
 		assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.getStakeAtStartOfLastRewardedPeriod());
-		assertEquals(state.isRewardedSinceLastMetadataChange(), subject.isRewardedSinceLastMetadataChange());
 	}
 
 	@Test
@@ -322,7 +319,6 @@ class MerkleAccountTest {
 		subject.setDeclineReward(declinedReward);
 		subject.setStakedId(-stakedNum);
 		subject.setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
-		subject.setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -351,7 +347,6 @@ class MerkleAccountTest {
 		verify(delegate).setStakePeriodStart(stakePeriodStart);
 		verify(delegate).setDeclineReward(declinedReward);
 		verify(delegate).setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
-		verify(delegate).setRewardedSinceLastMetadataChange(rewardedSinceLastMetadataChange);
 
 		subject.setStakedId(stakedNum);
 		verify(delegate).setStakedNum(stakedNum);

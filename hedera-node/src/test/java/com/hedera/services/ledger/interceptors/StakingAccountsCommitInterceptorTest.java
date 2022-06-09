@@ -132,12 +132,11 @@ class StakingAccountsCommitInterceptorTest {
 	void setsNothingIfUpdateIsSentinel() {
 		subject.getStakedToMeUpdates()[2] = -1;
 		subject.getStakePeriodStartUpdates()[2] = -1;
-		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = -1;
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = Long.MIN_VALUE;
 		final var mockAccount = mock(MerkleAccount.class);
 
 		subject.finish(2, mockAccount);
 
-		verify(mockAccount).setRewardedSinceLastMetadataChange(false);
 		verify(mockAccount, never()).setStakedToMe(subject.getStakedToMeUpdates()[2]);
 		verify(mockAccount, never()).setStakePeriodStart(subject.getStakePeriodStartUpdates()[2]);
 		verify(mockAccount, never())
@@ -164,9 +163,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
-		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1))).willReturn(true);
-		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		subject.preview(changes);
 
@@ -183,8 +180,9 @@ class StakingAccountsCommitInterceptorTest {
 
 		assertFalse(subject.hasBeenRewarded(0));
 		assertTrue(subject.hasBeenRewarded(1));
+		// both have stakeMeta changes
 		assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
+		assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
 	}
 
 	@Test
@@ -235,11 +233,9 @@ class StakingAccountsCommitInterceptorTest {
 		final var changes = randomStakedNodeChanges(100L);
 
 		subject.setRewardsActivated(true);
-		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
-		// invalid stake period start
-		assertFalse(subject.isRewardSituation(counterparty, -1, changes));
+		// has changes to StakeMeta,
+		assertTrue(subject.isRewardSituation(counterparty, -1, changes));
 
 		// valid fields, plus a ledger-managed staking field change
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
@@ -315,9 +311,6 @@ class StakingAccountsCommitInterceptorTest {
 		final var pendingChanges = buildPendingNodeStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
-		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
-
 		given(rewardCalculator.computePendingReward(any())).willReturn(10L);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(rewardCalculator.applyReward(10L, counterparty, pendingChanges.changes(0))).willReturn(true);
@@ -331,7 +324,8 @@ class StakingAccountsCommitInterceptorTest {
 
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager).awardStake(1L, 0, false);
-		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+		// StakingMeta changes
+		assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test
@@ -345,14 +339,11 @@ class StakingAccountsCommitInterceptorTest {
 		final var pendingChanges = buildPendingAccountStakeChanges();
 		final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
 
-		given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
 		given(stakePeriodManager.startUpdateFor(-1L, 2L, true, true))
 				.willReturn(13L);
 		given(stakePeriodManager.startUpdateFor(0L, 0L, false, false))
 				.willReturn(666L);
 		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
-
-		willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
 		given(rewardCalculator.computePendingReward(any())).willReturn(rewardPayment);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
@@ -396,7 +387,6 @@ class StakingAccountsCommitInterceptorTest {
 		given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
 		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
 		given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
 		given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
 		given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2))).willReturn(true);
@@ -435,7 +425,6 @@ class StakingAccountsCommitInterceptorTest {
 		given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
 		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
 		given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
 		given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
 		given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2)))
@@ -473,7 +462,7 @@ class StakingAccountsCommitInterceptorTest {
 		given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
 		given(txnCtx.numDeletedAccountsAndContracts()).willReturn(1);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		given(stakePeriodManager.isRewardable(stakePeriodStart - 2)).willReturn(true);
+		given(rewardCalculator.computePendingReward(any())).willReturn(123L);
 
 		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,

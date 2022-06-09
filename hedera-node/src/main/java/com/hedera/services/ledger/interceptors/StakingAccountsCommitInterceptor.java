@@ -234,7 +234,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			if (stakeMetaChanged) {
 				stakeAtStartOfLastRewardedPeriodUpdates[i] = -1;
 			} else if (rewardsEarned[i] > 0 ||
-					(rewardsEarned[i] == 0 && account.getStakeAtStartOfLastRewardedPeriod() == -1
+						(rewardsEarned[i] == 0 && account.getStakeAtStartOfLastRewardedPeriod() == -1
 							&& stakePeriodManager.currentStakePeriod() > account.getStakePeriodStart())) {
 				stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
 			}

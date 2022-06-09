@@ -104,8 +104,6 @@ class MerkleAccountStateTest {
 	private static final long otherBalanceAtStartOfLastRewardedPeriod = 678_324_546L;
 	private static final boolean declineReward = false;
 	private static final boolean otherDeclinedReward = true;
-	private static final boolean rewardedSinceLastMetadataChange = true;
-	private static final boolean otherRewardedSinceLastMetadataChange = false;
 
 	private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
 	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
@@ -166,8 +164,7 @@ class MerkleAccountStateTest {
 				stakePeriodStart,
 				stakedNum,
 				declineReward,
-				balanceAtStartOfLastRewardedPeriod,
-				rewardedSinceLastMetadataChange);
+				balanceAtStartOfLastRewardedPeriod);
 	}
 
 	@Test
@@ -212,8 +209,7 @@ class MerkleAccountStateTest {
 						"stakePeriodStart=" + stakePeriodStart + ", " +
 						"stakedNum=" + stakedNum + ", " +
 						"declineReward=" + declineReward + ", " +
-						"balanceAtStartOfLastRewardedPeriod=" + balanceAtStartOfLastRewardedPeriod + ", " +
-						"rewardedSinceLastMetadataChange=" + rewardedSinceLastMetadataChange + "}",
+						"balanceAtStartOfLastRewardedPeriod=" + balanceAtStartOfLastRewardedPeriod + "}",
 				subject.toString());
 	}
 
@@ -249,7 +245,6 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setStakePeriodStart(otherStakePeriodStart));
 		assertThrows(MutabilityException.class, () -> subject.setStakedNum(otherStakedNum));
 		assertThrows(MutabilityException.class, () -> subject.setDeclineReward(otherDeclinedReward));
-		assertThrows(MutabilityException.class, () -> subject.setRewardedSinceLastMetadataChange(otherRewardedSinceLastMetadataChange));
 		assertThrows(MutabilityException.class, () -> subject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
 	}
 
@@ -454,20 +449,6 @@ class MerkleAccountStateTest {
 		final var otherSubject = subject.copy();
 		otherSubject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
 		assertNotEquals(subject, otherSubject);
-	}
-
-	@Test
-	void equalsWorksForRewardedSinceLastMetadataChange() {
-		final var otherSubject = subject.copy();
-		otherSubject.setRewardedSinceLastMetadataChange(otherRewardedSinceLastMetadataChange);
-		assertNotEquals(subject, otherSubject);
-	}
-
-	@Test
-	void resetBalanceAtStartOfLastRewardedPeriodIfRewardedSinceLastMetadataChange() {
-		final var otherSubject = subject.copy();
-		otherSubject.setRewardedSinceLastMetadataChange(true);
-		assertEquals(-1, otherSubject.getStakeAtStartOfLastRewardedPeriod());
 	}
 
 	@Test

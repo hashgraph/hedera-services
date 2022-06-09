@@ -251,13 +251,13 @@ class StakeChangesInterceptorTest {
 			changes.entity(1).setKey(EntityNum.fromAccountId(bob));
 			return 1;
 		}).given(stakeChangeManager).findOrAdd(bob.getAccountNum(), changes);
-		given(stakePeriodManager.isRewardable(123L)).willReturn(true);
 		given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
+		given(rewardCalculator.computePendingReward(any())).willReturn(123L);
 
 		subject.setRewardsActivated(true);
 		subject.preview(changes);
 
-		verify(sideEffectsTracker).trackRewardPayment(bob.getAccountNum(), 0);
+		verify(sideEffectsTracker).trackRewardPayment(bob.getAccountNum(), 123L);
 	}
 
 	private Map<AccountProperty, Object> newChanges() {

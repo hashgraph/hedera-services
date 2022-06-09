@@ -364,8 +364,7 @@ public class SeededPropertySource {
 				-1,
 				0,
 				false,
-				0,
-				false);
+				0);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
@@ -412,8 +411,7 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextInRangeLong(),
 				nextBoolean(),
-				nextUnsignedLong(),
-				nextBoolean());
+				nextUnsignedLong());
 	}
 
 	public MerkleScheduledTransactionsState nextScheduledTransactionsState() {

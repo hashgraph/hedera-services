@@ -109,7 +109,7 @@ class StakePeriodManagerTest {
 		// UTC day 14
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
-		assertEquals(13, subject.startUpdateFor(-1, -1, true, true));
+		assertEquals(13, subject.startUpdateFor(-1, -1, true, false));
 	}
 
 	@Test
