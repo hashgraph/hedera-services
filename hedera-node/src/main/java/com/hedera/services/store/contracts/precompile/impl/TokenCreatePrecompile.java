@@ -21,7 +21,6 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
@@ -133,7 +132,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *     	</li>
  * </ol>
  */
-public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
+public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	private final EncodingFacade encoder;
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
@@ -141,6 +140,7 @@ public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
 	private final int functionId;
 	private final Address senderAddress;
 	private final AccountID fundingAccount;
+	private final Provider<FeeCalculator> feeCalculator;
 	private TransactionBody.Builder transactionBody;
 	private TokenCreateWrapper tokenCreateOp;
 
@@ -158,10 +158,9 @@ public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
 			final Address senderAddress,
 			final AccountID fundingAccount,
 			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView,
 			final PrecompilePricingUtils pricingUtils
 	) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.encoder = encoder;
 		this.updater = updater;
 		this.sigsVerifier = sigsVerifier;
@@ -169,6 +168,7 @@ public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
 		this.functionId = functionId;
 		this.senderAddress = senderAddress;
 		this.fundingAccount = fundingAccount;
+		this.feeCalculator = feeCalculator;
 	}
 
 	@Override
@@ -245,9 +245,7 @@ public class TokenCreatePrecompile extends ERCWriteAbstractPrecompile {
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()),
 				Instant.ofEpochSecond(timestampSeconds),
-				this,
-				feeCalculator,
-				currentView);
+				this);
 
 		final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
 				- getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;

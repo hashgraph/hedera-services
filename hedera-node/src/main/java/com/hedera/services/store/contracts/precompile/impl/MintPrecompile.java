@@ -22,9 +22,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -43,7 +41,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import javax.inject.Provider;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class MintPrecompile extends ERCWriteAbstractPrecompile {
+public class MintPrecompile extends AbstractWritePrecompile {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
@@ -78,11 +75,9 @@ public class MintPrecompile extends ERCWriteAbstractPrecompile {
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
+			final PrecompilePricingUtils pricingUtils
 	) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.encoder = encoder;
 		this.aliases = aliases;
 		this.sigsVerifier = sigsVerifier;
@@ -146,6 +141,6 @@ public class MintPrecompile extends ERCWriteAbstractPrecompile {
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 }

@@ -20,9 +20,6 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -35,13 +32,12 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 
-import javax.inject.Provider;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
-public class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
+public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
 	private NftId nftId;
 
 	public OwnerOfPrecompile(
@@ -50,18 +46,14 @@ public class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
 			final DecodingFacade decoder,
-			final Provider<FeeCalculator> feeCalculator,
-			final UsagePricesProvider resourceCosts,
-			final StateView currentView,
-			final PrecompilePricingUtils pricingUtils
-	) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator, resourceCosts, currentView, pricingUtils);
+			final PrecompilePricingUtils pricingUtils) {
+		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
 	}
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
 		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now), feeCalculator, resourceCosts, currentView);
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
 	}
 
 	@Override

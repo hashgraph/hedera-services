@@ -20,9 +20,6 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -40,7 +37,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 
-import javax.inject.Provider;
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 
@@ -48,7 +44,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRever
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
-public class AllowancePrecompile extends ERCReadOnlyAbstractPrecompile {
+public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 	private TokenAllowanceWrapper allowanceWrapper;
 
 	public AllowancePrecompile(
@@ -57,18 +53,14 @@ public class AllowancePrecompile extends ERCReadOnlyAbstractPrecompile {
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
 			final DecodingFacade decoder,
-			final Provider<FeeCalculator> feeCalculator,
-			final UsagePricesProvider resourceCosts,
-			final StateView currentView,
-			final PrecompilePricingUtils pricingUtils
-	) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, feeCalculator, resourceCosts, currentView, pricingUtils);
+			final PrecompilePricingUtils pricingUtils) {
+		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
 	}
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
 		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now), feeCalculator, resourceCosts, currentView);
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
 	}
 
 	@Override

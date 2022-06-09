@@ -21,8 +21,6 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.Precompile;
@@ -30,35 +28,26 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 
-import javax.inject.Provider;
-
-public abstract class ERCWriteAbstractPrecompile implements Precompile {
+public abstract class AbstractWritePrecompile implements Precompile {
 	protected final WorldLedgers ledgers;
 	protected final DecodingFacade decoder;
 	protected final SideEffectsTracker sideEffects;
 	protected final SyntheticTxnFactory syntheticTxnFactory;
 	protected final InfrastructureFactory infrastructureFactory;
 	protected final PrecompilePricingUtils pricingUtils;
-	protected final Provider<FeeCalculator> feeCalculator;
-	protected final StateView currentView;
 
-	protected ERCWriteAbstractPrecompile(
+	protected AbstractWritePrecompile(
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
+			final PrecompilePricingUtils pricingUtils) {
 		this.ledgers = ledgers;
 		this.decoder = decoder;
 		this.sideEffects = sideEffects;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.infrastructureFactory = infrastructureFactory;
-		this.feeCalculator = feeCalculator;
 		this.pricingUtils = pricingUtils;
-		this.currentView = currentView;
 	}
 }

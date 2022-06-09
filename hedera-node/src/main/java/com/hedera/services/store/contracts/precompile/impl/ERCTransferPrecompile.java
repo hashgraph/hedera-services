@@ -21,10 +21,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -46,7 +44,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-import javax.inject.Provider;
 import java.math.BigInteger;
 import java.util.function.UnaryOperator;
 
@@ -75,12 +72,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
-			final ImpliedTransfersMarshal impliedTransfersMarshal,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
+			final ImpliedTransfersMarshal impliedTransfersMarshal) {
 		super(ledgers, decoder, updater, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
-				pricingUtils,functionId, callerAccount, impliedTransfersMarshal, feeCalculator, currentView);
+				pricingUtils,functionId, callerAccount, impliedTransfersMarshal);
 		this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 		this.tokenID = tokenID;
 		this.isFungible = isFungible;
@@ -178,6 +172,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, syntheticTxn);
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, syntheticTxn);
 	}
 }

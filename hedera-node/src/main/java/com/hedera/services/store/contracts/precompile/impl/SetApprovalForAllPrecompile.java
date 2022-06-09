@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
@@ -41,7 +40,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-import javax.inject.Provider;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -51,9 +49,10 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class SetApprovalForAllPrecompile extends ERCWriteAbstractPrecompile {
+public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 	private final TokenID tokenId;
 	private final Address senderAddress;
+	private final StateView currentView;
 	private TransactionBody.Builder transactionBody;
 	private SetApprovalForAllWrapper setApprovalForAllWrapper;
 
@@ -66,12 +65,12 @@ public class SetApprovalForAllPrecompile extends ERCWriteAbstractPrecompile {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
-			final Address senderAddress,
-			final Provider<FeeCalculator> feeCalculator
+			final Address senderAddress
 	) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.tokenId = tokenId;
 		this.senderAddress = senderAddress;
+		this.currentView = currentView;
 	}
 
 	@Override
@@ -117,7 +116,7 @@ public class SetApprovalForAllPrecompile extends ERCWriteAbstractPrecompile {
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, transactionBody);
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 
 	@Override

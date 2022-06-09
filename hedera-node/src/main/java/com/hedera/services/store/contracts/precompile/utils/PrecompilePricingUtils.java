@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,10 +66,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
 public class PrecompilePricingUtils {
-	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
-			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
-			.build();
-
 	static class CanonicalOperationsUnloadableException extends RuntimeException {
 		public CanonicalOperationsUnloadableException(Exception e) {
 			super("Canonical prices for precompiles are not available", e);
@@ -81,14 +77,26 @@ public class PrecompilePricingUtils {
 	 * In this case $1 Million Dollars.
 	 */
 	static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
+	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
+			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
+			.build();
 	private final HbarCentExchange exchange;
+	private final Provider<FeeCalculator> feeCalculator;
+	private final UsagePricesProvider resourceCosts;
+	private final StateView currentView;
 	Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
 	@Inject
 	public PrecompilePricingUtils(
 			AssetsLoader assetsLoader,
-			final HbarCentExchange exchange) {
+			final HbarCentExchange exchange,
+			final Provider<FeeCalculator> feeCalculator,
+			final UsagePricesProvider resourceCosts,
+			final StateView currentView) {
 		this.exchange = exchange;
+		this.feeCalculator = feeCalculator;
+		this.resourceCosts = resourceCosts;
+		this.currentView = currentView;
 
 		canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
 		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -118,10 +126,8 @@ public class PrecompilePricingUtils {
 	}
 
 	public long gasFeeInTinybars(final TransactionBody.Builder txBody,
-								  final Instant consensusTime,
-								  final Precompile precompile,
-								  final Provider<FeeCalculator> feeCalculator,
-								  final StateView currentView) {
+								 final Instant consensusTime,
+								 final Precompile precompile) {
 		final var signedTxn = SignedTransaction.newBuilder()
 				.setBodyBytes(txBody.build().toByteString())
 				.setSigMap(SignatureMap.getDefaultInstance())
@@ -136,11 +142,7 @@ public class PrecompilePricingUtils {
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
-	public long computeViewFunctionGas(final Timestamp now,
-									   final long minimumTinybarCost,
-									   final Provider<FeeCalculator> feeCalculator,
-									   final UsagePricesProvider resourceCosts,
-									   final StateView currentView) {
+	public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
 		final var calculator = feeCalculator.get();
 		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
 		final var fees = calculator.estimatePayment(
@@ -154,14 +156,12 @@ public class PrecompilePricingUtils {
 		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		return baseGasCost + (baseGasCost/5L);
+		return baseGasCost + (baseGasCost / 5L);
 	}
 
 	public long computeGasRequirement(final long blockTimestamp,
-											 final Provider<FeeCalculator> feeCalculator,
-											 final StateView currentView,
-											 final Precompile precompile,
-											 final TransactionBody.Builder transactionBody) {
+									  final Precompile precompile,
+									  final TransactionBody.Builder transactionBody) {
 		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
 				blockTimestamp).build();
 		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -170,9 +170,7 @@ public class PrecompilePricingUtils {
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()),
 				Instant.ofEpochSecond(blockTimestamp),
-				precompile,
-				feeCalculator,
-				currentView);
+				precompile);
 
 		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
 		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
@@ -181,7 +179,7 @@ public class PrecompilePricingUtils {
 		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		return baseGasCost + (baseGasCost/5L);
+		return baseGasCost + (baseGasCost / 5L);
 	}
 
 	public enum GasCostType {

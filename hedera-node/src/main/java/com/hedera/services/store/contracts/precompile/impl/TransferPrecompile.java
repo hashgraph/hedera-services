@@ -21,10 +21,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
@@ -51,7 +49,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -64,7 +61,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class TransferPrecompile extends ERCWriteAbstractPrecompile {
+public class TransferPrecompile extends AbstractWritePrecompile {
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
 	private final int functionId;
@@ -88,11 +85,9 @@ public class TransferPrecompile extends ERCWriteAbstractPrecompile {
 			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
 			final Address senderAddress,
-			final ImpliedTransfersMarshal impliedTransfersMarshal,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
+			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, feeCalculator, currentView);
+		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.updater = updater;
 		this.sigsVerifier = sigsVerifier;
 		this.functionId = functionId;
@@ -297,7 +292,7 @@ public class TransferPrecompile extends ERCWriteAbstractPrecompile {
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp, feeCalculator, currentView, this, syntheticTxn);
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, syntheticTxn);
 	}
 
 }
