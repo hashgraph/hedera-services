@@ -67,7 +67,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 				seededAccount.setDeclineReward(false);
 				seededAccount.setStakePeriodStart(-1);
 				seededAccount.setStakedNum(0);
-				seededAccount.setStakeAtStartOfLastRewardedPeriod(0);
+				seededAccount.setStakeAtStartOfLastRewardedPeriod(-1);
 			}
 			return seededAccount;
 		}
