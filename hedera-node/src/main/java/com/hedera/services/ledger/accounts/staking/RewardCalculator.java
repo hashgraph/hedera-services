@@ -126,7 +126,6 @@ public class RewardCalculator {
 		}
 
 		if (account.totalStakeAtStartOfLastRewardedPeriod() != -1) {
-			System.out.println("Indexes we are playing with : " + (rewardFrom - 1) + " " + rewardFrom + " 0");
 			// Two-step computation; first, the reward from the last period the account changed its stake in...
 			return account.totalStakeAtStartOfLastRewardedPeriod() / HBARS_TO_TINYBARS
 					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom])
@@ -134,9 +133,6 @@ public class RewardCalculator {
 					+ account.totalStake() / HBARS_TO_TINYBARS
 					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
 		} else {
-			System.out.println("  * Subtracted rewardSumHistory[" +
-					rewardFrom + "]=" +
-					rewardSumHistory[rewardFrom]);
 			return account.totalStake() / HBARS_TO_TINYBARS * (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
 		}
 	}

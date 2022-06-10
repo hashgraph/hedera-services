@@ -33,7 +33,6 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
@@ -83,12 +82,6 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	public void updateNodes(final Instant consensusTime) {
-		// --- BEGIN DEBUG-ONLY CODE ---
-		final var thisPeriod = LinkedObjectStreamUtilities.getPeriod(consensusTime, 60_000);
-		final var lastPeriod = thisPeriod - 1;
-		System.out.println("Processing end of period " + lastPeriod + ", beginning " + thisPeriod);
-		// --- END DEBUG-ONLY CODE ---
-
 		final var stakingInfo = stakingInfoSupplier.get();
 		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
 
@@ -104,7 +97,6 @@ public class EndOfStakingPeriodCalculator {
 		final var rewardRate = effectiveRateForCurrentPeriod();
 
 		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
-		System.out.println("  - totalStakedRewardStart for ending period: " + totalStakedRewardStart);
 
 		// The tinybars earned per hbar for stakers who are staked to a node whose total
 		// stakedRewarded is in the range [minStake, maxStake]
@@ -120,10 +112,8 @@ public class EndOfStakingPeriodCalculator {
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
 			final var endingPeriodRewardRate = merkleStakingInfo.updateRewardSumHistory(perHbarRate);
 
-			System.out.println("  (A) Node0 lastPeriodStakedRewardStart was: " + endingPeriodStakeRewardStart);
 			final var beginningPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
-			System.out.println("  (B) Node0 curPeriodStakedRewardStart was : " + beginningPeriodStakeRewardStart);
 
 			final var pendingRewardHbars = endingPeriodStakeRewardStart / HBARS_TO_TINYBARS;
 			final var rewardsOwedForEndingPeriod = pendingRewardHbars * endingPeriodRewardRate;

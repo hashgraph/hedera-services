@@ -213,7 +213,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 		rewardSumHistory[0] += perHbarRateThisNode;
 
-		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
 		// reset the historyHash
 		historyHash = null;
 		return perHbarRateThisNode;

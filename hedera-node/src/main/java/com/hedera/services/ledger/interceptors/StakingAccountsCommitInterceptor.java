@@ -30,7 +30,6 @@ import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -135,18 +134,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	@Override
 	public void finish(final int i, final MerkleAccount mutableAccount) {
 		if (stakedToMeUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakedToMe=" + stakedToMeUpdates[i]);
 			mutableAccount.setStakedToMe(stakedToMeUpdates[i]);
 		}
 		if (stakePeriodStartUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
 			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
 		}
 		if (stakeAtStartOfLastRewardedPeriodUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakeAtStartOfLastRewardedPeriodUpdates=" + stakeAtStartOfLastRewardedPeriodUpdates[i]);
 			mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
 		}
 	}
@@ -328,10 +321,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		}
 		// The final beneficiary might still decline the reward
 		if (rewardCalculator.applyReward(reward, account, changes)) {
-			System.out.println("Paid " + reward + " to account 0.0."
-					+ account.getKey().longValue()
-					+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
-					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
 		}
 	}
