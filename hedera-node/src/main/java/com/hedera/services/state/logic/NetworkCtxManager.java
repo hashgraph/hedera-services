@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -28,7 +29,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.ledger.interceptors.EndOfStakingPeriodCalculator;
+import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
@@ -50,6 +51,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -62,6 +65,7 @@ public class NetworkCtxManager {
 	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
+	private final long stakingPeriod;
 	private final IssEventInfo issInfo;
 	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
@@ -72,7 +76,6 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
-	private final PropertySource propertySource;
 	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
@@ -106,7 +109,7 @@ public class NetworkCtxManager {
 		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
 		this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
-		this.propertySource = propertySource;
+		this.stakingPeriod = propertySource.getLongProperty("staking.periodMins");
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -153,12 +156,13 @@ public class NetworkCtxManager {
 		}
 	}
 
-	private boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
-		final var stakingPeriod = propertySource.getLongProperty("staking.periodMins");
+	@VisibleForTesting
+	boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
 		if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
 			return isNextDay.test(lastConsensusTime, consensusTime);
 		} else {
-			return consensusTime.getEpochSecond() >= lastConsensusTime.getEpochSecond() + (stakingPeriod * 60);
+			return getPeriod(consensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
+					!= getPeriod(lastConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
 		}
 	}
 

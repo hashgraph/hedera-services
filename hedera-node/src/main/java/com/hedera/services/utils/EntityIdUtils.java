@@ -346,8 +346,7 @@ public final class EntityIdUtils {
 			final var alias = idOrAlias.getEvmAddress();
 			final var evmAddress = alias.toByteArray();
 			if (aliasManager.isMirror(evmAddress)) {
-				final var contractNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
-				return EntityNum.fromLong(contractNum);
+				return EntityNum.fromLong(numOfMirror(evmAddress));
 			}
 			if (aliasObs != null) {
 				aliasObs.accept(alias);
@@ -355,6 +354,35 @@ public final class EntityIdUtils {
 			return aliasManager.lookupIdBy(alias);
 		} else {
 			return EntityNum.fromContractId(idOrAlias);
+		}
+	}
+
+	public static long numOfMirror(final byte[] evmAddress) {
+		return Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
+        }
+
+	public static EntityNum unaliased(final AccountID idOrAlias, final AliasManager aliasManager) {
+		return unaliased(idOrAlias, aliasManager, null);
+	}
+
+	public static EntityNum unaliased(
+			final AccountID idOrAlias,
+			final AliasManager aliasManager,
+			@Nullable final Consumer<ByteString> aliasObs
+	) {
+		if (isAlias(idOrAlias)) {
+			final var alias = idOrAlias.getAlias();
+			final var evmAddress = alias.toByteArray();
+			if (aliasManager.isMirror(evmAddress)) {
+				final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
+				return EntityNum.fromLong(accountNum);
+			}
+			if (aliasObs != null) {
+				aliasObs.accept(alias);
+			}
+			return aliasManager.lookupIdBy(alias);
+		} else {
+			return EntityNum.fromAccountId(idOrAlias);
 		}
 	}
 }

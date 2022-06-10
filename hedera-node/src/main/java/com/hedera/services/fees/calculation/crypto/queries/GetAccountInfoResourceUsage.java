@@ -64,8 +64,8 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 		final var op = query.getCryptoGetInfo();
 
 		final var account = op.getAccountID();
-		final var info = view.infoForAccount(account, aliasManager,
-				dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
+		final var info = view.infoForAccount(
+				account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

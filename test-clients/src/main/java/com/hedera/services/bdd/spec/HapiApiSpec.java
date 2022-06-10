@@ -523,6 +523,8 @@ public class HapiApiSpec implements Runnable {
 				ciPropsSource.put("warnings.suppressUnrecoverableNetworkFailures", "true");
 			}
 			ciPropsSource.putAll(otherOverrides);
+			// merge properties from CI Properties Map with default ones
+			ciPropsSource.putAll(explicitCiProps.getProps());
 		}
 		return ciPropsSource;
 	}
@@ -713,6 +715,16 @@ public class HapiApiSpec implements Runnable {
 				hapiSetup.costSnapshotDir(),
 				costSnapshotFile());
 		return path;
+	}
+
+	/**
+	 * Add new properties that would merge with existing ones, if a property already
+	 * exist then override it with new value
+	 * @param props
+	 * 		A map of new properties
+	 */
+	public void addOverrideProperties(final Map<String, Object> props) {
+		hapiSetup.addOverrides(props);
 	}
 
 	public static void ensureDir(String path) {

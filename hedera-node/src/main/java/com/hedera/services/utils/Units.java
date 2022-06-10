@@ -27,9 +27,17 @@ public final class Units {
 	}
 
 	/**
-	 * Multiply this value to HBAR amount to get the num of tinybars
+	 * Conversion factor from hbar to tinybar
 	 */
 	public static final long HBARS_TO_TINYBARS = 100_000_000L;
 
-	public static final int SECS_IN_MINUTE = 60;
+	/**
+	 * Conversion factor from minutes to seconds
+	 */
+	public static final long MINUTES_TO_SECONDS = 60L;
+
+	/**
+	 * Conversion factor from minutes to milliseconds
+	 */
+	public static final long MINUTES_TO_MILLISECONDS = 60_000L;
 }

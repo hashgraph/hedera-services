@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.interceptors;
+package com.hedera.services.ledger.accounts.staking;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
@@ -112,7 +112,7 @@ class EndOfStakingPeriodCalculatorTest {
 
 		subject.updateNodes(consensusTime);
 
-		verify(merkleNetworkContext).setTotalStakedRewardStart(1000L);
+		verify(merkleNetworkContext).setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
 		verify(merkleNetworkContext).setTotalStakedStart(1300L);
 		assertEquals(800L, stakingInfo1.getStake());
 		assertEquals(500L, stakingInfo2.getStake());

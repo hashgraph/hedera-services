@@ -41,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
@@ -182,8 +181,6 @@ class TransactionalLedgerTest {
 	@SuppressWarnings("unchecked")
 	void committingUsesProvidedFinisherIfPresent() {
 		setupInterceptedTestLedger();
-		final var boop = new AtomicBoolean();
-		given(testInterceptor.finisherFor(0)).willReturn(ignore -> boop.set(true));
 
 		testLedger.begin();
 		testLedger.create(1L);
@@ -193,7 +190,8 @@ class TransactionalLedgerTest {
 		testLedger.set(2L, OBJ, things);
 		testLedger.commit();
 
-		assertTrue(boop.get());
+		verify(testInterceptor).finish(eq(0), any(TestAccount.class));
+		verify(testInterceptor).finish(eq(1), any(TestAccount.class));
 	}
 
 	@Test

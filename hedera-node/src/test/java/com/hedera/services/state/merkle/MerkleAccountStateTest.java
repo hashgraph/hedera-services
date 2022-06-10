@@ -100,6 +100,8 @@ class MerkleAccountStateTest {
 	private static final long otherStakePeriodStart = 945L;
 	private static final long stakedNum = 1111L;
 	private static final long otherStakedNum = 5L;
+	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+	private static final long otherBalanceAtStartOfLastRewardedPeriod = 678_324_546L;
 	private static final boolean declineReward = false;
 	private static final boolean otherDeclinedReward = true;
 
@@ -161,7 +163,8 @@ class MerkleAccountStateTest {
 				stakedToMe,
 				stakePeriodStart,
 				stakedNum,
-				declineReward);
+				declineReward,
+				balanceAtStartOfLastRewardedPeriod);
 	}
 
 	@Test
@@ -205,7 +208,8 @@ class MerkleAccountStateTest {
 						"stakedToMe=" + stakedToMe + ", " +
 						"stakePeriodStart=" + stakePeriodStart + ", " +
 						"stakedNum=" + stakedNum + ", " +
-						"declineReward=" + declineReward + "}",
+						"declineReward=" + declineReward + ", " +
+						"balanceAtStartOfLastRewardedPeriod=" + balanceAtStartOfLastRewardedPeriod + "}",
 				subject.toString());
 	}
 
@@ -241,6 +245,7 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setStakePeriodStart(otherStakePeriodStart));
 		assertThrows(MutabilityException.class, () -> subject.setStakedNum(otherStakedNum));
 		assertThrows(MutabilityException.class, () -> subject.setDeclineReward(otherDeclinedReward));
+		assertThrows(MutabilityException.class, () -> subject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
 	}
 
 	@Test
@@ -436,6 +441,13 @@ class MerkleAccountStateTest {
 	void equalsWorksForDeclineReward() {
 		final var otherSubject = subject.copy();
 		otherSubject.setDeclineReward(otherDeclinedReward);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForBalanceAtStartOfLastRewardedPeriod() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
 		assertNotEquals(subject, otherSubject);
 	}
 

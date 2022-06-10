@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -59,9 +60,10 @@ public class StakingSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						enabledRewards(),
-//						previewnetPlannedTest(),
-						sendToCarol(),
+						previewnetPlannedTest(),
+//						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
+//						rewardsOfDeletedAreRedirectedToBeneficiary(),
 				}
 		);
 	}
@@ -69,10 +71,14 @@ public class StakingSuite extends HapiApiSuite {
 	private HapiApiSpec sendToCarol() {
 		return defaultHapiSpec("SendToCarol")
 				.given(
-//						getAccountInfo("0.0.1003").logged()
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1002", 1)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1003", 1)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1))
+//						getAccountBalance("0.0.1006").logged()
+//						getAccountInfo("0.0.1006").logged()
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1005", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1006", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1004", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1005", 1)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.1006", 1))
 				).when().then(
 				);
 	}
@@ -112,6 +118,27 @@ public class StakingSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
+		final var alice = "alice";
+		final var bob = "bob";
+		final var deletion = "deletion";
+		return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")
+				.given(
+						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS))
+				).when(
+						cryptoCreate(alice)
+								.stakedNodeId(0)
+								.balance(33_000 * ONE_MILLION_HBARS),
+						cryptoCreate(bob).balance(0L),
+						sleepFor(150_000)
+				).then(
+						cryptoDelete(alice).transfer(bob).via(deletion),
+						getTxnRecord(deletion).andAllChildRecords().logged()
+				);
+	}
+
 	private HapiApiSpec previewnetPlannedTest() {
 		final var alice = "alice";
 		final var bob = "bob";
@@ -134,7 +161,7 @@ public class StakingSuite extends HapiApiSuite {
 								.balance(20_000 * ONE_MILLION_HBARS),
 						cryptoCreate(bob).balance(5_000 * ONE_MILLION_HBARS),
 						cryptoCreate(carol).stakedNodeId(0),
-						cryptoCreate(debbie).balance(5 * ONE_HBAR  + 90_000_000L),
+						cryptoCreate(debbie).balance(5 * ONE_HBAR + 90_000_000L),
 						cryptoUpdate(bob).newStakedNodeId(0),
 						// End of period ONE
 						sleepFor(75_000)

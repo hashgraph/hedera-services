@@ -439,7 +439,8 @@ public class StateView {
 			final AccountID id,
 			final AliasManager aliasManager,
 			final int maxTokensForAccountInfo,
-			final RewardCalculator rewardCalculator) {
+			final RewardCalculator rewardCalculator
+	) {
 		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -502,15 +503,15 @@ public class StateView {
 
 		final var stakedNum = account.getStakedId();
 		if (stakedNum < 0) {
-			// since we store the staking node id as (-nodeId -1), the node id account is staking to will be
-			// -stakedNum -1
+			// Staked num for a node is (-nodeId -1)
 			stakingInfo.setStakedNodeId(-stakedNum - 1);
 		} else if (stakedNum > 0) {
 			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
 		}
 
 		if (account.getStakePeriodStart() > 0) {
-			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(account.getStakePeriodStart()).build());
+			final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
+			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(startSecond).build());
 			if (account.mayHavePendingReward()) {
 				final var info = stateChildren.stakingInfo();
 				final var nodeStakingInfo = info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));

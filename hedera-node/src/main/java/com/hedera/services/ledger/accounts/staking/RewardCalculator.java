@@ -23,13 +23,13 @@ package com.hedera.services.ledger.accounts.staking;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -39,33 +39,48 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 public class RewardCalculator {
 	private final StakeInfoManager stakeInfoManager;
 	private final StakePeriodManager stakePeriodManager;
-	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	private long rewardsPaid;
 
 	@Inject
 	public RewardCalculator(
 			final StakePeriodManager stakePeriodManager,
-			final StakeInfoManager stakeInfoManager,
-			final Supplier<MerkleNetworkContext> networkCtx
+			final StakeInfoManager stakeInfoManager
 	) {
 		this.stakePeriodManager = stakePeriodManager;
 		this.stakeInfoManager = stakeInfoManager;
-		this.networkCtx = networkCtx;
 	}
 
 	public void reset() {
 		rewardsPaid = 0;
 	}
 
-	public long computeAndApplyReward(final MerkleAccount account, final Map<AccountProperty, Object> changes) {
-		final var reward = computePendingRewards(account);
+	public long computePendingReward(final MerkleAccount account) {
+		final var rewardOffered = computeRewardFromDetails(
+				account,
+				stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
+				stakePeriodManager.currentStakePeriod(),
+				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+		return account.isDeclinedReward() ? 0 : rewardOffered;
+	}
+
+	public boolean applyReward(
+			final long reward,
+			@Nullable final MerkleAccount account,
+			@NotNull final Map<AccountProperty, Object> changes
+	) {
 		if (reward > 0) {
+			final var isDeclined = (account != null)
+					? account.isDeclinedReward()
+					: (boolean) changes.getOrDefault(AccountProperty.DECLINE_REWARD, false);
+			if (isDeclined) {
+				return false;
+			}
 			final var balance = finalBalanceGiven(account, changes);
 			changes.put(BALANCE, balance + reward);
+			rewardsPaid += reward;
 		}
-		rewardsPaid += reward;
-		return reward;
+		return true;
 	}
 
 	public long rewardsPaidInThisTxn() {
@@ -81,14 +96,8 @@ public class RewardCalculator {
 		return account.isDeclinedReward() ? 0 : rewardOffered;
 	}
 
-	private long computePendingRewards(final MerkleAccount account) {
-		final var rewardOffered = computeRewardFromDetails(
-				account,
-				stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
-				stakePeriodManager.currentStakePeriod(),
-				stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
-		networkCtx.get().decreasePendingRewards(rewardOffered);
-		return account.isDeclinedReward() ? 0 : rewardOffered;
+	public long epochSecondAtStartOfPeriod(final long stakePeriod) {
+		return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
 	}
 
 	private long computeRewardFromDetails(
@@ -101,10 +110,35 @@ public class RewardCalculator {
 			return 0L;
 		}
 		final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();
-		// stakedNode.rewardSumHistory[0] is the reward for all periods up to and including the full staking period
-		// (currentStakePeriod - 1); since this period is not finished yet, we do not know how to reward for it
-		return (account.getBalance() / HBARS_TO_TINYBARS)
-						* (rewardSumHistory[0] - rewardSumHistory[(int) (currentStakePeriod - 1 - (effectiveStart - 1))]);
+		return rewardFor(account, rewardSumHistory, currentStakePeriod, effectiveStart);
+	}
+
+	private long rewardFor(
+			final MerkleAccount account,
+			final long[] rewardSumHistory,
+			final long currentStakePeriod,
+			final long effectiveStart
+	) {
+		final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
+
+		if (rewardFrom == 0) {
+			return 0;
+		}
+
+		if (account.totalStakeAtStartOfLastRewardedPeriod() != -1) {
+			System.out.println("Indexes we are playing with : " + (rewardFrom - 1) + " " + rewardFrom + " 0");
+			// Two-step computation; first, the reward from the last period the account changed its stake in...
+			return account.totalStakeAtStartOfLastRewardedPeriod() / HBARS_TO_TINYBARS
+					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom])
+					// ...and second, the reward for all following periods
+					+ account.totalStake() / HBARS_TO_TINYBARS
+					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
+		} else {
+			System.out.println("  * Subtracted rewardSumHistory[" +
+					rewardFrom + "]=" +
+					rewardSumHistory[rewardFrom]);
+			return account.totalStake() / HBARS_TO_TINYBARS * (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
+		}
 	}
 
 	@VisibleForTesting

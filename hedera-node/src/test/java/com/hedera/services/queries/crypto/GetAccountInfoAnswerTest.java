@@ -33,7 +33,6 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -282,6 +281,7 @@ class GetAccountInfoAnswerTest {
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		given(rewardCalculator.epochSecondAtStartOfPeriod(12345678L)).willReturn(12345678L);
 
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);

@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.interceptors;
+package com.hedera.services.ledger.accounts.staking;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Set;
 
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -65,12 +66,13 @@ class PendingRewardsManagementTest {
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
-		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
-		given(info.reviewElectionsFromLastPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
+				.willReturn(lastPeriodRewardRate);
+		given(info.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 
-		verify(networkCtx).increasePendingRewards((updatedStakeRewardStart / 100_000_000) * lastPeriodRewardRate);
+		verify(networkCtx).increasePendingRewards((stakeRewardStart / 100_000_000) * lastPeriodRewardRate);
 	}
 
 	@Test

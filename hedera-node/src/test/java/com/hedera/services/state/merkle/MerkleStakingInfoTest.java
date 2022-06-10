@@ -77,38 +77,6 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
-	void canUpdatePendingRewardAdjustment() {
-		subject.updatePendingRewardAdjustment(123);
-		assertEquals(123, subject.getPendingRewardHbarAdjustment());
-	}
-
-	@Test
-	void awardingStakeAdjustsPendingsRewardsIfIsNotDecline() {
-		subject.addRewardStake(123, false);
-		assertEquals(123, subject.getPendingRewardHbarAdjustment());
-	}
-
-	@Test
-	void doesntAdjustPendingsRewardsOnRewardIfDecline() {
-		subject.addRewardStake(123, true);
-		assertEquals(0, subject.getPendingRewardHbarAdjustment());
-	}
-
-	@Test
-	void withdrawingStakeAdjustsPendingsRewardsIfIsNotDecline() {
-		subject.setPendingRewardHbarAdjustment(123);
-		subject.removeRewardStake(123, false);
-		assertEquals(0, subject.getPendingRewardHbarAdjustment());
-	}
-
-	@Test
-	void doesntAdjustPendingsRewardsOnWithdrawalIfDecline() {
-		subject.setPendingRewardHbarAdjustment(123);
-		subject.removeRewardStake(123, true);
-		assertEquals(123, subject.getPendingRewardHbarAdjustment());
-	}
-
-	@Test
 	void objectContractsWork() {
 		final long otherMinStake = 101L;
 		final long otherMaxStake = 10_001L;
@@ -208,11 +176,9 @@ class MerkleStakingInfoTest {
 
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+		final var rewardRate = 1_000_000;
 
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 1_000_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(1_000_000L, pendingRewardRate);
@@ -220,12 +186,10 @@ class MerkleStakingInfoTest {
 
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMaxStake() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+		final var rewardRate = 1_000_000;
 
 		subject.setStakeToReward(2 * subject.getMaxStake());
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(500_000L, pendingRewardRate);
@@ -234,24 +198,9 @@ class MerkleStakingInfoTest {
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStake() {
 		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
 		subject.setStakeRewardStart(0);
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
-
-		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
-		assertEquals(0L, pendingRewardRate);
-	}
-
-	@Test
-	void updatesRewardsSumHistoryAsExpectedForTotalStakeLessThanOneHbar() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is less than an hbar
-		final var totalStakedRewardStart = 100_000_000L - 1;
-
-		subject.setStakeRewardStart(Long.MAX_VALUE);
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(0L, pendingRewardRate);
@@ -288,8 +237,8 @@ class MerkleStakingInfoTest {
 		final var expected = CommonUtils.noThrowSha384HashOf(baos.toByteArray());
 		final var actual = subject.getHash();
 
-		assertNotNull(subject.historyHash);
-		assertArrayEquals(rewardSumHistoryHash, subject.historyHash);
+		assertNotNull(subject.getHistoryHash());
+		assertArrayEquals(rewardSumHistoryHash, subject.getHistoryHash());
 		assertArrayEquals(expected, actual.getValue());
 
 	}
