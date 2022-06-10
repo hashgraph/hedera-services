@@ -195,6 +195,36 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	@Test
+	void revertsCommittedChildIdsSourceIdsIfCreated() {
+		final var firstChildSourceId = 123;
+		final var mySourceId = 666;
+		final var secondChildSourceId = 456;
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+		subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
+		subject.revert();
+
+		verify(recordsHistorian).revertChildRecordsFromSource(mySourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(firstChildSourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(secondChildSourceId);
+	}
+
+	@Test
+	void notOkToCommitFromDifferentHistorians() {
+		final var otherHistorian = mock(RecordsHistorian.class);
+		final var firstChildSourceId = 123;
+		final var secondChildSourceId = 456;
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.addCommittedRecordSourceId(secondChildSourceId, otherHistorian));
+	}
+
+	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
 		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
