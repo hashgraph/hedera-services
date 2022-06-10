@@ -44,7 +44,7 @@ public class InfoProvider {
 	}
 
 	public long getRemainingGas() {
-		return isDirectTokenCall ? precompileMessage.getRemainingGas()
+		return isDirectTokenCall ? precompileMessage.getGasRemaining()
 				: messageFrame.getRemainingGas();
 	}
 
@@ -64,16 +64,18 @@ public class InfoProvider {
 
 	public void setState(MessageFrame.State state) {
 		if (isDirectTokenCall) {
-			//TODO
+			precompileMessage.setState(PrecompileMessage.State.valueOf(state.name()));
 		} else {
 			messageFrame.setState(state);
 		}
 	}
 
 	public void setRevertReason(Bytes revertReason) {
-		//TODO
-		if (messageFrame != null)
+		if (isDirectTokenCall) {
+			precompileMessage.setRevertReason(revertReason);
+		} else {
 			messageFrame.setRevertReason(revertReason);
+		}
 	}
 
 	public boolean validateKey(final Address target, final HTSPrecompiledContract.ContractActivationTest activationTest) {

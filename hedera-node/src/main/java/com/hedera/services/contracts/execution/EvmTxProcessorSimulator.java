@@ -15,6 +15,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
@@ -32,6 +33,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompileMessage.S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+
 
 @Singleton
 public class EvmTxProcessorSimulator {
@@ -64,6 +66,7 @@ public class EvmTxProcessorSimulator {
 			final long maxGasAllowanceInTinybars,
 			final Account relayer,
 			long tokenId, WorldLedgers ledgers) {
+		Optional<ExceptionalHaltReason> exceptionalHaltReason = Optional.empty();
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 		final boolean isStatic = false;
 		final var redirectBytes = constructRedirectBytes(payload, tokenId);
@@ -130,27 +133,28 @@ public class EvmTxProcessorSimulator {
 				.setLedgers(ledgers)
 				.setSenderAddress(sender.canonicalAddress())
 				.setValue(valueAsWei)
-				.setConsensusTime(consensusTime.getEpochSecond())
-				.setGasAvailable(gasAvailable)
+				.setConsensusTime(consensusTime)
+				.setGasRemaining(gasAvailable)
 				.setInputData(redirectBytes)
 				.build();
 		//call the hts
 		htsPrecompiledContract.callHtsDirectly(message);
 		final var gasRequirement = message.getGasRequired();
 
-		//check gasAvailable < requiredGas
-		if (gasAvailable < gasRequirement) {
-			gasAvailable -= 0;
+		if (message.getGasRemaining() < gasRequirement) {
+			message.decrementRemainingGas(message.getGasRemaining());
+			exceptionalHaltReason = Optional.of(
+					org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS);
 			message.setState(EXCEPTIONAL_HALT);
 		} else if (message.getHtsOutputResult() != null) {
-			gasAvailable -= gasRequirement;
+			message.decrementRemainingGas(gasRequirement);
 			message.setState(COMPLETED_SUCCESS);
 		} else {
 			message.setState(EXCEPTIONAL_HALT);
 		}
 
 		//and calculate the gas used for the hts call
-		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, gasAvailable);
+		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, message.getGasRemaining());
 		final long sbhRefund = updater.getSbhRefund();
 
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
@@ -200,13 +204,12 @@ public class EvmTxProcessorSimulator {
 					mirrorReceiver,
 					stateChanges);
 		} else {
-			//revertReason and haltReason any idea here?
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction,
 					0,
 					gasPrice,
-					Optional.empty(),
-					Optional.empty(),
+					message.getRevertReason(),
+					exceptionalHaltReason,
 					stateChanges);
 		}
 
@@ -229,7 +232,6 @@ public class EvmTxProcessorSimulator {
 		return gasUsedByTransaction;
 	}
 
-	//TODO its always HederaFunctionality.ContractCall for not eth txs?
 	private long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
 		return livePricesSource.currentGasPrice(consensusTime,
 				isEthTxn ? HederaFunctionality.EthereumTransaction : HederaFunctionality.ContractCall);

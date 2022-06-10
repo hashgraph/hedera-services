@@ -1,51 +1,43 @@
 package com.hedera.services.store.contracts.precompile;
 
+import com.google.common.base.Preconditions;
 import com.hedera.services.store.contracts.WorldLedgers;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+
+import java.time.Instant;
+import java.util.Optional;
 
 public class PrecompileMessage {
 
 	private WorldLedgers ledgers;
 	private Address senderAddress;
 	private State state;
+	private Optional<Bytes> revertReason;
 	private Bytes htsOutputResult;
 	private long gasRequired;
 	private Wei value;
-	private long consensusTime;
-	private long gasAvailable;
+	private Instant consensusTime;
+	private long gasRemaining;
 	private Bytes inputData;
+
 
 	public static PrecompileMessage.Builder builder() {
 		return new PrecompileMessage.Builder();
 	}
 
-	private PrecompileMessage(WorldLedgers ledgers, Address senderAddress, Wei value, long consensusTime,
-							  long gasAvailable, Bytes inputData) {
-		this.state = State.NOT_STARTED;
+	private PrecompileMessage(WorldLedgers ledgers, Address senderAddress, Wei value, Instant consensusTime,
+							  Long gasRemaining, Bytes inputData) {
+		state = State.NOT_STARTED;
+		revertReason = Optional.empty();
 		this.ledgers = ledgers;
 		this.senderAddress = senderAddress;
 		this.value = value;
 		this.consensusTime = consensusTime;
-		this.gasAvailable = gasAvailable;
+		this.gasRemaining = gasRemaining;
 		this.inputData = inputData;
-	}
-
-	public State getState() {
-		return state;
-	}
-
-	public void setState(State state) {
-		this.state = state;
-	}
-
-	public void setGasRequired(long gasRequired) {
-		this.gasRequired = gasRequired;
-	}
-
-	public void setHtsOutputResult(Bytes htsOutputResult) {
-		this.htsOutputResult = htsOutputResult;
 	}
 
 	public Wei getValue() {
@@ -65,7 +57,7 @@ public class PrecompileMessage {
 	}
 
 	public long getConsensusTime() {
-		return consensusTime;
+		return consensusTime.getEpochSecond();
 	}
 
 	public Bytes getInputData() {
@@ -76,10 +68,37 @@ public class PrecompileMessage {
 		return ledgers;
 	}
 
-	public long getRemainingGas() {
-		return gasAvailable;
+	public long getGasRemaining() {
+		return gasRemaining;
 	}
 
+	public State getState() {
+		return state;
+	}
+
+	public Optional<Bytes> getRevertReason() {
+		return revertReason;
+	}
+
+	public void setRevertReason(Bytes revertReason) {
+		this.revertReason = Optional.ofNullable(revertReason);
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+
+	public void setGasRequired(long gasRequired) {
+		this.gasRequired = gasRequired;
+	}
+
+	public void setHtsOutputResult(Bytes htsOutputResult) {
+		this.htsOutputResult = htsOutputResult;
+	}
+
+	public void decrementRemainingGas(long amount) {
+		this.gasRemaining -= amount;
+	}
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
 		if (!addressOrAlias.equals(ledgers.canonicalAddress(addressOrAlias))) {
@@ -91,10 +110,9 @@ public class PrecompileMessage {
 	public static class Builder {
 		private WorldLedgers ledgers;
 		private Address senderAddress;
-		private State state;
 		private Wei value;
-		private long consensusTime;
-		private long gasAvailable;
+		private Instant consensusTime;
+		private Long gasRemaining;
 		private Bytes inputData;
 
 		public Builder() {
@@ -110,23 +128,18 @@ public class PrecompileMessage {
 			return this;
 		}
 
-		public Builder setState(State state) {
-			this.state = state;
-			return this;
-		}
-
 		public Builder setValue(Wei value) {
 			this.value = value;
 			return this;
 		}
 
-		public Builder setConsensusTime(long consensusTime) {
+		public Builder setConsensusTime(Instant consensusTime) {
 			this.consensusTime = consensusTime;
 			return this;
 		}
 
-		public Builder setGasAvailable(long gasAvailable) {
-			this.gasAvailable = gasAvailable;
+		public Builder setGasRemaining(Long gasRemaining) {
+			this.gasRemaining = gasRemaining;
 			return this;
 		}
 
@@ -135,13 +148,24 @@ public class PrecompileMessage {
 			return this;
 		}
 
+		private void validate() {
+			Preconditions.checkState(this.gasRemaining != null, "Missing Precompile message getGasRemaining price");
+			Preconditions.checkState(this.inputData != null, "Missing Precompile message input data");
+			Preconditions.checkState(this.senderAddress != null, "Missing Precompile message sender");
+			Preconditions.checkState(this.value != null, "Missing Precompile message  value");
+			Preconditions.checkState(this.consensusTime != null, "Missing Precompile message consensusTime");
+			Preconditions.checkState(this.ledgers != null, "Missing Precompile message Ledgers");
+		}
+
+
 		public PrecompileMessage build() {
+			validate();
 			return new PrecompileMessage(this.ledgers, this.senderAddress, this.value, this.consensusTime,
-					this.gasAvailable, this.inputData);
+					this.gasRemaining, this.inputData);
 		}
 	}
 
-	public static enum State {
+	public enum State {
 		NOT_STARTED,
 		CODE_EXECUTING,
 		CODE_SUCCESS,
@@ -151,7 +175,7 @@ public class PrecompileMessage {
 		COMPLETED_FAILED,
 		COMPLETED_SUCCESS;
 
-		private State() {
+		State() {
 		}
 	}
 }
