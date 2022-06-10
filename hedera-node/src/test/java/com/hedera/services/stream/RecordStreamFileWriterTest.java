@@ -63,6 +63,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
@@ -304,7 +305,7 @@ class RecordStreamFileWriterTest {
 		assertArrayEquals(expectedEntireFileSignature, entireFileSignatureObject.getSignature().toByteArray());
 
 		/* --- assert metadata signature --- */
-		final var expectedMetaHash = getMetadataHashFrom(recordStreamVersion, recordStreamFileProto);
+		final var expectedMetaHash = computeMetadataHashFrom(recordStreamVersion, recordStreamFileProto);
 		final var metadataSignatureObject = signatureFile.getMetadataSignature();
 		final var actualMetaHash = metadataSignatureObject.getHashObject();
 		// assert metadata hash
@@ -329,7 +330,7 @@ class RecordStreamFileWriterTest {
 				.build();
 	}
 
-	private Hash getMetadataHashFrom(final Integer version, final RecordStreamFile recordStreamFile) {
+	private Hash computeMetadataHashFrom(final Integer version, final RecordStreamFile recordStreamFile) {
 		try (final var outputStream = new SerializableDataOutputStream(new HashingOutputStream(messageDigest))) {
 			// digest file header
 			outputStream.writeInt(version);
@@ -339,15 +340,15 @@ class RecordStreamFileWriterTest {
 			outputStream.writeInt(hapiProtoVersion.getPatch());
 
 			// digest startRunningHash
-			outputStream.writeSerializable(
-					new Hash(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384),
-					false
-			);
+			final var startRunningHash =
+					new Hash(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
+			startRunningHash.serialize(outputStream);
+
 			// digest endRunningHash
-			outputStream.writeSerializable(
-					new Hash(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384),
-					false
-			);
+			final var endRunningHash =
+					new Hash(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
+			endRunningHash.serialize(outputStream);
+
 			// digest block number
 			outputStream.writeLong(recordStreamFile.getBlockNumber());
 
@@ -362,10 +363,6 @@ class RecordStreamFileWriterTest {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-		// set initial running hash
-		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-		final var startRunningHash = new Hash(messageDigest.digest());
-		subject.setRunningHash(startRunningHash);
 		// send RSOs for block 1
 		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant);
 		firstBlockRSOs.forEach(subject::addObject);
@@ -395,10 +392,6 @@ class RecordStreamFileWriterTest {
 			// given
 			given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 			final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-			// set initial running hash
-			messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-			final var startRunningHash = new Hash(messageDigest.digest());
-			subject.setRunningHash(startRunningHash);
 			// send RSOs for block 1
 			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant)
 					.forEach(subject::addObject);
@@ -613,10 +606,17 @@ class RecordStreamFileWriterTest {
 	}
 
 	@Test
-	void interruptAndLogWhenWritingStartRunningHashToMetadataStreamThrowsIOException() {
+	void interruptAndLogWhenWritingStartRunningHashToMetadataStreamThrowsIOException() throws IOException {
+		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		final var hashMock = mock(Hash.class);
+		given(hashMock.getDigestType()).willReturn(DigestType.SHA_384);
+		given(hashMock.getValue()).willReturn("hash".getBytes());
+		doThrow(IOException.class).when(hashMock).serialize(any());
+		subject.setRunningHash(hashMock);
 
+		// when
 		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
 				SerializableDataOutputStream.class,
 				(mock, context) -> doThrow(IOException.class).when(mock).writeSerializable(
@@ -625,6 +625,7 @@ class RecordStreamFileWriterTest {
 			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant).forEach(subject::addObject);
 		}
 
+		// then
 		assertTrue(Thread.currentThread().isInterrupted());
 		assertThat(logCaptor.errorLogs(),
 				contains(Matchers.startsWith("begin :: Got IOException when writing startRunningHash to")));

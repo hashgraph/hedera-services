@@ -214,7 +214,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 					// write endRunningHash
 					final var endRunningHash = runningHash.getFutureHash().get();
 					recordStreamFile.setEndObjectRunningHash(toProto(endRunningHash));
-					dosMeta.writeSerializable(endRunningHash, false);
+					endRunningHash.serialize(dosMeta);
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
 							endRunningHash);
 
@@ -301,7 +301,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 			// write startRunningHash
 			final var startRunningHash = runningHash.getFutureHash().get();
 			recordStreamFile.setStartObjectRunningHash(toProto(startRunningHash));
-			dosMeta.writeSerializable(startRunningHash, false);
+			startRunningHash.serialize(dosMeta);
 			LOG.debug(OBJECT_STREAM_FILE.getMarker(), "begin :: write startRunningHash to metadata {}",
 					startRunningHash);
 		} catch (IOException e) {
