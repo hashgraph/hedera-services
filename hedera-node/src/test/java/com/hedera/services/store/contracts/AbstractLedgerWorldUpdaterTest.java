@@ -79,6 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -171,6 +172,36 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.revert();
 
 		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
+	}
+
+	@Test
+	void revertsCommittedChildIdsSourceIdsIfCreated() {
+		final var firstChildSourceId = 123;
+		final var mySourceId = 666;
+		final var secondChildSourceId = 456;
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+		subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
+		subject.revert();
+
+		verify(recordsHistorian).revertChildRecordsFromSource(mySourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(firstChildSourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(secondChildSourceId);
+	}
+
+	@Test
+	void notOkToCommitFromDifferentHistorians() {
+		final var otherHistorian = mock(RecordsHistorian.class);
+		final var firstChildSourceId = 123;
+		final var secondChildSourceId = 456;
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.addCommittedRecordSourceId(secondChildSourceId, otherHistorian));
 	}
 
 	@Test
