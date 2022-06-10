@@ -654,18 +654,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			result = precompile.getFailureResultFor(FAIL_INVALID);
 			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), infoProvider);
 		}
-		if (provider.isDirectTokenCall())
-			return splitter(result, childRecord);
 
-		// This should always have a parent stacked updater
-		final var parentUpdater = updater.parentUpdater();
-		if (parentUpdater.isPresent()) {
-			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-			parent.manageInProgressRecord(recordsHistorian, childRecord, this.transactionBody);
+		if (provider.isDirectTokenCall()) {
+			recordsHistorian.trackFollowingChildRecord(recordsHistorian.nextChildRecordSourceId(), transactionBody, childRecord);
 		} else {
-			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
+			// This should always have a parent stacked updater
+			final var parentUpdater = updater.parentUpdater();
+			if (parentUpdater.isPresent()) {
+				final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
+				parent.manageInProgressRecord(recordsHistorian, childRecord, this.transactionBody);
+			} else {
+				throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
+			}
 		}
-
 		return result;
 	}
 
@@ -694,11 +695,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					null);
 			childRecord.setContractCallResult(evmFnResult);
 		}
-	}
-
-	private Bytes splitter(Bytes result, ExpirableTxnRecord.Builder childRecord) {
-		recordsHistorian.trackFollowingChildRecord(recordsHistorian.nextChildRecordSourceId(), transactionBody, childRecord);
-		return result;
 	}
 
 	/* --- Constructor functional interfaces for mocking --- */
