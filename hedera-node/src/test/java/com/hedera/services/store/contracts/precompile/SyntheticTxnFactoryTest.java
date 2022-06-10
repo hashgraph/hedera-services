@@ -329,7 +329,7 @@ class SyntheticTxnFactoryTest {
 						.build()
 		);
 
-		final var txnBody = subject.nodeStakeUpdate(timestamp, rewardRate, nodeStakes);
+		final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
 
 		assertTrue(txnBody.hasNodeStakeUpdate());
 		assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());

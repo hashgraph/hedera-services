@@ -135,6 +135,7 @@ public class EndOfStakingPeriodCalculator {
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
 					.setStake(merkleStakingInfo.getStake())
+					.setRewardRate(rewardsOwedForEndingPeriod)
 					.setStakeRewarded(merkleStakingInfo.getStakeToReward())
 					.build());
 		}
@@ -143,10 +144,7 @@ public class EndOfStakingPeriodCalculator {
 
 		// Create a synthetic txn with this computed data
 		final var syntheticNodeStakeUpdateTxn =
-				syntheticTxnFactory.nodeStakeUpdate(
-						getMidnightTime(consensusTime),
-						rewardRate,
-						nodeStakingInfos);
+				syntheticTxnFactory.nodeStakeUpdate(getMidnightTime(consensusTime), nodeStakingInfos);
 		recordsHistorian.trackPrecedingChildRecord(
 				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn,
 				creator.createSuccessfulSyntheticRecord(

@@ -113,7 +113,7 @@
 			</snapshots>
 			<id>proto-staging</id>
 			<name>Protobufs staging</name>
-			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1479</url>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1489</url>
 		</repository>
 		<repository>
 			<snapshots>
@@ -233,7 +233,7 @@
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.1-jre</guava.version>
-		<hapi-proto.version>0.27.0-alpha.3</hapi-proto.version>
+		<hapi-proto.version>0.27.0-alpha.4</hapi-proto.version>
 		<headlong.version>6.1.1</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>
