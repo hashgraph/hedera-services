@@ -199,13 +199,10 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 		long perHbarRateThisNode = 0;
 
-		// In a future release, a node that is judged inactive based on,
-		//    node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold
-		// will _also_ have zero pendingRewardRate.
-		// If this node was "active", and it had non-zero stakedReward at the start of the ending staking period,
-		// then it should give rewards for this staking period
-		if ( //node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold &&
-				Math.min(stakeRewardStart, stake) > 0) {
+		// If this node was "active" (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold), and it had
+		// non-zero stakedReward at the start of the ending staking period, then it should give rewards for this
+		// staking period---_unless_ its effective stake was less than minStake (and hence zero here)
+		 if (Math.min(stakeRewardStart, stake) > 0) {
 			perHbarRateThisNode = perHbarRate;
 			// But if the node received more the maximum stakeToReward, "down-scale" its reward rate to
 			// ensure accounts staking to this node will receive a fraction of the total rewards that does

@@ -82,7 +82,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	private boolean rewardsActivated;
 	// The rewards earned by accounts in the change set
 	private long[] rewardsEarned = new long[INITIAL_CHANGE_CAPACITY];
-	// The balance at the start of this reward period for accounts in the change set
+	// The new total stake at start of last rewarded period accounts in the change set
 	private long[] stakeAtStartOfLastRewardedPeriodUpdates = new long[INITIAL_CHANGE_CAPACITY];
 	// The new stakedToMe values of accounts in the change set
 	private long[] stakedToMeUpdates = new long[INITIAL_CHANGE_CAPACITY];
@@ -233,9 +233,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			if (stakeMetaChanged) {
 				stakeAtStartOfLastRewardedPeriodUpdates[i] = NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 			} else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
-//			} else if (rewardsEarned[i] > 0 ||
-//						(rewardsEarned[i] == 0 && account.totalStakeAtStartOfLastRewardedPeriod() == -1
-//							&& stakePeriodManager.currentStakePeriod() > account.getStakePeriodStart())) {
 				stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
 			}
 			stakePeriodStartUpdates[i] = stakePeriodManager.startUpdateFor(
