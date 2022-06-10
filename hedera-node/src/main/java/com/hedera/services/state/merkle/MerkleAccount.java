@@ -469,7 +469,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setDeclineReward(declineReward);
 	}
 
-	public long getStakeAtStartOfLastRewardedPeriod() {
+	public long totalStakeAtStartOfLastRewardedPeriod() {
 		return state().getStakeAtStartOfLastRewardedPeriod();
 	}
 
@@ -485,6 +485,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setStakedToMe(long stakedToMe) {
 		throwIfImmutable("Cannot change this account's stakedToMe if it's immutable");
 		state().setStakedToMe(stakedToMe);
+	}
+
+	public long totalStake() {
+		return state().balance() + state().getStakedToMe();
 	}
 
 	public long getStakePeriodStart() {

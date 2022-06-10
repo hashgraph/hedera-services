@@ -31,6 +31,7 @@ import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -54,9 +55,11 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
@@ -112,8 +115,8 @@ class StakingAccountsCommitInterceptorTest {
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 	private StakingAccountsCommitInterceptor subject;
 
-	private static final long stakePeriodStart = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L),
-			ZONE_UTC).toEpochDay() - 1;
+	private static final long stakePeriodStart =
+			LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay() - 1;
 
 	private final EntityNum node0Id = EntityNum.fromLong(0L);
 	private final EntityNum node1Id = EntityNum.fromLong(1L);
@@ -130,9 +133,9 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void setsNothingIfUpdateIsSentinel() {
-		subject.getStakedToMeUpdates()[2] = -1;
-		subject.getStakePeriodStartUpdates()[2] = -1;
-		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = Long.MIN_VALUE;
+		subject.getStakedToMeUpdates()[2] = NA;
+		subject.getStakePeriodStartUpdates()[2] = NA;
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[2] = NA;
 		final var mockAccount = mock(MerkleAccount.class);
 
 		subject.finish(2, mockAccount);
@@ -153,6 +156,39 @@ class StakingAccountsCommitInterceptorTest {
 
 		verify(mockAccount).setStakedToMe(100 * HBARS_TO_TINYBARS);
 		verify(mockAccount).setStakePeriodStart(123);
+	}
+
+	@Test
+	void changingKeyOnlyIsNotRewardSituation() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(AccountProperty.KEY, EMPTY_KEY);
+		changes.include(counterpartyId, counterparty, keyOnlyChanges);
+		counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0] = NA;
+
+		subject.preview(changes);
+
+		assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+	}
+
+	@Test
+	void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(BALANCE, 2 * counterpartyBalance);
+		changes.include(counterpartyId, counterparty, keyOnlyChanges);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance - 1);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0] = NA;
+
+		subject.preview(changes);
+
+		assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test
@@ -382,8 +418,6 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
-		final Consumer<MerkleAccount> noopFinisherOne = a -> {};
-		final Consumer<MerkleAccount> noopFinisherTwo = a -> {};
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 		final var rewardPayment = HBARS_TO_TINYBARS + 100;
@@ -548,7 +582,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject.setCurStakedId(1L);
 		subject.setNewStakedId(2L);
-		Arrays.fill(subject.getStakedToMeUpdates(), -1);
+		Arrays.fill(subject.getStakedToMeUpdates(), NA);
 		subject.updateStakedToMeSideEffects(
 				counterparty,
 				StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT,

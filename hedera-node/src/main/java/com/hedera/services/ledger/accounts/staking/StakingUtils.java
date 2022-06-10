@@ -35,6 +35,11 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class StakingUtils {
+	// Sentinel value for a field that wasn't applicable to this transaction
+	public static final long NA = Long.MIN_VALUE;
+	// A non-sentinel negative value to indicate an account has not been rewarded since its last stake meta change
+	public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
+
 	private StakingUtils() {
 		throw new UnsupportedOperationException("Utility class");
 	}
@@ -78,7 +83,7 @@ public class StakingUtils {
 			@Nullable final MerkleAccount account,
 			@NotNull final long[] stakedToMeUpdates
 	) {
-		if (stakedToMeUpdates[stakeeI] != -1) {
+		if (stakedToMeUpdates[stakeeI] != NA) {
 			return stakedToMeUpdates[stakeeI];
 		} else {
 			return (account == null) ? 0 : account.getStakedToMe();
@@ -91,7 +96,7 @@ public class StakingUtils {
 			@NotNull final long[] stakedToMeUpdates,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		if (stakedToMeUpdates[stakeeI] != -1) {
+		if (stakedToMeUpdates[stakeeI] != NA) {
 			stakedToMeUpdates[stakeeI] += delta;
 		} else {
 			// In theory this could be null if a multi-step contract operation created an account and then staked to it

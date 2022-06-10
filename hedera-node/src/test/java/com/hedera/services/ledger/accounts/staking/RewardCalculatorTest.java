@@ -84,10 +84,11 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
-		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
 		subject.setRewardsPaidInThisTxn(100L);
 		final var reward = subject.computePendingReward(account);
@@ -152,8 +153,8 @@ class RewardCalculatorTest {
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
-		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(90 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(90 * Units.HBARS_TO_TINYBARS);
 
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 4);
 		// 100 * (6-1) + 90 * (1-0) = 590;
@@ -226,9 +227,9 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
-		given(account.getStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 		given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
 		given(stakePeriodManager.isRewardable(todayNum - 2)).willReturn(true);
 

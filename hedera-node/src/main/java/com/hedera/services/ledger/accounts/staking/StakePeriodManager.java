@@ -35,6 +35,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.hedera.services.utils.Units.MINUTES_TO_SECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -117,7 +118,7 @@ public class StakePeriodManager {
 	 * Given the current and new staked ids for an account, as well as if it received a reward in
 	 * this transaction, returns the new {@code stakePeriodStart} for this account:
 	 * <ol>
-	 *     <li>{@code -1} if the {@code stakePeriodStart} doesn't need to change; or,</li>
+	 *     <li>{@link StakingUtils#NA} if the {@code stakePeriodStart} doesn't need to change; or,</li>
 	 *     <li>The value to which the {@code stakePeriodStart} should be changed.</li>
 	 * </ol>
 	 *
@@ -129,7 +130,7 @@ public class StakePeriodManager {
 	 * 		whether the account was rewarded during the transaction
 	 * @param stakeMetaChanged
 	 * 		whether the account's stake metadata changed
-	 * @return either -1 for no new stakePeriodStart, or the new value
+	 * @return either NA for no new stakePeriodStart, or the new value
 	 */
 	public long startUpdateFor(
 			final long curStakedId,
@@ -137,23 +138,17 @@ public class StakePeriodManager {
 			final boolean rewarded,
 			final boolean stakeMetaChanged
 	) {
-		// There's no reason to update stakedPeriodStart for an account not staking to
-		// a node; the value will never be used, since it cannot be eligible for a reward
+		// Only worthwhile to update stakedPeriodStart for an account staking to a node
 		if (newStakedId < 0) {
 			if (curStakedId >= 0 || stakeMetaChanged) {
 				// We just started staking to a node today
 				return currentStakePeriod();
-			} else {
+			} else if (rewarded) {
 				// If we were just rewarded, stake period start is yesterday
-				if (rewarded) {
-					return currentStakePeriod() - 1;
-				} else {
-					return -1;
-				}
+				return currentStakePeriod() - 1;
 			}
-		} else {
-			return -1;
 		}
+		return NA;
 	}
 
 	@VisibleForTesting

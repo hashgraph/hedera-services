@@ -162,6 +162,11 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void totalStakeIsSumOfBalanceAndStakedToMe() {
+		assertEquals(balance + stakedToMe, subject.totalStake());
+	}
+
+	@Test
 	void equalsIncorporatesRecords() {
 		final var otherRecords = mock(FCQueue.class);
 
@@ -274,7 +279,7 @@ class MerkleAccountTest {
 		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
 		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
 		assertEquals(state.getStakedNum(), subject.getStakedId());
-		assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.getStakeAtStartOfLastRewardedPeriod());
+		assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.totalStakeAtStartOfLastRewardedPeriod());
 	}
 
 	@Test

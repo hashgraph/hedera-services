@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,7 +76,7 @@ class StakePeriodManagerTest {
 	@Test
 	void noPeriodStartChangeIfNotStakingToANode() {
 		givenAgnosticManager();
-		assertEquals(-1, subject.startUpdateFor(0, 0, false, false));
+		assertEquals(NA, subject.startUpdateFor(0, 0, false, false));
 	}
 
 	@Test
@@ -91,7 +92,7 @@ class StakePeriodManagerTest {
 	void noStartPeriodChangeIfStakeMetaUntouched() {
 		givenProdManager();
 
-		assertEquals(-1, subject.startUpdateFor(-1, -1, false, false));
+		assertEquals(NA, subject.startUpdateFor(-1, -1, false, false));
 	}
 
 	@Test

@@ -384,6 +384,5 @@ public final class EntityIdUtils {
 		} else {
 			return EntityNum.fromAccountId(idOrAlias);
 		}
->>>>>>> origin/master
 	}
 }

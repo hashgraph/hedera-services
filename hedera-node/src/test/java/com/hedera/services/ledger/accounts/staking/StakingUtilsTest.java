@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
@@ -113,7 +114,7 @@ public class StakingUtilsTest {
 		changes = randomNotStakeFieldChanges();
 		pendingChanges.clear();
 		pendingChanges.include(counterpartyId, counterparty, changes);
-		stakedToMeUpdates[0] = -1;
+		stakedToMeUpdates[0] = NA;
 
 		updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
 		assertEquals(counterparty.getStakedToMe() + 20L, stakedToMeUpdates[0]);
@@ -125,7 +126,7 @@ public class StakingUtilsTest {
 		final var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		pendingChanges.clear();
 		pendingChanges.include(counterpartyId, null, changes);
-		final var stakedToMeUpdates = new long[] { -1L };
+		final var stakedToMeUpdates = new long[] { NA };
 
 		updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
 		assertEquals(20L, stakedToMeUpdates[0]);
@@ -146,7 +147,7 @@ public class StakingUtilsTest {
 	@Test
 	void getsFieldsCorrectlyIfNotFromChanges() {
 		final var changes = randomNotStakeFieldChanges();
-		final long[] stakedToMeUpdates = new long[] { -1l };
+		final long[] stakedToMeUpdates = new long[] { NA };
 
 		assertEquals(0L, getAccountStakeeNum(changes));
 		assertEquals(0L, getNodeStakeeNum(changes));
@@ -158,7 +159,7 @@ public class StakingUtilsTest {
 	@Test
 	void returnsDefaultsWhenAccountIsNull() {
 		final var changes = randomNotStakeFieldChanges();
-		final long[] stakedToMeUpdates = new long[] { -1l };
+		final long[] stakedToMeUpdates = new long[] { NA };
 
 		assertEquals(0, finalBalanceGiven(null, changes));
 		assertEquals(false, finalDeclineRewardGiven(null, changes));

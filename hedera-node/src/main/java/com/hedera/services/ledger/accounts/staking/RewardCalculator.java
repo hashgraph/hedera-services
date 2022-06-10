@@ -117,26 +117,27 @@ public class RewardCalculator {
 			final MerkleAccount account,
 			final long[] rewardSumHistory,
 			final long currentStakePeriod,
-			final long effectiveStart) {
+			final long effectiveStart
+	) {
 		final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
 
 		if (rewardFrom == 0) {
 			return 0;
 		}
 
-		if (account.getStakeAtStartOfLastRewardedPeriod() != -1) {
-			System.out.println("Indexes we are playing with : " + (rewardFrom-1) + " " + rewardFrom + " 0");
-			return ((account.getStakeAtStartOfLastRewardedPeriod()) / HBARS_TO_TINYBARS)
-					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom]) +
-
-					((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
-							* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
+		if (account.totalStakeAtStartOfLastRewardedPeriod() != -1) {
+			System.out.println("Indexes we are playing with : " + (rewardFrom - 1) + " " + rewardFrom + " 0");
+			// Two-step computation; first, the reward from the last period the account changed its stake in...
+			return account.totalStakeAtStartOfLastRewardedPeriod() / HBARS_TO_TINYBARS
+					* (rewardSumHistory[rewardFrom - 1] - rewardSumHistory[rewardFrom])
+					// ...and second, the reward for all following periods
+					+ account.totalStake() / HBARS_TO_TINYBARS
+					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
 		} else {
 			System.out.println("  * Subtracted rewardSumHistory[" +
 					rewardFrom + "]=" +
 					rewardSumHistory[rewardFrom]);
-			return ((account.getBalance() + account.getStakedToMe()) / HBARS_TO_TINYBARS)
-					* (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
+			return account.totalStake() / HBARS_TO_TINYBARS * (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
 		}
 	}
 
