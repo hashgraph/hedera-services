@@ -54,6 +54,11 @@ public class SendCommand implements Callable<Integer> {
 			paramLabel = "<beneficiary>",
 			description = "account to receive the funds")
 	String beneficiary;
+	@CommandLine.Option(
+			names = { "--memo" },
+			paramLabel = "<memo>",
+			description = "memo to use for the CryptoTransfer")
+	String memo;
 	@CommandLine.Parameters(
 			paramLabel = "<amount_to_send>",
 			description = "how many units of the denomination to send")
@@ -79,7 +84,8 @@ public class SendCommand implements Callable<Integer> {
 				amountInTinybars = amount * TINYBARS_PER_KILOBAR;
 				break;
 		}
-		var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amountInTinybars);
+		final var effectiveMemo = memo != null ? memo : "";
+		var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amountInTinybars, effectiveMemo);
 		delegate.runSuiteSync();
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {

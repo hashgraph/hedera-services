@@ -49,6 +49,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
+import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
@@ -148,6 +149,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -224,6 +226,14 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation expectedEntitiesExist() {
 		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
+	}
+
+	public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc, String name) {
+		return new SpecKeyFromEcdsaFile(loc, name);
+	}
+
+	public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc) {
+		return new SpecKeyFromEcdsaFile(loc, loc);
 	}
 
 	public static SpecKeyFromFile keyFromFile(String name, String flexLoc) {
@@ -729,7 +739,7 @@ public class UtilVerbs {
 
 			HapiFileUpdate updateSubOp = fileUpdate(fileName)
 					.contents(byteString.substring(0, position))
-					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
+					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 					.noLogging()
 					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);
