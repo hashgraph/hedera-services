@@ -35,10 +35,17 @@ public class SendSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SendSuite.class);
 
 	private final Map<String, String> specConfig;
+	private final String memo;
 	private final String beneficiary;
 	private final long tinybarsToSend;
 
-	public SendSuite(final Map<String, String> specConfig, final String beneficiary, final long tinybarsToSend) {
+	public SendSuite(
+			final Map<String, String> specConfig,
+			final String beneficiary,
+			final long tinybarsToSend,
+			final String memo
+	) {
+		this.memo = memo;
 		this.specConfig = specConfig;
 		this.beneficiary = Utils.extractAccount(beneficiary);
 		this.tinybarsToSend = tinybarsToSend;
@@ -54,6 +61,7 @@ public class SendSuite extends HapiApiSuite {
 				.withProperties(specConfig)
 				.given().when().then(
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
+								.memo(memo)
 								.signedBy(DEFAULT_PAYER)
 				);
 	}
