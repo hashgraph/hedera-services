@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
 	protected final WorldLedgers ledgers;
@@ -35,6 +36,7 @@ public abstract class AbstractWritePrecompile implements Precompile {
 	protected final SyntheticTxnFactory syntheticTxnFactory;
 	protected final InfrastructureFactory infrastructureFactory;
 	protected final PrecompilePricingUtils pricingUtils;
+	protected TransactionBody.Builder transactionBody;
 
 	protected AbstractWritePrecompile(
 			final WorldLedgers ledgers,
@@ -49,5 +51,10 @@ public abstract class AbstractWritePrecompile implements Precompile {
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.infrastructureFactory = infrastructureFactory;
 		this.pricingUtils = pricingUtils;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 }

@@ -32,7 +32,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
@@ -55,12 +54,6 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 			final DecodingFacade decoder,
 			final PrecompilePricingUtils pricingUtils) {
 		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
 	}
 
 	@Override

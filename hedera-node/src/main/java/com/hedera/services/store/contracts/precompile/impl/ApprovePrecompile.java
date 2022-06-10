@@ -64,8 +64,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 	private final EncodingFacade encoder;
 	private final Address senderAddress;
 	private final StateView currentView;
-
-	private TransactionBody.Builder transactionBody;
 	private ApproveWrapper approveOp;
 	@Nullable
 	private EntityId operatorId;
@@ -188,11 +186,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 	@Override
 	public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 		return encoder.encodeApprove(true);
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 
 	private boolean isNftApprovalRevocation() {

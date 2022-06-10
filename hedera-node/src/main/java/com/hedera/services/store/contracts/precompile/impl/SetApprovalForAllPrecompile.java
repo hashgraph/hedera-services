@@ -53,7 +53,6 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 	private final TokenID tokenId;
 	private final Address senderAddress;
 	private final StateView currentView;
-	private TransactionBody.Builder transactionBody;
 	private SetApprovalForAllWrapper setApprovalForAllWrapper;
 
 	public SetApprovalForAllPrecompile(
@@ -112,11 +111,6 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 		frame.addLog(getLogForSetApprovalForAll(precompileAddress));
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 
 	@Override

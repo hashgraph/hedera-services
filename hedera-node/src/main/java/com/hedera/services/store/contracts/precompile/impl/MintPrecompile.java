@@ -61,7 +61,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
 	private final RecordsHistorian recordsHistorian;
-	private TransactionBody.Builder transactionBody;
 
 	private MintWrapper mintOp;
 
@@ -137,10 +136,5 @@ public class MintPrecompile extends AbstractWritePrecompile {
 	@Override
 	public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 		return encoder.encodeMintFailure(status);
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 }

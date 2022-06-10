@@ -77,4 +77,10 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 	public boolean shouldAddTraceabilityFieldsToRecord() {
 		return false;
 	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
+	}
 }

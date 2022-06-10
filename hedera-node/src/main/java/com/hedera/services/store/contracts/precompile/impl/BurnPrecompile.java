@@ -57,7 +57,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
-	private TransactionBody.Builder transactionBody;
 	private BurnWrapper burnOp;
 
 	public BurnPrecompile(
@@ -128,10 +127,5 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 	@Override
 	public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 		return encoder.encodeBurnFailure(status);
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 }

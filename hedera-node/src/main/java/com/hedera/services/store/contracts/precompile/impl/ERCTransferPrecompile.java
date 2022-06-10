@@ -97,9 +97,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			}
 			default -> null;
 		};
-		syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+		transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
 		extrapolateDetailsFromSyntheticTxn();
-		return syntheticTxn;
+		return transactionBody;
 	}
 
 	@Override
@@ -168,10 +168,5 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 		} else {
 			return Bytes.EMPTY;
 		}
-	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, syntheticTxn);
 	}
 }

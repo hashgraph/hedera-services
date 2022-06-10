@@ -71,7 +71,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 	private ImpliedTransfers impliedTransfers;
 	private List<BalanceChange> explicitChanges;
 	private HederaTokenStore hederaTokenStore;
-	protected TransactionBody.Builder syntheticTxn;
 	protected List<TokenTransferWrapper> transferOp;
 
 	public TransferPrecompile(
@@ -115,11 +114,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 			case AbiConstants.ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
 			default -> null;
 		};
-		syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+		transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
 		extrapolateDetailsFromSyntheticTxn();
 
 		initializeHederaTokenStore();
-		return syntheticTxn;
+		return transactionBody;
 	}
 
 	@Override
@@ -191,7 +190,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 	}
 
 	protected void extrapolateDetailsFromSyntheticTxn() {
-		final var op = syntheticTxn.getCryptoTransfer();
+		final var op = transactionBody.getCryptoTransfer();
 		impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
 		if (impliedValidity != ResponseCodeEnum.OK) {
 			return;
@@ -289,10 +288,4 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 		}
 		return accumulatedCost;
 	}
-
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, syntheticTxn);
-	}
-
 }
