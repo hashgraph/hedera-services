@@ -90,10 +90,12 @@ public class SendCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - " +
-					"sent " + amountRepr + " " + denomination + " to account " + beneficiary);
+					"sent " + amountRepr + " " + denomination
+					+ " to account " + beneficiary + " with memo: '" + memo + "'");
 		} else {
 			COMMON_MESSAGES.info("FAILED - " +
-					"could not send " + amountRepr + " " + denomination + " to account " + beneficiary);
+					"could not send " + amountRepr + " " + denomination
+					+ " to account " + beneficiary + " with memo: '" + memo + "'");
 			return 1;
 		}
 
