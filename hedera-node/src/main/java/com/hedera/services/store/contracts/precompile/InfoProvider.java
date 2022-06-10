@@ -15,14 +15,12 @@ public class InfoProvider {
 	private MessageFrame messageFrame;
 	private PrecompileMessage precompileMessage;
 	private boolean isDirectTokenCall;
-	private Address senderAddress;
 	private WorldLedgers ledgers;
 	private HederaStackedWorldStateUpdater updater;
 
 	public InfoProvider(boolean isDirectTokenCall, PrecompileMessage precompileMessage, WorldLedgers ledgers) {
 		this.isDirectTokenCall = isDirectTokenCall;
 		this.precompileMessage = precompileMessage;
-		this.senderAddress = precompileMessage.getSenderAddress();
 		this.ledgers = ledgers;
 	}
 
@@ -80,7 +78,7 @@ public class InfoProvider {
 
 	public boolean validateKey(final Address target, final HTSPrecompiledContract.ContractActivationTest activationTest) {
 		if (isDirectTokenCall)
-			return activationTest.apply(false, target, senderAddress, ledgers);
+			return activationTest.apply(false, target, precompileMessage.getSenderAddress(), ledgers);
 
 		final var aliases = updater.aliases();
 		final var recipient = aliases.resolveForEvm(messageFrame

@@ -188,8 +188,7 @@ public class EvmTxProcessorSimulator {
 				stateChanges = Map.of();
 			}
 
-			// Commit top level updater
-			//updater.commit();
+			updater.commit();
 		}
 		if (message.getState() == COMPLETED_SUCCESS) {
 			return TransactionProcessingResult.successful(
