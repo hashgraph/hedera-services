@@ -89,7 +89,7 @@ public class EndOfStakingPeriodCalculator {
 		System.out.println("Processing end of period " + lastPeriod + ", beginning " + thisPeriod);
 		// --- END DEBUG-ONLY CODE ---
 
-		final var stakingInfo = stakingInfoSupplier.get();
+		final var stakingInfos = stakingInfoSupplier.get();
 		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
 
 		// skip end of staking period calculations if the rewards are not yet activated.
@@ -112,31 +112,27 @@ public class EndOfStakingPeriodCalculator {
 				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
 
 		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
-		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
-			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
-			final var endingPeriodStakeRewardStart = merkleStakingInfo.getStakeRewardStart();
+		for (final var nodeNum : stakingInfos.keySet().stream().sorted().toList()) {
+			final var stakingInfo = stakingInfos.getForModify(nodeNum);
 
 			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
-			final var endingPeriodRewardRate = merkleStakingInfo.updateRewardSumHistory(perHbarRate);
+			final var nodeRewardRate = stakingInfo.updateRewardSumHistory(perHbarRate);
+			System.out.println("  (A) Node0 lastPeriodStakedRewardStart was: " + stakingInfo.getStakeRewardStart());
+			final var newStakeRewardStart = stakingInfo.reviewElectionsAndRecomputeStakes();
+			System.out.println("  (B) Node0 curPeriodStakedRewardStart was : " + newStakeRewardStart);
 
-			System.out.println("  (A) Node0 lastPeriodStakedRewardStart was: " + endingPeriodStakeRewardStart);
-			final var beginningPeriodStakeRewardStart =
-					merkleStakingInfo.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
-			System.out.println("  (B) Node0 curPeriodStakedRewardStart was : " + beginningPeriodStakeRewardStart);
+			final var pendingRewardHbars = stakingInfo.stakeRewardStartWithPendingRewards() / HBARS_TO_TINYBARS;
+			final var nodePendingRewards = pendingRewardHbars * nodeRewardRate;
+			merkleNetworkContext.increasePendingRewards(nodePendingRewards);
 
-			final var pendingRewardHbars = endingPeriodStakeRewardStart / HBARS_TO_TINYBARS;
-			final var rewardsOwedForEndingPeriod = pendingRewardHbars * endingPeriodRewardRate;
-			merkleNetworkContext.increasePendingRewards(rewardsOwedForEndingPeriod);
-
-			updatedTotalStakedRewardStart += beginningPeriodStakeRewardStart;
-			updatedTotalStakedStart += merkleStakingInfo.getStake();
-
+			updatedTotalStakedRewardStart += newStakeRewardStart;
+			updatedTotalStakedStart += stakingInfo.getStake();
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
-					.setStake(merkleStakingInfo.getStake())
-					.setRewardRate(rewardsOwedForEndingPeriod)
-					.setStakeRewarded(merkleStakingInfo.getStakeToReward())
+					.setStake(stakingInfo.getStake())
+					.setRewardRate(nodePendingRewards)
+					.setStakeRewarded(stakingInfo.getStakeToReward())
 					.build());
 		}
 		merkleNetworkContext.setTotalStakedRewardStart(updatedTotalStakedRewardStart);

@@ -65,6 +65,7 @@ class MerkleStakingInfoTest {
 	private final long stakeToReward = 345L;
 	private final long stakeToNotReward = 155L;
 	private final long stakeRewardStart = 1234L;
+	private final long unclaimedStakeRewardStart = stakeRewardStart / 10;
 	private final long stake = 500L;
 	private final long[] rewardSumHistory = new long[] { 2L, 1L, 0L };
 	private final EntityNum key = EntityNum.fromInt(number);
@@ -72,8 +73,19 @@ class MerkleStakingInfoTest {
 	@BeforeEach
 	void setUp() {
 		subject = new MerkleStakingInfo(
-				minStake, maxStake, stakeToReward, stakeToNotReward, stakeRewardStart, stake, rewardSumHistory);
+				minStake, maxStake, stakeToReward, stakeToNotReward,
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject.setKey(key);
+	}
+
+	@Test
+	void managesUnclaimedStakeAsExpected() {
+		assertEquals(unclaimedStakeRewardStart, subject.getUnclaimedStakeRewardStart());
+		subject.resetUnclaimedStakeRewardStart();
+		assertEquals(0, subject.getUnclaimedStakeRewardStart());
+		subject.increaseUnclaimedStakeRewardStart(666);
+		assertEquals(666, subject.getUnclaimedStakeRewardStart());
+		assertEquals(stakeRewardStart - 666, subject.stakeRewardStartWithPendingRewards());
 	}
 
 	@Test
@@ -83,33 +95,37 @@ class MerkleStakingInfoTest {
 		final long otherStakeToReward = 344L;
 		final long otherStakeToNotReward = 156L;
 		final long otherStakeRewardStart = 1235L;
+		final long otherUnclaimedStakeRewardStart = otherStakeRewardStart / 10 - 1;
 		final long otherStake = 501L;
 		final long[] otherRewardSumHistory = new long[] { 3L, 2L };
 		final var subject2 = new MerkleStakingInfo(otherMinStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject2.setKey(key);
 		final var subject3 = new MerkleStakingInfo(minStake, otherMaxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject3.setKey(key);
 		final var subject4 = new MerkleStakingInfo(minStake, maxStake, otherStakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject4.setKey(key);
 		final var subject5 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, otherStakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject5.setKey(key);
 		final var subject6 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				otherStakeRewardStart, stake, rewardSumHistory);
+				otherStakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		subject6.setKey(key);
 		final var subject7 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, otherStake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, otherStake, rewardSumHistory);
 		subject7.setKey(key);
 		final var subject8 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, otherRewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, otherRewardSumHistory);
 		subject8.setKey(key);
+		final var subject10 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
+				stakeRewardStart, otherUnclaimedStakeRewardStart, stake, rewardSumHistory);
+		subject10.setKey(key);
 		final var subject9 = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		final var identical = new MerkleStakingInfo(minStake, maxStake, stakeToReward, stakeToNotReward,
-				stakeRewardStart, stake, rewardSumHistory);
+				stakeRewardStart, unclaimedStakeRewardStart, stake, rewardSumHistory);
 		identical.setKey(key);
 
 		assertNotEquals(subject, new Object());
@@ -121,6 +137,7 @@ class MerkleStakingInfoTest {
 		assertNotEquals(subject, subject7);
 		assertNotEquals(subject, subject8);
 		assertNotEquals(subject, subject9);
+		assertNotEquals(subject, subject10);
 		assertEquals(subject, identical);
 		assertEquals(subject, subject);
 
@@ -242,5 +259,4 @@ class MerkleStakingInfoTest {
 		assertArrayEquals(expected, actual.getValue());
 
 	}
-
 }

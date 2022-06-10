@@ -65,14 +65,15 @@ class PendingRewardsManagementTest {
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
-		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
+		given(info.stakeRewardStartWithPendingRewards()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
 		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
 				.willReturn(lastPeriodRewardRate);
-		given(info.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+		given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 
-		verify(networkCtx).increasePendingRewards((stakeRewardStart / 100_000_000) * lastPeriodRewardRate);
+		verify(networkCtx).increasePendingRewards(
+				(stakeRewardStart - unclaimedStakeRewardStart) / 100_000_000 * lastPeriodRewardRate);
 	}
 
 	@Test
@@ -91,6 +92,7 @@ class PendingRewardsManagementTest {
 
 	private static final long rewardRate = 100_000_000;
 	private static final long stakeRewardStart = 666L * 100_000_000L;
+	private static final long unclaimedStakeRewardStart = stakeRewardStart / 10;
 	private static final long updatedStakeRewardStart = 777L * 100_000_000L;
 	private static final long lastPeriodRewardRate = 100_000L;
 	private static final long totalStakedRewardStart = 100_000_000_000L;

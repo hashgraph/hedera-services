@@ -146,8 +146,11 @@ class EndOfStakingPeriodCalculatorTest {
 	final long stakeToNotReward2 = 200L;
 	final long stakeToNotReward3 = 20L;
 	final long stakedRewardStart1 = 1_000L;
+	final long unclaimedStakedRewardStart1 = stakedRewardStart1 / 10;
 	final long stakedRewardStart2 = 700L;
+	final long unclaimedStakedRewardStart2 = stakedRewardStart2 / 10;
 	final long stakedRewardStart3 = 10_000L;
+	final long unclaimedStakedRewardStart3 = stakedRewardStart3 / 10;
 	final long stake1 = 2_000L;
 	final long stake2 = 750L;
 	final long stake3 = 75L;
@@ -158,9 +161,12 @@ class EndOfStakingPeriodCalculatorTest {
 	final EntityNum nodeNum2 = EntityNum.fromInt(1);
 	final EntityNum nodeNum3 = EntityNum.fromInt(2);
 	final MerkleStakingInfo stakingInfo1 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward1, stakeToNotReward1, stakedRewardStart1, stake1, rewardSumHistory1);
+			minStake, maxStake, stakeToReward1, stakeToNotReward1,
+			stakedRewardStart1, unclaimedStakedRewardStart1, stake1, rewardSumHistory1);
 	final MerkleStakingInfo stakingInfo2 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward2, stakeToNotReward2, stakedRewardStart2, stake2, rewardSumHistory2);
+			minStake, maxStake, stakeToReward2, stakeToNotReward2,
+			stakedRewardStart2, unclaimedStakedRewardStart2, stake2, rewardSumHistory2);
 	final MerkleStakingInfo stakingInfo3 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward3, stakeToNotReward3, stakedRewardStart3, stake3, rewardSumHistory3);
+			minStake, maxStake, stakeToReward3, stakeToNotReward3,
+			stakedRewardStart3, unclaimedStakedRewardStart3, stake3, rewardSumHistory3);
 }

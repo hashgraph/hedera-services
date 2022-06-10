@@ -61,6 +61,10 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 	private long stakeToReward;
 	private long stakeToNotReward;
 	private long stakeRewardStart;
+	// Tracks how much stake from stakeRewardStart will have unclaimed rewards due to
+	// accounts changing their staking metadata in a way that disqualifies them for the
+	// current period; reset at the beginning of every period
+	private long unclaimedStakeRewardStart;
 	private long stake;
 	private long[] rewardSumHistory;
 	@Nullable
@@ -85,6 +89,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		this.stake = that.stake;
 		this.rewardSumHistory = that.rewardSumHistory;
 		this.historyHash = that.historyHash;
+		this.unclaimedStakeRewardStart = that.unclaimedStakeRewardStart;
 	}
 
 	public void removeRewardStake(final long amount, final boolean declinedReward) {
@@ -103,7 +108,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 	}
 
-	public long reviewElectionsFromJustFinishedPeriodAndRecomputeStakes() {
+	public long reviewElectionsAndRecomputeStakes() {
 		final var totalStake = stakeToReward + stakeToNotReward;
 		if (totalStake > maxStake) {
 			setStake(maxStake);
@@ -114,6 +119,62 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 		stakeRewardStart = stakeToReward;
 		return stakeRewardStart;
+	}
+
+	public long updateRewardSumHistory(final long perHbarRate) {
+		assertMutableRewardSumHistory();
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
+		for (int i = rewardSumHistory.length - 1; i > 0; i--) {
+			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
+		}
+		rewardSumHistory[0] -= droppedRewardSum;
+
+		long perHbarRateThisNode = 0;
+		// If this node was "active"---i.e., node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold---and
+		// it had non-zero stakedReward at the start of the ending staking period, then it should give rewards
+		// for this staking period, unless its effective stake was less than minStake, and hence zero here (note
+		// the active condition will only be checked in a later release)
+		if (Math.min(stakeRewardStart, stake) > 0) {
+			perHbarRateThisNode = perHbarRate;
+			// But if the node received more the maximum stakeToReward, "down-scale" its reward rate to
+			// ensure accounts staking to this node will receive a fraction of the total rewards that does
+			// not exceed node.stakedRewardStart / totalStakedRewardedStart
+			if (stakeToReward > maxStake) {
+				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeToReward;
+			}
+		}
+		rewardSumHistory[0] += perHbarRateThisNode;
+
+		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
+		// reset the historyHash
+		historyHash = null;
+		return perHbarRateThisNode;
+	}
+
+	public void clearRewardSumHistory() {
+		assertMutableRewardSumHistory();
+		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
+		// reset rewardSumHistory array.
+		Arrays.fill(rewardSumHistory, 0);
+		// reset the historyHash
+		historyHash = null;
+	}
+
+	public long getUnclaimedStakeRewardStart() {
+		return unclaimedStakeRewardStart;
+	}
+
+	public void resetUnclaimedStakeRewardStart() {
+		unclaimedStakeRewardStart = 0;
+	}
+
+	public void increaseUnclaimedStakeRewardStart(final long amount) {
+		unclaimedStakeRewardStart += amount;
+	}
+
+	public long stakeRewardStartWithPendingRewards() {
+		return stakeRewardStart - unclaimedStakeRewardStart;
 	}
 
 	public long getMinStake() {
@@ -179,46 +240,6 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		this.rewardSumHistory = rewardSumHistory;
 	}
 
-	public void clearRewardSumHistory() {
-		assertMutableRewardSumHistory();
-		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
-		// reset rewardSumHistory array.
-		Arrays.fill(rewardSumHistory, 0);
-		// reset the historyHash
-		historyHash = null;
-	}
-
-	public long updateRewardSumHistory(final long perHbarRate) {
-		assertMutableRewardSumHistory();
-		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
-		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
-		for (int i = rewardSumHistory.length - 1; i > 0; i--) {
-			rewardSumHistory[i] = rewardSumHistory[i - 1] - droppedRewardSum;
-		}
-		rewardSumHistory[0] -= droppedRewardSum;
-
-		long perHbarRateThisNode = 0;
-
-		// If this node was "active" (node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold), and it had
-		// non-zero stakedReward at the start of the ending staking period, then it should give rewards for this
-		// staking period---_unless_ its effective stake was less than minStake (and hence zero here)
-		 if (Math.min(stakeRewardStart, stake) > 0) {
-			perHbarRateThisNode = perHbarRate;
-			// But if the node received more the maximum stakeToReward, "down-scale" its reward rate to
-			// ensure accounts staking to this node will receive a fraction of the total rewards that does
-			// not exceed node.stakedRewardStart / totalStakedRewardedStart
-			if (stakeToReward > maxStake) {
-				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeToReward;
-			}
-		}
-		rewardSumHistory[0] += perHbarRateThisNode;
-
-		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
-		// reset the historyHash
-		historyHash = null;
-		return perHbarRateThisNode;
-	}
-
 	@Override
 	public MerkleStakingInfo copy() {
 		setImmutable(true);
@@ -233,6 +254,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		stakeToReward = in.readLong();
 		stakeToNotReward = in.readLong();
 		stakeRewardStart = in.readLong();
+		unclaimedStakeRewardStart = in.readLong();
 		stake = in.readLong();
 		rewardSumHistory = in.readLongArray(MAX_REWARD_HISTORY);
 	}
@@ -279,6 +301,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				this.stakeToReward == that.stakeToReward &&
 				this.stakeToNotReward == that.stakeToNotReward &&
 				this.stakeRewardStart == that.stakeRewardStart &&
+				this.unclaimedStakeRewardStart == that.unclaimedStakeRewardStart &&
 				this.stake == that.stake &&
 				Arrays.equals(this.rewardSumHistory, that.rewardSumHistory);
 	}
@@ -291,6 +314,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				stakeToReward,
 				stakeToNotReward,
 				stakeRewardStart,
+				unclaimedStakeRewardStart,
 				stake,
 				Arrays.hashCode(rewardSumHistory)
 		);
@@ -305,6 +329,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				.add("stakeToReward", stakeToReward)
 				.add("stakeToNotReward", stakeToNotReward)
 				.add("stakeRewardStart", stakeRewardStart)
+				.add("unclaimedStakeRewardStart", unclaimedStakeRewardStart)
 				.add("stake", stake)
 				.add("rewardSumHistory", rewardSumHistory)
 				.toString();
@@ -347,6 +372,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		out.writeLong(stakeToReward);
 		out.writeLong(stakeToNotReward);
 		out.writeLong(stakeRewardStart);
+		out.writeLong(unclaimedStakeRewardStart);
 		out.writeLong(stake);
 	}
 
@@ -363,6 +389,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 			final long stakeToReward,
 			final long stakeToNotReward,
 			final long stakeRewardStart,
+			final long unclaimedStakeRewardStart,
 			final long stake,
 			final long[] rewardSumHistory
 	) {
@@ -371,6 +398,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		this.stakeToReward = stakeToReward;
 		this.stakeToNotReward = stakeToNotReward;
 		this.stakeRewardStart = stakeRewardStart;
+		this.unclaimedStakeRewardStart = unclaimedStakeRewardStart;
 		this.stake = stake;
 		this.rewardSumHistory = rewardSumHistory;
 	}

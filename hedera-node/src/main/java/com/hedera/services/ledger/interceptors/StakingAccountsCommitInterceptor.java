@@ -30,7 +30,6 @@ import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -173,9 +172,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final var changes = pendingChanges.changes(i);
 			stakeChangeScenarios[i] = scenarioFor(account, changes);
 
-			if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
-				payReward(i, account, changes, pendingChanges);
-			}
+			payRewardIfPending(i, account, changes, pendingChanges);
 
 			// If we are outside the original change set, this is a "stakee" account; and its stakedId cannot
 			// have changed directly. Furthermore, its balance can only have changed via reward---but if so, it
@@ -273,21 +270,18 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		if (delta != 0) {
 			final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
 			updateStakedToMe(stakeeI, delta, stakedToMeUpdates, pendingChanges);
-			if (!hasBeenRewarded(stakeeI)) {
-				// If this stakee has already been previewed, and wasn't rewarded, we should
-				// re-check if this stakedToMe change has now made it eligible for a reward
-				payRewardIfRewardable(stakeeI, pendingChanges);
-			}
+			// The stakee may now be eligible for a reward
+			payRewardIfPending(stakeeI, pendingChanges.entity(stakeeI), pendingChanges.changes(stakeeI), pendingChanges);
 		}
 	}
 
-	private void payRewardIfRewardable(
+	private void payRewardIfPending(
 			final int i,
+			@NotNull MerkleAccount account,
+			@NotNull Map<AccountProperty, Object> changes,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var account = pendingChanges.entity(i);
-		final var changes = pendingChanges.changes(i);
-		if (isRewardSituation(account, stakedToMeUpdates[i], changes)) {
+		if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
 			payReward(i, account, changes, pendingChanges);
 		}
 	}
@@ -298,9 +292,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			@NotNull Map<AccountProperty, Object> changes,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {
-		final var reward = rewardCalculator.computePendingReward(account);
-		rewardsEarned[i] = reward;
-
+		final var reward = rewardsEarned[i] = rewardCalculator.computePendingReward(account);
 		if (reward > 0) {
 			networkCtx.get().decreasePendingRewards(reward);
 		} else {
@@ -309,7 +301,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 		var receiverNum = numFromCode(account.number());
 		// We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
-		// accounts until we find a non-deleted account to reward
+		// accounts until we find a non-deleted account to try to reward (it may still decline)
 		if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
 			var j = 1;
 			var maxRedirects= txnCtx.numDeletedAccountsAndContracts();
@@ -359,21 +351,19 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final long stakedToMeUpdate,
 			@NotNull final Map<AccountProperty, Object> changes
 	) {
-		return account != null
-				&& rewardsActivated
+		return rewardsActivated
+				&& account != null
 				&& account.getStakedId() < 0
 				&& (stakedToMeUpdate != NA || changes.containsKey(BALANCE) || hasStakeMetaChanges(changes));
 	}
 
 	/**
-	 * Checks and activates staking rewards if the staking funding account balance reaches threshold
+	 * Activates staking rewards (implies the staking funding account balance has reached the start threshold).
 	 */
 	private void activateStakingRewards() {
-		long todayNumber = stakePeriodManager.currentStakePeriod();
-
 		networkCtx.get().setStakingRewardsActivated(true);
 		stakeInfoManager.clearAllRewardHistory();
-		stakeChangeManager.initializeAllStakingStartsTo(todayNumber);
+		stakeChangeManager.initializeAllStakingStartsTo(stakePeriodManager.currentStakePeriod());
 		log.info("Staking rewards are activated and rewardSumHistory arrays for all nodes cleared");
 	}
 
@@ -388,10 +378,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			stakeChangeScenarios = new StakeChangeScenario[maxImpliedChanges];
 			stakePeriodStartUpdates = new long[maxImpliedChanges];
 		}
+		// The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used left-to-right only
 		Arrays.fill(rewardsEarned, NA);
 		Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, NA);
 		Arrays.fill(stakedToMeUpdates, NA);
-		// The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used left-to-right only
 	}
 
 	private void setCurrentAndNewIds(
@@ -434,7 +424,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 	// Only used for unit tests
 	@VisibleForTesting
-	public void setRewardsActivated(final boolean rewardsActivated) {
+	void setRewardsActivated(final boolean rewardsActivated) {
 		this.rewardsActivated = rewardsActivated;
 	}
 

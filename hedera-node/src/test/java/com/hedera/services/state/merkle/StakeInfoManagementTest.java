@@ -8,21 +8,21 @@ class StakeInfoManagementTest {
 	@Test
 	void updatedStakeCannotExceedMaxStake() {
 		final var subject = subjectWith(1L, 10L, 9L, 2L);
-		subject.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
+		subject.reviewElectionsAndRecomputeStakes();
 		assertEquals(10L, subject.getStake());
 	}
 
 	@Test
 	void updatedStakeIsZeroIfBelowMinStake() {
 		final var subject = subjectWith(12L, 20L, 9L, 2L);
-		subject.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
+		subject.reviewElectionsAndRecomputeStakes();
 		assertEquals(0L, subject.getStake());
 	}
 
 	@Test
 	void updatedStakeIsSumOfRewardedAndNotRewardedIfWithinBounds() {
 		final var subject = subjectWith(12L, 20L, 9L, 5L);
-		subject.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
+		subject.reviewElectionsAndRecomputeStakes();
 		assertEquals(14L, subject.getStake());
 	}
 
@@ -30,7 +30,7 @@ class StakeInfoManagementTest {
 	@Test
 	void stakeRewardStartIsMinimumOfStakedToRewardAndNewStake() {
 		final var subject = subjectWith(12L, 20L, 9L, 5L, 16L);
-		final var newStakeRewardStart = subject.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
+		final var newStakeRewardStart = subject.reviewElectionsAndRecomputeStakes();
 		assertEquals(9L, newStakeRewardStart);
 		assertEquals(9L, subject.getStakeRewardStart());
 	}
