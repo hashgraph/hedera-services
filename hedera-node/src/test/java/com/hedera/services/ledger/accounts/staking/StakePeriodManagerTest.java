@@ -24,7 +24,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.Units;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -35,12 +34,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class StakePeriodManagerTest {
@@ -52,22 +50,6 @@ class StakePeriodManagerTest {
 	private PropertySource properties;
 
 	private StakePeriodManager subject;
-
-	@Test
-	void doesntUpdatePendingRewardsIfNothingOffered() {
-		givenAgnosticManager();
-		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(-1, -1, -1, account);
-		verifyNoInteractions(networkCtx);
-	}
-
-	@Test
-	void updatesPendingRewardsIfSomethingOffered() {
-		givenAgnosticManager();
-		final var account = MerkleAccountFactory.newAccount().get();
-		subject.updatePendingRewardsGiven(123, -1, -1, account);
-		verify(networkCtx).decreasePendingRewards(123);
-	}
 
 	@Test
 	void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {
@@ -94,7 +76,7 @@ class StakePeriodManagerTest {
 	@Test
 	void noPeriodStartChangeIfNotStakingToANode() {
 		givenAgnosticManager();
-		assertEquals(-1, subject.startUpdateFor(0, 0, false, false));
+		assertEquals(NA, subject.startUpdateFor(0, 0, false, false));
 	}
 
 	@Test
@@ -110,7 +92,7 @@ class StakePeriodManagerTest {
 	void noStartPeriodChangeIfStakeMetaUntouched() {
 		givenProdManager();
 
-		assertEquals(-1, subject.startUpdateFor(-1, -1, false, false));
+		assertEquals(NA, subject.startUpdateFor(-1, -1, false, false));
 	}
 
 	@Test
@@ -128,7 +110,7 @@ class StakePeriodManagerTest {
 		// UTC day 14
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
-		assertEquals(13, subject.startUpdateFor(-1, -1, true, true));
+		assertEquals(13, subject.startUpdateFor(-1, -1, true, false));
 	}
 
 	@Test
@@ -153,6 +135,13 @@ class StakePeriodManagerTest {
 		givenDevManager();
 		final var approx = Instant.now().getEpochSecond() / 60;
 		assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
+	}
+
+	@Test
+	void estimatesBasedOnInstantNowForProdProperty() {
+		givenProdManager();
+		final var expected = LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
+		assertEquals(expected, subject.estimatedCurrentStakePeriod());
 	}
 
 	@Test

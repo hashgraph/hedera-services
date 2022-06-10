@@ -100,21 +100,31 @@ public class EndOfStakingPeriodCalculator {
 		long updatedTotalStakedStart = 0L;
 		long updatedTotalStakedRewardStart = 0L;
 
+		// total tinybars of reward earned by all stakers for the staking period now ending
 		final var rewardRate = effectiveRateForCurrentPeriod();
+
 		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
 		System.out.println("  - totalStakedRewardStart for ending period: " + totalStakedRewardStart);
+
+		// The tinybars earned per hbar for stakers who are staked to a node whose total
+		// stakedRewarded is in the range [minStake, maxStake]
+		final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 :
+				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+
 		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
 		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
 			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
 			final var endingPeriodStakeRewardStart = merkleStakingInfo.getStakeRewardStart();
+
 			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
-			final var endingPeriodRewardRate =
-					merkleStakingInfo.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+			final var endingPeriodRewardRate = merkleStakingInfo.updateRewardSumHistory(perHbarRate);
+
 			System.out.println("  (A) Node0 lastPeriodStakedRewardStart was: " + endingPeriodStakeRewardStart);
 			final var beginningPeriodStakeRewardStart =
 					merkleStakingInfo.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
 			System.out.println("  (B) Node0 curPeriodStakedRewardStart was : " + beginningPeriodStakeRewardStart);
+
 			final var pendingRewardHbars = endingPeriodStakeRewardStart / HBARS_TO_TINYBARS;
 			final var rewardsOwedForEndingPeriod = pendingRewardHbars * endingPeriodRewardRate;
 			merkleNetworkContext.increasePendingRewards(rewardsOwedForEndingPeriod);

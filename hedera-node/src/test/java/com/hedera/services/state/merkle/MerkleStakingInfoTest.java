@@ -176,11 +176,9 @@ class MerkleStakingInfoTest {
 
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+		final var rewardRate = 1_000_000;
 
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 1_000_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(1_000_000L, pendingRewardRate);
@@ -188,12 +186,10 @@ class MerkleStakingInfoTest {
 
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMaxStake() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
+		final var rewardRate = 1_000_000;
 
 		subject.setStakeToReward(2 * subject.getMaxStake());
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(500_000L, pendingRewardRate);
@@ -202,24 +198,9 @@ class MerkleStakingInfoTest {
 	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStake() {
 		final var rewardRate = 1_000_000_000;
-		// Total staked is 1000 hbar
-		final var totalStakedRewardStart = 1_000L * 100_000_000L;
 
 		subject.setStakeRewardStart(0);
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
-
-		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
-		assertEquals(0L, pendingRewardRate);
-	}
-
-	@Test
-	void updatesRewardsSumHistoryAsExpectedForTotalStakeLessThanOneHbar() {
-		final var rewardRate = 1_000_000_000;
-		// Total staked is less than an hbar
-		final var totalStakedRewardStart = 100_000_000L - 1;
-
-		subject.setStakeRewardStart(Long.MAX_VALUE);
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, totalStakedRewardStart);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(0L, pendingRewardRate);

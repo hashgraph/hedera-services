@@ -43,6 +43,7 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
+import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
@@ -170,7 +171,8 @@ class UtilsConstructorTest {
 			EthereumLogicModule.class,
 			ReleaseTwentySevenMigration.class,
 			ByteUtils.class,
-			Units.class
+			Units.class,
+			StakingUtils.class
 	));
 
 	@Test

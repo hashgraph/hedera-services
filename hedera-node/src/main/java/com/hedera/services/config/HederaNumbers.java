@@ -36,7 +36,6 @@ public class HederaNumbers {
 
 	private long realm = UNKNOWN_NUMBER;
 	private long shard = UNKNOWN_NUMBER;
-	private long numReservedSystemEntities = UNKNOWN_NUMBER;
 
 	@Inject
 	public HederaNumbers(@CompositeProps PropertySource properties) {

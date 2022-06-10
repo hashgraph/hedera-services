@@ -84,9 +84,11 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.getStakedNodeAddressBookId()).willReturn(0L);
 		given(account.isDeclinedReward()).willReturn(false);
 		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 
 		subject.setRewardsPaidInThisTxn(100L);
 		final var reward = subject.computePendingReward(account);
@@ -141,6 +143,43 @@ class RewardCalculatorTest {
 	}
 
 	@Test
+	void calculatesRewardsAppropriatelyIfBalanceAtStartOfLastRewardedPeriodIsSet() {
+		rewardHistory[0] = 6;
+		rewardHistory[1] = 3;
+		rewardHistory[2] = 1;
+		setUpMocks();
+		given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
+		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
+		given(account.getStakedNodeAddressBookId()).willReturn(0L);
+		given(account.isDeclinedReward()).willReturn(false);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(90 * Units.HBARS_TO_TINYBARS);
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 4);
+		// 100 * (6-1) + 90 * (1-0) = 590;
+		var reward = subject.computePendingReward(account);
+
+		assertEquals(590, reward);
+
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 3);
+		// 100 * (6-3) + 90 * (3-1) = 480;
+		reward = subject.computePendingReward(account);
+
+		assertEquals(480, reward);
+
+		given(account.getStakePeriodStart()).willReturn(todayNumber - 2);
+		// 100 * (6-6) + 90 * (6-3) = 270;
+		reward = subject.computePendingReward(account);
+
+		assertEquals(270, reward);
+		rewardHistory[0] = 5;
+		rewardHistory[1] = 0;
+		rewardHistory[2] = 0;
+	}
+
+	@Test
 	void adjustsEffectiveStartIfBeforeAnYear() throws NegativeAccountBalanceException {
 		setUpMocks();
 		final var changes = new HashMap<AccountProperty, Object>();
@@ -188,8 +227,9 @@ class RewardCalculatorTest {
 		given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
 		given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
 		given(account.getStakePeriodStart()).willReturn(todayNum - 2);
+		given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
 		given(account.isDeclinedReward()).willReturn(false);
-		given(account.getBalance()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+		given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
 		given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
 		given(stakePeriodManager.isRewardable(todayNum - 2)).willReturn(true);
 

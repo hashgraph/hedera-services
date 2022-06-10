@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Set;
 
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -65,7 +66,8 @@ class PendingRewardsManagementTest {
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.getStakeRewardStart()).willReturn(stakeRewardStart);
-		given(info.updateRewardSumHistory(rewardRate, totalStakedRewardStart)).willReturn(lastPeriodRewardRate);
+		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
+				.willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
