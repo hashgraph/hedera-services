@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -38,6 +39,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,15 +56,14 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
@@ -93,6 +94,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -119,7 +121,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -191,24 +192,31 @@ class TransferPrecompilesTest {
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private ApproveAllowanceChecks allowanceChecks;
-	@Mock
-	private CreateChecks createChecks;
-	@Mock
-	private DeleteAllowanceChecks deleteAllowanceChecks;
-	@Mock
 	private InfrastructureFactory infrastructureFactory;
+	@Mock
+	private AssetsLoader assetLoader;
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+
+	private static final long TEST_SERVICE_FEE = 5_000_000;
+	private static final long TEST_NETWORK_FEE = 400_000;
+	private static final long TEST_NODE_FEE = 300_000;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
@@ -221,6 +229,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferFailsFastGivenWrongSyntheticValidity() {
+		givenPricingUtilsContext();
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
@@ -257,7 +266,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -275,6 +284,7 @@ class TransferPrecompilesTest {
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -314,7 +324,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -327,6 +337,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void abortsIfImpliedCustomFeesCannotBeAssessed() {
+		givenPricingUtilsContext();
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -365,7 +376,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
 		assertEquals(statusResult, result);
@@ -377,6 +388,7 @@ class TransferPrecompilesTest {
 
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
@@ -415,7 +427,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -432,6 +444,7 @@ class TransferPrecompilesTest {
 
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(syntheticTxnFactory.createCryptoTransfer(
@@ -470,7 +483,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -487,6 +500,7 @@ class TransferPrecompilesTest {
 
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -526,7 +540,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -548,6 +562,7 @@ class TransferPrecompilesTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -587,7 +602,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -615,6 +630,7 @@ class TransferPrecompilesTest {
 
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -652,7 +668,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -670,6 +686,7 @@ class TransferPrecompilesTest {
 
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
@@ -711,7 +728,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -732,10 +749,141 @@ class TransferPrecompilesTest {
 		given(decoder.decodeTransferToken(eq(pretendArguments), any())).willThrow(new IndexOutOfBoundsException());
 
 		subject.prepareFields(frame);
-		var result = subject.compute(pretendArguments, frame);
+		var result = subject.computePrecompile(pretendArguments, frame);
 
 		assertDoesNotThrow(() -> subject.prepareComputation(pretendArguments, a -> a));
-		assertNull(result);
+		assertEquals(Bytes.EMPTY, result.getOutput());
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferNfts() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferNft() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForSingleCryptoTransfer() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForMultipleCryptoTransfers() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(
+						CryptoTransferTransactionBody.newBuilder()
+								.addTokenTransfers(TokenTransferList.newBuilder().build())
+								.addTokenTransfers(TokenTransferList.newBuilder().build())
+								.addTokenTransfers(TokenTransferList.newBuilder().build())));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferMultipleTokens() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferSingleToken() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
 	}
 
 	private void givenFrameContext() {
@@ -769,5 +917,16 @@ class TransferPrecompilesTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	}
+
+	private void givenMinFrameContext() {
+		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 }

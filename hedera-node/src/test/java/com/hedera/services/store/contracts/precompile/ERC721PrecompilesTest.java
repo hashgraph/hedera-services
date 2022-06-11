@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -37,6 +38,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -76,6 +78,7 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -206,13 +209,9 @@ class ERC721PrecompilesTest {
     @Mock
     private StateView stateView;
     @Mock
-    private PrecompilePricingUtils precompilePricingUtils;
-    @Mock
     private FeeObject mockFeeObject;
     @Mock
     private UsagePricesProvider resourceCosts;
-    @Mock
-    private CreateChecks createChecks;
     @Mock
     private InfrastructureFactory infrastructureFactory;
     @Mock
@@ -243,12 +242,22 @@ class ERC721PrecompilesTest {
 	private HederaTokenStore hederaTokenStore;
 	@Mock
 	private TypedTokenStore tokenStore;
+	@Mock
+	private AssetsLoader assetLoader;
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
 
 	private HTSPrecompiledContract subject;
 	private MockedStatic<EntityIdUtils> entityIdUtils;
 
     @BeforeEach
     void setUp() {
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
         subject = new HTSPrecompiledContract(
                 dynamicProperties, gasCalculator,
                 recordsHistorian, sigsVerifier, decoder, encoder,
@@ -293,7 +302,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -322,7 +331,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -366,7 +375,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -403,7 +412,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -420,6 +429,7 @@ class ERC721PrecompilesTest {
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -428,15 +438,16 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -463,7 +474,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -474,6 +485,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveRevertsIfItFails() {
+		givenPricingUtilsContext();
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -485,15 +497,16 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -521,7 +534,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
@@ -531,6 +544,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0WhenOwner() {
+		givenPricingUtilsContext();
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -542,16 +556,17 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
 		given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(List.of(
@@ -579,7 +594,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -590,6 +605,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0WhenGrantedApproveForAll() {
+		givenPricingUtilsContext();
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -601,16 +617,17 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
 		given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList()).willReturn(List.of(
@@ -637,7 +654,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -648,23 +665,24 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void approveSpender0NoGoodIfNotPermissioned() {
+		givenPricingUtilsContext();
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
 				.willReturn(mockSynthBodyBuilder);
-
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -675,7 +693,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
@@ -685,6 +703,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void validatesImpliedNftApprovalDeletion() {
+		givenPricingUtilsContext();
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -694,16 +713,17 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(syntheticTxnFactory.createDeleteAllowance(APPROVE_WRAPPER_0, EntityId.fromGrpcAccountId(sender)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoDeleteAllowance()).willReturn(cryptoDeleteAllowanceTransactionBody);
 
@@ -726,7 +746,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var expectedFailure = EncodingFacade.resultFrom(INVALID_ALLOWANCE_OWNER_ID);
 
@@ -736,6 +756,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void allowanceValidation() {
+		givenPricingUtilsContext();
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -748,17 +769,18 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 		given(syntheticTxnFactory.createNonfungibleApproval(eq(APPROVE_WRAPPER), any(), any()))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -779,7 +801,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -795,6 +817,7 @@ class ERC721PrecompilesTest {
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -803,15 +826,16 @@ class ERC721PrecompilesTest {
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
-		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getNodeFee())
-				.willReturn(1L);
-		given(mockFeeObject.getNetworkFee())
-				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
 		given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, token))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
@@ -834,7 +858,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -874,7 +898,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -903,7 +927,7 @@ class ERC721PrecompilesTest {
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(successResult, result);
@@ -936,7 +960,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then:
 		assertEquals(successResult, subject.computeInternal(frame));
@@ -971,7 +995,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -1001,7 +1025,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(missingNftResult, result);
@@ -1012,6 +1036,7 @@ class ERC721PrecompilesTest {
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
@@ -1055,7 +1080,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -1072,6 +1097,7 @@ class ERC721PrecompilesTest {
 		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
@@ -1109,7 +1135,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -1138,7 +1164,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(failResult, result);
@@ -1168,7 +1194,7 @@ class ERC721PrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -1233,6 +1259,12 @@ class ERC721PrecompilesTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 	}
 
 	public static final IsApproveForAllWrapper IS_APPROVE_FOR_ALL_WRAPPER = new IsApproveForAllWrapper(sender,

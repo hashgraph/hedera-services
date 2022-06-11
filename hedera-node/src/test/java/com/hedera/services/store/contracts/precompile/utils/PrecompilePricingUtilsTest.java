@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,10 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Provider;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -52,13 +56,19 @@ class PrecompilePricingUtilsTest {
 	private HbarCentExchange exchange;
 	@Mock
 	private ExchangeRate exchangeRate;
+	@Mock
+	private Provider<FeeCalculator> feeCalculator;
+	@Mock
+	private UsagePricesProvider resourceCosts;
+	@Mock
+	private StateView stateView;
 
 
 	@Test
 	void failsToLoadCanonicalPrices() throws IOException {
 		given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
 		assertThrows(PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-				() -> new PrecompilePricingUtils(assetLoader, exchange));
+				() -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, stateView));
 	}
 
 	@Test
@@ -70,7 +80,7 @@ class PrecompilePricingUtilsTest {
 		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
 		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-		PrecompilePricingUtils subject = new PrecompilePricingUtils(assetLoader, exchange);
+		PrecompilePricingUtils subject = new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, stateView);
 
 		long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE,
 				timestamp);

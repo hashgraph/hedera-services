@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,14 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -34,6 +36,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -49,12 +52,12 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.DissociateLogic;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -69,20 +72,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
@@ -160,24 +170,34 @@ class DissociatePrecompilesTest {
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private CreateChecks createChecks;
-	@Mock
 	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private ApproveAllowanceChecks allowanceChecks;
+	private AssetsLoader assetLoader;
 	@Mock
-	private DeleteAllowanceChecks deleteAllowanceChecks;
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+
+	private static final long TEST_SERVICE_FEE = 5_000_000;
+	private static final long TEST_NETWORK_FEE = 400_000;
+	private static final long TEST_NODE_FEE = 300_000;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws IOException {
+		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+		canonicalPrices.put(HederaFunctionality.TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
@@ -191,6 +211,7 @@ class DissociatePrecompilesTest {
 	@Test
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
+		givenPricingUtilsContext();
 		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
@@ -211,7 +232,7 @@ class DissociatePrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -224,6 +245,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
@@ -250,7 +272,7 @@ class DissociatePrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		subject.computeInternal(frame);
 
 		// then:
@@ -261,6 +283,7 @@ class DissociatePrecompilesTest {
 	void computeMultiDissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS);
 
 		given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
@@ -290,7 +313,7 @@ class DissociatePrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -298,6 +321,56 @@ class DissociatePrecompilesTest {
 		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForDissociateTokens() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS));
+		given(decoder.decodeMultipleDissociations(any(), any())).willReturn(multiDissociateOp);
+		final var builder = TokenDissociateTransactionBody.newBuilder();
+		builder.setAccount(multiDissociateOp.accountId());
+		builder.addAllTokens(multiDissociateOp.tokenIds());
+		given(syntheticTxnFactory.createDissociate(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenDissociate(builder));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForDissociateToken() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN));
+		given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
+		given(syntheticTxnFactory.createDissociate(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenDissociate(
+						TokenDissociateTransactionBody.newBuilder()
+								.build()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
 	}
 
 	private void givenFrameContext() {
@@ -325,5 +398,17 @@ class DissociatePrecompilesTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	}
+
+	private void givenMinFrameContext() {
+		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 }

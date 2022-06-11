@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -40,6 +41,7 @@ import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -59,8 +61,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
@@ -114,7 +114,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -173,8 +172,6 @@ class CreatePrecompileTest {
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
@@ -189,9 +186,9 @@ class CreatePrecompileTest {
 	@Mock
 	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private ApproveAllowanceChecks allowanceChecks;
+	private AssetsLoader assetLoader;
 	@Mock
-	private DeleteAllowanceChecks deleteAllowanceChecks;
+	private HbarCentExchange exchange;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -208,6 +205,7 @@ class CreatePrecompileTest {
 
 	@BeforeEach
 	void setUp() {
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
@@ -765,10 +763,10 @@ class CreatePrecompileTest {
 
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(successResult, result);
+		assertEquals(successResult, result.getOutput());
 		// and:
 		verify(createLogic).create(
 				pendingChildConsTime.getEpochSecond(),
@@ -789,10 +787,10 @@ class CreatePrecompileTest {
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertNull(result);
+		assertEquals(Bytes.EMPTY, result.getOutput());
 
 		// and
 		verify(frame).setRevertReason(any());
