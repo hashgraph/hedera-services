@@ -286,6 +286,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 					}
 
 					op = contractCall(CONTRACT, "addNthFib", targets, fibN.get())
+							.noLogging()
 							.payingWith(civilian)
 							.gas(GAS_TO_OFFER)
 							.hasPrecheckFrom(OK, BUSY)
