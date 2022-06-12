@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -69,7 +70,8 @@ class CallLocalExecutorTest {
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 	Id callerID = new Id(0, 0, 123);
 	Id contractID = new Id(0, 0, 456);
-
+	Id senderID = new Id(0, 0, 789);
+	
 	ContractCallLocalQuery query;
 
 	@Mock
@@ -100,6 +102,34 @@ class CallLocalExecutorTest {
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
 						callerID.asEvmAddress(), new TreeMap<>());
 		final var expected = response(OK, transactionProcessingResult);
+
+		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
+
+		// when:
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+
+		// then:
+		assertEquals(expected, result);
+	}
+
+	@Test
+	void processingSuccessfulWithAccountAlias() {
+		// setup:
+		final var senderAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+		final var sender = AccountID.newBuilder()
+				.setAlias(ByteString.copyFrom(senderAlias))
+				.build();
+		query = localCallQuery(contractID.asGrpcContract(), sender, ANSWER_ONLY);
+		given(aliasManager.lookupIdBy(sender.getAlias())).willReturn(EntityNum.fromLong(senderID.num()));
+
+		final var transactionProcessingResult = TransactionProcessingResult
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
+						callerID.asEvmAddress(), new TreeMap<>());
+		final var expected = response(OK,transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
@@ -254,6 +284,18 @@ class CallLocalExecutorTest {
 				.setHeader(QueryHeader.newBuilder()
 						.setResponseType(type)
 						.build())
+				.build();
+	}
+
+	private ContractCallLocalQuery localCallQuery(ContractID id, AccountID sender, ResponseType type) {
+		return ContractCallLocalQuery.newBuilder()
+				.setContractID(id)
+				.setGas(gas)
+				.setFunctionParameters(params)
+				.setHeader(QueryHeader.newBuilder()
+						.setResponseType(type)
+						.build())
+				.setSenderId(sender)
 				.build();
 	}
 }

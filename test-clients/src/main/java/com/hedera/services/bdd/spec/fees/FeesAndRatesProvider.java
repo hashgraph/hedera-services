@@ -47,7 +47,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
@@ -214,14 +213,14 @@ public class FeesAndRatesProvider {
 						body(CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
 		Transaction.Builder txnBuilder = txns.getReadyToSign(b -> {
 			b.setTransactionID(TransactionID.newBuilder().mergeFrom(b.getTransactionID())
-					.setAccountID(setup.genesisAccount()));
+					.setAccountID(setup.defaultPayer()));
 			b.setCryptoTransfer(opBody);
 		});
 
 		return keys.signWithFullPrefixEd25519Keys(
 				txnBuilder,
 				List.of(flattenedMaybeList(registry.getKey(setup.defaultPayerName())),
-				flattenedMaybeList(registry.getKey(setup.genesisAccountName()))));
+				flattenedMaybeList(registry.getKey(setup.defaultPayerName()))));
 	}
 
 	private Key flattenedMaybeList(final Key k) {
