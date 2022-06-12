@@ -58,7 +58,7 @@ public final class Ed25519Utils {
 	private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
 	private static final Provider BC_PROVIDER = new BouncyCastleProvider();
 	private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
-	private static final EdDSANamedCurveSpec ED25519_PARAMS =
+	public static final EdDSANamedCurveSpec ED25519_PARAMS =
 			EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 	private static final DrbgParameters.Instantiation DRBG_INSTANTIATION =
 			DrbgParameters.instantiation(256, DrbgParameters.Capability.RESEED_ONLY, null);

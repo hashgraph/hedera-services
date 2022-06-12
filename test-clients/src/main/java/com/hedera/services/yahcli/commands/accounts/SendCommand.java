@@ -20,6 +20,7 @@ package com.hedera.services.yahcli.commands.accounts;
  * ‍
  */
 
+import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.SendSuite;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -43,12 +44,6 @@ public class SendCommand implements Callable<Integer> {
 	@ParentCommand
 	AccountsCommand accountsCommand;
 
-	@CommandLine.Option(names = { "-d", "--denomination" },
-			paramLabel = "denomination",
-			description = "{ tinybar | hbar | kilobar }",
-			defaultValue = "hbar")
-	String denomination;
-
 	@CommandLine.Option(
 			names = { "--to" },
 			paramLabel = "<beneficiary>",
@@ -64,28 +59,19 @@ public class SendCommand implements Callable<Integer> {
 			description = "how many units of the denomination to send")
 	String amountRepr;
 
+	@CommandLine.Option(names = { "-d", "--denomination" },
+			paramLabel = "denomination",
+			description = "{ tinybar | hbar | kilobar }",
+			defaultValue = "hbar")
+	String denomination;
+
 	@Override
 	public Integer call() throws Exception {
 		var config = configFrom(accountsCommand.getYahcli());
 
-		long amount = Long.parseLong(amountRepr.replaceAll("_", ""));
-		long amountInTinybars = amount;
-		switch (denomination) {
-			default:
-				throw new CommandLine.ParameterException(
-						accountsCommand.getYahcli().getSpec().commandLine(),
-						"Denomination must be one of { tinybar | hbar | kilobar }");
-			case "tinybar":
-				break;
-			case "hbar":
-				amountInTinybars = amount * TINYBARS_PER_HBAR;
-				break;
-			case "kilobar":
-				amountInTinybars = amount * TINYBARS_PER_KILOBAR;
-				break;
-		}
+		long amount = validatedTinybars(accountsCommand.getYahcli(), amountRepr, denomination);
 		final var effectiveMemo = memo != null ? memo : "";
-		var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amountInTinybars, effectiveMemo);
+		var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amount, effectiveMemo);
 		delegate.runSuiteSync();
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
@@ -100,5 +86,21 @@ public class SendCommand implements Callable<Integer> {
 		}
 
 		return 0;
+	}
+
+	public static long validatedTinybars(
+			final Yahcli yahcli,
+			final String amountRepr,
+			final String denomination
+	) {
+		final var amount = Long.parseLong(amountRepr.replaceAll("_", ""));
+		return switch (denomination) {
+			default -> throw new CommandLine.ParameterException(
+					yahcli.getSpec().commandLine(),
+					"Denomination must be one of { tinybar | hbar | kilobar }");
+			case "tinybar" -> amount;
+			case "hbar" -> amount * TINYBARS_PER_HBAR;
+			case "kilobar" -> amount * TINYBARS_PER_KILOBAR;
+		};
 	}
 }
