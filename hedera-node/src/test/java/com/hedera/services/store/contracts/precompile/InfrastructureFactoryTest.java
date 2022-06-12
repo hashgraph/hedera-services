@@ -24,12 +24,17 @@ import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculato
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -167,5 +172,36 @@ class InfrastructureFactoryTest {
 		given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
 
 		assertInstanceOf(RedirectViewExecutor.class, subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
+	}
+
+	@Test
+	void canCreateNewApproveAllowanceLogic() {
+		final var accountStore = subject.newAccountStore(accounts);
+		final var tokenStore = subject.newTokenStore(accountStore, subject.newSideEffects(), tokens,
+				uniqueTokens, tokenRels);
+		assertInstanceOf(ApproveAllowanceLogic.class, subject.newApproveAllowanceLogic(accountStore, tokenStore));
+	}
+
+	@Test
+	void canCreateNewDeleteAllowanceLogic() {
+		final var accountStore = subject.newAccountStore(accounts);
+		final var tokenStore = subject.newTokenStore(accountStore, subject.newSideEffects(), tokens,
+				uniqueTokens, tokenRels);
+		assertInstanceOf(DeleteAllowanceLogic.class, subject.newDeleteAllowanceLogic(accountStore, tokenStore));
+	}
+
+	@Test
+	void canCreateNewCreateChecks() {
+		assertInstanceOf(CreateChecks.class, subject.newCreateChecks());
+	}
+
+	@Test
+	void canCreateNewApproveAllowanceChecks() {
+		assertInstanceOf(ApproveAllowanceChecks.class, subject.newApproveAllowanceChecks());
+	}
+
+	@Test
+	void canCreateNewDeleteAllowanceChecks() {
+		assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
 	}
 }

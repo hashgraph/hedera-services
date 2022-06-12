@@ -204,10 +204,8 @@ class BurnPrecompilesTest {
 		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
 				infrastructureFactory);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

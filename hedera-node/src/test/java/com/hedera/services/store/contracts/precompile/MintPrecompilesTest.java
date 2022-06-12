@@ -204,11 +204,8 @@ class MintPrecompilesTest {
 		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
-				infrastructureFactory);
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}

@@ -30,7 +30,6 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -125,7 +124,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final EvmSigsVerifier sigsVerifier;
 	private final RecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final UsagePricesProvider resourceCosts;
 	private final InfrastructureFactory infrastructureFactory;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
@@ -154,7 +152,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Provider<FeeCalculator> feeCalculator,
 			final StateView currentView,
 			final PrecompilePricingUtils precompilePricingUtils,
-			final UsagePricesProvider resourceCosts,
 			final InfrastructureFactory infrastructureFactory
 	) {
 		super("HTS", gasCalculator);
@@ -169,7 +166,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.feeCalculator = feeCalculator;
 		this.currentView = currentView;
 		this.precompilePricingUtils = precompilePricingUtils;
-		this.resourceCosts = resourceCosts;
 		this.infrastructureFactory = infrastructureFactory;
 	}
 

@@ -69,7 +69,6 @@ import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -258,12 +257,10 @@ class ERC721PrecompilesTest {
     @BeforeEach
     void setUp() {
 		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
-        subject = new HTSPrecompiledContract(
-                dynamicProperties, gasCalculator,
-                recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
-                infrastructureFactory);
+		subject = new HTSPrecompiledContract(
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
+				infrastructureFactory);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);

@@ -653,9 +653,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
 								.gas(2_000_000L)
-								.hasKnownStatus(SUCCESS),
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						emptyChildRecordsCheck(firstMintTxn, SUCCESS)
+						emptyChildRecordsCheck(firstMintTxn, CONTRACT_REVERT_EXECUTED)
 				);
 	}
 

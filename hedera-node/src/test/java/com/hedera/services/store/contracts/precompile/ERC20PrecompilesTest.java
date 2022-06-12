@@ -256,10 +256,8 @@ class ERC20PrecompilesTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
         subject = new HTSPrecompiledContract(
-                dynamicProperties, gasCalculator,
-                recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts,
+                dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+                creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
                 infrastructureFactory);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
