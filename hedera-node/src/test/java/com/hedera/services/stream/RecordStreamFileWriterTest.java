@@ -248,7 +248,7 @@ class RecordStreamFileWriterTest {
 		// assert startRunningHash
 		assertEquals(toProto(startRunningHash), recordStreamFile.getStartObjectRunningHash());
 
-		assertTrue(logCaptor.debugLogs().contains("begin :: write startRunningHash to metadata " + startRunningHash));
+		assertTrue(logCaptor.debugLogs().contains("beginNew :: write startRunningHash to metadata " + startRunningHash));
 
 		// assert RSOs
 		assertEquals(blockRSOs.size(), recordStreamFile.getRecordStreamItemsCount());
@@ -553,7 +553,7 @@ class RecordStreamFileWriterTest {
 				.forEach(subject::addObject);
 
 		// then
-		assertTrue(logCaptor.errorLogs().get(0).startsWith("begin :: Got interrupted when getting " +
+		assertTrue(logCaptor.errorLogs().get(0).startsWith("beginNew :: Got interrupted when getting " +
 				"startRunningHash for writing to metadata stream."));
 	}
 
@@ -628,7 +628,7 @@ class RecordStreamFileWriterTest {
 		// then
 		assertTrue(Thread.currentThread().isInterrupted());
 		assertThat(logCaptor.errorLogs(),
-				contains(Matchers.startsWith("begin :: Got IOException when writing startRunningHash to")));
+				contains(Matchers.startsWith("beginNew :: Got IOException when writing startRunningHash to")));
 	}
 
 	@BeforeAll
@@ -659,9 +659,9 @@ class RecordStreamFileWriterTest {
 	private static final int RECORD_STREAM_VERSION = 6;
 	private static final int[] FILE_HEADER_VALUES = {
 			RECORD_STREAM_VERSION,
-			0,  // HAPI Major version
-			27, // HAPI Minor version
-			0   // HAPI Patch version
+			0,  // HAPI proto major version
+			27, // HAPI proto minor version
+			0   // HAPI proto patch version
 	};
 
 	@Mock
