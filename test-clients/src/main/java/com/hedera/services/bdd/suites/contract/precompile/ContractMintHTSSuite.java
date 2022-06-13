@@ -652,10 +652,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(theContract, "mintFungibleToken", amount)
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(2_000_000L)
-								.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+								.gas(2_000_000L),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						emptyChildRecordsCheck(firstMintTxn, CONTRACT_REVERT_EXECUTED)
+						//we don`t have child record because the decoding is failing.
+						// The parent continues execution since we don`t have revert() in the smart contract.
+						emptyChildRecordsCheck(firstMintTxn, SUCCESS)
 				);
 	}
 
