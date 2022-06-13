@@ -342,12 +342,12 @@ class RecordStreamFileWriterTest {
 			// digest startRunningHash
 			final var startRunningHash =
 					new Hash(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-			outputStream.writeByteArray(startRunningHash.getValue());
+			outputStream.write(startRunningHash.getValue());
 
 			// digest endRunningHash
 			final var endRunningHash =
 					new Hash(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-			outputStream.writeByteArray(endRunningHash.getValue());
+			outputStream.write(endRunningHash.getValue());
 
 			// digest block number
 			outputStream.writeLong(recordStreamFile.getBlockNumber());
@@ -614,7 +614,7 @@ class RecordStreamFileWriterTest {
 		// when
 		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
 				SerializableDataOutputStream.class,
-				(mock, context) -> doThrow(IOException.class).when(mock).writeByteArray(any()))
+				(mock, context) -> doThrow(IOException.class).when(mock).write(any()))
 		) {
 			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant).forEach(subject::addObject);
 		}

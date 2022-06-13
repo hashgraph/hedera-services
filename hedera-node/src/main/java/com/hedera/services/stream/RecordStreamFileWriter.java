@@ -225,7 +225,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 					// write endRunningHash
 					final var endRunningHash = runningHash.getFutureHash().get();
 					recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash));
-					dosMeta.writeByteArray(endRunningHash.getValue());
+					dosMeta.write(endRunningHash.getValue());
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
 							endRunningHash);
 
@@ -312,7 +312,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 			// write startRunningHash
 			final var startRunningHash = runningHash.getFutureHash().get();
 			recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash));
-			dosMeta.writeByteArray(startRunningHash.getValue());
+			dosMeta.write(startRunningHash.getValue());
 			LOG.debug(
 					OBJECT_STREAM_FILE.getMarker(),
 					"beginNew :: write startRunningHash to metadata {}", startRunningHash);
