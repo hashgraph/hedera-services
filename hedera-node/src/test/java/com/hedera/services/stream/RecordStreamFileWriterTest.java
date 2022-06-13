@@ -342,12 +342,12 @@ class RecordStreamFileWriterTest {
 			// digest startRunningHash
 			final var startRunningHash =
 					new Hash(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-			startRunningHash.serialize(outputStream);
+			outputStream.writeByteArray(startRunningHash.getValue());
 
 			// digest endRunningHash
 			final var endRunningHash =
 					new Hash(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-			endRunningHash.serialize(outputStream);
+			outputStream.writeByteArray(endRunningHash.getValue());
 
 			// digest block number
 			outputStream.writeLong(recordStreamFile.getBlockNumber());
@@ -606,21 +606,15 @@ class RecordStreamFileWriterTest {
 	}
 
 	@Test
-	void interruptAndLogWhenWritingStartRunningHashToMetadataStreamThrowsIOException() throws IOException {
+	void interruptAndLogWhenWritingStartRunningHashToMetadataStreamThrowsIOException() {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-		final var hashMock = mock(Hash.class);
-		given(hashMock.getDigestType()).willReturn(DigestType.SHA_384);
-		given(hashMock.getValue()).willReturn("hash".getBytes());
-		doThrow(IOException.class).when(hashMock).serialize(any());
-		subject.setRunningHash(hashMock);
 
 		// when
 		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
 				SerializableDataOutputStream.class,
-				(mock, context) -> doThrow(IOException.class).when(mock).writeSerializable(
-						any(SelfSerializable.class), anyBoolean()))
+				(mock, context) -> doThrow(IOException.class).when(mock).writeByteArray(any()))
 		) {
 			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant).forEach(subject::addObject);
 		}
