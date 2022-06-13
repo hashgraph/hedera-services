@@ -1,133 +1,29 @@
 package com.hedera.services.store.contracts.precompile;
 
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldLedgers;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import java.util.Optional;
+public interface InfoProvider {
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+	Wei getValue();
 
-public class InfoProvider {
-	private MessageFrame messageFrame;
-	private PrecompileMessage precompileMessage;
-	private boolean isDirectTokenCall;
-	private WorldLedgers ledgers;
-	private HederaStackedWorldStateUpdater updater;
+	MessageFrame getMessageFrame();
+	long getRemainingGas();
 
-	public InfoProvider(boolean isDirectTokenCall, PrecompileMessage precompileMessage, WorldLedgers ledgers) {
-		this.isDirectTokenCall = isDirectTokenCall;
-		this.precompileMessage = precompileMessage;
-		this.ledgers = ledgers;
-	}
+	boolean isDirectTokenCall();
 
-	public InfoProvider(MessageFrame messageFrame, WorldLedgers ledgers, HederaStackedWorldStateUpdater updater) {
-		this(false, null, ledgers);
-		this.messageFrame = messageFrame;
-		this.updater = updater;
-	}
+	long getTimestamp();
 
-	public MessageFrame getMessageFrame() {
-		return messageFrame;
-	}
+	Bytes getInputData();
 
-	public PrecompileMessage getPrecompileMessage() {
-		return precompileMessage;
-	}
+	void setState(MessageFrame.State state);
 
-	public Wei getValue() {
-		return isDirectTokenCall ? precompileMessage.getValue()
-				: messageFrame.getValue();
-	}
+	void setRevertReason(Bytes revertReason);
 
-	public long getRemainingGas() {
-		return isDirectTokenCall ? precompileMessage.getGasRemaining()
-				: messageFrame.getRemainingGas();
-	}
+	boolean validateKey(final Address target,
+						final HTSPrecompiledContract.ContractActivationTest activationTest);
 
-	public boolean isDirectTokenCall() {
-		return isDirectTokenCall;
-	}
-
-	public long getTimestamp() {
-		return isDirectTokenCall ? precompileMessage.getConsensusTime()
-				: messageFrame.getBlockValues().getTimestamp();
-	}
-
-	public Bytes getInputData() {
-		return isDirectTokenCall ? precompileMessage.getInputData()
-				: messageFrame.getInputData();
-	}
-
-	public void setState(MessageFrame.State state) {
-		if (isDirectTokenCall) {
-			precompileMessage.setState(PrecompileMessage.State.valueOf(state.name()));
-		} else {
-			messageFrame.setState(state);
-		}
-	}
-
-	public void setRevertReason(Bytes revertReason) {
-		if (isDirectTokenCall) {
-			precompileMessage.setRevertReason(revertReason);
-		} else {
-			messageFrame.setRevertReason(revertReason);
-		}
-	}
-
-	public boolean validateKey(final Address target, final HTSPrecompiledContract.ContractActivationTest activationTest) {
-		if (isDirectTokenCall)
-			return activationTest.apply(false, target, precompileMessage.getSenderAddress(), ledgers);
-
-		final var aliases = updater.aliases();
-		final var recipient = aliases.resolveForEvm(messageFrame
-				.getRecipientAddress());
-		final var sender = aliases.resolveForEvm(messageFrame.getSenderAddress());
-		if (messageFrame == null) {
-			return activationTest.apply(false, target, sender, ledgers);
-		} else if (isDelegateCall(messageFrame) && !isToken(messageFrame, recipient)) {
-			return activationTest.apply(true, target, recipient, ledgers);
-		} else {
-			final var parentFrame = getParentFrame(messageFrame);
-			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender,
-					ledgers);
-		}
-	}
-
-	private boolean isDelegateCall(final MessageFrame frame) {
-		final var contract = frame.getContractAddress();
-		final var recipient = frame.getRecipientAddress();
-		return !contract.equals(recipient);
-	}
-
-	private boolean isToken(final MessageFrame frame, final Address address) {
-		final var account = frame.getWorldUpdater().get(address);
-		if (account != null) {
-			return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
-		}
-		return false;
-	}
-
-	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {
-		final var it = currentFrame.getMessageFrameStack().descendingIterator();
-
-		if (it.hasNext()) {
-			it.next();
-		} else {
-			return Optional.empty();
-		}
-
-		MessageFrame parentFrame;
-		if (it.hasNext()) {
-			parentFrame = it.next();
-		} else {
-			return Optional.empty();
-		}
-
-		return Optional.of(parentFrame);
-	}
 
 }

@@ -389,7 +389,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		prepareFields(frame);
 		prepareComputation(input, updater::unaliased);
-		infoProvider = new InfoProvider(frame, ledgers, updater);
+		infoProvider = new EVMInfoProvider(frame, ledgers, updater);
 		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {
 			frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
@@ -494,7 +494,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		sideEffectsTracker = sideEffectsFactory.get();
 		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
 		senderAddress = message.getSenderAddress();
-		infoProvider = new InfoProvider(true, message, ledgers);
+		infoProvider = new DirectCallsInfoProvider(message, ledgers);
+
 		precompile = tokenRedirectCase(inputData);
 
 		if (precompile != null) {
@@ -506,13 +507,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			computeGasRequirement(now);
 		}
 
-		message.setGasRequired(gasRequirement);
 		message.setHtsOutputResult(computeInternal(infoProvider));
-//		var record = creator.createSuccessfulSyntheticRecord(
-//				precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
-//
-//		message.setGasRequired(gasRequirement);
-//		message.setHtsOutputResult(precompile.getSuccessResultFor(record));
+		message.setGasRequired(gasRequirement);
 	}
 
 	private Precompile tokenRedirectCase(Bytes input) {
@@ -2015,33 +2011,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	/**
-	 * Checks if a key implicit in a target address is active in the current frame using a {@link
-	 * ContractActivationTest}.
-	 * <p>
-	 * We massage the current frame a bit to ensure that a precompile being executed via delegate call is tested as
-	 * such.
-	 * There are three cases.
-	 * <ol>
-	 *     <li>The precompile is being executed via a delegate call, so the current frame's <b>recipient</b>
-	 *     (not sender) is really the "active" contract that can match a {@code delegatable_contract_id} key; or,
-	 *     <li>The precompile is being executed via a call, but the calling code was executed via
-	 *     a delegate call, so although the current frame's sender <b>is</b> the "active" contract, it must
-	 *     be evaluated using an activation test that restricts to {@code delegatable_contract_id} keys; or,</li>
-	 *     <li>The precompile is being executed via a call, and the calling code is being executed as
-	 *     part of a non-delegate call.</li>
-	 * </ol>
-	 * <p>
-	 * Note that because the {@link DecodingFacade} converts every address to its "mirror" address form
-	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
-	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
-	 *
-	 * @param frame          current frame
-	 * @param target         the element to test for key activation, in standard form
-	 * @param activationTest the function which should be invoked for key validation
-	 * @return whether the implied key is active
-	 */
-
 	boolean isToken(final MessageFrame frame, final Address address) {
 		final var account = frame.getWorldUpdater().get(address);
 		if (account != null) {
@@ -2077,31 +2046,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				Address target,
 				Address activeContract,
 				WorldLedgers worldLedgers);
-	}
-
-	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {
-		final var it = currentFrame.getMessageFrameStack().descendingIterator();
-
-		if (it.hasNext()) {
-			it.next();
-		} else {
-			return Optional.empty();
-		}
-
-		MessageFrame parentFrame;
-		if (it.hasNext()) {
-			parentFrame = it.next();
-		} else {
-			return Optional.empty();
-		}
-
-		return Optional.of(parentFrame);
-	}
-
-	private boolean isDelegateCall(final MessageFrame frame) {
-		final var contract = frame.getContractAddress();
-		final var recipient = frame.getRecipientAddress();
-		return !contract.equals(recipient);
 	}
 
 	private long defaultGas() {
