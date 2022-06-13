@@ -39,6 +39,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
 
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 @Command(

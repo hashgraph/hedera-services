@@ -83,7 +83,6 @@ class AbstractStackedLedgerUpdaterTest {
 	@Mock
 	private RecordsHistorian recordsHistorian;
 
-
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
 
