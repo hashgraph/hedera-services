@@ -74,6 +74,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -664,6 +665,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("autoAssociationWorksForContracts")
 				.given(
+						overriding("contracts.allowAutoAssociations", "true"),
 						newKeyNamed("supplyKey"),
 						uploadInitCode(theContract),
 						contractCreate(theContract)

@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -77,6 +79,8 @@ class HederaStackedWorldStateUpdaterTest {
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private HederaAccountCustomizer accountCustomizer;
 	@Mock
 	private GlobalDynamicProperties globalDynamicProperties;
 
@@ -178,12 +182,15 @@ class HederaStackedWorldStateUpdaterTest {
 			given(trackingLedgers.aliases()).willReturn(aliases);
 			given(trackingLedgers.accounts()).willReturn(accountsLedger);
 			given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+			given(customizerFactory.apply(any(), any())).willReturn(customizer);
+			given(customizer.accountCustomizer()).willReturn(accountCustomizer);
 
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
 			assertSame(address, created);
 			assertEquals(addressId, subject.idOfLastNewAddress());
 			verify(aliases).link(alias, address);
+			verify(accountCustomizer).maxAutomaticAssociations(0);
 		});
 	}
 
@@ -205,6 +212,7 @@ class HederaStackedWorldStateUpdaterTest {
 			given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
 			given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
 			given(accountsLedger.exists(targetId)).willReturn(true);
+			given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
@@ -223,6 +231,7 @@ class HederaStackedWorldStateUpdaterTest {
 			given(aliases.isInUse(alias)).willReturn(true);
 			given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
 			given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
+			given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
@@ -240,6 +249,7 @@ class HederaStackedWorldStateUpdaterTest {
 					ContractID.newBuilder().setContractNum(1).build())));
 			given(trackingLedgers.aliases()).willReturn(aliases);
 			given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
+			given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 			final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 			given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
@@ -279,6 +289,7 @@ class HederaStackedWorldStateUpdaterTest {
 			given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
 			given(trackingLedgers.aliases()).willReturn(aliases);
 			given(trackingLedgers.accounts()).willReturn(accountsLedger);
+			given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 			final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 			given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);

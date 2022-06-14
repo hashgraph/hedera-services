@@ -161,6 +161,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		// --- Do the business logic ---
 		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+		if (!properties.areContractAutoAssociationsEnabled()) {
+			hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+		}
 		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {
