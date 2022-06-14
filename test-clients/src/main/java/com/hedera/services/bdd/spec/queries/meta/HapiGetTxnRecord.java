@@ -522,6 +522,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 		}
 		if (!paidStakingRewards.isEmpty()) {
+			if (actualRecord.getPaidStakingRewardsList().isEmpty()) {
+				Assertions.fail("PaidStakingRewards not present in the txnRecord");
+			}
+
 			for (int i = 0; i < paidStakingRewards.size(); i++) {
 				final var expectedRewards = paidStakingRewards.get(i);
 				final var actualPaidRewards = actualRecord.getPaidStakingRewards(i);

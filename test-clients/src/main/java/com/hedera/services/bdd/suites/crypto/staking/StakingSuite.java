@@ -32,14 +32,19 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
 public class StakingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(StakingSuite.class);
@@ -67,13 +72,113 @@ public class StakingSuite extends HapiApiSuite {
 //						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
 //						rewardsOfDeletedAreRedirectedToBeneficiary(),
-						rewardsWorkAsexpected(),
+//						rewardsWorkAsExpected(),
+				        rewardPaymentsNotRepeatedInSamePeriod(),
 //						getInfoQueriesReturnsPendingRewards()
 				}
 		);
 	}
 
-	private HapiApiSpec rewardsWorkAsexpected() {
+	private HapiApiSpec rewardPaymentsNotRepeatedInSamePeriod() {
+		final var alice = "alice";
+		final var bob = "bob";
+		final var stakingRewardRate = 100_000_000_000L;
+		final long expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HUNDRED_HBARS; // stakedToMe by contract and alice balance
+		final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, stakingRewardRate)); // should be 10 * ONE_HBAR;
+		final long expectedRewardSumHistory = expectedRewardRate / (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE);// should be 9900990L
+		final long expectedPendingRewards = expectedRewardSumHistory * (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE); // should be 999999990L
+
+		return defaultHapiSpec("rewardPaymentsNotRepeatedInSamePeriod")
+				.given(
+						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
+						overriding("staking.rewardRate", "" + stakingRewardRate),
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, STAKING_REWARD, 10 * ONE_HBAR))
+				).when(
+						cryptoCreate(alice)
+								.stakedNodeId(0)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
+
+						uploadInitCode(PAYABLE_CONTRACT),
+						contractCreate(PAYABLE_CONTRACT)
+								.balance(ONE_HUNDRED_HBARS)
+								.stakedNodeId(0),
+						sleepFor(60_000)
+				).then(
+						/* --- staking will be activated, so child record is generated at end of staking period. But
+						since rewardsSunHistory will be 0 for the first staking period after rewards are activated ,
+						paid_rewards will be 0 --- */
+						contractUpdate(PAYABLE_CONTRACT)
+								.newStakedNodeId(1L)
+								.hasPrecheck(INVALID_STAKING_ID),
+						contractUpdate(PAYABLE_CONTRACT)
+								.newStakedAccountId(bob)
+								.via("firstTxn"),
+						getTxnRecord("firstTxn")
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+								.hasPaidStakingRewards(List.of()),
+
+						/* --- staking is activated, so child record is generated at end of staking period.
+						Since rewardsSumHistory is updated during the previous staking period after rewards are
+						activated ,paid_rewards will be non-empty in this record --- */
+						sleepFor(60_000),
+						cryptoTransfer(
+								tinyBarsFromTo(bob, alice, ONE_HBAR))
+								.payingWith(bob)
+								.via("secondTransfer"),
+						getTxnRecord("secondTransfer")
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasStakingFeesPaid()
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+								.hasPaidStakingRewards(List.of(Pair.of(alice, 500000000L)))
+								.logged(),
+						cryptoTransfer(
+								tinyBarsFromTo(bob, alice, ONE_HBAR))
+								.payingWith(bob)
+								.via("thirdTransfer"),
+						getTxnRecord("thirdTransfer")
+								.andAllChildRecords()
+								.hasChildRecordCount(0)
+								.hasStakingFeesPaid()
+								.hasPaidStakingRewards(List.of())
+								.logged(),
+						cryptoUpdate(alice).newStakedAccountId(bob).via("updateAccountTxn"),
+						getTxnRecord("updateAccountTxn").logged()
+								.andAllChildRecords()
+								.hasChildRecordCount(0)
+								.stakingFeeExempted()
+								.hasPaidStakingRewards(List.of()),
+
+						/* Within the same period rewards are not awarded twice */
+						sleepFor(60_000),
+						contractUpdate(PAYABLE_CONTRACT)
+								.payingWith(bob)
+								.newStakedNodeId(0L)
+								.via("contractUpdateTxn"),
+						getTxnRecord("contractUpdateTxn")
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasStakingFeesPaid()
+								.hasPaidStakingRewards(List.of()) // no rewards since it was staking to account
+								.logged(),
+						contractUpdate(PAYABLE_CONTRACT)
+								.payingWith(bob)
+								.newDeclinedReward(true)
+								.via("contractUpdateTxn2"),
+						getTxnRecord("contractUpdateTxn2")
+								.andAllChildRecords()
+								.hasChildRecordCount(0)
+								.hasStakingFeesPaid()
+								.hasPaidStakingRewards(List.of())
+								.logged()
+				);
+	}
+
+	private HapiApiSpec rewardsWorkAsExpected() {
 		final var alice = "alice";
 		final var bob = "bob";
 		final var stakingRewardRate = 100_000_000_000L;
@@ -82,7 +187,7 @@ public class StakingSuite extends HapiApiSuite {
 		final long expectedRewardSumHistory = expectedRewardRate / (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE);// should be 9900990L
 		final long expectedPendingRewards = expectedRewardSumHistory * (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE); // should be 999999990L
 
-		return defaultHapiSpec("rewardsNotEnabledBeforeActivation")
+		return defaultHapiSpec("rewardsWorkAsExpected")
 				.given(
 						overriding("staking.startThreshold", "" + 10 * ONE_HBAR),
 						overriding("staking.rewardRate", "" + stakingRewardRate),
@@ -119,8 +224,7 @@ public class StakingSuite extends HapiApiSuite {
 								.stakingFeeExempted()
 								.hasChildRecordCount(1)
 								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
-								.hasPaidStakingRewards(List.of())
-								.logged(),
+								.hasPaidStakingRewards(List.of()),
 
 						/* --- staking is activated, so child record is generated at end of staking period.
 						Since rewardsSunHistory is updated during the previous staking period after rewards are
@@ -136,8 +240,7 @@ public class StakingSuite extends HapiApiSuite {
 								.hasChildRecordCount(1)
 								.hasStakingFeesPaid()
 								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
-								.hasPaidStakingRewards(List.of(Pair.of(alice, expectedPendingRewards)))
-								.logged(),
+								.hasPaidStakingRewards(List.of(Pair.of(alice, expectedPendingRewards))),
 
 						/* Within the same period rewards are not awarded twice */
 						cryptoTransfer(
@@ -149,7 +252,6 @@ public class StakingSuite extends HapiApiSuite {
 								.hasChildRecordCount(0)
 								.hasStakingFeesPaid()
 								.hasPaidStakingRewards(List.of())
-								.logged()
 				);
 	}
 

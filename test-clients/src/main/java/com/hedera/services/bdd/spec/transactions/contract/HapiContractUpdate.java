@@ -71,7 +71,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
 	private Optional<String> bytecode = Optional.empty();
-	private Optional<AccountID> newStakedAccountId = Optional.empty();
+	private Optional<String> newStakedAccountId = Optional.empty();
 	private Optional<Long> newStakedNodeId = Optional.empty();
 	private boolean newDeclinedReward = false;
 	private Optional<String> newProxy = Optional.empty();
@@ -156,7 +156,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 
 	public HapiContractUpdate newStakedAccountId(String idLit) {
-		newStakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		newStakedAccountId = Optional.of(idLit);
 		return this;
 	}
 
@@ -223,7 +223,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 									b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 
 							if (newStakedAccountId.isPresent()) {
-								b.setStakedAccountId(newStakedAccountId.get());
+								b.setStakedAccountId(asId(newStakedAccountId.get(), spec));
 							} else if (newStakedNodeId.isPresent()) {
 								b.setStakedNodeId(newStakedNodeId.get());
 							}
