@@ -343,4 +343,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		});
 		return this;
 	}
+
+	public AccountInfoAsserts pendingRewards(long reward) {
+		registerProvider((spec, o) -> {
+			assertEquals(reward, ((AccountInfo) o).getStakingInfo().getPendingReward(),
+					"Bad pending rewards!");
+		});
+		return this;
+	}
 }
