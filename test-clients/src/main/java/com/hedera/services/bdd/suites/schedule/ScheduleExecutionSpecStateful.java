@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -83,15 +84,15 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				/* Stateful specs from ScheduleExecutionSpecs */
-				scheduledUniqueMintFailsWithNftsDisabled(),
-				scheduledUniqueBurnFailsWithNftsDisabled(),
-				scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
-				executionWithTransferListWrongSizedFails(),
-				executionWithTokenTransferListSizeExceedFails(),
-				suiteCleanup()
-		});
+		return withAndWithoutLongTermEnabled(() -> List.of(
+			/* Stateful specs from ScheduleExecutionSpecs */
+			scheduledUniqueMintFailsWithNftsDisabled(),
+			scheduledUniqueBurnFailsWithNftsDisabled(),
+			scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
+			executionWithTransferListWrongSizedFails(),
+			executionWithTokenTransferListSizeExceedFails(),
+			suiteCleanup()
+		));
 	}
 
 	private HapiApiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {

@@ -89,7 +89,10 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 								.gas(1_000_000L)
 								.payingWith("payerAccount")
 								.hasKnownStatusFrom(SUCCESS, OK),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas",
+								"contracts.maxGas",
+								"contracts.frontendThrottleMaxGasLimit",
+								"contracts.consensusThrottleMaxGasLimit")
 				);
 	}
 
@@ -113,7 +116,10 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 								.gas(1_000_001)
 								.payingWith("payerAccount")
 								.hasPrecheck(BUSY),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas",
+								"contracts.maxGas",
+								"contracts.frontendThrottleMaxGasLimit",
+								"contracts.consensusThrottleMaxGasLimit")
 				);
 	}
 

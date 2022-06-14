@@ -30,6 +30,7 @@ import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.SigObserver;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.transaction.SwirldTransaction;
@@ -70,6 +71,8 @@ class ExpansionTest {
 	@Mock
 	private TransactionSignature secp256k1Sig;
 	@Mock
+	private AccountID payer;
+	@Mock
 	private Expansion.CryptoSigsCreation cryptoSigsCreation;
 
 	private Expansion subject;
@@ -83,19 +86,20 @@ class ExpansionTest {
 	@Test
 	void tracksLinkedRefs() {
 		final var mockTxn = TransactionBody.getDefaultInstance();
-		given(sigReqs.keysForPayer(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(sigReqs.keysForPayer(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willAnswer(invocationOnMock -> {
 					final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
 					linkedRefs.link(1L);
 					return mockPayerResponse;
 				});
-		given(sigReqs.keysForOtherParties(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(sigReqs.keysForOtherParties(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willAnswer(
 						invocationOnMock -> {
 							final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
 							linkedRefs.link(2L);
 							return mockOtherPartiesResponse;
 						});
+		given(txnAccessor.getPayer()).willReturn(payer);
 		given(txnAccessor.getTxn()).willReturn(mockTxn);
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
 
@@ -146,11 +150,12 @@ class ExpansionTest {
 	private void setupDegenerateMocks() {
 		final var degenTxnBody = TransactionBody.getDefaultInstance();
 		given(txnAccessor.getTxn()).willReturn(degenTxnBody);
-		given(sigReqs.keysForPayer(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(sigReqs.keysForPayer(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willReturn(mockPayerResponse);
-		given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any()))
+		given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willReturn(mockOtherPartiesResponse);
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
+		given(txnAccessor.getPayer()).willReturn(payer);
 	}
 
 	private static final JKey mockEd25519FullKey = new JEd25519Key("01234567890123456789012345678901".getBytes());

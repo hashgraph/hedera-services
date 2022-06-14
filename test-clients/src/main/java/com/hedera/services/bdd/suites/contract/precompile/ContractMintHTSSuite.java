@@ -116,7 +116,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -605,9 +605,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0),
 						childRecordsCheck(nestedMintTxn, CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(SUCCESS)
-										.newTotalSupply(1)
-										.serialNos(List.of(1L)),
+										.status(REVERTED_SUCCESS)
+										.newTotalSupply(0)
+										.serialNos(List.of()),
 								recordWith()
 										.contractCallResult(
 												resultWith()

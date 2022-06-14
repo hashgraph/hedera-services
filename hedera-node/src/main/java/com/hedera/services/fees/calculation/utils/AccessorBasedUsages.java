@@ -189,7 +189,7 @@ public class AccessorBasedUsages {
 	private void estimateCryptoApproveAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
 			UsageAccumulator into) {
 		final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
-		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
+		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor);
 		cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
 	}
 

@@ -242,7 +242,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			try {
 				final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
 				final var applicablePrices = prices.get(usage.getSubType());
-				return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier());
+				return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
 			} catch (InvalidTxBodyException e) {
 				log.warn(
 						"Argument accessor={} malformed for implied estimator {}!",

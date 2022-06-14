@@ -120,7 +120,7 @@ public abstract class HapiApiSuite {
 		return finalSpecs;
 	}
 
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 

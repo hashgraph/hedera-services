@@ -70,12 +70,14 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
 
 public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
+	// Temporary work-around for CI states with expired system files
+	private static final long MIN_SYS_FILE_LIFETIME = 7776000L;
 	static final Logger log = LogManager.getLogger(HapiFileUpdate.class);
-	static final ByteString RANDOM_4K = ByteString.copyFrom(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K));
 
 	/* WARNING - set to true only if you really want to replace 0.0.121/2! */
 	private boolean dropUnmentionedProperties = false;
@@ -282,6 +284,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		}
 
 		long nl = -1;
+		var fid = TxnUtils.asFileId(file, spec);
 		if (expiryExtension.isPresent()) {
 			try {
 				var oldExpiry = spec.registry().getTimestamp(file).getSeconds();
@@ -289,9 +292,10 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			} catch (Exception ignore) { }
 		} else if (lifetimeSecs.isPresent()) {
 			nl = lifetimeSecs.get();
+		} else if (SYS_FILE_SERDES.containsKey(fid.getFileNum())) {
+			nl = MIN_SYS_FILE_LIFETIME;
 		}
 		final OptionalLong newLifetime = (nl == -1) ? OptionalLong.empty() : OptionalLong.of(nl);
-		var fid = TxnUtils.asFileId(file, spec);
 		FileUpdateTransactionBody opBody = spec
 				.txns()
 				.<FileUpdateTransactionBody, FileUpdateTransactionBody.Builder>body(

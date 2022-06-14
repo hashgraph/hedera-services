@@ -140,7 +140,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -1053,7 +1053,7 @@ public class ContractCallSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(
 														logWith().longAtBytes(depositAmount, 24))))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 
@@ -1074,7 +1074,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(SIMPLE_UPDATE_CONTRACT,
 								"set", 15, 434).gas(350_000L)
 								.hasKnownStatus(CONTRACT_DELETED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 
@@ -1189,7 +1189,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									loggedRecord.getTransactionFee(),
 									"Result size should change the txn fee!");
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit",
+								"contracts.throttle.throttleByGas")
 				);
 	}
 
@@ -1437,7 +1438,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.getContractCallResult().getGasUsed();
 							Assertions.assertEquals(285000, gasUsed);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -1461,7 +1462,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.getContractCallResult().getGasUsed();
 							Assertions.assertTrue(gasUsed > 0L);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -1475,7 +1476,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42).gas(101L
 								)
 								.hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 

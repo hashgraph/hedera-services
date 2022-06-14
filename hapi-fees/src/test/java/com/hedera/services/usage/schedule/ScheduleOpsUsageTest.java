@@ -27,6 +27,7 @@ import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -50,6 +51,7 @@ import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
@@ -58,6 +60,7 @@ import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -79,6 +82,11 @@ class ScheduleOpsUsageTest {
 					.setDeleteAccountID(payer))
 			.build();
 
+	private SchedulableTransactionBody scheduledTxnWithContractCall = SchedulableTransactionBody.newBuilder()
+			.setTransactionFee(1_234_567L)
+			.setContractCall(ContractCallTransactionBody.newBuilder())
+			.build();
+
 	private EstimatorFactory factory;
 	private TxnUsageEstimator base;
 	private Function<ResponseType, QueryUsage> queryEstimatorFactory;
@@ -91,6 +99,7 @@ class ScheduleOpsUsageTest {
 	void setUp() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
+		given(base.get(SCHEDULE_CREATE_CONTRACT_CALL)).willReturn(A_USAGES_MATRIX);
 		queryBase = mock(QueryUsage.class);
 		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
 
@@ -99,8 +108,8 @@ class ScheduleOpsUsageTest {
 		queryEstimatorFactory = mock(Function.class);
 		given(queryEstimatorFactory.apply(ANSWER_STATE_PROOF)).willReturn(queryBase);
 
-		ScheduleOpsUsage.txnEstimateFactory = factory;
-		ScheduleOpsUsage.queryEstimateFactory = queryEstimatorFactory;
+		subject.txnEstimateFactory = factory;
+		subject.queryEstimateFactory = queryEstimatorFactory;
 	}
 
 	@Test
@@ -153,7 +162,37 @@ class ScheduleOpsUsageTest {
 				+ BASIC_ENTITY_ID_SIZE;
 
 		// when:
-		var estimate = subject.scheduleCreateUsage(creationTxn(), sigUsage, lifetimeSecs);
+		var estimate = subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
+
+		// then:
+		assertSame(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(base).addBpt(expectedTxBytes);
+		verify(base).addRbs(expectedRamBytes * lifetimeSecs);
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void estimatesCreateWithContractCallAsExpected() {
+		// given:
+		var createdCtx = ExtantScheduleContext.newBuilder()
+				.setAdminKey(adminKey)
+				.setMemo(memo)
+				.setScheduledTxn(scheduledTxnWithContractCall)
+				.setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+				.setResolved(false)
+				.build();
+		var expectedRamBytes = createdCtx.nonBaseRb();
+		// and:
+		var expectedTxBytes = scheduledTxnWithContractCall.getSerializedSize()
+				+ getAccountKeyStorageSize(adminKey)
+				+ memo.length()
+				+ BASIC_ENTITY_ID_SIZE;
+
+		// when:
+		var estimate = subject.scheduleCreateUsage(
+				creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
 
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
@@ -195,8 +234,8 @@ class ScheduleOpsUsageTest {
 		return Query.newBuilder().setScheduleGetInfo(op).build();
 	}
 
-	private TransactionBody creationTxn() {
-		return baseTxn().setScheduleCreate(creationOp()).build();
+	private TransactionBody creationTxn(SchedulableTransactionBody body) {
+		return baseTxn().setScheduleCreate(creationOp(body)).build();
 	}
 
 	private TransactionBody deletionTxn() {
@@ -214,12 +253,12 @@ class ScheduleOpsUsageTest {
 						.build());
 	}
 
-	private ScheduleCreateTransactionBody creationOp() {
+	private ScheduleCreateTransactionBody creationOp(SchedulableTransactionBody body) {
 		return ScheduleCreateTransactionBody.newBuilder()
 				.setMemo(memo)
 				.setAdminKey(adminKey)
 				.setPayerAccountID(payer)
-				.setScheduledTransactionBody(scheduledTxn)
+				.setScheduledTransactionBody(body)
 				.build();
 	}
 
