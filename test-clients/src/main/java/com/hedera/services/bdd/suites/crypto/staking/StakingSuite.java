@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 public class StakingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(StakingSuite.class);
 	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
-	public static final long HBARS_TO_TINYBARS = 100_000_000L;
 
 	public static void main(String... args) {
 		new StakingSuite().runSuiteAsync();
@@ -68,20 +67,20 @@ public class StakingSuite extends HapiApiSuite {
 //						sendToCarol(),
 //						endOfStakingPeriodRecTest(),
 //						rewardsOfDeletedAreRedirectedToBeneficiary(),
-						rewardsNotEnabledBeforeActivation(),
+						rewardsWorkAsexpected(),
 //						getInfoQueriesReturnsPendingRewards()
 				}
 		);
 	}
 
-	private HapiApiSpec rewardsNotEnabledBeforeActivation() {
+	private HapiApiSpec rewardsWorkAsexpected() {
 		final var alice = "alice";
 		final var bob = "bob";
 		final var stakingRewardRate = 100_000_000_000L;
-//		final var expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HBAR;
-//		final var expectedRewardRate = 10 * ONE_HBAR; // should be Math.max(0, Math.min(10 * ONE_HBAR, stakingRewardRate))
-//		final var expectedRewardSumHistory = 9900990L; // should be expectedRewardRate / expectedTotalStakedRewardStart / HBARS_TO_TINYBARS
-		final var expectedPendingRewards = 999999990L; // expectedRewardSumHistory * (expectedTotalStakedRewardStart / HBARS_TO_TINYBARS;
+		final long expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HBAR;
+		final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, stakingRewardRate)); // should be 10 * ONE_HBAR;
+		final long expectedRewardSumHistory = expectedRewardRate / (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE);// should be 9900990L
+		final long expectedPendingRewards = expectedRewardSumHistory * (expectedTotalStakedRewardStart / TINY_PARTS_PER_WHOLE); // should be 999999990L
 
 		return defaultHapiSpec("rewardsNotEnabledBeforeActivation")
 				.given(
@@ -138,6 +137,18 @@ public class StakingSuite extends HapiApiSuite {
 								.hasStakingFeesPaid()
 								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
 								.hasPaidStakingRewards(List.of(Pair.of(alice, expectedPendingRewards)))
+								.logged(),
+
+						/* Within the same period rewards are not awarded twice */
+						cryptoTransfer(
+								tinyBarsFromTo(bob, alice, ONE_HBAR))
+								.payingWith(bob)
+								.via("expectNoReward"),
+						getTxnRecord("expectNoReward")
+								.andAllChildRecords()
+								.hasChildRecordCount(0)
+								.hasStakingFeesPaid()
+								.hasPaidStakingRewards(List.of())
 								.logged()
 				);
 	}
