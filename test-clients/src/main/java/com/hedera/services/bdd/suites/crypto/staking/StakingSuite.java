@@ -106,14 +106,11 @@ public class StakingSuite extends HapiApiSuite {
 								.stakedNodeId(0),
 						sleepFor(60_000)
 				).then(
-						/* --- staking will be activated, so child record is generated at end of staking period. But
+						/* --- staking will be activated, child record is generated at end of staking period. But
 						since rewardsSunHistory will be 0 for the first staking period after rewards are activated ,
 						paid_rewards will be 0 --- */
 						contractUpdate(PAYABLE_CONTRACT)
-								.newStakedNodeId(1L)
-								.hasPrecheck(INVALID_STAKING_ID),
-						contractUpdate(PAYABLE_CONTRACT)
-								.newStakedAccountId(bob)
+								.newDeclinedReward(false)
 								.via("firstTxn"),
 						getTxnRecord("firstTxn")
 								.andAllChildRecords()
@@ -121,60 +118,99 @@ public class StakingSuite extends HapiApiSuite {
 								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
 								.hasPaidStakingRewards(List.of()),
 
-						/* --- staking is activated, so child record is generated at end of staking period.
+						/* should receive reward */
+						sleepFor(60_000),
+						contractUpdate(PAYABLE_CONTRACT)
+								.newDeclinedReward(false)
+								.via("acceptsReward"),
+						getTxnRecord("acceptsReward")
+								.logged()
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+								.hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 500000000L))),
+
+						contractUpdate(PAYABLE_CONTRACT)
+								.newStakedNodeId(1L)
+								.hasPrecheck(INVALID_STAKING_ID),
+						contractUpdate(PAYABLE_CONTRACT)
+								.newStakedAccountId(bob)
+								.via("samePeriodTxn"),
+						getTxnRecord("samePeriodTxn")
+								.andAllChildRecords()
+								.hasChildRecordCount(0)
+								.hasPaidStakingRewards(List.of()),
+
+						/* --- next period, so child record is generated at end of staking period.
 						Since rewardsSumHistory is updated during the previous staking period after rewards are
 						activated ,paid_rewards will be non-empty in this record --- */
 						sleepFor(60_000),
 						cryptoTransfer(
 								tinyBarsFromTo(bob, alice, ONE_HBAR))
 								.payingWith(bob)
-								.via("secondTransfer"),
-						getTxnRecord("secondTransfer")
+								.via("firstTransfer"),
+						getTxnRecord("firstTransfer")
 								.andAllChildRecords()
 								.hasChildRecordCount(1)
 								.hasStakingFeesPaid()
 								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
 								.hasPaidStakingRewards(List.of(Pair.of(alice, 500000000L)))
 								.logged(),
+						/* Within the same period rewards are not awarded twice */
 						cryptoTransfer(
 								tinyBarsFromTo(bob, alice, ONE_HBAR))
 								.payingWith(bob)
-								.via("thirdTransfer"),
-						getTxnRecord("thirdTransfer")
+								.via("samePeriodTransfer"),
+						getTxnRecord("samePeriodTransfer")
 								.andAllChildRecords()
 								.hasChildRecordCount(0)
 								.hasStakingFeesPaid()
 								.hasPaidStakingRewards(List.of())
 								.logged(),
-						cryptoUpdate(alice).newStakedAccountId(bob).via("updateAccountTxn"),
-						getTxnRecord("updateAccountTxn").logged()
+						cryptoUpdate(alice).newStakedAccountId(bob).via("samePeriodUpdate"),
+						getTxnRecord("samePeriodUpdate").logged()
 								.andAllChildRecords()
 								.hasChildRecordCount(0)
 								.stakingFeeExempted()
-								.hasPaidStakingRewards(List.of()),
-
-						/* Within the same period rewards are not awarded twice */
-						sleepFor(60_000),
-						contractUpdate(PAYABLE_CONTRACT)
-								.payingWith(bob)
-								.newStakedNodeId(0L)
-								.via("contractUpdateTxn"),
-						getTxnRecord("contractUpdateTxn")
-								.andAllChildRecords()
-								.hasChildRecordCount(1)
-								.hasStakingFeesPaid()
-								.hasPaidStakingRewards(List.of()) // no rewards since it was staking to account
-								.logged(),
-						contractUpdate(PAYABLE_CONTRACT)
-								.payingWith(bob)
-								.newDeclinedReward(true)
-								.via("contractUpdateTxn2"),
-						getTxnRecord("contractUpdateTxn2")
-								.andAllChildRecords()
-								.hasChildRecordCount(0)
-								.hasStakingFeesPaid()
 								.hasPaidStakingRewards(List.of())
-								.logged()
+
+//						/* Next period, so end of staking period child record is generated.
+//						But no paid rewards since it was staking to account */
+//						sleepFor(60_000),
+//						contractUpdate(PAYABLE_CONTRACT)
+//								.payingWith(bob)
+//								.newStakedNodeId(0L)
+//								.via("contractUpdateTxn"),
+//						getTxnRecord("contractUpdateTxn")
+//								.andAllChildRecords()
+//								.hasChildRecordCount(1)
+//								.hasStakingFeesPaid()
+//								.hasPaidStakingRewards(List.of())
+//								.logged(),
+//						/* Same period, so end of staking period child record is not generated.
+//						But no paid rewards since it was not staking to node more than one period */
+//						contractUpdate(PAYABLE_CONTRACT)
+//								.payingWith(bob)
+//								.newDeclinedReward(false)
+//								.via("contractUpdateTxn2"),
+//						getTxnRecord("contractUpdateTxn2")
+//								.andAllChildRecords()
+//								.hasChildRecordCount(0)
+//								.hasStakingFeesPaid()
+//								.hasPaidStakingRewards(List.of())
+//								.logged(),
+//						/* Same period, so end of staking period child record is not generated.
+//						But no paid rewards since it was not staking to node more than one period */
+//						contractUpdate(PAYABLE_CONTRACT)
+//								.payingWith(bob)
+//								.newDeclinedReward(false)
+//								.via("contractUpdateTxn3"),
+//						getTxnRecord("contractUpdateTxn3")
+//								.andAllChildRecords()
+//								.hasChildRecordCount(0)
+//								.hasStakingFeesPaid()
+//								.hasPaidStakingRewards(List.of())
+//								.logged()
 				);
 	}
 
