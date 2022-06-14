@@ -333,6 +333,7 @@ abstract class EvmTxProcessor {
 					mirrorReceiver,
 					stateChanges);
 		} else {
+			System.out.println("Revert reason " + initialFrame.getRevertReason());
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction,
 					sbhRefund,
