@@ -85,8 +85,9 @@ public class EthereumSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return Stream.concat(
-				feePaymentMatrix().stream(),
+		return
+//				Stream.concat(
+//				feePaymentMatrix().stream(),
 				Stream.of(
 						invalidTxData(),
 						ETX_007_fungibleTokenCreateWithFeesHappyPath(),
@@ -98,11 +99,11 @@ public class EthereumSuite extends HapiApiSuite {
 						ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
 						ETX_014_contractCreateInheritsSignerProperties(),
 						ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-						ETX_009_callsToTokenAddresses(),
 						originAndSenderAreEthereumSigner(),
 						ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
 						ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()
-				)).toList();
+//				)
+		).toList();
 	}
 
 	HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
@@ -163,23 +164,23 @@ public class EthereumSuite extends HapiApiSuite {
 
 		return Stream.of(
 				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
-				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment }
-//				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
-//				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
-//				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
-//				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
-//				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
-//				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
-//				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
-//				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
-//				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
-//				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
+				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
+				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
+				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
+				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
+				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
+				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
+				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
+				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
+				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
+				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
+				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
 		).map(params ->
 				// [0] - success
 				// [1] - sender gas price
 				// [2] - relayer offered
 				// [3] - sender charged amount
-				// [4] - relayer charged amount 
+				// [4] - relayer charged amount
 				matrixedPayerRelayerTest(
 						(boolean) params[0],
 						(long) params[1],
@@ -682,9 +683,9 @@ public class EthereumSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																SECP_256K1_SOURCE_KEY).getECDSASecp256K1().toByteArray(),
-														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
-														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-														asHeadlongAddress(asAddress(spec.registry().getAccountID(RELAYER))),
+														asAddress(spec.registry().getAccountID(feeCollector)),
+														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
+														asAddress(spec.registry().getAccountID(RELAYER)),
 														8_000_000L)
 														.via(firstTxn)
 														.gasLimit(GAS_LIMIT)
