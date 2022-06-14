@@ -164,6 +164,9 @@ public class HederaStackedWorldStateUpdater
 		numAllocatedIds++;
 		final var sponsorId = accountIdFromEvmAddress(sponsor);
 		pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
+		if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
+			pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+		}
 		lastAllocatedId = contractIdFromEvmAddress(newAddress);
 		return newAddress;
 	}

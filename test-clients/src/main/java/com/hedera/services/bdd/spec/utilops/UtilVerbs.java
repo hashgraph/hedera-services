@@ -343,6 +343,22 @@ public class UtilVerbs {
 						bProperty, bValue));
 	}
 
+	public static HapiSpecOperation overridingThree(
+			final String aProperty,
+			final String aValue,
+			final String bProperty,
+			final String bValue,
+			final String cProperty,
+			final String cValue
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(
+						aProperty, aValue,
+						bProperty, bValue,
+						cProperty, cValue));
+	}
+
 	public static HapiSpecOperation resetAppPropertiesTo(String path) {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(ADDRESS_BOOK_CONTROL)

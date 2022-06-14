@@ -93,7 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -133,30 +133,30 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						revertedTryExtCallHasNoSideEffects(),
+//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+//						cannotSendToNonExistentAccount(),
 //						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
-						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsedByContractCreate(),
-						gasLimitOverMaxGasLimitFailsPrecheck(),
-						vanillaSuccess(),
-						propagatesNestedCreations(),
-						blockTimestampChangesWithinFewSeconds(),
-						contractWithAutoRenewNeedSignatures(),
+//						delegateContractIdRequiredForTransferInDelegateCall(),
+//						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//						minChargeIsTXGasUsedByContractCreate(),
+//						gasLimitOverMaxGasLimitFailsPrecheck(),
+//						vanillaSuccess(),
+//						propagatesNestedCreations(),
+//						blockTimestampChangesWithinFewSeconds(),
+//						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo()
 				}
 		);
@@ -172,9 +172,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
 				.given(
-						overridingTwo(
+						overridingThree(
 								"entities.limitTokenAssociations", "true",
-								"tokens.maxPerAccount", "" + 1)
+								"tokens.maxPerAccount", "" + 1,
+								"contracts.allowAutoAssociations", "true")
 				).when().then(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
@@ -814,6 +815,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var contract = "CreateTrivial";
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
+						overriding("contracts.allowAutoAssociations", "true"),
 						uploadInitCode(contract),
 						contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
 						getContractInfo(contract)
