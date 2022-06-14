@@ -102,6 +102,7 @@ public class EndOfStakingPeriodCalculator {
 
 		// total tinybars of reward earned by all stakers for the staking period now ending
 		final var rewardRate = effectiveRateForCurrentPeriod();
+		System.out.println("  - rewardRate for ending period was: " + rewardRate);
 
 		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
 		System.out.println("  - totalStakedRewardStart for ending period: " + totalStakedRewardStart);
