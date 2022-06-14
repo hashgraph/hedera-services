@@ -4,12 +4,12 @@
     <parent>
     <artifactId>hedera-services</artifactId>
     <groupId>com.hedera.hashgraph</groupId>
-    <version>0.26.3-SNAPSHOT</version>
+    <version>0.26.3</version>
   </parent>
 
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>benchmarks</artifactId>
-    <version>0.26.3-SNAPSHOT</version>
+    <version>0.26.3</version>
     <packaging>jar</packaging>
 
     <name>Hedera Services JMH benchmarks</name>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
             <artifactId>hedera-node</artifactId>
-            <version>0.26.3-SNAPSHOT</version>
+            <version>0.26.3</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
