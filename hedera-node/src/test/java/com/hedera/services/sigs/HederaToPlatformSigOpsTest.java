@@ -249,12 +249,19 @@ class HederaToPlatformSigOpsTest {
 		final SyncVerifier syncVerifier = l -> {
 			throw new AssertionError("All sigs were verified async!");
 		};
+		final var mockAccessor = mock(PlatformTxnAccessor.class);
+		final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
+		givenMirrorMock(mockAccessor, platformTxn);
+
 		final var rationalization = new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(platformTxn);
+		rationalization.performFor(mockAccessor);
 
 		assertFalse(rationalization.usedSyncVerification());
 		assertEquals(OK, rationalization.finalStatus());
+		verify(mockAccessor).setSigMeta(captor.capture());
+		final var sigMeta = captor.getValue();
+		platformTxn.setSigMeta(sigMeta);
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn()).hasClearBeenCalled());
