@@ -33,7 +33,7 @@ class RecordStreamingUtilsTest {
 	public static final String PATH_TO_FILES = "src/test/resources/recordstream";
 
 	@Test
-	void parsingRecordFilesSucceeds() throws IOException {
+	void parsingV6RecordFilesSucceeds() throws IOException {
 		final var allStreamFiles = Files.walk(Path.of(PATH_TO_FILES))
 				.filter(path -> !path.toString().contains("V5") && path.toString().endsWith(".rcd"))
 				.toList();
@@ -45,13 +45,14 @@ class RecordStreamingUtilsTest {
 	}
 
 	@Test
-	void parsingSignatureRecordFilesSucceeds() throws IOException {
+	void parsingV6SignatureRecordFilesSucceeds() throws IOException {
 		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> path.toString().contains(".rcd_sig"))
+				.filter(path -> !path.toString().contains("V5") && path.toString().contains(".rcd_sig"))
 				.toList();
 		for (final var file : signatureFiles) {
-			final var signatureFile = RecordStreamingUtils.readSignatureFile(file.toString());
-			assertNotNull(signatureFile);
+			final var signatureFilePair = RecordStreamingUtils.readSignatureFile(file.toString());
+			assertEquals(6, signatureFilePair.getLeft());
+			assertNotNull(signatureFilePair.getRight());
 		}
 	}
 
@@ -68,13 +69,14 @@ class RecordStreamingUtilsTest {
 	}
 
 	@Test
-	void parsingUnknownSignatureRecordFilesReturnsEmpty() throws IOException {
+	void parsingUnknownSignatureRecordFilesReturnsEmptyPair() throws IOException {
 		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
 				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd_sig"))
 				.toList();
 		for (final var file : signatureFiles) {
-			final var signatureFile = RecordStreamingUtils.readSignatureFile(file.toString());
-			assertFalse(signatureFile.isPresent());
+			final var pair = RecordStreamingUtils.readSignatureFile(file.toString());
+			assertEquals(-1, pair.getLeft());
+			assertFalse(pair.getRight().isPresent());
 		}
 	}
 }

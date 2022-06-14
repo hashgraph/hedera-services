@@ -42,6 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -465,7 +466,8 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 
 		// create signature file
 		final var sigFilePath = generateSigFilePath(relatedRecordStreamFile);
-		try (final var fos = new FileOutputStream(sigFilePath)) {
+		try (final var fos = new DataOutputStream(new FileOutputStream(sigFilePath))) {
+			fos.writeInt(recordFileVersion);
 			signatureFile.build().writeTo(fos);
 			LOG.debug(OBJECT_STREAM_FILE.getMarker(),
 					"closeCurrentAndSign :: signature file saved: {}", sigFilePath);

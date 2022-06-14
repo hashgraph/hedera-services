@@ -18,7 +18,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
@@ -58,12 +57,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
@@ -218,8 +215,12 @@ class RecordStreamFileWriterTest {
 		assertTrue(recordStreamFileOptional.isPresent());
 		final var recordStreamFile = recordStreamFileOptional.get();
 
-		assertRecordFile(expectedBlock, blockRSOs, startRunningHash, recordStreamFile,
-				new File(recordStreamFilePath).getName());
+		assertRecordFile(expectedBlock,
+				blockRSOs,
+				startRunningHash,
+				recordStreamFile,
+				new File(recordStreamFilePath).getName()
+		);
 		assertSignatureFile(
 				recordStreamFilePath,
 				expectedEntireFileSignature,
@@ -234,7 +235,7 @@ class RecordStreamFileWriterTest {
 			final List<RecordStreamObject> blockRSOs,
 			final Hash startRunningHash,
 			final RecordStreamFile recordStreamFile,
-			String fileShortName
+			final String fileShortName
 	) {
 		assertTrue(logCaptor.debugLogs().contains("Stream file created " + fileShortName));
 
@@ -278,15 +279,18 @@ class RecordStreamFileWriterTest {
 	}
 
 	private void assertSignatureFile(
-			final String streamFilePath,
+			final String recordStreamFilePath,
 			final byte[] expectedEntireFileSignature,
 			final byte[] expectedMetadataSignature,
 			final Integer recordStreamVersion,
 			final RecordStreamFile recordStreamFileProto
 	) throws IOException, NoSuchAlgorithmException {
-		final var recordStreamFile = new File(streamFilePath);
+		final var recordStreamFile = new File(recordStreamFilePath);
 		final var signatureFilePath = generateSigFilePath(recordStreamFile);
-		final var signatureFileOptional = RecordStreamingUtils.readSignatureFile(signatureFilePath);
+		final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath);
+		assertEquals(RECORD_STREAM_VERSION, signatureFilePair.getLeft());
+
+		final var signatureFileOptional = signatureFilePair.getRight();
 		assertTrue(signatureFileOptional.isPresent());
 		final var signatureFile = signatureFileOptional.get();
 

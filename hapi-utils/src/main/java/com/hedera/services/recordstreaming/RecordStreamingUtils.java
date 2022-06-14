@@ -44,12 +44,13 @@ public class RecordStreamingUtils {
 		}
 	}
 
-	public static Optional<SignatureFile> readSignatureFile(final String fileLoc) {
+	public static Pair<Integer, Optional<SignatureFile>> readSignatureFile(final String fileLoc) {
 		try (final var fin = new FileInputStream(fileLoc)) {
+			final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
 			final var recordStreamSignatureFile = SignatureFile.parseFrom(fin);
-			return Optional.ofNullable(recordStreamSignatureFile);
+			return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamSignatureFile));
 		} catch (Exception e) {
-			return Optional.empty();
+			return Pair.of(-1, Optional.empty());
 		}
 	}
 }

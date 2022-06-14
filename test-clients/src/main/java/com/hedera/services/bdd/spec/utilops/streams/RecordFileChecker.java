@@ -87,8 +87,8 @@ public class RecordFileChecker extends UtilOp {
                     ), recordFileName + "_sig");
 
 
-            final var signatureFile = RecordStreamingUtils.readSignatureFile(pathToSig.toString());
-            Assertions.assertTrue(signatureFile.isPresent(), SIGNATURE_FILE_MISSING_ERROR);
+            final var signatureFilePair = RecordStreamingUtils.readSignatureFile(pathToSig.toString());
+            Assertions.assertTrue(signatureFilePair.getRight().isPresent(), SIGNATURE_FILE_MISSING_ERROR);
 
             final var recordFileVersionAndProto = RecordStreamingUtils.readRecordStreamFile(pathToFile.toString());
             var recordStreamFileOptional = recordFileVersionAndProto.getRight();
