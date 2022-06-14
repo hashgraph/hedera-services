@@ -551,7 +551,7 @@ class ContractCreateTransitionLogicTest {
 		final var customizerUsed = captor.getValue();
 		final var changes = customizerUsed.accountCustomizer().getChanges();
 		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
-		assertEquals((int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS), 0);
+		assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
@@ -618,7 +618,7 @@ class ContractCreateTransitionLogicTest {
 		final var customizerUsed = captor.getValue();
 		final var changes = customizerUsed.accountCustomizer().getChanges();
 		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
-		assertEquals((int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS), 10);
+		assertEquals(10, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
