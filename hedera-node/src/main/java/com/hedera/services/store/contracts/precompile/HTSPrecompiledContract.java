@@ -658,7 +658,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
 							EvmFnResult.EMPTY,
-					null);
+					EntityId.fromAddress(senderAddress));
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
