@@ -132,6 +132,8 @@ class MintPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -238,7 +240,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -271,7 +273,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(failInvalidResult, result);
@@ -313,7 +315,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -354,7 +356,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(frame);
+		subject.computeInternal(infoProvider);
 
 		// then:
 		verify(wrappedLedgers, never()).commit();
@@ -384,7 +386,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWith10Supply, result);
 		// and:
@@ -417,7 +419,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);
+		assertFailsWith(() -> subject.computeInternal(infoProvider), FAIL_INVALID);
 	}
 
 	@Test
@@ -464,7 +466,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
 		// and:

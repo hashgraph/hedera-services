@@ -143,6 +143,8 @@ class TransferPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private MessageFrame parentFrame;
 	@Mock
 	private Deque<MessageFrame> frameDeque;
@@ -276,7 +278,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
@@ -340,7 +342,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -391,7 +393,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
 		assertEquals(statusResult, result);
 	}
@@ -448,7 +450,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -510,7 +512,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -573,7 +575,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -641,7 +643,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -715,7 +717,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -783,7 +785,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertNotEquals(successResult, result);

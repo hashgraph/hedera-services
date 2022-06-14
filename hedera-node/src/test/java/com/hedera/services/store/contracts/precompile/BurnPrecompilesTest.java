@@ -132,6 +132,8 @@ class BurnPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -237,7 +239,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		assertEquals(invalidSigResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -267,7 +269,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		assertEquals(failInvalidResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -301,7 +303,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		assertEquals(successResult, result);
 		verify(burnLogic).burn(nonFungibleId, 0, targetSerialNos);
@@ -333,7 +335,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(frame);
+		subject.computeInternal(infoProvider);
 
 		verify(wrappedLedgers, never()).commit();
 	}
@@ -363,7 +365,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		assertEquals(burnSuccessResultWith49Supply, result);
 		verify(burnLogic).burn(fungibleId, AMOUNT, List.of());
@@ -414,7 +416,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		assertEquals(burnSuccessResultWithLongMaxValueSupply, result);
 		verify(burnLogic).burn(fungibleId, Long.MAX_VALUE, List.of());

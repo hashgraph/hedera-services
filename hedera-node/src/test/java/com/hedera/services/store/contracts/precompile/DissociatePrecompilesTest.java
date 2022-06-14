@@ -119,6 +119,8 @@ class DissociatePrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private MessageFrame parentFrame;
 	@Mock
 	private Deque<MessageFrame> frameDeque;
@@ -233,7 +235,7 @@ class DissociatePrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -273,7 +275,7 @@ class DissociatePrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(frame);
+		subject.computeInternal(infoProvider);
 
 		// then:
 		verify(wrappedLedgers, never()).commit();
@@ -315,7 +317,7 @@ class DissociatePrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.computeInternal(infoProvider);
 
 		// then:
 		assertEquals(successResult, result);

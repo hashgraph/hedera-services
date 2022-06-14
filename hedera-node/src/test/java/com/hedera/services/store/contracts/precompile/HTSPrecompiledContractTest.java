@@ -134,6 +134,8 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private MessageFrame messageFrame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -894,7 +896,7 @@ class HTSPrecompiledContractTest {
 		givenFrameContext();
 		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
-		given(messageFrame.getRemainingGas()).willReturn(0L);
+		given(infoProvider.getRemainingGas()).willReturn(0L);
 		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
@@ -909,7 +911,7 @@ class HTSPrecompiledContractTest {
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
-		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(messageFrame));
+		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(infoProvider));
 	}
 
 	@Test
@@ -917,7 +919,7 @@ class HTSPrecompiledContractTest {
 		// given
 		givenFrameContext();
 		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
-		given(messageFrame.getValue()).willReturn(Wei.of(1));
+		given(infoProvider.getValue()).willReturn(Wei.of(1));
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -928,10 +930,10 @@ class HTSPrecompiledContractTest {
 
 		// then
 		final var precompile = subject.getPrecompile();
-		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(messageFrame));
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(infoProvider));
 
-		verify(messageFrame).setRevertReason(INVALID_TRANSFER);
-		verify(messageFrame).setState(REVERT);
+		verify(infoProvider).setRevertReason(INVALID_TRANSFER);
+		verify(infoProvider).setState(REVERT);
 	}
 
 	private void givenFrameContext() {

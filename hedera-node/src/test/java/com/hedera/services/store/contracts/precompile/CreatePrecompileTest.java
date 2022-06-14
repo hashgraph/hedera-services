@@ -137,6 +137,8 @@ class CreatePrecompileTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private InfoProvider infoProvider;
+	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -304,7 +306,7 @@ class CreatePrecompileTest {
 		subject.prepareComputation(pretendArguments, a -> a);
 
 		final var precompile = subject.getPrecompile();
-		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(frame));
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(infoProvider));
 
 		// then
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);

@@ -158,6 +158,8 @@ class ERC20PrecompilesTest {
     @Mock
     private MessageFrame frame;
     @Mock
+    private InfoProvider infoProvider;
+    @Mock
     private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
     private RecordsHistorian recordsHistorian;
@@ -478,7 +480,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -517,7 +519,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -553,7 +555,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -588,7 +590,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -632,7 +634,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -673,7 +675,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -716,7 +718,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(failResult, result);
@@ -769,7 +771,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -831,7 +833,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -897,7 +899,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -949,7 +951,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
+        final var result = subject.computeInternal(infoProvider);
 
         // then:
         assertEquals(invalidSigResult, result);
