@@ -36,7 +36,7 @@ public class RecordStreamingUtils {
 
 	public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(final String fileLoc) {
 		try (final var fin = new FileInputStream(fileLoc)) {
-			final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
+			final var recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
 			final var recordStreamFile = RecordStreamFile.parseFrom(fin);
 			return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
 		} catch (Exception e) {
@@ -46,7 +46,7 @@ public class RecordStreamingUtils {
 
 	public static Pair<Integer, Optional<SignatureFile>> readSignatureFile(final String fileLoc) {
 		try (final var fin = new FileInputStream(fileLoc)) {
-			final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
+			final var recordFileVersion = fin.read();
 			final var recordStreamSignatureFile = SignatureFile.parseFrom(fin);
 			return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamSignatureFile));
 		} catch (Exception e) {
