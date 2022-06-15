@@ -31,7 +31,6 @@ import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -59,7 +58,6 @@ import java.util.Map;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
@@ -175,6 +173,101 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(-1);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
+
+		subject.preview(changes);
+
+		assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedDaysAgoUnclaimsStakeWhenChangingElection() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance / 5);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 3);
+
+		subject.preview(changes);
+
+		assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedTodayUnclaimsStakeStartWhenChangingElection() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance / 5);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
+
+		subject.preview(changes);
+
+		assertEquals(counterpartyBalance / 5, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void anAccountThatStartedStakingAtCurrentPeriodDoesntUnclaimStakeWhenChangingElection() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(-1);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart);
+
+		subject.preview(changes);
+
+		assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void anAccountThatDeclineRewardsDoesntUnclaimStakeWhenChangingElection() {
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(-1);
+		counterparty.setDeclineReward(true);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+
+		subject.preview(changes);
+
+		assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
 	void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(BALANCE, 2 * counterpartyBalance);
@@ -209,7 +302,7 @@ class StakingAccountsCommitInterceptorTest {
 		verify(stakeChangeManager).awardStake(1, (long) changes.changes(0).get(AccountProperty.BALANCE),
 				false);
 
-		verify(stakeChangeManager).withdrawStake(0, changes.entity(1).getBalance(),false);
+		verify(stakeChangeManager).withdrawStake(0, changes.entity(1).getBalance(), false);
 
 		verify(stakeChangeManager).awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE),
 				false);
@@ -386,7 +479,8 @@ class StakingAccountsCommitInterceptorTest {
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
 		// StakingMeta changes
-		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(),
+				subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test
@@ -401,7 +495,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		given(rewardCalculator.computePendingReward(any())).willReturn(0L);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
-		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart+1);
+		given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
 		pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
 		stakingFund.setStakePeriodStart(-1);
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
@@ -413,7 +507,8 @@ class StakingAccountsCommitInterceptorTest {
 		inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
 		inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
 		// StakingMeta changes
-		assertEquals(counterpartyBalance + counterparty.getStakedToMe(), subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+		assertEquals(counterpartyBalance + counterparty.getStakedToMe(),
+				subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test
@@ -725,22 +820,22 @@ class StakingAccountsCommitInterceptorTest {
 	private static final AccountID counterpartyId = AccountID.newBuilder().setAccountNum(321).build();
 	private static final AccountID beneficiaryId = AccountID.newBuilder().setAccountNum(456).build();
 	private static final AccountID stakingFundId = AccountID.newBuilder().setAccountNum(800).build();
-	private static final MerkleAccount party = MerkleAccountFactory.newAccount()
+	private final MerkleAccount party = MerkleAccountFactory.newAccount()
 			.number(EntityNum.fromAccountId(partyId))
 			.balance(partyBalance)
 			.get();
-	private static final MerkleAccount counterparty = MerkleAccountFactory.newAccount()
+	private final MerkleAccount counterparty = MerkleAccountFactory.newAccount()
 			.stakedId(-1)
 			.number(EntityNum.fromAccountId(counterpartyId))
 			.balance(counterpartyBalance)
 			.get();
 
-	private static final MerkleAccount beneficiary = MerkleAccountFactory.newAccount()
+	private final MerkleAccount beneficiary = MerkleAccountFactory.newAccount()
 			.stakedId(-1)
 			.number(EntityNum.fromAccountId(beneficiaryId))
 			.balance(beneficiaryBalance)
 			.get();
-	private static final MerkleAccount stakingFund = MerkleAccountFactory.newAccount()
+	private final MerkleAccount stakingFund = MerkleAccountFactory.newAccount()
 			.number(EntityNum.fromAccountId(stakingFundId))
 			.balance(amount)
 			.get();

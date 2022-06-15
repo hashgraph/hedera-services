@@ -33,8 +33,11 @@ public final class ReleaseTwentySevenMigration {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook, BootstrapProperties bootstrapProperties) {
-		MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
+	public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
+			final AddressBook addressBook,
+			final BootstrapProperties bootstrapProperties
+	) {
+		final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
 
 		final var numberOfNodes = addressBook.getSize();
 		long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
@@ -48,9 +51,9 @@ public final class ReleaseTwentySevenMigration {
 			final var info = new MerkleStakingInfo(bootstrapProperties);
 			info.setMinStake(minStakePerNode);
 			info.setMaxStake(maxStakePerNode);
-			stakingInfo.put(nodeNum, info);
+			stakingInfos.put(nodeNum, info);
 		}
 
-		return stakingInfo;
+		return stakingInfos;
 	}
 }

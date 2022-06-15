@@ -484,6 +484,7 @@ public class SeededPropertySource {
 				nextLong(),
 				nextLong(),
 				nextLong(),
+				nextLong(),
 				nextLongs(MAX_REWARD_HISTORY));
 		return ans;
 	}

@@ -60,6 +60,13 @@ class StakeInfoManagerTest {
 	}
 
 	@Test
+	void canUnclaimRewards() {
+		subject.unclaimRewardsForStakeStart(0, 333);
+		final var newNode0Info = stakingInfo.get(node0Id);
+		assertEquals(333L, newNode0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
 	void resetsRewardSUmHistory() {
 		stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] { 5, 5 }));
 		assertEquals(5L, stakingInfo.get(node0Id).getRewardSumHistory()[0]);
@@ -82,7 +89,7 @@ class StakeInfoManagerTest {
 		// old and new are same
 		var oldStakingInfo = stakingInfo;
 		oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
-		subject.setPrevStakingInfo(oldStakingInfo);
+		subject.setPrevStakingInfos(oldStakingInfo);
 
 		var expectedInfo = stakingInfo.get(node0Id);
 		var actual = subject.mutableStakeInfoFor(0L);
@@ -91,7 +98,7 @@ class StakeInfoManagerTest {
 		// old and new are not same instances, but the cached value is null
 		oldStakingInfo = buildsStakingInfoMap();
 		oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
-		subject.setPrevStakingInfo(oldStakingInfo);
+		subject.setPrevStakingInfos(oldStakingInfo);
 
 		expectedInfo = stakingInfo.get(node0Id);
 		actual = subject.mutableStakeInfoFor(0L);
@@ -118,6 +125,7 @@ class StakeInfoManagerTest {
 			b.setStakeToReward(300L);
 			b.setStake(1000L);
 			b.setStakeToNotReward(400L);
+			b.setStakeRewardStart(666L);
 		});
 		return info;
 	}

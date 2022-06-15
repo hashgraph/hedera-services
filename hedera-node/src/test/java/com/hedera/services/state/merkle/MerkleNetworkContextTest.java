@@ -62,10 +62,10 @@ import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -886,21 +886,31 @@ class MerkleNetworkContextTest {
 		localSub.increasePendingRewards(123);
 		localSub.increasePendingRewards(234);
 		localSub.decreasePendingRewards(99);
-		assertEquals(123 + 234 - 99, localSub.getPendingRewards());
+		assertEquals(123 + 234 - 99, localSub.pendingRewards());
 	}
 
 	@Test
 	void pendingRewardsAdjustmentsAreSanityChecked() {
 		final var localSub = new MerkleNetworkContext();
 		localSub.setPendingRewards(100);
-//		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(-1));
-//		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(Long.MAX_VALUE));
-//		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(-1));
-//		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(101));
-		assertDoesNotThrow(() -> localSub.increasePendingRewards(-1));
-		assertDoesNotThrow(() -> localSub.increasePendingRewards(Long.MAX_VALUE));
-		assertDoesNotThrow(() -> localSub.decreasePendingRewards(-1));
-		assertDoesNotThrow(() -> localSub.decreasePendingRewards(101));
+		assertThrows(IllegalArgumentException.class, () -> localSub.increasePendingRewards(-1));
+		assertThrows(IllegalArgumentException.class, () -> localSub.decreasePendingRewards(-1));
+	}
+
+	@Test
+	void pendingRewardsAreKeptInRangeAtHighEnd() {
+		final var localSub = new MerkleNetworkContext();
+		localSub.setPendingRewards(100);
+		localSub.increasePendingRewards(Long.MAX_VALUE);
+		assertEquals(50_000_000_000L * HBARS_TO_TINYBARS, localSub.pendingRewards());
+	}
+
+	@Test
+	void pendingRewardsAreKeptInRangeAtLowEnd() {
+		final var localSub = new MerkleNetworkContext();
+		localSub.setPendingRewards(100);
+		localSub.decreasePendingRewards(101);
+		assertEquals(0L, localSub.pendingRewards());
 	}
 
 	long[] used = new long[] { 100L, 200L, 300L };

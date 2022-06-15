@@ -451,6 +451,14 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void checksIfRewardedSinceLastStakeMetaChange() {
+		state.setStakeAtStartOfLastRewardedPeriod(-1L);
+		assertFalse(subject.hasBeenRewardedSinceLastStakeMetaChange());
+		state.setStakeAtStartOfLastRewardedPeriod(123L);
+		assertTrue(subject.hasBeenRewardedSinceLastStakeMetaChange());
+	}
+
+	@Test
 	void getsNodeStakedIdCorrectly() {
 		var subject = new MerkleAccount();
 

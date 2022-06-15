@@ -33,8 +33,9 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,12 +53,13 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 @Singleton
 public class EndOfStakingPeriodCalculator {
+	private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
 	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
 	private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfoSupplier;
-	private final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
+	private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final RecordsHistorian recordsHistorian;
 	private final EntityCreator creator;
@@ -66,16 +68,16 @@ public class EndOfStakingPeriodCalculator {
 	@Inject
 	public EndOfStakingPeriodCalculator(
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfoSupplier,
-			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier,
+			final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos,
+			final Supplier<MerkleNetworkContext> networkCtx,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final RecordsHistorian recordsHistorian,
 			final EntityCreator creator,
 			final @CompositeProps PropertySource properties
 	) {
 		this.accounts = accounts;
-		this.stakingInfoSupplier = stakingInfoSupplier;
-		this.merkleNetworkContextSupplier = merkleNetworkContextSupplier;
+		this.stakingInfos = stakingInfos;
+		this.networkCtx = networkCtx;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.recordsHistorian = recordsHistorian;
 		this.creator = creator;
@@ -83,72 +85,64 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	public void updateNodes(final Instant consensusTime) {
-		// --- BEGIN DEBUG-ONLY CODE ---
-		final var thisPeriod = LinkedObjectStreamUtilities.getPeriod(consensusTime, 60_000);
-		final var lastPeriod = thisPeriod - 1;
-		System.out.println("Processing end of period " + lastPeriod + ", beginning " + thisPeriod);
-		// --- END DEBUG-ONLY CODE ---
+		log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
-		final var stakingInfo = stakingInfoSupplier.get();
-		final var merkleNetworkContext = merkleNetworkContextSupplier.get();
-
-		// skip end of staking period calculations if the rewards are not yet activated.
-		if (!merkleNetworkContext.areRewardsActivated()) {
+		final var curNetworkCtx = networkCtx.get();
+		if (!curNetworkCtx.areRewardsActivated()) {
+			log.info(" * Rewards not active, nothing to do");
 			return;
 		}
+		final var curStakingInfos = stakingInfos.get();
 
-		long updatedTotalStakedStart = 0L;
-		long updatedTotalStakedRewardStart = 0L;
-
-		// total tinybars of reward earned by all stakers for the staking period now ending
-		final var rewardRate = effectiveRateForCurrentPeriod();
-
-		final var totalStakedRewardStart = merkleNetworkContext.getTotalStakedRewardStart();
-		System.out.println("  - totalStakedRewardStart for ending period: " + totalStakedRewardStart);
-
-		// The tinybars earned per hbar for stakers who are staked to a node whose total
-		// stakedRewarded is in the range [minStake, maxStake]
+		final var rewardRate = rewardRateForEndingPeriod();
+		final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
+		// The tinybars earned per hbar for stakers who were staked to a node whose total
+		// stakedRewardStart for the ending period was in the range [minStake, maxStake]
 		final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 :
 				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+		log.info(" * The reward rate for the period was {} tb " +
+						"({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
+				rewardRate, perHbarRate, totalStakedRewardStart);
 
+		long newTotalStakedStart = 0L;
+		long newTotalStakedRewardStart = 0L;
 		final List<NodeStake> nodeStakingInfos = new ArrayList<>();
-		for (final var nodeNum : stakingInfo.keySet().stream().sorted().toList()) {
-			final var merkleStakingInfo = stakingInfo.getForModify(nodeNum);
-			final var endingPeriodStakeRewardStart = merkleStakingInfo.getStakeRewardStart();
+		for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
+			final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
 			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
-			final var endingPeriodRewardRate = merkleStakingInfo.updateRewardSumHistory(perHbarRate);
+			final var nodeRewardRate = stakingInfo.updateRewardSumHistory(perHbarRate);
 
-			System.out.println("  (A) Node0 lastPeriodStakedRewardStart was: " + endingPeriodStakeRewardStart);
-			final var beginningPeriodStakeRewardStart =
-					merkleStakingInfo.reviewElectionsFromJustFinishedPeriodAndRecomputeStakes();
-			System.out.println("  (B) Node0 curPeriodStakedRewardStart was : " + beginningPeriodStakeRewardStart);
+			final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
+			final var pendingRewardHbars = stakingInfo.stakeRewardStartMinusUnclaimed() / HBARS_TO_TINYBARS;
+			final var newStakeRewardStart = stakingInfo.reviewElectionsAndRecomputeStakes();
+			final var nodePendingRewards = pendingRewardHbars * nodeRewardRate;
+			log.info("  - For node{}, the tb/hbar reward rate was {} for {} pending, " +
+							"with stake reward start {} -> {}",
+					nodeNum.longValue(), nodeRewardRate, nodePendingRewards, oldStakeRewardStart, newStakeRewardStart);
+			curNetworkCtx.increasePendingRewards(nodePendingRewards);
+			stakingInfo.resetUnclaimedStakeRewardStart();
 
-			final var pendingRewardHbars = endingPeriodStakeRewardStart / HBARS_TO_TINYBARS;
-			final var rewardsOwedForEndingPeriod = pendingRewardHbars * endingPeriodRewardRate;
-			merkleNetworkContext.increasePendingRewards(rewardsOwedForEndingPeriod);
-
-			updatedTotalStakedRewardStart += beginningPeriodStakeRewardStart;
-			updatedTotalStakedStart += merkleStakingInfo.getStake();
-
+			newTotalStakedRewardStart += newStakeRewardStart;
+			newTotalStakedStart += stakingInfo.getStake();
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
-					.setStake(merkleStakingInfo.getStake())
-					.setStakeRewarded(merkleStakingInfo.getStakeToReward())
+					.setStake(stakingInfo.getStake())
+					.setRewardRate(nodePendingRewards)
+					.setStakeRewarded(stakingInfo.getStakeToReward())
 					.build());
 		}
-		merkleNetworkContext.setTotalStakedRewardStart(updatedTotalStakedRewardStart);
-		merkleNetworkContext.setTotalStakedStart(updatedTotalStakedStart);
+		curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
+		curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
+		log.info(" * Total staked start is now {} ({} rewarded), pending rewards are {} vs 0.0.800 balance {}",
+				newTotalStakedStart, newTotalStakedRewardStart, curNetworkCtx.pendingRewards(), rewardsBalance());
 
-		// Create a synthetic txn with this computed data
 		final var syntheticNodeStakeUpdateTxn =
-				syntheticTxnFactory.nodeStakeUpdate(
-						getMidnightTime(consensusTime),
-						rewardRate,
-						nodeStakingInfos);
+				syntheticTxnFactory.nodeStakeUpdate(lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos);
 		recordsHistorian.trackPrecedingChildRecord(
-				DEFAULT_SOURCE_ID, syntheticNodeStakeUpdateTxn,
+				DEFAULT_SOURCE_ID,
+				syntheticNodeStakeUpdateTxn,
 				creator.createSuccessfulSyntheticRecord(
 						NO_CUSTOM_FEES,
 						NO_OTHER_SIDE_EFFECTS,
@@ -156,25 +150,24 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	@VisibleForTesting
-	long effectiveRateForCurrentPeriod() {
+	long rewardRateForEndingPeriod() {
 		return Math.max(0, Math.min(
-				stakingRewardsAccountBalance() - merkleNetworkContextSupplier.get().getPendingRewards(),
+				rewardsBalance() - networkCtx.get().pendingRewards(),
 				properties.getLongProperty("staking.rewardRate")));
 	}
 
 	@VisibleForTesting
-	Timestamp getMidnightTime(final Instant consensusTime) {
+	Timestamp lastInstantOfPreviousPeriodFor(final Instant consensusTime) {
 		final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
 				.atStartOfDay()
 				.minusNanos(1); // give out the timestamp that is just before midnight
-
 		return Timestamp.newBuilder()
 				.setSeconds(justBeforeMidNightTime.toEpochSecond(ZoneOffset.UTC))
 				.setNanos(justBeforeMidNightTime.getNano())
 				.build();
 	}
 
-	private long stakingRewardsAccountBalance() {
+	private long rewardsBalance() {
 		return accounts.get()
 				.get(EntityNum.fromLong(properties.getLongProperty("accounts.stakingRewardAccount")))
 				.getBalance();
