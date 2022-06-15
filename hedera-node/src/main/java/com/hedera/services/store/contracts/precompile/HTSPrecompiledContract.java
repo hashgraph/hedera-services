@@ -1275,7 +1275,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (impliedValidity != OK) {
 				throw new InvalidTransactionException(impliedValidity);
 			}
-			final var frame = provider.getMessageFrame();
+			final var frame = provider.messageFrame();
 			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
 			final var numExplicitChanges = explicitChanges.size();
 			final var assessmentStatus = impliedTransfers.getMeta().code();
@@ -1550,7 +1550,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(final InfoProvider provider) {
-			final var frame = provider.getMessageFrame();
+			final var frame = provider.messageFrame();
 			if (!isFungible) {
 				final var nftExchange = transferOp.get(0).nftExchanges().get(0);
 				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
@@ -1800,7 +1800,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void run(final InfoProvider provider) {
-			final var frame = provider.getMessageFrame();
+			final var frame = provider.messageFrame();
 			Objects.requireNonNull(approveOp);
 
 			validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -1926,7 +1926,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrueOrRevert(status == OK, status);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var frame = provider.getMessageFrame();
+			final var frame = provider.messageFrame();
 			final var hasValidFrame = frame != null;
 			final var sender = hasValidFrame ? frame.getSenderAddress() : senderAddress;
 			final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
@@ -2022,7 +2022,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 
 	@FunctionalInterface
-	private interface ContractActivationTest {
+	 interface ContractActivationTest {
 		/**
 		 * Returns whether a key implicit in the target address is active, given an idealized message
 		 * frame in which:
