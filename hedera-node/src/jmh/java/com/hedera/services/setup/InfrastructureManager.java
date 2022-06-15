@@ -115,7 +115,7 @@ public class InfrastructureManager {
 		final var jdbBuilderFactory = new JasperDbBuilderFactory() {
 			@Override
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			public <K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
+			public <K extends VirtualKey<? super K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
 				return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
 			}
 		};

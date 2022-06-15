@@ -55,6 +55,7 @@ import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.ST
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -96,6 +97,7 @@ class ContractCustomizerTest {
 		verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
 		final var keyUsed = captor.getValue();
 		assertTrue(JKey.equalUpToDecodability(cryptoAdminKey, keyUsed));
+		assertSame(accountCustomizer, subject.accountCustomizer());
 	}
 
 	@Test

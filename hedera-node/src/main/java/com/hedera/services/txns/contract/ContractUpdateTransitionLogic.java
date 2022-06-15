@@ -27,7 +27,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
@@ -45,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -100,15 +100,19 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			final var target = contracts.get().get(id);
 
 			var result = customizerFactory.customizerFor(target, validator, op);
-			var customizer = result.getLeft();
-			if (customizer.isPresent()) {
-				final var validity = sanityCheckAutoAssociations(id, customizer.get());
+			var contractCustomizer = result.getLeft();
+			if (contractCustomizer.isPresent()) {
+				final var customizer = contractCustomizer.get();
+				if (!properties.areContractAutoAssociationsEnabled()) {
+					customizer.getChanges().remove(MAX_AUTOMATIC_ASSOCIATIONS);
+				}
+				final var validity = sanityCheckAutoAssociations(id, customizer);
 				if (validity != OK) {
 					txnCtx.setStatus(validity);
 					return;
 				}
 
-				ledger.customize(id.toGrpcAccountId(), customizer.get());
+				ledger.customize(id.toGrpcAccountId(), customizer);
 				sigImpactHistorian.markEntityChanged(id.longValue());
 				if (target.hasAlias()) {
 					sigImpactHistorian.markAliasChanged(target.getAlias());
@@ -126,8 +130,8 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target, final HederaAccountCustomizer customizer) {
 		final var changes = customizer.getChanges();
-		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
-			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+		if (changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS)) {
+			final long newMax = (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS);
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target.toGrpcAccountId())) {
 				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 			}
