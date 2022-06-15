@@ -52,19 +52,19 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class EndOfStakingPeriodCalculatorTest {
 	@Mock
-	MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
 	@Mock
-	MerkleNetworkContext merkleNetworkContext;
+	private MerkleNetworkContext merkleNetworkContext;
 	@Mock
-	SyntheticTxnFactory syntheticTxnFactory;
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
-	RecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
-	EntityCreator creator;
+	private EntityCreator creator;
 	@Mock
-	PropertySource properties;
+	private PropertySource properties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -90,7 +90,7 @@ class EndOfStakingPeriodCalculatorTest {
 
 		verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
 		verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
-		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyLong(), anyList());
+		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
 	}
 
 	@Test
@@ -117,9 +117,12 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(800L, stakingInfo1.getStake());
 		assertEquals(500L, stakingInfo2.getStake());
 		assertEquals(0L, stakingInfo3.getStake());
-		assertArrayEquals(new long[]{16,6,5}, stakingInfo1.getRewardSumHistory());
-		assertArrayEquals(new long[]{11,1,1}, stakingInfo2.getRewardSumHistory());
-		assertArrayEquals(new long[]{13,3,1}, stakingInfo3.getRewardSumHistory());
+		assertEquals(0L, stakingInfo1.getUnclaimedStakeRewardStart());
+		assertEquals(0L, stakingInfo2.getUnclaimedStakeRewardStart());
+		assertEquals(0L, stakingInfo3.getUnclaimedStakeRewardStart());
+		assertArrayEquals(new long[] { 14, 6, 5 }, stakingInfo1.getRewardSumHistory());
+		assertArrayEquals(new long[] { 11, 1, 1 }, stakingInfo2.getRewardSumHistory());
+		assertArrayEquals(new long[] { 3, 3, 1 }, stakingInfo3.getRewardSumHistory());
 	}
 
 	@Test
@@ -133,7 +136,7 @@ class EndOfStakingPeriodCalculatorTest {
 				.setNanos(expectedNanos)
 				.build();
 
-		assertEquals(expectedMidnightTime, subject.getMidnightTime(consensusTime));
+		assertEquals(expectedMidnightTime, subject.lastInstantOfPreviousPeriodFor(consensusTime));
 	}
 
 	final long stakingRewardAccount = 800L;
@@ -146,21 +149,27 @@ class EndOfStakingPeriodCalculatorTest {
 	final long stakeToNotReward2 = 200L;
 	final long stakeToNotReward3 = 20L;
 	final long stakedRewardStart1 = 1_000L;
+	final long unclaimedStakedRewardStart1 = stakedRewardStart1 / 10;
 	final long stakedRewardStart2 = 700L;
+	final long unclaimedStakedRewardStart2 = stakedRewardStart2 / 10;
 	final long stakedRewardStart3 = 10_000L;
+	final long unclaimedStakedRewardStart3 = stakedRewardStart3 / 10;
 	final long stake1 = 2_000L;
 	final long stake2 = 750L;
 	final long stake3 = 75L;
-	final long[] rewardSumHistory1 = new long[]{8,7,2};
-	final long[] rewardSumHistory2 = new long[]{5,5,4};
-	final long[] rewardSumHistory3 = new long[]{4,2,1};
+	final long[] rewardSumHistory1 = new long[] { 8, 7, 2 };
+	final long[] rewardSumHistory2 = new long[] { 5, 5, 4 };
+	final long[] rewardSumHistory3 = new long[] { 4, 2, 1 };
 	final EntityNum nodeNum1 = EntityNum.fromInt(0);
 	final EntityNum nodeNum2 = EntityNum.fromInt(1);
 	final EntityNum nodeNum3 = EntityNum.fromInt(2);
 	final MerkleStakingInfo stakingInfo1 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward1, stakeToNotReward1, stakedRewardStart1, stake1, rewardSumHistory1);
+			minStake, maxStake, stakeToReward1, stakeToNotReward1,
+			stakedRewardStart1, unclaimedStakedRewardStart1, stake1, rewardSumHistory1);
 	final MerkleStakingInfo stakingInfo2 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward2, stakeToNotReward2, stakedRewardStart2, stake2, rewardSumHistory2);
+			minStake, maxStake, stakeToReward2, stakeToNotReward2,
+			stakedRewardStart2, unclaimedStakedRewardStart2, stake2, rewardSumHistory2);
 	final MerkleStakingInfo stakingInfo3 = new MerkleStakingInfo(
-			minStake, maxStake, stakeToReward3, stakeToNotReward3, stakedRewardStart3, stake3, rewardSumHistory3);
+			minStake, maxStake, stakeToReward3, stakeToNotReward3,
+			stakedRewardStart3, unclaimedStakedRewardStart3, stake3, rewardSumHistory3);
 }
