@@ -334,6 +334,7 @@ abstract class EvmTxProcessor {
 					stateChanges);
 		} else {
 			System.out.println("Revert reason " + initialFrame.getRevertReason());
+			System.out.println("halt reason " + initialFrame.getExceptionalHaltReason());
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction,
 					sbhRefund,
