@@ -42,7 +42,7 @@ public class StakingUtils {
 	public static final long NA = Long.MIN_VALUE;
 	// A non-sentinel negative value to indicate an account has not been rewarded since its last stake meta change
 	public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
-	public static AccountID SENTINEL_ACCOUNT = EntityId.fromIdentityCode(0).toGrpcAccountId();
+	private static AccountID SENTINEL_ACCOUNT = EntityId.fromIdentityCode(0).toGrpcAccountId();
 
 	private StakingUtils() {
 		throw new UnsupportedOperationException("Utility class");
