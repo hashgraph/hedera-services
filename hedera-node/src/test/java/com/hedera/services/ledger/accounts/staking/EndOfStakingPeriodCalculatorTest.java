@@ -124,7 +124,6 @@ class EndOfStakingPeriodCalculatorTest {
 		assertArrayEquals(new long[] { 11, 1, 1 }, stakingInfo2.getRewardSumHistory());
 		assertArrayEquals(new long[] { 3, 3, 1 }, stakingInfo3.getRewardSumHistory());
 	}
-
 	@Test
 	void calculatesMidnightTimeCorrectly() {
 		final var consensusSecs = 1653660350L;

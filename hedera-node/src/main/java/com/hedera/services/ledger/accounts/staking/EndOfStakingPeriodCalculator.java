@@ -128,14 +128,17 @@ public class EndOfStakingPeriodCalculator {
 			newTotalStakedStart += stakingInfo.getStake();
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
-					.setStake(stakingInfo.getStake())
 					.setRewardRate(nodePendingRewards)
+					.setStake(stakingInfo.getStake())
+					.setMinStake(stakingInfo.getMinStake())
+					.setMaxStake(stakingInfo.getMaxStake())
 					.setStakeRewarded(stakingInfo.getStakeToReward())
+					.setStakeNotRewarded(stakingInfo.getStakeToNotReward())
 					.build());
 		}
 		curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
 		curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
-		log.info(" * Total staked start is now {} ({} rewarded), pending rewards are {} vs 0.0.800 balance {}",
+		log.info(" * Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800 balance {}",
 				newTotalStakedStart, newTotalStakedRewardStart, curNetworkCtx.pendingRewards(), rewardsBalance());
 
 		final var syntheticNodeStakeUpdateTxn =
