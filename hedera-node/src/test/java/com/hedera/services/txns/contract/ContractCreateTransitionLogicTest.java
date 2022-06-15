@@ -28,6 +28,7 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
@@ -53,6 +54,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,6 +66,7 @@ import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -490,7 +493,8 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithOverrides() {
 		// setup:
-		givenValidTxnCtxWithAutoRenew();
+		givenValidTxnCtxWithMaxAssociations();
+		final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
 		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -534,7 +538,7 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
-		verify(worldState).setHapiSenderCustomizer(any());
+		verify(worldState).setHapiSenderCustomizer(captor.capture());
 		verify(worldState).getCreatedContractIds();
 		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
@@ -542,12 +546,18 @@ class ContractCreateTransitionLogicTest {
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 		verify(accountStore).loadAccount(senderAccount.getId());
 		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+		// and:
+		final var customizerUsed = captor.getValue();
+		final var changes = customizerUsed.accountCustomizer().getChanges();
+		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
 	void followsHappyPathWithCounterAndRecord() {
 		// setup:
-		givenValidTxnCtxWithAutoRenew();
+		givenValidTxnCtxWithMaxAssociations();
+		final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
 		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -584,6 +594,7 @@ class ContractCreateTransitionLogicTest {
 				biOfferedGasPrice,
 				maxGas)
 		).willReturn(result);
+		given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 		// when:
 		subject.doStateTransitionOperation(
@@ -594,7 +605,7 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
-		verify(worldState).setHapiSenderCustomizer(any());
+		verify(worldState).setHapiSenderCustomizer(captor.capture());
 		verify(worldState).getCreatedContractIds();
 		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
@@ -602,6 +613,11 @@ class ContractCreateTransitionLogicTest {
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 		verify(accountStore).loadAccount(senderAccount.getId());
 		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+		// and:
+		final var customizerUsed = captor.getValue();
+		final var changes = customizerUsed.accountCustomizer().getChanges();
+		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(10, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
