@@ -26,11 +26,12 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.CommonUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +94,7 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, (SwirldState) state, new Event[0],
+				platform, book, state, new PlatformEvent[0],
 				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
@@ -109,7 +110,7 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, (SwirldState) state, new Event[0],
+				platform, book, state, new PlatformEvent[0],
 				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
@@ -127,7 +128,7 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, (SwirldState) state, new Event[0],
+				platform, book, state, new PlatformEvent[0],
 				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
@@ -145,7 +146,7 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform, book, (SwirldState) state, new Event[0],
+				platform, book, state, new PlatformEvent[0],
 				self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:

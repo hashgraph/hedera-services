@@ -33,6 +33,8 @@ import com.swirlds.platform.state.TransactionHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.swirlds.platform.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+
 /**
  * Provides a tracker of the usable consensus time space during a
  * {@link com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
@@ -42,7 +44,7 @@ public class ConsensusTimeTracker {
 	private static final Logger log = LogManager.getLogger(ConsensusTimeTracker.class);
 
 	@VisibleForTesting
-	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 	private final GlobalDynamicProperties properties;
 	private final Supplier<MerkleNetworkContext> networkCtx;

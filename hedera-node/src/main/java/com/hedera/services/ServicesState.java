@@ -58,7 +58,9 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldDualState;
@@ -208,7 +210,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		deserializedVersion = version;
 	}
 
-	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
 		if (deserializedVersionFromState < RELEASE_025X_VERSION) {
@@ -250,7 +251,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- SwirldState --- */
 	@Override
-	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
+	public void init(
+			final Platform platform,
+			final AddressBook addressBook,
+			final SwirldDualState dualState,
+			final InitTrigger trigger,
+			final SoftwareVersion previousSoftwareVersion) {
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -262,6 +268,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		internalInit(platform, new BootstrapProperties(), dualState, false);
+
+		if (trigger == InitTrigger.GENESIS) {
+			genesisInit(platform, addressBook, dualState);
+		} else if (getStateVersion() < CURRENT_VERSION) {
+			migrate();
+		}
 	}
 
 	private void addPostMigrationTask(Runnable runnable) {
@@ -275,7 +287,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		postMigrationTasks.clear();
 	}
 
-	@Override
 	public void genesisInit(Platform platform, AddressBook addressBook, final SwirldDualState dualState) {
 		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 

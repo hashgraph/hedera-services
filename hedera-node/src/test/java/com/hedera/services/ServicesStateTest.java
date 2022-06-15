@@ -57,8 +57,10 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldDualState;
@@ -580,7 +582,8 @@ class ServicesStateTest {
 
 		APPS.save(selfId.getId(), app);
 
-		assertDoesNotThrow(() -> subject.init(platform, addressBook, null));
+		assertDoesNotThrow(() -> subject.init(platform, addressBook, null,
+				InitTrigger.RESTART, SoftwareVersion.NO_VERSION));
 	}
 
 	@Test
@@ -603,7 +606,7 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		subject.genesisInit(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, SoftwareVersion.NO_VERSION);
 
 		// then:
 		assertFalse(subject.isImmutable());
@@ -652,7 +655,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		// then:
 		assertSame(addressBook, subject.addressBook());
@@ -679,7 +682,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		verify(mockExit).fail(1);
 	}
@@ -703,7 +706,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		verify(networkContext).discardPreparedUpgradeMeta();
 		verify(dualState).setFreezeTime(null);
@@ -727,7 +730,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		verify(networkContext).discardPreparedUpgradeMeta();
 		verify(networkContext).markMigrationRecordsNotYetStreamed();
@@ -750,7 +753,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
 	}
@@ -781,7 +784,7 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		var scheduledTxns = subject.scheduleTxs();
 
@@ -860,7 +863,7 @@ class ServicesStateTest {
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		APPS.save(selfId.getId(), app);
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 
 		verify(hashLogger).logHashesFor(subject);
 	}
@@ -877,7 +880,7 @@ class ServicesStateTest {
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		APPS.save(selfId.getId(), app);
 
-		subject.init(platform, addressBook, dualState);
+		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
 		verify(app, never()).hashLogger();
 	}
 

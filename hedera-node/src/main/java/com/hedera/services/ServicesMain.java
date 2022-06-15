@@ -25,6 +25,7 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.Browser;
@@ -81,6 +82,11 @@ public class ServicesMain implements SwirldMain {
 		} else {
 			log.info("Platform {} status set to : {}", nodeId, status);
 		}
+	}
+
+	@Override
+	public SoftwareVersion getSoftwareVersion() {
+		return SoftwareVersion.NO_VERSION;
 	}
 
 	@Override

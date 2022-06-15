@@ -95,7 +95,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		// expect:
@@ -112,7 +112,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		// when:
@@ -199,7 +199,7 @@ class PlatformTxnAccessorTest {
 		final var txn = new SwirldTransaction(NONSENSE);
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class,
-				() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(txn.getContentsDirect()),
+				() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(txn.getContents()),
 						txn));
 	}
 
@@ -210,7 +210,7 @@ class PlatformTxnAccessorTest {
 
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class,
-				() -> new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
+				() -> new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()), platformTxn));
 	}
 
 	@Test
@@ -224,7 +224,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// then:
-		assertThrows(InvalidProtocolBufferException.class,() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
+		assertThrows(InvalidProtocolBufferException.class,() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContents()), platformTxn));
 	}
 
 	@Test
@@ -237,7 +237,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		// then:
@@ -258,7 +258,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 		Transaction asBodyBytes = signedTxn4Log
@@ -286,7 +286,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(txn.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
@@ -312,7 +312,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		// then:
@@ -342,7 +342,7 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 		final var aliasManager = mock(AliasManager.class);
 
-		var signedAccessor = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+		var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
@@ -442,7 +442,7 @@ class PlatformTxnAccessorTest {
 		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
 
 		final var expectedString = "PlatformTxnAccessor{delegate=SignedTxnAccessor{sigMapSize=71, numSigPairs=1, " +
 				"numAutoCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, " +

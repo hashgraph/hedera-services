@@ -29,6 +29,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a running
@@ -68,6 +69,8 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 			Thread.currentThread().interrupt();
 			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
 					ex);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -142,6 +145,10 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	}
 
 	public Hash currentRunningHash() throws InterruptedException {
-		return runningHash.getFutureHash().get();
+		try {
+			return runningHash.getFutureHash().get();
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

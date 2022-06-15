@@ -38,7 +38,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;

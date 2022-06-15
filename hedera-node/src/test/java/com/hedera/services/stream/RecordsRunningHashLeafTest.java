@@ -36,6 +36,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,7 +137,7 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	void serializationDeserializationTest() throws IOException, InterruptedException {
+	void serializationDeserializationTest() throws IOException, InterruptedException, ExecutionException {
 		try (final var byteArrayOutputStream = new ByteArrayOutputStream();
 			 final var out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);
