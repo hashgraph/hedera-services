@@ -267,11 +267,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
 		}
 
-		internalInit(platform, new BootstrapProperties(), dualState, false);
-
 		if (trigger == InitTrigger.GENESIS) {
 			genesisInit(platform, addressBook, dualState);
-		} else if (getStateVersion() < CURRENT_VERSION) {
+			return;
+		}
+
+		internalInit(platform, new BootstrapProperties(), dualState, false);
+
+		if (getStateVersion() < CURRENT_VERSION) {
 			migrate();
 		}
 	}

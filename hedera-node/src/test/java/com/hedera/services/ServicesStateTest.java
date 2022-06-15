@@ -725,6 +725,8 @@ class ServicesStateTest {
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
 
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.hashLogger()).willReturn(hashLogger);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
 		APPS.save(selfId.getId(), app);
@@ -878,10 +880,14 @@ class ServicesStateTest {
 
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
 		APPS.save(selfId.getId(), app);
 
 		subject.init(platform, addressBook, dualState, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
-		verify(app, never()).hashLogger();
+		assertTrue(subject.getChild(StateChildIndices.UNIQUE_TOKENS) instanceof VirtualMap);
+		verify(app).hashLogger();
 	}
 
 	@Test

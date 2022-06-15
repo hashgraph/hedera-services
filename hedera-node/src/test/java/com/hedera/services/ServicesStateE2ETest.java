@@ -30,11 +30,11 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.platform.SignedStateFileManager;
 import com.swirlds.platform.state.DualStateImpl;
@@ -42,7 +42,6 @@ import com.swirlds.platform.state.SignedState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.scheduling.Trigger;
 
 import java.io.File;
 import java.io.IOException;
@@ -116,7 +115,7 @@ public class ServicesStateE2ETest {
 		return servicesState.runningHashLeaf().currentRunningHash();
 	}
 
-	private static ServicesApp createApp(Platform platform) throws NoSuchAlgorithmException, IOException {
+	private static ServicesApp createApp(Platform platform) {
 		return DaggerServicesApp.builder()
 				.initialHash(new Hash())
 				.platform(platform)
