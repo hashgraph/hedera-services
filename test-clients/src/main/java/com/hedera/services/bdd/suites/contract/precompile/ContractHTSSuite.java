@@ -104,8 +104,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(new HapiApiSpec[] {
-//				HSCS_PREC_017_rollback_after_insufficient_balance(),
-//				nonZeroTransfersFail()
+				HSCS_PREC_017_rollback_after_insufficient_balance(),
+				nonZeroTransfersFail()
 		});
 	}
 
@@ -291,7 +291,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, theContract, -25L)
-//														.including(A_TOKEN, RECEIVER, 25L)
+														.including(A_TOKEN, RECEIVER, 25L)
 										))
 				);
 	}

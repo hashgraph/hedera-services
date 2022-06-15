@@ -133,26 +133,26 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
 				HSCS_KEY_1(),
-//				HSCS_KEY_2(),
-				HSCS_KEY_3()
-//				HSCS_KEY_4(),
-//				HSCS_KEY_5(),
-//				HSCS_KEY_6(),
-//				HSCS_KEY_7(),
-//				HSCS_KEY_8(),
-//				HSCS_KEY_10()
+				HSCS_KEY_2(),
+				HSCS_KEY_3(),
+				HSCS_KEY_4(),
+				HSCS_KEY_5(),
+				HSCS_KEY_6(),
+				HSCS_KEY_7(),
+				HSCS_KEY_8(),
+				HSCS_KEY_10()
 		);
 	}
 
 	List<HapiApiSpec> HSCS_KEY_1() {
 		return List.of(
-				callForMintWithContractKey()
-//				callForTransferWithContractKey(),
-//				callForAssociateWithContractKey(),
-//				callForDissociateWithContractKey(),
-//				callForBurnWithContractKey(),
-//				delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
-//				delegateCallForDissociatePrecompileSignedWithContractKeyFails()
+				callForMintWithContractKey(),
+				callForTransferWithContractKey(),
+				callForAssociateWithContractKey(),
+				callForDissociateWithContractKey(),
+				callForBurnWithContractKey(),
+				delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
+				delegateCallForDissociatePrecompileSignedWithContractKeyFails()
 		);
 	}
 
@@ -170,13 +170,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> HSCS_KEY_3() {
 		return List.of(
-				callForMintWithDelegateContractKey()
-//				callForTransferWithDelegateContractKey(),
-//				callForAssociateWithDelegateContractKey(),
-//				callForDissociateWithDelegateContractKey(),
-//				callForBurnWithDelegateContractKey(),
-//				delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
-//				delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks()
+				callForMintWithDelegateContractKey(),
+				callForTransferWithDelegateContractKey(),
+				callForAssociateWithDelegateContractKey(),
+				callForDissociateWithDelegateContractKey(),
+				callForBurnWithDelegateContractKey(),
+				delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
+				delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks()
 		);
 	}
 

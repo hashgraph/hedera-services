@@ -83,9 +83,7 @@ public class DecodingUtil {
     }
 
     public static long numFromEvmAddress(final byte[] bytes) {
-        return Longs.fromBytes(
-                bytes[12], bytes[13], bytes[14], bytes[15],
-                bytes[16], bytes[17], bytes[18], bytes[19]);
+        return Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
     }
 }
 
