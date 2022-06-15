@@ -78,7 +78,7 @@ public class KeyFactory implements Serializable {
 
 	private final HapiSpecSetup setup;
 	private final Map<String, PrivateKey> pkMap = new ConcurrentHashMap<>();
-	private Map<Key, SigControl> controlMap = new ConcurrentHashMap<>();
+	private final Map<Key, SigControl> controlMap = new ConcurrentHashMap<>();
 	private final SigMapGenerator defaultSigMapGen = TrieSigMapGenerator.withNature(UNIQUE_PREFIXES);
 
 	private transient HapiSpecRegistry registry;
