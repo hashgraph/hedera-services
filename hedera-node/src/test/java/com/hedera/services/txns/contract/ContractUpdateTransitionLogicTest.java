@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -353,6 +354,21 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void maxAutoAssociationsSetToZeroIfNotSupported() {
+		givenValidTxnCtxWithMaxAssociations();
+		customizer = mock(HederaAccountCustomizer.class);
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+				.willReturn(Pair.of(Optional.of(customizer), OK));
+		final Map<AccountProperty, Object> changes = new EnumMap<>(AccountProperty.class);
+		changes.put(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 5);
+		given(customizer.getChanges()).willReturn(changes);
+
+		subject.doStateTransition();
+
+		assertFalse(changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
+	}
+
+	@Test
 	void updateMaxAutomaticAssociationsFailWithMaxLessThanAlreadyExisting() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenValidTxnCtxWithMaxAssociations();
@@ -362,6 +378,7 @@ class ContractUpdateTransitionLogicTest {
 		given(customizer.getChanges()).willReturn(
 				Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));
 		given(ledger.alreadyUsedAutomaticAssociations(targetId)).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
+		given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -381,6 +398,7 @@ class ContractUpdateTransitionLogicTest {
 				.willReturn(Pair.of(Optional.of(customizer), OK));
 		given(customizer.getChanges()).willReturn(
 				Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+		given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 

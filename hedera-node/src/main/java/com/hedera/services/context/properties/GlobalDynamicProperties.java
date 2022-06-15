@@ -130,6 +130,7 @@ public class GlobalDynamicProperties {
 	private int nodeRewardPercent;
 	private int stakingRewardPercent;
 	private int stakingActiveThreshold;
+	private boolean contractAutoAssociationsEnabled;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -237,6 +238,7 @@ public class GlobalDynamicProperties {
 		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
 		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
 		stakingActiveThreshold = properties.getIntProperty("staking.activeThreshold");
+		contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
 	}
 
 	public int maxTokensPerAccount() {
@@ -589,5 +591,9 @@ public class GlobalDynamicProperties {
 
 	public int getStakingActiveThreshold() {
 		return stakingActiveThreshold;
+        }
+
+	public boolean areContractAutoAssociationsEnabled() {
+		return contractAutoAssociationsEnabled;
 	}
 }

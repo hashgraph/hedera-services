@@ -125,7 +125,7 @@ public abstract class AccountCustomizer<
 	}
 
 	public T proxy(final EntityId option) {
-		if(option != null) {
+		if (option != null) {
 			changeManager.update(changes, optionProperties.get(PROXY), option);
 		}
 		return self();
@@ -172,7 +172,7 @@ public abstract class AccountCustomizer<
 	}
 
 	public T autoRenewAccount(final EntityId option) {
-		if(option != null) {
+		if (option != null) {
 			changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
 		}
 		return self();
