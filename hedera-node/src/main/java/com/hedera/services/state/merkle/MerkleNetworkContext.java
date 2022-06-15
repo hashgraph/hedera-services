@@ -56,12 +56,13 @@ import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
+	private static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
 	private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
@@ -752,23 +753,31 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void increasePendingRewards(final long amount) {
-//		assertAcceptableRewardChange(amount, +1);
-		this.pendingRewards += amount;
-		System.out.println("pending rewards ⬆️ to " + pendingRewards);
+		safeUpdatePendingRewards(amount, +1);
 	}
 
 	public void decreasePendingRewards(final long amount) {
-//		assertAcceptableRewardChange(amount, -1);
-		this.pendingRewards -= amount;
-		System.out.println("pending rewards ⬇️ to " + pendingRewards);
+		safeUpdatePendingRewards(amount, -1);
 	}
 
-	private void assertAcceptableRewardChange(final long amount, final long sigNum) {
-		if (amount < 0 || (pendingRewards + sigNum * amount < 0)) {
+	private void safeUpdatePendingRewards(final long amount, final long sigNum) {
+		if (amount < 0) {
 			throw new IllegalArgumentException("Cannot " + (sigNum < 0 ? "decrease " : "increase ")
 					+ "pendingRewards=" + pendingRewards
-					+ " by amount=" + amount);
+					+ " by negative amount (" + amount + ")");
 		}
+		final var delta = sigNum * amount;
+		var newPendingRewards = pendingRewards + delta;
+		if (MAX_PENDING_REWARDS - pendingRewards < delta) {
+			log.warn("Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar",
+					amount, newPendingRewards);
+			newPendingRewards = MAX_PENDING_REWARDS;
+		} else if (newPendingRewards < 0) {
+			log.warn("Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+					amount, newPendingRewards);
+			newPendingRewards = 0;
+		}
+		pendingRewards = newPendingRewards;
 	}
 
 	public void markMigrationRecordsStreamed() {

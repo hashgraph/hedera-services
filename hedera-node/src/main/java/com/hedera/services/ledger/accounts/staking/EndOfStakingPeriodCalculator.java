@@ -89,6 +89,7 @@ public class EndOfStakingPeriodCalculator {
 
 		final var curNetworkCtx = networkCtx.get();
 		if (!curNetworkCtx.areRewardsActivated()) {
+			log.info(" * Rewards not active, nothing to do");
 			return;
 		}
 		final var curStakingInfos = stakingInfos.get();
@@ -121,10 +122,10 @@ public class EndOfStakingPeriodCalculator {
 							"with stake reward start {} -> {}",
 					nodeNum.longValue(), nodeRewardRate, nodePendingRewards, oldStakeRewardStart, newStakeRewardStart);
 			curNetworkCtx.increasePendingRewards(nodePendingRewards);
+			stakingInfo.resetUnclaimedStakeRewardStart();
 
 			newTotalStakedRewardStart += newStakeRewardStart;
 			newTotalStakedStart += stakingInfo.getStake();
-			stakingInfo.resetUnclaimedStakeRewardStart();
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
 					.setStake(stakingInfo.getStake())
@@ -138,7 +139,7 @@ public class EndOfStakingPeriodCalculator {
 				newTotalStakedStart, newTotalStakedRewardStart, curNetworkCtx.pendingRewards(), rewardsBalance());
 
 		final var syntheticNodeStakeUpdateTxn =
-				syntheticTxnFactory.nodeStakeUpdate(getMidnightTime(consensusTime), nodeStakingInfos);
+				syntheticTxnFactory.nodeStakeUpdate(lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos);
 		recordsHistorian.trackPrecedingChildRecord(
 				DEFAULT_SOURCE_ID,
 				syntheticNodeStakeUpdateTxn,
@@ -156,11 +157,10 @@ public class EndOfStakingPeriodCalculator {
 	}
 
 	@VisibleForTesting
-	Timestamp getMidnightTime(final Instant consensusTime) {
+	Timestamp lastInstantOfPreviousPeriodFor(final Instant consensusTime) {
 		final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
 				.atStartOfDay()
 				.minusNanos(1); // give out the timestamp that is just before midnight
-
 		return Timestamp.newBuilder()
 				.setSeconds(justBeforeMidNightTime.toEpochSecond(ZoneOffset.UTC))
 				.setNanos(justBeforeMidNightTime.getNano())

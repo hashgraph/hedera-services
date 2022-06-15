@@ -120,9 +120,9 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(0L, stakingInfo1.getUnclaimedStakeRewardStart());
 		assertEquals(0L, stakingInfo2.getUnclaimedStakeRewardStart());
 		assertEquals(0L, stakingInfo3.getUnclaimedStakeRewardStart());
-		assertArrayEquals(new long[] { 16, 6, 5 }, stakingInfo1.getRewardSumHistory());
+		assertArrayEquals(new long[] { 14, 6, 5 }, stakingInfo1.getRewardSumHistory());
 		assertArrayEquals(new long[] { 11, 1, 1 }, stakingInfo2.getRewardSumHistory());
-		assertArrayEquals(new long[] { 13, 3, 1 }, stakingInfo3.getRewardSumHistory());
+		assertArrayEquals(new long[] { 3, 3, 1 }, stakingInfo3.getRewardSumHistory());
 	}
 
 	@Test
@@ -136,7 +136,7 @@ class EndOfStakingPeriodCalculatorTest {
 				.setNanos(expectedNanos)
 				.build();
 
-		assertEquals(expectedMidnightTime, subject.getMidnightTime(consensusTime));
+		assertEquals(expectedMidnightTime, subject.lastInstantOfPreviousPeriodFor(consensusTime));
 	}
 
 	final long stakingRewardAccount = 800L;

@@ -134,18 +134,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	@Override
 	public void finish(final int i, final MerkleAccount mutableAccount) {
 		if (stakedToMeUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakedToMe=" + stakedToMeUpdates[i]);
 			mutableAccount.setStakedToMe(stakedToMeUpdates[i]);
 		}
 		if (stakePeriodStartUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakePeriodStart=" + stakePeriodStartUpdates[i]);
 			mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
 		}
 		if (stakeAtStartOfLastRewardedPeriodUpdates[i] != NA) {
-			System.out.println("Updating 0.0." + mutableAccount.number()
-					+ " stakeAtStartOfLastRewardedPeriodUpdates=" + stakeAtStartOfLastRewardedPeriodUpdates[i]);
 			mutableAccount.setStakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardedPeriodUpdates[i]);
 		}
 	}
@@ -157,10 +151,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	 *    due to a change in {@code balance}, {@code stakedAccountId}, {@code stakedNodeId}, or {@code declineReward}
 	 *    fields has been rewarded.
 	 *    <li>Any account whose {@code stakedToMe} balance was affected by one or more changes in the {@code [0, i)}
-	 *    range has been, if not already present, added to the {@code pendingChanges}; and its updated {@code stakedToMe}
+	 *    range has been, if not already present, added to the {@code pendingChanges}; and its updated {@code
+	 *    stakedToMe}
 	 *    is reflected in {@code stakedToMeUpdates}.</li>
 	 * </ol>
-	 * @param pendingChanges the changes to iterate, preserving the above invariants
+	 *
+	 * @param pendingChanges
+	 * 		the changes to iterate, preserving the above invariants
 	 */
 	private void updateRewardsAndElections(
 			final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
@@ -215,8 +212,14 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			if (scenario.withdrawsFromNode()) {
 				stakeChangeManager.withdrawStake(
 						-curStakedId - 1,
-						roundedToHbar(account.getBalance() + account.getStakedToMe()),
+						roundedToHbar(account.totalStake()),
 						account.isDeclinedReward());
+				if (newStakedId != curStakedId) {
+					// This account may be leaving some rewards from its current node "unclaimed"; if so, we
+					// need to record that, so we don't include them in the pendingRewards calculation later
+					final var effStakeRewardStart = rewardableStartStakeFor(account);
+					stakeInfoManager.unclaimRewardsForStakeStart(-curStakedId - 1, effStakeRewardStart);
+				}
 			}
 			if (scenario.awardsToNode()) {
 				final var stakeToAward = finalBalanceGiven(account, changes)
@@ -230,10 +233,29 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			if (stakeMetaChanged) {
 				stakeAtStartOfLastRewardedPeriodUpdates[i] = NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 			} else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
-				stakeAtStartOfLastRewardedPeriodUpdates[i] = account.getBalance() + account.getStakedToMe();
+				stakeAtStartOfLastRewardedPeriodUpdates[i] = roundedToHbar(account.totalStake());
 			}
 			stakePeriodStartUpdates[i] = stakePeriodManager.startUpdateFor(
 					curStakedId, newStakedId, rewardsEarned[i] > 0, stakeMetaChanged);
+		}
+	}
+
+	private long rewardableStartStakeFor(final MerkleAccount account) {
+		if (account.isDeclinedReward()) {
+			return 0;
+		}
+		final var startPeriod = account.getStakePeriodStart();
+		final var currentPeriod = stakePeriodManager.currentStakePeriod();
+		if (startPeriod >= currentPeriod) {
+			return 0;
+		} else {
+			if (account.hasBeenRewardedSinceLastStakeMetaChange() && (startPeriod == currentPeriod - 1)) {
+				// Special case---this account was already rewarded today, so its current stake
+				// has almost certainly changed from what it was at the start of the day
+				return account.totalStakeAtStartOfLastRewardedPeriod();
+			} else {
+				return roundedToHbar(account.totalStake());
+			}
 		}
 	}
 
@@ -271,7 +293,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 			final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
 			updateStakedToMe(stakeeI, delta, stakedToMeUpdates, pendingChanges);
 			// The stakee may now be eligible for a reward
-			payRewardIfPending(stakeeI, pendingChanges.entity(stakeeI), pendingChanges.changes(stakeeI), pendingChanges);
+			payRewardIfPending(stakeeI, pendingChanges.entity(stakeeI), pendingChanges.changes(stakeeI),
+					pendingChanges);
 		}
 	}
 
@@ -304,9 +327,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		// accounts until we find a non-deleted account to try to reward (it may still decline)
 		if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
 			var j = 1;
-			var maxRedirects= txnCtx.numDeletedAccountsAndContracts();
+			var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
 			do {
-				if (j++ > maxRedirects)	{
+				if (j++ > maxRedirects) {
 					log.error(
 							"With {} accounts deleted, last redirect in {} led to deleted beneficiary 0.0.{}",
 							maxRedirects, changes, receiverNum);
@@ -320,10 +343,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		}
 		// The final beneficiary might still decline the reward
 		if (rewardCalculator.applyReward(reward, account, changes)) {
-			System.out.println("Paid " + reward + " to account 0.0."
-					+ account.getKey().longValue()
-					+ " (stakePeriodStart = " + account.getStakePeriodStart() + " -> "
-					+ (stakePeriodManager.currentStakePeriod() - 1) + ")");
 			sideEffectsTracker.trackRewardPayment(receiverNum, reward);
 		}
 	}
@@ -391,6 +410,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 		curStakedId = account == null ? 0L : account.getStakedId();
 		newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
 	}
+
 	private boolean shouldRememberStakeStartFor(
 			@NotNull final MerkleAccount account,
 			final long curStakedId,

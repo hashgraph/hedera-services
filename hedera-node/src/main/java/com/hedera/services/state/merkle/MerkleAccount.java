@@ -469,6 +469,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setDeclineReward(declineReward);
 	}
 
+	public boolean hasBeenRewardedSinceLastStakeMetaChange() {
+		return state().getStakeAtStartOfLastRewardedPeriod() != -1L;
+	}
+
 	public long totalStakeAtStartOfLastRewardedPeriod() {
 		return state().getStakeAtStartOfLastRewardedPeriod();
 	}

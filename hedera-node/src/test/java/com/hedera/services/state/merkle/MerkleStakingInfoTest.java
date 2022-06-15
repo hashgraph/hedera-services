@@ -261,4 +261,19 @@ class MerkleStakingInfoTest {
 		assertArrayEquals(expected, actual.getValue());
 
 	}
+
+	@Test
+	void cannotUnclaimMoreThanStakedRewardStart() {
+		subject.increaseUnclaimedStakeRewardStart(stakeRewardStart - unclaimedStakeRewardStart + 1);
+		assertEquals(stakeRewardStart, subject.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void representsNonZeroHistoryAsExpected() {
+		final var historyNoZeros = new long[] { 5L, 4L, 3L };
+		assertEquals("[5, 4, 3]", MerkleStakingInfo.readableNonZeroHistory(historyNoZeros));
+
+		final var historyWithZeros = new long[] { 5L, 4L, 3L, 0L, 0L, 0L };
+		assertEquals("[5, 4, 3]", MerkleStakingInfo.readableNonZeroHistory(historyWithZeros));
+	}
 }

@@ -146,7 +146,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		}
 		rewardSumHistory[0] += perHbarRateThisNode;
 
-		System.out.println("  rewardSumHistory now: " + Arrays.toString(Arrays.copyOf(rewardSumHistory, 10)));
+		log.info("   > Non-zero reward sum history is now {}", () -> readableNonZeroHistory(rewardSumHistory));
 		// reset the historyHash
 		historyHash = null;
 		return perHbarRateThisNode;
@@ -171,6 +171,11 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public void increaseUnclaimedStakeRewardStart(final long amount) {
 		unclaimedStakeRewardStart += amount;
+		if (unclaimedStakeRewardStart > stakeRewardStart) {
+			log.warn("Asked to release {} stake reward start for node{}, but only {} was staked",
+					number, unclaimedStakeRewardStart, stakeRewardStart);
+			unclaimedStakeRewardStart = stakeRewardStart;
+		}
 	}
 
 	public long stakeRewardStartMinusUnclaimed() {
@@ -380,6 +385,20 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		if (historyHash == null) {
 			historyHash = getHashBytes(rewardSumHistory);
 		}
+	}
+
+	@VisibleForTesting
+	static String readableNonZeroHistory(final long[] rewardSumHistory) {
+		int firstZero = -1;
+		for (int i = 0; i < rewardSumHistory.length; i++) {
+			if (rewardSumHistory[i] == 0) {
+				firstZero = i;
+				break;
+			}
+		}
+		return Arrays.toString((firstZero == -1)
+				? rewardSumHistory
+				: Arrays.copyOfRange(rewardSumHistory, 0, firstZero));
 	}
 
 	@VisibleForTesting
