@@ -354,18 +354,26 @@ public class StakingSuite extends HapiApiSuite {
 								.via("trigger"),
 						getTxnRecord("trigger")
 								.logged()
-								.hasChildRecordCount(1),
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
 						sleepFor(SLEEP_MS),
 						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
 								.via("transfer"),
 						getTxnRecord("transfer")
-								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+								.logged(),
+						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
+								.via("noEndOfStakingPeriodRecord"),
+						getTxnRecord("noEndOfStakingPeriodRecord")
+								.hasChildRecordCount(0)
 								.logged(),
 						sleepFor(SLEEP_MS),
 						cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
 								.via("transfer1"),
 						getTxnRecord("transfer1")
-								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
 								.logged()
 				);
 	}
@@ -444,9 +452,9 @@ public class StakingSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec enabledRewards() {
+	private HapiApiSpec enableRewards() {
 		final var stakingAccount = "0.0.800";
-		return defaultHapiSpec("AutoAccountCreationsHappyPath")
+		return defaultHapiSpec("EnableRewards")
 				.given(
 						overriding("staking.startThreshold", "" + 10 * ONE_HBAR)
 				).when(
