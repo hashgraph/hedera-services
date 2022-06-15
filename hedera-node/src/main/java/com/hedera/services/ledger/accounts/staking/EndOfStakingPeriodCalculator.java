@@ -129,7 +129,7 @@ public class EndOfStakingPeriodCalculator {
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
 					.setStake(stakingInfo.getStake())
-					.setRewardRate(nodePendingRewards)
+					.setStakeRewarded(nodePendingRewards)
 					.setStakeRewarded(stakingInfo.getStakeToReward())
 					.build());
 		}

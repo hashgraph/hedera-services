@@ -33,6 +33,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {

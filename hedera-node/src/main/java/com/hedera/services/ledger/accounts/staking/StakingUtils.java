@@ -23,15 +23,18 @@ package com.hedera.services.ledger.accounts.staking;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class StakingUtils {
@@ -39,6 +42,7 @@ public class StakingUtils {
 	public static final long NA = Long.MIN_VALUE;
 	// A non-sentinel negative value to indicate an account has not been rewarded since its last stake meta change
 	public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
+	public static AccountID SENTINEL_ACCOUNT = EntityId.fromIdentityCode(0).toGrpcAccountId();
 
 	private StakingUtils() {
 		throw new UnsupportedOperationException("Utility class");
@@ -126,5 +130,14 @@ public class StakingUtils {
 
 	public static long roundedToHbar(long value) {
 		return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
+	}
+
+	public static boolean validSentinel(final String idCase, final AccountID stakedAccountId, final long stakedNodeId) {
+		// sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset staking on an account
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return stakedAccountId.equals(SENTINEL_ACCOUNT);
+		} else {
+			return stakedNodeId == -1;
+		}
 	}
 }

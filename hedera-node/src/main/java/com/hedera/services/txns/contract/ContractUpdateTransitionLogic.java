@@ -44,7 +44,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.validSentinel;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -124,7 +126,8 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target, final HederaAccountCustomizer customizer) {
+	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target,
+			final HederaAccountCustomizer customizer) {
 		final var changes = customizer.getChanges();
 		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
 			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
@@ -175,15 +178,18 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		final var stakedIdCase = op.getStakedIdCase().name();
-		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
-				stakedIdCase,
-				op.getStakedAccountId(),
-				op.getStakedNodeId(),
-				contracts.get(),
-				nodeInfo)) {
-			return INVALID_STAKING_ID;
+		if (hasStakedId(stakedIdCase)) {
+			if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
+				return OK;
+			} else if (!validator.isValidStakedId(
+					stakedIdCase,
+					op.getStakedAccountId(),
+					op.getStakedNodeId(),
+					contracts.get(),
+					nodeInfo)) {
+				return INVALID_STAKING_ID;
+			}
 		}
-
 		return OK;
 	}
 }
