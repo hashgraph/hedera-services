@@ -66,6 +66,7 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -75,6 +76,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -925,6 +928,9 @@ class ServicesStateTest {
 	}
 
 	private void setAllChildren() {
+		try {
+			FileUtils.cleanDirectory(new File("database"));
+		} catch (IOException ignore) { }
 		subject.createGenesisChildren(addressBook, 0);
 	}
 }

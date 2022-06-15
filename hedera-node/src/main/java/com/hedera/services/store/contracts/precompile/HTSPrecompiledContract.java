@@ -461,6 +461,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		this.functionId = input.getInt(0);
 		this.gasRequirement = 0L;
+		this.isTokenReadOnlyTransaction = false;
 
 		this.precompile =
 				switch (functionId) {
@@ -2152,7 +2153,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.approveAllowanceLogicFactory = approveAllowanceLogicFactory;
 	}
 
+	@VisibleForTesting
 	public Precompile getPrecompile() {
 		return precompile;
+	}
+
+	@VisibleForTesting
+	void setTokenReadOnlyTransaction(final boolean tokenReadOnlyTransaction) {
+		isTokenReadOnlyTransaction = tokenReadOnlyTransaction;
+	}
+
+	@VisibleForTesting
+	boolean isTokenReadOnlyTransaction() {
+		return isTokenReadOnlyTransaction;
 	}
 }
