@@ -1,0 +1,344 @@
+#!/usr/bin/env bash
+
+set -eEx -o pipefail
+
+ANSIBLE_DIR="/infrastructure/terraform/deployments/ansible"
+CLIENT_DIR="/repo/test-clients"
+HAPIAPP_DIR="/repo/HapiApp2.0"
+
+if [[ -z "${TF_WORKSPACE}" ]]; then
+  TF_WORKSPACE="test-${CIRCLE_BUILD_NUM}"
+fi
+
+if [[ -z "${ENABLE_NEW_RELIC}" ]]; then
+  ENABLE_NEW_RELIC=false
+  NEW_RELIC_NAME=""
+fi
+
+if [[ -z "${COMMAND_LINE_ARGS}" ]]; then
+    COMMAND_LINE_ARGS=""
+fi
+
+function ansible_deploy {
+  ansible-playbook \
+    -i ./inventory/hosts-${TF_WORKSPACE} \
+    --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
+    -u ubuntu \
+    -e branch=${CIRCLE_BRANCH} \
+    -e app_dir=/repo \
+    -e enable_newrelic=${ENABLE_NEW_RELIC} \
+    -e new_relic_name=${NEW_RELIC_NAME} \
+  play-deploy-psql.yml
+}
+
+function ansible_clean {
+  ansible-playbook \
+    -i ./inventory/hosts-${TF_WORKSPACE} \
+    --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
+    -u ubuntu \
+  play-clean-state.yml
+}
+
+function ansible_reboot {
+  ansible-playbook \
+    -i ./inventory/hosts-${TF_WORKSPACE} \
+    --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
+    -u ubuntu \
+  play-reboot.yml
+}
+
+function tf_apply {
+  terraform apply \
+    --auto-approve \
+    --var-file ci.tfvars \
+    --var node_count=${1}
+}
+
+function tf_destroy {
+  terraform destroy \
+    --auto-approve \
+    --var-file ci.tfvars \
+    --var node_count=0 \
+  && terraform workspace select default \
+  && terraform workspace delete ${TF_WORKSPACE} \
+  ;
+}
+
+function replace_application_properties {
+  rm -f ${CLIENT_DIR}/src/main/resource/application.properties \
+  && cp ${TF_DIR}/nets/${TF_WORKSPACE}/client.application.properties \
+        ${CLIENT_DIR}/src/main/resource/application.properties \
+  ;
+}
+
+function replace_test_properties {
+  rm -f ${CLIENT_DIR}/config/umbrellaTest.properties \
+  && cp ${CLIENT_DIR}/config/umbrellaTest.properties.alt${1} \
+        ${CLIENT_DIR}/config/umbrellaTest.properties \
+  ;
+}
+
+function download_hosts_output {
+  for host in "${HOSTS[@]}"; do
+    scp -p -o StrictHostKeyChecking=no ubuntu@$host:/opt/hgcapp/services-hedera/HapiApp2.0/*.csv $HAPIAPP_DIR
+    mkdir -p $HAPIAPP_DIR/$host
+    scp -p -r -o StrictHostKeyChecking=no ubuntu@$host:/opt/hgcapp/services-hedera/HapiApp2.0/output $HAPIAPP_DIR/$host
+  done
+}
+
+function print_downloaded_hosts_output {
+  for host in "${HOSTS[@]}"; do
+    grep "current platform status = " $HAPIAPP_DIR/$host/output/hgcaa.log
+    grep "StorageMap roothash on " $HAPIAPP_DIR/$host/output/hgcaa.log
+    cat $HAPIAPP_DIR/$host/output/swirlds.log
+  done
+}
+
+function look_for_iss_in_hosts_output {
+  download_hosts_output
+  for host in "${HOSTS[@]}"; do
+    set +e
+    issCount=$(grep "Received invalid state signature" $HAPIAPP_DIR/$host/output/swirlds.log | wc -l)
+    set -e
+    if [[ "$issCount" -gt "0" ]]; then
+      echo "FAILED: Node $host received invalid state signature"
+      return -2
+    fi
+  done
+}
+
+function check_postgresql_status {
+  for host in "${HOSTS[@]}"; do
+    ssh -o StrictHostKeyChecking=no ubuntu@$host "sudo ls -ltr $POSTGRESQL_LOG_DIR; psql -V; systemctl status postgresql@10-main"
+#    secondLatestLog=$(ssh -o StrictHostKeyChecking=no ubuntu@$host "sudo ls -tr $POSTGRESQL_LOG_DIR | tail -2 | head -1")
+#    ssh -o StrictHostKeyChecking=no ubuntu@$host "sudo tail -100 $POSTGRESQL_LOG_DIR/$secondLatestLog"
+  done
+}
+
+#
+# A wrapper for "waitFor" in HapiApp2.0/functions.sh
+# to wait for remote nodes
+#
+# Arguments:
+#   string to wait for
+#   log of remote nodes
+#   expected number of appearances of the string to stop the wait
+#
+function wait_for_all_remote_nodes {
+  for host in "${HOSTS[@]}"; do
+    searchCommand="ssh -o StrictHostKeyChecking=no ubuntu@$host 'grep \"$1\" $2'"
+    waitFor "$searchCommand" $3
+    eval "$searchCommand"
+  done
+}
+
+function validate_freeze_start_time {
+  download_hosts_output
+  for host in "${HOSTS[@]}"; do
+    local result=$(grep "current platform status = MAINTENANCE" $HAPIAPP_DIR/$host/output/hgcaa.log | tail -1)
+    local realFreezeStartTime=${result:11:7}
+    if [[ "$realFreezeStartTime" == "$1" || "$realFreezeStartTime" == "$2" ]]; then
+      echo "Passed: Node $host entered MAINTENANCE mode at the expected time"
+    else
+      echo "FAILED: Node $host did not enter MAINTENANCE mode at the expected time"
+      return -1
+    fi
+  done
+}
+
+function prepare {
+  HOSTS=($(cat ${TF_DIR}/nets/${TF_WORKSPACE}/hosts_list))
+  TESTS_ARR=(${TESTS})
+  TEST_PROPS_NUM_ARR=(${TEST_PROPS_NUM})
+  POSTGRESQL_LOG_DIR="/var/lib/postgresql/10/main/log"
+  . $HAPIAPP_DIR/functions.sh
+  disallow_postgresql_to_upgrade
+}
+
+function disallow_postgresql_to_upgrade {
+  set +e
+  printTimestamp
+  for host in "${HOSTS[@]}"; do
+    runningAptCommands="apt"
+    while [ -n "$runningAptCommands" ]; do
+      sleep 10
+      runningAptCommands=$(ssh -o StrictHostKeyChecking=no ubuntu@$host "ps -ef | grep [a]pt")
+    done
+    ssh -o StrictHostKeyChecking=no ubuntu@$host "sudo apt-mark hold postgresql-10"
+  done
+  printTimestamp
+  set -e
+}
+
+function empty_run_only_to_check_postgresql_status {
+  for i in {1..5}
+  do
+    check_postgresql_status
+    sleep 120
+  done
+}
+
+function run_tests {
+  COUNT=0
+  cd ${CLIENT_DIR}
+  mvn clean install
+
+  for test in "${TESTS_ARR[@]}"; do
+    check_postgresql_status
+    if [[ "$test" == "restart" ]]; then
+      echo "All nodes should be in MAINTENANCE mode"
+      local hgcaaLog="/opt/hgcapp/services-hedera/HapiApp2.0/output/hgcaa.log"
+      local searchString="current platform status = MAINTENANCE"
+      wait_for_all_remote_nodes "$searchString" $hgcaaLog 1
+      validate_freeze_start_time "$freezeStartHour:$freezeStartMin:0" "$oneMinuteBeforeFreezeStartTime:5"
+
+      echo "Waiting for all nodes to be back to ACTIVE..."
+      searchString="$freezeEndHour:$freezeEndMin:0.*current platform status = ACTIVE"
+      wait_for_all_remote_nodes "$searchString" $hgcaaLog 1
+
+      # Check for background jobs before restart
+      jobs
+
+      echo "Restarting all nodes..."
+      cd $ANSIBLE_DIR
+      ansible_reboot
+      wait_for_it 50211
+      sleep 30
+
+      echo "Waiting for all nodes to restart completely..."
+      searchString="current platform status = ACTIVE"
+      wait_for_all_remote_nodes "$searchString" $hgcaaLog 3
+
+      echo "All nodes should restore saved signed state from disk..."
+      local swirldsLog="/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log"
+      searchString="Platform - Signed state loaded from disk has a valid hash."
+      wait_for_all_remote_nodes "$searchString" $swirldsLog 1
+
+      echo "All nodes should restart with the same events..."
+      searchString="Hashgraph - lateseq after restart is .*$"
+      local searchCommand="ssh -o StrictHostKeyChecking=no ubuntu@${HOSTS[0]} 'grep -o \"$searchString\" $swirldsLog'"
+      waitFor "$searchCommand" 1
+      searchString=$(eval "$searchCommand")
+      searchString="${searchString//[/\\[}"
+      searchString="${searchString//]/\\]}"
+      wait_for_all_remote_nodes "$searchString" $swirldsLog 1
+
+      # Clean up client output after the restart and prepare for the final validations
+      cd $CLIENT_DIR
+      rm $CLIENT_DIR/output/*
+    else
+      if [[ "${TEST_PROPS_NUM_ARR[${COUNT}]}" != "-1" ]]; then
+        echo "replacing properties"
+        replace_test_properties "${TEST_PROPS_NUM_ARR[${COUNT}]}"
+      else
+        echo "not replacing properties"
+      fi
+
+    # Adding an echo line to have a separation of log blocks
+    # printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+
+      chmod -R +x $CLIENT_DIR/*
+
+      local clientLog="$CLIENT_DIR/output/$test$COUNT.log"
+      if [[ "${TEST_PROPS_NUM_ARR[${COUNT}]}" == "5k" ]]; then
+        # Turn off set -e for 5k requests so the test does not fail on UNAVAILABLE nodes
+        set +e
+        mvn -q exec:java -Dexec.mainClass=${test} -Dexec.args="${HOSTS[${HOST_INDEX}]} ${NODE_ACCOUNT} ${COMMAND_LINE_ARGS}" -Dexec.cleanupDaemonThreads=false >$clientLog 2>&1 &
+        local clientPid=$!
+        waitFor "grep \"UNAVAILABLE\" $clientLog" 1
+
+        kill $clientPid
+
+        # Turn set -e back on
+        set -e
+        grep -n "UNAVAILABLE" $clientLog | tail -10
+#        cat $clientLog
+      elif [[ $test == *FreezeServiceTest* ]]; then
+        mvn -e -q exec:java -Dexec.mainClass=${test} -Dexec.args="${HOSTS[${HOST_INDEX}]} ${NODE_ACCOUNT} ${COMMAND_LINE_ARGS}" -Dexec.cleanupDaemonThreads=false >$clientLog 2>&1
+        local failedIndicator=$(grep "\[INFO\] BUILD FAILURE" $clientLog)
+        if [[ -n "$failedIndicator" ]]; then
+          cat $clientLog
+          return 1
+        fi
+        oneMinuteBeforeFreezeStartTime=$(date '+%H:%M')
+        local freezeTransactionBody=$(grep -A4 "freeze: FreezeTransactionBody =" $clientLog)
+        local freezeArr=(${freezeTransactionBody//:/ })
+        freezeStartHour=$(printf "%02d" ${freezeArr[4]})
+        freezeStartMin=$(printf "%02d" ${freezeArr[6]})
+        freezeEndHour=$(printf "%02d" ${freezeArr[8]})
+        freezeEndMin=$(printf "%02d" ${freezeArr[10]})
+      else
+        mvn -e -q exec:java -Dexec.mainClass=${test} -Dexec.args="${HOSTS[${HOST_INDEX}]} ${NODE_ACCOUNT} ${COMMAND_LINE_ARGS}" -Dexec.cleanupDaemonThreads=false
+      fi
+    fi
+    look_for_iss_in_hosts_output
+    COUNT=$((COUNT + 1))
+     # printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+  done
+
+  echo "Tests Finished"
+  download_hosts_output
+  $HAPIAPP_DIR/validateStats.sh "$HAPIAPP_DIR/*0.csv" "$CLIENT_DIR/output/#*.log"
+}
+
+function wait_for_it {
+  for host in $(cat ${TF_DIR}/nets/${TF_WORKSPACE}/hosts_list); do
+    wait-for-it ${host}:${1} -t 60 -- echo "${host} is up"
+  done
+}
+
+
+function cleanup {
+  SIG=$?
+  set +e
+  download_hosts_output
+  print_downloaded_hosts_output
+  check_postgresql_status
+  cd ${TF_DIR}
+  tf_destroy
+  exit ${SIG}
+}
+
+####################
+### BEGIN SCRIPT
+####################
+
+# trap and do terraform deploy only when 'SKIP_TF_DEPLOY' var is unset
+if [[ -z "${SKIP_TF_DEPLOY}" ]]; then
+  echo "Trapping for cleanup..."
+  trap cleanup EXIT
+  cd ${TF_DIR}
+  echo "Initializing TF Workspace: ${TF_WORKSPACE}"
+  terraform init
+  terraform workspace new ${TF_WORKSPACE}
+  tf_apply 3
+  wait_for_it 22
+  sleep 3
+else
+  echo "Not trapping for cleanup..."
+fi
+
+# run deploy only when 'SKIP_ANSIBLE_DEPLOY' var is unset
+if [[ -z "${SKIP_ANSIBLE_DEPLOY}" ]]; then
+  cd ${ANSIBLE_DIR}
+  echo "Deploying with Ansible"
+  ansible_deploy
+fi
+
+# run clean only if 'DO_ANSIBLE_CLEAN' var is set
+if [[ ! -z "${DO_ANSIBLE_CLEAN}" ]]; then
+  echo "cleaning state and restarting"
+  ansible_clean
+fi
+
+wait_for_it 50211
+sleep 30
+
+echo "Testing Circle Build ${CIRCLE_BUILD_NUM} and running tests: ${TESTS}"
+
+replace_application_properties
+
+prepare
+
+run_tests
+#empty_run_only_to_check_postgresql_status
