@@ -33,7 +33,6 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
@@ -43,18 +42,13 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -149,9 +143,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 						callData,
 						txnCtx.consensusTime(),
 						aliasManager.resolveForEvm(receiver.canonicalAddress()),
-						offeredGasPrice,
-						maxGasAllowanceInTinybars,
-						null,
 						targetId.num(),
 						entityAccess.worldLedgers());
 			} else {
@@ -167,7 +158,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			sender.incrementEthereumNonce();
 			accountStore.commitAccount(sender);
 			if (isDirectTokenCall) {
-				result = evmTxSimulator.execute(
+				result = evmTxSimulator.executeEth(
 						sender,
 						op.getGas(),
 						op.getAmount(),
