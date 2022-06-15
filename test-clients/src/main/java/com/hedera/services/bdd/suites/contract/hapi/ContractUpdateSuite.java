@@ -128,6 +128,38 @@ public class ContractUpdateSuite extends HapiApiSuite {
 										.isDeclinedReward(false)
 										.noStakingNodeId()
 										.stakedAccountId("0.0.10"))
+								.logged(),
+
+						/* --- reset the staking account ---*/
+						contractUpdate(CONTRACT)
+								.newDeclinedReward(false)
+								.newStakedAccountId("0.0.0"),
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakingNodeId()
+										.noStakedAccountId())
+								.logged(),
+
+						contractCreate(CONTRACT)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged(),
+
+						/* --- reset the staking account ---*/
+						contractUpdate(CONTRACT)
+								.newDeclinedReward(false)
+								.newStakedNodeId(-1L),
+						getContractInfo(CONTRACT)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakingNodeId()
+										.noStakedAccountId())
 								.logged()
 				)
 				.then(

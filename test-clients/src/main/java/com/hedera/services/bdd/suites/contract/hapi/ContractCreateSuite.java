@@ -108,6 +108,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -157,7 +158,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-//						canCallPendingContractSafely(),
+						canCallPendingContractSafely(),
 						createContractWithStakingFields()
 				}
 		);
@@ -209,7 +210,18 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.isDeclinedReward(false)
 										.noStakingNodeId()
 										.stakedAccountId("0.0.10"))
-								.logged()
+								.logged(),
+						/*-- sentinel values throw ---*/
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedAccountId("0.0.0")
+								.hasPrecheck(INVALID_STAKING_ID),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedNodeId(-1L)
+								.hasPrecheck(INVALID_STAKING_ID)
 				);
 	}
 

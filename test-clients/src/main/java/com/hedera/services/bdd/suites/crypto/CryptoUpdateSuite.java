@@ -136,26 +136,52 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoCreate("user")
 								.key(ADMIN_KEY)
 								.stakedAccountId("0.0.20")
-								.declinedReward(true)
+								.declinedReward(true),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.stakedAccountId("0.0.20")
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged()
 				)
 				.when(
+						cryptoUpdate("user")
+								.newStakedNodeId(0L)
+								.newDeclinedReward(false),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.stakedNodeId(0L)
+										.isDeclinedReward(false))
+								.logged(),
+						cryptoUpdate("user")
+								.newStakedNodeId(-1L),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.noStakingNodeId()
+										.isDeclinedReward(false))
+								.logged()
+				)
+				.then(
+						cryptoUpdate("user")
+								.key(ADMIN_KEY)
+								.newStakedAccountId("0.0.20")
+								.newDeclinedReward(true),
 						getAccountInfo("user")
 								.has(AccountInfoAsserts.accountWith()
 										.stakedAccountId("0.0.20")
 										.noStakingNodeId()
 										.isDeclinedReward(true))
 								.logged(),
-
 						cryptoUpdate("user")
-								.newStakedNodeId(0L)
-								.newDeclinedReward(false)
-				)
-				.then(
+								.key(ADMIN_KEY)
+								.newStakedAccountId("0.0.0"),
 						getAccountInfo("user")
 								.has(AccountInfoAsserts.accountWith()
 										.noStakedAccountId()
-										.stakedNodeId(0L)
-										.isDeclinedReward(false))
+										.noStakingNodeId()
+										.isDeclinedReward(true))
 								.logged()
 				);
 	}
