@@ -74,7 +74,7 @@ public class EncodingUtil {
             } else if(params[i] instanceof byte[] && (((byte[]) params[i]).length == 40)) {
                 result[i] = convertAliasToHeadlongAddress((String) params[i]);
             } else if (params[i] instanceof List) {
-                if(((List<?>) params[i]).get(0) instanceof byte[]){
+                if(!((List<?>) params[i]).isEmpty() && ((List<?>) params[i]).get(0) instanceof byte[]){
                     Address[] objectsInside = new Address[((List<?>) params[i]).size()];
                     for (int j = 0; j < ((List<?>) params[i]).size(); j++) {
                         if(((byte[]) ((List<?>) params[i]).get(j)).length == 20) {

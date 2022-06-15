@@ -268,7 +268,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, DEFAULT_CONTRACT_SENDER, -50L)
-														.including(A_TOKEN, theContract, 50L)
+//														.including(A_TOKEN, theContract, 50L)
 										)),
 						childRecordsCheck("receiverTx",
 								SUCCESS,
@@ -291,7 +291,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, theContract, -25L)
-														.including(A_TOKEN, RECEIVER, 25L)
+//														.including(A_TOKEN, RECEIVER, 25L)
 										))
 				);
 	}
@@ -337,7 +337,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "distributeTokens",
-													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													accounts,
 													amounts
 											)
@@ -410,11 +410,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
-									final var accounts = List.of(sender, receiver1, receiver2);
-									final var amounts = List.of(-10L, 5L, 5L);
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(SECOND_RECEIVER)));
+									final var accounts = new Address[]{sender, receiver1, receiver2};
+									final var amounts = new long[]{-10L, 5L, 5L};
 
 									/* --- HSCS-PREC-009 --- */
 									allRunFor(
@@ -422,8 +422,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.gas(GAS_TO_OFFER)
@@ -438,8 +438,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
@@ -454,8 +454,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
@@ -578,11 +578,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
-									final var accounts = List.of(sender, receiver1, receiver2);
-									final var amounts = List.of(-10L, 5L, 5L);
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(SECOND_RECEIVER)));
+									final var accounts = new Address[]{sender, receiver1, receiver2};
+									final var amounts = new long[]{-10L, 5L, 5L};
 
 									/* --- HSCS-PREC-009 --- */
 									allRunFor(
@@ -591,8 +591,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
@@ -607,8 +607,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
@@ -624,8 +624,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 													"feeDistributionAfterTransferStaticNestedCall",
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
 													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
+													accounts,
+													amounts,
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)

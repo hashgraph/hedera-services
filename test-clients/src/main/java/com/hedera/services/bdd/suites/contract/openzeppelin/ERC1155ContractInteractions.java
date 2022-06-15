@@ -100,7 +100,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 									senderAddress, accountOneAddress,
 									0, // token id 
 									1, // amount 
-									"0x0"
+									"0x0".getBytes()
 							).via("contractTransferFromCall").payingWith(ACCOUNT1)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(transferCall);

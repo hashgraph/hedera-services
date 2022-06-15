@@ -122,22 +122,22 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
+				positiveSpecs()
+//				negativeSpecs()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(new HapiApiSpec[] {
-				fungibleTokenCreateHappyPath(),
-				fungibleTokenCreateWithFeesHappyPath(),
-				nonFungibleTokenCreateHappyPath(),
-				nonFungibleTokenCreateWithFeesHappyPath(),
-				fungibleTokenCreateThenQueryAndTransfer(),
-				nonFungibleTokenCreateThenQuery(),
+//				fungibleTokenCreateHappyPath(),
+//				fungibleTokenCreateWithFeesHappyPath(),
+//				nonFungibleTokenCreateHappyPath(),
+//				nonFungibleTokenCreateWithFeesHappyPath(),
+//				fungibleTokenCreateThenQueryAndTransfer(),
+//				nonFungibleTokenCreateThenQuery(),
 				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-				inheritsSenderAutoRenewAccountForTokenCreate(),
-				createTokenWithDefaultExpiryAndEmptyKeys()
+				inheritsSenderAutoRenewAccountForTokenCreate()
+//				createTokenWithDefaultExpiryAndEmptyKeys()
 		});
 	}
 

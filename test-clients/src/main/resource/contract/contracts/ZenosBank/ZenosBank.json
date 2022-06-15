@@ -13,9 +13,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint16"
+        "type": "int64"
       }
     ],
     "name": "depositTokens",
