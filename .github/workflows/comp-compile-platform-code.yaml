@@ -100,15 +100,6 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         run: bash compose-build.sh
 
-      - name: Start network # start 3 node network
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: docker compose up -d
-
-      - name: Healthcheck for Hedera node # wait until node is ready to serve requests
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        working-directory: .github/scripts
-        run: bash healthcheck.sh
-
       - name: Integration Testing
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         id: gradle-itest
@@ -144,11 +135,8 @@ jobs:
       - name: Javadoc
         if: ${{ inputs.enable-javadoc && !cancelled() }}
         uses: gradle/gradle-build-action@v2
-        # run: ./mvnw -DskipTests javadoc:aggregate
-        # TODO What about javadoc aggregation? Should I do that too?
         with:
           arguments: javadoc
-
 
       - name: SonarCloud Options
         id: sonar-cloud

@@ -18,9 +18,9 @@
  * ‍
  */
 
+import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -211,15 +211,9 @@ import org.junit.jupiter.api.TestFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
-
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 
-class E2EPackageRunner {
+class E2EPackageRunner extends TestBase {
 
 	@BeforeAll
 	static void beforeAll() {
@@ -762,37 +756,5 @@ class E2EPackageRunner {
 		return List.of(
 				extractSpecsFromSuite(SubmitMessagePerfSuite::new)
 		);
-	}
-
-	private DynamicContainer extractSpecsFromSuite(final Supplier<HapiApiSuite> suiteSupplier) {
-		final var suite = suiteSupplier.get();
-		final var tests = suite.getSpecsInSuite()
-				.stream()
-				.map(s -> dynamicTest(s.getName(), () -> {
-							s.run();
-							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + "}, while " +
-											"executing " +
-											"SPEC {" + s.getName() + "}");
-						}
-				));
-		return dynamicContainer(suite.getClass().getSimpleName(), tests);
-	}
-
-	private DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiApiSuite> suiteSupplier) {
-		final var suite = suiteSupplier.get();
-		final var tests = suite.getSpecsInSuite()
-				.stream()
-				.map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
-							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
-							s.run();
-							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
-											"while " +
-											"executing " +
-											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
-						}
-				));
-		return dynamicContainer(suite.getClass().getSimpleName(), tests);
 	}
 }

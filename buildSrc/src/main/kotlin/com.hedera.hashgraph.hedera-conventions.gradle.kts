@@ -111,6 +111,29 @@ testing {
                 }
             }
         }
+
+        // Add the EET task for executing end-to-end tests
+        testing {
+            suites {
+                @Suppress("UnstableApiUsage", "UNUSED_VARIABLE")
+                val eet by registering(JvmTestSuite::class) {
+                    testType.set("end-to-end-test")
+                    dependencies {
+                        implementation(project)
+                    }
+
+                    // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
+                    // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
+                    targets {
+                        all {
+                            testTask.configure {
+                                shouldRunAfter(tasks.test)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

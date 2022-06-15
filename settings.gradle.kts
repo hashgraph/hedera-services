@@ -35,7 +35,7 @@ dependencyResolutionManagement {
         create("libs") {
             // Definition of version numbers for all libraries
             version("besu-version", "22.4.1")
-            version("besu-native-version", "0.4.3")
+            version("besu-native-version", "0.5.0")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
             version("commons-codec-version", "1.15")
@@ -117,14 +117,16 @@ dependencyResolutionManagement {
             version("commons-collections4-version", "4.4")
             version("ethereumj-version", "1.12.0-v0.5.0")
             version("hamcrest-version", "2.2")
+            version("json-version", "20210307")
             version("junit5-version", "5.8.2")
             version("mockito-version", "4.4.0")
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
-            version("json-version", "20210307")
+            version("testcontainers-version", "1.17.2")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
+            bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
             bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility"))
 
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
@@ -132,6 +134,7 @@ dependencyResolutionManagement {
             library("commons-collections4", "org.apache.commons", "commons-collections4").versionRef("commons-collections4-version")
             library("ethereumj", "com.hedera.hashgraph", "ethereumj-core").versionRef("ethereumj-version")
             library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
+            library("json", "org.json", "json").versionRef("json-version")
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")
             library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit5-version")
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
@@ -139,7 +142,8 @@ dependencyResolutionManagement {
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
-            library("json", "org.json", "json").versionRef("json-version")
+            library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
+            library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
         }
     }
 }
