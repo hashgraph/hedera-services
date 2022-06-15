@@ -120,6 +120,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -291,10 +292,11 @@ class TransferPrecompilesTest {
 	}
 
 	@Test
-	void transferTokenHappyPathWorks() {
+	void transferTokenHappyPathWorksEvenIfLastCallWasReadOnlyPrecompile() {
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 		givenMinimalFrameContext();
 		givenLedgers();
+		subject.setTokenReadOnlyTransaction(true);
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -350,6 +352,7 @@ class TransferPrecompilesTest {
 		verify(transferLogic).doZeroSum(tokensTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		assertFalse(subject.isTokenReadOnlyTransaction());
 	}
 
 	@Test

@@ -415,7 +415,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
 	}
 
-
 	void computeGasRequirement(final long blockTimestamp) {
 		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
 				blockTimestamp).build();
@@ -432,7 +431,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final Long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		gasRequirement = baseGasCost + (baseGasCost / 5L);
+		gasRequirement = baseGasCost + (baseGasCost/5L);
 	}
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
@@ -454,14 +453,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
 		// charge premium
-		return baseGasCost + (baseGasCost / 5L);
+		return baseGasCost + (baseGasCost/5L);
 	}
 
 	void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		this.precompile = null;
 		this.transactionBody = null;
+
 		this.functionId = input.getInt(0);
 		this.gasRequirement = 0L;
+		this.isTokenReadOnlyTransaction = false;
+
 		this.precompile =
 				switch (functionId) {
 					case ABI_ID_CRYPTO_TRANSFER,
@@ -663,6 +665,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 			}
 		}
+
 		return result;
 	}
 
@@ -672,7 +675,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Optional<ResponseCodeEnum> errorStatus,
 			final InfoProvider provider
 	) {
-
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
@@ -1553,7 +1555,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var nftExchange = transferOp.get(0).nftExchanges().get(0);
 				final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
 				validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
-
 			}
 			try {
 				super.run(provider);
@@ -2021,7 +2022,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 
 	@FunctionalInterface
-	interface ContractActivationTest {
+	private interface ContractActivationTest {
 		/**
 		 * Returns whether a key implicit in the target address is active, given an idealized message
 		 * frame in which:
@@ -2035,10 +2036,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target         an address with an implicit key understood by this implementation
-		 * @param activeContract the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers   the worldLedgers representing current state
+		 * @param isDelegateCall
+		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target
+		 * 		an address with an implicit key understood by this implementation
+		 * @param activeContract
+		 * 		the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers
+		 * 		the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
@@ -2118,7 +2123,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.approveAllowanceLogicFactory = approveAllowanceLogicFactory;
 	}
 
+	@VisibleForTesting
 	public Precompile getPrecompile() {
 		return precompile;
+	}
+
+	@VisibleForTesting
+	void setTokenReadOnlyTransaction(final boolean tokenReadOnlyTransaction) {
+		isTokenReadOnlyTransaction = tokenReadOnlyTransaction;
+	}
+
+	@VisibleForTesting
+	boolean isTokenReadOnlyTransaction() {
+		return isTokenReadOnlyTransaction;
 	}
 }

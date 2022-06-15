@@ -31,6 +31,7 @@ import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
+import com.hedera.services.yahcli.suites.CreateSuite;
 import com.hedera.services.yahcli.suites.FreezeHelperSuite;
 import com.hedera.services.yahcli.suites.RekeySuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
@@ -170,7 +171,8 @@ public class ConfigUtils {
 				HapiGetFileContents.class,
 				HapiApiSpec.class,
 				VersionInfoSpec.class,
-				SendSuite.class
+				SendSuite.class,
+				CreateSuite.class
 		).forEach(cls -> setLogLevel(cls, logLevel));
 	}
 
