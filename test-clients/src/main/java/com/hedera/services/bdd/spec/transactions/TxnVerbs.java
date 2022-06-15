@@ -76,7 +76,7 @@ import org.ethereum.core.CallTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.OptionalLong;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -460,12 +460,16 @@ public class TxnVerbs {
 	 * 		the name(s) of the contract(s), which are to be deployed
 	 */
 	public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
+		return uploadInitCode(Optional.empty(), contractsNames);
+	}
+
+	public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			for (String contractName : contractsNames) {
 				final var path = getResourcePath(contractName, ".bin");
 				final var file = new HapiFileCreate(contractName);
-				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+				final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, extractByteCode(path));
 				ops.add(file);
 				ops.add(updatedFile);
 			}

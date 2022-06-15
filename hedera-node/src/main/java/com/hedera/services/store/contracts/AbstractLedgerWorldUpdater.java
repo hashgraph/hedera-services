@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -46,8 +47,10 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -88,13 +91,15 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  * 		the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
-	private static final int UNKNOWN_RECORD_SOURCE_ID = -1;
+	protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
 	private final W world;
 	private final WorldLedgers trackingLedgers;
 
-	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
-	private RecordsHistorian recordsHistorian = null;
+	// All the record source ids of our committed child updaters
+	protected int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
+	protected List<Integer> committedRecordSourceIds = Collections.emptyList();
+	protected RecordsHistorian recordsHistorian = null;
 
 	protected Set<Address> deletedAccounts = new HashSet<>();
 	protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
@@ -112,7 +117,8 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	 * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and either
 	 * committed or reverted atomically with all other mutations in the change-set.
 	 *
-	 * @param address the address of interest
+	 * @param address
+	 * 		the address of interest
 	 * @return a tracked mutable account for the given address
 	 */
 	protected abstract A getForMutation(Address address);
@@ -230,6 +236,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 		if (recordsHistorian != null) {
 			recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);
+			committedRecordSourceIds.forEach(recordsHistorian::revertChildRecordsFromSource);
 		}
 	}
 
@@ -238,15 +245,33 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			final ExpirableTxnRecord.Builder recordSoFar,
 			final TransactionBody.Builder syntheticBody
 	) {
+		ensureFamiliarityWith(recordsHistorian);
 		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
 			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
-			this.recordsHistorian =  recordsHistorian;
 		}
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
 		return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));
+	}
+
+	protected void addCommittedRecordSourceId(final int recordSourceId, final RecordsHistorian recordsHistorian) {
+		ensureFamiliarityWith(recordsHistorian);
+		if (committedRecordSourceIds.isEmpty()) {
+			committedRecordSourceIds = new ArrayList<>();
+		}
+		committedRecordSourceIds.add(recordSourceId);
+	}
+
+	private void ensureFamiliarityWith(final RecordsHistorian recordsHistorian) {
+		if (this.recordsHistorian == null) {
+			this.recordsHistorian = recordsHistorian;
+		} else {
+			if (this.recordsHistorian != recordsHistorian) {
+				throw new IllegalArgumentException("Encountered multiple historians in the same transaction");
+			}
+		}
 	}
 
 	private WorldLedgers withChangeObserver(final WorldLedgers wrappedLedgers) {
@@ -331,5 +356,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		} else {
 			return false;
 		}
+	}
+
+	@VisibleForTesting
+	List<Integer> getCommittedRecordSourceIds() {
+		return committedRecordSourceIds;
+	}
+	@VisibleForTesting
+	RecordsHistorian getRecordsHistorian() {
+		return recordsHistorian;
 	}
 }

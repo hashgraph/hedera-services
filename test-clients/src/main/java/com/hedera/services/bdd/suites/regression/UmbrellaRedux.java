@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -72,10 +73,15 @@ public class UmbrellaRedux extends HapiApiSuite {
 	}
 
 	private HapiApiSpec umbrellaRedux() {
-		return HapiApiSpec.customHapiSpec("UmbrellaRedux")
-				.withProperties(Map.of(
-						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
+		return defaultHapiSpec("UmbrellaRedux")
 				.given(
+						withOpContext((spec, opLog) -> {
+							configureFromCi(spec);
+							// use ci property statusTimeoutSecs to overwrite default value of status.wait.timeout.ms
+							spec.addOverrideProperties(
+									Map.of("status.wait.timeout.ms",
+											Integer.toString(1_000 * statusTimeoutSecs.get())));
+						}),
 						cryptoCreate(UNIQUE_PAYER_ACCOUNT)
 								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
 								.withRecharging()
@@ -84,7 +90,6 @@ public class UmbrellaRedux extends HapiApiSuite {
 				).when(
 						getTxnRecord("createUniquePayer").logged()
 				).then(
-						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						sourcing( () -> runWithProvider(factoryFrom(props::get))
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
