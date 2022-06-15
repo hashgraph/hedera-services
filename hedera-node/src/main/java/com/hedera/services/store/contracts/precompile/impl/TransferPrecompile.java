@@ -163,22 +163,21 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 						updater.aliases());
 				validateTrue(hasSenderSig, INVALID_SIGNATURE);
 			}
-			if (i >= numExplicitChanges) {
-				/* Ignore receiver sig requirements for custom fee payments (which are never NFT transfers) */
-				continue;
+			if (i < numExplicitChanges) {
+				/* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
+				var hasReceiverSigIfReq = true;
+				if (change.isForNft()) {
+					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
+					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
+							frame, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
+							updater.aliases());
+				} else if (units > 0) {
+					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
+							frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+							ledgers, updater.aliases());
+				}
+				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
-			var hasReceiverSigIfReq = true;
-			if (change.isForNft()) {
-				final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
-				hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-						frame, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
-						updater.aliases());
-			} else if (units > 0) {
-				hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-						frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-						ledgers, updater.aliases());
-			}
-			validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 		}
 
 		transferLogic.doZeroSum(changes);
