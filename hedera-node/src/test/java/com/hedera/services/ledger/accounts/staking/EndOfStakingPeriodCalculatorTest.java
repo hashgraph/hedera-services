@@ -52,19 +52,19 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class EndOfStakingPeriodCalculatorTest {
 	@Mock
-	MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
 	@Mock
-	MerkleNetworkContext merkleNetworkContext;
+	private MerkleNetworkContext merkleNetworkContext;
 	@Mock
-	SyntheticTxnFactory syntheticTxnFactory;
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
-	RecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
-	EntityCreator creator;
+	private EntityCreator creator;
 	@Mock
-	PropertySource properties;
+	private PropertySource properties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -117,9 +117,12 @@ class EndOfStakingPeriodCalculatorTest {
 		assertEquals(800L, stakingInfo1.getStake());
 		assertEquals(500L, stakingInfo2.getStake());
 		assertEquals(0L, stakingInfo3.getStake());
-		assertArrayEquals(new long[]{16,6,5}, stakingInfo1.getRewardSumHistory());
-		assertArrayEquals(new long[]{11,1,1}, stakingInfo2.getRewardSumHistory());
-		assertArrayEquals(new long[]{13,3,1}, stakingInfo3.getRewardSumHistory());
+		assertEquals(0L, stakingInfo1.getUnclaimedStakeRewardStart());
+		assertEquals(0L, stakingInfo2.getUnclaimedStakeRewardStart());
+		assertEquals(0L, stakingInfo3.getUnclaimedStakeRewardStart());
+		assertArrayEquals(new long[] { 16, 6, 5 }, stakingInfo1.getRewardSumHistory());
+		assertArrayEquals(new long[] { 11, 1, 1 }, stakingInfo2.getRewardSumHistory());
+		assertArrayEquals(new long[] { 13, 3, 1 }, stakingInfo3.getRewardSumHistory());
 	}
 
 	@Test
@@ -154,9 +157,9 @@ class EndOfStakingPeriodCalculatorTest {
 	final long stake1 = 2_000L;
 	final long stake2 = 750L;
 	final long stake3 = 75L;
-	final long[] rewardSumHistory1 = new long[]{8,7,2};
-	final long[] rewardSumHistory2 = new long[]{5,5,4};
-	final long[] rewardSumHistory3 = new long[]{4,2,1};
+	final long[] rewardSumHistory1 = new long[] { 8, 7, 2 };
+	final long[] rewardSumHistory2 = new long[] { 5, 5, 4 };
+	final long[] rewardSumHistory3 = new long[] { 4, 2, 1 };
 	final EntityNum nodeNum1 = EntityNum.fromInt(0);
 	final EntityNum nodeNum2 = EntityNum.fromInt(1);
 	final EntityNum nodeNum3 = EntityNum.fromInt(2);

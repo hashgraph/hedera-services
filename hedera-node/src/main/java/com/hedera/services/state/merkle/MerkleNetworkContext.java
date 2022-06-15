@@ -743,7 +743,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
-	public long getPendingRewards() {
+	public long pendingRewards() {
 		return pendingRewards;
 	}
 

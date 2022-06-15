@@ -886,7 +886,7 @@ class MerkleNetworkContextTest {
 		localSub.increasePendingRewards(123);
 		localSub.increasePendingRewards(234);
 		localSub.decreasePendingRewards(99);
-		assertEquals(123 + 234 - 99, localSub.getPendingRewards());
+		assertEquals(123 + 234 - 99, localSub.pendingRewards());
 	}
 
 	@Test

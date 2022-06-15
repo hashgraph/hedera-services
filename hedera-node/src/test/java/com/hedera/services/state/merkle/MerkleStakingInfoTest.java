@@ -85,7 +85,7 @@ class MerkleStakingInfoTest {
 		assertEquals(0, subject.getUnclaimedStakeRewardStart());
 		subject.increaseUnclaimedStakeRewardStart(666);
 		assertEquals(666, subject.getUnclaimedStakeRewardStart());
-		assertEquals(stakeRewardStart - 666, subject.stakeRewardStartWithPendingRewards());
+		assertEquals(stakeRewardStart - 666, subject.stakeRewardStartMinusUnclaimed());
 	}
 
 	@Test
@@ -149,7 +149,8 @@ class MerkleStakingInfoTest {
 	@Test
 	void toStringWorks() {
 		final var expected = "MerkleStakingInfo{id=0.0.0.34, minStake=100, maxStake=10000, stakeToReward=345, " +
-				"stakeToNotReward=155, stakeRewardStart=1234, stake=500, rewardSumHistory=[2, 1, 0]}";
+				"stakeToNotReward=155, stakeRewardStart=1234, unclaimedStakeRewardStart=123, stake=500, " +
+				"rewardSumHistory=[2, 1, 0]}";
 
 		assertEquals(expected, subject.toString());
 	}
@@ -205,7 +206,7 @@ class MerkleStakingInfoTest {
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMaxStake() {
 		final var rewardRate = 1_000_000;
 
-		subject.setStakeToReward(2 * subject.getMaxStake());
+		subject.setStakeRewardStart(2 * subject.getMaxStake());
 		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
@@ -248,6 +249,7 @@ class MerkleStakingInfoTest {
 		out.writeLong(stakeToReward);
 		out.writeLong(stakeToNotReward);
 		out.writeLong(stakeRewardStart);
+		out.writeLong(unclaimedStakeRewardStart);
 		out.writeLong(stake);
 		out.write(rewardSumHistoryHash);
 

@@ -137,11 +137,11 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		// the active condition will only be checked in a later release)
 		if (Math.min(stakeRewardStart, stake) > 0) {
 			perHbarRateThisNode = perHbarRate;
-			// But if the node received more the maximum stakeToReward, "down-scale" its reward rate to
-			// ensure accounts staking to this node will receive a fraction of the total rewards that does
-			// not exceed node.stakedRewardStart / totalStakedRewardedStart
-			if (stakeToReward > maxStake) {
-				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeToReward;
+			// But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate to
+			// ensure the accounts staking to this node will receive a fraction of the total rewards that
+			// does not exceed node.stakedRewardStart / totalStakedRewardedStart
+			if (stakeRewardStart > maxStake) {
+				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeRewardStart;
 			}
 		}
 		rewardSumHistory[0] += perHbarRateThisNode;
@@ -173,7 +173,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		unclaimedStakeRewardStart += amount;
 	}
 
-	public long stakeRewardStartWithPendingRewards() {
+	public long stakeRewardStartMinusUnclaimed() {
 		return stakeRewardStart - unclaimedStakeRewardStart;
 	}
 

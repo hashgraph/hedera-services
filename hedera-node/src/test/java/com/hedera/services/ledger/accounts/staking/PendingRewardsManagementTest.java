@@ -65,7 +65,7 @@ class PendingRewardsManagementTest {
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
-		given(info.stakeRewardStartWithPendingRewards()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
+		given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
 		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
 				.willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
@@ -79,9 +79,9 @@ class PendingRewardsManagementTest {
 	@Test
 	void rewardRateIsZeroIfPendingRewardsExceed800Balance() {
 		given800Balance(123);
-		given(networkCtx.getPendingRewards()).willReturn(124L);
+		given(networkCtx.pendingRewards()).willReturn(124L);
 
-		Assertions.assertEquals(0, subject.effectiveRateForCurrentPeriod());
+		Assertions.assertEquals(0, subject.rewardRateForEndingPeriod());
 	}
 
 	private void given800Balance(final long balance) {
