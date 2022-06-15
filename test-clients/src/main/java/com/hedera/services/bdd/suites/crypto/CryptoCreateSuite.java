@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -131,7 +132,18 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						getAccountInfo("civilianWRewardStakingAcc").has(accountWith()
 								.isDeclinedReward(false)
 								.noStakingNodeId()
-								.stakedAccountId("0.0.10"))
+								.stakedAccountId("0.0.10")),
+						/* --- sentiel values throw ---*/
+						cryptoCreate("invalidStakedAccount")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedAccountId("0.0.0")
+								.hasPrecheck(INVALID_STAKING_ID),
+						cryptoCreate("invalidStakedNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedNodeId(-1L)
+								.hasPrecheck(INVALID_STAKING_ID)
 				);
 	}
 

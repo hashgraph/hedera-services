@@ -51,6 +51,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.validSentinel;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -242,13 +243,17 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		final var stakedIdCase = op.getStakedIdCase().name();
-		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
-				stakedIdCase,
-				op.getStakedAccountId(),
-				op.getStakedNodeId(),
-				accounts.get(),
-				nodeInfo)) {
-			return INVALID_STAKING_ID;
+		if (hasStakedId(stakedIdCase)) {
+			if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
+				return OK;
+			} else if (!validator.isValidStakedId(
+					stakedIdCase,
+					op.getStakedAccountId(),
+					op.getStakedNodeId(),
+					accounts.get(),
+					nodeInfo)) {
+				return INVALID_STAKING_ID;
+			}
 		}
 		return OK;
 	}

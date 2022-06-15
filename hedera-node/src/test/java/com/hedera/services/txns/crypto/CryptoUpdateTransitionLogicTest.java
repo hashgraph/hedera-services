@@ -168,9 +168,6 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void validatesStakedId() {
-		final var deletedAccount = new MerkleAccount();
-		deletedAccount.setDeleted(true);
-
 		final var op = CryptoUpdateTransactionBody.newBuilder();
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
@@ -180,6 +177,39 @@ class CryptoUpdateTransitionLogicTest {
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void agreesUpdatingToSentinelValues() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(0).build()).build())
+				.build();
+
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(-2).build()).build())
+				.build();
+
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedNodeId(-1).build())
+				.build();
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedNodeId(-2).build())
+				.build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 

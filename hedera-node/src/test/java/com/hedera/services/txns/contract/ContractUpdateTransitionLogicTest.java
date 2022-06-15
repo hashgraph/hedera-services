@@ -55,6 +55,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -259,7 +260,44 @@ class ContractUpdateTransitionLogicTest {
 		givenValidTxnCtxWithStaking();
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedAccountId(asAccount("0.0.0"))).build();
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedNodeId(-1L)).build();
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedAccountId(asAccount("0.0.-1"))).build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedNodeId(-3L)).build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
