@@ -937,9 +937,16 @@ class ServicesStateTest {
 	}
 
 	private void setAllChildren() {
+		File databaseFolder = new File("database");
 		try {
+			if (!databaseFolder.exists()) {
+				databaseFolder.mkdir();
+			}
 			FileUtils.cleanDirectory(new File("database"));
-		} catch (IOException ignore) { }
+		} catch (IllegalArgumentException | IOException e) {
+			System.err.println("Exception thrown while cleaning up directory");
+			e.printStackTrace();
+		}
 		subject.createGenesisChildren(addressBook, 0);
 	}
 }
