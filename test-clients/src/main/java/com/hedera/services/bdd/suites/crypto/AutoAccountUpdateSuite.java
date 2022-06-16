@@ -82,7 +82,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								"transferTxn"),
 						/* validate child record has alias set and has fields as expected */
 						getTxnRecord("transferTxn").andAllChildRecords()
-								.hasChildRecordCount(1)
+								.hasNonStakingChildRecordCount(1)
 								.hasAliasInChildRecord("testAlias", 0).logged(),
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -107,7 +107,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
 								.via("transferTxn3")
 								.signedBy("testAlias", "payer", DEFAULT_PAYER),
-						getTxnRecord("transferTxn3").andAllChildRecords().hasChildRecordCount(0),
+						getTxnRecord("transferTxn3").andAllChildRecords().hasNonStakingChildRecordCount(0),
 						getAliasedAccountInfo("testAlias").has(
 								accountWith()
 										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10))
@@ -140,7 +140,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						/* account is expired but not deleted and validate the transfer succeeds*/
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(0),
 						getAliasedAccountInfo("alias").has(
 								accountWith()
 										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10)),
@@ -186,7 +186,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 	// Can't be done without property change, since auto-renew period can't be reduced from 3 months after create.
 	private HapiApiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
 		final var briefAutoRenew = 3L;
-		return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
+		return defaultHapiSpec("AccountCreatedAfterAliasAccountExpiresAndDelete")
 				.given(
 						newKeyNamed("alias"),
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
@@ -209,7 +209,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						/* validate account is expired and deleted , so new account is created */
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(1),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(1),
 
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
