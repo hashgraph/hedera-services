@@ -433,7 +433,7 @@
 					<configuration>
 						<forkCount>3</forkCount>
 						<reuseForks>true</reuseForks>
-						<argLine>@{argLine} -Xmx5120m -XX:MaxPermSize=256m</argLine>
+						<argLine>@{argLine} -Xmx5120m -XX:MaxMetaspaceSize=256m</argLine>
 						<useSystemClassLoader>false</useSystemClassLoader>
 					</configuration>
 				</plugin>
