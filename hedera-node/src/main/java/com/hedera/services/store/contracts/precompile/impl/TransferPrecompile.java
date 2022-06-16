@@ -282,8 +282,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 						PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
 				consensusTime);
 		for (var transfer : transferOp) {
-			accumulatedCost += transfer.fungibleTransfers().size() * fungibleHalfTxCost;
-			accumulatedCost += transfer.nftExchanges().size() * nftHalfTxCost;
+			accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
+			accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
 		}
 		return accumulatedCost;
 	}

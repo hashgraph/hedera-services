@@ -63,7 +63,7 @@ class HederaMessageCallProcessorTest {
 	private static final PrecompiledContract.PrecompileContractResult NO_RESULT = new PrecompiledContract.PrecompileContractResult(
 			Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 	private static final PrecompiledContract.PrecompileContractResult RESULT = new PrecompiledContract.PrecompileContractResult(
-			Bytes.of(1), true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+			Bytes.of(1), true, MessageFrame.State.COMPLETED_SUCCESS, Optional.empty());
 	private static final long GAS_ONE = 1L;
 	private static final long GAS_ONE_K = 1_000L;
 	private static final long GAS_ONE_M = 1_000_000L;
