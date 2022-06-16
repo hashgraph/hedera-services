@@ -277,7 +277,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 						PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
 				consensusTime) / 2;
 		// NFTs are atomic, one line can do it.
-		long fungibleHalfTxCost = pricingUtils.getMinimumPriceInTinybars(
+		long nonFungibleTxCost = pricingUtils.getMinimumPriceInTinybars(
 				customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES :
 						PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
 				consensusTime);
