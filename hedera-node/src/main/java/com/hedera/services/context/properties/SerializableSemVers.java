@@ -184,7 +184,10 @@ public class SerializableSemVers implements SoftwareVersion {
 		return ans.build();
 	}
 
-	private static String readable(final SemanticVersion semVer) {
+	private static String readable(@Nullable final SemanticVersion semVer) {
+		if (semVer == null) {
+			return "<N/A>";
+		}
 		final var sb = new StringBuilder()
 				.append(semVer.getMajor()).append(".")
 				.append(semVer.getMinor()).append(".")
