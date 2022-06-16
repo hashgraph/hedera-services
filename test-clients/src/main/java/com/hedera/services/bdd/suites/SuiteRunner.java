@@ -724,7 +724,8 @@ public class SuiteRunner {
 		}
 		CompletableFuture<Void> future = CompletableFuture.allOf(
 				IntStream.range(0, inputs.length)
-						.mapToObj(i -> runAsync(() -> outputs.set(i, f.apply(inputs[i]))))
+						.mapToObj(i -> runAsync(() -> outputs.set(i, f.apply(inputs[i])),
+								HapiApiSpec.getCommonThreadPool()))
 						.toArray(n -> new CompletableFuture[n]));
 		future.join();
 		return outputs;
