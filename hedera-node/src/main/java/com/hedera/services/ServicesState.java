@@ -271,10 +271,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			genesisInit(platform, addressBook, dualState);
 			return;
 		}
-
+		final int stateVersion = getStateVersion();
 		internalInit(platform, new BootstrapProperties(), dualState, false);
 
-		if (getStateVersion() < CURRENT_VERSION) {
+		if (stateVersion < CURRENT_VERSION) {
 			migrate();
 		}
 	}
