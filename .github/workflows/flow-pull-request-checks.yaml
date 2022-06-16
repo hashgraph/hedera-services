@@ -15,7 +15,7 @@ defaults:
 jobs:
   build:
     name: Code
-    uses: ./.github/workflows/comp-compile-platform-code.yaml
+    uses: ./.github/workflows/comp-compile-application-code.yaml
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -34,7 +34,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    uses: ./.github/workflows/comp-compile-platform-code.yaml
+    uses: ./.github/workflows/comp-compile-application-code.yaml
     needs:
       - unit-label-check
     with:

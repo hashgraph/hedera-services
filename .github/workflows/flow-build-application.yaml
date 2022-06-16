@@ -1,0 +1,51 @@
+name: "Build Application"
+on:
+  workflow_dispatch:
+    inputs:
+      enable-javadoc:
+        description: "Javadoc Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-owasp-analysis:
+        description: "OWASP Analysis Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-unit-tests:
+        description: "Unit Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-sonar-analysis:
+        description: "Sonar Analysis Enabled"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+  push:
+    branches:
+      - master
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  code:
+    name: Code
+    uses: ./.github/workflows/comp-compile-application-code.yaml
+    with:
+      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
+      enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
+      enable-owasp-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-owasp-analysis == 'true' }}
+      enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
+      enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
