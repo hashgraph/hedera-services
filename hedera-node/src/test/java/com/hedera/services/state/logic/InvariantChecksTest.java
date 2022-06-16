@@ -77,7 +77,7 @@ class InvariantChecksTest {
 	@BeforeEach
 	void setUp() throws InvalidProtocolBufferException {
 		final var swirldsTxn = new SwirldTransaction(mockTxn.toByteArray());
-		accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(swirldsTxn.getContentsDirect()), swirldsTxn);
+		accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(swirldsTxn.getContents()), swirldsTxn);
 		subject = new InvariantChecks(nodeInfo, () -> networkCtx);
 	}
 

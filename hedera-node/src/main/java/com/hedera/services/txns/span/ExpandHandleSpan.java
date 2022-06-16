@@ -90,7 +90,7 @@ public class ExpandHandleSpan {
 	}
 
 	private SwirldsTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = factory.nonTriggeredTxn(transaction.getContentsDirect());
+		final var accessor = factory.nonTriggeredTxn(transaction.getContents());
 		spanMapManager.expandSpan(accessor);
 		return PlatformTxnAccessor.from(accessor, transaction);
 	}

@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
@@ -190,7 +191,9 @@ public class SerializedForms {
 					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
-							MIN_TEST_CASES_PER_VERSION)
+							MIN_TEST_CASES_PER_VERSION),
+					entry(SerializableSemVers.class, SeededPropertySource::nextSerializableSemVers,
+							2 * MIN_TEST_CASES_PER_VERSION)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

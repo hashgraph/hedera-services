@@ -29,10 +29,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.platform.SignedStateFileManager;
 import com.swirlds.platform.state.DualStateImpl;
@@ -49,7 +50,6 @@ import java.util.List;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -76,7 +76,7 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testMigrationFromSignedStateV24() throws IOException {
+	void testMigrationFromSignedStateV24() {
 		assertDoesNotThrow(() -> migrate(signedStateDir + "v0.24.2-nfts/SignedState.swh"));
 	}
 
@@ -96,23 +96,27 @@ public class ServicesStateE2ETest {
 		final var app = createApp(platform);
 
 		APPS.save(platform.getSelfId().getId(), app);
-		assertDoesNotThrow(() -> servicesState.genesisInit(platform, addressBook, swirldDualState));
+		assertDoesNotThrow(() -> servicesState.init(
+				platform,
+				addressBook,
+				swirldDualState,
+				InitTrigger.GENESIS,
+				null));
 	}
 
-	private static Hash migrate(String dataPath) throws IOException, InterruptedException, NoSuchAlgorithmException {
+	private static Hash migrate(String dataPath) throws IOException, InterruptedException {
 		final var signedState = loadSignedState(dataPath);
 		final var addressBook = signedState.getAddressBook();
 		final var swirldDualState = signedState.getState().getSwirldDualState();
 
 		final var platform = createMockPlatform();
 		final var servicesState = (ServicesState) signedState.getSwirldState();
-		servicesState.init(platform, addressBook, swirldDualState);
+		servicesState.init(platform, addressBook, swirldDualState, InitTrigger.RESTART, null);
 		servicesState.setMetadata(new StateMetadata(createApp(platform), new FCHashMap<>()));
-		servicesState.migrate();
 		return servicesState.runningHashLeaf().currentRunningHash();
 	}
 
-	private static ServicesApp createApp(Platform platform) throws NoSuchAlgorithmException, IOException {
+	private static ServicesApp createApp(Platform platform) {
 		return DaggerServicesApp.builder()
 				.initialHash(new Hash())
 				.platform(platform)
@@ -132,7 +136,7 @@ public class ServicesStateE2ETest {
 	private static SignedState loadSignedState(final String path) throws IOException {
 		final var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
-		Assertions.assertNotNull(signedPair.getRight());
-		return signedPair.getRight();
+		Assertions.assertNotNull(signedPair.signedState());
+		return signedPair.signedState();
 	}
 }

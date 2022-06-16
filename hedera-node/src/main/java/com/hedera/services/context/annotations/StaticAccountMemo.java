@@ -21,7 +21,7 @@ package com.hedera.services.context.annotations;
  */
 
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.Platform;
 
 import javax.inject.Qualifier;

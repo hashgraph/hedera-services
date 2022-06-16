@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.26.0-SNAPSHOT</version>
+	<version>0.27.0-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -232,7 +232,7 @@
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.26.2</swirlds.version>
+		<swirlds.version>0.27.0-adhoc.xa6802d9a</swirlds.version>
 		<tuweni.version>2.2.0</tuweni.version>
 
 		<!-- Test dependency properties in alphabetical order -->
@@ -257,7 +257,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-04-02T00:14:21Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-06-16T16:14:34Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>

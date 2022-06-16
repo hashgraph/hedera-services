@@ -20,6 +20,10 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
+
+import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
+
 /**
  * Gives the versions of the current and previous world states.
  */
@@ -42,7 +46,9 @@ public final class StateVersions {
 	//   - Release 0.22.x was state version 15
 	public static final int RELEASE_024X_VERSION = 17;
 	public static final int RELEASE_025X_VERSION = 18;
+	public static final SerializableSemVers FIRST_025X_VERSION = forHapiAndHedera("0.25.1", "0.25.0");
 	public static final int RELEASE_0260_VERSION = 19;
+	public static final SerializableSemVers FIRST_026X_VERSION = forHapiAndHedera("0.26.0", "0.26.0");
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_024X_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0260_VERSION;
