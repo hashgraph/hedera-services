@@ -7,11 +7,6 @@ on:
         type: boolean
         required: false
         default: true
-      enable-owasp-analysis:
-        description: "OWASP Analysis Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-unit-tests:
         description: "Unit Testing Enabled"
         type: boolean
@@ -43,7 +38,6 @@ jobs:
     with:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
-      enable-owasp-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-owasp-analysis == 'true' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
     secrets:
