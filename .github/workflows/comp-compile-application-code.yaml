@@ -81,16 +81,22 @@ jobs:
         with:
           arguments: assemble
 
+      - name: Javadoc
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-javadoc && !cancelled() }}
+        with:
+          arguments: javadoc
+
       - name: Unit Testing
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         id: gradle-test
         uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           arguments: check
 
       - name: Publish Unit Test Report
-        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
         uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
         with:
           name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
@@ -101,23 +107,23 @@ jobs:
         run: bash compose-build.sh
 
       - name: Integration Testing
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         id: gradle-itest
         uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           arguments: itest
 
       - name: Publish Integration Test Report
-        if: ${{ inputs.enable-unit-tests && steps.gradle-itest.conclusion == 'success' && !cancelled() }}
         uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-unit-tests && steps.gradle-itest.conclusion == 'success' && !cancelled() }}
         with:
           name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
           require_tests: 'false'
 
       - name: Jacoco Coverage Report
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           arguments: jacocoTestReport
 
@@ -126,17 +132,11 @@ jobs:
         uses: codecov/codecov-action@v3
 
       - name: Publish Code Coverage Data
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: actions/upload-artifact@v3
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Jacoco Data
           path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
-
-      - name: Javadoc
-        if: ${{ inputs.enable-javadoc && !cancelled() }}
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: javadoc
 
       - name: SonarCloud Options
         id: sonar-cloud
@@ -152,11 +152,11 @@ jobs:
           echo "::set-output name=options::${SONAR_OPTS}"
 
       - name: SonarCloud Scan
+        uses: gradle/gradle-build-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
           SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
         if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        uses: gradle/gradle-build-action@v2
         with:
           arguments: sonarqube --info
