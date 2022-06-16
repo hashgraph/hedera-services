@@ -272,7 +272,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 		long accumulatedCost = 0;
 		boolean customFees = impliedTransfers != null && !impliedTransfers.getAssessedCustomFees().isEmpty();
 		// For fungible there are always at least two operations, so only charge half for each operation
-		long nftHalfTxCost = pricingUtils.getMinimumPriceInTinybars(
+		long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
 				customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES :
 						PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
 				consensusTime) / 2;
