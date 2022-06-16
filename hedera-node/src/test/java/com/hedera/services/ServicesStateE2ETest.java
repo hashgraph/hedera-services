@@ -109,9 +109,8 @@ public class ServicesStateE2ETest {
 		final var previousVersion = SoftwareVersion.NO_VERSION;
 		final var platform = createMockPlatform();
 		final var servicesState = (ServicesState) signedState.getSwirldState();
-		servicesState.init(platform, addressBook, swirldDualState, initTrigger, previousVersion);
 		servicesState.setMetadata(new StateMetadata(createApp(platform), new FCHashMap<>()));
-		servicesState.migrate();
+		servicesState.init(platform, addressBook, swirldDualState, initTrigger, previousVersion);
 		return servicesState.runningHashLeaf().currentRunningHash();
 	}
 
