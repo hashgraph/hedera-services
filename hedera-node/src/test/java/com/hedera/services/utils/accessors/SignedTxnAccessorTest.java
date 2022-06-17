@@ -812,7 +812,7 @@ class SignedTxnAccessorTest {
 		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
 				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +

@@ -24,10 +24,10 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.BalanceOfWrapper;
-import com.hedera.services.store.contracts.precompile.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
@@ -46,14 +46,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,7 +89,7 @@ class RedirectViewExecutorTest {
 	public static final Id nonfungibleId = Id.fromGrpcToken(nonfungibletoken);
 	public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 	public static final Address nonfungibleTokenAddress = nonfungibleId.asEvmAddress();
-	
+
 	private static final long timestamp = 10L;
 	private static final Timestamp resultingTimestamp = Timestamp.newBuilder().setSeconds(timestamp).build();
 	private static final long gas = 100L;

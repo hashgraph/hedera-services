@@ -41,8 +41,8 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +64,7 @@ import java.util.stream.LongStream;
 import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.Address.ipString;
+import static com.swirlds.common.system.address.Address.ipString;
 
 @Singleton
 public final class HfsSystemFilesManager implements SystemFilesManager {

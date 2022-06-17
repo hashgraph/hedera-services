@@ -23,10 +23,8 @@ package com.hedera.services.state.migration;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 
 public final class ReleaseTwentySevenMigration {
 	private ReleaseTwentySevenMigration() {
@@ -42,10 +40,6 @@ public final class ReleaseTwentySevenMigration {
 		final var numberOfNodes = addressBook.getSize();
 		long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
 		long minStakePerNode = maxStakePerNode / 2;
-		final long stakingPeriod = bootstrapProperties.getLongProperty("staking.periodMins");
-		if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
-			minStakePerNode = 0L;
-		}
 		for (int i = 0; i < numberOfNodes; i++) {
 			final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
 			final var info = new MerkleStakingInfo(bootstrapProperties);
