@@ -616,4 +616,8 @@ public class TxnUtils {
 			throw new UncheckedIOException(e);
 		}
 	}
+
+	public static boolean isEndOfStakingPeriodRecord(final TransactionRecord record) {
+		return record.getMemo().startsWith("End of Staking Period Calculation");
+	}
 }

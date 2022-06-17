@@ -26,6 +26,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -74,6 +75,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
@@ -95,6 +97,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean useDefaultTxnId = false;
 	private boolean requestDuplicates = false;
 	private boolean requestChildRecords = false;
+	private boolean includeStakingRecordsInCount = true;
 	private boolean shouldBeTransferFree = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
@@ -111,6 +114,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
+	private Optional<TransactionID> expectedParentId = Optional.empty();
 	private Optional<List<TransactionRecordAsserts>> childRecordsExpectations = Optional.empty();
 	private Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	private Optional<String> creationName = Optional.empty();
@@ -122,7 +126,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
-	private Optional<Integer> childRecordsCount = Optional.empty();
+	private OptionalInt childRecordsCount = OptionalInt.empty();
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
 	private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
@@ -218,7 +222,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord hasChildRecordCount(int count) {
 		requestChildRecords = true;
-		childRecordsCount = Optional.of(count);
+		childRecordsCount = OptionalInt.of(count);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasNonStakingChildRecordCount(int count) {
+		requestChildRecords = true;
+		includeStakingRecordsInCount = false;
+		childRecordsCount = OptionalInt.of(count);
 		return this;
 	}
 
@@ -279,6 +290,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
+		childRecordsExpectations = Optional.of(Arrays.asList(providers));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasChildRecords(TransactionID parentId, TransactionRecordAsserts... providers) {
+		expectedParentId = Optional.of(parentId);
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
@@ -369,15 +386,29 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords) throws Throwable {
 		if (childRecordsExpectations.isPresent()) {
+			int numStakingRecords = 0;
+			if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
+				numStakingRecords++;
+			}
 			final var expectedChildRecords = childRecordsExpectations.get();
+			if (expectedParentId.isPresent()) {
+				final var sequentialId = new SequentialID(expectedParentId.get());
+				for (int i = 0; i < numStakingRecords; i++) {
+					sequentialId.nextChild();
+				}
+				for (final var childRecordAssert : expectedChildRecords) {
+					childRecordAssert.txnId(sequentialId.nextChild());
+				}
+			}
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(),
-					String.format("Expected %d child records, got %d", expectedChildRecords.size(),
-							actualRecords.size()));
-			for (int i = 0; i < actualRecords.size(); i++) {
-				final var expectedChildRecord = expectedChildRecords.get(i);
+			final var numActualRecords = actualRecords.size();
+			assertEquals(
+					expectedChildRecords.size(),
+					numActualRecords - numStakingRecords,
+			"Wrong # of (non-staking) child records");
+			for (int i = numStakingRecords; i < numActualRecords; i++) {
+				final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
 				final var actualChildRecord = actualRecords.get(i);
-
 				ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
 				List<Throwable> errors = asserts.errorsIn(actualChildRecord);
 				rethrowSummaryError(log, "Bad child records!", errors);
@@ -709,7 +740,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
-		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
+		childRecordsCount.ifPresent(count -> {
+			if (includeStakingRecordsInCount) {
+				assertEquals(count, childRecords.size());
+			} else {
+				int observedCount = childRecords.size();
+				if (!childRecords.isEmpty() && isEndOfStakingPeriodRecord(childRecords.get(0))) {
+					observedCount--;
+				}
+				assertEquals(count, observedCount, "Wrong # of non-staking records");
+			}
+		});
 		for (var rec : childRecords) {
 			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
 			spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));

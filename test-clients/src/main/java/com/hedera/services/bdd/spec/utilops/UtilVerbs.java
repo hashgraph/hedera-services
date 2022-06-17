@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -408,29 +407,27 @@ public class UtilVerbs {
 		});
 	}
 
-	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
-			ResponseCodeEnum parentalStatus,
-			TransactionRecordAsserts... childRecordAsserts) {
-		return withOpContext(
-				(spec, opLog) -> {
-					var distributeTx = getTxnRecord(parentTxnId);
-					allRunFor(spec, distributeTx);
-
-					var distributeTxId = distributeTx.getResponseRecord().getTransactionID();
-					SequentialID sequentialID = new SequentialID(distributeTxId);
-
-					for (TransactionRecordAsserts childRecordAssert : childRecordAsserts) {
-						childRecordAssert.txnId(sequentialID.nextChild());
-					}
-
-					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
-							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
-							.hasChildRecords(childRecordAsserts).logged());
-				});
-	}
-
 	public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
 		return childRecordsCheck(parentTxnId, parentalStatus);
+	}
+
+	public static HapiSpecOperation childRecordsCheck(
+			final String parentTxnId,
+			final ResponseCodeEnum parentalStatus,
+			final TransactionRecordAsserts... childRecordAsserts
+	) {
+		return withOpContext(
+				(spec, opLog) -> {
+					final var lookup = getTxnRecord(parentTxnId);
+					allRunFor(spec, lookup);
+					final var parentId = lookup.getResponseRecord().getTransactionID();
+					allRunFor(spec,
+							getTxnRecord(parentTxnId)
+									.andAllChildRecords()
+									.hasPriority(recordWith().status(parentalStatus).txnId(parentId))
+									.hasChildRecords(parentId, childRecordAsserts)
+									.logged());
+				});
 	}
 
 	public static Setting from(String name, String value) {
@@ -755,7 +752,8 @@ public class UtilVerbs {
 
 			HapiFileUpdate updateSubOp = fileUpdate(fileName)
 					.contents(byteString.substring(0, position))
-					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
+					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED,
+							SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 					.noLogging()
 					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);
