@@ -53,7 +53,7 @@ import static java.util.stream.Collectors.toList;
 public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractRecordsSanityCheckSuite.class);
 	private static final String BALANCE_LOOKUP = "BalanceLookup";
-	private static final String PAYABLE_CONTRACT = "PayReceivable";
+	public static final String PAYABLE_CONTRACT = "PayReceivable";
 
 	public static void main(String... args) {
 		new ContractRecordsSanityCheckSuite().runSuiteSync();

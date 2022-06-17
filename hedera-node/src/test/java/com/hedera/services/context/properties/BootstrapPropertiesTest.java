@@ -79,7 +79,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.rates.nextHbarEquiv", 1),
 			entry("bootstrap.rates.nextCentEquiv", 15),
 			entry("bootstrap.rates.nextExpiry", 4102444800L),
-			entry("bootstrap.system.entityExpiry", 1654819200L),
+			entry("bootstrap.system.entityExpiry", 1812637686L),
 			entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),

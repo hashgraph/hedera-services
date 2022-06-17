@@ -43,6 +43,7 @@ public final class ReleaseTwentySevenMigration {
 		long maxStakePerNode = bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
 		long minStakePerNode = maxStakePerNode / 2;
 		final long stakingPeriod = bootstrapProperties.getLongProperty("staking.periodMins");
+		// TODO : Remove this before merging Only need for testing
 		if (stakingPeriod != DEFAULT_STAKING_PERIOD_MINS) {
 			minStakePerNode = 0L;
 		}

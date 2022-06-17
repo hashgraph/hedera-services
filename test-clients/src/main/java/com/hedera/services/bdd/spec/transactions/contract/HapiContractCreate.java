@@ -309,7 +309,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
 							if (stakedAccountId.isPresent()) {
-								b.setStakedAccountId(asId(String.valueOf(stakedAccountId.get()), spec));
+								b.setStakedAccountId(asId(stakedAccountId.get(), spec));
 							} else if (stakedNodeId.isPresent()) {
 								b.setStakedNodeId(stakedNodeId.get());
 							}
