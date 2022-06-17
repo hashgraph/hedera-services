@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -101,7 +102,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private final String TARGET_ACCOUNT = "complexKeyAccount";
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -459,9 +460,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("updateMaxAutoAssociationsWorks")
 				.given(
-						overridingTwo(
+						overridingThree(
 								"entities.limitTokenAssociations", "true",
-								"tokens.maxPerAccount", "" + 10),
+								"tokens.maxPerAccount", "" + 10,
+								"contracts.allowAutoAssociations", "true"),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						newKeyNamed(ADMIN_KEY),

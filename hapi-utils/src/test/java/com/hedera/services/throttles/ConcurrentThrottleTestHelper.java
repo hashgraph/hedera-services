@@ -22,6 +22,7 @@ package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Assertions;
 
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,6 +64,11 @@ public class ConcurrentThrottleTestHelper {
 		var done = new CountDownLatch(threads);
 		ExecutorService exec = Executors.newCachedThreadPool();
 
+		Instant startTime = Instant.now();
+		final long startNanos = System.nanoTime();
+		final long[] addNanos = new long[] { 0 };
+
+
 		for (int i = 0; i < threads; i++) {
 			exec.execute(() -> {
 				ready.countDown();
@@ -70,7 +76,18 @@ public class ConcurrentThrottleTestHelper {
 					start.await();
 					while (!stopped.get()) {
 						synchronized (subject) {
-							if (subject.allow(opsToRequest)) {
+
+							// We need to handle time going backwards here, which was causing tests using
+							// this to be flaky. It is possible for time to go backwards with ntp running on
+							// your system.
+							long toAdd = System.nanoTime() - startNanos;
+							if (addNanos[0] >= toAdd) {
+								continue;
+							}
+
+							addNanos[0] = toAdd;
+
+							if (subject.allow(opsToRequest, startTime.plusNanos(addNanos[0]))) {
 								allowed.getAndAdd(opsToRequest);
 							}
 						}

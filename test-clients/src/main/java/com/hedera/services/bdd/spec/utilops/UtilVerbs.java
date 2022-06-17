@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -48,6 +49,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
+import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
@@ -81,9 +83,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -91,13 +91,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,6 +149,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -226,6 +226,14 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation expectedEntitiesExist() {
 		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
+	}
+
+	public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc, String name) {
+		return new SpecKeyFromEcdsaFile(loc, name);
+	}
+
+	public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc) {
+		return new SpecKeyFromEcdsaFile(loc, loc);
 	}
 
 	public static SpecKeyFromFile keyFromFile(String name, String flexLoc) {
@@ -330,6 +338,14 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation resetToDefault(String... properties) {
+		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Arrays.stream(properties)
+						.collect(Collectors.toMap(v -> v, defaultNodeProps::get)));
+	}
+
 	public static HapiSpecOperation overridingTwo(
 			final String aProperty,
 			final String aValue,
@@ -343,30 +359,20 @@ public class UtilVerbs {
 						bProperty, bValue));
 	}
 
-	public static HapiSpecOperation resetAppPropertiesTo(String path) {
+	public static HapiSpecOperation overridingThree(
+			final String aProperty,
+			final String aValue,
+			final String bProperty,
+			final String bValue,
+			final String cProperty,
+			final String cValue
+	) {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(ADDRESS_BOOK_CONTROL)
-				.overridingProps(readPropertyFile(path));
-	}
-
-	private static Map<String, String> readPropertyFile(String path) {
-		Properties properties = null;
-
-		try (InputStream input = new FileInputStream(path)) {
-			properties = new Properties();
-			properties.load(input);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		Map<String, String> resultMap = new HashMap<>();
-
-		for (String key : properties.stringPropertyNames()) {
-			resultMap.put(key, properties.getProperty(key));
-		}
-
-		return resultMap;
+				.overridingProps(Map.of(
+						aProperty, aValue,
+						bProperty, bValue,
+						cProperty, cValue));
 	}
 
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
@@ -749,7 +755,7 @@ public class UtilVerbs {
 
 			HapiFileUpdate updateSubOp = fileUpdate(fileName)
 					.contents(byteString.substring(0, position))
-					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
+					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 					.noLogging()
 					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);

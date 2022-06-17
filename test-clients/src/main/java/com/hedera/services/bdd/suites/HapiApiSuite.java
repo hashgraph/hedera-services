@@ -120,7 +120,7 @@ public abstract class HapiApiSuite {
 		return finalSpecs;
 	}
 
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -217,7 +217,7 @@ public abstract class HapiApiSuite {
 	private void runAsync(Iterable<HapiApiSpec> specs) {
 		CompletableFuture[] futures = StreamSupport
 				.stream(specs.spliterator(), false)
-				.map(CompletableFuture::runAsync)
+				.map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
 				.toArray(n -> new CompletableFuture[n]);
 		CompletableFuture.allOf(futures).join();
 	}

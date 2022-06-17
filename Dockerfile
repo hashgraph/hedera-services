@@ -27,6 +27,15 @@ RUN mkdir /opt/hedera/services/config-mount
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
 
+# Maven
+# Note: Java 17 requires Maven 3.8+ so the distro provided one just won't do
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    wget https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.zip && \
+    unzip apache-maven-3.8.6-bin.zip -d /opt && \
+    rm apache-maven-3.8.6-bin.zip
+ENV PATH=/opt/apache-maven-3.8.6/bin:$PATH
+
 WORKDIR /opt/hedera/services
 # Install Services
 COPY .env /opt/hedera/services

@@ -79,7 +79,6 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -710,6 +709,84 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(0L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void markThrottleExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+		subject.markThrottleExempt();
+		assertTrue(subject.throttleExempt());
+
+	}
+
+	@Test
+	void throttleExemptWorksWithExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2"));
+
+		assertTrue(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNonExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNullPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(null);
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void markCongestionExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertFalse(subject.congestionExempt());
+		subject.markCongestionExempt();
+		assertTrue(subject.congestionExempt());
 	}
 
 	@Test

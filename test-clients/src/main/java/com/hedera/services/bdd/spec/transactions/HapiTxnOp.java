@@ -203,10 +203,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
-//					log.error(
-//							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
-//							actualPrecheck,
-//							permissiblePrechecks.get());
 					throw new HapiTxnPrecheckStateException(String.format(
 							"Wrong precheck status! Expected one of %s, actual %s",
 							permissiblePrechecks.get(), actualPrecheck));
@@ -351,7 +347,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			treated as
 			Duplicate transactions and except for the client that gets its transaction handled first.. rest of the
 			clients
-			will submit a similar transaction again, with new transaction IDs. No need to throw an exception. 
+			will submit a similar transaction again, with new transaction IDs. No need to throw an exception.
 			 */
 			log.warn("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}.",
 					spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
@@ -726,5 +722,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public TransactionReceipt getLastReceipt() {
 		return lastReceipt;
+	}
+
+	public ResponseCodeEnum getActualPrecheck() {
+		return actualPrecheck;
 	}
 }

@@ -95,6 +95,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -156,6 +157,10 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();
+	}
+
+	private AccountID ourAccount() {
+		return payerId;
 	}
 
 	private static final long serial1 = 1L;

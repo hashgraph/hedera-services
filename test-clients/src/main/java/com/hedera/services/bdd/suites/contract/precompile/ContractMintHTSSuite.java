@@ -116,7 +116,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -605,9 +605,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0),
 						childRecordsCheck(nestedMintTxn, CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(SUCCESS)
-										.newTotalSupply(1)
-										.serialNos(List.of(1L)),
+										.status(REVERTED_SUCCESS)
+										.newTotalSupply(0)
+										.serialNos(List.of()),
 								recordWith()
 										.contractCallResult(
 												resultWith()
@@ -652,9 +652,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(theContract, "mintFungibleToken", amount)
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(2_000_000L)
-								.hasKnownStatus(SUCCESS),
+								.gas(2_000_000L),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						//we don`t have child record because the decoding is failing.
+						// The parent continues execution since we don`t have revert() in the smart contract.
 						emptyChildRecordsCheck(firstMintTxn, SUCCESS)
 				);
 	}

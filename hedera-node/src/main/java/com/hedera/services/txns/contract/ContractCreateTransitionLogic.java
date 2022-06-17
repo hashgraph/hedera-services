@@ -123,7 +123,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
-		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
+		final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
 		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
 	}
 
@@ -161,6 +161,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		// --- Do the business logic ---
 		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+		if (!properties.areContractAutoAssociationsEnabled()) {
+			hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+		}
 		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {

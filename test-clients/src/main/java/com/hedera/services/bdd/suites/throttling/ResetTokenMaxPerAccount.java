@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +30,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public final class ResetTokenMaxPerAccount extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ResetTokenMaxPerAccount.class);
@@ -49,10 +54,19 @@ public final class ResetTokenMaxPerAccount extends HapiApiSuite {
 		return defaultHapiSpec("ResetTokenMaxPerAccount")
 				.given(
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(
-										Map.of("tokens.maxPerAccount", "100000"))
+						// only allow the first client to update throttle file with the first node
+						withOpContext((spec, opLog) -> {
+							HapiSpecOperation subOp;
+							if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+								subOp = fileUpdate(APP_PROPERTIES)
+										.payingWith(GENESIS)
+										.overridingProps(
+												Map.of("tokens.maxPerAccount", "100000"));
+							} else {
+								subOp = sleepFor(20000);
+							}
+							allRunFor(spec, subOp);
+						})
 				).then(
 				);
 	}

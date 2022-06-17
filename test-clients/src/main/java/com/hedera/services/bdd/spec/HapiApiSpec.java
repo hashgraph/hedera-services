@@ -56,6 +56,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -93,6 +95,12 @@ import static java.util.stream.Collectors.toList;
 
 public class HapiApiSpec implements Runnable {
 	private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
+	private static final ThreadPoolExecutor THREAD_POOL = new ThreadPoolExecutor(
+					0,
+					10_000,
+					250,
+					TimeUnit.MILLISECONDS,
+					new SynchronousQueue<>());
 
 	static final Logger log = LogManager.getLogger(HapiApiSpec.class);
 
@@ -129,6 +137,10 @@ public class HapiApiSpec implements Runnable {
 	EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 
 	List<SingleAccountBalances> accountBalances = new ArrayList<>();
+
+	public static ThreadPoolExecutor getCommonThreadPool() {
+		return THREAD_POOL;
+	}
 
 	public void adhocIncrement() {
 		adhoc.getAndIncrement();
@@ -191,6 +203,10 @@ public class HapiApiSpec implements Runnable {
 
 	public String getName() {
 		return name;
+	}
+
+	public void appendToName(String postfix) {
+		this.name = this.name + postfix;
 	}
 
 	public String getSuitePrefix() {
@@ -519,6 +535,8 @@ public class HapiApiSpec implements Runnable {
 				ciPropsSource.put("warnings.suppressUnrecoverableNetworkFailures", "true");
 			}
 			ciPropsSource.putAll(otherOverrides);
+			// merge properties from CI Properties Map with default ones
+			ciPropsSource.putAll(explicitCiProps.getProps());
 		}
 		return ciPropsSource;
 	}
@@ -709,6 +727,16 @@ public class HapiApiSpec implements Runnable {
 				hapiSetup.costSnapshotDir(),
 				costSnapshotFile());
 		return path;
+	}
+
+	/**
+	 * Add new properties that would merge with existing ones, if a property already
+	 * exist then override it with new value
+	 * @param props
+	 * 		A map of new properties
+	 */
+	public void addOverrideProperties(final Map<String, Object> props) {
+		hapiSetup.addOverrides(props);
 	}
 
 	public static void ensureDir(String path) {

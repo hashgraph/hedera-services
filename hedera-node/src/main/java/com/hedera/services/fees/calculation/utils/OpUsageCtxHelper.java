@@ -149,8 +149,8 @@ public class OpUsageCtxHelper {
 		return cryptoContext;
 	}
 
-	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
-		final var id = txn.getTransactionID().getAccountID();
+	public ExtantCryptoContext ctxForCryptoAllowance(TxnAccessor accessor) {
+		final var id = accessor.getPayer();
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -170,7 +170,7 @@ public class OpUsageCtxHelper {
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
-					.setCurrentExpiry(txn.getTransactionID().getTransactionValidStart().getSeconds())
+					.setCurrentExpiry(accessor.getTxn().getTransactionID().getTransactionValidStart().getSeconds())
 					.setCurrentMemo(DEFAULT_MEMO)
 					.setCurrentKey(Key.getDefaultInstance())
 					.setCurrentlyHasProxy(false)

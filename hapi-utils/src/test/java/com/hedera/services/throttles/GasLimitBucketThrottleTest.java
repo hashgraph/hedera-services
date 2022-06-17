@@ -55,4 +55,34 @@ class GasLimitBucketThrottleTest {
 		assertFalse(subject.allow(BEYOND_CAPACITY, 0L));
 		assertEquals(BUCKET_CAPACITY, subject.bucket().capacityFree());
 	}
+
+	@Test
+	void lastAllowedUseReclaimsCorrectly() {
+		assertTrue(subject.allow(BUCKET_CAPACITY / 3, 0L));
+		subject.resetLastAllowedUse();
+		assertTrue(subject.allow(BUCKET_CAPACITY / 3, 0L));
+		subject.reclaimLastAllowedUse();
+		assertEquals(BUCKET_CAPACITY - (BUCKET_CAPACITY / 3), subject.bucket().capacityFree());
+		subject.reclaimLastAllowedUse();
+		assertEquals(BUCKET_CAPACITY - (BUCKET_CAPACITY / 3), subject.bucket().capacityFree());
+	}
+
+	@Test
+	void lastAllowedUseReclaimsCorrectlyWithFullUsage() {
+		assertTrue(subject.allow(BUCKET_CAPACITY / 2, 0L));
+		assertFalse(subject.allow(BUCKET_CAPACITY, 0L));
+		subject.reclaimLastAllowedUse();
+		assertEquals(BUCKET_CAPACITY, subject.bucket().capacityFree());
+		subject.reclaimLastAllowedUse();
+		assertEquals(BUCKET_CAPACITY, subject.bucket().capacityFree());
+	}
+
+	@Test
+	void lastAllowedUseResetsCorrectly() {
+		assertTrue(subject.allow(BUCKET_CAPACITY / 3, 0L));
+		assertTrue(subject.allow(BUCKET_CAPACITY / 3, 0L));
+		subject.resetLastAllowedUse();
+		subject.reclaimLastAllowedUse();
+		assertEquals(BUCKET_CAPACITY - ((BUCKET_CAPACITY/3)*2), subject.bucket().capacityFree());
+	}
 }

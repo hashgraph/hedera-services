@@ -93,7 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -172,9 +172,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
 				.given(
-						overridingTwo(
+						overridingThree(
 								"entities.limitTokenAssociations", "true",
-								"tokens.maxPerAccount", "" + 1)
+								"tokens.maxPerAccount", "" + 1,
+								"contracts.allowAutoAssociations", "true")
 				).when().then(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
@@ -243,7 +244,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn)),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
 				);
 	}
 
@@ -710,7 +711,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 									.getContractCreateResult().getGasUsed();
 							assertEquals(285_000L, gasUsed);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -730,7 +731,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 									.getContractCreateResult().getGasUsed();
 							assertTrue(gasUsed > 0L);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -742,7 +743,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when().then(
 						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxGas")
 				);
 	}
 
@@ -811,6 +812,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var contract = "CreateTrivial";
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
+						overriding("contracts.allowAutoAssociations", "true"),
 						uploadInitCode(contract),
 						contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
 						getContractInfo(contract)

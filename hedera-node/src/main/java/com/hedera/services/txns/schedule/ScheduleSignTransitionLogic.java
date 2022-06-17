@@ -22,6 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -43,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -51,24 +53,29 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
 	private final InHandleActivationHelper activationHelper;
 
-	private ScheduleExecutor executor;
+	private final GlobalDynamicProperties properties;
+	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
 
-	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
-	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
+	SigMapScheduleClassifier classifier;
+	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness;
 
 	@Inject
 	public ScheduleSignTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx,
-			InHandleActivationHelper activationHelper,
-			ScheduleExecutor executor
-	) {
+			final GlobalDynamicProperties properties,
+			final ScheduleStore store,
+			final TransactionContext txnCtx,
+			final InHandleActivationHelper activationHelper,
+			final ScheduleExecutor executor,
+			final ScheduleProcessing scheduleProcessing) {
+		this.properties = properties;
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.executor = executor;
 		this.activationHelper = activationHelper;
+		classifier = scheduleProcessing.classifier;
+		replSigningsWitness = scheduleProcessing.signingsWitness;
 	}
 
 	@Override
@@ -87,7 +94,12 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			ScheduleSignTransactionBody op
 	) throws InvalidProtocolBufferException {
 		var scheduleId = op.getScheduleID();
-		var origSchedule = store.get(scheduleId);
+		var origSchedule = properties.schedulingLongTermEnabled()
+				? store.getNoError(scheduleId) : store.get(scheduleId);
+		if (origSchedule == null) {
+			txnCtx.setStatus(INVALID_SCHEDULE_ID);
+			return;
+		}
 		if (origSchedule.isExecuted()) {
 			txnCtx.setStatus(SCHEDULE_ALREADY_EXECUTED);
 			return;
@@ -96,20 +108,31 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
 			return;
 		}
+		if (txnCtx.consensusTime().isAfter(origSchedule.calculatedExpirationTime().toJava())) {
+			if (!properties.schedulingLongTermEnabled()) {
+				txnCtx.setStatus(INVALID_SCHEDULE_ID);
+				return;
+			}
+			txnCtx.setStatus(SCHEDULE_PENDING_EXPIRATION);
+			return;
+		}
 
 		var validScheduleKeys = classifier.validScheduleKeys(
 				List.of(txnCtx.activePayerKey()),
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store,
+				validScheduleKeys, activationHelper,
+				properties.schedulingLongTermEnabled() && origSchedule.calculatedWaitForExpiry());
 
 		var outcome = signingOutcome.getLeft();
 		if (outcome == OK) {
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
+
 			if (Boolean.TRUE.equals(signingOutcome.getRight())) {
-				outcome = executor.processExecution(scheduleId, store, txnCtx);
+				outcome = executor.processImmediateExecution(scheduleId, store, txnCtx);
 			}
 		}
 		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
@@ -128,6 +151,15 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		ScheduleSignTransactionBody op = txnBody.getScheduleSign();
 
-		return (op.hasScheduleID()) ? OK : INVALID_SCHEDULE_ID;
+		if (!op.hasScheduleID()) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		// If long term scheduled transactions are enabled, the schedule must exist at the HAPI level to allow deep throttle checks
+		if (properties.schedulingLongTermEnabled() && store.getNoError(op.getScheduleID()) == null) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		return OK;
 	}
 }
