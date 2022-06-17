@@ -215,7 +215,7 @@
 
 		<!-- Dependency properties in alphabetical order -->
 		<besu.version>22.4.1</besu.version>
-		<besu-native.version>0.4.3</besu-native.version>
+		<besu-native.version>0.5.0</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
 		<commons-io.version>2.11.0</commons-io.version>
