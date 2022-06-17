@@ -892,9 +892,16 @@ class ServicesStateTest {
 		given(address.getId()).willReturn(0L);
 		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(3_000_000_000L);
 		given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+		File databaseFolder = new File("database");
 		try {
+			if (!databaseFolder.exists()) {
+				databaseFolder.mkdir();
+			}
 			FileUtils.cleanDirectory(new File("database"));
-		} catch (IOException ignore) { }
+		} catch (IllegalArgumentException | IOException e) {
+			System.err.println("Exception thrown while cleaning up directory");
+			e.printStackTrace();
+		}
 		subject.createGenesisChildren(addressBook, 0, bootstrapProperties);
 	}
 }
