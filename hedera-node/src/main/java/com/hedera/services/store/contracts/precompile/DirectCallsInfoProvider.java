@@ -20,14 +20,12 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.hedera.services.store.contracts.WorldLedgers;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public record DirectCallsInfoProvider(PrecompileMessage precompileMessage,
-									  WorldLedgers ledgers) implements InfoProvider {
+public record DirectCallsInfoProvider(PrecompileMessage precompileMessage) implements InfoProvider {
 	@Override
 	public Wei getValue() {
 		return precompileMessage.getValue();
@@ -54,6 +52,11 @@ public record DirectCallsInfoProvider(PrecompileMessage precompileMessage,
 	}
 
 	@Override
+	public Address getSenderAddress() {
+		return precompileMessage.getSenderAddress();
+	}
+
+	@Override
 	public Bytes getInputData() {
 		return precompileMessage.getInputData();
 	}
@@ -68,8 +71,4 @@ public record DirectCallsInfoProvider(PrecompileMessage precompileMessage,
 		precompileMessage.setRevertReason(revertReason);
 	}
 
-	@Override
-	public boolean validateKey(final Address target, final HTSPrecompiledContract.ContractActivationTest activationTest) {
-		return activationTest.apply(false, target, precompileMessage.getSenderAddress(), ledgers);
-	}
 }

@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -37,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 import java.util.Objects;
@@ -81,7 +81,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(MessageFrame frame) {
+	public void run(InfoProvider provider) {
 		Objects.requireNonNull(setApprovalForAllWrapper);
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
@@ -106,11 +106,12 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 		approveAllowanceLogic.approveAllowance(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
 				transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
 				transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-				EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+				EntityIdUtils.accountIdFromEvmAddress(provider.getSenderAddress()));
 
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-
-		frame.addLog(getLogForSetApprovalForAll(precompileAddress));
+		if (!provider.isDirectTokenCall()) {
+			provider.messageFrame().addLog(getLogForSetApprovalForAll(precompileAddress));
+		}
 	}
 
 	@Override

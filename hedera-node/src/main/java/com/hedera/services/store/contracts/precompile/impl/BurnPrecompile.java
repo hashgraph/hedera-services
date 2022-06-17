@@ -25,6 +25,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -84,13 +85,13 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final MessageFrame frame) {
+	public void run(final InfoProvider provider) {
 		Objects.requireNonNull(burnOp);
 
 		/* --- Check required signatures --- */
 		final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
+				provider, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
 		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */

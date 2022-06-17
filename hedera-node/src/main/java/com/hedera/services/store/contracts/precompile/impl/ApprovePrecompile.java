@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -115,7 +116,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final MessageFrame frame) {
+	public void run(final InfoProvider provider) {
 		Objects.requireNonNull(approveOp);
 
 		validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -166,11 +167,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 			}
 		}
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-
-		if (isFungible) {
-			frame.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
-		} else {
-			frame.addLog(getLogForNftAdjustAllowance(precompileAddress));
+		if (!provider.isDirectTokenCall()) {
+			if (isFungible) {
+				provider.messageFrame().addLog(getLogForFungibleAdjustAllowance(precompileAddress));
+			} else {
+				provider.messageFrame().addLog(getLogForNftAdjustAllowance(precompileAddress));
+			}
 		}
 	}
 

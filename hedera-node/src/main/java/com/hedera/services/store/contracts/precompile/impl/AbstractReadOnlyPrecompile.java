@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile.impl;
  */
 
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -64,7 +65,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 	}
 
 	@Override
-	public void run(final MessageFrame frame) {
+	public void run(final InfoProvider provider) {
 		// No changes to state to apply
 	}
 

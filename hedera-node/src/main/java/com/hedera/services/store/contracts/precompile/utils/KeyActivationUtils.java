@@ -23,6 +23,8 @@ package com.hedera.services.store.contracts.precompile.utils;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.DirectCallsInfoProvider;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -58,8 +60,8 @@ public final class KeyActivationUtils {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
+	 * @param provider
+	 * 		provides the current frame or precompile message
 	 * @param target
 	 * 		the element to test for key activation, in standard form
 	 * @param activationTest
@@ -69,12 +71,18 @@ public final class KeyActivationUtils {
 	 * @return whether the implied key is active
 	 */
 	public static boolean validateKey(
-			final MessageFrame frame,
+			final InfoProvider provider,
 			final Address target,
 			final KeyActivationTest activationTest,
 			final WorldLedgers ledgers,
 			final ContractAliases aliases
 	) {
+		//logic for direct token account calls
+		if(provider instanceof DirectCallsInfoProvider){
+			final var message =((DirectCallsInfoProvider) provider).precompileMessage();
+			return activationTest.apply(false, target, message.getSenderAddress(), ledgers);
+		}
+		final var frame = provider.messageFrame();
 		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
 		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 

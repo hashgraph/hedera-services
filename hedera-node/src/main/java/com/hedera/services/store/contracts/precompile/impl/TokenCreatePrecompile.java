@@ -35,6 +35,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -196,7 +197,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final MessageFrame frame) {
+	public void run(final InfoProvider provider) {
 		Objects.requireNonNull(tokenCreateOp);
 
 		/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
@@ -208,9 +209,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 		/* --- Check required signatures --- */
 		final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 		final var treasuryHasSigned = KeyActivationUtils.validateKey(
-				frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
+				provider, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
 		validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
-		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_SIGNATURE));
+		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(provider, key), INVALID_SIGNATURE));
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
@@ -235,8 +236,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void handleSentHbars(final MessageFrame frame) {
-		final var timestampSeconds = frame.getBlockValues().getTimestamp();
+	public void handleSentHbars(final InfoProvider provider) {
+		final var timestampSeconds = provider.getTimestamp();
 		final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 		final var gasPriceInTinybars = feeCalculator.get()
 				.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -249,7 +250,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 		final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
 				- getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
 
-		validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
+		validateTrue(provider.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
 		updater.getAccount(senderAddress).getMutable()
 				.decrementBalance(Wei.of(tinybarsRequirement));
@@ -334,18 +335,18 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	private boolean validateAdminKey(
-			final MessageFrame frame,
+			final InfoProvider provider,
 			final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 	) {
 		final var key = tokenKeyWrapper.key();
 		return switch (key.getKeyValueType()) {
 			case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
-					frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, updater.aliases());
+					provider, senderAddress, sigsVerifier::hasActiveKey, ledgers, updater.aliases());
 			case CONTRACT_ID -> KeyActivationUtils.validateKey(
-					frame, asTypedEvmAddress(key.getContractID()), sigsVerifier::hasActiveKey, ledgers,
+					provider, asTypedEvmAddress(key.getContractID()), sigsVerifier::hasActiveKey, ledgers,
 					updater.aliases());
 			case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
-					frame, asTypedEvmAddress(key.getDelegatableContractID()), sigsVerifier::hasActiveKey, ledgers,
+					provider, asTypedEvmAddress(key.getDelegatableContractID()), sigsVerifier::hasActiveKey, ledgers,
 					updater.aliases());
 			case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
 					sigsVerifier::cryptoKeyIsActive);

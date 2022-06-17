@@ -30,6 +30,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -129,9 +130,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(
-			final MessageFrame frame
-	) {
+	public void run(final InfoProvider provider) {
+		final var aliases = !provider.isDirectTokenCall() ? updater.aliases() : null;
 		if (impliedValidity == null) {
 			extrapolateDetailsFromSyntheticTxn();
 		}
@@ -159,8 +159,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 					continue;
 				}
 				final var hasSenderSig = KeyActivationUtils.validateKey(
-						frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
-						updater.aliases());
+						provider, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
+						aliases);
 				validateTrue(hasSenderSig, INVALID_SIGNATURE);
 			}
 			if (i < numExplicitChanges) {
@@ -169,12 +169,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 				if (change.isForNft()) {
 					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
 					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-							frame, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
-							updater.aliases());
+							provider, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
+							aliases);
 				} else if (units > 0) {
 					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-							frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-							ledgers, updater.aliases());
+							provider, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+							ledgers,aliases );
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}

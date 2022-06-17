@@ -30,20 +30,19 @@ public interface InfoProvider {
 	Wei getValue();
 
 	MessageFrame messageFrame();
+
 	long getRemainingGas();
 
 	boolean isDirectTokenCall();
 
 	long getTimestamp();
 
+	Address getSenderAddress();
+
 	Bytes getInputData();
 
 	void setState(MessageFrame.State state);
 
 	void setRevertReason(Bytes revertReason);
-
-	boolean validateKey(final Address target,
-						final HTSPrecompiledContract.ContractActivationTest activationTest);
-
 
 }

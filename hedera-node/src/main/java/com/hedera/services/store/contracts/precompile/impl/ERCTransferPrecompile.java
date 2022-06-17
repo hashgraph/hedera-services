@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -74,7 +75,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			final int functionId,
 			final ImpliedTransfersMarshal impliedTransfersMarshal) {
 		super(ledgers, decoder, updater, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
-				pricingUtils,functionId, callerAccount, impliedTransfersMarshal);
+				pricingUtils, functionId, callerAccount, impliedTransfersMarshal);
 		this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 		this.tokenID = tokenID;
 		this.isFungible = isFungible;
@@ -103,24 +104,26 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	}
 
 	@Override
-	public void run(final MessageFrame frame) {
+	public void run(final InfoProvider provider) {
 		if (!isFungible) {
 			final var nftExchange = transferOp.get(0).nftExchanges().get(0);
 			final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
 			validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 		}
 		try {
-			super.run(frame);
+			super.run(provider);
 		} catch (InvalidTransactionException e) {
 			throw InvalidTransactionException.fromReverting(e.getResponseCode());
 		}
 
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-		if (isFungible) {
-			frame.addLog(getLogForFungibleTransfer(precompileAddress));
-		} else {
-			frame.addLog(getLogForNftExchange(precompileAddress));
+		if (!provider.isDirectTokenCall()) {
+			if (isFungible) {
+				provider.messageFrame().addLog(getLogForFungibleTransfer(precompileAddress));
+			} else {
+				provider.messageFrame().addLog(getLogForNftExchange(precompileAddress));
+			}
 		}
 	}
 
