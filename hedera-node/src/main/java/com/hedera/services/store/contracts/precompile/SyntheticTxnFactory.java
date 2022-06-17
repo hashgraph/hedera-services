@@ -27,6 +27,14 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -150,7 +158,7 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry,
-			final AccountID payerForAutoRenew) {
+														  final AccountID payerForAutoRenew) {
 		final var op = ContractUpdateTransactionBody.newBuilder()
 				.setContractID(contractNum.toGrpcContractID())
 				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
@@ -395,6 +403,22 @@ public class SyntheticTxnFactory {
 		public AccountAmount receiverAdjustment() {
 			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(
 					isApproval).build();
+		}
+
+		public AccountID sender() {
+			return sender;
+		}
+
+		public AccountID receiver() {
+			return receiver;
+		}
+
+		public long amount() {
+			return amount;
+		}
+
+		public boolean isApproval() {
+			return isApproval;
 		}
 	}
 

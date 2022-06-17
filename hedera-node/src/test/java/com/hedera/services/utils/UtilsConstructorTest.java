@@ -65,7 +65,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
-import com.hedera.services.store.contracts.precompile.DescriptorUtils;
+import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;

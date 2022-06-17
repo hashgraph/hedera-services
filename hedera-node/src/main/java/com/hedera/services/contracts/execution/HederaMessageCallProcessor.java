@@ -84,7 +84,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {
-			output = contract.compute(frame.getInputData(), frame);
+			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
 			gasRequirement = contract.gasRequirement(frame.getInputData());
 		}
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
@@ -92,7 +92,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			frame.decrementRemainingGas(frame.getRemainingGas());
 			frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
 			frame.setState(EXCEPTIONAL_HALT);
-		} else if (output != null) {
+		} else if (output != null && !Bytes.EMPTY.equals(output)) {
 			frame.decrementRemainingGas(gasRequirement);
 			frame.setOutputData(output);
 			frame.setState(COMPLETED_SUCCESS);
