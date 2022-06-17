@@ -65,7 +65,6 @@ class ReleaseTwentySevenMigrationTest {
 		given(addressBook.getAddress(4)).willReturn(address5);
 		given(address5.getId()).willReturn(4L);
 		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(totalHbar);
-		given(bootstrapProperties.getLongProperty("staking.periodMins")).willReturn(1440L);
 
 		var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
 
