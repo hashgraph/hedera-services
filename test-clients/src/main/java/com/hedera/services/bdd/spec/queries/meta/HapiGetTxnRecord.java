@@ -73,6 +73,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
@@ -643,7 +644,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				assertEquals(count, childRecords.size());
 			} else {
 				int observedCount = childRecords.size();
-				if (TxnUtils.isEndOfStakingPeriodRecord(childRecords.get(0))) {
+				if (!childRecords.isEmpty() && isEndOfStakingPeriodRecord(childRecords.get(0))) {
 					observedCount--;
 				}
 				assertEquals(count, observedCount, "Wrong # of non-staking records");
