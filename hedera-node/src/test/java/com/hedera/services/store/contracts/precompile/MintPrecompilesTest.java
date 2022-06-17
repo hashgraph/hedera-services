@@ -27,17 +27,17 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -49,16 +49,17 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.MintLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
-import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
@@ -75,13 +76,18 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_MINT_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -109,7 +115,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -126,8 +131,6 @@ class MintPrecompilesTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private OptionValidator validator;
-	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
@@ -141,12 +144,6 @@ class MintPrecompilesTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private MintLogic mintLogic;
 	@Mock
@@ -174,50 +171,51 @@ class MintPrecompilesTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfers;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private FeeObject mockFeeObject;
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private ApproveAllowanceChecks allowanceChecks;
+	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
+	private AssetsLoader assetLoader;
 	@Mock
-	private CreateChecks createChecks;
+	private HbarCentExchange exchange;
 	@Mock
-	private EntityIdSource entityIdSource;
-	@Mock
-	private DeleteAllowanceChecks deleteAllowanceChecks;
+	private ExchangeRate exchangeRate;
+
+	private static final long TEST_SERVICE_FEE = 5_000_000;
+	private static final long TEST_NETWORK_FEE = 400_000;
+	private static final long TEST_NODE_FEE = 300_000;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws IOException {
+		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+		canonicalPrices.put(HederaFunctionality.TokenMint, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
+		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks,
-				deleteAllowanceChecks);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test
 	void mintFailurePathWorks() {
 		Bytes pretendArguments = givenNonFungibleFrameContext();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -239,7 +237,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(infoProvider);
 
 		// then:
@@ -251,6 +249,7 @@ class MintPrecompilesTest {
 	@Test
 	void mintRandomFailurePathWorks() {
 		Bytes pretendArguments = givenNonFungibleFrameContext();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
 				.willThrow(new IllegalArgumentException("random error"));
@@ -272,7 +271,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(infoProvider);
 
 		// then:
@@ -283,13 +282,13 @@ class MintPrecompilesTest {
 	void nftMintHappyPathWorks() {
 		Bytes pretendArguments = givenNonFungibleFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore, dynamicProperties))
-				.willReturn(mintLogic);
+		given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -314,7 +313,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(infoProvider);
 
 		// then:
@@ -329,13 +328,13 @@ class MintPrecompilesTest {
 	void nftMintBadSyntaxWorks() {
 		Bytes pretendArguments = givenNonFungibleFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore, dynamicProperties))
-				.willReturn(mintLogic);
+		given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -355,7 +354,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		subject.computeInternal(infoProvider);
 
 		// then:
@@ -367,6 +366,7 @@ class MintPrecompilesTest {
 		Bytes pretendArguments = givenFungibleFrameContext();
 		givenLedgers();
 		givenFungibleCollaborators();
+		givenPricingUtilsContext();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -385,7 +385,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);;
 		final var result = subject.computeInternal(infoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -400,6 +400,7 @@ class MintPrecompilesTest {
 		Bytes pretendArguments = givenFungibleFrameContext();
 		givenLedgers();
 		givenFungibleCollaborators();
+		givenPricingUtilsContext();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 		given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
 		given(worldUpdater.aliases()).willReturn(aliases);
@@ -418,7 +419,7 @@ class MintPrecompilesTest {
 
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		assertFailsWith(() -> subject.computeInternal(infoProvider), FAIL_INVALID);
 	}
 
@@ -432,9 +433,9 @@ class MintPrecompilesTest {
 		doCallRealMethod().when(frame).setRevertReason(any());
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintAmountOversize);
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 		// then:
-		assertNull(result);
+		assertEquals(Bytes.EMPTY, result.getOutput());
 		verify(wrappedLedgers, never()).commit();
 		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -443,6 +444,7 @@ class MintPrecompilesTest {
 	void fungibleMintForMaxAmountWorks() {
 		// given:
 		givenLedgers();
+		givenPricingUtilsContext();
 		Bytes pretendArguments = givenFrameContext();
 		givenFungibleCollaborators();
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintMaxAmount);
@@ -465,7 +467,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(infoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
@@ -473,6 +475,28 @@ class MintPrecompilesTest {
 		verify(mintLogic).mint(fungibleId, 0, Long.MAX_VALUE, Collections.emptyList(), Instant.EPOCH);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForMintToken() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+		given(syntheticTxnFactory.createMint(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
 	}
 
 	private Bytes givenNonFungibleFrameContext() {
@@ -512,12 +536,23 @@ class MintPrecompilesTest {
 	private void givenFungibleCollaborators() {
 		given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore, dynamicProperties))
-				.willReturn(mintLogic);
+		given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
+	}
+
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	}
+
+	private void givenMinFrameContext() {
+		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 }
