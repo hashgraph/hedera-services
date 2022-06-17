@@ -35,7 +35,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
-import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -87,9 +86,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0270_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0260_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
-import static com.hedera.services.state.migration.StateVersions.FIRST_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
@@ -189,9 +187,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
 			return NUM_POST_0210_CHILDREN;
 		} else if (version == CURRENT_VERSION) {
-			return NUM_POST_0270_CHILDREN;
-		}
-		else {
+			return NUM_POST_0260_CHILDREN;
+		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
 	}
@@ -203,7 +200,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		// No new top-level children
+		// The new STAKING_INFO child is added in the migration step for consistency
 	}
 
 	@Override
@@ -543,10 +540,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static TokenRelsLinkMigrator tokenRelsLinkMigrator = ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList;
 	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator = ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
 	private static IterableStorageMigrator iterableStorageMigrator = ReleaseTwentySixMigration::makeStorageIterable;
-	private static Consumer<ServicesState> titleCountsMigrator = ReleaseTwentyFiveMigration::initTreasuryTitleCounts;
 	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
 	private static StakingInfoBuilder stakingInfoBuilder = ReleaseTwentySevenMigration::buildStakingInfoMap;
 	private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory = VirtualMapFactory::new;
@@ -555,10 +550,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@VisibleForTesting
 	void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
-		if (FIRST_025X_VERSION.isAfter(deserializedVersion)) {
-			tokenRelsLinkMigrator.buildAccountTokenAssociationsLinkedList(accounts(), tokenAssociations());
-			titleCountsMigrator.accept(this);
-		}
 		if (FIRST_026X_VERSION.isAfter(deserializedVersion)) {
 			iterableStorageMigrator.makeStorageIterable(
 					this,
@@ -573,7 +564,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 		if (FIRST_027X_VERSION.isAfter(deserializedVersion)) {
-			setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook(), new BootstrapProperties()));
+			setChild(
+					StateChildIndices.STAKING_INFO,
+					stakingInfoBuilder.buildStakingInfoMap(addressBook(), new BootstrapProperties()));
 		}
 		// we know for a fact that we need to migrate scheduled transactions if they are a MerkleMap, the version
 		// doesn't really matter.
@@ -588,13 +581,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		logStateChildrenSizes();
 	}
 
-
-	@FunctionalInterface
-	interface TokenRelsLinkMigrator {
-		void buildAccountTokenAssociationsLinkedList(
-				MerkleMap<EntityNum, MerkleAccount> accounts,
-				MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations);
-	}
 
 	@FunctionalInterface
 	interface OwnedNftsLinkMigrator {
@@ -644,11 +630,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@VisibleForTesting
-	static void setTokenRelsLinkMigrator(TokenRelsLinkMigrator tokenRelsLinkMigrator) {
-		ServicesState.tokenRelsLinkMigrator = tokenRelsLinkMigrator;
-	}
-
-	@VisibleForTesting
 	static void setOwnedNftsLinkMigrator(OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
 		ServicesState.ownedNftsLinkMigrator = ownedNftsLinkMigrator;
 	}
@@ -661,11 +642,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@VisibleForTesting
 	static void setIterableStorageMigrator(final IterableStorageMigrator iterableStorageMigrator) {
 		ServicesState.iterableStorageMigrator = iterableStorageMigrator;
-	}
-
-	@VisibleForTesting
-	static void setTitleCountsMigrator(final Consumer<ServicesState> titleCountsMigrator) {
-		ServicesState.titleCountsMigrator = titleCountsMigrator;
 	}
 
 	@VisibleForTesting

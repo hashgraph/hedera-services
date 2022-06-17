@@ -35,8 +35,6 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
-import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
-import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -118,7 +116,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
-	private final SoftwareVersion some024xVersion = forHapiAndHedera("0.24.0", "0.24.2");
+	private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
 	private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 	private final SoftwareVersion futureVersion = forHapiAndHedera( "0.28.0", "0.28.0");
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
@@ -175,15 +173,11 @@ class ServicesStateTest {
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> iterableStorage;
 	@Mock
-	private ServicesState.TokenRelsLinkMigrator tokenRelsLinkMigrator;
-	@Mock
 	private ServicesState.OwnedNftsLinkMigrator ownedNftsLinkMigrator;
 	@Mock
 	private ServicesState.StakingInfoBuilder stakingInfoBuilder;
 	@Mock
 	private ServicesState.IterableStorageMigrator iterableStorageMigrator;
-	@Mock
-	private Consumer<ServicesState> titleCountsMigrator;
 	@Mock
 	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
 	@Mock
@@ -220,17 +214,15 @@ class ServicesStateTest {
 
 		subject.migrateFrom(futureVersion);
 
-		verifyNoInteractions(
-				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator);
+		verifyNoInteractions(autoRenewalMigrator, iterableStorageMigrator);
 
 		unmockMigrators();
 	}
 
 	@Test
-	void doesAllMigrationsExceptAutoRenewFromRelease024VersionIfExpiryNotJustEnabled() {
+	void doesAllMigrationsExceptAutoRenewFromRelease025VersionIfExpiryNotJustEnabled() {
 		mockMigrators();
-		final var inOrder = inOrder(
-				titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState, scheduledTxnsMigrator);
+		final var inOrder = inOrder(iterableStorageMigrator, vmf, workingState, scheduledTxnsMigrator);
 
 		ServicesState.setExpiryJustEnabled(false);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -248,10 +240,8 @@ class ServicesStateTest {
 			return null;
 		}).when(scheduledTxnsMigrator).accept(subject);
 
-		subject.migrateFrom(some024xVersion);
+		subject.migrateFrom(some025xVersion);
 
-		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
-		inOrder.verify(titleCountsMigrator).accept(subject);
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
 		inOrder.verify(scheduledTxnsMigrator).accept(subject);
@@ -263,11 +253,10 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesAllMigrationsFromRelease024VersionIfExpiryJustEnabled() {
+	void doesAllMigrationsFromRelease025VersionIfExpiryJustEnabled() {
 		mockMigrators();
 		final var inOrder = inOrder(
-				autoRenewalMigrator, titleCountsMigrator, scheduledTxnsMigrator,
-				iterableStorageMigrator, tokenRelsLinkMigrator, vmf, workingState);
+				autoRenewalMigrator, scheduledTxnsMigrator, iterableStorageMigrator, vmf, workingState);
 
 		ServicesState.setExpiryJustEnabled(true);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -286,11 +275,9 @@ class ServicesStateTest {
 			return null;
 		}).when(scheduledTxnsMigrator).accept(subject);
 
-		subject.migrateFrom(some024xVersion);
+		subject.migrateFrom(some025xVersion);
 		ServicesState.setExpiryJustEnabled(false);
 
-		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
-		inOrder.verify(titleCountsMigrator).accept(subject);
 		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
 				eq(subject), any(), any(), eq(iterableStorage));
 		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
@@ -315,7 +302,6 @@ class ServicesStateTest {
 
 		subject.migrateFrom(futureVersion);
 
-		verify(titleCountsMigrator, never()).accept(any());
 		verify(iterableStorageMigrator, never()).makeStorageIterable(any(), any(), any(), any());
 		verify(autoRenewalMigrator, never()).grantFreeAutoRenew(any(), any());
 
@@ -532,9 +518,9 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0240() {
+	void minimumVersionIsRelease025() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_024X_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_025X_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
@@ -546,7 +532,7 @@ class ServicesStateTest {
 				StateChildIndices.NUM_POST_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0260_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0270_CHILDREN,
+				StateChildIndices.NUM_POST_0260_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.CURRENT_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
@@ -710,7 +696,7 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-		subject.setDeserializedStateVersion(StateVersions.RELEASE_024X_VERSION);
+		subject.setDeserializedStateVersion(StateVersions.RELEASE_025X_VERSION);
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -735,7 +721,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
-		subject.setDeserializedStateVersion(StateVersions.RELEASE_024X_VERSION - 1);
+		subject.setDeserializedStateVersion(StateVersions.RELEASE_025X_VERSION - 1);
 
 		assertThrows(IllegalStateException.class, () ->
 				subject.init(platform, addressBook, dualState, RESTART, null));
@@ -887,17 +873,22 @@ class ServicesStateTest {
 		given(address.getId()).willReturn(0L);
 		given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(3_000_000_000L);
 		given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+		File databaseFolder = new File("database");
 		try {
+			if (!databaseFolder.exists()) {
+				databaseFolder.mkdir();
+			}
 			FileUtils.cleanDirectory(new File("database"));
-		} catch (IOException ignore) { }
+		} catch (IllegalArgumentException | IOException e) {
+			System.err.println("Exception thrown while cleaning up directory");
+			e.printStackTrace();
+		}
 		subject.createGenesisChildren(addressBook, 0, bootstrapProperties);
 	}
 
 	private void mockMigrators() {
 		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
-		ServicesState.setTitleCountsMigrator(titleCountsMigrator);
 		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
-		ServicesState.setTokenRelsLinkMigrator(tokenRelsLinkMigrator);
 		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
 		ServicesState.setVmFactory(vmf);
 		ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
@@ -905,9 +896,7 @@ class ServicesStateTest {
 
 	private void unmockMigrators() {
 		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
-		ServicesState.setTitleCountsMigrator(ReleaseTwentyFiveMigration::initTreasuryTitleCounts);
 		ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
-		ServicesState.setTokenRelsLinkMigrator(ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList);
 		ServicesState.setOwnedNftsLinkMigrator(ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList);
 		ServicesState.setVmFactory(VirtualMapFactory::new);
 		ServicesState.setScheduledTransactionsMigrator(
