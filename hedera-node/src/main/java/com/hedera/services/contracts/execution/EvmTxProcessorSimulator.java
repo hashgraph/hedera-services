@@ -136,7 +136,7 @@ public class EvmTxProcessorSimulator {
 
 		if (message.getState() == COMPLETED_SUCCESS) {
 			return TransactionProcessingResult.successful(
-					new ArrayList<>(),
+					message.getLogs(),
 					gasUsedByTransaction,
 					sbhRefund,
 					gasPrice,
@@ -170,7 +170,6 @@ public class EvmTxProcessorSimulator {
 
 		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-		final var redirectBytes = constructRedirectBytes(payload, tokenId);
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
@@ -217,7 +216,7 @@ public class EvmTxProcessorSimulator {
 
 		//construct the PrecompileMessage here
 		PrecompileMessage message = constructMessageAndCallPrecompileContract(sender, consensusTime, ledgers,
-				redirectBytes, gasAvailable, value, tokenId);
+				payload, gasAvailable, value, tokenId);
 
 		// calculate the gas used for the hts call
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, message.getGasRemaining());

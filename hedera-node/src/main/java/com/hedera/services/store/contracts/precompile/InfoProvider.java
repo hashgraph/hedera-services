@@ -24,6 +24,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.log.Log;
+
+import java.util.List;
 
 public interface InfoProvider {
 
@@ -44,5 +47,7 @@ public interface InfoProvider {
 	void setState(MessageFrame.State state);
 
 	void setRevertReason(Bytes revertReason);
+
+	void addLog(Log log);
 
 }

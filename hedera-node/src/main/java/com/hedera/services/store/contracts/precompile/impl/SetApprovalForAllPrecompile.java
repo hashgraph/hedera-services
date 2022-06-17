@@ -109,9 +109,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 				EntityIdUtils.accountIdFromEvmAddress(provider.getSenderAddress()));
 
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-		if (!provider.isDirectTokenCall()) {
-			provider.messageFrame().addLog(getLogForSetApprovalForAll(precompileAddress));
-		}
+
+		provider.addLog(getLogForSetApprovalForAll(precompileAddress));
 	}
 
 	@Override

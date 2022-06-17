@@ -27,8 +27,11 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.log.Log;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class PrecompileMessage {
@@ -36,7 +39,8 @@ public class PrecompileMessage {
 	private final WorldLedgers ledgers;
 	private final Address senderAddress;
 	private State state;
-	private  Optional<Bytes> revertReason;
+	private Optional<Bytes> revertReason;
+	private final List<Log> logs;
 	private Bytes htsOutputResult;
 	private long gasRequired;
 	private final Wei value;
@@ -53,6 +57,7 @@ public class PrecompileMessage {
 							  Long gasRemaining, Bytes inputData) {
 		state = State.NOT_STARTED;
 		revertReason = Optional.empty();
+		logs = new ArrayList();
 		this.ledgers = ledgers;
 		this.senderAddress = senderAddress;
 		this.value = value;
@@ -101,6 +106,10 @@ public class PrecompileMessage {
 		return revertReason;
 	}
 
+	public List<Log> getLogs() {
+		return this.logs;
+	}
+
 	public void setRevertReason(Bytes revertReason) {
 		this.revertReason = Optional.ofNullable(revertReason);
 	}
@@ -117,9 +126,14 @@ public class PrecompileMessage {
 		this.htsOutputResult = htsOutputResult;
 	}
 
+	public void addLog(Log log) {
+		logs.add(log);
+	}
+
 	public void decrementRemainingGas(long amount) {
 		this.gasRemaining -= amount;
 	}
+
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
 		if (!addressOrAlias.equals(ledgers.canonicalAddress(addressOrAlias))) {

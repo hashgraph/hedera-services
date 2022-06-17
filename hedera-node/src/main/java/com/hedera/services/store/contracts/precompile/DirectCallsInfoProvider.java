@@ -24,6 +24,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.log.Log;
+
+import java.util.List;
 
 public record DirectCallsInfoProvider(PrecompileMessage precompileMessage) implements InfoProvider {
 	@Override
@@ -69,6 +72,11 @@ public record DirectCallsInfoProvider(PrecompileMessage precompileMessage) imple
 	@Override
 	public void setRevertReason(Bytes revertReason) {
 		precompileMessage.setRevertReason(revertReason);
+	}
+
+	@Override
+	public void addLog(Log log) {
+		precompileMessage.addLog(log);
 	}
 
 }

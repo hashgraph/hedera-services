@@ -167,12 +167,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 			}
 		}
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-		if (!provider.isDirectTokenCall()) {
-			if (isFungible) {
-				provider.messageFrame().addLog(getLogForFungibleAdjustAllowance(precompileAddress));
-			} else {
-				provider.messageFrame().addLog(getLogForNftAdjustAllowance(precompileAddress));
-			}
+
+		if (isFungible) {
+			provider.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
+		} else {
+			provider.addLog(getLogForNftAdjustAllowance(precompileAddress));
 		}
 	}
 

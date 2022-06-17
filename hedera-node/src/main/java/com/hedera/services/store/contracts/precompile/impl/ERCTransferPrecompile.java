@@ -118,12 +118,11 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-		if (!provider.isDirectTokenCall()) {
-			if (isFungible) {
-				provider.messageFrame().addLog(getLogForFungibleTransfer(precompileAddress));
-			} else {
-				provider.messageFrame().addLog(getLogForNftExchange(precompileAddress));
-			}
+
+		if (isFungible) {
+			provider.addLog(getLogForFungibleTransfer(precompileAddress));
+		} else {
+			provider.addLog(getLogForNftExchange(precompileAddress));
 		}
 	}
 
