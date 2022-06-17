@@ -71,6 +71,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
@@ -88,6 +89,7 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -104,7 +106,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static boolean expiryJustEnabled = false;
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
-	private int deserializedVersion = CURRENT_VERSION;
+	private int deserializedStateVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
@@ -133,7 +135,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 		/* Copy the non-Merkle state from the source */
-		this.deserializedVersion = that.deserializedVersion;
+		this.deserializedStateVersion = that.deserializedStateVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
 	}
 
@@ -200,7 +202,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void addDeserializedChildren(List<MerkleNode> children, int version) {
 		super.addDeserializedChildren(children, version);
-		deserializedVersion = version;
+		deserializedStateVersion = version;
 	}
 
 	@Override
@@ -209,11 +211,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final AddressBook addressBook,
 			final SwirldDualState dualState,
 			final InitTrigger trigger,
-			@Nullable final SoftwareVersion deserializedVersion
+			@Nullable SoftwareVersion deserializedVersion
 	) {
 		if (trigger == GENESIS) {
 			genesisInit(platform, addressBook, dualState);
 		} else {
+			if (deserializedVersion == null) {
+				deserializedVersion = lastSoftwareVersionOf(deserializedStateVersion);
+				if (deserializedVersion == null) {
+					throw new IllegalStateException("No software version for deserialized state version "
+							+ deserializedStateVersion);
+				}
+			}
 			deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
 			if (SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion)) {
 				migrateFrom(deserializedVersion);
@@ -227,7 +236,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final AddressBook addressBook,
 			final SwirldDualState dualState,
 			final InitTrigger trigger,
-			@Nullable final SoftwareVersion deserializedVersion
+			@NotNull final SoftwareVersion deserializedVersion
 	) {
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
@@ -289,8 +298,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var deployedVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 		if (deployedVersion.isBefore(deserializedVersion)) {
 			log.error("Fatal error, state source version {} is after node software version {}",
-					deserializedVersion,
-					SEMANTIC_VERSIONS.deployedSoftwareVersion());
+					deserializedVersion, deployedVersion);
 			app.systemExits().fail(1);
 		} else {
 			if (trigger == RESTART) {
@@ -486,8 +494,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
-	int getDeserializedVersion() {
-		return deserializedVersion;
+	int getDeserializedStateVersion() {
+		return deserializedStateVersion;
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
@@ -531,7 +539,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static Consumer<ServicesState> scheduledTxnsMigrator = LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
 	@VisibleForTesting
-	void migrateFrom(@Nullable final SoftwareVersion deserializedVersion) {
+	void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
 		if (FIRST_025X_VERSION.isAfter(deserializedVersion)) {
 			tokenRelsLinkMigrator.buildAccountTokenAssociationsLinkedList(accounts(), tokenAssociations());
 			titleCountsMigrator.accept(this);
@@ -603,8 +611,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@VisibleForTesting
-	void setDeserializedVersion(final int deserializedVersion) {
-		this.deserializedVersion = deserializedVersion;
+	void setDeserializedStateVersion(final int deserializedStateVersion) {
+		this.deserializedStateVersion = deserializedStateVersion;
 	}
 
 	@VisibleForTesting

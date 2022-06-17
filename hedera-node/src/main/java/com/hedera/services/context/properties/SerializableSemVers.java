@@ -34,6 +34,7 @@ import java.util.Comparator;
 import static com.hedera.services.context.properties.SemanticVersions.asSemVer;
 
 public class SerializableSemVers implements SoftwareVersion {
+	private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
 	public static final int RELEASE_027_VERSION = 1;
 	public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
@@ -104,7 +105,7 @@ public class SerializableSemVers implements SoftwareVersion {
 		if (other instanceof SerializableSemVers that) {
 			return this.isAfter(that) && haveDifferentMajorAndMinorVersions(this, that);
 		} else {
-			throw new IllegalArgumentException("Version " + this + " cannot be compared to " + other);
+			throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
 		}
 	}
 
@@ -119,7 +120,7 @@ public class SerializableSemVers implements SoftwareVersion {
 	@Override
 	public int compareTo(@Nullable final SoftwareVersion other) {
 		if (proto == null || services == null) {
-			throw new IllegalStateException("Uninitialized version " + this + " cannot be compared to " + other);
+			throw new IllegalStateException("Uninitialized version " + this + IS_INCOMPARABLE_MSG + other);
 		}
 		if (other == SoftwareVersion.NO_VERSION) {
 			// We are later than any unknown version
@@ -128,7 +129,7 @@ public class SerializableSemVers implements SoftwareVersion {
 		if (other instanceof SerializableSemVers that) {
 			return FULL_COMPARATOR.compare(this, that);
 		} else {
-			throw new IllegalArgumentException("Version " + this + " cannot be compared to " + other);
+			throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
 		}
 	}
 

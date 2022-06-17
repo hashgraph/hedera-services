@@ -695,6 +695,7 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setDeserializedStateVersion(StateVersions.RELEASE_024X_VERSION);
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -715,6 +716,14 @@ class ServicesStateTest {
 		verify(dualState).setFreezeTime(null);
 
 		unmockMigrators();
+	}
+
+	@Test
+	void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
+		subject.setDeserializedStateVersion(StateVersions.RELEASE_024X_VERSION - 1);
+
+		assertThrows(IllegalStateException.class, () ->
+				subject.init(platform, addressBook, dualState, RESTART, null));
 	}
 
 	@Test
@@ -800,7 +809,7 @@ class ServicesStateTest {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		// and:
 		subject.setMetadata(metadata);
-		subject.setDeserializedVersion(10);
+		subject.setDeserializedStateVersion(10);
 
 		given(addressBook.copy()).willReturn(addressBook);
 		given(networkContext.copy()).willReturn(networkContext);
@@ -813,7 +822,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		assertEquals(10, copy.getDeserializedVersion());
+		assertEquals(10, copy.getDeserializedStateVersion());
 		assertSame(metadata, copy.getMetadata());
 		verify(metadata).copy();
 		// and:

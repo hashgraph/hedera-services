@@ -68,7 +68,6 @@ public enum SemanticVersions {
 	}
 
 	@Nonnull
-	@VisibleForTesting
 	static ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
 		try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
 			final var props = new Properties();
