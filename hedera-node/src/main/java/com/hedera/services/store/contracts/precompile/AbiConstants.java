@@ -27,7 +27,7 @@ import org.apache.tuweni.bytes.Bytes;
  */
 public final class AbiConstants {
 	private AbiConstants() {
-		throw new IllegalStateException("Utility class");
+		throw new UnsupportedOperationException("Utility class");
 	}
 
 	// **** HIP-206 function selectors ****
