@@ -51,6 +51,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -83,7 +84,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
 	private Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
-	private Optional<AccountID> stakedAccountId = Optional.empty();
+	private Optional<String> stakedAccountId = Optional.empty();
 	private Optional<Long> stakedNodeId = Optional.empty();
 	private boolean isDeclinedReward = false;
 
@@ -193,7 +194,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	}
 
 	public HapiCryptoCreate stakedAccountId(String idLit) {
-		stakedAccountId = Optional.of(HapiPropertySource.asAccount(idLit));
+		stakedAccountId = Optional.of(idLit);
 		return this;
 	}
 
@@ -248,7 +249,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
 							if (stakedAccountId.isPresent()) {
-								b.setStakedAccountId(stakedAccountId.get());
+								b.setStakedAccountId(asId(stakedAccountId.get(), spec));
 							} else if (stakedNodeId.isPresent()) {
 								b.setStakedNodeId(stakedNodeId.get());
 							}

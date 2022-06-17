@@ -295,6 +295,14 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts pendingRewards(long reward) {
+		registerProvider((spec, o) -> {
+			assertEquals(reward, (object2ContractInfo(o)).getStakingInfo().getPendingReward(),
+					"Bad pending rewards!");
+		});
+		return this;
+	}
+
 	private ContractInfo object2ContractInfo(Object o) {
 		return (ContractInfo) o;
 	}
