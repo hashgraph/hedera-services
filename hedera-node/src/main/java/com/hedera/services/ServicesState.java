@@ -112,8 +112,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/**
 	 * For scheduled transaction migration we need to initialize the new scheduled transactions' storage
-	 * _before_ the {@link #migrateFrom(SoftwareVersion)} ()} call. There are things that call {@link #scheduleTxs()}
-	 * before {@link #migrateFrom(SoftwareVersion)} (int)} is called, like initializationFlow, which would cause casting
+	 * _before_ the {@link #migrateFrom(SoftwareVersion)} call. There are things that call {@link #scheduleTxs()}
+	 * before {@link #migrateFrom(SoftwareVersion)} is called, like initializationFlow, which would cause casting
 	 * and other issues if not handled.
 	 *
 	 * Remove this once we no longer need to handle migrations from pre-0.26.
