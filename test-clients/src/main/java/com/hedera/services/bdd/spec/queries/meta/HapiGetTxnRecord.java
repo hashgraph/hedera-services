@@ -26,6 +26,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -109,6 +110,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
+	private Optional<TransactionID> expectedParentId = Optional.empty();
 	private Optional<List<TransactionRecordAsserts>> childRecordsExpectations = Optional.empty();
 	private Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	private Optional<String> creationName = Optional.empty();
@@ -281,6 +283,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasChildRecords(TransactionID parentId, TransactionRecordAsserts... providers) {
+		expectedParentId = Optional.of(parentId);
+		childRecordsExpectations = Optional.of(Arrays.asList(providers));
+		return this;
+	}
+
 	public HapiGetTxnRecord hasDuplicates(ErroringAssertsProvider<List<TransactionRecord>> provider) {
 		duplicateExpectations = Optional.of(provider);
 		return this;
@@ -356,15 +364,29 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords) throws Throwable {
 		if (childRecordsExpectations.isPresent()) {
+			int numStakingRecords = 0;
+			if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
+				numStakingRecords++;
+			}
 			final var expectedChildRecords = childRecordsExpectations.get();
+			if (expectedParentId.isPresent()) {
+				final var sequentialId = new SequentialID(expectedParentId.get());
+				for (int i = 0; i < numStakingRecords; i++) {
+					sequentialId.nextChild();
+				}
+				for (final var childRecordAssert : expectedChildRecords) {
+					childRecordAssert.txnId(sequentialId.nextChild());
+				}
+			}
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(),
-					String.format("Expected %d child records, got %d", expectedChildRecords.size(),
-							actualRecords.size()));
-			for (int i = 0; i < actualRecords.size(); i++) {
-				final var expectedChildRecord = expectedChildRecords.get(i);
+			final var numActualRecords = actualRecords.size();
+			assertEquals(
+					expectedChildRecords.size(),
+					numActualRecords - numStakingRecords,
+			"Wrong # of (non-staking) child records");
+			for (int i = numStakingRecords; i < numActualRecords; i++) {
+				final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
 				final var actualChildRecord = actualRecords.get(i);
-
 				ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
 				List<Throwable> errors = asserts.errorsIn(actualChildRecord);
 				rethrowSummaryError(log, "Bad child records!", errors);
