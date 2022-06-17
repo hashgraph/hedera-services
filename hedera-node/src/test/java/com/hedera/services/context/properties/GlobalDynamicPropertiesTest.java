@@ -93,6 +93,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
+		assertTrue(subject.areContractAutoAssociationsEnabled());
 	}
 
 	@Test
@@ -230,6 +231,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.schedulingLongTermEnabled());
+		assertFalse(subject.areContractAutoAssociationsEnabled());
 	}
 
 	@Test
@@ -418,6 +420,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
 		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
 		given(properties.getIntProperty("hedera.recordStream.version")).willReturn((i + 70));
+		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
+				.willReturn((i + 65) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

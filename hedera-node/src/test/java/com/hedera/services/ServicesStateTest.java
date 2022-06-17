@@ -64,6 +64,7 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -73,6 +74,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -97,7 +100,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -867,6 +869,16 @@ class ServicesStateTest {
 	}
 
 	private void setAllChildren() {
+		File databaseFolder = new File("database");
+		try {
+			if (!databaseFolder.exists()) {
+				databaseFolder.mkdir();
+			}
+			FileUtils.cleanDirectory(new File("database"));
+		} catch (IllegalArgumentException | IOException e) {
+			System.err.println("Exception thrown while cleaning up directory");
+			e.printStackTrace();
+		}
 		subject.createGenesisChildren(addressBook, 0);
 	}
 }

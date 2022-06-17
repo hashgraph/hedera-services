@@ -158,4 +158,8 @@ public class ContractCustomizer {
 		}
 		accountCustomizer.customizeSynthetic(op);
 	}
+
+	public HederaAccountCustomizer accountCustomizer() {
+		return accountCustomizer;
+	}
 }
