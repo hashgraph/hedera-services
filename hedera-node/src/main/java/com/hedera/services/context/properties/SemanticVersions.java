@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +87,6 @@ public enum SemanticVersions {
 		}
 	}
 
-	@VisibleForTesting
 	static SemanticVersion asSemVer(final String value) {
 		final var matcher = SEMVER_SPEC_REGEX.matcher(value);
 		if (matcher.matches()) {
