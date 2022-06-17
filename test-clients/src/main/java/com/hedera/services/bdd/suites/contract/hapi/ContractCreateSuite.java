@@ -158,8 +158,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						canCallPendingContractSafely(),
 						createContractWithStakingFields()
+//						canCallPendingContractSafely(),
 				}
 		);
 	}
@@ -414,7 +414,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
