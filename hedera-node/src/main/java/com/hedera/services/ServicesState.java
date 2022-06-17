@@ -310,6 +310,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					networkCtx().markMigrationRecordsNotYetStreamed();
 				}
 			}
+			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
 			// Log state before migration.
