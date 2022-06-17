@@ -945,13 +945,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-CentOS7-4N-2C:
-    triggers:
-      - schedule:
-          cron: "45 3 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -991,13 +984,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-4N-2C:
-    triggers:
-      - schedule:
-          cron: "30 22 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1407,50 +1393,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  continuous-integration-gcp:
-      jobs:
-        - build-artifact:
-            name: "artifact-build"
-            context: SonarCloud
-            filters:
-              branches:
-                ignore:
-                  - NONE
-            workflow-name: "Continuous-integration"
-        - sonar-check:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
-
-        - build-platform-and-services:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
-        - javadoc-generation:
-            context: Slack
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - attach_workspace:
-                  at: /
-        - jrs-regression:
-            context: Slack
-            regression_path: /swirlds-platform/regression/assets
-            result_path: assets/results/4N_1C/CI
-            config_type: "ci"
-            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
-            name: "run-continuous-integration-gcp"
-            continuous_integration: true
-            slack_results_channel: "hedera-cicd"
-            slack_summary_channel: "hedera-cicd"
-            requires:
-              - javadoc-generation
-            pre-steps:
-              - install-tools
-              - attach_workspace:
-                  at: /
 jobs:
   build-artifact:
     parameters:
@@ -1597,13 +1539,13 @@ jobs:
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
-            
             # Build Platform
             cd /swirlds-platform
             ./mvnw clean install -DskipTests;
             
             # Build JRS
             cd /swirlds-platform/regression
+            git checkout -b 02547-D-Fix-search-version-string origin/02547-D-Fix-search-version-string 
             ./mvnw clean install
 
       - run:
@@ -1681,10 +1623,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
