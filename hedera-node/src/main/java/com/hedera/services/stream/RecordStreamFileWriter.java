@@ -20,8 +20,8 @@ package com.hedera.services.stream;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -59,6 +59,8 @@ import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 
 class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObjectStream<T> {
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
+
+	private static final DigestType currentDigestType = DigestType.SHA_384;
 
 	/**
 <	 * the current record stream type;
@@ -151,8 +153,8 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 		this.signer = signer;
 		this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
 		this.streamType = streamType;
-		this.streamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-		this.metadataStreamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+		this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
+		this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
 	}
 
 	@Override
@@ -224,7 +226,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 				try {
 					// write endRunningHash
 					final var endRunningHash = runningHash.getFutureHash().get();
-					recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash));
+					recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash.getValue()));
 					dosMeta.write(endRunningHash.getValue());
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write endRunningHash {}",
 							endRunningHash);
@@ -311,7 +313,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 			}
 			// write startRunningHash
 			final var startRunningHash = runningHash.getFutureHash().get();
-			recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash));
+			recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
 			dosMeta.write(startRunningHash.getValue());
 			LOG.debug(
 					OBJECT_STREAM_FILE.getMarker(),
@@ -442,23 +444,18 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 		return result;
 	}
 
-	private HashObject toProto(final Hash hash) {
+	private HashObject toProto(final byte[] hash) {
 		return HashObject.newBuilder()
 				.setAlgorithm(HashAlgorithm.SHA_384)
-				.setLength(hash.getDigestType().digestLength())
-				.setHash(ByteString.copyFrom(hash.getValue()))
+				.setLength(currentDigestType.digestLength())
+				.setHash(ByteStringUtils.wrapUnsafely(hash))
 				.build();
 	}
 
 	private void createSignatureFile(final File relatedRecordStreamFile) {
-		// get entire hash of current record stream file
-		final var entireHash = new Hash(streamDigest.digest(), DigestType.SHA_384);
-		// get metaData hash of current record stream file
-		final var metaHash = new Hash(metadataStreamDigest.digest(), DigestType.SHA_384);
-
 		// create proto messages for signature file
-		final var fileSignature = generateSignatureObject(entireHash);
-		final var metadataSignature = generateSignatureObject(metaHash);
+		final var fileSignature = generateSignatureObject(streamDigest.digest());
+		final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
 		final var signatureFile = SignatureFile.newBuilder()
 				.setFileSignature(fileSignature)
 				.setMetadataSignature(metadataSignature);
@@ -478,13 +475,13 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 		}
 	}
 
-	private SignatureObject generateSignatureObject(final Hash hash) {
-		final var signature = signer.sign(hash.getValue());
+	private SignatureObject generateSignatureObject(final byte[] hash) {
+		final var signature = signer.sign(hash);
 		return SignatureObject.newBuilder()
 				.setType(SignatureType.SHA_384_WITH_RSA)
 				.setLength(signature.length)
 				.setChecksum(101 - signature.length) // simple checksum to detect if at wrong place in the stream
-				.setSignature(ByteString.copyFrom(signature))
+				.setSignature(ByteStringUtils.wrapUnsafely(signature))
 				.setHashObject(toProto(hash))
 				.build();
 	}
