@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -191,6 +192,7 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
+		//HederaWorldState.Updater to be added or provided with an interface
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
 		final MutableAccount mutableSender = senderAccount.getMutable();

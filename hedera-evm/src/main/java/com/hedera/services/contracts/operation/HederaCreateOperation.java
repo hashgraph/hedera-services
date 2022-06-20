@@ -40,6 +40,7 @@ import javax.inject.Inject;
  *
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
+//TODO: EntityCreator, SyntheticTxnFactory, SyntheticTxnFactory to be supplied by Java Configurator. Only used in hedera-nodes to track changes and manage records
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 	private final StorageGasCalculator storageGasCalculator;
 

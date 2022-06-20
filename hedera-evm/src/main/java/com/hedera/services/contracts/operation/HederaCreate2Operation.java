@@ -38,6 +38,7 @@ import javax.inject.Inject;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+//TODO: EntityCreator, SyntheticTxnFactory, SyntheticTxnFactory to be supplied by Java Configurator. Only used in hedera-nodes to track changes and manage records
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 

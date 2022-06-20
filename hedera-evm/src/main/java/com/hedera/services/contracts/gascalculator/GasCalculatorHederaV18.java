@@ -37,6 +37,7 @@ import javax.inject.Inject;
  * Provides Hedera adapted gas cost lookups and calculations used during transaction processing.
  * Maps to the gas costs of the Smart Contract Service up until 0.18.0 release
  */
+//TODO: replace UsagePricesProvider and HbarCentExchange with an interface
 public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final UsagePricesProvider usagePrices;

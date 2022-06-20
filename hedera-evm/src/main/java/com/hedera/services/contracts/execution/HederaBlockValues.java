@@ -33,6 +33,7 @@ import java.util.Optional;
 /**
  * Hedera adapted {@link BlockValues}
  */
+//TODO: To be replaced with an interface
 public class HederaBlockValues implements BlockValues {
 	protected final long gasLimit;
 	protected final long blockNo;

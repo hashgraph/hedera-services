@@ -34,6 +34,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.gascalculator.GasCalculator}
  */
+//TODO: replace UsagePricesProvider and HbarCentExchange with an interface
 public final class GasCalculatorHederaUtil {
 	private static final int LOG_CONTRACT_ID_SIZE = 24;
 	private static final int LOG_TOPIC_SIZE = 32;

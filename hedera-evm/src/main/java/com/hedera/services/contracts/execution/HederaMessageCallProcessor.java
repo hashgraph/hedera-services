@@ -69,6 +69,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		}
 	}
 
+	//TODO: keep hts-precompile logic in hedera-node
 	void executeHederaPrecompile(
 			final PrecompiledContract contract,
 			final MessageFrame frame,

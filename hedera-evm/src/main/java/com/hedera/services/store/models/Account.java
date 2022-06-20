@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
  * only the API needed to support the Hedera Token Service. The
  * memo field, for example, is not yet present.
  */
+//TODO: we don't need a lot of the logic here. Provide a stripped version of Account
 public class Account {
     private final Id id;
 

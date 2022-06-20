@@ -56,7 +56,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			new OperationResult(
 					OptionalLong.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 
-	//TODO: to be supplied by Java Configurator. Only used in hedera-nodes to track changes and manage records
+	//TODO: EntityCreator, SyntheticTxnFactory, SyntheticTxnFactory to be supplied by Java Configurator. Only used in hedera-nodes to track changes and manage records
 	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final RecordsHistorian recordsHistorian;

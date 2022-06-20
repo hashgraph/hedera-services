@@ -27,6 +27,7 @@ import javax.inject.Singleton;
 import java.util.Optional;
 
 @Singleton
+//TODO: to be removed?
 public class StaticBlockMetaProvider {
 	private final SignedStateViewFactory stateViewFactory;
 

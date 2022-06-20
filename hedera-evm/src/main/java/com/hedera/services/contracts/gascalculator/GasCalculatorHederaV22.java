@@ -32,6 +32,7 @@ import javax.inject.Inject;
 /**
  * Updates gas costs enabled by gas-per-second throttling.
  */
+//TODO: replace UsagePricesProvider and HbarCentExchange with an interface
 public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
 
 	private static final long TX_DATA_ZERO_COST = 4L;

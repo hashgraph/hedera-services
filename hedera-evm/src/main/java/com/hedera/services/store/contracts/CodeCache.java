@@ -46,6 +46,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
  * whether a value is stale is present.
  */
 @Singleton
+//TODO: to be replaced with an interface
 public class CodeCache {
     private final EntityAccess entityAccess;
     private final Cache<BytesKey, Code> cache;

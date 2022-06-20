@@ -21,13 +21,11 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
-import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,10 +38,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
     static Runnable stackDump = Thread::dumpStack;
 
     //TODO to be removed
-    static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
+//    static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
 
     static {
-        IMMUTABLE_EMPTY_FCQ.copy();
+//        IMMUTABLE_EMPTY_FCQ.copy();
     }
 
     private static final int RELEASE_0240_VERSION = 4;
@@ -84,8 +82,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
         addDeserializedChildren(children, MERKLE_VERSION);
     }
 
+    //TODO: to be removed
     public MerkleAccount() {
-        addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
+//        addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
     }
 
     /* --- MerkleInternal --- */
@@ -151,9 +150,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
     }
 
     /* ----  Merkle children  ---- */
-//    public MerkleAccountState state() {
-//        return getChild(ChildIndices.STATE);
-//    }
+    public MerkleAccountState state() {
+        return getChild(ChildIndices.STATE);
+    }
 //
 //    public FCQueue<ExpirableTxnRecord> records() {
 //        return getChild(ChildIndices.RELEASE_090_RECORDS);
@@ -346,9 +345,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 //        state().setDeleted(deleted);
 //    }
 //
-//    public long getExpiry() {
-//        return state().expiry();
-//    }
+    public long getExpiry() {
+        return state().expiry();
+    }
 //
 //    public void setExpiry(final long expiry) {
 //        throwIfImmutable("Cannot change this account's expiry time if it's immutable.");

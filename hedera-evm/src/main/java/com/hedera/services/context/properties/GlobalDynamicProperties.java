@@ -20,28 +20,22 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
-
-import static com.hedera.services.context.properties.EntityType.ACCOUNT;
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
 
 //TODO We need only a few of these properties. An interface (PropertiesProvider) would be introduced
 @Singleton
 public class GlobalDynamicProperties {
-    private final HederaNumbers hederaNums;
-    private final PropertySource properties;
+    //TODO replace HederaNumbers with an interface?
+//    private final HederaNumbers hederaNums;
+
+//    private final PropertySource properties;
 
     private int maxNftMetadataBytes;
     private int maxBatchSizeBurn;
@@ -93,7 +87,7 @@ public class GlobalDynamicProperties {
     private long maxPrecedingRecords;
     private long maxFollowingRecords;
     private Set<HederaFunctionality> schedulingWhitelist;
-    private CongestionMultipliers congestionMultipliers;
+//    private CongestionMultipliers congestionMultipliers;
     private int feesMinCongestionPeriod;
     private long ratesMidnightCheckInterval;
     private boolean areNftsEnabled;
@@ -129,109 +123,109 @@ public class GlobalDynamicProperties {
     private long exchangeRateGasReq;
     private boolean contractAutoAssociationsEnabled;
 
-    @Inject
-    public GlobalDynamicProperties(
-            HederaNumbers hederaNums,
-            @CompositeProps PropertySource properties
-    ) {
-        this.hederaNums = hederaNums;
-        this.properties = properties;
-
-        reload();
-    }
+//    @Inject
+//    public GlobalDynamicProperties(
+//            HederaNumbers hederaNums,
+//            @CompositeProps PropertySource properties
+//    ) {
+//        this.hederaNums = hederaNums;
+//        this.properties = properties;
+//
+//        reload();
+//    }
 
     public void reload() {
-        maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
-        maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
-        maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
-        maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
-        maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
-        maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
-        maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
-        maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
-        maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
-        maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
-        maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
-        fundingAccount = AccountID.newBuilder()
-                .setShardNum(hederaNums.shard())
-                .setRealmNum(hederaNums.realm())
-                .setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
-                .build();
-        cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
-        ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
-        balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
-        shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
-        nodeBalanceWarningThreshold = properties.getLongProperty("balances.nodeBalanceWarningThreshold");
-        pathToBalancesExportDir = properties.getStringProperty("balances.exportDir.path");
-        shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
-        maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
-        maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
-        maxNftTransfersLen = properties.getIntProperty("ledger.nftTransfers.maxLen");
-        maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
-        maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
-        minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
-        minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
-        maxGas = properties.getIntProperty("contracts.maxGas");
-        chainId = properties.getIntProperty("contracts.chainId");
-        chainIdBytes = Integers.toBytes(chainId);
-        defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
-        feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
-        autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
-        autoRenewMaxNumberOfEntitiesToRenewOrDelete =
-                properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
-        autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
-        maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
-        minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
-        grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
-        localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
-        scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
-        schedulingLongTermEnabled = properties.getBooleanProperty("scheduling.longTermEnabled");
-        schedulingMaxTxnPerSecond = properties.getLongProperty("scheduling.maxTxnPerSecond");
-        schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
-        schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
-        messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
-        maxPrecedingRecords = properties.getLongProperty("consensus.handle.maxPrecedingRecords");
-        maxFollowingRecords = properties.getLongProperty("consensus.handle.maxFollowingRecords");
-        congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
-        feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
-        ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
-        maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
-        areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
-        maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
-        maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
-        maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
-        nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
-        upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
-        throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
-        contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
-        frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
-        consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
-        scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
-        htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
-        changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
-        autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
-        expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
-        maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
-        maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
-        maxMostRecentQueryableRecords = properties.getIntProperty("ledger.records.maxQueryableByAccount");
-        maxAllowanceLimitPerTransaction = properties.getIntProperty("hedera.allowances.maxTransactionLimit");
-        maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
-        exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
-        create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
-        redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
-        enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
-        enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
-        final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
-        expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
-        expireContracts = autoRenewTargetTypes.contains(CONTRACT);
-        atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
-        limitTokenAssociations = properties.getBooleanProperty("entities.limitTokenAssociations");
-        enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
-        maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
-        maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
-        knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
-        exchangeRateGasReq = properties.getLongProperty("contracts.precompile.exchangeRateGasCost");
-        contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
+//        maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
+//        maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
+//        maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
+//        maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
+//        maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
+//        maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
+//        maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
+//        maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
+//        maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
+//        maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
+//        maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
+//        fundingAccount = AccountID.newBuilder()
+//                .setShardNum(hederaNums.shard())
+//                .setRealmNum(hederaNums.realm())
+//                .setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
+//                .build();
+//        cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
+//        ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
+//        balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
+//        shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
+//        nodeBalanceWarningThreshold = properties.getLongProperty("balances.nodeBalanceWarningThreshold");
+//        pathToBalancesExportDir = properties.getStringProperty("balances.exportDir.path");
+//        shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
+//        maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
+//        maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
+//        maxNftTransfersLen = properties.getIntProperty("ledger.nftTransfers.maxLen");
+//        maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
+//        maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
+//        minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
+//        minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
+//        maxGas = properties.getIntProperty("contracts.maxGas");
+//        chainId = properties.getIntProperty("contracts.chainId");
+//        chainIdBytes = Integers.toBytes(chainId);
+//        defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
+//        feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
+//        autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
+//        autoRenewMaxNumberOfEntitiesToRenewOrDelete =
+//                properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
+//        autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
+//        maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
+//        minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
+//        grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
+//        localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
+//        scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
+//        schedulingLongTermEnabled = properties.getBooleanProperty("scheduling.longTermEnabled");
+//        schedulingMaxTxnPerSecond = properties.getLongProperty("scheduling.maxTxnPerSecond");
+//        schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
+//        schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
+//        messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
+//        maxPrecedingRecords = properties.getLongProperty("consensus.handle.maxPrecedingRecords");
+//        maxFollowingRecords = properties.getLongProperty("consensus.handle.maxFollowingRecords");
+//        congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
+//        feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
+//        ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
+//        maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
+//        areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
+//        maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
+//        maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
+//        maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
+//        nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
+//        upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
+//        throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
+//        contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
+//        frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
+//        consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+//        scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
+//        htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
+//        changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
+//        autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
+//        expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
+//        maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
+//        maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
+//        maxMostRecentQueryableRecords = properties.getIntProperty("ledger.records.maxQueryableByAccount");
+//        maxAllowanceLimitPerTransaction = properties.getIntProperty("hedera.allowances.maxTransactionLimit");
+//        maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
+//        exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
+//        create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
+//        redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
+//        enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
+//        enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+//        final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
+//        expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
+//        expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+//        atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
+//        limitTokenAssociations = properties.getBooleanProperty("entities.limitTokenAssociations");
+//        enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
+//        maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
+//        maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
+//        knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+//        exchangeRateGasReq = properties.getLongProperty("contracts.precompile.exchangeRateGasCost");
+//        contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
     }
 
     public int maxTokensPerAccount() {
@@ -426,9 +420,9 @@ public class GlobalDynamicProperties {
         return schedulingWhitelist;
     }
 
-    public CongestionMultipliers congestionMultipliers() {
-        return congestionMultipliers;
-    }
+//    public CongestionMultipliers congestionMultipliers() {
+//        return congestionMultipliers;
+//    }
 
     public int feesMinCongestionPeriod() {
         return feesMinCongestionPeriod;

@@ -36,6 +36,7 @@ import java.util.function.ToLongFunction;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 @Singleton
+//TODO: to be replaced with an interface
 public class LivePricesSource {
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
