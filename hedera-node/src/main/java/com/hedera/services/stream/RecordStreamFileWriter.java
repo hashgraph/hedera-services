@@ -466,7 +466,8 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 		// create signature file
 		final var sigFilePath = generateSigFilePath(relatedRecordStreamFile);
 		try (final var fos = new FileOutputStream(sigFilePath)) {
-			fos.write(recordFileVersion); // version in signature files is 1 byte, compared to 4 in record files
+			// version in signature files is 1 byte, compared to 4 in record files
+			fos.write(streamType.getSigFileHeader()[0]);
 			signatureFile.build().writeTo(fos);
 			LOG.debug(OBJECT_STREAM_FILE.getMarker(),
 					"closeCurrentAndSign :: signature file saved: {}", sigFilePath);

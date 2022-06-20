@@ -127,7 +127,8 @@ public class GlobalDynamicProperties {
 	private int maxReturnedNftsPerTouch;
 	private long exchangeRateGasReq;
 	private boolean contractAutoAssociationsEnabled;
-	private int recordStreamVersion;
+	private int recordFileVersion;
+	private int recordSignatureFileVersion;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -232,7 +233,8 @@ public class GlobalDynamicProperties {
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 		exchangeRateGasReq = properties.getLongProperty("contracts.precompile.exchangeRateGasCost");
 		contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
-		recordStreamVersion = properties.getIntProperty("hedera.recordStream.version");
+		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
+		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
 	}
 
 	public int maxTokensPerAccount() {
@@ -575,7 +577,11 @@ public class GlobalDynamicProperties {
 		return contractAutoAssociationsEnabled;
 	}
 
-	public int recordStreamVersion() {
-		return recordStreamVersion;
+	public int recordFileVersion() {
+		return recordFileVersion;
+	}
+
+	public int recordSignatureFileVersion() {
+		return recordSignatureFileVersion;
 	}
 }

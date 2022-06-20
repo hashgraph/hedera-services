@@ -134,7 +134,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(30, subject.feesMinCongestionPeriod());
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
-		assertEquals(71, subject.recordStreamVersion());
+		assertEquals(71, subject.recordFileVersion());
+		assertEquals(73, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -281,7 +282,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxIndividualContractKvPairs());
 		assertEquals(57, subject.maxAllowanceLimitPerTransaction());
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
-		assertEquals(72, subject.recordStreamVersion());
+		assertEquals(72, subject.recordFileVersion());
+		assertEquals(74, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -419,9 +421,10 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds")).willReturn(i + 67L);
 		given(properties.getLongProperty("consensus.handle.maxPrecedingRecords")).willReturn(i + 68L);
 		given(properties.getLongProperty("consensus.handle.maxFollowingRecords")).willReturn(i + 69L);
-		given(properties.getIntProperty("hedera.recordStream.version")).willReturn((i + 70));
+		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 70));
 		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
-				.willReturn((i + 65) % 2 == 0);
+				.willReturn((i + 71) % 2 == 0);
+		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 72));
 	}
 
 	private Set<EntityType> typesFor(final int i) {

@@ -87,6 +87,7 @@ class RecordStreamFileWriterTest {
 	void recordAndSignatureFilesAreCreatedAsExpected() throws IOException, NoSuchAlgorithmException {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
 		given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
 		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
@@ -133,6 +134,7 @@ class RecordStreamFileWriterTest {
 			throws IOException, NoSuchAlgorithmException {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
 		given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
 		final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
@@ -521,6 +523,7 @@ class RecordStreamFileWriterTest {
 	void logWhenIOExceptionIsCaughtWhenClosingSerializableStreamsAndFilesAreStillCreated()  {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
 		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
@@ -660,6 +663,9 @@ class RecordStreamFileWriterTest {
 			0,  // HAPI proto major version
 			27, // HAPI proto minor version
 			0   // HAPI proto patch version
+	};
+	private static final byte[] SIG_FILE_HEADER_VALUES = {
+			RECORD_STREAM_VERSION,
 	};
 
 	@Mock

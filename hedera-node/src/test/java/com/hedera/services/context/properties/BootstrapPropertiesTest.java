@@ -226,7 +226,8 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
 			entry("entities.limitTokenAssociations", false),
-			entry("hedera.recordStream.version", 5)
+			entry("hedera.recordStream.recordFileVersion", 5),
+			entry("hedera.recordStream.signatureFileVersion", 5)
 	);
 
 	@Test

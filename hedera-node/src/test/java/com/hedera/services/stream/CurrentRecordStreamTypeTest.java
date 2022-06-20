@@ -84,7 +84,7 @@ class CurrentRecordStreamTypeTest {
 	void returnsCurrentStreamTypeFromResource() {
 		given(semanticVersions.getDeployed()).willReturn(activeVersions);
 		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
-		given(dynamicProperties.recordStreamVersion()).willReturn(5);
+		given(dynamicProperties.recordFileVersion()).willReturn(5);
 
 
 		final var header = subject.getFileHeader();
@@ -96,7 +96,7 @@ class CurrentRecordStreamTypeTest {
 	void returnsCurrentStreamTypeFromResourceV6() {
 		given(semanticVersions.getDeployed()).willReturn(activeVersions);
 		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
-		given(dynamicProperties.recordStreamVersion()).willReturn(6);
+		given(dynamicProperties.recordFileVersion()).willReturn(6);
 
 		final var header = subject.getFileHeader();
 
@@ -116,7 +116,7 @@ class CurrentRecordStreamTypeTest {
 
 	@Test
 	void sigFileHeaderReturnsVersionFromDynamicProperties() {
-		given(dynamicProperties.recordStreamVersion()).willReturn(6);
+		given(dynamicProperties.recordSignatureFileVersion()).willReturn(6);
 
 		final var header = subject.getSigFileHeader();
 
