@@ -82,12 +82,6 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	private final MessageDigest metadataStreamDigest;
 
 	/**
-	 * file stream and output stream for writing record stream data to file
-	 * */
-	private FileOutputStream stream = null;
-	private SerializableDataOutputStream dos = null;
-
-	/**
 	 * output stream for digesting metaData
 	 */
 	private SerializableDataOutputStream dosMeta = null;
@@ -123,16 +117,6 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 * restart, so that no object would be missing in the nodes' stream files
 	 */
 	private boolean startWriteAtCompleteWindow;
-
-	/**
-	 * The current record stream file that is being written.
-	 */
-	private File file;
-
-	/**
-	 * The file name of the current record stream file. Used for logs.
-	 */
-	private String fileNameShort;
 
 	/**
 	 * the path to which we write record stream files and signature files
@@ -216,10 +200,10 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 			// generate file name
 			final var firstTxnTimestamp =
 					recordStreamFileBuilder.getRecordStreamItems(0).getRecord().getConsensusTimestamp();
-			this.file = new File(
+			final var file = new File(
 					generateStreamFilePath(
 							Instant.ofEpochSecond(firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos())));
-			this.fileNameShort = file.getName();
+			final var fileNameShort = file.getName(); // for logging purposes
 			if (file.exists() && !file.isDirectory()) {
 				LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", fileNameShort);
 			} else {
@@ -257,33 +241,44 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 					3. We populate the SidecarMetadata of the RecordStreamFile message
 				*/
 
-				try {
-					// create record file
-					stream = new FileOutputStream(file, false);
-					dos = new SerializableDataOutputStream(
-							new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)));
+				// create record file
+				try (FileOutputStream stream = new FileOutputStream(file, false);
+					SerializableDataOutputStream dos = new SerializableDataOutputStream(
+							new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)))
+				) {
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file created {}", fileNameShort);
 
 					// write contents of record file - record file version and serialized RecordFile protobuf
 					dos.writeInt(recordFileVersion);
 					dos.write(serialize(recordStreamFileBuilder));
+
+					// make sure the whole file is written to disk
 					dos.flush();
+					stream.flush();
+					stream.getChannel().force(true);
+					stream.getFD().sync();
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file written successfully {}", fileNameShort);
 
-					// close record file
-					final var currentFile = file;
-					closeFile();
+					// close dosMeta manually; stream and dos will be automatically closed
+					dosMeta.close();
+					dosMeta = null;
+					recordStreamFileBuilder = null;
 
-					// create signature file
-					createSignatureFile(currentFile);
+					LOG.debug(OBJECT_STREAM_FILE.getMarker(),
+							"File {} is closed at {}", () -> fileNameShort, Instant::now);
 				} catch (FileNotFoundException e) {
 					Thread.currentThread().interrupt();
 					LOG.error(EXCEPTION.getMarker(), "closeCurrentAndSign :: FileNotFound: {}", e.getMessage());
+					return;
 				} catch (IOException e) {
 					Thread.currentThread().interrupt();
 					LOG.warn(EXCEPTION.getMarker(),
 							"closeCurrentAndSign :: IOException when serializing {}", recordStreamFileBuilder, e);
+					return;
 				}
+
+				// if this line is reached, record file has been created successfully, so create its signature
+				createSignatureFile(file);
 			}
 		}
 	}
@@ -347,33 +342,6 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 
 		// In phase 2 we will need to add logic here to also
 		// save the sidecar records of the current object
-	}
-
-	/**
-	 * if stream is not null, close current file and save to disk
-	 */
-	private void closeFile() {
-		try {
-			dos.flush();
-			stream.flush();
-
-			stream.getChannel().force(true);
-			stream.getFD().sync();
-
-			dos.close();
-			stream.close();
-			dosMeta.close();
-
-			file = null;
-			stream = null;
-			dos = null;
-			dosMeta = null;
-			recordStreamFileBuilder = null;
-		} catch (IOException e) {
-			LOG.warn(EXCEPTION.getMarker(), "Exception in close file", e);
-		}
-		LOG.debug(OBJECT_STREAM_FILE.getMarker(),
-				"File {} is closed at {}", () -> fileNameShort, Instant::now);
 	}
 
 	/**
@@ -471,7 +439,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 		} catch (IOException e) {
 			LOG.error(EXCEPTION.getMarker(),
 					"closeCurrentAndSign ::  :: Fail to generate signature file for {}",
-					fileNameShort, e);
+					relatedRecordStreamFile.getName(), e);
 		}
 	}
 

@@ -520,35 +520,6 @@ class RecordStreamFileWriterTest {
 	}
 
 	@Test
-	void logWhenIOExceptionIsCaughtWhenClosingSerializableStreamsAndFilesAreStillCreated()  {
-		// given
-		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
-		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-		given(signer.sign(any()))
-				.willReturn(firstBlockEntireFileSignature)
-				.willReturn(firstBlockMetadataSignature);
-		final var firstTransactionInstant = LocalDateTime.of(2022, 4, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-		generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant)
-				.forEach(subject::addObject);
-
-		// when
-		try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
-				SerializableDataOutputStream.class,
-				(mock, context) -> doThrow(IOException.class).when(mock).close())
-		) {
-			subject.closeCurrentAndSign();
-		}
-
-		// then
-		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Exception in close file")));
-		final var recordFile = new File(subject.generateStreamFilePath(firstTransactionInstant));
-		assertTrue(recordFile.exists());
-		assertTrue(new File(generateSigFilePath(recordFile)).exists());
-	}
-
-	@Test
 	void waitingForStartRunningHashInterruptedExceptionIsCaughtAndLoggedProperly()  {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
