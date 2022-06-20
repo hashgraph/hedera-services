@@ -215,12 +215,12 @@
 
 		<!-- Dependency properties in alphabetical order -->
 		<besu.version>22.4.1</besu.version>
-		<besu-native.version>0.5.0</besu-native.version>
+		<besu-native.version>0.4.3</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
 		<commons-io.version>2.11.0</commons-io.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
-		<dagger.version>2.42</dagger.version>
+		<dagger.version>2.41</dagger.version>
 		<eddsa.version>0.3.0</eddsa.version>
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
@@ -265,6 +265,7 @@
 		<module>hapi-fees</module>
 		<module>hedera-node</module>
 		<module>test-clients</module>
+		<module>hedera-evm</module>
 	</modules>
 
 	<build>

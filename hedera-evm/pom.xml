@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hedera.hashgraph</groupId>
+    <artifactId>hedera-evm</artifactId>
+    <packaging>jar</packaging>
+    <name>Hedera EVM</name>
+
+    <parent>
+        <artifactId>hedera-services</artifactId>
+        <groupId>com.hedera.hashgraph</groupId>
+        <version>0.26.0-SNAPSHOT</version>
+    </parent>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+
+        <protobuf-java.version>3.19.4</protobuf-java.version>
+        <swirlds.version>0.26.2</swirlds.version>
+        <tuweni.version>2.2.0</tuweni.version>
+        <besu.version>22.4.1</besu.version>
+        <besu-native.version>0.4.3</besu-native.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-common</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>bls12-381</artifactId>
+            <version>${besu-native.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>secp256k1</artifactId>
+            <version>${besu-native.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>evm</artifactId>
+            <version>${besu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>besu-datatypes</artifactId>
+            <version>${besu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu.internal</groupId>
+            <artifactId>crypto</artifactId>
+            <version>${besu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>tuweni-bytes</artifactId>
+            <version>${tuweni.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>tuweni-units</artifactId>
+            <version>${tuweni.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-fcqueue</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera.hashgraph</groupId>
+            <artifactId>hapi-utils</artifactId>
+            <version>0.26.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera.hashgraph</groupId>
+            <artifactId>hapi-fees</artifactId>
+            <version>0.26.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-merkle</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.0.6</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>besu</id>
+            <name>Hyperledger Besu</name>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
+        </repository>
+    </repositories>
+
+</project>
