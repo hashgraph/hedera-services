@@ -16,7 +16,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.convertAliasToHeadlo
 import static org.ethereum.crypto.HashUtil.sha3;
 
 public class EncodingUtil {
-    public static byte[] encodeParametersWithTuple(final String abi, final Object[] params) {
+    public static byte[] encodeParametersWithTuple(String abi, final Object[] params) {
         byte[] callData = new byte[] { };
 
         Function function = Function.fromJson(abi);
@@ -25,7 +25,7 @@ public class EncodingUtil {
 
         var argumentTypes = function.getInputs().toString();
 
-        var correctParams = convertAddressToHeadlong(params);
+        var correctParams = convertAddressToHeadlong(abi ,params);
 
         Tuple paramsAsTuple = Tuple.EMPTY;
         if (correctParams.length > 0 && correctParams[0] instanceof Tuple) {
@@ -49,9 +49,9 @@ public class EncodingUtil {
 
         final var convertedArgumentTypes = new String[splittedArgumentTypes.length];
         for(int i = 0; i < params.length; i++) {
-            if(params[i] instanceof Integer && !("uint32".equals(splittedArgumentTypes[i]))) {
-                convertedArgumentTypes[i] = "int32";
-            } else if((params[i] instanceof Long && !"int64".equals(splittedArgumentTypes[i])) || "int32".equals(splittedArgumentTypes[i])) {
+            if(params[i] instanceof Integer && !("uint16".equals(splittedArgumentTypes[i]))) {
+                convertedArgumentTypes[i] = "uint16";
+            } else if(params[i] instanceof Long && !"int64".equals(splittedArgumentTypes[i])) {
                 convertedArgumentTypes[i] = "int64";
             } else if(params[i] instanceof BigInteger && !("uint64".equals(splittedArgumentTypes[i])) || "int128".equals(splittedArgumentTypes[i])
                     || "uint128".equals(splittedArgumentTypes[i]) || "int256".equals(splittedArgumentTypes[i]) || "uint256".equals(splittedArgumentTypes[i])) {
@@ -64,12 +64,13 @@ public class EncodingUtil {
         return "("  + Arrays.stream(convertedArgumentTypes).collect(Collectors.joining(",")).concat(")");
     }
 
-    private static Object[] convertAddressToHeadlong(final Object[] params) {
+    private static Object[] convertAddressToHeadlong(final String abi, final Object[] params) {
         Object[] result = new Object[params.length];
         for (int i = 0; i < params.length; i++) {
-            if(params[i] instanceof String && ((String) params[i]).length() > 10){
-                result[i] = convertAliasToHeadlongAddress((String) params[i]);
-            } else if(params[i] instanceof byte[] && (((byte[]) params[i]).length == 20)) {
+//            if(params[i] instanceof String && ((String) params[i]).length() > 10){
+//                result[i] = convertAliasToHeadlongAddress((String) params[i]);
+//            } else
+            if(params[i] instanceof byte[] && (((byte[]) params[i]).length == 20)) {
                 result[i] = asHeadlongAddress((byte[]) params[i]);
             } else if(params[i] instanceof byte[] && (((byte[]) params[i]).length == 40)) {
                 result[i] = convertAliasToHeadlongAddress((String) params[i]);

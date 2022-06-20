@@ -75,6 +75,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
@@ -374,7 +375,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						withOpContext((spec, ignore) -> {
 							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
 							final var subop2 = contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-									asAddress(spec.registry().getAccountID(ACCOUNT)),
+									asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 									new byte[] { },
 									AUTO_RENEW_PERIOD
@@ -440,7 +441,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
@@ -448,7 +449,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														new byte[] { }, // set empty autoRenewAccount
 														AUTO_RENEW_PERIOD,
-														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE))))
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)

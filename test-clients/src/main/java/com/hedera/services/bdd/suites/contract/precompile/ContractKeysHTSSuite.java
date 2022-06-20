@@ -934,7 +934,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												tokenUpdate(fungibleToken).supplyKey(CONTRACT_KEY),
 												contractCall(ORDINARY_CALLS_CONTRACT, "mintTokenCall",
 														asAddress(spec.registry().getTokenID(fungibleToken)), amount,
-														new byte[]{}
+														new byte[][]{}
 												)
 														.via(firstMintTxn)
 														.payingWith(theAccount)
@@ -996,7 +996,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 														.supplyKey(DELEGATE_KEY),
 												contractCall(ORDINARY_CALLS_CONTRACT, "mintTokenCall",
 														asAddress(spec.registry().getTokenID(fungibleToken)), amount,
-														new byte[]{}
+														new byte[][]{}
 												)
 														.via(firstMintTxn)
 														.payingWith(theAccount)
