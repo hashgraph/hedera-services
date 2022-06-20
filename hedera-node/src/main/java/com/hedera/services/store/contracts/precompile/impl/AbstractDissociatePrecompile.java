@@ -41,6 +41,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import javax.inject.Provider;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
@@ -94,7 +95,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 		/* --- Check required signatures --- */
 		final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				provider, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
+				provider, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, Optional.of(aliases));
 		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */

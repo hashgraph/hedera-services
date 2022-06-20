@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -61,6 +62,7 @@ import javax.inject.Provider;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -209,7 +211,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 		/* --- Check required signatures --- */
 		final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 		final var treasuryHasSigned = KeyActivationUtils.validateKey(
-				provider, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
+				provider, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
+				Optional.of(updater.aliases()));
 		validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
 		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(provider, key), INVALID_SIGNATURE));
 
@@ -339,15 +342,16 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 			final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 	) {
 		final var key = tokenKeyWrapper.key();
+		final Optional<ContractAliases> aliases= Optional.of(updater.aliases());
 		return switch (key.getKeyValueType()) {
 			case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
-					provider, senderAddress, sigsVerifier::hasActiveKey, ledgers, updater.aliases());
+					provider, senderAddress, sigsVerifier::hasActiveKey, ledgers, aliases);
 			case CONTRACT_ID -> KeyActivationUtils.validateKey(
 					provider, asTypedEvmAddress(key.getContractID()), sigsVerifier::hasActiveKey, ledgers,
-					updater.aliases());
+					aliases);
 			case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
 					provider, asTypedEvmAddress(key.getDelegatableContractID()), sigsVerifier::hasActiveKey, ledgers,
-					updater.aliases());
+					aliases);
 			case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
 					sigsVerifier::cryptoKeyIsActive);
 			case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),

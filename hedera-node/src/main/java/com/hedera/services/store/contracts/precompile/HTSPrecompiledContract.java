@@ -409,9 +409,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		try {
 			validateTrue(provider.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-			precompile.handleSentHbars(infoProvider);
+			precompile.handleSentHbars(provider);
 			precompile.customizeTrackingLedgers(ledgers);
-			precompile.run(infoProvider);
+			precompile.run(provider);
 
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
@@ -420,12 +420,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = creator.createSuccessfulSyntheticRecord(
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 			result = precompile.getSuccessResultFor(childRecord);
-			addContractCallResultToRecord(childRecord, result, Optional.empty(), infoProvider);
+			addContractCallResultToRecord(childRecord, result, Optional.empty(), provider);
 		} catch (final InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
-			addContractCallResultToRecord(childRecord, result, Optional.of(status), infoProvider);
+			addContractCallResultToRecord(childRecord, result, Optional.of(status), provider);
 			if (e.isReverting()) {
 				provider.setState(MessageFrame.State.REVERT);
 				provider.setRevertReason(e.getRevertReason());

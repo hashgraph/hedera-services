@@ -43,6 +43,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -91,7 +92,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 		/* --- Check required signatures --- */
 		final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				provider, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
+				provider, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, Optional.of(aliases));
 		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */

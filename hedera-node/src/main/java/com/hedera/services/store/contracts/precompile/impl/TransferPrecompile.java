@@ -26,6 +26,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -53,6 +54,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -131,7 +133,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
 	@Override
 	public void run(final InfoProvider provider) {
-		final var aliases = !provider.isDirectTokenCall() ? updater.aliases() : null;
+		final Optional<ContractAliases> aliases = !provider.isDirectTokenCall() ?
+				Optional.of(updater.aliases()) :
+				Optional.empty();
 		if (impliedValidity == null) {
 			extrapolateDetailsFromSyntheticTxn();
 		}
@@ -174,7 +178,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 				} else if (units > 0) {
 					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
 							provider, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-							ledgers,aliases );
+							ledgers, aliases);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}

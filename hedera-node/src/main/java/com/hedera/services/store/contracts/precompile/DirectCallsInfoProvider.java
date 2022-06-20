@@ -26,17 +26,10 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-import java.util.List;
-
 public record DirectCallsInfoProvider(PrecompileMessage precompileMessage) implements InfoProvider {
 	@Override
 	public Wei getValue() {
 		return precompileMessage.getValue();
-	}
-
-	@Override
-	public MessageFrame messageFrame() {
-		return null;
 	}
 
 	@Override

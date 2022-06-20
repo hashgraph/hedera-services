@@ -24,6 +24,7 @@ import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.DirectCallsInfoProvider;
+import com.hedera.services.store.contracts.precompile.EVMInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfoProvider;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import org.hyperledger.besu.datatypes.Address;
@@ -75,16 +76,16 @@ public final class KeyActivationUtils {
 			final Address target,
 			final KeyActivationTest activationTest,
 			final WorldLedgers ledgers,
-			final ContractAliases aliases
+			final Optional<ContractAliases> aliases
 	) {
 		//logic for direct token account calls
 		if(provider instanceof DirectCallsInfoProvider){
 			final var message =((DirectCallsInfoProvider) provider).precompileMessage();
 			return activationTest.apply(false, target, message.getSenderAddress(), ledgers);
 		}
-		final var frame = provider.messageFrame();
-		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
-		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
+		final var frame = ((EVMInfoProvider)provider).messageFrame();
+		final var recipient = aliases.get().resolveForEvm(frame.getRecipientAddress());
+		final var sender = aliases.get().resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
 			return activationTest.apply(true, target, recipient, ledgers);

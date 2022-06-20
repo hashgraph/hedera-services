@@ -26,13 +26,9 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-import java.util.List;
-
 public interface InfoProvider {
 
 	Wei getValue();
-
-	MessageFrame messageFrame();
 
 	long getRemainingGas();
 

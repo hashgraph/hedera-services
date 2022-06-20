@@ -22,19 +22,11 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
-import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldLedgers;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public record EVMInfoProvider(MessageFrame messageFrame) implements InfoProvider {
 
