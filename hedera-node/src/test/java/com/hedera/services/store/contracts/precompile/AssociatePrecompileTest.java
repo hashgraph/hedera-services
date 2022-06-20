@@ -207,7 +207,7 @@ class AssociatePrecompileTest {
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
 				infrastructureFactory);
-
+		infoProvider = new EVMInfoProvider(frame);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}

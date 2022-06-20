@@ -140,6 +140,8 @@ class TransferPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private PrecompileMessage precompileMessage;
+	@Mock
 	private InfoProvider infoProvider;
 	@Mock
 	private MessageFrame parentFrame;
@@ -237,6 +239,7 @@ class TransferPrecompilesTest {
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -285,6 +288,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -338,6 +342,7 @@ class TransferPrecompilesTest {
 	@Test
 	void abortsIfImpliedCustomFeesCannotBeAssessed() {
 		givenPricingUtilsContext();
+		givenInfoProvider();
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -389,6 +394,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
@@ -445,6 +451,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(syntheticTxnFactory.createCryptoTransfer(
@@ -501,6 +508,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -563,6 +571,7 @@ class TransferPrecompilesTest {
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -631,6 +640,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -687,6 +697,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenPricingUtilsContext();
+		givenInfoProvider();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
@@ -912,12 +923,19 @@ class TransferPrecompilesTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 
+	private void givenInfoProvider() {
+		infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
+				new DirectCallsInfoProvider(precompileMessage) :
+				new EVMInfoProvider(frame);
+	}
+
 	private void givenLedgers() {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
+
 	private void givenPricingUtilsContext() {
 		given(exchange.rate(any())).willReturn(exchangeRate);
 		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);

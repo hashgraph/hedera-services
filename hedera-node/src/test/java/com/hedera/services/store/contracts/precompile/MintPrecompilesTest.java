@@ -208,6 +208,7 @@ class MintPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory);
+		infoProvider = new EVMInfoProvider(frame);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -385,7 +386,7 @@ class MintPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);;
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(infoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWith10Supply, result);

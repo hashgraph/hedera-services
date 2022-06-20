@@ -240,7 +240,7 @@ class CreatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(syntheticTxnFactory.createTokenCreate(wrapper)).willReturn(mockSynthBodyBuilder);
 
-		subject.compute(pretendArguments, frame);
+		subject.computePrecompile(pretendArguments, frame);
 
 		// then
 		assertEquals(
@@ -265,6 +265,7 @@ class CreatePrecompileTest {
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
+		givenInfoProvider();
 
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
@@ -429,10 +430,10 @@ class CreatePrecompileTest {
 		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(invalidSigResult, result);
+		assertEquals(invalidSigResult, result.getOutput());
 
 		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
 		verify(createLogic, never()).create(
@@ -483,10 +484,10 @@ class CreatePrecompileTest {
 		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(invalidSigResult, result);
+		assertEquals(invalidSigResult, result.getOutput());
 
 		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
 		verify(createLogic, never()).create(
@@ -538,10 +539,10 @@ class CreatePrecompileTest {
 		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(invalidSigResult, result);
+		assertEquals(invalidSigResult, result.getOutput());
 
 		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
 		verify(createLogic, never()).create(
@@ -814,6 +815,10 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+
+	private void givenInfoProvider(){
+		infoProvider = new EVMInfoProvider(frame);
 	}
 
 	private void givenValidGasCalculation() {
