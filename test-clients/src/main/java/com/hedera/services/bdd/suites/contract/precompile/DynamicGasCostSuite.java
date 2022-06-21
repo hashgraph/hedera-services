@@ -383,6 +383,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
+						overriding("staking.isEnabled", "true"),
 						newKeyNamed(adminKey),
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),

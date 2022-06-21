@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -105,7 +106,6 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateStakingFieldsWorks() {
-		final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
 		return defaultHapiSpec("updateStakingFieldsWorks")
 				.given(
 						uploadInitCode(CONTRACT),
@@ -218,6 +218,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
 				.given(
+						overriding("staking.isEnabled", "true"),
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)

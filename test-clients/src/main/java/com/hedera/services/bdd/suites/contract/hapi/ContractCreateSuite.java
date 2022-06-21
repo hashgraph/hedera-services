@@ -391,6 +391,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec createEmptyConstructor() {
 		return defaultHapiSpec("EmptyConstructor")
 				.given(
+						overriding("staking.isEnabled", "true"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
 
