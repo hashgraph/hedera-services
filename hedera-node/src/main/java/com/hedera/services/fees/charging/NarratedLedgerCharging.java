@@ -234,23 +234,29 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		effPayerStartingBalance = payerAccount.getBalance();
 	}
 
-	private void adjustFundingAndStakingBalances(final long totalFee) {
-		long fundingAccountFee = totalFee;
+	private void adjustFundingAndStakingBalances(final long totalAdjustment) {
+		long fundingAdjustment = totalAdjustment;
 		if (dynamicProperties.isStakingEnabled()) {
-			final var nodeRewardFee = calculateNodeRewardFee(totalFee);
-			ledger.adjustBalance(nodeRewardAccountId, nodeRewardFee);
-			final var stakingRewardFee = calculateStakingRewardFee(totalFee);
-			ledger.adjustBalance(stakingRewardAccountId, stakingRewardFee);
-			fundingAccountFee -= (nodeRewardFee + stakingRewardFee);
+			final var nodeRewardAdjustment = nodeRewardFractionOf(totalAdjustment);
+			if (nodeRewardAdjustment != 0) {
+				ledger.adjustBalance(nodeRewardAccountId, nodeRewardAdjustment);
+			}
+			final var stakingRewardAdjustment = stakingRewardFractionOf(totalAdjustment);
+			if (stakingRewardAdjustment != 0) {
+				ledger.adjustBalance(stakingRewardAccountId, stakingRewardAdjustment);
+			}
+			fundingAdjustment -= (nodeRewardAdjustment + stakingRewardAdjustment);
 		}
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAccountFee);
+		if (fundingAdjustment != 0) {
+			ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAdjustment);
+		}
 	}
 
-	private long calculateStakingRewardFee(final long totalFee) {
+	private long stakingRewardFractionOf(final long totalFee) {
 		return (dynamicProperties.getStakingRewardPercent() * totalFee) / 100;
 	}
 
-	private long calculateNodeRewardFee(final long totalFee) {
+	private long nodeRewardFractionOf(final long totalFee) {
 		return (dynamicProperties.getNodeRewardPercent() * totalFee) / 100;
 	}
 }

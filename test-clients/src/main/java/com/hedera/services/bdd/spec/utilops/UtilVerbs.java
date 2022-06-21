@@ -337,6 +337,12 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation overridingAllOf(Map<String, String> explicit) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(explicit);
+	}
+
 	public static HapiSpecOperation resetToDefault(String... properties) {
 		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
 		return fileUpdate(APP_PROPERTIES)

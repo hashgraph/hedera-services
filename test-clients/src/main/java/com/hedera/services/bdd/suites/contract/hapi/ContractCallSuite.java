@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -97,7 +98,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -359,7 +360,8 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("BitcarbonTestStillPasses")
 				.given(
 						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
-						withOpContext((spec, opLog) -> defaultPayerMirror.set((unhex(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID())))),
+						withOpContext((spec, opLog) -> defaultPayerMirror.set((unhex(spec.registry().getAccountInfo(
+								DEFAULT_CONTRACT_SENDER).getContractAccountID())))),
 						uploadInitCode(addressBook, jurisdictions),
 						contractCreate(addressBook)
 								.exposingNumTo(num -> addressBookMirror.set(
@@ -380,7 +382,8 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith(DEFAULT_CONTRACT_SENDER)
 				).when(
 						contractCall(minters)
-								.withExplicitParams(() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
+								.withExplicitParams(
+										() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
 						contractCall(jurisdictions)
 								.withExplicitParams(() -> explicitJurisdictionsAddParams)
 								.via(addJurisTxn)
@@ -394,24 +397,24 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(jurisdictions, "isValid", nyJurisCode.get())
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "isValid", jurisdictions),
-												isLiteralResult(new Object[]{Boolean.TRUE})))
+												isLiteralResult(new Object[] { Boolean.TRUE })))
 						),
 						contractCallLocal(minters, "seven")
 								.has(resultWith()
 										.resultThruAbi(getABIFor(FUNCTION, "seven", minters),
-												isLiteralResult(new Object[]{BigInteger.valueOf(7L)}))),
+												isLiteralResult(new Object[] { BigInteger.valueOf(7L) }))),
 						sourcing(() -> contractCallLocal(minters, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												isLiteralResult(new Object[] { defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCallLocal(jurisdictions, "owner")
 								.has(resultWith()
 										.resultThruAbi(
 												getABIFor(FUNCTION, "owner", minters),
-												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												isLiteralResult(new Object[] { defaultPayerMirror.get()
 												})))
 						),
 						sourcing(() -> contractCall(
@@ -914,7 +917,8 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							var result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
-							final var funcJson = getABIFor(FUNCTION, "getCodeSize", inlineTestContract).replaceAll("'", "\"");
+							final var funcJson = getABIFor(FUNCTION, "getCodeSize", inlineTestContract).replaceAll("'",
+									"\"");
 							final var function = CallTransaction.Function.fromJsonInterface(funcJson);
 
 							var codeSize = 0;
@@ -1158,10 +1162,16 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
-						overridingThree(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000",
 								"contracts.maxRefundPercentOfGasLimit", "100",
-								"contracts.throttle.throttleByGas", "false",
-								"staking.isEnabled", "true"),
+								"contracts.throttle.throttleByGas", "false"
+						)),
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
@@ -1849,19 +1859,27 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
 				.given(
 						withOpContext((spec, log) -> {
-							if(!spec.isUsingEthCalls()) {
-								spec.registry().saveAccountId(DEFAULT_CONTRACT_RECEIVER, spec.setup().strongControlAccount());
+							if (!spec.isUsingEthCalls()) {
+								spec.registry().saveAccountId(DEFAULT_CONTRACT_RECEIVER,
+										spec.setup().strongControlAccount());
 							}
 							final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
-							final var transfer1 = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+							final var transfer1 = cryptoTransfer(
+									tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
 									.via("autoAccount");
 
-							final var nestedTransferringUpload = uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT);
-							final var createFirstNestedContract = contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L);
-							final var createSecondNestedContract = contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L);
-							final var transfer2 = cryptoTransfer(TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
-							final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfo").payingWith(GENESIS);
-							allRunFor(spec, keyCreation, transfer1, nestedTransferringUpload, createFirstNestedContract, createSecondNestedContract, transfer2, saveSnapshot);
+							final var nestedTransferringUpload = uploadInitCode(NESTED_TRANSFERRING_CONTRACT,
+									NESTED_CONTRACT);
+							final var createFirstNestedContract = contractCustomCreate(NESTED_CONTRACT, "1").balance(
+									10_000L);
+							final var createSecondNestedContract = contractCustomCreate(NESTED_CONTRACT, "2").balance(
+									10_000L);
+							final var transfer2 = cryptoTransfer(
+									TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
+							final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(
+									"accountInfo").payingWith(GENESIS);
+							allRunFor(spec, keyCreation, transfer1, nestedTransferringUpload, createFirstNestedContract,
+									createSecondNestedContract, transfer2, saveSnapshot);
 						})
 				)
 				.when(
@@ -1879,7 +1897,8 @@ public class ContractCallSuite extends HapiApiSuite {
 											.via(transferTxn).logged(),
 
 									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn").payingWith(GENESIS),
-									getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
+									getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(
+											"accountInfoAfterCall").payingWith(GENESIS));
 						})
 				)
 				.then(
