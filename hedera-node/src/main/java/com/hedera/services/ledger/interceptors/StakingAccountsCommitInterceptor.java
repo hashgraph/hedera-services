@@ -115,19 +115,24 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-		prepareAuxiliaryArraysFor(pendingChanges.size());
-		// Once rewards are activated, they remain activated
-		rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
-		// Only updated and consulted if rewards are not activated
-		newFundingBalance = NA;
+		if (!dynamicProperties.isStakingEnabled()) {
+			super.preview(pendingChanges);
+		} else {
+			prepareAuxiliaryArraysFor(pendingChanges.size());
+			// Once rewards are activated, they remain activated
+			rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
+			// Only updated and consulted if rewards are not activated
+			newFundingBalance = NA;
 
-		updateRewardsAndElections(pendingChanges);
-		finalizeStakeMetadata(pendingChanges);
-		finalizeRewardBalance(pendingChanges);
-		super.preview(pendingChanges);
+			updateRewardsAndElections(pendingChanges);
+			finalizeStakeMetadata(pendingChanges);
+			finalizeRewardBalance(pendingChanges);
+			// Final sanity check that all staking balance adjustments conserve net-zero change
+			super.preview(pendingChanges);
 
-		if (!rewardsActivated && newFundingBalance >= dynamicProperties.getStakingStartThreshold()) {
-			activateStakingRewards();
+			if (!rewardsActivated && newFundingBalance >= dynamicProperties.getStakingStartThreshold()) {
+				activateStakingRewards();
+			}
 		}
 	}
 

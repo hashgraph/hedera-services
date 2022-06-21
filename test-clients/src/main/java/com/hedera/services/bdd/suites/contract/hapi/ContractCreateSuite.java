@@ -125,7 +125,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
 	private static final String defaultMaxGas =
-			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas");
+			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
 	public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
 
 	public static void main(String... args) {
@@ -806,12 +806,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "100"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "100"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
 						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -953,7 +953,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", "" + amount
+						"contracts.maxGasPerSec", "" + amount
 				));
 	}
 
@@ -962,7 +962,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", defaultMaxGas
+						"contracts.maxGasPerSec", defaultMaxGas
 				));
 	}
 

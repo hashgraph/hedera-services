@@ -1,5 +1,6 @@
 package com.hedera.services.ledger.accounts.staking;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -42,6 +43,8 @@ class PendingRewardsManagementTest {
 	private PropertySource properties;
 	@Mock
 	private MerkleStakingInfo info;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -54,21 +57,25 @@ class PendingRewardsManagementTest {
 				syntheticTxnFactory,
 				recordsHistorian,
 				creator,
-				properties);
+				properties,
+				dynamicProperties);
 	}
 
 	@Test
 	void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
 		given800Balance(1_000_000_000_000L);
+		given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
-		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
-				.willReturn(lastPeriodRewardRate);
+		given(info.updateRewardSumHistory(
+				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate
+				)).willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 

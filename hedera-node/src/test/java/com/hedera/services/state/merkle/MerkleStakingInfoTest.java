@@ -193,10 +193,21 @@ class MerkleStakingInfoTest {
 	}
 
 	@Test
+	void updatesRewardsSumHistoryWithRateLimiting() {
+		final var rewardRate = 1_000_000;
+		final var maxRewardRate = rewardRate / 2;
+
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, maxRewardRate);
+
+		assertArrayEquals(new long[] { maxRewardRate + 2L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(maxRewardRate, pendingRewardRate);
+	}
+
+	@Test
 	void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
 		final var rewardRate = 1_000_000;
 
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
 
 		assertArrayEquals(new long[] { 1_000_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(1_000_000L, pendingRewardRate);
@@ -207,7 +218,7 @@ class MerkleStakingInfoTest {
 		final var rewardRate = 1_000_000;
 
 		subject.setStakeRewardStart(2 * subject.getMaxStake());
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(500_000L, pendingRewardRate);
@@ -218,7 +229,7 @@ class MerkleStakingInfoTest {
 		final var rewardRate = 1_000_000_000;
 
 		subject.setStakeRewardStart(0);
-		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
 
 		assertArrayEquals(new long[] { 2L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(0L, pendingRewardRate);

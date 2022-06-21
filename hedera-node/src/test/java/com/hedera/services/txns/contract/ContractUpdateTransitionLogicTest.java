@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -216,7 +217,7 @@ class ContractUpdateTransitionLogicTest {
 
 	@Test
 	void acceptsOmittedAutoRenew() {
-		givenValidTxnCtx(false, false, false);
+		givenValidTxnCtx(false, false, false, false);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
@@ -256,8 +257,18 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void failsForDeclineRewardIfStakingDisabled() {
+		givenValidTxnCtx(true, false, false, true);
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractUpdateTxn));
+	}
+
+	@Test
 	void failsForInvalidStakingId() {
 		givenValidTxnCtxWithStaking();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractUpdateTxn));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
@@ -320,14 +331,19 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false, false);
+		givenValidTxnCtx(true, false, false, false);
 	}
 
 	private void givenValidTxnCtxWithStaking() {
-		givenValidTxnCtx(true, false, true);
+		givenValidTxnCtx(true, false, true, true);
 	}
 
-	private void givenValidTxnCtx(boolean useAutoRenew, boolean useMaxAutoAssociations, boolean stakingEnabled) {
+	private void givenValidTxnCtx(
+			boolean useAutoRenew,
+			boolean useMaxAutoAssociations,
+			boolean stakingIdSet,
+			boolean declineReward
+	) {
 		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -343,8 +359,10 @@ class ContractUpdateTransitionLogicTest {
 			op.getContractUpdateInstanceBuilder().setMaxAutomaticTokenAssociations(
 					Int32Value.of(maxAutoAssociations));
 		}
-		if (stakingEnabled) {
+		if (stakingIdSet) {
 			op.getContractUpdateInstanceBuilder().setStakedNodeId(10L);
+		}
+		if (declineReward) {
 			op.getContractUpdateInstanceBuilder().setDeclineReward(BoolValue.of(true));
 		}
 		contractUpdateTxn = op.build();
@@ -415,7 +433,7 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
-		givenValidTxnCtx(true, true, false);
+		givenValidTxnCtx(true, true, false, false);
 	}
 
 	private void withRubberstampingValidator() {

@@ -76,6 +76,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
@@ -130,6 +131,15 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void stakingInfraIsUnusedIfNotEnabled() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(false);
+
+		subject.preview(new EntityChangeSet<>());
+
+		verifyNoInteractions(networkCtx);
+	}
+
+	@Test
 	void setsNothingIfUpdateIsSentinel() {
 		subject.getStakedToMeUpdates()[2] = NA;
 		subject.getStakePeriodStartUpdates()[2] = NA;
@@ -158,6 +168,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void changingKeyOnlyIsNotRewardSituation() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(AccountProperty.KEY, EMPTY_KEY);
 		changes.include(counterpartyId, counterparty, keyOnlyChanges);
@@ -174,6 +185,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final var node0Info = stakingInfo.get(node0Id);
 		node0Info.setStakeRewardStart(2 * counterpartyBalance);
@@ -193,6 +205,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedDaysAgoUnclaimsStakeWhenChangingElection() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final var node0Info = stakingInfo.get(node0Id);
 		node0Info.setStakeRewardStart(2 * counterpartyBalance);
@@ -212,6 +225,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedTodayUnclaimsStakeStartWhenChangingElection() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final var node0Info = stakingInfo.get(node0Id);
 		node0Info.setStakeRewardStart(2 * counterpartyBalance);
@@ -231,6 +245,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountThatStartedStakingAtCurrentPeriodDoesntUnclaimStakeWhenChangingElection() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final var node0Info = stakingInfo.get(node0Id);
 		node0Info.setStakeRewardStart(2 * counterpartyBalance);
@@ -250,6 +265,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountThatDeclineRewardsDoesntUnclaimStakeWhenChangingElection() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final var node0Info = stakingInfo.get(node0Id);
 		node0Info.setStakeRewardStart(2 * counterpartyBalance);
@@ -269,6 +285,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(BALANCE, 2 * counterpartyBalance);
 		changes.include(counterpartyId, counterparty, keyOnlyChanges);
@@ -286,6 +303,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void calculatesRewardIfNeeded() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = buildChanges();
 		final var rewardPayment = 1L;
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
@@ -316,6 +334,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void checksIfRewardsToBeActivatedEveryHandle() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
 		changes.include(partyId, party, randomStakedNodeChanges(partyBalance + amount));
 		changes.include(counterpartyId, counterparty, randomStakedNodeChanges(counterpartyBalance - amount - 100L));
@@ -390,6 +409,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void activatesStakingRewardsAndClearsRewardSumHistoryAsExpected() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final long randomFee = 3L;
 		final long rewardsPaid = 1L;
 		final var inorder = inOrder(sideEffectsTracker);
@@ -434,6 +454,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToNode() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 
@@ -459,6 +480,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChanges() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 
@@ -485,6 +507,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 
@@ -513,6 +536,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var inorderST = inOrder(sideEffectsTracker);
 		final var inorderM = inOrder(stakeChangeManager);
 		final var rewardPayment = HBARS_TO_TINYBARS + 100;
@@ -547,6 +571,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var tbdReward = 1_234L;
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
 		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
@@ -585,6 +610,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var tbdReward = 1_234L;
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
 		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
@@ -624,6 +650,7 @@ class StakingAccountsCommitInterceptorTest {
 
 	@Test
 	void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		counterparty.setStakePeriodStart(stakePeriodStart - 2);
 		beneficiary.setStakePeriodStart(stakePeriodStart - 2);
 

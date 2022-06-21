@@ -1,5 +1,6 @@
 package com.hedera.services.ledger.accounts.staking;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -65,6 +66,8 @@ class EndOfStakingPeriodCalculatorTest {
 	private EntityCreator creator;
 	@Mock
 	private PropertySource properties;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -77,14 +80,27 @@ class EndOfStakingPeriodCalculatorTest {
 				syntheticTxnFactory,
 				recordsHistorian,
 				creator,
-				properties
-		);
+				properties,
+				dynamicProperties);
 	}
 
 	@Test
 	void skipsEndOfStakingPeriodCalcsIfRewardsAreNotActivated() {
 		final var consensusTime = Instant.now();
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(false);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+		subject.updateNodes(consensusTime);
+
+		verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
+		verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
+		verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
+	}
+
+	@Test
+	void skipsEndOfStakingPeriodCalcsIfStakingNotEnabled() {
+		final var consensusTime = Instant.now();
+		given(dynamicProperties.isStakingEnabled()).willReturn(false);
 
 		subject.updateNodes(consensusTime);
 
@@ -99,6 +115,8 @@ class EndOfStakingPeriodCalculatorTest {
 		final var balance_800 = 100_000_000_000L;
 		final var account_800 = mock(MerkleAccount.class);
 
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+		given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
 		given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(100L);
 		given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(stakingRewardAccount);

@@ -52,7 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 
 public class StakingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(StakingSuite.class);
-	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
+	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
 	private static final long ONE_STAKING_PERIOD = 60_000L;
 	private static final long BUFFER = 10_000L;
 	private static final long stakingRewardRate = 100_000_000_000L;

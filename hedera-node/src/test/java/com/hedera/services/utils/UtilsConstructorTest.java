@@ -98,6 +98,7 @@ class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
 			AbiConstants.class,
 			Units.class,
+			AbiConstants.class,
 			MapValueListUtils.class,
 			HFileMetaSerde.class,
 			IoUtils.class,

@@ -23,6 +23,7 @@ package com.hedera.services.ledger.accounts.staking;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -54,7 +55,7 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 @Singleton
 public class EndOfStakingPeriodCalculator {
 	private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
-	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of Staking Period Calculation record";
+	public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
 	private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -64,6 +65,7 @@ public class EndOfStakingPeriodCalculator {
 	private final RecordsHistorian recordsHistorian;
 	private final EntityCreator creator;
 	private final PropertySource properties;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public EndOfStakingPeriodCalculator(
@@ -73,7 +75,8 @@ public class EndOfStakingPeriodCalculator {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final RecordsHistorian recordsHistorian,
 			final EntityCreator creator,
-			final @CompositeProps PropertySource properties
+			final @CompositeProps PropertySource properties,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.accounts = accounts;
 		this.stakingInfos = stakingInfos;
@@ -82,18 +85,24 @@ public class EndOfStakingPeriodCalculator {
 		this.recordsHistorian = recordsHistorian;
 		this.creator = creator;
 		this.properties = properties;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void updateNodes(final Instant consensusTime) {
 		log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
+
+		if (!dynamicProperties.isStakingEnabled()) {
+			log.info(" * Staking not enabled, nothing to do");
+			return;
+		}
 
 		final var curNetworkCtx = networkCtx.get();
 		if (!curNetworkCtx.areRewardsActivated()) {
 			log.info(" * Rewards not active, nothing to do");
 			return;
 		}
-		final var curStakingInfos = stakingInfos.get();
 
+		final var curStakingInfos = stakingInfos.get();
 		final var rewardRate = rewardRateForEndingPeriod();
 		final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
 		// The tinybars earned per hbar for stakers who were staked to a node whose total
@@ -112,7 +121,8 @@ public class EndOfStakingPeriodCalculator {
 
 			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
-			final var nodeRewardRate = stakingInfo.updateRewardSumHistory(perHbarRate);
+			final var nodeRewardRate =
+					stakingInfo.updateRewardSumHistory(perHbarRate, dynamicProperties.maxDailyStakeRewardThPerH());
 
 			final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
 			final var pendingRewardHbars = stakingInfo.stakeRewardStartMinusUnclaimed() / HBARS_TO_TINYBARS;

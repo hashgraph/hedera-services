@@ -183,7 +183,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		if (op.getAmount() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-		if (op.getGas() > properties.maxGas()) {
+		if (op.getGas() > properties.maxGasPerSec()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		return OK;
