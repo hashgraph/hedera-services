@@ -44,6 +44,7 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -283,11 +284,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
 		final var contract = "FibonacciPlus";
+		final var expiry = Instant.now().getEpochSecond() + 1000;
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-						uploadSingleInitCode(contract, 1000, GENESIS, createdFileNum::set),
+						UtilVerbs.overriding("ledger.autoRenewPeriod.minDuration", "10"),
+						uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
 										contractCustomCreate(contract, String.valueOf(i), numSlots)
@@ -308,7 +311,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn)),
-						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"),
+						UtilVerbs.resetToDefault("ledger.autoRenewPeriod.minDuration")
 				);
 	}
 
@@ -414,7 +418,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.proxy("0.0.3")
+								.stakedNodeId(0)
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
