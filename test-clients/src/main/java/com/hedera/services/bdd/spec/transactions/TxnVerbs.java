@@ -71,7 +71,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -521,8 +521,9 @@ public class TxnVerbs {
 			final var path = getResourcePath(contractName, ".bin");
 			final var file = new HapiFileCreate(contractName);
 			final var fileByteCode = extractByteCode(path);
-			final byte[] params = args.length == 0 ? new byte[] { } : CallTransaction.Function.fromJsonInterface(
-					abi).encodeArguments(args);
+			final byte[] params = args.length == 0 ? new byte[] { } :
+					com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(args).array();
+//					CallTransaction.Function.fromJsonInterface(abi).encodeArguments(args);
 			final var updatedFile = updateLargeFile(GENESIS, contractName,
 					params.length == 0 ? fileByteCode : fileByteCode.concat(ByteString.copyFrom(params)));
 			ops.add(file);

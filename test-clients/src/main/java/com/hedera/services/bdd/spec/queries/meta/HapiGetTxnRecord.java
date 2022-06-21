@@ -51,6 +51,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+// TODO: Change implementation
 import org.ethereum.solidity.Abi;
 import org.junit.jupiter.api.Assertions;
 
@@ -674,6 +675,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void exposeRequestedEventsFrom(final TransactionRecord record) {
 		final var abi = Abi.fromJson(contractResultAbi);
+//		final var abi = Function.fromJson(contractResultAbi);
 		final var matcher = abi.findEvent(eventMatcher);
 		final var logs = record.getContractCallResult().getLogInfoList();
 		for (final var log : logs) {

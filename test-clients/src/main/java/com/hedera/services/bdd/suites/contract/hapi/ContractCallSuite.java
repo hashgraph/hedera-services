@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -40,7 +41,7 @@ import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -709,7 +710,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec, subop1, subop3, subop4, subop5);
 
 							final var funcSymbol =
-									CallTransaction.Function.fromJsonInterface(getABIFor(FUNCTION, "symbol", contract));
+									Function.fromJson(getABIFor(FUNCTION, "symbol", contract));
 
 							final var symbol = getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
@@ -719,7 +720,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									"", symbol,
 									"TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
 
-							final var funcDecimals = CallTransaction.Function.fromJsonInterface(
+							final var funcDecimals = Function.fromJson(
 									getABIFor(FUNCTION, "decimals", contract));
 
 							//long decimals = getLongValueFromRegistry(spec, "decimals", function);
@@ -733,7 +734,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							final long tokenMultiplier = (long) Math.pow(10, decimals);
 
-							final var function = CallTransaction.Function.fromJsonInterface(
+							final var function = Function.fromJson(
 									getABIFor(FUNCTION, "balanceOf", contract));
 
 							long issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
@@ -867,11 +868,11 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private <T> T getValueFromRegistry(HapiApiSpec spec, String from, CallTransaction.Function function) {
+	private <T> T getValueFromRegistry(HapiApiSpec spec, String from, Function function) {
 		byte[] value = spec.registry().getBytes(from);
 
 		T decodedReturnedValue = null;
-		Object[] retResults = function.decodeResult(value);
+		Object[] retResults = function.decodeReturn(value).get(0);
 		if (retResults != null && retResults.length > 0) {
 			decodedReturnedValue = (T) retResults[0];
 		}
@@ -914,13 +915,14 @@ public class ContractCallSuite extends HapiApiSuite {
 							var result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
 							final var funcJson = getABIFor(FUNCTION, "getCodeSize", inlineTestContract).replaceAll("'", "\"");
-							final var function = CallTransaction.Function.fromJsonInterface(funcJson);
+//							final var function = CallTransaction.Function.fromJsonInterface(funcJson);
+							final var function = Function.fromJson(funcJson);
 
 							var codeSize = 0;
 							if (result != null && result.length > 0) {
-								final var retResults = function.decodeResult(result);
-								if (retResults != null && retResults.length > 0) {
-									final var retBi = (BigInteger) retResults[0];
+								final var retResults = function.decodeReturn(result);
+								if (retResults != null && retResults.size() > 0) {
+									final var retBi = (BigInteger) retResults.get(0);
 									codeSize = retBi.intValue();
 								}
 							}
@@ -945,9 +947,9 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							codeSize = 0;
 							if (result != null && result.length > 0) {
-								final var retResults = function.decodeResult(result);
-								if (retResults != null && retResults.length > 0) {
-									final var retBi = (BigInteger) retResults[0];
+								final var retResults = function.decodeReturn(result);
+								if (retResults != null && retResults.size() > 0) {
+									final var retBi = (BigInteger) retResults.get(0);
 									codeSize = retBi.intValue();
 								}
 							}

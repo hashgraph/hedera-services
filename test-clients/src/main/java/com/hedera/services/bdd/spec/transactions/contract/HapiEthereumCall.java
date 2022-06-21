@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -286,7 +286,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 callData = encodeParametersWithTuple(params);
             } else {
                 callData = (!abi.equals(FALLBACK_ABI))
-                        ? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+                        ? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
+//                        ? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
             }
         }
 
@@ -352,12 +353,17 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
         if (resultObserver != null) {
             doObservedLookup(spec, txnSubmitted, record -> {
-                final var function = CallTransaction.Function.fromJsonInterface(abi);
-                final var result = function.decodeResult(record
+//                final var function = CallTransaction.Function.fromJsonInterface(abi);
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+//                final var result = function.decodeResult(record
+//                        .getContractCallResult()
+//                        .getContractCallResult()
+//                        .toByteArray());
+                final var result = function.decodeReturn(record
                         .getContractCallResult()
-                        .getContractCallResult()
-                        .toByteArray());
-                resultObserver.accept(result);
+                        .toByteArray()
+                );
+                resultObserver.accept(result.get(0));
             });
         }
     }

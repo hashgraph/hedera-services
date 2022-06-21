@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -31,7 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -349,14 +350,15 @@ public class CreateOperationSuite extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
 							var resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
-									getABIFor(FUNCTION, "getIndirect", contract));
+							Function function = Function.fromJson(getABIFor(FUNCTION, "getIndirect", contract));
+//							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
+//									getABIFor(FUNCTION, "getIndirect", contract));
 
 							var contractCallReturnVal = 0;
 							if (resultBytes != null && resultBytes.length > 0) {
-								final var retResults = function.decodeResult(resultBytes);
-								if (retResults != null && retResults.length > 0) {
-									final var retBi = (BigInteger) retResults[0];
+								final var retResults = function.decodeReturn(resultBytes);
+								if (retResults != null && retResults.size() > 0) {
+									final var retBi = (BigInteger) retResults.get(0);
 									contractCallReturnVal = retBi.intValue();
 								}
 							}
@@ -373,13 +375,14 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");
 
-							function = CallTransaction.Function.fromJsonInterface(
-									getABIFor(FUNCTION, "getAddress", contract));
+							function = Function.fromJson(getABIFor(FUNCTION, "getAddress", contract));
+//							function = CallTransaction.Function.fromJsonInterface(
+//									getABIFor(FUNCTION, "getAddress", contract));
 
-							final var retResults = function.decodeResult(resultBytes);
+							final var retResults = function.decodeReturn(resultBytes);
 							String contractIDString = null;
-							if (retResults != null && retResults.length > 0) {
-								final var retVal = (byte[]) retResults[0];
+							if (retResults != null && retResults.size() > 0) {
+								final var retVal = (byte[]) retResults.get(0);
 
 								final var realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
 								final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));

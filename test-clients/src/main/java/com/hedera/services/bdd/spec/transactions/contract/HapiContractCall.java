@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 
 import java.util.*;
 import java.util.function.*;
@@ -251,7 +251,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 				callData = encodeParametersWithTuple(params);
 			} else {
 				callData = (!abi.equals(FALLBACK_ABI))
-						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+						? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
+//						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 			}
 		}
 
@@ -279,12 +280,17 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		}
 		if (resultObserver != null) {
 			doObservedLookup(spec, txnSubmitted, record -> {
-				final var function = CallTransaction.Function.fromJsonInterface(abi);
-				final var result = function.decodeResult(record
+//				final var function1 = CallTransaction.Function.fromJsonInterface(abi);
+				final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+//				final var result = function1.decodeResult(record
+//						.getContractCallResult()
+//						.getContractCallResult()
+//						.toByteArray());
+				final var result = function.decodeCall(record
 						.getContractCallResult()
 						.getContractCallResult()
 						.toByteArray());
-				resultObserver.accept(result);
+				resultObserver.accept(result.get(0));
 			});
 		}
 	}

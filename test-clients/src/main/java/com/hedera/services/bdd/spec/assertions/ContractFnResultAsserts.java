@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
-import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,7 +35,7 @@ import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -87,8 +87,10 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	}
 
 	public static Object[] viaAbi(String abi, byte[] bytes) {
-		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
-		return function.decodeResult(bytes);
+//		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
+		com.esaulpaugh.headlong.abi.Function function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+//		return function.decodeResult(bytes);
+		return function.decodeReturn(bytes).get(0);
 	}
 
 	public ContractFnResultAsserts contract(String contract) {

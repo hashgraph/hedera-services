@@ -40,7 +40,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
-import org.ethereum.core.CallTransaction;
+//import org.ethereum.core.CallTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -263,7 +263,8 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 			params = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex);
 		} else {
 			params = abi.isPresent()
-					? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
+					? Optional.of(com.esaulpaugh.headlong.abi.Function.fromJson(abi.get()).encodeCallWithArgs(args.get()).array())
+//					? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
 					: Optional.empty();
 		}
 		FileID bytecodeFileId = TxnUtils.asFileId(bytecodeFile.get(), spec);

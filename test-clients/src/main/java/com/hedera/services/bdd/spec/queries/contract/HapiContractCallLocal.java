@@ -38,8 +38,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
-
+//import org.ethereum.core.CallTransaction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -151,9 +150,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		final var rawResult = response.getContractCallLocal().getFunctionResult().getContractCallResult();
 		saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, rawResult));
 		if (typedResultsObs.isPresent()) {
-			final var function = CallTransaction.Function.fromJsonInterface(abi);
-			final var typedResult = function.decodeResult(rawResult.toByteArray());
-			typedResultsObs.get().accept(typedResult);
+			final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+//			final var function1 = CallTransaction.Function.fromJsonInterface(abi);
+			final var typedResult = function.decodeCall(rawResult.toByteArray());
+//			final var typedResult1 = function1.decodeResult(rawResult.toByteArray());
+			typedResultsObs.get().accept(typedResult.get(0));
 		}
 	}
 
@@ -175,7 +176,8 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		}
 
 		byte[] callData = (abi != FALLBACK_ABI)
-				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+				? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
+//				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 
 		final var opBuilder = ContractCallLocalQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))

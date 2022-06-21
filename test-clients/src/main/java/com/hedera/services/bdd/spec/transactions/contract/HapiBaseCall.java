@@ -25,13 +25,14 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import org.ethereum.util.ByteUtil;
+//import org.ethereum.util.ByteUtil;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+// TODO: Replace this method
 import static org.ethereum.crypto.HashUtil.sha3;
 
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
@@ -63,9 +64,33 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
 
         final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
                 argumentTypes);
-        callData = ByteUtil.merge(callData, tupleEncoded);
+        callData = merge(callData, tupleEncoded);
 
-        return ByteUtil.merge(encodeSignature(signature), callData);
+        return merge(encodeSignature(signature), callData);
+    }
+
+    public static byte[] merge(byte[]... arrays) {
+        int count = 0;
+        byte[][] var2 = arrays;
+        int start = arrays.length;
+
+        for(int var4 = 0; var4 < start; ++var4) {
+            byte[] array = var2[var4];
+            count += array.length;
+        }
+
+        byte[] mergedArray = new byte[count];
+        start = 0;
+        byte[][] var9 = arrays;
+        int var10 = arrays.length;
+
+        for(int var6 = 0; var6 < var10; ++var6) {
+            byte[] array = var9[var6];
+            System.arraycopy(array, 0, mergedArray, start, array.length);
+            start += array.length;
+        }
+
+        return mergedArray;
     }
 
     private byte[] getTupleAsBytes(final Tuple argumentValues, final String argumentTypes) {
