@@ -7,7 +7,8 @@
 		{
 		  "operations": [
 			"CryptoTransfer",
-			"CryptoCreate"
+			"CryptoCreate",
+			"RandomGenerate"
 		  ],
 		  "opsPerSec": 10000
 		},

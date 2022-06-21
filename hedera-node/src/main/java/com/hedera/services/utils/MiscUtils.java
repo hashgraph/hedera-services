@@ -98,6 +98,7 @@ import static com.hedera.services.grpc.controllers.CryptoController.GET_ACCOUNT_
 import static com.hedera.services.grpc.controllers.CryptoController.GET_LIVE_HASH_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.GET_RECEIPT_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.GET_RECORD_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.RANDOM_GENERATE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.CREATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.DELETE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.FILE_APPEND_METRIC;
@@ -154,6 +155,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -238,7 +240,8 @@ public final class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
 			NetworkGetExecutionTime,
-			GetAccountDetails
+			GetAccountDetails,
+			RandomGenerate
 	);
 
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
@@ -356,6 +359,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
 		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+		BASE_STAT_NAMES.put(RandomGenerate, RANDOM_GENERATE_METRIC);
 		/* Queries */
 		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
 		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -713,6 +717,9 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
+		if(txn.hasRandomGenerate()){
+			return RandomGenerate;
+		}
 		throw new UnknownHederaFunctionality();
 	}
 
@@ -815,6 +822,8 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
+		}else if(scheduledTxn.hasRandomGenerate()){
+			ordinary.setRandomGenerate(scheduledTxn.getRandomGenerate());
 		}
 		return ordinary.build();
 	}

@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetSt
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
@@ -67,6 +68,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
 	public static final String CRYPTO_APPROVE_ALLOWANCES = "approveAllowances";
 	public static final String CRYPTO_DELETE_ALLOWANCE = "deleteAllowances";
+	public static final String RANDOM_GENERATE_METRIC = "randomGenerate";
 
 	private final MetaAnswers metaAnswers;
 	private final CryptoAnswers cryptoAnswers;
@@ -164,5 +166,10 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	@Override
 	public void deleteLiveHash(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, CryptoDeleteLiveHash);
+	}
+
+	@Override
+	public void randomGenerate(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, RandomGenerate);
 	}
 }
