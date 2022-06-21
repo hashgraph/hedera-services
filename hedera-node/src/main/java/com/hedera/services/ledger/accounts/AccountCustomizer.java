@@ -82,8 +82,8 @@ public abstract class AccountCustomizer<
 	}
 
 	private final Map<Option, P> optionProperties;
-	private final EnumMap<P, Object> changes;
 	private final ChangeSummaryManager<A, P> changeManager;
+	protected final EnumMap<P, Object> changes;
 
 	protected abstract T self();
 

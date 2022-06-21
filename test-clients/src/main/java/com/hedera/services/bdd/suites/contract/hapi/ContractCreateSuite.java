@@ -44,6 +44,7 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
 	private static final String defaultMaxGas =
-			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas");
+			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
 	public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
 
 	public static void main(String... args) {
@@ -283,11 +284,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
 		final var contract = "FibonacciPlus";
+		final var expiry = Instant.now().getEpochSecond() + 1000;
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-						uploadSingleInitCode(contract, 1000, GENESIS, createdFileNum::set),
+						UtilVerbs.overriding("ledger.autoRenewPeriod.minDuration", "10"),
+						uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
 										contractCustomCreate(contract, String.valueOf(i), numSlots)
@@ -308,7 +311,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn)),
-						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"),
+						UtilVerbs.resetToDefault("ledger.autoRenewPeriod.minDuration")
 				);
 	}
 
@@ -414,6 +418,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
+								.stakedNodeId(0)
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
@@ -801,12 +806,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "100"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "100"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
 						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -948,7 +953,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", "" + amount
+						"contracts.maxGasPerSec", "" + amount
 				));
 	}
 
@@ -957,7 +962,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", defaultMaxGas
+						"contracts.maxGasPerSec", defaultMaxGas
 				));
 	}
 

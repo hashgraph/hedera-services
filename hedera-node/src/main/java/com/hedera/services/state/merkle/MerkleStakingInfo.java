@@ -48,8 +48,6 @@ import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
-	// get this max history from the props.
-	static final int MAX_REWARD_HISTORY = 366;
 
 	static final int RELEASE_0270_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
@@ -121,7 +119,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		return stakeRewardStart;
 	}
 
-	public long updateRewardSumHistory(final long perHbarRate) {
+	public long updateRewardSumHistory(final long perHbarRate, long maxPerHbarRate) {
 		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -144,6 +142,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeRewardStart;
 			}
 		}
+		perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
 		rewardSumHistory[0] += perHbarRateThisNode;
 
 		log.info("   > Non-zero reward sum history is now {}", () -> readableNonZeroHistory(rewardSumHistory));
@@ -261,7 +260,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		stakeRewardStart = in.readLong();
 		unclaimedStakeRewardStart = in.readLong();
 		stake = in.readLong();
-		rewardSumHistory = in.readLongArray(MAX_REWARD_HISTORY);
+		rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);
 	}
 
 	@Override

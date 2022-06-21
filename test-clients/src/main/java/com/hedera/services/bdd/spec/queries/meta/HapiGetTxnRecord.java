@@ -364,6 +364,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return response.getTransactionGetRecord().getChildTransactionRecords(i);
 	}
 
+	public List<TransactionRecord> getChildRecords() {
+		return response.getTransactionGetRecord().getChildTransactionRecordsList();
+	}
+
 	public HapiGetTxnRecord hasStakingFeesPaid() {
 		validateStakingFees = true;
 		return this;

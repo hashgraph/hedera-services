@@ -77,10 +77,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
@@ -151,9 +153,10 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void updatesStakedIdIfPresent() {
+	void updatesStakedIdIfPresentAndEnabled() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(STAKED_ID));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -163,7 +166,7 @@ class CryptoUpdateTransitionLogicTest {
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(-11L, changes.get(AccountProperty.STAKED_ID));
-		assertEquals(null, changes.get(AccountProperty.DECLINE_REWARD));
+		assertNull(changes.get(AccountProperty.DECLINE_REWARD));
 	}
 
 	@Test
@@ -174,6 +177,7 @@ class CryptoUpdateTransitionLogicTest {
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
 						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
 				.build();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
@@ -181,8 +185,33 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsStakedIdIfStakingDisabled() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
+				.build();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void rejectsDeclineRewardIfStakingDisabled() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setDeclineReward(BoolValue.newBuilder().setValue(false)).build())
+				.build();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
 	void agreesUpdatingToSentinelValues() {
 		final var op = CryptoUpdateTransactionBody.newBuilder();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
@@ -217,6 +246,7 @@ class CryptoUpdateTransitionLogicTest {
 	void updatesDeclineRewardIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(DECLINE_REWARD));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -418,6 +448,7 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
@@ -426,6 +457,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsDetachedAccount() {
 		givenTxnCtx();
 		given(ledger.isDetached(TARGET)).willReturn(true);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -436,6 +468,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsInvalidExpiry() {
 		givenTxnCtx();
 		given(validator.isValidExpiry(any())).willReturn(false);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -467,6 +500,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsSmartContract() {
 		givenTxnCtx();
 		given(ledger.isSmartContract(TARGET)).willReturn(true);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -477,6 +511,7 @@ class CryptoUpdateTransitionLogicTest {
 	void preemptsMissingAccountException() {
 		givenTxnCtx();
 		given(ledger.exists(TARGET)).willReturn(false);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -487,6 +522,7 @@ class CryptoUpdateTransitionLogicTest {
 	void translatesMissingAccountException() {
 		givenTxnCtx();
 		willThrow(MissingEntityException.class).given(ledger).customize(any(), any());
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -497,6 +533,7 @@ class CryptoUpdateTransitionLogicTest {
 	void translatesAccountIsDeletedException() {
 		givenTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 

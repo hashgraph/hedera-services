@@ -143,8 +143,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxGas() {
-		return 300_000;
+	public long maxGasPerSec() {
+		return 300_000L;
 	}
 
 	@Override

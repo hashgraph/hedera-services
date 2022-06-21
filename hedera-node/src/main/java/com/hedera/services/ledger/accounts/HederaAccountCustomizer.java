@@ -122,7 +122,8 @@ public final class HederaAccountCustomizer extends
 	static long getStakedId(
 			final String idCase,
 			final AccountID stakedAccountId,
-			final long stakedNodeId) {
+			final long stakedNodeId
+	) {
 		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
 			return stakedAccountId.getAccountNum();
 		} else {

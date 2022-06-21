@@ -94,6 +94,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
+		assertTrue(subject.isStakingEnabled());
 	}
 
 	@Test
@@ -151,7 +152,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(15, subject.maxTransferListSize());
 		assertEquals(16, subject.maxTokenTransferListSize());
 		assertEquals(17, subject.maxMemoUtf8Bytes());
-		assertEquals(21, subject.maxGas());
+		assertEquals(21, subject.maxGasPerSec());
 		assertEquals(25, subject.maxAutoRenewDuration());
 		assertEquals(36, subject.maxCustomFeesAllowed());
 		assertEquals(46, subject.maxXferBalanceChanges());
@@ -180,13 +181,12 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(23L, subject.defaultContractLifetime());
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(44L, subject.maxNftMints());
-		assertEquals(49L, subject.frontendThrottleGasLimit());
-		assertEquals(50L, subject.consensusThrottleGasLimit());
 		assertEquals(66L, subject.schedulingMaxTxnPerSecond());
 		assertEquals(67L, subject.scheduleThrottleMaxGasLimit());
 		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
 		assertEquals(69L, subject.maxPrecedingRecords());
 		assertEquals(70L, subject.maxFollowingRecords());
+		assertEquals(76L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test
@@ -260,7 +260,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(17, subject.maxTokenTransferListSize());
 		assertEquals(18, subject.maxMemoUtf8Bytes());
 		assertEquals(21, subject.minValidityBuffer());
-		assertEquals(22, subject.maxGas());
+		assertEquals(22, subject.maxGasPerSec());
 		assertEquals(25, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.maxAutoRenewDuration());
 		assertEquals(27, subject.minAutoRenewDuration());
@@ -299,8 +299,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(24L, subject.defaultContractLifetime());
 		assertEquals(35L, subject.autoRenewGracePeriod());
 		assertEquals(45L, subject.maxNftMints());
-		assertEquals(50L, subject.frontendThrottleGasLimit());
-		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(54L, subject.htsDefaultGasCost());
 		assertEquals(72L, subject.getStakingStartThreshold());
 		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
@@ -350,7 +348,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(i + 17L);
 		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(i + 18L);
 		given(properties.getIntProperty("hedera.transaction.minValidityBufferSecs")).willReturn(i + 19);
-		given(properties.getIntProperty("contracts.maxGas")).willReturn(i + 20);
+		given(properties.getLongProperty("contracts.maxGasPerSec")).willReturn(i + 20L);
 		given(properties.getIntProperty("contracts.chainId")).willReturn(i + 21);
 		given(properties.getLongProperty("contracts.defaultLifetime")).willReturn(i + 22L);
 		given(properties.getIntProperty("fees.tokenTransferUsageMultiplier")).willReturn(i + 23);
@@ -387,8 +385,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getStringProperty("upgrade.artifacts.path")).willReturn(upgradeArtifactLocs[i % 2]);
 		given(properties.getBooleanProperty("contracts.throttle.throttleByGas")).willReturn((i + 47) % 2 == 0);
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
-		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
-		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
 		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i + 52L);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
@@ -426,6 +422,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
 		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
 				.willReturn((i + 65) % 2 == 0);
+		given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 75L);
+		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

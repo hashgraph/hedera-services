@@ -42,7 +42,7 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
 	@Override
 	protected int getNumTestCasesFor(final int version) {
-		return version == MerkleNetworkContext.RELEASE_0200_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+		return NUM_TEST_CASES;
 	}
 
 	@Override
@@ -58,9 +58,6 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 				seeded.setBlockNo(Long.MIN_VALUE);
 				seeded.setFirstConsTimeOfCurrentBlock(null);
 				seeded.getBlockHashes().clear();
-				if (version == MerkleNetworkContext.RELEASE_0200_VERSION) {
-					seeded.setMigrationRecordsStreamed(false);
-				}
 			}
 			return seeded;
 		} else {

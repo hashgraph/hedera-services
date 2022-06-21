@@ -235,20 +235,22 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	}
 
 	private void adjustFundingAndStakingBalances(final long totalFee) {
-		final var stakingRewardFee = calculateStakingRewardFee(totalFee);
-		final var nodeRewardFee = calculateNodeRewardFee(totalFee);
-		final var fundingAccountFee = totalFee - stakingRewardFee - nodeRewardFee;
-
+		long fundingAccountFee = totalFee;
+		if (dynamicProperties.isStakingEnabled()) {
+			final var nodeRewardFee = calculateNodeRewardFee(totalFee);
+			ledger.adjustBalance(nodeRewardAccountId, nodeRewardFee);
+			final var stakingRewardFee = calculateStakingRewardFee(totalFee);
+			ledger.adjustBalance(stakingRewardAccountId, stakingRewardFee);
+			fundingAccountFee -= (nodeRewardFee + stakingRewardFee);
+		}
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAccountFee);
-		ledger.adjustBalance(stakingRewardAccountId, stakingRewardFee);
-		ledger.adjustBalance(nodeRewardAccountId, nodeRewardFee);
 	}
 
-	private long calculateStakingRewardFee(long totalFee) {
+	private long calculateStakingRewardFee(final long totalFee) {
 		return (dynamicProperties.getStakingRewardPercent() * totalFee) / 100;
 	}
 
-	private long calculateNodeRewardFee(long totalFee) {
+	private long calculateNodeRewardFee(final long totalFee) {
 		return (dynamicProperties.getNodeRewardPercent() * totalFee) / 100;
 	}
 }

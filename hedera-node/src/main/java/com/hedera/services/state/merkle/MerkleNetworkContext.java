@@ -79,7 +79,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
-	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int RELEASE_0260_VERSION = 8;
 	static final int RELEASE_0270_VERSION = 9;
@@ -419,7 +418,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0200_VERSION;
+		return RELEASE_0240_VERSION;
 	}
 
 	public String summarized() {

@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -110,7 +111,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
-			final var created = ledger.create(sponsor, balance, asCustomizer(op));
+			final var customizer = asCustomizer(op);
+			final var created = ledger.create(sponsor, balance, customizer);
 			sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
 			txnCtx.setCreated(created);
@@ -198,7 +200,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 		final var stakedIdCase = op.getStakedIdCase().name();
-		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!dynamicProperties.isStakingEnabled() && (electsStakingId || op.getDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId && !validator.isValidStakedId(
 				stakedIdCase,
 				op.getStakedAccountId(),
 				op.getStakedNodeId(),

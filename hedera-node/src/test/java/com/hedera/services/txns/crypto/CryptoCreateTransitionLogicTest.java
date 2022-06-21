@@ -74,10 +74,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -215,6 +217,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -253,7 +256,7 @@ class CryptoCreateTransitionLogicTest {
 		assertEquals(expiry, (long) changes.get(EXPIRY));
 		assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
-		assertEquals(null, changes.get(AccountProperty.PROXY));
+		assertNull(changes.get(AccountProperty.PROXY));
 		assertEquals(EntityId.fromGrpcAccountId(STAKED_ACCOUNT_ID).num(), changes.get(STAKED_ID));
 		assertEquals(false, changes.get(DECLINE_REWARD));
 		assertEquals(MEMO, changes.get(AccountProperty.MEMO));
@@ -288,10 +291,25 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void validatesStakedId() {
 		givenValidTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
+	void rejectsStakedIdIfStakingDisabled() {
+		givenValidTxnCtx();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
+	void rejectsDeclineRewardIfStakingDisabled() {
+		givenValidTxnCtx(KEY, false, true);
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -412,20 +430,24 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(final Key toUse) {
-		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(
-						CryptoCreateTransactionBody.newBuilder()
-								.setMemo(MEMO)
-								.setInitialBalance(BALANCE)
-								.setStakedAccountId(STAKED_ACCOUNT_ID)
-								.setDeclineReward(false)
-								.setReceiverSigRequired(true)
-								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
-								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
-								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
-								.setKey(toUse)
-								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-				).build();
+		givenValidTxnCtx(toUse, true, false);
+	}
+
+	private void givenValidTxnCtx(final Key toUse, final boolean setStakingId, final boolean declineReward) {
+		final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+				.setMemo(MEMO)
+				.setInitialBalance(BALANCE)
+				.setDeclineReward(declineReward)
+				.setReceiverSigRequired(true)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+				.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
+				.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
+				.setKey(toUse)
+				.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS);
+		if (setStakingId) {
+			opBuilder.setStakedAccountId(STAKED_ACCOUNT_ID);
+		}
+		cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
