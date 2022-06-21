@@ -97,6 +97,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -1157,8 +1158,10 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						overridingThree(
+								"contracts.maxRefundPercentOfGasLimit", "100",
+								"contracts.throttle.throttleByGas", "false",
+								"staking.isEnabled", "true"),
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
