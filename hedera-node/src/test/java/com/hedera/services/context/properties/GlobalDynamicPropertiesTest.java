@@ -281,7 +281,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
 		assertEquals(73, subject.getNodeRewardPercent());
 		assertEquals(74, subject.getStakingRewardPercent());
-		assertEquals(75, subject.getStakingActiveThreshold());
 	}
 
 	@Test
@@ -418,7 +417,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 70L);
 		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 71);
 		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 72);
-		given(properties.getIntProperty("staking.activeThreshold")).willReturn(i + 73);
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
 		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
 				.willReturn((i + 65) % 2 == 0);

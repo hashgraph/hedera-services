@@ -214,7 +214,6 @@ class BootstrapPropertiesTest {
 			entry("staking.fees.nodeRewardPercentage", 10),
 			entry("staking.fees.stakingRewardPercentage", 10),
 			entry("staking.maxDailyStakeRewardThPerH", 100L),
-			entry("staking.activeThreshold", 10),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("consensus.handle.maxPrecedingRecords", 3L),
 			entry("consensus.handle.maxFollowingRecords", 50L),
