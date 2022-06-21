@@ -91,13 +91,18 @@ public class EndOfStakingPeriodCalculator {
 	public void updateNodes(final Instant consensusTime) {
 		log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
+		if (!dynamicProperties.isStakingEnabled()) {
+			log.info(" * Staking not enabled, nothing to do");
+			return;
+		}
+
 		final var curNetworkCtx = networkCtx.get();
 		if (!curNetworkCtx.areRewardsActivated()) {
 			log.info(" * Rewards not active, nothing to do");
 			return;
 		}
-		final var curStakingInfos = stakingInfos.get();
 
+		final var curStakingInfos = stakingInfos.get();
 		final var rewardRate = rewardRateForEndingPeriod();
 		final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
 		// The tinybars earned per hbar for stakers who were staked to a node whose total
@@ -116,7 +121,8 @@ public class EndOfStakingPeriodCalculator {
 
 			// The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
 			// accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
-			final var nodeRewardRate = stakingInfo.updateRewardSumHistory(perHbarRate);
+			final var nodeRewardRate =
+					stakingInfo.updateRewardSumHistory(perHbarRate, dynamicProperties.maxDailyStakeRewardThPerH());
 
 			final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
 			final var pendingRewardHbars = stakingInfo.stakeRewardStartMinusUnclaimed() / HBARS_TO_TINYBARS;

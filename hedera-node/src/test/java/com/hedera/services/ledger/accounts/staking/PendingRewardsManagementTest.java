@@ -70,8 +70,9 @@ class PendingRewardsManagementTest {
 		given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
 		given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
 		given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
-		given(info.updateRewardSumHistory(rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS)))
-				.willReturn(lastPeriodRewardRate);
+		given(info.updateRewardSumHistory(
+				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate
+				)).willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));

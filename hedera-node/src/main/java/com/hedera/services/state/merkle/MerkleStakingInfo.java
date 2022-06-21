@@ -121,7 +121,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		return stakeRewardStart;
 	}
 
-	public long updateRewardSumHistory(final long perHbarRate) {
+	public long updateRewardSumHistory(final long perHbarRate, long maxPerHbarRate) {
 		assertMutableRewardSumHistory();
 		rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
 		final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -144,6 +144,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeRewardStart;
 			}
 		}
+		perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
 		rewardSumHistory[0] += perHbarRateThisNode;
 
 		log.info("   > Non-zero reward sum history is now {}", () -> readableNonZeroHistory(rewardSumHistory));
