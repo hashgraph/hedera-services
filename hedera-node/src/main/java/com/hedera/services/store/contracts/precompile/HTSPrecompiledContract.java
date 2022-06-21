@@ -109,7 +109,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final PrecompileContractResult NO_RESULT = new PrecompileContractResult(
-			Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+					Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
@@ -201,7 +201,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		prepareFields(frame);
 		infoProvider = new EVMInfoProvider(frame);
 		prepareComputation(input, updater::unaliased);
-		gasRequirement = defaultGas();
+
 		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {
 			frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
@@ -238,7 +238,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_TOKEN,
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile(
-							ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+									ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
 							infrastructureFactory, precompilePricingUtils, functionId, senderAddress, impliedTransfersMarshal);
 					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
@@ -469,6 +469,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final InfoProvider provider
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
+			final var traceabilityOn = precompile.shouldAddTraceabilityFieldsToRecord();
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
 					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
@@ -479,11 +480,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getRemainingGas() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getValue().toLong() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? provider.getInputData().toArrayUnsafe() :
-							EvmFnResult.EMPTY,
-					null);
+					traceabilityOn ? provider.getRemainingGas() : 0L,
+					traceabilityOn ? provider.getValue().toLong() : 0L,
+					traceabilityOn ? provider.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
+					EntityId.fromAddress(senderAddress));
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
