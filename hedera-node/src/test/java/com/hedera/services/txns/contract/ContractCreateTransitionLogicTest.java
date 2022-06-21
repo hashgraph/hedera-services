@@ -102,7 +102,7 @@ import static org.mockito.Mockito.verify;
 class ContractCreateTransitionLogicTest {
 	private static final long maxGas = 666_666L;
 	private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
-	private int gas = 33_333;
+	private long gas = 33_333;
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
 	private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
@@ -179,7 +179,7 @@ class ContractCreateTransitionLogicTest {
 		given(properties.isStakingEnabled()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -189,7 +189,7 @@ class ContractCreateTransitionLogicTest {
 	void failsStakingIdIfStakingNotEnabled() {
 		givenValidTxnCtx(true, false, false, true, false);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
@@ -197,7 +197,7 @@ class ContractCreateTransitionLogicTest {
 	void failsDeclineRewardIfStakingNotEnabled() {
 		givenValidTxnCtx(true, false, false, false, true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
@@ -206,7 +206,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtxWithStakingId();
 		given(properties.isStakingEnabled()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
 		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractCreateTxn));
@@ -226,7 +226,7 @@ class ContractCreateTransitionLogicTest {
 		contractCreateTxn = txn.build();
 
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 
 		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
 
@@ -242,7 +242,7 @@ class ContractCreateTransitionLogicTest {
 		contractCreateTxn = txn.build();
 
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
@@ -250,7 +250,7 @@ class ContractCreateTransitionLogicTest {
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas - 1);
+		given(properties.maxGasPerSec()).willReturn(gas - 1);
 		// expect:
 		assertEquals(MAX_GAS_LIMIT_EXCEEDED,
 				subject.semanticCheck().apply(contractCreateTxn));
@@ -303,7 +303,7 @@ class ContractCreateTransitionLogicTest {
 		given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		given(validator.memoCheck(any())).willReturn(OK);
 
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -702,7 +702,7 @@ class ContractCreateTransitionLogicTest {
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));

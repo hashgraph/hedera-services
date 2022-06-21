@@ -263,7 +263,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-		if (op.getGas() > properties.maxGas()) {
+		if (op.getGas() > properties.maxGasPerSec()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		if (properties.areTokenAssociationsLimited() &&

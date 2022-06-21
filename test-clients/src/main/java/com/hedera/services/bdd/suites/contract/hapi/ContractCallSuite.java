@@ -1042,7 +1042,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec payableSuccess() {
 		return defaultHapiSpec("PayableSuccess")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "1000000"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "1000000"),
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
 						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000)
 				).when(
@@ -1053,14 +1053,14 @@ public class ContractCallSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(
 														logWith().longAtBytes(depositAmount, 24))))),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
 	HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
 		return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "1000000"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "1000000"),
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT)
 				).when(
 						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1074,7 +1074,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(SIMPLE_UPDATE_CONTRACT,
 								"set", 15, 434).gas(350_000L)
 								.hasKnownStatus(CONTRACT_DELETED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -1471,12 +1471,12 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT),
 						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-						UtilVerbs.overriding("contracts.maxGas", "100")
+						UtilVerbs.overriding("contracts.maxGasPerSec", "100")
 				).when().then(
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42).gas(101L
 								)
 								.hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 

@@ -69,7 +69,7 @@ public class GlobalDynamicProperties {
 	private long maxTxnDuration;
 	private long minTxnDuration;
 	private int minValidityBuffer;
-	private int maxGas;
+	private long maxGasPerSec;
 	private int chainId;
 	private byte[] chainIdBytes;
 	private long defaultContractLifetime;
@@ -102,8 +102,6 @@ public class GlobalDynamicProperties {
 	private String upgradeArtifactsLoc;
 	private boolean throttleByGas;
 	private int contractMaxRefundPercentOfGasLimit;
-	private long frontendThrottleMaxGasLimit;
-	private long consensusThrottleMaxGasLimit;
 	private long scheduleThrottleMaxGasLimit;
 	private long htsDefaultGasCost;
 	private int changeHistorianMemorySecs;
@@ -176,7 +174,7 @@ public class GlobalDynamicProperties {
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
-		maxGas = properties.getIntProperty("contracts.maxGas");
+		maxGasPerSec = properties.getLongProperty("contracts.maxGasPerSec");
 		chainId = properties.getIntProperty("contracts.chainId");
 		chainIdBytes = Integers.toBytes(chainId);
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
@@ -208,8 +206,6 @@ public class GlobalDynamicProperties {
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
-		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
-		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
 		scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
 		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
@@ -353,8 +349,8 @@ public class GlobalDynamicProperties {
 		return minValidityBuffer;
 	}
 
-	public int maxGas() {
-		return maxGas;
+	public long maxGasPerSec() {
+		return maxGasPerSec;
 	}
 
 	public int chainId() {
@@ -475,14 +471,6 @@ public class GlobalDynamicProperties {
 
 	public int maxGasRefundPercentage() {
 		return contractMaxRefundPercentOfGasLimit;
-	}
-
-	public long frontendThrottleGasLimit() {
-		return frontendThrottleMaxGasLimit;
-	}
-
-	public long consensusThrottleGasLimit() {
-		return consensusThrottleMaxGasLimit;
 	}
 
 	public long scheduleThrottleMaxGasLimit() {
