@@ -1545,7 +1545,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout -b 02547-D-Fix-search-version-string origin/02547-D-Fix-search-version-string 
+            git checkout -b 02547-D-Fix-search-version-string-v2 origin/02547-D-Fix-search-version-string-v2 
             ./mvnw clean install
 
       - run:
