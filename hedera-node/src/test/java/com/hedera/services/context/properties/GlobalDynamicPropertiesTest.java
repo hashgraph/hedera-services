@@ -94,6 +94,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
+		assertTrue(subject.isStakingEnabled());
 	}
 
 	@Test
@@ -187,6 +188,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
 		assertEquals(69L, subject.maxPrecedingRecords());
 		assertEquals(70L, subject.maxFollowingRecords());
+		assertEquals(76L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test
@@ -426,6 +428,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
 		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
 				.willReturn((i + 65) % 2 == 0);
+		given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 75L);
+		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

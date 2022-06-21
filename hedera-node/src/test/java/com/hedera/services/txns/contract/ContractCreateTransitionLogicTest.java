@@ -86,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -139,7 +140,7 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
-	SyntheticTxnFactory syntheticTxnFactory;
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private Account autoRenewModel;
 	@Mock
@@ -157,8 +158,10 @@ class ContractCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, validator, worldState, entityCreator,
-				recordsHistorian, recordServices, evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory, () -> accounts, nodeInfo);
+		subject = new ContractCreateTransitionLogic(
+				hfs, txnCtx, accountStore,
+				validator, worldState, entityCreator, recordsHistorian, recordServices,
+				evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory, () -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -172,7 +175,8 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void acceptsOkSyntax() {
-		givenValidTxnCtx();
+		givenValidTxnCtx(true, false, false, false, true);
+		given(properties.isStakingEnabled()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(properties.maxGas()).willReturn(gas + 1);
@@ -182,8 +186,25 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void failsStakingIdIfStakingNotEnabled() {
+		givenValidTxnCtx(true, false, false, true, false);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void failsDeclineRewardIfStakingNotEnabled() {
+		givenValidTxnCtx(true, false, false, false, true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas + 1);
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
 	void failsForInvalidStakingId() {
-		givenValidTxnCtxWithStaking();
+		givenValidTxnCtxWithStakingId();
+		given(properties.isStakingEnabled()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(properties.maxGas()).willReturn(gas + 1);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
@@ -237,7 +258,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false, false, false, false);
+		givenValidTxnCtx(false, false, false, false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -756,20 +777,21 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false, false, false);
+		givenValidTxnCtx(true, false, false, false, false);
 	}
 
-	private void givenValidTxnCtxWithAutoRenew() {
-		givenValidTxnCtx(true, true, false, false);
-	}
-
-	private void givenValidTxnCtxWithStaking() {
-		givenValidTxnCtx(true, true, false, true);
+	private void givenValidTxnCtxWithStakingId() {
+		givenValidTxnCtx(true, true, false, true, false);
 	}
 
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew, boolean useAutoRenewAccount,
-			boolean useMaxAutoAssociations, boolean stakingEnabled) {
+	private void givenValidTxnCtx(
+			boolean rememberAutoRenew,
+			boolean useAutoRenewAccount,
+			boolean useMaxAutoAssociations,
+			boolean setStakingId,
+			boolean declineReward
+	) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
@@ -783,17 +805,17 @@ class ContractCreateTransitionLogicTest {
 		if (useMaxAutoAssociations) {
 			op.setMaxAutomaticTokenAssociations(maxAutoAssociations);
 		}
-		if (stakingEnabled) {
+		if (setStakingId) {
 			op.setStakedNodeId(10L);
-			op.setDeclineReward(true);
 		}
+		op.setDeclineReward(declineReward);
 		var txn = TransactionBody.newBuilder()
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
-		givenValidTxnCtx(true, true, true, false);
+		givenValidTxnCtx(true, true, true, false, false);
 	}
 
 	private AccountID ourAccount() {

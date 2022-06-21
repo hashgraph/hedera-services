@@ -81,6 +81,7 @@ class StakeChangesInterceptorTest {
 		subject = new StakingAccountsCommitInterceptor(
 				sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 	}
 
 	@Test

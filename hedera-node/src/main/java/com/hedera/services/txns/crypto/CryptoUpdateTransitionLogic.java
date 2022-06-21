@@ -67,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -243,7 +244,11 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		final var stakedIdCase = op.getStakedIdCase().name();
-		if (hasStakedId(stakedIdCase)) {
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!dynamicProperties.isStakingEnabled() && (electsStakingId || op.hasDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId) {
 			if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
 				return OK;
 			} else if (!validator.isValidStakedId(

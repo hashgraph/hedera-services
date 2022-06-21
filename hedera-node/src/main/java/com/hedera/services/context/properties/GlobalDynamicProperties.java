@@ -131,6 +131,8 @@ public class GlobalDynamicProperties {
 	private int stakingRewardPercent;
 	private int stakingActiveThreshold;
 	private boolean contractAutoAssociationsEnabled;
+	private boolean stakingEnabled;
+	private long maxDailyStakeRewardThPerH;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -239,6 +241,8 @@ public class GlobalDynamicProperties {
 		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
 		stakingActiveThreshold = properties.getIntProperty("staking.activeThreshold");
 		contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
+		maxDailyStakeRewardThPerH = properties.getLongProperty("staking.maxDailyStakeRewardThPerH");
+		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -595,5 +599,13 @@ public class GlobalDynamicProperties {
 
 	public boolean areContractAutoAssociationsEnabled() {
 		return contractAutoAssociationsEnabled;
+	}
+
+	public boolean isStakingEnabled() {
+		return stakingEnabled;
+	}
+
+	public long maxDailyStakeRewardThPerH() {
+		return maxDailyStakeRewardThPerH;
 	}
 }

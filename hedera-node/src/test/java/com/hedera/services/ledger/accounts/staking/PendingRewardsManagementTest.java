@@ -1,5 +1,6 @@
 package com.hedera.services.ledger.accounts.staking;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -42,6 +43,8 @@ class PendingRewardsManagementTest {
 	private PropertySource properties;
 	@Mock
 	private MerkleStakingInfo info;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -54,7 +57,8 @@ class PendingRewardsManagementTest {
 				syntheticTxnFactory,
 				recordsHistorian,
 				creator,
-				properties);
+				properties,
+				dynamicProperties);
 	}
 
 	@Test

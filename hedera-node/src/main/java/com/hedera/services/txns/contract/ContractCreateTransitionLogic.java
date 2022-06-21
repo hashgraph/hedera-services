@@ -81,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
 @Singleton
 public class ContractCreateTransitionLogic implements TransitionLogic {
@@ -273,7 +274,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 		}
 		final var stakedIdCase = op.getStakedIdCase().name();
-		if (hasStakedId(stakedIdCase) && !validator.isValidStakedId(
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!properties.isStakingEnabled() && (electsStakingId || op.getDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId && !validator.isValidStakedId(
 				stakedIdCase,
 				op.getStakedAccountId(),
 				op.getStakedNodeId(),

@@ -1,5 +1,6 @@
 package com.hedera.services.ledger.accounts.staking;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -65,6 +66,8 @@ class EndOfStakingPeriodCalculatorTest {
 	private EntityCreator creator;
 	@Mock
 	private PropertySource properties;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private EndOfStakingPeriodCalculator subject;
 
@@ -77,8 +80,8 @@ class EndOfStakingPeriodCalculatorTest {
 				syntheticTxnFactory,
 				recordsHistorian,
 				creator,
-				properties
-		);
+				properties,
+				dynamicProperties);
 	}
 
 	@Test
