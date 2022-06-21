@@ -48,8 +48,6 @@ import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
 public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
-	// get this max history from the props.
-	static final int MAX_REWARD_HISTORY = 366;
 
 	static final int RELEASE_0270_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
@@ -261,7 +259,7 @@ public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<Entit
 		stakeRewardStart = in.readLong();
 		unclaimedStakeRewardStart = in.readLong();
 		stake = in.readLong();
-		rewardSumHistory = in.readLongArray(MAX_REWARD_HISTORY);
+		rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);
 	}
 
 	@Override
