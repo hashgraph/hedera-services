@@ -285,9 +285,10 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void name() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_NAME)));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenInfoProvider();
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -315,9 +316,10 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void symbol() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_SYMBOL)));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SYMBOL));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenInfoProvider();
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -356,7 +358,7 @@ class ERC721PrecompilesTest {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.operator())).willReturn(true);
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
@@ -395,7 +397,7 @@ class ERC721PrecompilesTest {
 		givenInfoProvider();
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
@@ -896,7 +898,7 @@ class ERC721PrecompilesTest {
 		given(nfts.contains(nftId)).willReturn(true);
 		given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(RIPEMD160));
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO)).willReturn(
 				mockRecordBuilder);
 
@@ -923,9 +925,10 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void totalSupply() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN)));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN));
+		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenInfoProvider();
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -956,7 +959,7 @@ class ERC721PrecompilesTest {
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenInfoProvider();
 
-		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -1248,7 +1251,7 @@ class ERC721PrecompilesTest {
 	private Bytes givenMinimalFrameContext(Bytes nestedPretendArguments) {
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(frame.getRemainingGas()).willReturn(300L);
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

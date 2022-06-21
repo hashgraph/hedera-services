@@ -30,6 +30,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -85,7 +86,7 @@ public class EvmTxProcessorSimulator {
 			final Bytes payload,
 			final Instant consensusTime,
 			final Address mirrorReceiver,
-			final long tokenId,
+			final Id tokenId,
 			final WorldLedgers ledgers) {
 
 		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
@@ -165,7 +166,7 @@ public class EvmTxProcessorSimulator {
 			final BigInteger userOfferedGasPrice,
 			final long maxGasAllowanceInTinybars,
 			final Account relayer,
-			final long tokenId,
+			final Id tokenId,
 			final WorldLedgers ledgers) {
 
 		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
@@ -276,15 +277,15 @@ public class EvmTxProcessorSimulator {
 
 	private PrecompileMessage constructMessageAndCallPrecompileContract(Account sender, Instant consensusTime, WorldLedgers ledgers,
 																		Bytes payload, long gasAvailable, long value,
-																		long tokenId) {
-		final var redirectBytes = constructRedirectBytes(payload, tokenId);
+																		Id token) {
 		PrecompileMessage message = new PrecompileMessage.Builder()
 				.setLedgers(ledgers)
 				.setSenderAddress(sender.canonicalAddress())
 				.setValue(Wei.of(value))
 				.setConsensusTime(consensusTime)
 				.setGasRemaining(gasAvailable)
-				.setInputData(redirectBytes)
+				.setInputData(payload)
+				.setTokenID(buildTokenId(token))
 				.build();
 
 		//call the hts
@@ -310,12 +311,12 @@ public class EvmTxProcessorSimulator {
 		return senderAccount.getMutable();
 	}
 
-	private Bytes constructRedirectBytes(Bytes input, long tokenId) {
-		final String TOKEN_CALL_REDIRECT_HEX = "0x618dc65e0000000000000000000000000000000000000";
-		return Bytes.fromHexString(
-				TOKEN_CALL_REDIRECT_HEX
-						.concat(Long.toHexString(tokenId))
-						.concat(input.toUnprefixedHexString()));
+	private TokenID buildTokenId(Id token){
+		return  TokenID.newBuilder()
+				.setShardNum(token.shard())
+				.setRealmNum(token.realm())
+				.setTokenNum(token.num())
+				.build();
 	}
 
 	private long calculateGasUsedByTX(final long txGasLimit, final long remainingGas) {

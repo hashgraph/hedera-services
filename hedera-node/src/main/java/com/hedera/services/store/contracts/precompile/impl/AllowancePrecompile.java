@@ -58,8 +58,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
-		allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, aliasResolver);
+		allowanceWrapper = decoder.decodeTokenAllowance(input, aliasResolver);
 
 		return super.body(input, aliasResolver);
 	}

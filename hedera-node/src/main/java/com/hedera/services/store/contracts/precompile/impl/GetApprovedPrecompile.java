@@ -54,8 +54,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
-		getApprovedWrapper = decoder.decodeGetApproved(nestedInput);
+		getApprovedWrapper = decoder.decodeGetApproved(input);
 		return super.body(input, aliasResolver);
 	}
 

@@ -24,6 +24,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.common.base.Preconditions;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -47,6 +48,7 @@ public class PrecompileMessage {
 	private final Instant consensusTime;
 	private long gasRemaining;
 	private final Bytes inputData;
+	private final TokenID tokenID;
 
 
 	public static PrecompileMessage.Builder builder() {
@@ -54,7 +56,7 @@ public class PrecompileMessage {
 	}
 
 	private PrecompileMessage(WorldLedgers ledgers, Address senderAddress, Wei value, Instant consensusTime,
-							  Long gasRemaining, Bytes inputData) {
+							  Long gasRemaining, Bytes inputData, TokenID tokenID) {
 		state = State.NOT_STARTED;
 		revertReason = Optional.empty();
 		logs = new ArrayList();
@@ -64,6 +66,7 @@ public class PrecompileMessage {
 		this.consensusTime = consensusTime;
 		this.gasRemaining = gasRemaining;
 		this.inputData = inputData;
+		this.tokenID = tokenID;
 	}
 
 	public Wei getValue() {
@@ -88,6 +91,10 @@ public class PrecompileMessage {
 
 	public Bytes getInputData() {
 		return inputData;
+	}
+
+	public TokenID getTokenID() {
+		return tokenID;
 	}
 
 	public WorldLedgers getLedgers() {
@@ -149,6 +156,7 @@ public class PrecompileMessage {
 		private Instant consensusTime;
 		private Long gasRemaining;
 		private Bytes inputData;
+		private TokenID tokenID;
 
 		public Builder() {
 		}
@@ -183,6 +191,11 @@ public class PrecompileMessage {
 			return this;
 		}
 
+		public Builder setTokenID(TokenID tokenID) {
+			this.tokenID = tokenID;
+			return this;
+		}
+
 		private void validate() {
 			Preconditions.checkState(this.gasRemaining != null, "Missing Precompile message getGasRemaining price");
 			Preconditions.checkState(this.inputData != null, "Missing Precompile message input data");
@@ -190,13 +203,14 @@ public class PrecompileMessage {
 			Preconditions.checkState(this.value != null, "Missing Precompile message  value");
 			Preconditions.checkState(this.consensusTime != null, "Missing Precompile message consensusTime");
 			Preconditions.checkState(this.ledgers != null, "Missing Precompile message Ledgers");
+			Preconditions.checkState(this.tokenID != null, "Missing Precompile message TokenID");
 		}
 
 
 		public PrecompileMessage build() {
 			validate();
 			return new PrecompileMessage(this.ledgers, this.senderAddress, this.value, this.consensusTime,
-					this.gasRemaining, this.inputData);
+					this.gasRemaining, this.inputData, this.tokenID);
 		}
 	}
 

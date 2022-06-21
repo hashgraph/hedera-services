@@ -52,8 +52,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
-		isApproveForAllWrapper = decoder.decodeIsApprovedForAll(nestedInput, aliasResolver);
+		isApproveForAllWrapper = decoder.decodeIsApprovedForAll(input, aliasResolver);
 		return super.body(input, aliasResolver);
 	}
 

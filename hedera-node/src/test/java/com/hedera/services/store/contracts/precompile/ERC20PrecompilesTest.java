@@ -367,7 +367,7 @@ class ERC20PrecompilesTest {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
@@ -462,7 +462,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenInfoProvider();
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -502,7 +502,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenInfoProvider();
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -537,7 +537,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenInfoProvider();
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -573,7 +573,7 @@ class ERC20PrecompilesTest {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenInfoProvider();
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -614,7 +614,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -656,7 +656,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenInfoProvider();
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 

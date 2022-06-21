@@ -86,15 +86,14 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		initializeHederaTokenStore();
 
-		final var nestedInput = input.slice(24);
-		transferOp = switch (nestedInput.getInt(0)) {
-			case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(nestedInput, tokenID,
+		transferOp = switch (input.getInt(0)) {
+			case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(input, tokenID,
 					callerAccountID,
 					aliasResolver);
 			case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
 				final var operatorId = EntityId.fromGrpcAccountId(callerAccountID);
 				yield decoder.decodeERCTransferFrom(
-						nestedInput, tokenID, isFungible, aliasResolver, ledgers, operatorId);
+						input, tokenID, isFungible, aliasResolver, ledgers, operatorId);
 			}
 			default -> null;
 		};

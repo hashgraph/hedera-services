@@ -94,9 +94,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
 		operatorId = EntityId.fromAddress(senderAddress);
-		approveOp = decoder.decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver);
+		approveOp = decoder.decodeTokenApprove(input, tokenId, isFungible, aliasResolver);
 		if (isFungible) {
 			transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
 			return transactionBody;

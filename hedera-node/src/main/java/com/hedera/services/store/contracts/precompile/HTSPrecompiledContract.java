@@ -68,6 +68,7 @@ import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -138,6 +139,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private InfoProvider infoProvider;
+	private boolean hasRedirectBytes;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -197,9 +199,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public PrecompileContractResult computePrecompile(final Bytes input, @NotNull final MessageFrame frame) {
 		prepareFields(frame);
+		infoProvider = new EVMInfoProvider(frame);
 		prepareComputation(input, updater::unaliased);
 		gasRequirement = defaultGas();
-		infoProvider = new EVMInfoProvider(frame);
 		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {
 			frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
@@ -260,7 +262,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							ledgers, decoder, updater.aliases(), sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
-					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> tokenRedirectCase(input, functionId);
+					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> tokenRedirectCase(input);
 					case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
@@ -278,98 +280,105 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private Precompile tokenRedirectCase(Bytes input, int functionId) {
+	private Precompile tokenRedirectCase(Bytes input) {
 		final var target = DescriptorUtils.getRedirectTarget(input);
 		final var tokenId = target.tokenId();
+		final var functionSelector = target.descriptor();
+		hasRedirectBytes = true;
+		return constructRedirectPrecompile(functionSelector, tokenId);
+	}
+
+	private Precompile constructRedirectPrecompile(int functionSelector, TokenID tokenId) {
 		final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-		Precompile nestedPrecompile;
-		final var nestedFunctionSelector = target.descriptor();
-		if (AbiConstants.ABI_ID_NAME == nestedFunctionSelector) {
-			nestedPrecompile = new NamePrecompile(
+		final var functionId = AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+		Precompile precompile;
+
+		if (AbiConstants.ABI_ID_NAME == functionSelector) {
+			precompile = new NamePrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_SYMBOL == nestedFunctionSelector) {
-			nestedPrecompile = new SymbolPrecompile(
+		} else if (AbiConstants.ABI_ID_SYMBOL == functionSelector) {
+			precompile = new SymbolPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_DECIMALS == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_DECIMALS == functionSelector) {
 			if (!isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			nestedPrecompile = new DecimalsPrecompile(
+			precompile = new DecimalsPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
-			nestedPrecompile = new TotalSupplyPrecompile(
+		} else if (AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN == functionSelector) {
+			precompile = new TotalSupplyPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
-			nestedPrecompile = new BalanceOfPrecompile(
+		} else if (AbiConstants.ABI_ID_BALANCE_OF_TOKEN == functionSelector) {
+			precompile = new BalanceOfPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_OWNER_OF_NFT == functionSelector) {
 			if (isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			nestedPrecompile = new OwnerOfPrecompile(
+			precompile = new OwnerOfPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_TOKEN_URI_NFT == functionSelector) {
 			if (isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			nestedPrecompile = new TokenURIPrecompile(
+			precompile = new TokenURIPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_ERC_TRANSFER == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_ERC_TRANSFER == functionSelector) {
 			if (!isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+			precompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 					ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 					impliedTransfersMarshal);
-		} else if (AbiConstants.ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_ERC_TRANSFER_FROM == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+			precompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 					ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 					impliedTransfersMarshal);
-		} else if (AbiConstants.ABI_ID_ALLOWANCE == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_ALLOWANCE == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new AllowancePrecompile(
+			precompile = new AllowancePrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_APPROVE == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_APPROVE == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new ApprovePrecompile(
+			precompile = new ApprovePrecompile(
 					tokenId, isFungibleToken, ledgers, decoder, encoder, currentView, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress);
-		} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new SetApprovalForAllPrecompile(
+			precompile = new SetApprovalForAllPrecompile(
 					tokenId, ledgers, decoder, currentView, sideEffectsTracker, syntheticTxnFactory,
 					infrastructureFactory, precompilePricingUtils, senderAddress);
-		} else if (AbiConstants.ABI_ID_GET_APPROVED == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_GET_APPROVED == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new GetApprovedPrecompile(
+			precompile = new GetApprovedPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-		} else if (AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
+		} else if (AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			nestedPrecompile = new IsApprovedForAllPrecompile(
+			precompile = new IsApprovedForAllPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else {
-			nestedPrecompile = null;
+			precompile = null;
 		}
-		return nestedPrecompile;
+		return precompile;
 	}
 
 	public void callHtsDirectly(PrecompileMessage message) {
@@ -380,8 +389,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		senderAddress = message.getSenderAddress();
 		infoProvider = new DirectCallsInfoProvider(message);
 
-		precompile = tokenRedirectCase(inputData, inputData.getInt(0));
-
+		precompile = constructRedirectPrecompile(inputData.getInt(0), message.getTokenID());
 		if (precompile != null) {
 			decodeInput(inputData, message::unaliased);
 		}
@@ -392,7 +400,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	/* --- Helpers --- */
-	void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+	void decodeInput(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		input = hasRedirectBytes ? input.slice(24) : input;
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
 			this.transactionBody = this.precompile.body(input, aliasResolver);

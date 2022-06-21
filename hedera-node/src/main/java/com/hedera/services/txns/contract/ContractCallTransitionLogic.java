@@ -143,7 +143,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 						callData,
 						txnCtx.consensusTime(),
 						aliasManager.resolveForEvm(receiver.canonicalAddress()),
-						targetId.num(),
+						targetId,
 						entityAccess.worldLedgers());
 			} else {
 				result = evmTxProcessor.execute(
@@ -168,7 +168,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 						offeredGasPrice,
 						maxGasAllowanceInTinybars,
 						accountStore.loadAccount(relayerId),
-						targetId.num(),
+						targetId,
 						entityAccess.worldLedgers());
 			} else {
 				result = evmTxProcessor.executeEth(

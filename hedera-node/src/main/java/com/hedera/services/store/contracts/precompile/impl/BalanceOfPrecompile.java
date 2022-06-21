@@ -48,8 +48,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
-		balanceWrapper = decoder.decodeBalanceOf(nestedInput, aliasResolver);
+		balanceWrapper = decoder.decodeBalanceOf(input, aliasResolver);
 		return super.body(input, aliasResolver);
 	}
 

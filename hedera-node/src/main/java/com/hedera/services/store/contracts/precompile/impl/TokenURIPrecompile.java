@@ -48,7 +48,7 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var wrapper = decoder.decodeTokenUriNFT(input.slice(24));
+		final var wrapper = decoder.decodeTokenUriNFT(input);
 		nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), wrapper.serialNo());
 		return super.body(input, aliasResolver);
 	}
