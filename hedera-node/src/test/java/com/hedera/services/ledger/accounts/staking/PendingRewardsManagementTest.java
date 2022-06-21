@@ -64,6 +64,7 @@ class PendingRewardsManagementTest {
 	@Test
 	void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
 		given800Balance(1_000_000_000_000L);
+		given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
 		given(networkCtx.areRewardsActivated()).willReturn(true);
 		given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
 		given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
@@ -74,6 +75,7 @@ class PendingRewardsManagementTest {
 				rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate
 				)).willReturn(lastPeriodRewardRate);
 		given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 

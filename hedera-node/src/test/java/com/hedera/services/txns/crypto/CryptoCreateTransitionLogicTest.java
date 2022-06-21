@@ -88,7 +88,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 class CryptoCreateTransitionLogicTest {
 	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -218,6 +217,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -291,6 +291,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void validatesStakedId() {
 		givenValidTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
