@@ -98,7 +98,7 @@ import static com.hedera.services.grpc.controllers.CryptoController.GET_ACCOUNT_
 import static com.hedera.services.grpc.controllers.CryptoController.GET_LIVE_HASH_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.GET_RECEIPT_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.GET_RECORD_METRIC;
-import static com.hedera.services.grpc.controllers.CryptoController.RANDOM_GENERATE_METRIC;
+import static com.hedera.services.grpc.controllers.UtilController.RANDOM_GENERATE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.CREATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.DELETE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.FILE_APPEND_METRIC;
