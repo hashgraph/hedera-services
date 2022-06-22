@@ -337,9 +337,9 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			out.writeInt(resolutionTime.getNanos());
 		}
 		out.writeInt(signatories.size());
-		for (byte[] key : signatories) {
-			out.writeInt(key.length);
-			out.write(key);
+		for (byte[] k : signatories) {
+			out.writeInt(k.length);
+			out.write(k);
 		}
 		if (key == null) {
 			out.writeByte((byte) 0);
@@ -405,9 +405,9 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			out.putInt(resolutionTime.getNanos());
 		}
 		out.putInt(signatories.size());
-		for (byte[] key : signatories) {
-			out.putInt(key.length);
-			out.put(key);
+		for (byte[] k : signatories) {
+			out.putInt(k.length);
+			out.put(k);
 		}
 		if (key == null) {
 			out.put((byte) 0);

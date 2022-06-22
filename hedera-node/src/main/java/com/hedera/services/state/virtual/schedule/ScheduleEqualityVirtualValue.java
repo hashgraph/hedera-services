@@ -108,8 +108,8 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 		for (int x = 0; x <	s; ++x) {
 			byte[] keyBytes = new byte[in.readInt()];
 			in.readFully(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.readLong());
+			var k = new String(keyBytes, StandardCharsets.UTF_8);
+			ids.put(k, in.readLong());
 		}
 		if (in.readByte() == 1) {
 			key = new ScheduleEqualityVirtualKey(in.readLong());
@@ -125,8 +125,8 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 		for (int x = 0; x <	s; ++x) {
 			byte[] keyBytes = new byte[in.getInt()];
 			in.get(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.getLong());
+			var k = new String(keyBytes, StandardCharsets.UTF_8);
+			ids.put(k, in.getLong());
 		}
 		if (in.get() == 1) {
 			key = new ScheduleEqualityVirtualKey(in.getLong());
