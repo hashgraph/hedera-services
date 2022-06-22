@@ -34,10 +34,12 @@ public abstract class AbstractContractAliases implements ContractAliases {
 	 * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
 	private static byte[] mirrorPrefix = null;
 
+	@Override
 	public boolean isMirror(final Address address) {
 		return isMirror(address.toArrayUnsafe());
 	}
 
+	@Override
 	public boolean isMirror(final byte[] address) {
 		if (address.length != EVM_ADDRESS_LEN) {
 			return false;

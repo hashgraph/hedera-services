@@ -23,7 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.AliasResolver;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -52,7 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
-	private final AliasManager aliasManager;
+	private final AliasResolver aliasResolver;
 	private final StorageExpiry storageExpiry;
 
 	@Inject
@@ -63,7 +63,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager,
+			final AliasResolver aliasResolver,
 			final StorageExpiry storageExpiry
 	) {
 		super(
@@ -73,7 +73,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				hederaOperations,
 				precompiledContractMap);
 		this.codeCache = codeCache;
-		this.aliasManager = aliasManager;
+		this.aliasResolver = aliasResolver;
 		this.storageExpiry = storageExpiry;
 	}
 
@@ -113,7 +113,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				true,
 				storageExpiry.hapiStaticCallOracle(),
-				aliasManager.resolveForEvm(receiver),
+				aliasResolver.resolveForEvm(receiver),
 				null,
 				0,
 				null);
@@ -126,7 +126,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Bytes payload,
 			final long value
 	) {
-		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+		final var code = codeCache.getIfPresent(aliasResolver.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's
 		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
 		 * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means

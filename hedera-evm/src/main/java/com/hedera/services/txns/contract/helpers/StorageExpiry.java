@@ -21,7 +21,6 @@ package com.hedera.services.txns.contract.helpers;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;

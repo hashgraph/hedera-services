@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
-public interface ContractAliases {
+public interface ContractAliases extends AliasResolver {
 	void revert();
 
 	void filterPendingChanges(Predicate<Address> filter);
@@ -42,11 +42,7 @@ public interface ContractAliases {
 
 	void link(Address alias, Address address);
 
-	boolean isMirror(Address address);
-
 	boolean isInUse(Address address);
-
-	Address resolveForEvm(Address addressOrAlias);
 
 	default Address currentAddress(final ContractID idOrAlias) {
 		if (isAlias(idOrAlias)) {

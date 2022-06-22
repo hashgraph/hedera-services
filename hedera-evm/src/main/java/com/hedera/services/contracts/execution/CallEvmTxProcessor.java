@@ -23,7 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.AliasResolver;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -50,7 +50,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
-	private final AliasManager aliasManager;
+	private final AliasResolver aliasResolver;
 	private final StorageExpiry storageExpiry;
 
 	@Inject
@@ -62,7 +62,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager,
+			final AliasResolver aliasResolver,
 			final StorageExpiry storageExpiry,
 			final InHandleBlockMetaSource blockMetaSource
 	) {
@@ -75,7 +75,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				precompiledContractMap,
 				blockMetaSource);
 		this.codeCache = codeCache;
-		this.aliasManager = aliasManager;
+		this.aliasResolver = aliasResolver;
 		this.storageExpiry = storageExpiry;
 	}
 
@@ -100,7 +100,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				storageExpiry.hapiCallOracle(),
-				aliasManager.resolveForEvm(receiver),
+				aliasResolver.resolveForEvm(receiver),
 				null,
 				0,
 				null);
@@ -130,7 +130,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				storageExpiry.hapiCallOracle(),
-				aliasManager.resolveForEvm(receiver),
+				aliasResolver.resolveForEvm(receiver),
 				userOfferedGasPrice,
 				maxGasAllowanceInTinybars,
 				relayer);
@@ -147,7 +147,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Address to,
 			final Bytes payload,
 			final long value) {
-		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+		final var code = codeCache.getIfPresent(aliasResolver.resolveForEvm(to));
 		/* The ContractCallTransitionLogic would have rejected a missing or deleted
 		 * contract, so at this point we should have non-null bytecode available.
 		 * If there is no bytecode, it means we have a non-token and non-contract account,

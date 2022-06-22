@@ -24,7 +24,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.AliasResolver;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -333,13 +333,14 @@ public final class EntityIdUtils {
         return idOrAlias.getContractNum() == 0 && !idOrAlias.getEvmAddress().isEmpty();
     }
 
-    public static EntityNum unaliased(final ContractID idOrAlias, final AliasManager aliasManager) {
+    public static EntityNum unaliased(final ContractID idOrAlias, final AliasResolver aliasManager) {
         return unaliased(idOrAlias, aliasManager, null);
     }
 
+    //TODO: to be removed
     public static EntityNum unaliased(
             final ContractID idOrAlias,
-            final AliasManager aliasManager,
+            final AliasResolver aliasManager,
             @Nullable final Consumer<ByteString> aliasObs
     ) {
         if (isAlias(idOrAlias)) {
@@ -358,13 +359,14 @@ public final class EntityIdUtils {
         }
     }
 
-    public static EntityNum unaliased(final AccountID idOrAlias, final AliasManager aliasManager) {
+    public static EntityNum unaliased(final AccountID idOrAlias, final AliasResolver aliasManager) {
         return unaliased(idOrAlias, aliasManager, null);
     }
 
+    //TODO: to be removed
     public static EntityNum unaliased(
             final AccountID idOrAlias,
-            final AliasManager aliasManager,
+            final AliasResolver aliasManager,
             @Nullable final Consumer<ByteString> aliasObs
     ) {
         if (isAlias(idOrAlias)) {
