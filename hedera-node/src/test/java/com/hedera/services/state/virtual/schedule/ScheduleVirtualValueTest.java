@@ -20,10 +20,10 @@ package com.hedera.services.state.virtual.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -94,6 +94,7 @@ public class ScheduleVirtualValueTest {
 		signatories.addAll(List.of(fpk, spk, tpk));
 
 		subject = ScheduleVirtualValue.from(bodyBytes, expiry);
+		subject.setKey(new EntityNumVirtualKey(3L));
 	}
 
 	@Test
@@ -196,6 +197,9 @@ public class ScheduleVirtualValueTest {
 		check.call();
 		subject.witnessValidSignature(tpk);
 		check.call();
+
+		subject.setKey(null);
+		check.call();
 	}
 
 	@Test
@@ -209,6 +213,7 @@ public class ScheduleVirtualValueTest {
 		assertArrayEquals(a.bodyBytes(), b.bodyBytes());
 		assertEquals(a.isDeleted(), b.isDeleted());
 		assertEquals(a.isExecuted(), b.isExecuted());
+		assertEquals(a.getKey(), b.getKey());
 		assertEquals(a.calculatedWaitForExpiry(), b.calculatedWaitForExpiry());
 		assertEquals(a.getResolutionTime(), b.getResolutionTime());
 		final var aSigs = a.signatories();
@@ -249,6 +254,7 @@ public class ScheduleVirtualValueTest {
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 		assertEquals(HederaFunctionality.CryptoDelete, subject.scheduledFunction());
+		assertEquals(3L, subject.getKey().getKeyAsLong());
 	}
 
 	@Test
@@ -495,7 +501,7 @@ public class ScheduleVirtualValueTest {
 				+ ", " + "signatories=[" + signatoriesToString() + "], "
 				+ "adminKey=" + describe(adminKey) + ", "
 				+ "resolutionTime=" + RichInstant.fromJava(resolutionTime).toString()
-				+ "}";
+				+ ", key=EntityNumVirtualKey{value=3}}";
 
 		assertEquals(expected, subject.toString());
 	}
@@ -517,6 +523,14 @@ public class ScheduleVirtualValueTest {
 	@Test
 	void validRuntimeConstructableID() {
 		assertEquals(ScheduleVirtualValue.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void setKeyWorks() {
+		subject.setKey(null);
+		assertEquals(null, subject.getKey());
+		subject.setKey(new EntityNumVirtualKey(4L));
+		assertEquals(new EntityNumVirtualKey(4L), subject.getKey());
 	}
 
 	@Test
@@ -543,6 +557,7 @@ public class ScheduleVirtualValueTest {
 		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(3L, copySubject.getKey().getKeyAsLong());
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 		assertTrue(subject.isImmutable());
@@ -574,6 +589,7 @@ public class ScheduleVirtualValueTest {
 		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(3L, copySubject.getKey().getKeyAsLong());
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 		assertFalse(subject.isImmutable());
@@ -605,6 +621,7 @@ public class ScheduleVirtualValueTest {
 		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(3L, copySubject.getKey().getKeyAsLong());
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 		assertFalse(subject.isImmutable());
@@ -661,16 +678,6 @@ public class ScheduleVirtualValueTest {
 												.setTransactionID(expectedId)
 												.build().toByteString())
 								.build().toByteString())
-				.build();
-	}
-
-	private static Transaction expectedParentSignedTxn() {
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(ByteString.copyFrom(bodyBytes))
-								.build()
-								.toByteString())
 				.build();
 	}
 

@@ -193,7 +193,7 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.longTermEnabled", true),
+			entry("scheduling.longTermEnabled", false),
 			entry("scheduling.maxTxnPerSecond", 100L),
 			entry("scheduling.maxExpirationFutureSeconds", 5356800L),
 			entry("scheduling.whitelist", Set.of(
