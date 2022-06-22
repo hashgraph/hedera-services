@@ -35,7 +35,7 @@ dependencyResolutionManagement {
         create("libs") {
             // Definition of version numbers for all libraries
             version("besu-version", "22.4.1")
-            version("besu-native-version", "0.4.3")
+            version("besu-native-version", "0.5.0")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
             version("commons-codec-version", "1.15")

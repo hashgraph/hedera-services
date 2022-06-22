@@ -22,7 +22,7 @@
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.30</snakeyaml.version>
-    <besu.version>22.1.1</besu.version>
+    <besu.version>22.4.1</besu.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
