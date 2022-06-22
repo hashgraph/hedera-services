@@ -501,7 +501,7 @@ public class ScheduleVirtualValueTest {
 				+ ", " + "signatories=[" + signatoriesToString() + "], "
 				+ "adminKey=" + describe(adminKey) + ", "
 				+ "resolutionTime=" + RichInstant.fromJava(resolutionTime).toString()
-				+ ", key=EntityNumVirtualKey{value=3}}";
+				+ ", number=3}";
 
 		assertEquals(expected, subject.toString());
 	}
@@ -528,7 +528,7 @@ public class ScheduleVirtualValueTest {
 	@Test
 	void setKeyWorks() {
 		subject.setKey(null);
-		assertEquals(null, subject.getKey());
+		assertEquals(new EntityNumVirtualKey(-1L), subject.getKey());
 		subject.setKey(new EntityNumVirtualKey(4L));
 		assertEquals(new EntityNumVirtualKey(4L), subject.getKey());
 	}

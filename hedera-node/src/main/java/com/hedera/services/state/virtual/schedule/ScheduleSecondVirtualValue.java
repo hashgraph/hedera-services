@@ -43,8 +43,6 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
-import javax.annotation.Nullable;
-
 /**
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
  * It should be moved back to VirtualMap in 0.28.
@@ -56,8 +54,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
 
-	@Nullable
-	private SecondSinceEpocVirtualKey key;
+	private long number;
 
 	/** The value must be a list because more than one schedule can be scheduled for the same instant. */
 	private final NavigableMap<RichInstant, ImmutableLongList> ids;
@@ -73,13 +70,13 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 
 	public ScheduleSecondVirtualValue(Map<RichInstant, ? extends LongList> ids, SecondSinceEpocVirtualKey key) {
 		this();
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 		ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
 	}
 
 	private ScheduleSecondVirtualValue(Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids, SecondSinceEpocVirtualKey key) {
 		this.ids = ids.get();
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 
 
@@ -105,7 +102,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(ScheduleSecondVirtualValue.class)
 				.add("ids", ids)
-				.add("key", key);
+				.add("number", number);
 		return helper.toString();
 	}
 
@@ -123,11 +120,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 				ids.put(RichInstant.from(in), l.toImmutable());
 			}
 		}
-		if (in.readByte() == 1) {
-			key = new SecondSinceEpocVirtualKey(in.readLong());
-		} else {
-			key = null;
-		}
+		number = in.readLong();
 	}
 
 	@Override
@@ -144,11 +137,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 				ids.put(new RichInstant(in.getLong(), in.getInt()), l.toImmutable());
 			}
 		}
-		if (in.get() == 1) {
-			key = new SecondSinceEpocVirtualKey(in.getLong());
-		} else {
-			key = null;
-		}
+		number = in.getLong();
 	}
 
 	@Override
@@ -161,12 +150,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 			}
 			e.getKey().serialize(out);
 		}
-		if (key == null) {
-			out.writeByte((byte) 0);
-		} else {
-			out.writeByte((byte) 1);
-			out.writeLong(key.getKeyAsLong());
-		}
+		out.writeLong(number);
 	}
 
 	@Override
@@ -180,12 +164,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 			out.putLong(e.getKey().getSeconds());
 			out.putInt(e.getKey().getNanos());
 		}
-		if (key == null) {
-			out.put((byte) 0);
-		} else {
-			out.put((byte) 1);
-			out.putLong(key.getKeyAsLong());
-		}
+		out.putLong(number);
 	}
 
 	@Override
@@ -200,7 +179,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 
 	@Override
 	public ScheduleSecondVirtualValue copy() {
-		var fc = new ScheduleSecondVirtualValue(ids, key);
+		var fc = new ScheduleSecondVirtualValue(ids, new SecondSinceEpocVirtualKey(number));
 
 		this.setImmutable(true);
 
@@ -252,7 +231,7 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 	 */
 	@Override
 	public ScheduleSecondVirtualValue asReadOnly() {
-		var c = new ScheduleSecondVirtualValue(this::getIds, key);
+		var c = new ScheduleSecondVirtualValue(this::getIds, new SecondSinceEpocVirtualKey(number));
 		c.setImmutable(true);
 		return c;
 	}
@@ -262,16 +241,16 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 	 * @return a copy of this without marking this as immutable
 	 */
 	public ScheduleSecondVirtualValue asWritable() {
-		return new ScheduleSecondVirtualValue(this.ids, key);
+		return new ScheduleSecondVirtualValue(this.ids, new SecondSinceEpocVirtualKey(number));
 	}
 
 	@Override
 	public SecondSinceEpocVirtualKey getKey() {
-		return key;
+		return new SecondSinceEpocVirtualKey(number);
 	}
 
 	@Override
 	public void setKey(final SecondSinceEpocVirtualKey key) {
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 }

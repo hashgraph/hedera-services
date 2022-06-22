@@ -27,7 +27,6 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,8 +48,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
-	@Nullable
-	private ScheduleEqualityVirtualKey key;
+	private long number;
 
 	/** Although extremely unlikely, we must handle the case where more than one schedule has the
 	 * same long equality hash. So this is a Map of string equality hash to schedule ID. */
@@ -71,7 +69,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 
 	private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids, ScheduleEqualityVirtualKey key) {
 		this.ids = ids.get();
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 
 
@@ -97,7 +95,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
 				.add("ids", ids)
-				.add("key", key);
+				.add("number", number);
 		return helper.toString();
 	}
 
@@ -111,11 +109,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 			var k = new String(keyBytes, StandardCharsets.UTF_8);
 			ids.put(k, in.readLong());
 		}
-		if (in.readByte() == 1) {
-			key = new ScheduleEqualityVirtualKey(in.readLong());
-		} else {
-			key = null;
-		}
+		number = in.readLong();
 	}
 
 	@Override
@@ -128,11 +122,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 			var k = new String(keyBytes, StandardCharsets.UTF_8);
 			ids.put(k, in.getLong());
 		}
-		if (in.get() == 1) {
-			key = new ScheduleEqualityVirtualKey(in.getLong());
-		} else {
-			key = null;
-		}
+		number = in.getLong();
 	}
 
 	@Override
@@ -144,12 +134,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 			out.write(keyBytes);
 			out.writeLong(e.getValue());
 		}
-		if (key == null) {
-			out.writeByte((byte) 0);
-		} else {
-			out.writeByte((byte) 1);
-			out.writeLong(key.getKeyAsLong());
-		}
+		out.writeLong(number);
 	}
 
 	@Override
@@ -161,12 +146,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 			out.put(keyBytes);
 			out.putLong(e.getValue());
 		}
-		if (key == null) {
-			out.put((byte) 0);
-		} else {
-			out.put((byte) 1);
-			out.putLong(key.getKeyAsLong());
-		}
+		out.putLong(number);
 	}
 
 	@Override
@@ -176,7 +156,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 
 	@Override
 	public ScheduleEqualityVirtualValue copy() {
-		var fc = new ScheduleEqualityVirtualValue(ids, key);
+		var fc = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(number));
 
 		this.setImmutable(true);
 
@@ -221,7 +201,7 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 	 */
 	@Override
 	public ScheduleEqualityVirtualValue asReadOnly() {
-		var c = new ScheduleEqualityVirtualValue(this::getIds, key);
+		var c = new ScheduleEqualityVirtualValue(this::getIds, new ScheduleEqualityVirtualKey(number));
 		c.setImmutable(true);
 		return c;
 	}
@@ -231,16 +211,16 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 	 * @return a copy of this without marking this as immutable
 	 */
 	public ScheduleEqualityVirtualValue asWritable() {
-		return new ScheduleEqualityVirtualValue(this.ids, key);
+		return new ScheduleEqualityVirtualValue(this.ids, new ScheduleEqualityVirtualKey(number));
 	}
 
 	@Override
 	public ScheduleEqualityVirtualKey getKey() {
-		return key;
+		return new ScheduleEqualityVirtualKey(number);
 	}
 
 	@Override
 	public void setKey(final ScheduleEqualityVirtualKey key) {
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 }

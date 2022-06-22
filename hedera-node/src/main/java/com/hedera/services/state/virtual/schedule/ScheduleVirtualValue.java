@@ -76,7 +76,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
 	@Nullable
-	private EntityNumVirtualKey key;
+	private long number;
 	@Nullable
 	private Key grpcAdminKey = null;
 	@Nullable
@@ -127,7 +127,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 		this.scheduledTxn = toCopy.scheduledTxn;
 		this.ordinaryScheduledTxn = toCopy.ordinaryScheduledTxn;
 		this.resolutionTime = toCopy.resolutionTime;
-		this.key = toCopy.key;
+		this.number = toCopy.number;
 
 		/* Signatories are mutable */
 		for (byte[] signatory : toCopy.signatories) {
@@ -273,7 +273,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
 				.add("adminKey", describe(adminKey))
 				.add("resolutionTime", resolutionTime)
-				.add("key", key);
+				.add("number", number);
 		return helper.toString();
 	}
 
@@ -306,11 +306,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			in.readFully(bytes);
 			witnessValidSignature(bytes);
 		}
-		if (in.readByte() == 1) {
-			key = new EntityNumVirtualKey(in.readLong());
-		} else {
-			key = null;
-		}
+		number = in.readLong();
 
 		initFromBodyBytes();
 	}
@@ -341,12 +337,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			out.writeInt(k.length);
 			out.write(k);
 		}
-		if (key == null) {
-			out.writeByte((byte) 0);
-		} else {
-			out.writeByte((byte) 1);
-			out.writeLong(key.getKeyAsLong());
-		}
+		out.writeLong(number);
 	}
 
 	@Override
@@ -374,11 +365,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			in.get(bytes);
 			witnessValidSignature(bytes);
 		}
-		if (in.get() == 1) {
-			key = new EntityNumVirtualKey(in.getLong());
-		} else {
-			key = null;
-		}
+		number = in.getLong();
 
 		initFromBodyBytes();
 	}
@@ -409,12 +396,7 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 			out.putInt(k.length);
 			out.put(k);
 		}
-		if (key == null) {
-			out.put((byte) 0);
-		} else {
-			out.put((byte) 1);
-			out.putLong(key.getKeyAsLong());
-		}
+		out.putLong(number);
 	}
 
 	@Override
@@ -637,11 +619,11 @@ public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualV
 
 	@Override
 	public EntityNumVirtualKey getKey() {
-		return key;
+		return new EntityNumVirtualKey(number);
 	}
 
 	@Override
 	public void setKey(final EntityNumVirtualKey key) {
-		this.key = key;
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 }

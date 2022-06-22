@@ -109,7 +109,6 @@ class ScheduleEqualityVirtualValueTest {
 		inOrder.verify(out).writeInt(5);
 		inOrder.verify(out).write("truck".getBytes(StandardCharsets.UTF_8));
 		inOrder.verify(out).writeLong(2L);
-		inOrder.verify(out).writeByte((byte) 1);
 		inOrder.verify(out).writeLong(3L);
 
 		inOrder.verifyNoMoreInteractions();
@@ -155,7 +154,6 @@ class ScheduleEqualityVirtualValueTest {
 		inOrder.verify(buffer).putInt(5);
 		inOrder.verify(buffer).put("truck".getBytes(StandardCharsets.UTF_8));
 		inOrder.verify(buffer).putLong(2L);
-		inOrder.verify(buffer).put((byte) 1);
 		inOrder.verify(buffer).putLong(3L);
 
 		inOrder.verifyNoMoreInteractions();
@@ -273,7 +271,7 @@ class ScheduleEqualityVirtualValueTest {
 	@Test
 	void setKeyWorks() {
 		subject.setKey(null);
-		assertEquals(null, subject.getKey());
+		assertEquals(new ScheduleEqualityVirtualKey(-1L), subject.getKey());
 		subject.setKey(new ScheduleEqualityVirtualKey(4L));
 		assertEquals(new ScheduleEqualityVirtualKey(4L), subject.getKey());
 	}
@@ -335,7 +333,7 @@ class ScheduleEqualityVirtualValueTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals("ScheduleEqualityVirtualValue{ids={foo=1, truck=2}, key=ScheduleEqualityVirtualKey{value=3}}",
+		assertEquals("ScheduleEqualityVirtualValue{ids={foo=1, truck=2}, number=3}",
 				subject.toString());
 	}
 

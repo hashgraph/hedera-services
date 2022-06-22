@@ -114,7 +114,6 @@ class ScheduleSecondVirtualValueTest {
 		inOrder.verify(out).writeLong(80L);
 		inOrder.verify(out).writeLong(30L);
 		inOrder.verify(out).writeInt(40);
-		inOrder.verify(out).writeByte((byte) 1);
 		inOrder.verify(out).writeLong(3L);
 
 		inOrder.verifyNoMoreInteractions();
@@ -153,7 +152,6 @@ class ScheduleSecondVirtualValueTest {
 		inOrder.verify(buffer).putLong(80L);
 		inOrder.verify(buffer).putLong(30L);
 		inOrder.verify(buffer).putInt(40);
-		inOrder.verify(buffer).put((byte) 1);
 		inOrder.verify(buffer).putLong(3L);
 
 		inOrder.verifyNoMoreInteractions();
@@ -259,7 +257,7 @@ class ScheduleSecondVirtualValueTest {
 	@Test
 	void setKeyWorks() {
 		subject.setKey(null);
-		assertEquals(null, subject.getKey());
+		assertEquals(new SecondSinceEpocVirtualKey(-1L), subject.getKey());
 		subject.setKey(new SecondSinceEpocVirtualKey(4L));
 		assertEquals(new SecondSinceEpocVirtualKey(4L), subject.getKey());
 	}
@@ -294,7 +292,7 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=10, nanos=20}=[50, 60, 70, 20, 6000], " +
 				"RichInstant{seconds=10, nanos=21}=[9020, 9120], " +
 				"RichInstant{seconds=30, nanos=40}=[80], " +
-				"RichInstant{seconds=200, nanos=20}=[9030]}, key=SecondSinceEpocVirtualKey{value=3}}", subject.toString());
+				"RichInstant{seconds=200, nanos=20}=[9030]}, number=3}", subject.toString());
 
 		subject.copy();
 		final var instant = new RichInstant(210L, 20);
@@ -327,7 +325,7 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=0, nanos=20}=[9030], " +
 				"RichInstant{seconds=10, nanos=20}=[60, 70, 20, 6000], " +
 				"RichInstant{seconds=30, nanos=40}=[80], " +
-				"RichInstant{seconds=200, nanos=20}=[9030]}, key=SecondSinceEpocVirtualKey{value=3}}", subject.toString());
+				"RichInstant{seconds=200, nanos=20}=[9030]}, number=3}", subject.toString());
 
 		subject.copy();
 
@@ -339,7 +337,7 @@ class ScheduleSecondVirtualValueTest {
 	@Test
 	void toStringWorks() {
 		assertEquals("ScheduleSecondVirtualValue{ids={RichInstant{seconds=10, nanos=20}=[50, 60, 70], " +
-				"RichInstant{seconds=30, nanos=40}=[80]}, key=SecondSinceEpocVirtualKey{value=3}}", subject.toString());
+				"RichInstant{seconds=30, nanos=40}=[80]}, number=3}", subject.toString());
 	}
 
 	private static void assertSubjectEquals(ScheduleSecondVirtualValue subject, ScheduleSecondVirtualValue value) {
