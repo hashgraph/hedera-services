@@ -41,8 +41,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -169,7 +169,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						/* get transaction record and validate the child record has alias bytes as expected */
 						getTxnRecord("transferTxn")
 								.andAllChildRecords()
-								.hasChildRecordCount(1)
+								.hasNonStakingChildRecordCount(1)
 								.hasAliasInChildRecord("validAlias", 0),
 						getAccountInfo("payer").has(
 								accountWith()
@@ -226,7 +226,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
 								"txn"),
-						getTxnRecord("txn").hasChildRecordCount(1).logged()
+						getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged()
 				).then(
 						cryptoDeleteAliased("alias")
 								.transfer("payer")
@@ -291,7 +291,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(alias, "randomAccount", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(0),
 						getAliasedAccountInfo(alias).has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 10))
 				);
@@ -328,7 +328,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec transferToAccountAutoCreatedUsingAlias() {
-		return defaultHapiSpec("transferToAccountAutoCreated")
+		return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
 				.given(
 						newKeyNamed("alias"),
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
@@ -346,7 +346,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						/* transfer using alias and not account number */
 						cryptoTransfer(tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS))
 								.via("transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0).logged(),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(0).logged(),
 						getAccountInfo("payer").has(
 								accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
 						getAliasedAccountInfo("alias").has(
@@ -432,7 +432,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						assertionsHold((spec, opLog) -> {
 							final var lookup = getTxnRecord("transferTxn")
 									.andAllChildRecords()
-									.hasChildRecordCount(1)
+									.hasNonStakingChildRecordCount(1)
 									.hasAliasInChildRecord("validAlias", 0);
 							allRunFor(spec, lookup);
 							final var sponsor = spec.registry().getAccountID(autoCreateSponsor);
@@ -464,7 +464,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 		long receivedBalance = 0;
 		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
 			final var id = adjust.getAccountID();
-			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(defaultPayer)) {
+			if (id.getAccountNum() < 100 ||
+					id.equals(sponsor) ||
+					id.equals(defaultPayer) ||
+					id.getAccountNum() == 800 ||
+					id.getAccountNum() == 801) {
 				continue;
 			}
 			receivedBalance = adjust.getAmount();
@@ -490,7 +494,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								tinyBarsFromToWithAlias("payer", "alias2", ONE_HUNDRED_HBARS),
 								tinyBarsFromToWithAlias("payer", "alias3", ONE_HUNDRED_HBARS)
 						).via("multipleAutoAccountCreates"),
-						getTxnRecord("multipleAutoAccountCreates").hasChildRecordCount(3).logged(),
+						getTxnRecord("multipleAutoAccountCreates").hasNonStakingChildRecordCount(3).logged(),
 						getAccountInfo("payer").has(
 								accountWith()
 										.balance((initialBalance * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)
@@ -501,7 +505,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								tinyBarsFromToWithAlias("payer", "alias4", ONE_HUNDRED_HBARS),
 								tinyBarsFromToWithAlias("payer", "alias5", 100)
 						).via("failedAutoCreate").hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
-						getTxnRecord("failedAutoCreate").hasChildRecordCount(0).logged(),
+						getTxnRecord("failedAutoCreate").hasNonStakingChildRecordCount(0).logged(),
 						getAccountInfo("payer").has(
 								accountWith()
 										.balance((initialBalance * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)

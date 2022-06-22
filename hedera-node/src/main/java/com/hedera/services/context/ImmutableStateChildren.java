@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -66,6 +67,7 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleSpecialFiles> specialFiles;
 	private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
 	private final WeakReference<Map<ByteString, EntityNum>> aliases;
+	private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final Instant signedAt;
 
 	public ImmutableStateChildren(ServicesState state) {
@@ -84,6 +86,7 @@ public class ImmutableStateChildren implements StateChildren {
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 		aliases = new WeakReference<>(state.aliases());
+		stakingInfo = new WeakReference<>(state.stakingInfo());
 	}
 
 	@Override
@@ -144,6 +147,11 @@ public class ImmutableStateChildren implements StateChildren {
 	@Override
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return Objects.requireNonNull(uniqueTokens.get());
+	}
+
+	@Override
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return Objects.requireNonNull(stakingInfo.get());
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -85,12 +86,14 @@ class GetAccountInfoResourceUsageTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	private GetAccountInfoResourceUsage subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
+		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
 	}
 
 	@Test
@@ -109,7 +112,7 @@ class GetAccountInfoResourceUsageTest {
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
-		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.of(info));
+		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator)).willReturn(Optional.of(info));
 		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
 		final var usage = subject.usageGiven(query, view);
@@ -134,7 +137,7 @@ class GetAccountInfoResourceUsageTest {
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.empty());
+		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator)).willReturn(Optional.empty());
 
 		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 

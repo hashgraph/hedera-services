@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -167,27 +168,27 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList(),
-						allowanceTransfersWorkAsExpected(),
-						allowanceTransfersWithComplexTransfersWork(),
-						canUseMirrorAliasesForNonContractXfers(),
-						canUseEip1014AliasesForXfers(),
-						cannotTransferFromImmutableAccounts(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList(),
+//						allowanceTransfersWorkAsExpected(),
+//						allowanceTransfersWithComplexTransfersWork(),
+//						canUseMirrorAliasesForNonContractXfers(),
+//						canUseEip1014AliasesForXfers(),
+//						cannotTransferFromImmutableAccounts(),
 //						nftTransfersHaveTransitiveClosure(),
 				}
 		);
@@ -441,9 +442,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var snapshot801 = "801startBalance";
 		final var multiKey = "swiss";
 		final var mutableToken = "token";
+		final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
 		return defaultHapiSpec("CannotTransferFromImmutableAccounts")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "10"
+								)),
 						newKeyNamed(multiKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -453,13 +461,24 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				).when(
 						balanceSnapshot(snapshot800, firstStakingFund),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, firstStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(firstStakingFund).hasTinyBars(changeFromSnapshot(snapshot800, ONE_HBAR)),
+								.signedBy(DEFAULT_PAYER)
+								.exposingFeesTo(feeObs)
+								.logged(),
+						sourcing(() ->
+								getAccountBalance(firstStakingFund)
+										.hasTinyBars(
+												changeFromSnapshot(snapshot800,
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1))))),
 
 						balanceSnapshot(snapshot801, secondStakingFund),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, secondStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(secondStakingFund).hasTinyBars(changeFromSnapshot(snapshot801, ONE_HBAR))
+								.signedBy(DEFAULT_PAYER)
+								.logged(),
+						sourcing(() ->
+								getAccountBalance(secondStakingFund)
+										.hasTinyBars(
+												changeFromSnapshot(snapshot801,
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1)))))
 				).then(
 						// Even the treasury cannot withdraw from an immutable contract
 						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))

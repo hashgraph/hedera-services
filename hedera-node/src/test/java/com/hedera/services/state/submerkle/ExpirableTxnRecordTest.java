@@ -26,6 +26,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -85,6 +86,12 @@ class ExpirableTxnRecordTest {
 	private static final long units = 123L;
 	private static final long initialAllowance = 100L;
 
+	private static final AccountAmount reward1 = AccountAmount.newBuilder()
+			.setAccountID(sponsor)
+			.setAmount(100L).build();
+	private static final AccountAmount reward2 = AccountAmount.newBuilder()
+			.setAccountID(spender)
+			.setAmount(1_000L).build();
 	private static final TokenTransferList nftTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(nft)
 			.addNftTransfers(
@@ -151,6 +158,7 @@ class ExpirableTxnRecordTest {
 				.setScheduleRef(scheduleID)
 				.addAssessedCustomFees(balanceChange.toGrpc())
 				.addAllAutomaticTokenAssociations(newRelationships)
+				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
 				.build();
@@ -164,6 +172,7 @@ class ExpirableTxnRecordTest {
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
+						.addAllPaidStakingRewards(List.of(reward1, reward2))
 						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.setEthereumHash(ByteString.copyFrom(pretendHash))
 						.build());
@@ -406,6 +415,7 @@ class ExpirableTxnRecordTest {
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
 				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
+				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
 				"ethereumHash=6e6f742d7265616c6c792d612d68617368, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -432,6 +442,7 @@ class ExpirableTxnRecordTest {
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
 				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
+				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
 				"ethereumHash=6e6f742d7265616c6c792d612d68617368, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +

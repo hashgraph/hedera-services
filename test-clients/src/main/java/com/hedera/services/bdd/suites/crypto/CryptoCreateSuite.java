@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
@@ -34,11 +35,14 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -49,6 +53,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -84,8 +90,61 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
 				maxAutoAssociationSpec(),
-				usdFeeAsExpected()
+				usdFeeAsExpected(),
+				createAnAccountWithStakingFields()
 		);
+	}
+
+	private HapiApiSpec createAnAccountWithStakingFields() {
+		return defaultHapiSpec("createAnAccountWithStakingFields")
+				.given(
+						cryptoCreate("civilianWORewardStakingNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getAccountInfo("civilianWORewardStakingNode").has(accountWith()
+								.isDeclinedReward(true)
+								.noStakedAccountId()
+								.stakedNodeId(0)
+						)
+				).when(
+						cryptoCreate("civilianWORewardStakingAcc")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(true)
+								.stakedAccountId("0.0.10"),
+						getAccountInfo("civilianWORewardStakingAcc").has(accountWith()
+								.isDeclinedReward(true)
+								.noStakingNodeId()
+								.stakedAccountId("0.0.10"))
+				).then(
+						cryptoCreate("civilianWRewardStakingNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedNodeId(0),
+						getAccountInfo("civilianWRewardStakingNode").has(accountWith()
+										.isDeclinedReward(false)
+										.noStakedAccountId()
+										.stakedNodeId(0)),
+						cryptoCreate("civilianWRewardStakingAcc")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedAccountId("0.0.10"),
+						getAccountInfo("civilianWRewardStakingAcc").has(accountWith()
+								.isDeclinedReward(false)
+								.noStakingNodeId()
+								.stakedAccountId("0.0.10")),
+						/* --- sentiel values throw ---*/
+						cryptoCreate("invalidStakedAccount")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedAccountId("0.0.0")
+								.hasPrecheck(INVALID_STAKING_ID),
+						cryptoCreate("invalidStakedNode")
+								.balance(ONE_HUNDRED_HBARS)
+								.declinedReward(false)
+								.stakedNodeId(-1L)
+								.hasPrecheck(INVALID_STAKING_ID)
+				);
 	}
 
 	private HapiApiSpec maxAutoAssociationSpec() {
@@ -171,7 +230,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.blankMemo()
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
-								.payingWith("civilian")
+								.payingWith("civilian"),
+						getTxnRecord(tenAutoAssocSlots).logged()
 				).then(
 						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
 						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
@@ -243,7 +303,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -258,7 +318,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -292,19 +352,19 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.keyShape(thresholdShape)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount2")
 								.key("regKey1")
 								.balance(initialBalance)
 								.logged()
 								.signedBy(GENESIS)
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount3")
 								.key("regKey2")
 								.balance(initialBalance)
 								.logged()
 								.signedBy(GENESIS)
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -326,11 +386,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("noKeys")
 								.keyShape(shape0).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("noKeys")
 								.keyShape(shape4).balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -346,12 +406,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.keyShape(thresholdShape0)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("badThresholdKeyAccount2")
 								.keyShape(thresholdShape4)
 								.balance(initialBalance)
 								.logged()
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -371,7 +431,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.balance(initialBalance)
 								.signedBy(GENESIS)
 								.logged()
-								.hasPrecheck(BAD_ENCODING),
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						cryptoCreate("emptyKey")
 								.key("emptyKey")
 								.balance(initialBalance)

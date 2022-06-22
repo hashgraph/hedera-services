@@ -115,6 +115,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -436,7 +437,7 @@ class MintPrecompilesTest {
 		// when:
 		final var result = subject.computePrecompile(pretendArguments, frame);
 		// then:
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 		verify(wrappedLedgers, never()).commit();
 		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}

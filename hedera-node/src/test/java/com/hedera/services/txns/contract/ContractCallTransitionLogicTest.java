@@ -54,7 +54,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +73,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	private int gas = 1_234;
+	private long gas = 1_234;
 	private long sent = 1_234L;
 	private static final long maxGas = 666_666L;
 	private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
@@ -297,7 +296,7 @@ class ContractCallTransitionLogicTest {
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
 	}
@@ -305,7 +304,7 @@ class ContractCallTransitionLogicTest {
 	@Test
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas - 1);
+		given(properties.maxGasPerSec()).willReturn(gas - 1);
 		// expect:
 		assertEquals(MAX_GAS_LIMIT_EXCEEDED,
 				subject.semanticCheck().apply(contractCallTxn));

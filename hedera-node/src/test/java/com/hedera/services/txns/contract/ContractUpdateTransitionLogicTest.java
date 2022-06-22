@@ -20,9 +20,11 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
@@ -53,19 +55,24 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -99,6 +106,7 @@ class ContractUpdateTransitionLogicTest {
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	private GlobalDynamicProperties dynamicProperties;
 	private ContractUpdateTransitionLogic subject;
+	private NodeInfo nodeInfo;
 
 	@BeforeEach
 	private void setup() {
@@ -116,10 +124,11 @@ class ContractUpdateTransitionLogicTest {
 		aliasManager = mock(AliasManager.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 
+		nodeInfo = mock(NodeInfo.class);
 
 		subject = new ContractUpdateTransitionLogic(
 				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts,
-				dynamicProperties);
+				dynamicProperties, nodeInfo);
 	}
 
 	@Test
@@ -200,6 +209,7 @@ class ContractUpdateTransitionLogicTest {
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -207,7 +217,8 @@ class ContractUpdateTransitionLogicTest {
 
 	@Test
 	void acceptsOmittedAutoRenew() {
-		givenValidTxnCtx(false, false);
+		givenValidTxnCtx(false, false, false, false);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -245,12 +256,64 @@ class ContractUpdateTransitionLogicTest {
 		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
-	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false);
+	@Test
+	void failsForDeclineRewardIfStakingDisabled() {
+		givenValidTxnCtx(true, false, false, true);
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
-	private void givenValidTxnCtx(boolean useAutoRenew, boolean useMaxAutoAssociations) {
-		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+	@Test
+	void failsForInvalidStakingId() {
+		givenValidTxnCtxWithStaking();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractUpdateTxn));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedAccountId(asAccount("0.0.0"))).build();
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedNodeId(-1L)).build();
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedAccountId(asAccount("0.0.-1"))).build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
+
+		contractUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target)
+								.setStakedNodeId(-3L)).build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
+	}
+
+	@Test
+	void failsForProxyId() {
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractUpdateInstance(
@@ -258,6 +321,36 @@ class ContractUpdateTransitionLogicTest {
 								.setMemo(memo)
 								.setContractID(target)
 								.setProxyAccountID(proxy));
+
+		contractUpdateTxn = op.build();
+		given(accessor.getTxn()).willReturn(contractUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(contracts.get(EntityNum.fromContractId(target))).willReturn(contract);
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractUpdateTxn));
+	}
+
+	private void givenValidTxnCtx() {
+		givenValidTxnCtx(true, false, false, false);
+	}
+
+	private void givenValidTxnCtxWithStaking() {
+		givenValidTxnCtx(true, false, true, true);
+	}
+
+	private void givenValidTxnCtx(
+			boolean useAutoRenew,
+			boolean useMaxAutoAssociations,
+			boolean stakingIdSet,
+			boolean declineReward
+	) {
+		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setContractID(target));
 		if (useAutoRenew) {
 			op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
 			op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));
@@ -265,6 +358,12 @@ class ContractUpdateTransitionLogicTest {
 		if (useMaxAutoAssociations) {
 			op.getContractUpdateInstanceBuilder().setMaxAutomaticTokenAssociations(
 					Int32Value.of(maxAutoAssociations));
+		}
+		if (stakingIdSet) {
+			op.getContractUpdateInstanceBuilder().setStakedNodeId(10L);
+		}
+		if (declineReward) {
+			op.getContractUpdateInstanceBuilder().setDeclineReward(BoolValue.of(true));
 		}
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
@@ -334,7 +433,7 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
-		givenValidTxnCtx(true, true);
+		givenValidTxnCtx(true, true, false, false);
 	}
 
 	private void withRubberstampingValidator() {

@@ -22,6 +22,7 @@ package com.hedera.services.state.migration;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -45,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -52,7 +54,6 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
-import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -81,6 +82,7 @@ public class MigrationRecordsManager {
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AccountNumbers accountNumbers;
 
 	@Inject
 	public MigrationRecordsManager(
@@ -90,7 +92,8 @@ public class MigrationRecordsManager {
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final ConsensusTimeTracker consensusTimeTracker,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final SyntheticTxnFactory syntheticTxnFactory
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final AccountNumbers accountNumbers
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
@@ -99,6 +102,7 @@ public class MigrationRecordsManager {
 		this.creator = creator;
 		this.accounts = accounts;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.accountNumbers = accountNumbers;
 	}
 
 	/**
@@ -114,10 +118,15 @@ public class MigrationRecordsManager {
 			return;
 		}
 
-		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
+		// After release 0.24.1, we publish creation records for 0.0.800 [stakingRewardAccount] and
+		// 0.0.801 [nodeRewardAccount] _only_ on a network reset
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+			final var stakingFundAccounts = List.of(
+					EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
+					EntityNum.fromLong(accountNumbers.nodeRewardAccount())
+			);
+			stakingFundAccounts.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
 		} else {
 			// Publish free auto-renewal migration records if expiry is just being enabled
 			if (expiryJustEnabled) {
