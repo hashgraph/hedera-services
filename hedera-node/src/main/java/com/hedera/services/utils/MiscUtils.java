@@ -240,8 +240,7 @@ public final class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
 			NetworkGetExecutionTime,
-			GetAccountDetails,
-			RandomGenerate
+			GetAccountDetails
 	);
 
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
@@ -717,7 +716,7 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
-		if(txn.hasRandomGenerate()){
+		if (txn.hasRandomGenerate()) {
 			return RandomGenerate;
 		}
 		throw new UnknownHederaFunctionality();
@@ -822,7 +821,7 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
-		}else if(scheduledTxn.hasRandomGenerate()){
+		} else if (scheduledTxn.hasRandomGenerate()) {
 			ordinary.setRandomGenerate(scheduledTxn.getRandomGenerate());
 		}
 		return ordinary.build();
@@ -830,11 +829,12 @@ public final class MiscUtils {
 
 
 	/**
-	 * @param functionality any {@link HederaFunctionality}
+	 * @param functionality
+	 * 		any {@link HederaFunctionality}
 	 * @return true if the functionality could possibly be allowed to be scheduled.
-	 * Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
-	 * The scheduling.whitelist configuration property is separate from this and provides the final list
-	 * of functionality that can be scheduled.
+	 * 		Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
+	 * 		The scheduling.whitelist configuration property is separate from this and provides the final list
+	 * 		of functionality that can be scheduled.
 	 */
 	public static boolean isSchedulable(final HederaFunctionality functionality) {
 		if (functionality == null) {

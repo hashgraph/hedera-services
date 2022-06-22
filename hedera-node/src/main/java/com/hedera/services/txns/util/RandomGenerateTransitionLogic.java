@@ -15,8 +15,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class RandomGenerateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
@@ -35,13 +37,9 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
+		final var pseudoRandomBytes = runningHashLeafSupplier.get().getRunningHash().getHash().getValue();
+
 		final var range = op.getRange();
-		byte[] pseudoRandomBytes;
-		try {
-			pseudoRandomBytes = runningHashLeafSupplier.get().currentRunningHash().getValue();
-		} catch (InterruptedException ignore) {
-			pseudoRandomBytes = new byte[MAX_PSEUDORANDOM_LENGTH];
-		}
 
 		if (range > 0) {
 			final var initialBits = Arrays.copyOf(pseudoRandomBytes, 32);
@@ -51,6 +49,7 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		} else {
 			sideEffectsTracker.trackPseudoRandomBytes(pseudoRandomBytes);
 		}
+		txnCtx.setStatus(SUCCESS);
 	}
 
 	@Override
