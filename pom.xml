@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.26.0-SNAPSHOT</version>
+	<version>0.27.0-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -106,6 +106,14 @@
 			<id>central</id>
 			<name>Central Repository</name>
 			<url>https://repo.maven.apache.org/maven2</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>proto-staging</id>
+			<name>Protobufs staging</name>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1502</url>
 		</repository>
 		<repository>
 			<snapshots>
@@ -215,7 +223,7 @@
 
 		<!-- Dependency properties in alphabetical order -->
 		<besu.version>22.4.1</besu.version>
-		<besu-native.version>0.4.3</besu-native.version>
+		<besu-native.version>0.5.0</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
 		<commons-io.version>2.11.0</commons-io.version>
@@ -225,7 +233,7 @@
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.1-jre</guava.version>
-		<hapi-proto.version>0.27.1-v6-SNAPSHOT</hapi-proto.version>
+		<hapi-proto.version>0.27.0-alpha.7</hapi-proto.version>
 		<headlong.version>6.1.1</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>

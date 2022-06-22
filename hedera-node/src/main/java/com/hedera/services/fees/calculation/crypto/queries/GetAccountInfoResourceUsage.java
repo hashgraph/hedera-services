@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -39,15 +40,18 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 	private final CryptoOpsUsage cryptoOpsUsage;
 	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final RewardCalculator rewardCalculator;
 
 	@Inject
 	public GetAccountInfoResourceUsage(
 			final CryptoOpsUsage cryptoOpsUsage,
 			final AliasManager aliasManager,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties,
+			final RewardCalculator rewardCalculator) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 		this.aliasManager = aliasManager;
 		this.dynamicProperties = dynamicProperties;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	@Override
@@ -60,7 +64,8 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 		final var op = query.getCryptoGetInfo();
 
 		final var account = op.getAccountID();
-		final var info = view.infoForAccount(account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+		final var info = view.infoForAccount(
+				account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

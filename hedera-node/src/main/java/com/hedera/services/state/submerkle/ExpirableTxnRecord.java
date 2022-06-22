@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -65,10 +66,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
-	static final int RELEASE_0230_VERSION = 7;
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0260_VERSION = 9;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 10;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
@@ -91,6 +92,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private TxnReceipt receipt;
 	private RichInstant consensusTime;
 	private CurrencyAdjustments hbarAdjustments;
+	private CurrencyAdjustments stakingRewardsPaid;
 	private EvmFnResult contractCallResult;
 	private EvmFnResult contractCreateResult;
 	// IMPORTANT: This class depends on the invariant that if any of the
@@ -125,6 +127,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.memo = builder.memo;
 		this.fee = builder.fee;
 		this.hbarAdjustments = builder.hbarAdjustments;
+		this.stakingRewardsPaid = builder.stakingRewardsPaid;
 		this.contractCallResult = builder.contractCallResult;
 		this.contractCreateResult = builder.contractCreateResult;
 		this.tokens = builder.tokens;
@@ -156,6 +159,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("contractCreation", contractCreateResult)
 				.add("contractCall", contractCallResult)
 				.add("hbarAdjustments", hbarAdjustments)
+				.add("stakingRewardsPaid", stakingRewardsPaid)
 				.add("scheduleRef", scheduleRef)
 				.add("alias", alias.toStringUtf8())
 				.add("ethereumHash", CommonUtils.hex(ethereumHash));
@@ -224,6 +228,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.contractCallResult, that.contractCallResult) &&
 				Objects.equals(this.contractCreateResult, that.contractCreateResult) &&
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
+				Objects.equals(this.stakingRewardsPaid, that.stakingRewardsPaid) &&
 				Objects.equals(this.tokens, that.tokens) &&
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
 				Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
@@ -244,6 +249,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				contractCallResult,
 				contractCreateResult,
 				hbarAdjustments,
+				stakingRewardsPaid,
 				expiry,
 				submittingMember,
 				tokens,
@@ -272,7 +278,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0230_VERSION;
+		return RELEASE_0250_VERSION;
 	}
 
 	@Override
@@ -318,6 +324,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		out.writeByteArray(alias.toByteArray());
 		out.writeByteArray(ethereumHash);
+		writeNullableSerializable(stakingRewardsPaid, out);
 	}
 
 	@Override
@@ -363,6 +370,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		// Added in 0.26
 		if (version >= RELEASE_0260_VERSION) {
 			ethereumHash = in.readByteArray(Integer.MAX_VALUE);
+		}
+		// Added in 0.27
+		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsPaid = readNullableSerializable(in);
 		}
 	}
 
@@ -440,10 +451,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public EvmFnResult getContractCreateResult() {
 		return contractCreateResult;
-	}
-
-	public CurrencyAdjustments getHbarAdjustments() {
-		return hbarAdjustments;
 	}
 
 	public long getExpiry() {
@@ -537,6 +544,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (hbarAdjustments != null) {
 			grpc.setTransferList(hbarAdjustments.toGrpc());
 		}
+		if (stakingRewardsPaid != null) {
+			grpc.addAllPaidStakingRewards(stakingRewardsPaid.asAccountAmountsList());
+		}
 		if (contractCallResult != null) {
 			grpc.setContractCallResult(contractCallResult.toGrpc());
 		}
@@ -602,6 +612,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 		private short numChildRecords = NO_CHILD_TRANSACTIONS;
 		private CurrencyAdjustments hbarAdjustments;
+		private CurrencyAdjustments stakingRewardsPaid;
 		private EvmFnResult contractCallResult;
 		private EvmFnResult contractCreateResult;
 		private List<EntityId> tokens;
@@ -652,6 +663,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public Builder setHbarAdjustments(CurrencyAdjustments hbarAdjustments) {
 			this.hbarAdjustments = hbarAdjustments;
+			return this;
+		}
+
+		public Builder setStakingRewardsPaid(CurrencyAdjustments stakingRewardsPaid) {
+			this.stakingRewardsPaid = stakingRewardsPaid;
 			return this;
 		}
 
@@ -796,6 +812,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		private void nullOutSideEffectFields(boolean removeCallResult) {
 			hbarAdjustments = null;
+			stakingRewardsPaid = null;
 			contractCreateResult = null;
 			tokens = NO_TOKENS;
 			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
@@ -813,6 +830,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public CurrencyAdjustments getHbarAdjustments() {
 			return hbarAdjustments;
+		}
+
+		public CurrencyAdjustments getStakingRewardsPaid() {
+			return stakingRewardsPaid;
 		}
 
 		public EvmFnResult getContractCallResult() {
@@ -871,5 +892,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
 		}
+	}
+
+	@VisibleForTesting
+	void clearStakingRewardsPaid() {
+		stakingRewardsPaid = null;
 	}
 }

@@ -346,11 +346,11 @@ class E2EPackageRunner {
 	@Tag("contract.openzeppelin.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpenZeppelinEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -433,7 +433,7 @@ class E2EPackageRunner {
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
-		return List.of(new DynamicContainer[]{
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
 				extractSpecsFromSuiteForEth(ContractCallSuite::new),
 				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
@@ -791,7 +791,8 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
+											" " +
 											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");

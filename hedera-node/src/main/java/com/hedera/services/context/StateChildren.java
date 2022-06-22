@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -67,6 +68,8 @@ public interface StateChildren {
 	MerkleSpecialFiles specialFiles();
 
 	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
+
+	MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
 
 	RecordsRunningHashLeaf runningHashLeaf();
 

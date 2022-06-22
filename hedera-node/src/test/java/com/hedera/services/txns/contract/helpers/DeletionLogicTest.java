@@ -107,6 +107,7 @@ class DeletionLogicTest {
 		final var deleted = subject.performFor(op);
 		verify(ledger).delete(id.toGrpcAccountId(), obtainer);
 		assertEquals(deleted, id.toGrpcContractID());
+		assertEquals(obtainer, subject.getLastObtainer());
 		verify(sigImpactHistorian).markEntityChanged(id.longValue());
 	}
 

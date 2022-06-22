@@ -96,7 +96,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					var op = query.getContractCallLocal();
 					if (op.getGas() < 0) {
 						return CONTRACT_NEGATIVE_GAS;
-					} else if (op.getGas() > dynamicProperties.maxGas()) {
+					} else if (op.getGas() > dynamicProperties.maxGasPerSec()) {
 						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
 						if (entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(op.getContractID()))) {

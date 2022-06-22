@@ -97,12 +97,18 @@ public class UtilStateChange {
 		cryptoTransfer.execFor(spec);
 		idLookup.execFor(spec);
 
-		final var childRecord = idLookup.getChildRecord(0);
-		final var autoCreatedId = childRecord.getReceipt().getAccountID();
-		log.info("Auto-created {} 0.0.{}", accountName, autoCreatedId.getAccountNum());
-		final var registry = spec.registry();
-		registry.saveAccountId(accountName, autoCreatedId);
-		registry.saveKey(accountName, registry.getKey(secp256k1Key));
+		final var children = idLookup.getChildRecords();
+		for (int i = 0, n = children.size(); i < n; i++) {
+			final var childRecord = idLookup.getChildRecord(i);
+			final var autoCreatedId = childRecord.getReceipt().getAccountID();
+			if (autoCreatedId.getAccountNum() > 1000L) {
+				log.info("Auto-created {} 0.0.{}", accountName, autoCreatedId.getAccountNum());
+				final var registry = spec.registry();
+				registry.saveAccountId(accountName, autoCreatedId);
+				registry.saveKey(accountName, registry.getKey(secp256k1Key));
+				break;
+			}
+		}
 	}
 
 	public static boolean isEthereumAccountCreatedForSpec(final HapiApiSpec spec) {

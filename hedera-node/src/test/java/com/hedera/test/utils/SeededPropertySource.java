@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -358,13 +359,18 @@ public class SeededPropertySource {
 				0,
 				null,
 				0,
-				0);
+				0,
+				0,
+				-1,
+				0,
+				false,
+				-1);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
 	}
 
-	public MerkleAccountState next0260AccountState() {
+	public MerkleAccountState nextAccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
@@ -400,6 +406,11 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextEntityId(),
 				nextInRangeLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextInRangeLong(),
+				nextBoolean(),
 				nextUnsignedLong());
 	}
 
@@ -449,6 +460,9 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
 		}
+		if (nextBoolean()) {
+			builder.setStakingRewardsPaid(nextCurrencyAdjustments());
+		}
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
@@ -461,7 +475,21 @@ public class SeededPropertySource {
 		return seeded;
 	}
 
-	public MerkleNetworkContext nextNetworkContext() {
+	public MerkleStakingInfo nextStakingInfo() {
+		final var MAX_REWARD_HISTORY = 366;
+		final var ans = new MerkleStakingInfo(
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLongs(MAX_REWARD_HISTORY));
+		return ans;
+	}
+
+	public MerkleNetworkContext next0260NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
@@ -473,7 +501,7 @@ public class SeededPropertySource {
 		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
 		seeded.setStateVersion(nextUnsignedInt());
 		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
-		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
+		nextNullableInstant();
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
@@ -482,6 +510,34 @@ public class SeededPropertySource {
 		for (int i = 0; i < numBlocks; i++) {
 			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
 		}
+		return seeded;
+	}
+
+	public MerkleNetworkContext next0270NetworkContext() {
+		final var numThrottles = 5;
+		final var seeded = new MerkleNetworkContext();
+		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
+		seeded.setSeqNo(nextSeqNo());
+		seeded.updateLastScannedEntity(nextInRangeLong());
+		seeded.setMidnightRates(nextExchangeRates());
+		seeded.setUsageSnapshots(nextUsageSnapshots(numThrottles));
+		seeded.setGasThrottleUsageSnapshot(nextUsageSnapshot());
+		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
+		seeded.setStateVersion(nextUnsignedInt());
+		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
+		seeded.setPreparedUpdateFileNum(nextInRangeLong());
+		seeded.setPreparedUpdateFileHash(nextBytes(48));
+		seeded.setMigrationRecordsStreamed(nextBoolean());
+		final var numBlocks = nextNonZeroInt(16);
+		final var anInstant = nextInstant();
+		for (int i = 0; i < numBlocks; i++) {
+			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
+		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
 		return seeded;
 	}
 
