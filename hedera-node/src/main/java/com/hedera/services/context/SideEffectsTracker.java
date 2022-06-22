@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.crypto.RunningHash;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
@@ -422,6 +423,9 @@ public class SideEffectsTracker {
 			}
 		}
 		return all;
+	}
+
+	public void trackPseudoRandomBytes(final RunningHash pseudoRandomBytes) {
 	}
 
 	/**
