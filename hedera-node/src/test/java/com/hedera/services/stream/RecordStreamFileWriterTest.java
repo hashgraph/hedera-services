@@ -50,6 +50,7 @@ import java.util.stream.Stream;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -168,9 +169,87 @@ class RecordStreamFileWriterTest {
 				secondBlockMetadataSignature);
 	}
 
+	@Test
+	void objectsFromDifferentPeriodsButWithSameAlignmentAreExternalizedInSameFile()
+			throws IOException, NoSuchAlgorithmException {
+		// given
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
+		given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+		given(signer.sign(any()))
+				.willReturn(firstBlockEntireFileSignature)
+				.willReturn(firstBlockMetadataSignature);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 9, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		// set initial running hash
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+
+		// when
+		// generate 2 RSOs for block #1, where the second RSO is in different period, but with same alignment (block)
+		final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant);
+		firstBlockRSOs.addAll(generateNRecordStreamObjectsForBlockMStartingFromT(1, 1,
+				firstTransactionInstant.plusSeconds(2 * (logPeriodMs / 1000))));
+		// RSOs for second block to trigger externalization of first block
+		final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(1, 2,
+				firstTransactionInstant.plusSeconds(3 * (logPeriodMs / 1000)));
+		Stream.of(firstBlockRSOs, secondBlockRSOs)
+				.flatMap(Collection::stream)
+				.forEach(subject::addObject);
+
+		// then
+		assertRecordStreamFiles(
+				1L,
+				firstBlockRSOs,
+				startRunningHash,
+				firstBlockEntireFileSignature,
+				firstBlockMetadataSignature);
+	}
+
+	@Test
+	void alignmentIsIgnoredForObjectsWithNoAlignment() throws IOException, NoSuchAlgorithmException {
+		// given
+		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+		given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
+		given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+		given(signer.sign(any()))
+				.willReturn(firstBlockEntireFileSignature)
+				.willReturn(firstBlockMetadataSignature);
+		final var firstTransactionInstant = LocalDateTime.of(2022, 10, 24, 16, 2, 55).toInstant(ZoneOffset.UTC);
+		// set initial running hash
+		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+		final var startRunningHash = new Hash(messageDigest.digest());
+		subject.setRunningHash(startRunningHash);
+
+		// when
+		// generate 2 RSOs for block #1 without alignment; should be externalized in same record file
+		final var firstBlockRSOs =
+				generateNRecordStreamObjectsForBlockMStartingFromT(2, NO_ALIGNMENT, firstTransactionInstant);
+		// generate 1 RSO in next block to trigger externalization of previous file; even though alignments are equal,
+		// when they are NO_ALIGNMENT, we ignore it and start a new file regardless
+		final var secondBlockRSOs =
+				generateNRecordStreamObjectsForBlockMStartingFromT(1, NO_ALIGNMENT,
+						firstTransactionInstant.plusSeconds(4 * (logPeriodMs / 1000)));
+		Stream.of(firstBlockRSOs, secondBlockRSOs)
+				.flatMap(Collection::stream)
+				.forEach(subject::addObject);
+
+		// then
+		assertRecordStreamFiles(
+				NO_ALIGNMENT,
+				firstBlockRSOs,
+				startRunningHash,
+				firstBlockEntireFileSignature,
+				firstBlockMetadataSignature);
+	}
+
 	private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
 			final int numberOfRSOs,
-			final int blockNumber,
+			final long blockNumber,
 			final Instant firstBlockTransactionInstant)
 	{
 		final var recordStreamObjects = new ArrayList<RecordStreamObject>();
@@ -191,7 +270,7 @@ class RecordStreamFileWriterTest {
 							transaction.build(),
 							Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos())
 					);
-			final var hashInput = (HASH_PREFIX + (blockNumber + i)).getBytes(StandardCharsets.UTF_8);
+			final var hashInput = recordStreamObject.toString().getBytes(StandardCharsets.UTF_8);
 			recordStreamObject.getRunningHash().setHash(new Hash(messageDigest.digest(hashInput)));
 			recordStreamObject.withBlockNumber(blockNumber);
 			recordStreamObjects.add(recordStreamObject);
@@ -263,10 +342,10 @@ class RecordStreamFileWriterTest {
 			assertEquals(expectedRSO.getTransactionRecord(), actualRSOProto.getRecord());
 		}
 
-		// assert endRunningHash
-		final var expectedHashInput = (HASH_PREFIX + (recordStreamFile.getBlockNumber() + (blockRSOs.size() - 1)))
-				.getBytes(StandardCharsets.UTF_8);
-		final Hash expectedEndRunningHash = new Hash(messageDigest.digest(expectedHashInput));
+		// assert endRunningHash - should be the hash of the last RSO from the block
+		final var expectedHashInput =
+				blockRSOs.get(blockRSOs.size() - 1).toString().getBytes(StandardCharsets.UTF_8);
+		final var expectedEndRunningHash = new Hash(messageDigest.digest(expectedHashInput));
 		assertEquals(toProto(expectedEndRunningHash), recordStreamFile.getEndObjectRunningHash());
 
 		assertTrue(logCaptor.debugLogs().contains("closeCurrentAndSign :: write endRunningHash "
@@ -627,7 +706,6 @@ class RecordStreamFileWriterTest {
 	}
 
 	private final static long logPeriodMs = 2000L;
-	private static final String HASH_PREFIX = "randomPrefix";
 	private static final int RECORD_STREAM_VERSION = 6;
 	private static final int[] FILE_HEADER_VALUES = {
 			RECORD_STREAM_VERSION,

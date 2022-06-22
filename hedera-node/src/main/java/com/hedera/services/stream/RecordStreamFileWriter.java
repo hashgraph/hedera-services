@@ -37,6 +37,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStream;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,6 +54,7 @@ import java.time.Instant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
@@ -82,7 +84,8 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	private final MessageDigest metadataStreamDigest;
 
 	/**
-	 * output stream for digesting metaData
+	 * Output stream for digesting metaData. Metadata should be written to this stream. Any data written to this
+	 * stream is used to generate a running metadata hash.
 	 */
 	private SerializableDataOutputStream dosMeta = null;
 
@@ -97,17 +100,19 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	private final Signer signer;
 
 	/**
-	 * period of generating record stream files in ms
+	 * The desired amount of time that data should be written into a file before starting a new file.
 	 */
 	private final long logPeriodMs;
 
 	/**
-	 * initially, set to be consensus timestamp of the first object;
-	 * start to write a new file when the next object's consensus timestamp is in different periods with
-	 * lastConsensusTimestamp;
-	 * update its value each time receives a new object
+	 * The previous object that was passed to the stream.
 	 */
-	private Instant lastConsensusTimestamp;
+	private T previousObject;
+
+	/**
+	 * Tracks if the previous object was held back in the previous file due to its alignment.
+	 */
+	private boolean previousHeldBackByAlignment;
 
 	/**
 	 * if it is true, we don't write object stream file until the first complete window. This is suitable for streaming
@@ -143,7 +148,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 
 	@Override
 	public void addObject(T object) {
-		if (checkIfShouldWriteNewFile(object)) {
+		if (shouldStartNewFile(object)) {
 			// if we are currently writing a file,
 			// finish current file and generate signature file
 			closeCurrentAndSign();
@@ -163,30 +168,57 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	}
 
 	/**
-	 * check whether need to start a new file
+	 * <p>
+	 * Check whether the provided object needs to be written into a new file, or if it should be written
+	 * into the current file.
+	 * </p>
 	 *
-	 * @param object
-	 * 		the object to be written into file
-	 * @return whether we should start a new File for writing this object
+	 * <p>
+	 * Time is divided into windows determined by provided configuration. An object is chosen to start a new file
+	 * if it is the first encountered object with a timestamp in the next window -- as long as the object has
+	 * a different stream alignment than the previous object. If an object has a matching stream alignment as the
+	 * previous object then it is always placed in the same file as the previous object. Alignment is ignored for
+	 * objects with {@link StreamAligned#NO_ALIGNMENT}.
+	 * </p>
+	 *
+	 * @param nextObject
+	 * 		the object currently being added to the stream
+	 * @return whether the object should be written into a new file
 	 */
-	public boolean checkIfShouldWriteNewFile(T object) {
-		Instant currentConsensusTimestamp = object.getTimestamp();
-		boolean result;
-		if (lastConsensusTimestamp == null && !startWriteAtCompleteWindow) {
-			// this is the first object, we should start writing it to new File
-			result = true;
-		} else if (lastConsensusTimestamp == null) {
-			// this is the first object, we should wait for the first complete window
-			result = false;
-		} else {
-			// if lastConsensusTimestamp and currentConsensusTimestamp are in different periods,
-			// we should start a new file
-			result =
-					getPeriod(lastConsensusTimestamp, logPeriodMs) != getPeriod(currentConsensusTimestamp, logPeriodMs);
+	private boolean shouldStartNewFile(final T nextObject) {
+		try {
+			if (previousObject == null) {
+				// This is the first object. It may be the first thing in a file, but it is impossible
+				// to make that determination at this point in time.
+				return !startWriteAtCompleteWindow;
+			} else {
+				// Check if this object is in a different period than the previous object.
+				final long previousPeriod = getPeriod(previousObject.getTimestamp(), logPeriodMs);
+				final long currentPeriod = getPeriod(nextObject.getTimestamp(), logPeriodMs);
+				final boolean differentPeriod = previousPeriod != currentPeriod;
+
+				// Check if this object has a different alignment than the previous object. Objects with NO_ALIGNMENT
+				// are always considered to be unaligned with any other object.
+				final boolean differentAlignment =
+						previousObject.getStreamAlignment() != nextObject.getStreamAlignment() ||
+								nextObject.getStreamAlignment() == NO_ALIGNMENT;
+
+				// If this object is in a new period with respect to the current file, and no
+				// objects have yet been written to the next file.
+				final boolean timestampIsEligibleForNextFile = previousHeldBackByAlignment || differentPeriod;
+
+				if (timestampIsEligibleForNextFile && !differentAlignment) {
+					// This object has the same alignment as the one that came before it, so we must hold it back.
+					previousHeldBackByAlignment = true;
+					return false;
+				}
+
+				previousHeldBackByAlignment = false;
+				return timestampIsEligibleForNextFile;
+			}
+		} finally {
+			previousObject = nextObject;
 		}
-		// update lastConsensusTimestamp
-		lastConsensusTimestamp = currentConsensusTimestamp;
-		return result;
 	}
 
 	/**
