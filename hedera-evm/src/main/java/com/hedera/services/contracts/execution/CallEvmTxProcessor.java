@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.CodeCacheProvider;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
@@ -49,7 +49,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
-	private final CodeCache codeCache;
+	private final CodeCacheProvider codeCache;
 	private final AliasManager aliasManager;
 	private final StorageExpiry storageExpiry;
 
@@ -57,7 +57,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	public CallEvmTxProcessor(
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
-			final CodeCache codeCache,
+			final CodeCacheProvider codeCache,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,

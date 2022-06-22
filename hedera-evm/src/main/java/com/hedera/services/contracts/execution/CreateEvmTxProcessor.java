@@ -23,7 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.CodeCacheProvider;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
@@ -50,14 +50,14 @@ import java.util.Set;
  */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
-	private final CodeCache codeCache;
+	private final CodeCacheProvider codeCache;
 	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CreateEvmTxProcessor(
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
-			final CodeCache codeCache,
+			final CodeCacheProvider codeCache,
 			final GlobalDynamicProperties globalDynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
