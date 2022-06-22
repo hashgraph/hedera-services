@@ -38,7 +38,7 @@ import static com.hedera.services.context.properties.EntityType.ACCOUNT;
 import static com.hedera.services.context.properties.EntityType.CONTRACT;
 
 @Singleton
-public class GlobalDynamicProperties {
+public class GlobalDynamicProperties implements PropertiesProvider {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
@@ -285,6 +285,7 @@ public class GlobalDynamicProperties {
 		return maxFileSizeKb;
 	}
 
+	@Override
 	public AccountID fundingAccount() {
 		return fundingAccount;
 	}
@@ -345,6 +346,7 @@ public class GlobalDynamicProperties {
 		return maxGas;
 	}
 
+	@Override
 	public int chainId() {
 		return chainId;
 	}
@@ -465,6 +467,7 @@ public class GlobalDynamicProperties {
 		return throttleByGas;
 	}
 
+	@Override
 	public int maxGasRefundPercentage() {
 		return contractMaxRefundPercentOfGasLimit;
 	}
@@ -521,6 +524,7 @@ public class GlobalDynamicProperties {
 		return exportPrecompileResults;
 	}
 
+	@Override
 	public boolean shouldEnableTraceability() {
 		return enableTraceability;
 	}

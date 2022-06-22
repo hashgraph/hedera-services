@@ -22,7 +22,7 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertiesProvider;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
@@ -58,7 +58,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
 			final CodeCache codeCache,
-			final GlobalDynamicProperties dynamicProperties,
+			final PropertiesProvider propertiesProvider,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
@@ -69,7 +69,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 		super(
 				worldState,
 				livePricesSource,
-				dynamicProperties,
+				propertiesProvider,
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,

@@ -22,7 +22,7 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertiesProvider;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -87,11 +87,11 @@ abstract class EvmTxProcessor {
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
-	protected final GlobalDynamicProperties dynamicProperties;
+	protected final PropertiesProvider propertiesProvider;
 
 	protected EvmTxProcessor(
 			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
+			final PropertiesProvider propertiesProvider,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap
@@ -99,7 +99,7 @@ abstract class EvmTxProcessor {
 		this(
 				null,
 				livePricesSource,
-				dynamicProperties,
+				propertiesProvider,
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
@@ -117,7 +117,7 @@ abstract class EvmTxProcessor {
 	protected EvmTxProcessor(
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
+			final PropertiesProvider propertiesProvider,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
@@ -125,11 +125,11 @@ abstract class EvmTxProcessor {
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
-		this.dynamicProperties = dynamicProperties;
+		this.propertiesProvider = propertiesProvider;
 		this.gasCalculator = gasCalculator;
 
 		var operationRegistry = new OperationRegistry();
-		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
+		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(propertiesProvider.chainId()));
 		hederaOperations.forEach(operationRegistry::put);
 
 		final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -242,7 +242,7 @@ abstract class EvmTxProcessor {
 			}
 		}
 
-		final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+		final var coinbase = Id.fromGrpcAccount(propertiesProvider.fundingAccount()).asEvmAddress();
 		final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
 		final var gasAvailable = gasLimit - intrinsicGas;
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -312,7 +312,7 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-			if (dynamicProperties.shouldEnableTraceability()) {
+			if (propertiesProvider.shouldEnableTraceability()) {
 				stateChanges = updater.getFinalStateChanges();
 			} else {
 				stateChanges = Map.of();
@@ -354,7 +354,7 @@ abstract class EvmTxProcessor {
 
 		gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
-		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		final var maxRefundPercent = propertiesProvider.maxGasRefundPercentage();
 		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
 		return gasUsedByTransaction;
