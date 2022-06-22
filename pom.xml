@@ -477,11 +477,6 @@
 			</dependency>
 			<dependency>
 				<groupId>org.hyperledger.besu</groupId>
-				<artifactId>bls12-381</artifactId>
-				<version>${besu-native.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.hyperledger.besu</groupId>
 				<artifactId>secp256k1</artifactId>
 				<version>${besu-native.version}</version>
 			</dependency>
@@ -489,6 +484,16 @@
 				<groupId>org.hyperledger.besu</groupId>
 				<artifactId>evm</artifactId>
 				<version>${besu.version}</version>
+				<exclusions>
+				<exclusion>
+					<groupId>org.hyperledger.besu</groupId>
+					<artifactId>secp256r1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.hyperledger.besu</groupId>
+					<artifactId>bls12-381</artifactId>
+				</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.hyperledger.besu</groupId>

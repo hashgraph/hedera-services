@@ -30,7 +30,10 @@ dependencies {
 
     implementation(project(":hapi-fees"))
     implementation(project(":hapi-utils"))
-    implementation(libs.bundles.besu)
+    implementation(libs.bundles.besu) {
+        exclude(group="org.hyperledger.besu", module="secp256r1")
+        exclude(group="org.hyperledger.besu", module="bls12-381")
+    }
     implementation(libs.bundles.di)
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
