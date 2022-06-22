@@ -170,11 +170,6 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 	}
 
 	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
-
-	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
 	}
@@ -186,6 +181,11 @@ public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
 		this.setImmutable(true);
 
 		return fc;
+	}
+
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	public void add(String hash, long id) {

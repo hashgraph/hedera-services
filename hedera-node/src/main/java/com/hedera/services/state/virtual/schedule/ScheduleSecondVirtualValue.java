@@ -189,13 +189,13 @@ public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
 	}
 
 	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
+	public int getVersion() {
+		return CURRENT_VERSION;
 	}
 
 	@Override
-	public int getVersion() {
-		return CURRENT_VERSION;
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	@Override
