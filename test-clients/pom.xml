@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.26.0-SNAPSHOT</version>
+    <version>0.27.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -22,6 +22,7 @@
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.30</snakeyaml.version>
+    <besu.version>22.1.1</besu.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -213,6 +214,14 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+      <id>besu</id>
+      <name>Hyperledger Besu</name>
+      <url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
       <id>central</id>
       <name>Central Repository</name>
       <url>https://repo.maven.apache.org/maven2</url>
@@ -240,12 +249,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.26.0-SNAPSHOT</version>
+      <version>0.27.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.26.0-SNAPSHOT</version>
+      <version>0.27.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -276,6 +285,7 @@
     <dependency>
         <groupId>org.hyperledger.besu.internal</groupId>
         <artifactId>crypto</artifactId>
+        <version>${besu.version}</version>
     </dependency>
     <dependency>
       <groupId>org.json</groupId>

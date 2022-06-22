@@ -81,6 +81,10 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
+	private Optional<String> newStakee = Optional.empty();
+	private Optional<Long> newStakedNodeId = Optional.empty();
+	private Optional<Boolean> isDeclinedReward = Optional.empty();
+
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoUpdate(String account) {
@@ -151,6 +155,21 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		return this;
 	}
 
+	public HapiCryptoUpdate newStakedAccountId(String stakee) {
+		newStakee = Optional.of(stakee);
+		return this;
+	}
+
+	public HapiCryptoUpdate newStakedNodeId(long idLit) {
+		newStakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiCryptoUpdate newDeclinedReward(boolean isDeclined) {
+		isDeclinedReward = Optional.of(isDeclined);
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoUpdate;
@@ -205,6 +224,13 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 									builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
+
+							if (newStakee.isPresent()) {
+								builder.setStakedAccountId(TxnUtils.asId(newStakee.get(), spec));
+							} else if (newStakedNodeId.isPresent()) {
+								builder.setStakedNodeId(newStakedNodeId.get());
+							}
+							isDeclinedReward.ifPresent(b -> builder.setDeclineReward(BoolValue.of(b)));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

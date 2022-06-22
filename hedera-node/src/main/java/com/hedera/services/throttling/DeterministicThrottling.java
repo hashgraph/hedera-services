@@ -184,19 +184,19 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		switch (mode) {
 			case CONSENSUS:
-				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
+				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.maxGasPerSec() == 0) {
 					log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 					return;
 				} else {
-					capacity = dynamicProperties.consensusThrottleGasLimit();
+					capacity = dynamicProperties.maxGasPerSec();
 				}
 				break;
 			case HAPI:
-				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
+				if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.maxGasPerSec() == 0) {
 					log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 					return;
 				} else {
-					capacity = dynamicProperties.frontendThrottleGasLimit();
+					capacity = dynamicProperties.maxGasPerSec();
 				}
 				break;
 			case SCHEDULE:

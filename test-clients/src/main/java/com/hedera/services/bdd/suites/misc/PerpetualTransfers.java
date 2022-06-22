@@ -47,7 +47,7 @@ public class PerpetualTransfers extends HapiApiSuite {
 
 	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
+	private AtomicInteger maxOpsPerSec = new AtomicInteger(5);
 
 	public static void main(String... args) {
 		new PerpetualTransfers().runSuiteSync();

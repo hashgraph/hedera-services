@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
@@ -31,6 +32,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -41,14 +43,19 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.validSentinel;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateTransitionLogic implements TransitionLogic {
@@ -62,6 +69,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 	private final GlobalDynamicProperties properties;
+	private final NodeInfo nodeInfo;
 
 	public ContractUpdateTransitionLogic(
 			final HederaLedger ledger,
@@ -71,7 +79,8 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final UpdateCustomizerFactory customizerFactory,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
-			final GlobalDynamicProperties properties
+			final GlobalDynamicProperties properties,
+			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
@@ -81,6 +90,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.customizerFactory = customizerFactory;
 		this.properties = properties;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -120,7 +130,10 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum sanityCheckAutoAssociations(final EntityNum target, final HederaAccountCustomizer customizer) {
+	private ResponseCodeEnum sanityCheckAutoAssociations(
+			final EntityNum target,
+			final HederaAccountCustomizer customizer
+	) {
 		final var changes = customizer.getChanges();
 		if (changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			final long newMax = (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS);
@@ -165,6 +178,27 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		final var newMemoIfAny = op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
 		if ((status = validator.memoCheck(newMemoIfAny)) != OK) {
 			return status;
+		}
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
+
+		final var stakedIdCase = op.getStakedIdCase().name();
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!properties.isStakingEnabled() && (electsStakingId || op.hasDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId) {
+			if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
+				return OK;
+			} else if (!validator.isValidStakedId(
+					stakedIdCase,
+					op.getStakedAccountId(),
+					op.getStakedNodeId(),
+					contracts.get(),
+					nodeInfo)) {
+				return INVALID_STAKING_ID;
+			}
 		}
 
 		return OK;

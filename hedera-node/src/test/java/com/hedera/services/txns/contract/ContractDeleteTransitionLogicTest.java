@@ -72,11 +72,13 @@ class ContractDeleteTransitionLogicTest {
 		final var op = contractDeleteTxn.getContractDeleteInstance();
 		final var tbd = op.getContractID();
 		given(deletionLogic.performFor(op)).willReturn(tbd);
+		given(deletionLogic.getLastObtainer()).willReturn(transfer);
 
 		subject.doStateTransition();
 
 		verify(deletionLogic).performFor(op);
 		verify(txnCtx).setTargetedContract(tbd);
+		verify(txnCtx).recordBeneficiaryOfDeleted(tbd.getContractNum(), transfer.getAccountNum());
 	}
 
 	@Test

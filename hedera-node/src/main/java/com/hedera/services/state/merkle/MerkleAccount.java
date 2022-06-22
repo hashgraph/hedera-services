@@ -330,6 +330,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAccountKey(key);
 	}
 
+	public int number() {
+		return state().number();
+	}
+
 	public EntityId getProxy() {
 		return state().proxy();
 	}
@@ -454,6 +458,84 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
 		state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
+	}
+
+	public boolean isDeclinedReward() {
+		return state().isDeclineReward();
+	}
+
+	public void setDeclineReward(boolean declineReward) {
+		throwIfImmutable("Cannot change this account's declineReward if it's immutable");
+		state().setDeclineReward(declineReward);
+	}
+
+	public boolean hasBeenRewardedSinceLastStakeMetaChange() {
+		return state().getStakeAtStartOfLastRewardedPeriod() != -1L;
+	}
+
+	public long totalStakeAtStartOfLastRewardedPeriod() {
+		return state().getStakeAtStartOfLastRewardedPeriod();
+	}
+
+	public void setStakeAtStartOfLastRewardedPeriod(final long balanceAtStartOfLastRewardedPeriod) {
+		throwIfImmutable("Cannot change this account's balanceAtStartOfLastRewardedPeriod if it's immutable");
+		state().setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+	}
+
+	public long getStakedToMe() {
+		return state().getStakedToMe();
+	}
+
+	public void setStakedToMe(long stakedToMe) {
+		throwIfImmutable("Cannot change this account's stakedToMe if it's immutable");
+		state().setStakedToMe(stakedToMe);
+	}
+
+	public long totalStake() {
+		return state().balance() + state().getStakedToMe();
+	}
+
+	public long getStakePeriodStart() {
+		return state().getStakePeriodStart();
+	}
+
+	public void setStakePeriodStart(final long stakePeriodStart) {
+		throwIfImmutable("Cannot change this account's stakePeriodStart if it's immutable");
+		state().setStakePeriodStart(stakePeriodStart);
+	}
+
+	/**
+	 * Get the num [of shard.realm.num] of node/account this account has staked its hbar to
+	 * If the returned value is negative it is staked to a node and node num is the absolute value of (-stakedNum - 1)
+	 * If the returned value is positive it is staked to an account and the accountNum is stakedNum.
+	 *
+	 * @return num [of shard.realm.num] of node/account
+	 */
+	public long getStakedId() {
+		return state().getStakedNum();
+	}
+
+	/**
+	 * Sets the id of account or node to which this account is staking its hbar to. If stakedId &lt; 0 it will be a node
+	 * id and if stakedId &gt; 0 it is an account number.
+	 *
+	 * @param stakedId
+	 * 		The node num of the node
+	 */
+	public void setStakedId(long stakedId) {
+		throwIfImmutable("Cannot change this account's staked id if it's immutable");
+		state().setStakedNum(stakedId);
+	}
+
+	public boolean mayHavePendingReward() {
+		return getStakedId() < 0 && !isDeclinedReward();
+	}
+
+	public long getStakedNodeAddressBookId() {
+		if (state().getStakedNum() >= 0) {
+			throw new IllegalStateException("Account is not staked to a node");
+		}
+		return -state().getStakedNum() - 1;
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {
