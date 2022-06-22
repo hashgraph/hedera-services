@@ -24,7 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
@@ -81,7 +81,7 @@ abstract class EvmTxProcessor {
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
 	private BlockMetaSource blockMetaSource;
-	private HederaMutableWorldState worldState;
+	private HederaEvmWorldUpdater worldUpdater;
 
 	private final GasCalculator gasCalculator;
 	private final LivePricesSource livePricesSource;
@@ -110,12 +110,12 @@ abstract class EvmTxProcessor {
 		this.blockMetaSource = blockMetaSource;
 	}
 
-	protected void setWorldState(final HederaMutableWorldState worldState) {
-		this.worldState = worldState;
+	protected void setWorldUpdater(final HederaEvmWorldUpdater worldUpdater) {
+		this.worldUpdater = worldUpdater;
 	}
 
 	protected EvmTxProcessor(
-			final HederaMutableWorldState worldState,
+			final HederaEvmWorldUpdater worldUpdater,
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
@@ -123,7 +123,7 @@ abstract class EvmTxProcessor {
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final BlockMetaSource blockMetaSource
 	) {
-		this.worldState = worldState;
+		this.worldUpdater = worldUpdater;
 		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
@@ -191,15 +191,13 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-		//HederaWorldState.Updater to be added or provided with an interface
-		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+		final var senderAccount = worldUpdater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
 		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		var allowanceCharged = Wei.ZERO;
 		MutableAccount mutableRelayer = null;
 		if (relayer != null) {
-			final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
+			final var relayerAccount = worldUpdater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
 			mutableRelayer = relayerAccount.getMutable();
 		}
 		if (!isStatic) {
@@ -247,8 +245,9 @@ abstract class EvmTxProcessor {
 		final var gasAvailable = gasLimit - intrinsicGas;
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
+
 		final var valueAsWei = Wei.of(value);
-		final var stackedUpdater = updater.updater();
+		final var stackedUpdater = worldUpdater.updater();
 		final var senderEvmAddress = sender.canonicalAddress();
 		final MessageFrame.Builder commonInitialFrame =
 				MessageFrame.builder()
@@ -281,7 +280,7 @@ abstract class EvmTxProcessor {
 		}
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-		final long sbhRefund = updater.getSbhRefund();
+		final long sbhRefund = worldUpdater.getSbhRefund();
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 		if (isStatic) {
@@ -306,20 +305,20 @@ abstract class EvmTxProcessor {
 			}
 
 			// Send fees to coinbase
-			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+			final var mutableCoinbase = worldUpdater.getOrCreate(coinbase).getMutable();
 			final long coinbaseFee = gasLimit - refunded;
 
 			mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
-			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
+			initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
 			if (dynamicProperties.shouldEnableTraceability()) {
-				stateChanges = updater.getFinalStateChanges();
+				stateChanges = worldUpdater.getFinalStateChanges();
 			} else {
 				stateChanges = Map.of();
 			}
 
 			// Commit top level updater
-			updater.commit();
+			worldUpdater.commit();
 		}
 
 		// Externalise result

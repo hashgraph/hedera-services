@@ -23,7 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.HederaEvmWorldUpdater;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -70,7 +70,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		try {
 			final var addressOrAlias = frame.getRecipientAddress();
-			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+			final var worldUpdater = (HederaEvmWorldUpdater) frame.getWorldUpdater();
 			final Account account = worldUpdater.get(addressOrAlias);
 			final Address address = account.getAddress();
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());

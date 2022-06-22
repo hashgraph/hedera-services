@@ -185,7 +185,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	public static class Updater
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
-			implements HederaWorldUpdater {
+			implements HederaWorldUpdater, HederaEvmWorldUpdater {
 
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
 		GlobalDynamicProperties dynamicProperties;

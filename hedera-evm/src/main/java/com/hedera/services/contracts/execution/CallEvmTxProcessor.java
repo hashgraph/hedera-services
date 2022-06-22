@@ -25,7 +25,7 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -55,7 +55,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CallEvmTxProcessor(
-			final HederaMutableWorldState worldState,
+			final HederaEvmWorldUpdater worldUpdater,
 			final LivePricesSource livePricesSource,
 			final CodeCache codeCache,
 			final GlobalDynamicProperties dynamicProperties,
@@ -67,7 +67,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final InHandleBlockMetaSource blockMetaSource
 	) {
 		super(
-				worldState,
+				worldUpdater,
 				livePricesSource,
 				dynamicProperties,
 				gasCalculator,
