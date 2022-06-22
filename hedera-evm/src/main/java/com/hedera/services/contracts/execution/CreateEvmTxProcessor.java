@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
+import com.hedera.services.txns.contract.helpers.StorageExpiryProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,7 +51,7 @@ import java.util.Set;
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
-	private final StorageExpiry storageExpiry;
+	private final StorageExpiryProvider storageExpiry;
 
 	@Inject
 	public CreateEvmTxProcessor(
@@ -62,7 +62,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final StorageExpiry storageExpiry,
+			final StorageExpiryProvider storageExpiry,
 			final InHandleBlockMetaSource blockMetaSource
 	) {
 		super(

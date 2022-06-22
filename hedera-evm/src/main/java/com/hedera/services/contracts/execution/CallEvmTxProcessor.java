@@ -27,7 +27,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
+import com.hedera.services.txns.contract.helpers.StorageExpiryProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
@@ -51,7 +51,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
-	private final StorageExpiry storageExpiry;
+	private final StorageExpiryProvider storageExpiry;
 
 	@Inject
 	public CallEvmTxProcessor(
@@ -63,7 +63,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
+			final StorageExpiryProvider storageExpiry,
 			final InHandleBlockMetaSource blockMetaSource
 	) {
 		super(

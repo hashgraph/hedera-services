@@ -27,7 +27,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
+import com.hedera.services.txns.contract.helpers.StorageExpiryProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
-	private final StorageExpiry storageExpiry;
+	private final StorageExpiryProvider storageExpiry;
 
 	@Inject
 	public CallLocalEvmTxProcessor(
@@ -64,7 +64,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry
+			final StorageExpiryProvider storageExpiry
 	) {
 		super(
 				livePricesSource,

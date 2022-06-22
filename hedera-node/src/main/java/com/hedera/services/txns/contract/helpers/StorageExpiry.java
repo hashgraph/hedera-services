@@ -57,7 +57,7 @@ import java.util.function.Supplier;
  * storage expiry. So we need to option to configure the oracle with a {@code fallbackExpiryFromHapi}.
  */
 @Singleton
-public class StorageExpiry {
+public class StorageExpiry implements StorageExpiryProvider {
 	private static final Logger log = LogManager.getLogger(StorageExpiry.class);
 
 	private static final long UNAVAILABLE_EXPIRY = 0;
@@ -77,31 +77,29 @@ public class StorageExpiry {
 		this.contracts = contracts;
 	}
 
+	@Override
 	public Oracle hapiCreationOracle(final long hapiExpiry) {
 		return new Oracle(hapiExpiry);
 	}
 
+	@Override
 	public Oracle hapiCallOracle() {
 		return callOracle;
 	}
 
+	@Override
 	public Oracle hapiStaticCallOracle() {
 		return unusableStaticOracle;
 	}
 
-	public class Oracle {
+	public class Oracle implements OracleProvider {
 		private final long fallbackExpiry;
 
 		private Oracle(long fallbackExpiryFromHapi) {
 			this.fallbackExpiry = fallbackExpiryFromHapi;
 		}
 
-		/**
-		 * Returns the effective expiry for storage being allocated in the current frame.
-		 *
-		 * @param frame the active message frame
-		 * @return the effective expiry for allocated storage
-		 */
+		@Override
 		public long storageExpiryIn(final MessageFrame frame) {
 			final var curContracts = contracts.get();
 			var expiry = effExpiryGiven(frame, curContracts);

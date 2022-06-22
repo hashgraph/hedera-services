@@ -27,7 +27,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
+import com.hedera.services.txns.contract.helpers.OracleProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -181,7 +181,7 @@ abstract class EvmTxProcessor {
 			final boolean contractCreation,
 			final Instant consensusTime,
 			final boolean isStatic,
-			final StorageExpiry.Oracle expiryOracle,
+			final OracleProvider expiryOracle,
 			final Address mirrorReceiver,
 			final BigInteger userOfferedGasPrice,
 			final long maxGasAllowanceInTinybars,

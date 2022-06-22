@@ -20,7 +20,7 @@ package com.hedera.services.contracts.gascalculator;
  * ‍
  */
 
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
+import com.hedera.services.txns.contract.helpers.OracleProvider;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -88,7 +88,7 @@ public class StorageGasCalculator {
 	}
 
 	private static long effStorageLifetime(final MessageFrame frame, final MessageFrame baseFrame) {
-		final StorageExpiry.Oracle expiryOracle = baseFrame.getContextVariable(EXPIRY_ORACLE_CONTEXT_KEY);
+		final OracleProvider expiryOracle = baseFrame.getContextVariable(EXPIRY_ORACLE_CONTEXT_KEY);
 		final var now = frame.getBlockValues().getTimestamp();
 		final var expectedLifetimeSecs = expiryOracle.storageExpiryIn(frame) - now;
 		return Math.max(0, expectedLifetimeSecs);
