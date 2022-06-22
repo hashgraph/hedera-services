@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
-                   'contract.precompile.part1,contract.records',
+                   'contract.precompile.part1,contract.records,ethereum',
                    'contract.precompile.part2,contract.hapi',
                    'contract.opcodes.eth,contract.openzeppelin.eth,contract.traceability.eth',
                    'contract.precompile.part1.eth,contract.records.eth',

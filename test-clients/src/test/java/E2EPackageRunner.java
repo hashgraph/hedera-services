@@ -47,6 +47,7 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
@@ -69,6 +70,7 @@ import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -92,6 +94,8 @@ import com.hedera.services.bdd.suites.crypto.TransferWithCustomFees;
 import com.hedera.services.bdd.suites.crypto.TxnReceiptRegression;
 import com.hedera.services.bdd.suites.crypto.TxnRecordRegression;
 import com.hedera.services.bdd.suites.crypto.UnsupportedQueriesRegression;
+import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
+import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
 import com.hedera.services.bdd.suites.fees.AllBaseOpFeesSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.CostOfEverythingSuite;
@@ -315,6 +319,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(DelegatePrecompileSuite::new),
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
 				extractSpecsFromSuite(DynamicGasCostSuite::new),
+				extractSpecsFromSuite(ERCPrecompileSuite::new),
 				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
 		});
 	}
@@ -325,9 +330,12 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2Eth() {
 		return List.of(new DynamicContainer[] {
-				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
+				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new),
+				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
+				extractSpecsFromSuiteForEth(DynamicGasCostSuite::new),
+				extractSpecsFromSuiteForEth(ERCPrecompileSuite::new),
+				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
 		});
 	}
 
@@ -381,6 +389,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(BalanceOperationSuite::new),
 				extractSpecsFromSuite(CallCodeOperationSuite::new),
 				extractSpecsFromSuite(CallOperationSuite::new),
+				extractSpecsFromSuite(Create2OperationSuite::new),
 				extractSpecsFromSuite(CreateOperationSuite::new),
 				extractSpecsFromSuite(DelegateCallOperationSuite::new),
 				extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
@@ -397,10 +406,10 @@ class E2EPackageRunner {
 	@Tag("contract.opcodes.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpcodesEth() {
-		return List.of(new DynamicContainer[] {
-				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
+		return List.of(extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallOperationSuite::new),
+				extractSpecsFromSuiteForEth(Create2OperationSuite::new),
 				extractSpecsFromSuiteForEth(CreateOperationSuite::new),
 				extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
 				extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
@@ -409,8 +418,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
 				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
 				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
-				extractSpecsFromSuiteForEth(SStoreSuite::new)
-		});
+				extractSpecsFromSuiteForEth(SStoreSuite::new));
 	}
 
 	@Tag("contract")
@@ -460,6 +468,15 @@ class E2EPackageRunner {
 	Collection<DynamicContainer> contractTraceabilityEth() {
 		return List.of(
 				extractSpecsFromSuiteForEth(ContractTraceabilitySuite::new)
+		);
+	}
+
+	@Tag("ethereum")
+	@TestFactory
+	Collection<DynamicContainer> ethereum() {
+		return List.of(
+				extractSpecsFromSuite(EthereumSuite::new),
+				extractSpecsFromSuite(HelloWorldEthereumSuite::new)
 		);
 	}
 
