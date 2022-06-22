@@ -187,13 +187,10 @@ import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.isSchedulable;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
-import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -439,18 +436,6 @@ class MiscUtilsTest {
 
 	private AccountAmount aa(final AccountID who, final long what) {
 		return AccountAmount.newBuilder().setAccountID(who).setAmount(what).build();
-	}
-
-	@Test
-	void prettyPrintsTransferList() {
-		final var transfers = withAdjustments(
-				asAccount("0.1.2"), 500L,
-				asAccount("1.0.2"), -250L,
-				asAccount("1.2.0"), Long.MIN_VALUE);
-
-		final var s = readableTransferList(transfers);
-
-		assertEquals("[0.1.2 <- +500, 1.0.2 -> -250, 1.2.0 -> -9223372036854775808]", s);
 	}
 
 	@Test
@@ -809,13 +794,6 @@ class MiscUtilsTest {
 		final var instant = Instant.now();
 		final var timestamp = MiscUtils.asTimestamp(instant);
 		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
-	}
-
-	@Test
-	void perm64Test() {
-		assertEquals(0L, perm64(0L));
-		assertEquals(-4328535976359616544L, perm64(1L));
-		assertEquals(2657016865369639288L, perm64(7L));
 	}
 
 	@Test

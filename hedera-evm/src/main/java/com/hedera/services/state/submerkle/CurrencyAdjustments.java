@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.EvmUtils.readableTransferList;
 
 public class CurrencyAdjustments implements SelfSerializable {
     static final int PRE_0240_VERSION = 1;

@@ -31,7 +31,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Comparator;
 
-import static com.hedera.services.utils.MiscUtils.perm64;
+import static com.hedera.services.utils.EvmUtils.perm64;
 
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).

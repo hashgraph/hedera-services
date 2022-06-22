@@ -43,17 +43,15 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import javax.annotation.Nullable;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -402,19 +400,6 @@ public final class MiscUtils {
 				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
 				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
 				.toList();
-	}
-
-	public static String readableTransferList(final TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsList()
-				.stream()
-				.map(aa -> String.format(
-						"%s %s %s%s",
-						EntityIdUtils.readableId(aa.getAccountID()),
-						aa.getAmount() < 0 ? "->" : "<-",
-						aa.getAmount() < 0 ? "-" : "+",
-						BigInteger.valueOf(aa.getAmount()).abs().toString()))
-				.toList()
-				.toString();
 	}
 
 	public static String readableNftTransferList(final TokenTransferList tokenTransferList) {
@@ -835,31 +820,6 @@ public final class MiscUtils {
 			case ScheduleCreate, ScheduleSign -> false;
 			default -> !QUERY_FUNCTIONS.contains(functionality);
 		};
-	}
-
-	/**
-	 * A permutation (invertible function) on 64 bits. The constants were found
-	 * by automated search, to optimize avalanche. Avalanche means that for a
-	 * random number x, flipping bit i of x has about a 50 percent chance of
-	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
-	 * achieves a probability between 49.8 and 50.2 percent.
-	 *
-	 * @param x
-	 * 		the value to permute
-	 * @return the avalanche-optimized permutation
-	 */
-	public static long perm64(long x) {
-		// Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-		x += x << 30;
-		x ^= x >>> 27;
-		x += x << 16;
-		x ^= x >>> 20;
-		x += x << 5;
-		x ^= x >>> 18;
-		x += x << 10;
-		x ^= x >>> 24;
-		x += x << 30;
-		return x;
 	}
 
 	public static <K, V extends MerkleNode & Keyed<K>> void forEach(

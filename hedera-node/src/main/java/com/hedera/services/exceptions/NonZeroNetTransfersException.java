@@ -22,7 +22,7 @@ package com.hedera.services.exceptions;
 
 import com.hederahashgraph.api.proto.java.TransferList;
 
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.EvmUtils.readableTransferList;
 
 public class NonZeroNetTransfersException extends IllegalArgumentException {
 	public NonZeroNetTransfersException(TransferList accountAmounts) {
