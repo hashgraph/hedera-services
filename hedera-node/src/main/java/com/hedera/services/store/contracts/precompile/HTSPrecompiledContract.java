@@ -109,7 +109,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final PrecompileContractResult NO_RESULT = new PrecompileContractResult(
-					Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+			Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
@@ -225,11 +225,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		this.precompile = null;
-		this.transactionBody = null;
-
+		resetPrecompileFields();
 		int functionId = input.getInt(0);
-		this.gasRequirement = 0L;
 
 		this.precompile =
 				switch (functionId) {
@@ -388,18 +385,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
 		senderAddress = message.getSenderAddress();
 		infoProvider = new DirectCallsInfoProvider(message);
+		resetPrecompileFields();
 
 		precompile = constructRedirectPrecompile(inputData.getInt(0), message.getTokenID());
+		gasRequirement = defaultGas();
+
 		if (precompile != null) {
 			decodeInput(inputData, message::unaliased);
+			gasRequirement = precompile.getGasRequirement(now);
+			message.setHtsOutputResult(computeInternal(infoProvider));
+		} else if (transactionBody == null) {
+			message.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 		}
-		gasRequirement = precompile.getGasRequirement(now);
-
-		message.setHtsOutputResult(computeInternal(infoProvider));
 		message.setGasRequired(gasRequirement);
 	}
 
 	/* --- Helpers --- */
+	private void resetPrecompileFields() {
+		precompile = null;
+		transactionBody = null;
+		gasRequirement = 0L;
+		hasRedirectBytes = false;
+	}
+
 	void decodeInput(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		input = hasRedirectBytes ? input.slice(24) : input;
 		this.transactionBody = TransactionBody.newBuilder();
