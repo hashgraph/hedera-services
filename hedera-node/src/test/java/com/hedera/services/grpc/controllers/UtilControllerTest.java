@@ -23,25 +23,34 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.service.proto.java.UtilServiceGrpc;
 import io.grpc.stub.StreamObserver;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
-@Singleton
-public class UtilController extends UtilServiceGrpc.UtilServiceImplBase {
-	public static final String RANDOM_GENERATE_METRIC = "randomGenerate";
-	private final TxnResponseHelper txnHelper;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
-	@Inject
-	public UtilController(TxnResponseHelper txnHelper) {
-		this.txnHelper = txnHelper;
+class UtilControllerTest {
+	Transaction txn = Transaction.getDefaultInstance();
+	TxnResponseHelper txnResponseHelper;
+	StreamObserver<TransactionResponse> txnObserver;
+
+	UtilController subject;
+
+	@BeforeEach
+	private void setup() {
+		txnResponseHelper = mock(TxnResponseHelper.class);
+
+		subject = new UtilController(txnResponseHelper);
 	}
 
-	@Override
-	public void randomGenerate(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.submit(signedTxn, observer, RandomGenerate);
+	@Test
+	void forwardsRandomGenerateAsExpected() {
+		// when:
+		subject.randomGenerate(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, RandomGenerate);
 	}
 }

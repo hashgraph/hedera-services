@@ -46,7 +46,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -380,6 +382,22 @@ class SideEffectsTrackerTest {
 		assertEquals(3, subject.getNumRewardedAccounts());
 		subject.reset();
 		assertEquals(0, subject.getNumRewardedAccounts());
+	}
+
+	@Test
+	void tracksAndResetsPseudoRandomDataCorrectly(){
+		final var num = 100;
+		final var bytes = new byte[]{0, 1, 2};
+
+		subject.trackPseudoRandomNumber(num);
+		subject.trackPseudoRandomBytes(bytes);
+
+		assertEquals(100, subject.getPseudorandomNumber());
+		assertArrayEquals(bytes, subject.getPseudorandomBytes());
+
+		subject.reset();
+		assertEquals(0, subject.getPseudorandomNumber());
+		assertArrayEquals(new byte[MAX_PSEUDORANDOM_LENGTH], subject.getPseudorandomBytes());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

@@ -61,6 +61,9 @@ public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 	private static final int MAX_BALANCE_CHANGES = 2048;
+	public static final int MAX_PSEUDORANDOM_LENGTH = 384;
+
+	public final byte[] DEFAULT_PSEUDORANDOM_BYTES = new byte[MAX_PSEUDORANDOM_LENGTH];
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
@@ -83,6 +86,9 @@ public class SideEffectsTracker {
 	// Either the key-derived alias for an auto-created account, or the EVM address of a created contract
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
+
+	private byte[] pseudorandomBytes = DEFAULT_PSEUDORANDOM_BYTES;
+	private int pseudorandomNumber;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -425,7 +431,24 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public void trackPseudoRandomBytes(final RunningHash pseudoRandomBytes) {
+	public void trackPseudoRandomBytes(final byte[] bytes) {
+		this.pseudorandomBytes = bytes;
+	}
+
+	public void trackPseudoRandomNumber(final int pseudoRandomNumber) {
+		this.pseudorandomNumber = pseudoRandomNumber;
+	}
+
+	public byte[] getPseudorandomBytes() {
+		return pseudorandomBytes;
+	}
+
+	public int getPseudorandomNumber() {
+		return pseudorandomNumber;
+	}
+
+	public boolean hasTrackedRandomData() {
+		return pseudorandomNumber > 0 || !Arrays.equals(pseudorandomBytes, DEFAULT_PSEUDORANDOM_BYTES);
 	}
 
 	/**
@@ -439,6 +462,8 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
+		pseudorandomNumber = 0;
+		pseudorandomBytes = DEFAULT_PSEUDORANDOM_BYTES;
 	}
 
 	/**

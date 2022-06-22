@@ -1,4 +1,4 @@
-package com.hedera.services.txns.crypto;
+package com.hedera.services.txns.util;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -8,10 +8,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -33,12 +36,21 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
 		final var range = op.getRange();
-		var pseudoRandomBytes = runningHashLeafSupplier.get().getRunningHash();
-		if (range > 0) {
-
+		byte[] pseudoRandomBytes;
+		try {
+			pseudoRandomBytes = runningHashLeafSupplier.get().currentRunningHash().getValue();
+		} catch (InterruptedException ignore) {
+			pseudoRandomBytes = new byte[MAX_PSEUDORANDOM_LENGTH];
 		}
 
-		sideEffectsTracker.trackPseudoRandomBytes(pseudoRandomBytes);
+		if (range > 0) {
+			final var initialBits = Arrays.copyOf(pseudoRandomBytes, 32);
+			final var value = new BigInteger(initialBits).longValue();
+			int pseudoRandomNumber = (int) ((range * value) >>> 32);
+			sideEffectsTracker.trackPseudoRandomNumber(pseudoRandomNumber);
+		} else {
+			sideEffectsTracker.trackPseudoRandomBytes(pseudoRandomBytes);
+		}
 	}
 
 	@Override

@@ -9,8 +9,7 @@
 			"CryptoTransfer",
 			"CryptoCreate",
 			"CryptoApproveAllowance",
-			"CryptoDeleteAllowance",
-			"RandomGenerate"
+			"CryptoDeleteAllowance"
 		  ],
 		  "opsPerSec": 10000
 		},
@@ -23,8 +22,7 @@
 		{
 		  "operations": [
 			"CryptoTransfer",
-			"TokenMint",
-			"RandomGenerate"
+			"TokenMint"
 		  ],
 		  "opsPerSec": 3000
 		}

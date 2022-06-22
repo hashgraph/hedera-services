@@ -38,6 +38,7 @@ import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PSEUDORANDOM_BYTES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -199,7 +200,8 @@ class ExpirableTxnRecordBuilderTest {
 	void revertClearsAllSideEffects() {
 		subject.setTokens(List.of(MISSING_ENTITY_ID));
 		subject.setHbarAdjustments(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
-		subject.setStakingRewardsPaid(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
+		subject.setStakingRewardsPaid(new CurrencyAdjustments(new long[] { 1 },
+				new long[] { MISSING_ENTITY_ID.num() }));
 		subject.setReceiptBuilder(receiptBuilder);
 		subject.setTokenAdjustments(
 				List.of(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() })));
@@ -225,6 +227,8 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getAssessedCustomFees());
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
 		assertTrue(subject.getAlias().isEmpty());
+		assertArrayEquals(MISSING_PSEUDORANDOM_BYTES, subject.getPseudoRandomBytes());
+		assertEquals(0, subject.getPseudoRandomNumber());
 	}
 
 	@Test

@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -69,7 +70,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0260_VERSION = 9;
 	static final int RELEASE_0270_VERSION = 10;
-	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+
+	static final int RELEASE_0280_VERSION = 11;
+	static final int CURRENT_VERSION = RELEASE_0280_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
@@ -78,6 +81,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
+	public static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
@@ -110,6 +114,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private ByteString alias = MISSING_ALIAS;
 	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 
+	private byte[] pseudoRandomBytes = new byte[0];
+	private int pseudoRandomNumber;
+
 	@Override
 	public void release() {
 		/* No-op */
@@ -140,6 +147,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.numChildRecords = builder.numChildRecords;
 		this.alias = builder.alias;
 		this.ethereumHash = builder.ethereumHash;
+		this.pseudoRandomBytes = builder.pseudoRandomBytes;
+		;
+		this.pseudoRandomNumber = builder.pseudoRandomNumber;
 	}
 
 	/* --- Object --- */
@@ -162,7 +172,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("stakingRewardsPaid", stakingRewardsPaid)
 				.add("scheduleRef", scheduleRef)
 				.add("alias", alias.toStringUtf8())
-				.add("ethereumHash", CommonUtils.hex(ethereumHash));
+				.add("ethereumHash", CommonUtils.hex(ethereumHash))
+				.add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes))
+				.add("pseudoRandomNumber", pseudoRandomNumber);
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -235,7 +247,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees) &&
 				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
 				Objects.equals(this.alias, that.alias) &&
-				Arrays.equals(this.ethereumHash, that.ethereumHash);
+				Arrays.equals(this.ethereumHash, that.ethereumHash) &&
+				Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes) &&
+				this.pseudoRandomNumber == that.pseudoRandomNumber;
 	}
 
 	@Override
@@ -261,8 +275,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				numChildRecords,
 				packedParentConsensusTime,
 				alias,
-				ethereumHash);
-		return result * 31 + Arrays.hashCode(txnHash);
+				ethereumHash,
+				pseudoRandomNumber);
+		result = result * 31 + Arrays.hashCode(txnHash);
+		return result * 31 + Arrays.hashCode(pseudoRandomBytes);
 	}
 
 	/* --- SelfSerializable --- */
@@ -325,6 +341,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		out.writeByteArray(alias.toByteArray());
 		out.writeByteArray(ethereumHash);
 		writeNullableSerializable(stakingRewardsPaid, out);
+
+		out.writeInt(pseudoRandomNumber);
+		out.writeByteArray(pseudoRandomBytes);
 	}
 
 	@Override
@@ -374,6 +393,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		// Added in 0.27
 		if (version >= RELEASE_0270_VERSION) {
 			stakingRewardsPaid = readNullableSerializable(in);
+		}
+
+		if (version >= RELEASE_0280_VERSION) {
+			pseudoRandomNumber = in.readInt();
+			pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_LENGTH);
 		}
 	}
 
@@ -576,6 +600,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
+		if (pseudoRandomNumber > 0) {
+			grpc.setPseudorandomNumber(pseudoRandomNumber);
+		} else if (pseudoRandomBytes != MISSING_PSEUDORANDOM_BYTES) {
+			grpc.setPseudorandomBytes(ByteString.copyFrom(pseudoRandomBytes));
+		}
+
 		return grpc.build();
 	}
 
@@ -623,6 +653,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
 		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
+		private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+		private int pseudoRandomNumber;
 
 		private boolean onlyExternalizedIfSuccessful = false;
 
@@ -731,6 +763,17 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
+		public Builder setPseudoRandomBytes(final byte[] pseudoRandomBytes) {
+			this.pseudoRandomBytes = pseudoRandomBytes;
+			return this;
+		}
+
+		public Builder setPseudoRandomNumber(final int pseudoRandomNumber) {
+			this.pseudoRandomNumber = pseudoRandomNumber;
+			return this;
+		}
+
+
 		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
 		}
@@ -822,6 +865,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
 			ethereumHash = MISSING_ETHEREUM_HASH;
+			pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+			pseudoRandomNumber = 0;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {
 				contractCallResult = null;
@@ -891,6 +936,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
+		}
+
+		public byte[] getPseudoRandomBytes() {
+			return pseudoRandomBytes;
+		}
+
+		public int getPseudoRandomNumber() {
+			return pseudoRandomNumber;
 		}
 	}
 
