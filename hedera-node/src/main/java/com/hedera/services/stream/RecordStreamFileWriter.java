@@ -59,7 +59,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 
-class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObjectStream<T> {
+class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
 	private static final DigestType currentDigestType = DigestType.SHA_384;
@@ -90,7 +90,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	private SerializableDataOutputStream dosMeta = null;
 
 	/**
-	 * current runningHash before consuming the object added by calling {@link #addObject(T)} method
+	 * current runningHash before consuming the object added by calling {@link #addObject(RecordStreamObject)} method
 	 */
 	private RunningHash runningHash;
 
@@ -107,7 +107,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	/**
 	 * The previous object that was passed to the stream.
 	 */
-	private T previousObject;
+	private RecordStreamObject previousObject;
 
 	/**
 	 * Tracks if the previous object was held back in the previous file due to its alignment.
@@ -147,7 +147,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	}
 
 	@Override
-	public void addObject(T object) {
+	public void addObject(final RecordStreamObject object) {
 		if (shouldStartNewFile(object)) {
 			// if we are currently writing a file,
 			// finish current file and generate signature file
@@ -185,7 +185,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 * 		the object currently being added to the stream
 	 * @return whether the object should be written into a new file
 	 */
-	private boolean shouldStartNewFile(final T nextObject) {
+	private boolean shouldStartNewFile(final RecordStreamObject nextObject) {
 		try {
 			if (previousObject == null) {
 				// This is the first object. It may be the first thing in a file, but it is impossible
@@ -319,7 +319,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 * write the beginning part of the record stream file and metadata:
 	 * record stream version, HAPI proto version and initial runningHash.
 	 */
-	private void beginNew(T object) {
+	private void beginNew(final RecordStreamObject object) {
 		final var fileHeader = streamType.getFileHeader();
 		// instead of creating the record file here and writing
 		// the record file version in it, save the version and
@@ -364,7 +364,7 @@ class RecordStreamFileWriter<T extends RecordStreamObject> implements LinkedObje
 	 * @param object
 	 * 	object to be added to the record stream file
 	 */
-	private void consume(T object) {
+	private void consume(final RecordStreamObject object) {
 		recordStreamFileBuilder.addRecordStreamItems(
 				RecordStreamItem.newBuilder()
 						.setTransaction(object.getTransaction())

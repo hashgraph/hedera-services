@@ -71,7 +71,7 @@ class RecordStreamFileWriterTest {
 
 	@BeforeEach
 	void setUp() throws NoSuchAlgorithmException {
-		subject = new RecordStreamFileWriter<>(
+		subject = new RecordStreamFileWriter(
 				expectedExportDir(),
 				logPeriodMs,
 				signer,
@@ -557,7 +557,7 @@ class RecordStreamFileWriterTest {
 	@Test
 	void interruptThreadAndLogWhenFileOutputStreamCannotBeOpened() throws NoSuchAlgorithmException {
 		final var invalidDirPath = "random/nonexistent/directory";
-		subject = new RecordStreamFileWriter<>(
+		subject = new RecordStreamFileWriter(
 				invalidDirPath,
 				logPeriodMs,
 				signer,
@@ -724,7 +724,7 @@ class RecordStreamFileWriterTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private RecordStreamFileWriter<RecordStreamObject> subject;
+	private RecordStreamFileWriter subject;
 
 	private MessageDigest messageDigest;
 	private final static MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();

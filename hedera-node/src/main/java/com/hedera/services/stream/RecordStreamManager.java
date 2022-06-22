@@ -79,7 +79,7 @@ public class RecordStreamManager {
 	 * stream files.
 	 * Will be used from V6 onwards.
 	 */
-	private RecordStreamFileWriter<RecordStreamObject> protobufStreamFileWriter;
+	private RecordStreamFileWriter protobufStreamFileWriter;
 
 	/** initial running Hash of records */
 	private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -134,7 +134,7 @@ public class RecordStreamManager {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
 			if (globalDynamicProperties.recordFileVersion() >= 6) {
-				protobufStreamFileWriter = new RecordStreamFileWriter<>(
+				protobufStreamFileWriter = new RecordStreamFileWriter(
 						nodeScopedRecordLogDir,
 						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 						platform,
@@ -327,7 +327,7 @@ public class RecordStreamManager {
 	 *
 	 * @return current RecordStreamFileWriter instance
 	 */
-	RecordStreamFileWriter<RecordStreamObject> getProtobufStreamFileWriter() {
+	RecordStreamFileWriter getProtobufStreamFileWriter() {
 		return protobufStreamFileWriter;
 	}
 
