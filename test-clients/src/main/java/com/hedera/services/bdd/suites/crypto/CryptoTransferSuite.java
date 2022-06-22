@@ -167,31 +167,29 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-//						transferWithMissingAccountGetsInvalidAccountId(),
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-//						baseCryptoTransferFeeChargedAsExpected(),
-//						autoAssociationRequiresOpenSlots(),
-//						royaltyCollectorsCanUseAutoAssociation(),
-//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						checksExpectedDecimalsForFungibleTokenTransferList(),
-//						allowanceTransfersWorkAsExpected(),
-//						allowanceTransfersWithComplexTransfersWork(),
-//						canUseMirrorAliasesForNonContractXfers(),
-//						canUseEip1014AliasesForXfers(),
-//						cannotTransferFromImmutableAccounts(),
-//						nftTransfersHaveTransitiveClosure(),
-				}
-		);
+		return List.of(
+				transferWithMissingAccountGetsInvalidAccountId(),
+				vanillaTransferSucceeds(),
+				complexKeyAcctPaysForOwnTransfer(),
+				twoComplexKeysRequired(),
+				specialAccountsBalanceCheck(),
+				tokenTransferFeesScaleAsExpected(),
+				okToSetInvalidPaymentHeaderForCostAnswer(),
+				baseCryptoTransferFeeChargedAsExpected(),
+				autoAssociationRequiresOpenSlots(),
+				royaltyCollectorsCanUseAutoAssociation(),
+				royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+				dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+				hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+				transferToNonAccountEntitiesReturnsInvalidAccountId(),
+				nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+				checksExpectedDecimalsForFungibleTokenTransferList(),
+				allowanceTransfersWorkAsExpected(),
+				allowanceTransfersWithComplexTransfersWork(),
+				canUseMirrorAliasesForNonContractXfers(),
+				canUseEip1014AliasesForXfers(),
+				cannotTransferFromImmutableAccounts(),
+				nftTransfersHaveTransitiveClosure());
 	}
 
 	@Override
