@@ -63,6 +63,7 @@ public class CodeCache implements CodeCacheProvider {
                 .build();
     }
 
+    @Override
     public Code getIfPresent(final Address address) {
         final var cacheKey = new BytesKey(address.toArray());
 
@@ -88,6 +89,7 @@ public class CodeCache implements CodeCacheProvider {
         return code;
     }
 
+    @Override
     public void invalidate(Address address) {
         cache.invalidate(new BytesKey(address.toArray()));
     }
