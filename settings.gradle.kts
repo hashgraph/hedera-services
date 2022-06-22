@@ -59,7 +59,7 @@ dependencyResolutionManagement {
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
-            bundle("besu", listOf("besu-evm", "besu-datatypes", "besu-secp256k1", "tuweni-units"))
+            bundle("besu", listOf("besu-bls12-381", "besu-evm", "besu-datatypes", "besu-secp256k1", "tuweni-units"))
             // Use when you need to use bouncy castle
             bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on"))
             // Use when you need to make use of dependency injection.
@@ -73,6 +73,7 @@ dependencyResolutionManagement {
                 "swirlds-merkle", "swirlds-fcqueue", "swirlds-jasperdb", "swirlds-virtualmap"))
 
             // Define the individual libraries
+            library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
             library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
             library("besu-datatypes", "org.hyperledger.besu", "besu-datatypes").versionRef("besu-version")
