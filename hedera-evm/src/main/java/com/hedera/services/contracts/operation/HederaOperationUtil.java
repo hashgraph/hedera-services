@@ -24,7 +24,6 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.utils.BytesComparator;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes;

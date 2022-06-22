@@ -25,7 +25,6 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;

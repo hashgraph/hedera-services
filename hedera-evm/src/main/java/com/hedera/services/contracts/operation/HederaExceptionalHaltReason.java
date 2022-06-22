@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**

@@ -23,7 +23,6 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.state.merkle.MerkleAccount;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
