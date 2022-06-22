@@ -84,13 +84,13 @@ abstract class EvmTxProcessor {
 	private HederaMutableWorldState worldState;
 
 	private final GasCalculator gasCalculator;
-	private final LivePricesSource livePricesSource;
+	private final PricesSourceProvider pricesSourceProvider;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
-			final LivePricesSource livePricesSource,
+			final PricesSourceProvider pricesSourceProvider,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
@@ -98,7 +98,7 @@ abstract class EvmTxProcessor {
 	) {
 		this(
 				null,
-				livePricesSource,
+				pricesSourceProvider,
 				dynamicProperties,
 				gasCalculator,
 				hederaOperations,
@@ -116,7 +116,7 @@ abstract class EvmTxProcessor {
 
 	protected EvmTxProcessor(
 			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
+			final PricesSourceProvider pricesSourceProvider,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
@@ -124,7 +124,7 @@ abstract class EvmTxProcessor {
 			final BlockMetaSource blockMetaSource
 	) {
 		this.worldState = worldState;
-		this.livePricesSource = livePricesSource;
+		this.pricesSourceProvider = pricesSourceProvider;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
 
@@ -361,12 +361,12 @@ abstract class EvmTxProcessor {
 	}
 
 	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-		return livePricesSource.currentGasPrice(consensusTime,
+		return pricesSourceProvider.currentGasPrice(consensusTime,
 				isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
 	}
 
 	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
-		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
+		return pricesSourceProvider.currentGasPrice(consensusTime, getFunctionType());
 	}
 
 	protected abstract HederaFunctionality getFunctionType();

@@ -24,7 +24,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
@@ -36,7 +38,7 @@ import java.util.function.ToLongFunction;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 @Singleton
-public class LivePricesSource {
+public class LivePricesSource implements PricesSourceProvider {
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
 	private final FeeMultiplierSource feeMultiplierSource;
@@ -82,5 +84,15 @@ public class LivePricesSource {
 		} else {
 			return unscaledPrice * curMultiplier;
 		}
+	}
+
+	@Override
+	public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
+		return usagePrices.defaultPricesGiven(function, at);
+	}
+
+	@Override
+	public ExchangeRate rate(final Timestamp at) {
+		return exchange.rate(at);
 	}
 }

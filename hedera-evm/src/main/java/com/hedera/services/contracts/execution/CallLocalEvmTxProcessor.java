@@ -58,7 +58,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	@Inject
 	public CallLocalEvmTxProcessor(
 			final CodeCache codeCache,
-			final LivePricesSource livePricesSource,
+			final PricesSourceProvider pricesSourceProvider,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
@@ -67,7 +67,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final StorageExpiry storageExpiry
 	) {
 		super(
-				livePricesSource,
+				pricesSourceProvider,
 				dynamicProperties,
 				gasCalculator,
 				hederaOperations,

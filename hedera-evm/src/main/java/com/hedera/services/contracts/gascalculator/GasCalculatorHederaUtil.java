@@ -23,8 +23,7 @@ package com.hedera.services.contracts.gascalculator;
  */
 
 
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.contracts.execution.PricesSourceProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -45,14 +44,13 @@ public final class GasCalculatorHederaUtil {
 	}
 
 	public static long ramByteHoursTinyBarsGiven(
-			final UsagePricesProvider usagePrices,
-			final HbarCentExchange exchange,
+			final PricesSourceProvider pricesSourceProvider,
 			long consensusTime,
 			HederaFunctionality functionType) {
 		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
+		FeeData prices = pricesSourceProvider.defaultPricesGiven(functionType, timestamp);
 		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
+		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(pricesSourceProvider.rate(timestamp), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
 	}
 
@@ -78,8 +76,7 @@ public final class GasCalculatorHederaUtil {
 
 	@SuppressWarnings("unused")
 	public static long logOperationGasCost(
-			final UsagePricesProvider usagePrices,
-			final HbarCentExchange exchange,
+			final PricesSourceProvider pricesSourceProvider,
 			final MessageFrame frame,
 			final long storageDuration,
 			final long dataOffset,
@@ -94,7 +91,7 @@ public final class GasCalculatorHederaUtil {
 		return GasCalculatorHederaUtil.calculateStorageGasNeeded(
 				logStorageTotalSize,
 				storageDuration,
-				GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
+				GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(pricesSourceProvider, timestamp, functionType),
 				gasPrice);
 	}
 }

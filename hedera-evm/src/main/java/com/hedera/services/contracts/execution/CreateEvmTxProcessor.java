@@ -56,7 +56,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	@Inject
 	public CreateEvmTxProcessor(
 			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
+			final PricesSourceProvider pricesSourceProvider,
 			final CodeCache codeCache,
 			final GlobalDynamicProperties globalDynamicProperties,
 			final GasCalculator gasCalculator,
@@ -67,7 +67,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	) {
 		super(
 				worldState,
-				livePricesSource,
+				pricesSourceProvider,
 				globalDynamicProperties,
 				gasCalculator,
 				hederaOperations,
