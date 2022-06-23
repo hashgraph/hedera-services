@@ -138,7 +138,7 @@ public class EndOfStakingPeriodCalculator {
 			newTotalStakedStart += stakingInfo.getStake();
 			nodeStakingInfos.add(NodeStake.newBuilder()
 					.setNodeId(nodeNum.longValue())
-					.setRewardRate(nodePendingRewards)
+					.setRewardRate(nodeRewardRate)
 					.setStake(stakingInfo.getStake())
 					.setMinStake(stakingInfo.getMinStake())
 					.setMaxStake(stakingInfo.getMaxStake())
