@@ -51,6 +51,7 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PAR
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.test.utils.TxnUtils.recordOne;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -67,6 +68,8 @@ class ExpirableTxnRecordTest {
 	private static final short numChildRecords = 2;
 
 	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
+
+	private static final String pseudoRandomBitString = TxnUtils.random384BitBinaryText();
 
 	private static final TokenID nft = IdUtils.asToken("0.0.2");
 	private static final TokenID tokenA = IdUtils.asToken("0.0.3");
@@ -223,11 +226,13 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomBitString(pseudoRandomBitString);
 
 		final var grpcSubject = subject.asGrpc();
 
@@ -236,6 +241,31 @@ class ExpirableTxnRecordTest {
 		assertEquals(expected, grpcSubject);
 		assertEquals(List.of(expected, expected), multiple);
 	}
+
+	@Test
+	void asGrpcWithBothPseudoRandomNumbersSetWorks() {
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
+				.toBuilder()
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
+				.setPseudorandomNumber(10)
+				.build();
+
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setExpiry(0L);
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomBitString(pseudoRandomBitString);
+		subject.setPseudoRandomNumber(10);
+
+		final var grpcSubject = subject.asGrpc();
+
+		var multiple = allToGrpc(List.of(subject, subject));
+
+		assertEquals(expected, grpcSubject);
+		assertEquals(List.of(expected, expected), multiple);
+	}
+
 
 	@Test
 	void nullEqualsWorks() {

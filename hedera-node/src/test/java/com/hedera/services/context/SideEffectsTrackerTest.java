@@ -33,6 +33,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -385,19 +387,19 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void tracksAndResetsPseudoRandomDataCorrectly(){
+	void tracksAndResetsPseudoRandomDataCorrectly() {
 		final var num = 100;
-		final var bytes = new byte[]{0, 1, 2};
+		final var bytes = TxnUtils.random384BitBinaryText();
 
 		subject.trackPseudoRandomNumber(num);
-		subject.trackPseudoRandomBytes(bytes);
+		subject.trackPseudoRandomBitString(bytes);
 
 		assertEquals(100, subject.getPseudorandomNumber());
-		assertArrayEquals(bytes, subject.getPseudorandomBytes());
+		assertEquals(bytes, subject.getPseudorandomBitString());
 
 		subject.reset();
 		assertEquals(0, subject.getPseudorandomNumber());
-		assertArrayEquals(new byte[MAX_PSEUDORANDOM_LENGTH], subject.getPseudorandomBytes());
+		assertEquals("", subject.getPseudorandomBitString());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

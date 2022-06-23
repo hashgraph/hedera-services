@@ -29,37 +29,38 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
+import java.math.BigInteger;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGenerateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
-	private static final Hash aFullHash = new Hash(TxnUtils.randomUtf8Bytes(MAX_PSEUDORANDOM_LENGTH));
+	private static final Hash aFullHash = new Hash(TxnUtils.randomUtf8Bytes(48));
 
-	@Mock
-	private SideEffectsTracker tracker;
+	private SideEffectsTracker tracker = new SideEffectsTracker();
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
 	private SignedTxnAccessor accessor;
+	@Mock
+	private RunningHash runningHash;
 
 	private RandomGenerateTransitionLogic subject;
 	private TransactionBody randomGenerateTxn;
@@ -99,17 +100,78 @@ class RandomGenerateTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPath() throws InterruptedException {
+	void followsHappyPathWithNoRange() {
 		givenValidTxnCtxWithoutRange();
-		given(runningHashLeaf.currentRunningHash()).willReturn(aFullHash);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
-		given(txnCtx.activePayer()).willReturn(ourAccount());
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
-		verify(tracker).trackPseudoRandomBytes(aFullHash.getValue());
-		verify(tracker, never()).trackPseudoRandomNumber(anyInt());
+
+		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
+		assertEquals(expectedBitString, tracker.getPseudorandomBitString());
+		assertEquals(0, tracker.getPseudorandomNumber());
+
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void followsHappyPathWithRange() {
+		givenValidTxnCtx(20);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(aFullHash);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+
+		final var num = tracker.getPseudorandomNumber();
+		assertTrue(num >= 0 && num < 20);
+	}
+
+	@Test
+	void followsHappyPathWithMaxIntegerRange() {
+		givenValidTxnCtx(Integer.MAX_VALUE);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(aFullHash);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+
+		final var num = tracker.getPseudorandomNumber();
+		assertTrue(num >= 0 && num < Integer.MAX_VALUE);
+	}
+
+	@Test
+	void anyNegativeValueThrowsInPrecheck() {
+		givenValidTxnCtx(Integer.MIN_VALUE);
+
+		final var response = subject.semanticCheck().apply(randomGenerateTxn);
+		assertEquals(INVALID_RANDOM_GENERATE_RANGE, response);
+	}
+
+	@Test
+	void givenRangeZeroGivesBitString() {
+		givenValidTxnCtx(0);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(aFullHash);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
+		assertEquals(expectedBitString, tracker.getPseudorandomBitString());
+		assertEquals(0, tracker.getPseudorandomNumber());
 	}
 
 	private void givenValidTxnCtx(int range) {

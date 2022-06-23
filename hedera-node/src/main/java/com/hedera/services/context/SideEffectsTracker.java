@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.crypto.RunningHash;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
@@ -87,7 +86,7 @@ public class SideEffectsTracker {
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
-	private byte[] pseudorandomBytes = DEFAULT_PSEUDORANDOM_BYTES;
+	private String pseudorandomBitString = "";
 	private int pseudorandomNumber;
 
 	@Inject
@@ -431,16 +430,16 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public void trackPseudoRandomBytes(final byte[] bytes) {
-		this.pseudorandomBytes = bytes;
+	public void trackPseudoRandomBitString(final String bytes) {
+		this.pseudorandomBitString = bytes;
 	}
 
 	public void trackPseudoRandomNumber(final int pseudoRandomNumber) {
 		this.pseudorandomNumber = pseudoRandomNumber;
 	}
 
-	public byte[] getPseudorandomBytes() {
-		return pseudorandomBytes;
+	public String getPseudorandomBitString() {
+		return pseudorandomBitString;
 	}
 
 	public int getPseudorandomNumber() {
@@ -448,7 +447,7 @@ public class SideEffectsTracker {
 	}
 
 	public boolean hasTrackedRandomData() {
-		return pseudorandomNumber > 0 || !Arrays.equals(pseudorandomBytes, DEFAULT_PSEUDORANDOM_BYTES);
+		return pseudorandomNumber > 0 || !pseudorandomBitString.isEmpty();
 	}
 
 	/**
@@ -463,7 +462,7 @@ public class SideEffectsTracker {
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
 		pseudorandomNumber = 0;
-		pseudorandomBytes = DEFAULT_PSEUDORANDOM_BYTES;
+		pseudorandomBitString = "";
 	}
 
 	/**

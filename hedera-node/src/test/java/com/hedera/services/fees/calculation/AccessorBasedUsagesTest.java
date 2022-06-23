@@ -51,6 +51,7 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
@@ -120,6 +121,8 @@ class AccessorBasedUsagesTest {
 	@Mock
 	private ConsensusOpsUsage consensusOpsUsage;
 	@Mock
+	private UtilOpsUsage utilOpsUsage;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
 	private AccessorBasedUsages subject;
@@ -127,7 +130,8 @@ class AccessorBasedUsagesTest {
 	@BeforeEach
 	void setUp() {
 		subject = new AccessorBasedUsages(
-				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, dynamicProperties);
+				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, utilOpsUsage,
+				dynamicProperties);
 	}
 
 	@Test
