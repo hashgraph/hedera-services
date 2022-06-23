@@ -22,20 +22,12 @@ package com.hedera.services.txns.util;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
-import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
-import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
-import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 
 @Module

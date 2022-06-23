@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UtilOpsUsageTest {
+class UtilOpsUsageTest {
 	private static final long now = 1_234_567L;
 	private UtilOpsUsage subject = new UtilOpsUsage();
 	@Test

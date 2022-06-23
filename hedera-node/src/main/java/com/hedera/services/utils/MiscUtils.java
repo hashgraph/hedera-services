@@ -51,6 +51,7 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;
@@ -69,6 +70,7 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
 import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -935,5 +937,22 @@ public final class MiscUtils {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(signedTxn.toByteString())
 				.build();
+	}
+
+	public static String byteArrayToBinaryString(byte[] bytes) {
+		StringBuilder result = new StringBuilder();
+		for (byte b1 : bytes) {
+			result.append(String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0'));
+		}
+		return result.toString();
+	}
+
+	public static String byteArrayToBinary(final byte[] pseudoRandomBytes) {
+		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
+		if (randomBitString.length() < MAX_PSEUDORANDOM_BIT_STRING_LENGTH) {
+			final var diff = MAX_PSEUDORANDOM_BIT_STRING_LENGTH - randomBitString.length();
+			return StringUtils.leftPad(randomBitString, diff, "0");
+		}
+		return randomBitString;
 	}
 }

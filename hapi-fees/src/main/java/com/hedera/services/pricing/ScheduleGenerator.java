@@ -21,7 +21,6 @@ package com.hedera.services.pricing;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.usage.util.RandomGenerateMeta;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Pair;

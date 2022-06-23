@@ -29,6 +29,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
 
 public class RandomGenerateSuite extends HapiApiSuite {
@@ -47,19 +48,41 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return List.of(
-				generatesRandomBytesIfNoRangeGiven()
+				generatesRandomBytesIfNoRangeOrZeroRangeGiven()
+//				failsInPreCheckForNegativerange(),
+//				returnsNumberWithinRange(),
+//				usdFeeAsExpected()
 		);
 	}
 
-	private HapiApiSpec generatesRandomBytesIfNoRangeGiven() {
+	private HapiApiSpec generatesRandomBytesIfNoRangeOrZeroRangeGiven() {
 		return defaultHapiSpec("createAnAccountWithStakingFields")
 				.given(
-						randomGenerate().logged().via("randomGenerate")
-								.payingWith(GENESIS)
-								.fee(ONE_HUNDRED_HBARS)
+						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
+
+						randomGenerate()
+								.payingWith("bob")
+								.via("randomGenerate")
+								.logged(),
+						getTxnRecord("randomGenerate")
+								.hasOnlyPseudoRandomBitString()
+								.logged()
 				).when(
-						getTxnRecord("randomGenerate").payingWith(GENESIS).logged()
+						randomGenerate(10)
+								.payingWith("bob")
+								.via("randomGenerateWithRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithRange")
+								.hasOnlyPseudoRandomNumberInRange(10)
+								.logged()
 				).then(
+						randomGenerate(0)
+								.payingWith("bob")
+								.via("randomGenerateWithZeroRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithZeroRange")
+								.hasOnlyPseudoRandomBitString()
+								.logged()
 				);
 	}
 

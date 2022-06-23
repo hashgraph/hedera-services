@@ -8,11 +8,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
-import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.MiscUtils.byteArrayToBinary;
+import static com.hedera.services.utils.MiscUtils.byteArrayToBinaryString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -35,8 +36,10 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
 		final var pseudoRandomBytes = runningHashLeafSupplier.get().getRunningHash().getHash().getValue();
+
 		//generate binary string from the running hash of records
-		final var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
+		var randomBitString = byteArrayToBinary(pseudoRandomBytes);
+		final var other = byteArrayToBinaryString(pseudoRandomBytes);
 
 		final var range = op.getRange();
 
@@ -68,4 +71,7 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		}
 		return OK;
 	}
+
+
+
 }

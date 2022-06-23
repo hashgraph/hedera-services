@@ -29,7 +29,7 @@ import java.io.IOException;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-public class UtilOpsSchedulesTest extends FeeSchedulesTestHelper{
+class UtilOpsSchedulesTest extends FeeSchedulesTestHelper{
 	@Test
 	void computesExpectedPriceForRandomGenerate() throws IOException {
 		testCanonicalPriceFor(RandomGenerate, DEFAULT);
