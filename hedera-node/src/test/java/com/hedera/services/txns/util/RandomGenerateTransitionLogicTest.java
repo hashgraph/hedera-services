@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,7 +111,8 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
-		assertEquals(expectedBitString, tracker.getPseudorandomBitString());
+		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
+		assertEquals(384, tracker.getPseudorandomBitString().length());
 		assertEquals(0, tracker.getPseudorandomNumber());
 
 		verify(txnCtx).setStatus(SUCCESS);
@@ -170,7 +172,8 @@ class RandomGenerateTransitionLogicTest {
 
 		verify(txnCtx).setStatus(SUCCESS);
 		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
-		assertEquals(expectedBitString, tracker.getPseudorandomBitString());
+		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
+		assertEquals(384, tracker.getPseudorandomBitString().length());
 		assertEquals(0, tracker.getPseudorandomNumber());
 	}
 
