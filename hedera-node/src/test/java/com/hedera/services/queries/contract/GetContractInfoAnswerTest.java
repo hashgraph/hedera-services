@@ -24,11 +24,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -37,6 +39,8 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.StakingInfo;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -89,6 +94,8 @@ class GetContractInfoAnswerTest {
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	ContractGetInfoResponse.ContractInfo info;
 
@@ -98,13 +105,18 @@ class GetContractInfoAnswerTest {
 	void setup() {
 		info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setLedgerId(ledgerId)
-				.setContractID(IdUtils.asContract(target))
+				.setContractID(asContract(target))
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
 				.setMemo("Stay cold...")
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setStakedAccountId(asAccount("0.0.2"))
+						.setStakePeriodStart(com.hederahashgraph.api.proto.java.Timestamp.newBuilder().setSeconds(12345678L).build())
+						.setDeclineReward(true)
+						.build())
 				.build();
 
-		subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties);
+		subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties, rewardCalculator);
 	}
 
 	@Test
@@ -112,7 +124,9 @@ class GetContractInfoAnswerTest {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.of(info));
+		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo,
+				rewardCalculator)).willReturn(
+				Optional.of(info));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -123,6 +137,13 @@ class GetContractInfoAnswerTest {
 		assertEquals(OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(ANSWER_ONLY, response.getContractGetInfo().getHeader().getResponseType());
 		assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
+
+		assertEquals(0L, info.getStakingInfo().getStakedNodeId());
+		assertTrue(info.getStakingInfo().hasStakedAccountId());
+		assertTrue(info.getStakingInfo().getDeclineReward());
+		assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
+		assertEquals(0L, info.getStakingInfo().getStakedToMe());
+
 		// and:
 		var actual = response.getContractGetInfo().getContractInfo();
 		assertEquals(info, actual);
@@ -146,7 +167,7 @@ class GetContractInfoAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertSame(info, opResponse.getContractInfo());
 		// and:
-		verify(view, never()).infoForContract(any(), any(), anyInt());
+		verify(view, never()).infoForContract(any(), any(), anyInt(), any());
 	}
 
 	@Test
@@ -154,7 +175,9 @@ class GetContractInfoAnswerTest {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.empty());
+		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo,
+				rewardCalculator)).willReturn(
+				Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -177,7 +200,7 @@ class GetContractInfoAnswerTest {
 		ContractGetInfoResponse opResponse = response.getContractGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(view, never()).infoForContract(any(), any(), anyInt());
+		verify(view, never()).infoForContract(any(), any(), anyInt(), any());
 	}
 
 	@Test

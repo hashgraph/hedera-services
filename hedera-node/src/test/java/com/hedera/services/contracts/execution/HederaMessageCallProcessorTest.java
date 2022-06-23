@@ -61,7 +61,7 @@ class HederaMessageCallProcessorTest {
 	private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
 	private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
 	private static final PrecompiledContract.PrecompileContractResult NO_RESULT = new PrecompiledContract.PrecompileContractResult(
-			Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+			null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 	private static final PrecompiledContract.PrecompileContractResult RESULT = new PrecompiledContract.PrecompileContractResult(
 			Bytes.of(1), true, MessageFrame.State.COMPLETED_SUCCESS, Optional.empty());
 	private static final long GAS_ONE = 1L;
@@ -156,7 +156,7 @@ class HederaMessageCallProcessorTest {
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(frame).decrementRemainingGas(GAS_ONE_K);
 		verify(nonHtsPrecompile).computePrecompile(Bytes.EMPTY, frame);
-		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, Bytes.EMPTY);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, null);
 		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
 	}
 
@@ -170,7 +170,7 @@ class HederaMessageCallProcessorTest {
 		subject.executeHederaPrecompile(nonHtsPrecompile, frame, operationTrace);
 
 		verify(frame).setState(EXCEPTIONAL_HALT);
-		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
 		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
 	}
 

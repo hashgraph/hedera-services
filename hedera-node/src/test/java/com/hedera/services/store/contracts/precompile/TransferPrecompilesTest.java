@@ -121,6 +121,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -750,7 +751,7 @@ class TransferPrecompilesTest {
 		var result = subject.computePrecompile(pretendArguments, frame);
 
 		assertDoesNotThrow(() -> subject.prepareComputation(pretendArguments, a -> a));
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	@Test

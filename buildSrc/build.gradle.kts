@@ -27,6 +27,9 @@ plugins {
 repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1500")
+    }
 }
 
 dependencies {

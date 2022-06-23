@@ -56,7 +56,9 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -93,15 +95,14 @@ public class BasicTransactionContext implements TransactionContext {
 	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
+	private EvmFnResult evmFnResult;
 	private TxnAccessor accessor;
+	private Map<Long, Long> deletedBeneficiaries;
 	private ResponseCodeEnum statusSoFar;
-	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
+	private ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<FcAssessedCustomFee> assessedCustomFees;
-
-	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
-	private EvmFnResult evmFnResult;
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
@@ -109,6 +110,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
 	private final SideEffectsTracker sideEffectsTracker;
+	private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
@@ -136,6 +138,7 @@ public class BasicTransactionContext implements TransactionContext {
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
 		this.triggeredTxn = null;
+		this.deletedBeneficiaries = null;
 		this.expiringEntities.clear();
 
 		otherNonThresholdFees = 0L;
@@ -152,6 +155,27 @@ public class BasicTransactionContext implements TransactionContext {
 		recordSoFar.reset();
 		sideEffectsTracker.reset();
 		evmFnResult = null;
+	}
+
+	@Override
+	public void recordBeneficiaryOfDeleted(final long accountNum, final long beneficiaryNum) {
+		if (deletedBeneficiaries == null) {
+			deletedBeneficiaries = new HashMap<>();
+		}
+		deletedBeneficiaries.put(accountNum, beneficiaryNum);
+	}
+
+	@Override
+	public long getBeneficiaryOfDeleted(final long accountNum) {
+		if (deletedBeneficiaries == null || !deletedBeneficiaries.containsKey(accountNum)) {
+			throw new IllegalArgumentException("Nothing recorded 0.0." + accountNum + " as deleted this transaction");
+		}
+		return deletedBeneficiaries.get(accountNum);
+	}
+
+	@Override
+	public int numDeletedAccountsAndContracts() {
+		return deletedBeneficiaries == null ? 0 : deletedBeneficiaries.size();
 	}
 
 	@Override

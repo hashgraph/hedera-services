@@ -340,11 +340,11 @@ class E2EPackageRunner extends TestBase {
 	@Tag("contract.openzeppelin.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpenZeppelinEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -427,7 +427,7 @@ class E2EPackageRunner extends TestBase {
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
-		return List.of(new DynamicContainer[]{
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
 				extractSpecsFromSuiteForEth(ContractCallSuite::new),
 				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
@@ -760,5 +760,38 @@ class E2EPackageRunner extends TestBase {
 		return List.of(
 				extractSpecsFromSuite(SubmitMessagePerfSuite::new)
 		);
+	}
+
+	private DynamicContainer extractSpecsFromSuite(final Supplier<HapiApiSuite> suiteSupplier) {
+		final var suite = suiteSupplier.get();
+		final var tests = suite.getSpecsInSuite()
+				.stream()
+				.map(s -> dynamicTest(s.getName(), () -> {
+							s.run();
+							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + "}, while " +
+											"executing " +
+											"SPEC {" + s.getName() + "}");
+						}
+				));
+		return dynamicContainer(suite.getClass().getSimpleName(), tests);
+	}
+
+	private DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiApiSuite> suiteSupplier) {
+		final var suite = suiteSupplier.get();
+		final var tests = suite.getSpecsInSuite()
+				.stream()
+				.map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
+							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
+							s.run();
+							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
+											" " +
+											"while " +
+											"executing " +
+											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
+						}
+				));
+		return dynamicContainer(suite.getClass().getSimpleName(), tests);
 	}
 }

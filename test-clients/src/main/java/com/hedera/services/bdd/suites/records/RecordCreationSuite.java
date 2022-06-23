@@ -77,6 +77,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
@@ -205,7 +206,15 @@ public class RecordCreationSuite extends HapiApiSuite {
 							uploadDefaultFeeSchedules(GENESIS),
 							fileUpdate(API_PERMISSIONS)
 									.payingWith(GENESIS)
-									.contents(serde.toValidatedRawFile(stylized121))
+									.contents(serde.toValidatedRawFile(stylized121)),
+							overridingAllOf(Map.of(
+									"staking.fees.nodeRewardPercentage", "10",
+									"staking.fees.stakingRewardPercentage", "10",
+									"staking.isEnabled", "true",
+									"staking.maxDailyStakeRewardThPerH", "100",
+									"staking.rewardRate", "100_000_000_000",
+									"staking.startThreshold", "100_000_000"
+							))
 					).when().then(
 							getAccountDetails("0.0.800")
 									.payingWith(GENESIS)
@@ -235,6 +244,12 @@ public class RecordCreationSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "10"
+								)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
 								.payingWith(GENESIS),
 						cryptoCreate("payer"),
@@ -247,6 +262,8 @@ public class RecordCreationSuite extends HapiApiSuite {
 				).when(
 						balanceSnapshot("before", "0.0.3"),
 						balanceSnapshot("fundingBefore", "0.0.98"),
+						balanceSnapshot("stakingReward", "0.0.800"),
+						balanceSnapshot("nodeReward", "0.0.801"),
 						sourcing(() ->
 								cryptoTransfer(
 										tinyBarsFromTo(GENESIS, FUNDING, 1L)
@@ -256,16 +273,33 @@ public class RecordCreationSuite extends HapiApiSuite {
 										.payingWith("payer")
 										.via("txnId")
 										.hasKnownStatus(INSUFFICIENT_TX_FEE)
+										.logged()
 						)
 				).then(
 						sourcing(() ->
 								getAccountBalance("0.0.3")
 										.hasTinyBars(
-												changeFromSnapshot("before", +feeObs.get().getNodeFee()))),
+												changeFromSnapshot("before", +feeObs.get().getNodeFee()))
+										.logged()),
 						sourcing(() ->
 								getAccountBalance("0.0.98")
 										.hasTinyBars(
-												changeFromSnapshot("fundingBefore", +feeObs.get().getNetworkFee()))),
+												changeFromSnapshot("fundingBefore",
+														(long) (+feeObs.get().getNetworkFee() * 0.8 + 1)))
+										.logged()
+						),
+						sourcing(() ->
+								getAccountBalance("0.0.800")
+										.hasTinyBars(
+												changeFromSnapshot("stakingReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.1)))
+										.logged()),
+						sourcing(() ->
+								getAccountBalance("0.0.801")
+										.hasTinyBars(
+												changeFromSnapshot("nodeReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.1)))
+										.logged()),
 						sourcing(() ->
 								getTxnRecord("txnId")
 										.assertingNothingAboutHashes()
@@ -285,6 +319,12 @@ public class RecordCreationSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "20"
+								)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
 								.payingWith(GENESIS),
 						cryptoCreate("payer"),
@@ -299,6 +339,8 @@ public class RecordCreationSuite extends HapiApiSuite {
 				).when(
 						balanceSnapshot("before", "0.0.3"),
 						balanceSnapshot("fundingBefore", "0.0.98"),
+						balanceSnapshot("stakingReward", "0.0.800"),
+						balanceSnapshot("nodeReward", "0.0.801"),
 						uncheckedSubmit(
 								cryptoTransfer(
 										tinyBarsFromTo(GENESIS, FUNDING, 1L)
@@ -317,7 +359,22 @@ public class RecordCreationSuite extends HapiApiSuite {
 						sourcing(() ->
 								getAccountBalance("0.0.98")
 										.hasTinyBars(
-												changeFromSnapshot("fundingBefore", +feeObs.get().getNetworkFee()))),
+												changeFromSnapshot("fundingBefore",
+														(long) (+feeObs.get().getNetworkFee() * 0.7 + 1)))
+										.logged()
+						),
+						sourcing(() ->
+								getAccountBalance("0.0.800")
+										.hasTinyBars(
+												changeFromSnapshot("stakingReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.1)))
+										.logged()),
+						sourcing(() ->
+								getAccountBalance("0.0.801")
+										.hasTinyBars(
+												changeFromSnapshot("nodeReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.2)))
+										.logged()),
 						sourcing(() ->
 								getTxnRecord("txnId")
 										.assertingNothingAboutHashes()
@@ -334,6 +391,12 @@ public class RecordCreationSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "20"
+								)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
 								.payingWith(GENESIS),
 						cryptoCreate("payer"),
@@ -348,6 +411,8 @@ public class RecordCreationSuite extends HapiApiSuite {
 				).when(
 						balanceSnapshot("before", "0.0.3"),
 						balanceSnapshot("fundingBefore", "0.0.98"),
+						balanceSnapshot("stakingReward", "0.0.800"),
+						balanceSnapshot("nodeReward", "0.0.801"),
 						sourcing(() ->
 								uncheckedSubmit(
 										cryptoTransfer(
@@ -369,7 +434,22 @@ public class RecordCreationSuite extends HapiApiSuite {
 						sourcing(() ->
 								getAccountBalance("0.0.98")
 										.hasTinyBars(
-												changeFromSnapshot("fundingBefore", +feeObs.get().getNetworkFee()))),
+												changeFromSnapshot("fundingBefore",
+														(long) (+feeObs.get().getNetworkFee() * 0.7 + 1)))
+										.logged()
+						),
+						sourcing(() ->
+								getAccountBalance("0.0.800")
+										.hasTinyBars(
+												changeFromSnapshot("stakingReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.1)))
+										.logged()),
+						sourcing(() ->
+								getAccountBalance("0.0.801")
+										.hasTinyBars(
+												changeFromSnapshot("nodeReward",
+														(long) (+feeObs.get().getNetworkFee() * 0.2)))
+										.logged()),
 						sourcing(() ->
 								getTxnRecord("txnId")
 										.assertingNothingAboutHashes()

@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -83,6 +84,8 @@ class MutableStateChildrenTest {
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	private MutableStateChildren subject = new MutableStateChildren();
 
@@ -116,6 +119,7 @@ class MutableStateChildrenTest {
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.aliases()).willReturn(aliases);
+		given(state.stakingInfo()).willReturn(stakingInfo);
 	}
 
 	private void assertChildrenAreExpectedMocks() {
@@ -132,6 +136,7 @@ class MutableStateChildrenTest {
 		assertSame(uniqueTokens, subject.uniqueTokens());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
 		assertSame(aliases, subject.aliases());
+		assertSame(stakingInfo, subject.stakingInfo());
 	}
 
 	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
