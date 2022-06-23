@@ -96,7 +96,7 @@ jobs:
 
       - name: Publish Unit Test Report
         uses: mikepenz/action-junit-report@v3
-        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
@@ -109,13 +109,13 @@ jobs:
       - name: Integration Testing
         id: gradle-itest
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
         with:
           arguments: itest
 
       - name: Publish Integration Test Report
         uses: mikepenz/action-junit-report@v3
-        if: ${{ inputs.enable-unit-tests && steps.gradle-itest.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
