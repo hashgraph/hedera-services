@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
@@ -65,7 +66,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private static final DigestType currentDigestType = DigestType.SHA_384;
 
 	/**
-<	 * the current record stream type;
+	 * <	 * the current record stream type;
 	 * used to obtain file extensions and versioning
 	 */
 	private final RecordStreamType streamType;
@@ -251,10 +252,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					dosMeta.writeLong(recordStreamFileBuilder.getBlockNumber());
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write block number {}",
 							recordStreamFileBuilder.getBlockNumber());
-				} catch (InterruptedException e) {
+				} catch (InterruptedException | ExecutionException e) {
 					Thread.currentThread().interrupt();
 					LOG.error(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: Got interrupted when getting endRunningHash for writing {}",
+							"closeCurrentAndSign :: Exception when getting endRunningHash for writing {}",
 							fileNameShort, e);
 					return;
 				} catch (IOException e) {
@@ -268,15 +269,16 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				/* When sidecars are enabled we will need to add more logic at this point:
 					1. We should have a map (?) of the TransactionSidecarRecords with key - the type of sidecar, updated
 					everytime we consume a RSO.
-					2. At this point, we will create a SidecarFile for each present type of sidecar record in the current
+					2. At this point, we will create a SidecarFile for each present type of sidecar record in the
+					current
 					 block
 					3. We populate the SidecarMetadata of the RecordStreamFile message
 				*/
 
 				// create record file
 				try (FileOutputStream stream = new FileOutputStream(file, false);
-					SerializableDataOutputStream dos = new SerializableDataOutputStream(
-							new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)))
+					 SerializableDataOutputStream dos = new SerializableDataOutputStream(
+							 new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)))
 				) {
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file created {}", fileNameShort);
 
@@ -350,11 +352,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 			LOG.error(
 					EXCEPTION.getMarker(),
 					"beginNew :: Got IOException when writing startRunningHash to metadata stream", e);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
 			LOG.error(
 					EXCEPTION.getMarker(),
-					"beginNew :: Got interrupted when getting startRunningHash for writing to metadata stream.", e);
+					"beginNew :: Exception when getting startRunningHash for writing to metadata stream", e);
 		}
 	}
 
@@ -362,7 +364,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	 * add given object to the current record stream file
 	 *
 	 * @param object
-	 * 	object to be added to the record stream file
+	 * 		object to be added to the record stream file
 	 */
 	private void consume(final RecordStreamObject object) {
 		recordStreamFileBuilder.addRecordStreamItems(
@@ -378,10 +380,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
 	/**
 	 * generate full fileName from given Instant object
+	 *
 	 * @param consensusTimestamp
-	 * 	the consensus timestamp of the first transaction in the record file
-	 * @return
-	 * 	the new record file name
+	 * 		the consensus timestamp of the first transaction in the record file
+	 * @return the new record file name
 	 */
 	String generateStreamFilePath(final Instant consensusTimestamp) {
 		return dirPath + File.separator + generateStreamFileNameFromInstant(consensusTimestamp, streamType);
@@ -429,10 +431,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	 * Helper method that serializes a RecordStreamFile.
 	 * Uses deterministic serialization to ensure multiple invocations on the same
 	 * object lead to identical serialization.
+	 *
 	 * @param recordStreamFileProtoBuilder
 	 * 		the RecordStreamFile object that needs to be serialized
-	 * @return
-	 * 		the serialized bytes
+	 * @return the serialized bytes
 	 */
 	private byte[] serialize(final RecordStreamFile.Builder recordStreamFileProtoBuilder) throws IOException {
 		final var recordStreamFileProto = recordStreamFileProtoBuilder.build();
