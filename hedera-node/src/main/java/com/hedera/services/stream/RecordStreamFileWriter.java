@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
@@ -255,7 +256,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				} catch (InterruptedException | ExecutionException e) {
 					Thread.currentThread().interrupt();
 					LOG.error(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: Exception when getting endRunningHash for writing {}",
+							"closeCurrentAndSign :: failed when getting endRunningHash for writing {}",
 							fileNameShort, e);
 					return;
 				} catch (IOException e) {
@@ -486,5 +487,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				.setSignature(ByteStringUtils.wrapUnsafely(signature))
 				.setHashObject(toProto(hash))
 				.build();
+	}
+
+	@VisibleForTesting
+	void clearRunningHash() {
+		runningHash = new RunningHash();
 	}
 }
