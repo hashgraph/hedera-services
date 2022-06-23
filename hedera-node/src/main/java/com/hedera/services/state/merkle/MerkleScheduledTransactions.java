@@ -24,7 +24,6 @@ import java.util.List;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
-import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
@@ -32,8 +31,7 @@ import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,12 +73,11 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	}
 
 	public MerkleScheduledTransactions() {
-		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 		addDeserializedChildren(List.of(
 				new MerkleScheduledTransactionsState(),
-				virtualMapFactory.newScheduleListStorage(),
-				virtualMapFactory.newScheduleTemporalStorage(),
-				virtualMapFactory.newScheduleEqualityStorage()), CURRENT_VERSION);
+				new MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue>(),
+				new MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>(),
+				new MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>()), CURRENT_VERSION);
 	}
 
 	/**
@@ -149,15 +146,15 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 		return getChild(ChildIndices.STATE);
 	}
 
-	public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+	public MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
 		return getChild(ChildIndices.BY_ID);
 	}
 
-	public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+	public MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
 		return getChild(ChildIndices.BY_EXPIRATION_SECOND);
 	}
 
-	public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+	public MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
 		return getChild(ChildIndices.BY_EQUALITY);
 	}
 
