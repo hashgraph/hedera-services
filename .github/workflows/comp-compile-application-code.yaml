@@ -98,7 +98,7 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
         with:
-          name: Unit Test Results
+          check_name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
           require_tests: 'false'
 
@@ -117,7 +117,7 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         if: ${{ inputs.enable-unit-tests && steps.gradle-itest.conclusion == 'success' && !cancelled() }}
         with:
-          name: Integration Test Results
+          check_name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
           require_tests: 'false'
 
