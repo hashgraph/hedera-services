@@ -53,6 +53,10 @@ repositories {
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
     }
+
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
+    }
 }
 
 // Enable maven publications
