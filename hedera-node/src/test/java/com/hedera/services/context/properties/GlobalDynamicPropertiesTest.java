@@ -94,7 +94,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
-		assertTrue(subject.isStakingEnabled());
+		assertFalse(subject.isStakingEnabled());
 	}
 
 	@Test
@@ -135,6 +135,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(30, subject.feesMinCongestionPeriod());
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(78, subject.recordFileVersion());
+		assertEquals(79, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -186,7 +188,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
 		assertEquals(69L, subject.maxPrecedingRecords());
 		assertEquals(70L, subject.maxFollowingRecords());
-		assertEquals(76L, subject.maxDailyStakeRewardThPerH());
+		assertEquals(74L, subject.getStakingRewardRate());
+		assertEquals(75L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test
@@ -230,6 +233,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
+		assertTrue(subject.isStakingEnabled());
 	}
 
 	@Test
@@ -281,6 +285,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
 		assertEquals(73, subject.getNodeRewardPercent());
 		assertEquals(74, subject.getStakingRewardPercent());
+		assertEquals(79, subject.recordFileVersion());
+		assertEquals(80, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -303,9 +309,10 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
 		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
 		assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
-		assertEquals(76L, subject.getStakingRewardRate());
 		assertEquals(70L, subject.maxPrecedingRecords());
 		assertEquals(71L, subject.maxFollowingRecords());
+		assertEquals(75L, subject.getStakingRewardRate());
+		assertEquals(76L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test
@@ -417,11 +424,14 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 70L);
 		given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 71);
 		given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 72);
-		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
+		given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 73L);
+		given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 74L);
 		given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
-				.willReturn((i + 65) % 2 == 0);
-		given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 75L);
-		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
+				.willReturn((i + 75) % 2 == 0);
+		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 76) % 2 == 0);
+		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
+		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
+
 	}
 
 	private Set<EntityType> typesFor(final int i) {
