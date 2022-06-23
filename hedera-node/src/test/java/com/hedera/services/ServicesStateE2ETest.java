@@ -20,10 +20,6 @@ package com.hedera.services;
  * ‍
  */
 
-import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -36,7 +32,6 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.platform.SignedStateFileManager;
-import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.SignedState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,6 +68,7 @@ public class ServicesStateE2ETest {
 	void testNftsFromSignedStateV25() {
 		assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.25.3/SignedState.swh"));
 	}
+
 	@Test
 	void testGenesisState() {
 		final var swirldDualState = new DualStateImpl();

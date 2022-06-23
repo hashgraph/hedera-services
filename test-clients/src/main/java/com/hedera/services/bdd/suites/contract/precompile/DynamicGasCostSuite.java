@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -87,6 +88,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -383,6 +385,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000"
+						)),
 						newKeyNamed(adminKey),
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),

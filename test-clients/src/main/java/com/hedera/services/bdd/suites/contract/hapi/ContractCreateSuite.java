@@ -94,6 +94,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -391,6 +392,14 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec createEmptyConstructor() {
 		return defaultHapiSpec("EmptyConstructor")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000"
+						)),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
 

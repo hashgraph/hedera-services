@@ -78,7 +78,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
@@ -208,7 +208,14 @@ public class RecordCreationSuite extends HapiApiSuite {
 							fileUpdate(API_PERMISSIONS)
 									.payingWith(GENESIS)
 									.contents(serde.toValidatedRawFile(stylized121)),
-							overriding("staking.isEnabled", "true")
+							overridingAllOf(Map.of(
+									"staking.fees.nodeRewardPercentage", "10",
+									"staking.fees.stakingRewardPercentage", "10",
+									"staking.isEnabled", "true",
+									"staking.maxDailyStakeRewardThPerH", "100",
+									"staking.rewardRate", "100_000_000_000",
+									"staking.startThreshold", "100_000_000"
+							))
 					).when().then(
 							getAccountDetails("0.0.800")
 									.payingWith(GENESIS)

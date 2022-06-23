@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
+import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -892,6 +893,7 @@ class ServicesStateTest {
 		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
 		ServicesState.setVmFactory(vmf);
 		ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
+		ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
 	}
 
 	private void unmockMigrators() {
@@ -901,5 +903,6 @@ class ServicesStateTest {
 		ServicesState.setVmFactory(VirtualMapFactory::new);
 		ServicesState.setScheduledTransactionsMigrator(
 				LongTermScheduledTransactionsMigration::migrateScheduledTransactions);
+		ServicesState.setStakingInfoBuilder(ReleaseTwentySevenMigration::buildStakingInfoMap);
 	}
 }

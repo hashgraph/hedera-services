@@ -60,9 +60,6 @@ repositories {
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
     }
-    maven {
-        url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
-    }
 }
 
 // Enable maven publications

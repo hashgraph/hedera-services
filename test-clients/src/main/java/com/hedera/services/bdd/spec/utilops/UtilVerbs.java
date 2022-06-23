@@ -58,6 +58,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
@@ -65,6 +66,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
+import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -76,7 +78,9 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
@@ -149,6 +153,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -337,6 +342,12 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation overridingAllOf(Map<String, String> explicit) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(explicit);
+	}
+
 	public static HapiSpecOperation resetToDefault(String... properties) {
 		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
 		return fileUpdate(APP_PROPERTIES)
@@ -384,6 +395,13 @@ public class UtilVerbs {
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
 		return new RecordStreamVerification(baseDir);
+	}
+
+	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, List<Transaction> transactions, TransactionRecord... transactionRecord) {
+		var recordFileName = generateStreamFileNameFromInstant(
+				Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
+
+		return new RecordFileChecker(recordFileName, transactions, transactionRecord);
 	}
 
 	/* Some more complicated ops built from primitive sub-ops */

@@ -127,10 +127,11 @@ public class GlobalDynamicProperties {
 	private long stakingStartThreshold;
 	private int nodeRewardPercent;
 	private int stakingRewardPercent;
-	private int stakingActiveThreshold;
 	private boolean contractAutoAssociationsEnabled;
 	private boolean stakingEnabled;
 	private long maxDailyStakeRewardThPerH;
+	private int recordFileVersion;
+	private int recordSignatureFileVersion;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -235,10 +236,11 @@ public class GlobalDynamicProperties {
 		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
 		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
 		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
-		stakingActiveThreshold = properties.getIntProperty("staking.activeThreshold");
 		contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
 		maxDailyStakeRewardThPerH = properties.getLongProperty("staking.maxDailyStakeRewardThPerH");
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
+		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
+		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
 	}
 
 	public int maxTokensPerAccount() {
@@ -581,10 +583,6 @@ public class GlobalDynamicProperties {
 		return stakingRewardPercent;
 	}
 
-	public int getStakingActiveThreshold() {
-		return stakingActiveThreshold;
-        }
-
 	public boolean areContractAutoAssociationsEnabled() {
 		return contractAutoAssociationsEnabled;
 	}
@@ -595,5 +593,13 @@ public class GlobalDynamicProperties {
 
 	public long maxDailyStakeRewardThPerH() {
 		return maxDailyStakeRewardThPerH;
+	}
+
+	public int recordFileVersion() {
+		return recordFileVersion;
+	}
+
+	public int recordSignatureFileVersion() {
+		return recordSignatureFileVersion;
 	}
 }

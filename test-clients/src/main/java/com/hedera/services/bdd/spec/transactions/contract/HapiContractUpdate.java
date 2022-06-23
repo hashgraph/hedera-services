@@ -73,7 +73,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> bytecode = Optional.empty();
 	private Optional<String> newStakedAccountId = Optional.empty();
 	private Optional<Long> newStakedNodeId = Optional.empty();
-	private boolean newDeclinedReward = false;
+	private OptionalBoolean newDeclinedReward = OptionalBoolean.empty();
 	private Optional<String> newProxy = Optional.empty();
 	private Optional<String> newAutoRenewAccount = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
@@ -166,7 +166,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 
 	public HapiContractUpdate newDeclinedReward(boolean isDeclined) {
-		newDeclinedReward = isDeclined;
+		newDeclinedReward = OptionalBoolean.of(isDeclined);
 		return this;
 	}
 
@@ -224,10 +224,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 
 							if (newStakedAccountId.isPresent()) {
 								b.setStakedAccountId(asId(newStakedAccountId.get(), spec));
-							} else if (newStakedNodeId.isPresent()) {
-								b.setStakedNodeId(newStakedNodeId.get());
+							} else {
+								newStakedNodeId.ifPresent(b::setStakedNodeId);
 							}
-							b.setDeclineReward(BoolValue.of(newDeclinedReward));
+							newDeclinedReward.ifPresent(p -> b.setDeclineReward(BoolValue.of(p)));
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

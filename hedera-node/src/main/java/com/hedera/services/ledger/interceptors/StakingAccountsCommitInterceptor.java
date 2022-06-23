@@ -305,7 +305,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
 	private void payRewardIfPending(
 			final int i,
-			@NotNull MerkleAccount account,
+			@Nullable MerkleAccount account,
 			@NotNull Map<AccountProperty, Object> changes,
 			@NotNull final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges
 	) {

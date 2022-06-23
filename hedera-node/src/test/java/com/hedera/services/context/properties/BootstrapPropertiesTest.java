@@ -206,15 +206,14 @@ class BootstrapPropertiesTest {
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
 			entry("stats.executionTimesToTrack", 0),
-			entry("staking.isEnabled", false),
+			entry("staking.isEnabled", true),
 			entry("staking.periodMins", 1440L),
 			entry("staking.rewardHistory.numStoredPeriods", 365),
-			entry("staking.rewardRate", 100_000_000_000L),
-			entry("staking.startThreshold", 100_000_000L),
-			entry("staking.fees.nodeRewardPercentage", 10),
-			entry("staking.fees.stakingRewardPercentage", 10),
-			entry("staking.maxDailyStakeRewardThPerH", 100L),
-			entry("staking.activeThreshold", 10),
+			entry("staking.rewardRate", 0L),
+			entry("staking.startThreshold", 25000000000000000L),
+			entry("staking.fees.nodeRewardPercentage", 0),
+			entry("staking.fees.stakingRewardPercentage", 100),
+			entry("staking.maxDailyStakeRewardThPerH", 17808L),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("consensus.handle.maxPrecedingRecords", 3L),
 			entry("consensus.handle.maxFollowingRecords", 50L),
@@ -233,7 +232,9 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("entities.limitTokenAssociations", false)
+			entry("entities.limitTokenAssociations", false),
+			entry("hedera.recordStream.recordFileVersion", 5),
+			entry("hedera.recordStream.signatureFileVersion", 5)
 	);
 
 	@Test
