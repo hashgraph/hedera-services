@@ -17,7 +17,6 @@
   "CryptoGetAccountBalance": 0.2,
   "CryptoGetInfo": 0.2,
   "CryptoGetStakers": 0.2,
-  "RandomGenerate": 0.2,
   "ConsensusCreateTopic": 0.9,
   "ConsensusUpdateTopic": 0.2,
   "ConsensusDeleteTopic": 0.2,
@@ -63,5 +62,6 @@
   "TransactionGetReceipt": 0.2,
   "TransactionGetRecord": 0.2,
   "SystemDelete": 0.2,
-  "SystemUndelete": 0.2
+  "SystemUndelete": 0.2,
+  "RandomGenerate": 0.2
 }

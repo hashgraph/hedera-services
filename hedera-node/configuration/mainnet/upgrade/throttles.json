@@ -16,7 +16,6 @@
 			"CryptoDelete",
 			"CryptoGetInfo",
 			"CryptoGetAccountRecords",
-			"RandomGenerate",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",
@@ -39,7 +38,8 @@
 			"TokenGetAccountNftInfos",
 			"TokenGetNftInfos",
 			"CryptoApproveAllowance",
-			"CryptoDeleteAllowance"
+			"CryptoDeleteAllowance",
+			"RandomGenerate"
 		  ]
 		},
 		{

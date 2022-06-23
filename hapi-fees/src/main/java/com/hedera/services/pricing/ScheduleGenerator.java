@@ -21,6 +21,7 @@ package com.hedera.services.pricing;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.services.usage.util.RandomGenerateMeta;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Pair;
@@ -43,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -171,6 +173,7 @@ public class ScheduleGenerator {
 			/* Consensus */
 			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
 			/* Schedule */
-			Pair.of(ScheduleCreate, List.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL))
+			Pair.of(ScheduleCreate, List.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL)),
+			Pair.of(RandomGenerate, List.of(DEFAULT))
 	);
 }

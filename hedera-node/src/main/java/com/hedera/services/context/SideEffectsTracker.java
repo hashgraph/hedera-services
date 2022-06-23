@@ -49,6 +49,7 @@ import java.util.Map;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
+import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 
 /**
  * Extracts the side-effect tracking logic previously squashed into {@link com.hedera.services.ledger.HederaLedger}
@@ -60,10 +61,7 @@ public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 	private static final int MAX_BALANCE_CHANGES = 2048;
-	public static final int MAX_PSEUDORANDOM_LENGTH = 384;
-
-	public final byte[] DEFAULT_PSEUDORANDOM_BYTES = new byte[MAX_PSEUDORANDOM_LENGTH];
-
+	public static final int MAX_PSEUDORANDOM_BIT_STRING_LENGTH = 384;
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
 	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];
@@ -86,7 +84,7 @@ public class SideEffectsTracker {
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
-	private String pseudorandomBitString = "";
+	private String pseudorandomBitString = EMPTY_STRING;
 	private int pseudorandomNumber;
 
 	@Inject
@@ -430,11 +428,11 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public void trackPseudoRandomBitString(final String bytes) {
-		this.pseudorandomBitString = bytes;
+	public void trackRandomBitString(final String binaryString) {
+		this.pseudorandomBitString = binaryString;
 	}
 
-	public void trackPseudoRandomNumber(final int pseudoRandomNumber) {
+	public void trackRandomNumber(final int pseudoRandomNumber) {
 		this.pseudorandomNumber = pseudoRandomNumber;
 	}
 
@@ -462,7 +460,7 @@ public class SideEffectsTracker {
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
 		pseudorandomNumber = 0;
-		pseudorandomBitString = "";
+		pseudorandomBitString = EMPTY_STRING;
 	}
 
 	/**

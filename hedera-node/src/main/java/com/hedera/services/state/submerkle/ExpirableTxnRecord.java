@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -397,7 +397,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		if (version >= RELEASE_0280_VERSION) {
 			pseudoRandomNumber = in.readInt();
-			pseudoRandomBitString = in.readNormalisedString(MAX_PSEUDORANDOM_LENGTH);
+			pseudoRandomBitString = in.readNormalisedString(MAX_PSEUDORANDOM_BIT_STRING_LENGTH);
 		}
 	}
 

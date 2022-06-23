@@ -43,12 +43,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_LENGTH;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -391,13 +389,15 @@ class SideEffectsTrackerTest {
 		final var num = 100;
 		final var bytes = TxnUtils.random384BitBinaryText();
 
-		subject.trackPseudoRandomNumber(num);
-		subject.trackPseudoRandomBitString(bytes);
+		subject.trackRandomNumber(num);
+		subject.trackRandomBitString(bytes);
 
+		assertTrue(subject.hasTrackedRandomData());
 		assertEquals(100, subject.getPseudorandomNumber());
 		assertEquals(bytes, subject.getPseudorandomBitString());
 
 		subject.reset();
+		assertFalse(subject.hasTrackedRandomData());
 		assertEquals(0, subject.getPseudorandomNumber());
 		assertEquals("", subject.getPseudorandomBitString());
 	}

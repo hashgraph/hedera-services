@@ -44,9 +44,9 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 			// generate pseudorandom number in the given range
 			final var initialBitsValue = Integer.parseUnsignedInt(randomBitString.substring(0, 32), 2);
 			int pseudoRandomNumber = Math.abs((int) ((range * (long) initialBitsValue) >>> 32));
-			sideEffectsTracker.trackPseudoRandomNumber(pseudoRandomNumber);
+			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
 		} else {
-			sideEffectsTracker.trackPseudoRandomBitString(randomBitString);
+			sideEffectsTracker.trackRandomBitString(randomBitString);
 		}
 		txnCtx.setStatus(SUCCESS);
 	}

@@ -45,9 +45,6 @@
   "CryptoGetStakers": {
 	"DEFAULT": 0.0001
   },
-  "RandomGenerate": {
-	"DEFAULT": 0.0001
-  },
   "ConsensusCreateTopic": {
 	"DEFAULT": 0.01
   },
@@ -198,5 +195,8 @@
   },
   "SystemUndelete": {
 	"DEFAULT": 0
+  },
+  "RandomGenerate": {
+	"DEFAULT": 0.0001
   }
 }
