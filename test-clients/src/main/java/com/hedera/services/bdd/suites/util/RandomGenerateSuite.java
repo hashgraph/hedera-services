@@ -31,6 +31,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class RandomGenerateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RandomGenerateSuite.class);
@@ -48,14 +50,62 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return List.of(
-				generatesRandomBytesIfNoRangeOrZeroRangeGiven()
-//				failsInPreCheckForNegativerange(),
-//				returnsNumberWithinRange(),
-//				usdFeeAsExpected()
+				happyPathWorksForRangeAndBitString(),
+				failsInPreCheckForNegativeRange(),
+				usdFeeAsExpected()
 		);
 	}
 
-	private HapiApiSpec generatesRandomBytesIfNoRangeOrZeroRangeGiven() {
+	private HapiApiSpec usdFeeAsExpected() {
+		return defaultHapiSpec("createAnAccountWithStakingFields")
+				.given(
+						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
+
+						randomGenerate()
+								.payingWith("bob")
+								.via("randomGenerate")
+								.logged(),
+						getTxnRecord("randomGenerate")
+								.hasOnlyPseudoRandomBitString()
+								.logged()
+				).when(
+						randomGenerate(10)
+								.payingWith("bob")
+								.via("randomGenerateWithRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithRange")
+								.hasOnlyPseudoRandomNumberInRange(10)
+								.logged()
+				).then(
+						randomGenerate(0)
+								.payingWith("bob")
+								.via("randomGenerateWithZeroRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithZeroRange")
+								.hasOnlyPseudoRandomBitString()
+								.logged()
+				);
+	}
+
+	private HapiApiSpec failsInPreCheckForNegativeRange() {
+		return defaultHapiSpec("createAnAccountWithStakingFields")
+				.given(
+						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
+
+						randomGenerate(-10)
+								.payingWith("bob")
+								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
+								.logged(),
+						randomGenerate(0)
+								.payingWith("bob")
+								.hasPrecheck(OK)
+								.logged()
+				).when(
+				).then(
+				);
+	}
+
+	private HapiApiSpec happyPathWorksForRangeAndBitString() {
 		return defaultHapiSpec("createAnAccountWithStakingFields")
 				.given(
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),

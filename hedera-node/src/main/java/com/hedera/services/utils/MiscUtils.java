@@ -949,10 +949,6 @@ public final class MiscUtils {
 
 	public static String byteArrayToBinary(final byte[] pseudoRandomBytes) {
 		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
-		if (randomBitString.length() < MAX_PSEUDORANDOM_BIT_STRING_LENGTH) {
-			final var diff = MAX_PSEUDORANDOM_BIT_STRING_LENGTH - randomBitString.length();
-			return StringUtils.leftPad(randomBitString, diff, "0");
-		}
-		return randomBitString;
+		return StringUtils.leftPad(randomBitString, MAX_PSEUDORANDOM_BIT_STRING_LENGTH, "0");
 	}
 }

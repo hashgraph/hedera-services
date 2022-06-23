@@ -13,7 +13,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.MiscUtils.byteArrayToBinary;
-import static com.hedera.services.utils.MiscUtils.byteArrayToBinaryString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -39,10 +38,8 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 
 		//generate binary string from the running hash of records
 		var randomBitString = byteArrayToBinary(pseudoRandomBytes);
-		final var other = byteArrayToBinaryString(pseudoRandomBytes);
 
 		final var range = op.getRange();
-
 		if (range > 0) {
 			// generate pseudorandom number in the given range
 			final var initialBitsValue = Integer.parseUnsignedInt(randomBitString.substring(0, 32), 2);

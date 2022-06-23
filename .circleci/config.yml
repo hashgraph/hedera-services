@@ -1599,7 +1599,8 @@ jobs:
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
             
             # Build Platform
-            cd /swirlds-platform
+            cd /swirlds-platform;
+            cd regression/; git checkout update-services-jsons; cd ..;
             ./mvnw clean install -DskipTests;
             
             # Build JRS
