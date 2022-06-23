@@ -9,8 +9,7 @@
 			"CryptoTransfer",
 			"CryptoCreate",
 			"CryptoApproveAllowance",
-			"CryptoDeleteAllowance",
-			"RandomGenerate"
+			"CryptoDeleteAllowance"
 		  ],
 		  "opsPerSec": 10000
 		},

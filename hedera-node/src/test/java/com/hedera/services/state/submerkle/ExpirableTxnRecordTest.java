@@ -127,17 +127,6 @@ class ExpirableTxnRecordTest {
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
-	private static final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
-			.setOwner(owner)
-			.setAmount(initialAllowance)
-			.setSpender(spender)
-			.build();
-	private static final TokenAllowance fungibleTokenAllowance = TokenAllowance.newBuilder()
-			.setOwner(owner)
-			.setAmount(initialAllowance)
-			.setSpender(spender)
-			.setTokenId(tokenA)
-			.build();
 
 	private ExpirableTxnRecord subject;
 
@@ -164,6 +153,8 @@ class ExpirableTxnRecordTest {
 				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomNumber(10)
+				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
 				.build();
 	}
 
@@ -178,6 +169,8 @@ class ExpirableTxnRecordTest {
 						.addAllPaidStakingRewards(List.of(reward1, reward2))
 						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.setEthereumHash(ByteString.copyFrom(pretendHash))
+						.setPseudorandomNumber(10)
+						.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
 						.build());
 		setNonGrpcDefaultsOn(s);
 		return s;
@@ -383,6 +376,18 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
+	void equalsDetectsDiffPsudoRandomData() {
+		final var a = new ExpirableTxnRecord();
+		var b = ExpirableTxnRecord.newBuilder()
+				.setPseudoRandomNumber(10).build();
+		assertNotEquals(a, b);
+
+		b = ExpirableTxnRecord.newBuilder()
+				.setPseudoRandomBitString(pseudoRandomBitString).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
 	void equalsDetectsDiffTokenAdjusts() {
 		final var a = new ExpirableTxnRecord();
 		final var b = ExpirableTxnRecord.newBuilder()
@@ -439,17 +444,17 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null," +
-				" " +
+				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], stateChanges={}, " +
+				"evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, parentConsensusTime=1970-01-15T06:56:07" +
-				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
-				" +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=0, pseudoRandomBitString=, " +
+				"parentConsensusTime=1970-01-15T06:56:07.000000890Z, tokenAdjustments=0.0.3" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
 				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
@@ -469,14 +474,14 @@ class ExpirableTxnRecordTest {
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
 				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], stateChanges={}, " +
+				"evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, tokenAdjustments=0.0.3" +
-				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
-				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=0, pseudoRandomBitString=, " +
+				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0" +
+				".4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
 				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +

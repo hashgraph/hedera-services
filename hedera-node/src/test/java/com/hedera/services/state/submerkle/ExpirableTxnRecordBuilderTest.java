@@ -38,7 +38,6 @@ import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PSEUDORANDOM_BYTES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -227,7 +226,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getAssessedCustomFees());
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
 		assertTrue(subject.getAlias().isEmpty());
-//		assertArrayEquals(MISSING_PSEUDORANDOM_BYTES, subject.getPseudoRandomBitString());
+		assertEquals("", subject.getPseudoRandomBitString());
 		assertEquals(0, subject.getPseudoRandomNumber());
 	}
 

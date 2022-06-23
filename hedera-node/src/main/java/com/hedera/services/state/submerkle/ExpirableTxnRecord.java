@@ -82,11 +82,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
-	public static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
-
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
-
 	private long fee;
 	private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 	private short numChildRecords = NO_CHILD_TRANSACTIONS;
@@ -147,9 +144,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.numChildRecords = builder.numChildRecords;
 		this.alias = builder.alias;
 		this.ethereumHash = builder.ethereumHash;
-		this.pseudoRandomBitString = builder.pseudoRandomBitString;
-		;
 		this.pseudoRandomNumber = builder.pseudoRandomNumber;
+		this.pseudoRandomBitString = builder.pseudoRandomBitString;
 	}
 
 	/* --- Object --- */
@@ -173,8 +169,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("scheduleRef", scheduleRef)
 				.add("alias", alias.toStringUtf8())
 				.add("ethereumHash", CommonUtils.hex(ethereumHash))
-				.add("pseudoRandomBytes", pseudoRandomBitString)
-				.add("pseudoRandomNumber", pseudoRandomNumber);
+				.add("pseudoRandomNumber", pseudoRandomNumber)
+				.add("pseudoRandomBitString", pseudoRandomBitString);
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -248,8 +244,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
 				Objects.equals(this.alias, that.alias) &&
 				Arrays.equals(this.ethereumHash, that.ethereumHash) &&
-				Objects.equals(this.pseudoRandomBitString, that.pseudoRandomBitString) &&
-				this.pseudoRandomNumber == that.pseudoRandomNumber;
+				this.pseudoRandomNumber == that.pseudoRandomNumber &&
+				Objects.equals(this.pseudoRandomBitString, that.pseudoRandomBitString);
 	}
 
 	@Override
@@ -532,9 +528,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public void setPseudoRandomBitString(final String pseudoRandomBitString) {
 		this.pseudoRandomBitString = pseudoRandomBitString;
 	}
+
 	public void setPseudoRandomNumber(final int pseudoRandomNumber) {
 		this.pseudoRandomNumber = pseudoRandomNumber;
 	}
+
 	public String getPseudoRandomBitString() {
 		return pseudoRandomBitString;
 	}
@@ -667,8 +665,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
 		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
-		private String pseudoRandomBitString = EMPTY_STRING;
 		private int pseudoRandomNumber;
+		private String pseudoRandomBitString = EMPTY_STRING;
 		private boolean onlyExternalizedIfSuccessful = false;
 
 		public Builder setFee(long fee) {
@@ -878,8 +876,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
 			ethereumHash = MISSING_ETHEREUM_HASH;
-			pseudoRandomBitString = EMPTY_STRING;
 			pseudoRandomNumber = 0;
+			pseudoRandomBitString = EMPTY_STRING;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {
 				contractCallResult = null;

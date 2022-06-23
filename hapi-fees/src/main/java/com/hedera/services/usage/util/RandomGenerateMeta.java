@@ -73,7 +73,7 @@ public class RandomGenerateMeta {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("baseSize", msgBytesUsed)
+				.add("msgBytesUsed", msgBytesUsed)
 				.toString();
 	}
 }
