@@ -489,6 +489,12 @@
 				<groupId>org.hyperledger.besu</groupId>
 				<artifactId>evm</artifactId>
 				<version>${besu.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.hyperledger.besu</groupId>
+						<artifactId>secp256r1</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.hyperledger.besu</groupId>
