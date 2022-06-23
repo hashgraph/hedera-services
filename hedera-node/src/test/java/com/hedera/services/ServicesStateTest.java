@@ -33,7 +33,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
@@ -43,6 +42,7 @@ import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -54,8 +54,13 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.IdUtils;
-import com.swirlds.common.merkle.MerkleNode;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -66,6 +71,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.SignedStateFileManager;
+import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.SignedState;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -80,7 +88,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Consumer;
@@ -113,13 +120,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
+	private final String signedStateDir = "src/test/resources/signedState/";
 	private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
 	private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-	private final SoftwareVersion futureVersion = forHapiAndHedera( "0.28.0", "0.28.0");
+	private final SoftwareVersion futureVersion = forHapiAndHedera("0.28.0", "0.28.0");
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
@@ -195,6 +204,8 @@ class ServicesStateTest {
 
 	@BeforeEach
 	void setUp() {
+		SEMANTIC_VERSIONS.deployedSoftwareVersion().setProto(SemanticVersion.newBuilder().setMinor(27).build());
+		SEMANTIC_VERSIONS.deployedSoftwareVersion().setServices(SemanticVersion.newBuilder().setMinor(27).build());
 		subject = new ServicesState();
 		setAllChildren();
 	}
@@ -833,28 +844,59 @@ class ServicesStateTest {
 		assertSame(specialFiles, copy.specialFiles());
 	}
 
-	private List<MerkleNode> legacyChildrenWith(
-			AddressBook addressBook,
-			MerkleNetworkContext networkContext,
-			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
-			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
-			boolean withNfts
-	) {
-		final List<MerkleNode> legacyChildren = new ArrayList<>();
-		legacyChildren.add(addressBook);
-		legacyChildren.add(networkContext);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(tokenRels);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		if (withNfts) {
-			legacyChildren.add(nfts);
-		}
-		return legacyChildren;
+	@Test
+	void testNftsFromSignedStateV25() {
+		ClassLoaderHelper.loadClassPathDependencies();
+		assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.25.3/SignedState.swh"));
+	}
+
+	@Test
+	void testGenesisState() {
+		ClassLoaderHelper.loadClassPathDependencies();
+		final var swirldDualState = new DualStateImpl();
+		final var servicesState = new ServicesState();
+		final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
+		recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
+		servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
+		final var platform = createMockPlatform();
+		final var nodeId = platform.getSelfId().getId();
+		final var address = new Address(
+				nodeId, "", "", 1L, false, null, -1, null, -1, null, -1, null, -1,
+				null, null, (SerializablePublicKey) null, "");
+		final var addressBook = new AddressBook(List.of(address));
+		final var app = createApp(platform);
+
+		APPS.save(platform.getSelfId().getId(), app);
+		assertDoesNotThrow(() -> servicesState.init(
+				platform,
+				addressBook,
+				swirldDualState,
+				InitTrigger.GENESIS,
+				null));
+	}
+
+	private static ServicesApp createApp(Platform platform) {
+		return DaggerServicesApp.builder()
+				.initialHash(new Hash())
+				.platform(platform)
+				.selfId(platform.getSelfId().getId())
+				.staticAccountMemo("memo")
+				.bootstrapProps(new BootstrapProperties())
+				.build();
+	}
+
+	private static Platform createMockPlatform() {
+		final var platform = mock(Platform.class);
+		when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
+		when(platform.getCryptography()).thenReturn(new CryptoEngine());
+		return platform;
+	}
+
+	private static SignedState loadSignedState(final String path) throws IOException {
+		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
+		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
+		Assertions.assertNotNull(signedPair.signedState());
+		return signedPair.signedState();
 	}
 
 	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {

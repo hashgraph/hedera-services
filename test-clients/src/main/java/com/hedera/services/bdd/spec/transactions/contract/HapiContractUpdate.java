@@ -26,12 +26,10 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -73,7 +71,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> bytecode = Optional.empty();
 	private Optional<String> newStakedAccountId = Optional.empty();
 	private Optional<Long> newStakedNodeId = Optional.empty();
-	private OptionalBoolean newDeclinedReward = OptionalBoolean.empty();
+	private Optional<Boolean> newDeclinedReward = Optional.empty();
 	private Optional<String> newProxy = Optional.empty();
 	private Optional<String> newAutoRenewAccount = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
@@ -166,7 +164,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 
 	public HapiContractUpdate newDeclinedReward(boolean isDeclined) {
-		newDeclinedReward = OptionalBoolean.of(isDeclined);
+		newDeclinedReward = Optional.of(isDeclined);
 		return this;
 	}
 

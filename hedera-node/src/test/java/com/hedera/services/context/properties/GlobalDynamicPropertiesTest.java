@@ -232,7 +232,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
-		assertTrue(subject.isStakingEnabled());
+		assertFalse(subject.isStakingEnabled());
 	}
 
 	@Test
@@ -311,8 +311,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(76L, subject.getStakingRewardRate());
 		assertEquals(70L, subject.maxPrecedingRecords());
 		assertEquals(71L, subject.maxFollowingRecords());
-		assertEquals(75L, subject.getStakingRewardRate());
-		assertEquals(76L, subject.maxDailyStakeRewardThPerH());
+		assertEquals(76L, subject.getStakingRewardRate());
+		assertEquals(77L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test

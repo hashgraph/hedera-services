@@ -203,12 +203,12 @@ public class SerializableSemVers implements SoftwareVersion {
 	}
 
 	@VisibleForTesting
-	void setProto(final SemanticVersion proto) {
+	public void setProto(final SemanticVersion proto) {
 		this.proto = proto;
 	}
 
 	@VisibleForTesting
-	void setServices(final SemanticVersion services) {
+	public void setServices(final SemanticVersion services) {
 		this.services = services;
 	}
 }
