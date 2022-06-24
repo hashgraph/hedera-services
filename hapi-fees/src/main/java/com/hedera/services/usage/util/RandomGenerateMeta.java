@@ -25,10 +25,13 @@ import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
+
 public class RandomGenerateMeta {
 	private final long msgBytesUsed;
+
 	public RandomGenerateMeta(RandomGenerateTransactionBody txn) {
-		msgBytesUsed = txn.getSerializedSize(); // Is this correct ?
+		msgBytesUsed = txn.getRange() > 0 ? INT_SIZE : 0; // Is this correct ?
 	}
 
 	public RandomGenerateMeta(RandomGenerateMeta.Builder builder) {

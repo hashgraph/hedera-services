@@ -133,6 +133,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
 	private boolean pseudorandomBitStringExpected = false;
+
+	private boolean noPseudoRandomData = false;
 	private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
 
 	private Consumer<List<?>> eventDataObserver;
@@ -301,6 +303,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		pseudorandomNumberRange = Optional.of(range);
 		return this;
 	}
+
+	public HapiGetTxnRecord hasNoPseudoRandomData() {
+		noPseudoRandomData = true;
+		return this;
+	}
+
 
 	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
@@ -572,7 +580,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			final var transferList = actualRecord.getTransferList();
 			assertNoStakingAccountFees(transferList);
 		}
-
+		if (noPseudoRandomData) {
+			final var actualBitString = actualRecord.getPseudorandomBytes();
+			final var actualRandomNum = actualRecord.getPseudorandomNumber();
+			assertEquals(0, actualBitString.size());
+			assertEquals(0, actualRandomNum);
+		}
 		if (pseudorandomBitStringExpected) {
 			final var actualBitString = actualRecord.getPseudorandomBytes();
 			final var actualRandomNum = actualRecord.getPseudorandomNumber();

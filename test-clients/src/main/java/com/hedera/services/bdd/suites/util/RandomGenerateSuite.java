@@ -51,9 +51,9 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return List.of(
-				happyPathWorksForRangeAndBitString()
-//				failsInPreCheckForNegativeRange(),
-//				usdFeeAsExpected()
+				happyPathWorksForRangeAndBitString(),
+				failsInPreCheckForNegativeRange(),
+				usdFeeAsExpected()
 		);
 	}
 
@@ -84,7 +84,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						getTxnRecord(plusRangeTxn)
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged(),
-						validateChargedUsd(plusRangeTxn, baseFee)
+						validateChargedUsd(plusRangeTxn, plusRangeFee)
 				).then(
 				);
 	}
@@ -110,29 +110,31 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	private HapiApiSpec happyPathWorksForRangeAndBitString() {
 		return defaultHapiSpec("createAnAccountWithStakingFields")
 				.given(
+						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
-
+						// n-1 running hash and running has set
 						randomGenerate()
 								.payingWith("bob")
 								.via("randomGenerate")
 								.logged(),
+						// n-1, n-2 running hash and running has set
 						getTxnRecord("randomGenerate")
-								.hasOnlyPseudoRandomBitString()
+								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it already has n-3 running hash
 								.logged(),
-
+						// n-1, n-2, n-3 running hash and running has set
 						randomGenerate(10)
 								.payingWith("bob")
 								.via("randomGenerateWithRange1")
 								.logged(),
 						getTxnRecord("randomGenerateWithRange1")
+								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it already has n-3 running hash
 								.logged(),
-						randomGenerate(10)
+						randomGenerate()
 								.payingWith("bob")
-								.via("randomGenerateWithRange2")
-								.logged(),
-						getTxnRecord("randomGenerateWithRange2")
+								.via("randomGenerate2")
 								.logged()
 				).when(
+						// should have pseudo random data
 						randomGenerate(10)
 								.payingWith("bob")
 								.via("randomGenerateWithRange")
@@ -141,6 +143,14 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged()
 				).then(
+						randomGenerate()
+								.payingWith("bob")
+								.via("randomGenerateWithoutRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithoutRange")
+								.hasOnlyPseudoRandomBitString()
+								.logged(),
+
 						randomGenerate(0)
 								.payingWith("bob")
 								.via("randomGenerateWithZeroRange")
