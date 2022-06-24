@@ -51,12 +51,8 @@ public abstract class IntegrationTestBase extends TestBase {
      * Before any test runs, configure HapiApiSpec to use the Testcontainer we created
      */
     @BeforeAll
-    static void beforeAll() {
-        try {
-            NODE_0.waitUntilActive(Duration.ofSeconds(30));
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+    static void beforeAll() throws TimeoutException {
+        NODE_0.waitUntilActive(Duration.ofSeconds(30));
 
         final var defaultProperties = JutilPropertySource.getDefaultInstance();
         HapiApiSpec.runInCiMode(
