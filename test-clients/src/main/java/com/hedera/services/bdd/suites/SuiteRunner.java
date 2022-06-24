@@ -522,7 +522,7 @@ public class SuiteRunner {
 
 	public static void main(String... args) throws Exception {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
+//		new org.ethereum.crypto.HashUtil();
 
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));

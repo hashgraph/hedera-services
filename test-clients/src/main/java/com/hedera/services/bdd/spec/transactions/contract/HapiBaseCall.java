@@ -25,15 +25,13 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-//import org.ethereum.util.ByteUtil;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 // TODO: Replace this method
-import static org.ethereum.crypto.HashUtil.sha3;
+//import static org.ethereum.crypto.HashUtil.sha3;
 
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
 
@@ -52,22 +50,22 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected Optional<Long> gas = Optional.empty();
     protected String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
-    protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
-        byte[] callData = new byte[] { };
-        var abiFunction = DEFAULT_MAPPER.readValue(abi, HapiBaseCall.AbiFunction.class);
-        final var signatureParameters = getParametersForSignature(abi);
-        final var signature = abiFunction.getName() + signatureParameters;
-        final var argumentTypes = signatureParameters.replace(
-                ADDRESS_ABI_TYPE,
-                ADDRESS_ENCODE_TYPE);
-        final var paramsAsTuple = Tuple.of(params);
-
-        final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
-                argumentTypes);
-        callData = merge(callData, tupleEncoded);
-
-        return merge(encodeSignature(signature), callData);
-    }
+//    protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
+//        byte[] callData = new byte[] { };
+//        var abiFunction = DEFAULT_MAPPER.readValue(abi, HapiBaseCall.AbiFunction.class);
+//        final var signatureParameters = getParametersForSignature(abi);
+//        final var signature = abiFunction.getName() + signatureParameters;
+//        final var argumentTypes = signatureParameters.replace(
+//                ADDRESS_ABI_TYPE,
+//                ADDRESS_ENCODE_TYPE);
+//        final var paramsAsTuple = Tuple.of(params);
+//
+//        final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
+//                argumentTypes);
+//        callData = merge(callData, tupleEncoded);
+//
+//        return merge(encodeSignature(signature), callData);
+//    }
 
     public static byte[] merge(byte[]... arrays) {
         int count = 0;
@@ -98,13 +96,13 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
         return tupleType.encode(argumentValues.get(0)).array();
     }
 
-    private byte[] encodeSignature(final String functionSignature) {
-        return Arrays.copyOfRange(encodeSignatureLong(functionSignature), 0, 4);
-    }
+//    private byte[] encodeSignature(final String functionSignature) {
+//        return Arrays.copyOfRange(encodeSignatureLong(functionSignature), 0, 4);
+//    }
 
-    private byte[] encodeSignatureLong(final String functionSignature) {
-        return sha3(functionSignature.getBytes());
-    }
+//    private byte[] encodeSignatureLong(final String functionSignature) {
+//        return sha3(functionSignature.getBytes());
+//    }
 
     private String getParametersForSignature(final String jsonABI) throws Throwable {
         final var abiFunction = DEFAULT_MAPPER.readValue(jsonABI, HapiBaseCall.AbiFunction.class);

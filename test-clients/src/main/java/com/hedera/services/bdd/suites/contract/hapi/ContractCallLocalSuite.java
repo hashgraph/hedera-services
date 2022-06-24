@@ -92,7 +92,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						sleepFor(3_000L),
 						contractCallLocal(CONTRACT, "getIndirect")
 								.has(resultWith().resultViaFunctionName("getIndirect", CONTRACT,
-										isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))
+										isLiteralResult(new Object[]{BigInteger.valueOf(7)})))
 				);
 	}
 
@@ -187,7 +187,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec erc20Query() {
 		final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\"," +
 								"\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false," +
-								"\"type\": \"function\"},";
+								"\"type\": \"function\"}";
 
 		return defaultHapiSpec("erc20Queries")
 				.given(
@@ -196,7 +196,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				).then(
 						contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
 								.has(resultWith().resultThruAbi(decimalsABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(DECIMALS) })))
+										isLiteralResult(new Object[]{ DECIMALS })))
 				);
 	}
 

@@ -29,6 +29,7 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -59,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+//import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -408,7 +410,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, asAddress(getNestedContractAddress(INNER_CONTRACT, spec))),
 												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
 												)

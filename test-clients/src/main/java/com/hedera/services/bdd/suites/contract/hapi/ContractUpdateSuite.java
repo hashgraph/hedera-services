@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -128,23 +129,23 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeNormalCall", contract),
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+										isLiteralResult(new Object[] { asAddress(childEip1014.get()) }))))),
 						contractCall(contract, "makeStaticCall").via(staticcallTxn),
 						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeStaticCall", contract),
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+										isLiteralResult(new Object[] { asAddress(childEip1014.get()) }))))),
 						contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
 						sourcing(
 								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												getABIFor(FUNCTION, "makeDelegateCall", contract),
-												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+												isLiteralResult(new Object[] { asAddress(childEip1014.get()) }))))),
 						contractCall(contract, "makeCallCode").via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "makeCallCode", contract),
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
+										isLiteralResult(new Object[] { asAddress(childEip1014.get()) })))))
 				);
 	}
 

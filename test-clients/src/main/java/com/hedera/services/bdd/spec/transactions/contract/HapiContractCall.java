@@ -241,14 +241,15 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 			params = paramsFn.get().apply(spec);
 		}
 
-		byte[] callData;
+		//TODO: remove initialisation after fixing the method that uses ethereumj sha3 method
+		byte[] callData = new byte[0];
 		if (explicitHexedParams.isPresent()) {
 			callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
 		} else {
 			final var paramsList = Arrays.asList(params);
 			final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
 			if (tupleExist) {
-				callData = encodeParametersWithTuple(params);
+//				callData = encodeParametersWithTuple(params);
 			} else {
 				callData = (!abi.equals(FALLBACK_ABI))
 						? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
@@ -256,6 +257,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 			}
 		}
 
+		byte[] finalCallData = callData; // <-- this also
 		ContractCallTransactionBody opBody = spec
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
@@ -265,7 +267,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 							} else {
 								builder.setContractID(TxnUtils.asContractId(contract, spec));
 							}
-							builder.setFunctionParameters(ByteString.copyFrom(callData));
+							builder.setFunctionParameters(ByteString.copyFrom(finalCallData));
 							valueSent.ifPresent(builder::setAmount);
 							gas.ifPresent(builder::setGas);
 						}

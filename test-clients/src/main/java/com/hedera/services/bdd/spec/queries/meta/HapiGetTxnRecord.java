@@ -52,7 +52,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 // TODO: Change implementation
-import org.ethereum.solidity.Abi;
+//import org.ethereum.solidity.Abi;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
@@ -123,7 +123,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
 	private Consumer<List<?>> eventDataObserver;
-	private Predicate<Abi.Event> eventMatcher;
+//	private Predicate<Abi.Event> eventMatcher;
 	private String contractResultAbi = null;
 
 	public static ByteString sha384HashOf(final Transaction transaction) {
@@ -164,11 +164,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord exposingFilteredCallResultVia(
 			final String abi,
-			final Predicate<Abi.Event> eventMatcher,
+//			final Predicate<Abi.Event> eventMatcher,
 			final Consumer<List<?>> dataObserver
 	) {
 		this.contractResultAbi = abi;
-		this.eventMatcher = eventMatcher;
+//		this.eventMatcher = eventMatcher;
 		this.eventDataObserver = dataObserver;
 
 		return this;
@@ -626,9 +626,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
-		if (contractResultAbi != null) {
-			exposeRequestedEventsFrom(record);
-		}
+//		if (contractResultAbi != null) {
+//			exposeRequestedEventsFrom(record);
+//		}
 		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
@@ -673,21 +673,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 	}
 
-	private void exposeRequestedEventsFrom(final TransactionRecord record) {
-		final var abi = Abi.fromJson(contractResultAbi);
-//		final var abi = Function.fromJson(contractResultAbi);
-		final var matcher = abi.findEvent(eventMatcher);
-		final var logs = record.getContractCallResult().getLogInfoList();
-		for (final var log : logs) {
-			final var data = log.getData().toByteArray();
-			final var topics = new byte[log.getTopicCount()][];
-			for (int i = 0, n = log.getTopicCount(); i < n; i++) {
-				topics[i] = log.getTopic(i).toByteArray();
-			}
-			final var decodedLog = matcher.decode(data, topics);
-			eventDataObserver.accept(decodedLog);
-		}
-	}
+//	private void exposeRequestedEventsFrom(final TransactionRecord record) {
+//		final var abi = Abi.fromJson(contractResultAbi);
+////		final var abi = Function.fromJson(contractResultAbi);
+//		final var matcher = abi.findEvent(eventMatcher);
+//		final var logs = record.getContractCallResult().getLogInfoList();
+//		for (final var log : logs) {
+//			final var data = log.getData().toByteArray();
+//			final var topics = new byte[log.getTopicCount()][];
+//			for (int i = 0, n = log.getTopicCount(); i < n; i++) {
+//				topics[i] = log.getTopic(i).toByteArray();
+//			}
+//			final var decodedLog = matcher.decode(data, topics);
+//			eventDataObserver.accept(decodedLog);
+//		}
+//	}
 
 	@Override
 	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {

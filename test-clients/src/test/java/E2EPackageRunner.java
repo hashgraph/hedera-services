@@ -281,12 +281,12 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile() {
 		return List.of(
-				extractSpecsFromSuite(AssociatePrecompileSuite::new),
-				extractSpecsFromSuite(ContractBurnHTSSuite::new),
-				extractSpecsFromSuite(ContractHTSSuite::new),
-				extractSpecsFromSuite(ContractKeysHTSSuite::new),
-				extractSpecsFromSuite(ContractMintHTSSuite::new),
-				extractSpecsFromSuite(CreatePrecompileSuite::new)
+				extractSpecsFromSuite(AssociatePrecompileSuite::new)
+//				extractSpecsFromSuite(ContractBurnHTSSuite::new),
+//				extractSpecsFromSuite(ContractHTSSuite::new),
+//				extractSpecsFromSuite(ContractKeysHTSSuite::new),
+//				extractSpecsFromSuite(ContractMintHTSSuite::new),
+//				extractSpecsFromSuite(CreatePrecompileSuite::new)
 		);
 	}
 

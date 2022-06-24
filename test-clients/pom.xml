@@ -252,10 +252,10 @@
       <artifactId>commons-collections4</artifactId>
       <version>${commons-collections4.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
-      <artifactId>ethereumj-core</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>com.hedera.hashgraph</groupId>-->
+<!--      <artifactId>ethereumj-core</artifactId>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>

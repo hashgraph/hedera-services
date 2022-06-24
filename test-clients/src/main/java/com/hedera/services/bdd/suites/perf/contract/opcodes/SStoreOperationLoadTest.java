@@ -59,7 +59,7 @@ public class SStoreOperationLoadTest extends LoadTest {
 		}
 
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
+//		new org.ethereum.crypto.HashUtil();
 
 		SStoreOperationLoadTest suite = new SStoreOperationLoadTest();
 		suite.runSuiteSync();

@@ -90,7 +90,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 //		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
 		com.esaulpaugh.headlong.abi.Function function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
 //		return function.decodeResult(bytes);
-		return function.decodeReturn(bytes).get(0);
+		return function.decodeReturn(bytes).toList().toArray();
 	}
 
 	public ContractFnResultAsserts contract(String contract) {

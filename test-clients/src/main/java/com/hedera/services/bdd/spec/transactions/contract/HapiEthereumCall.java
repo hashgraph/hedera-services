@@ -276,14 +276,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             params = paramsFn.get().apply(spec);
         }
 
-        byte[] callData;
+        byte[] callData = new byte[0];
         if (explicitHexedParams.isPresent()) {
             callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
         } else {
             final var paramsList = Arrays.asList(params);
             final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
             if (tupleExist) {
-                callData = encodeParametersWithTuple(params);
+//                callData = encodeParametersWithTuple(params);
             } else {
                 callData = (!abi.equals(FALLBACK_ABI))
                         ? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };

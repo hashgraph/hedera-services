@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -41,12 +42,15 @@ import org.json.JSONTokener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static java.lang.System.arraycopy;
@@ -75,6 +79,37 @@ public class Utils {
 	public static byte[] asAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
+
+	public static Address asAddress(final String id) {
+		String prefix = "0x";
+		String address = "0000000000000000000000000000000000000000";
+
+		if (id.length() == 40) {
+			return Address.wrap(Address.toChecksumAddress(prefix + id));
+		} else if (id.length() == 42 && (id.startsWith("0x"))) {
+			return Address.wrap(Address.toChecksumAddress(id));
+		} else {
+			return Address.wrap(Address.toChecksumAddress(prefix + address));
+		}
+	}
+
+	public static Address asHeadlongAddress(final byte[] solidityAddress) {
+		final var result = hex(solidityAddress);
+		final var prefix = "0x";
+		var headlongAdds = prefix + result;
+		return Address.wrap(Address.toChecksumAddress(headlongAdds));
+	}
+
+	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
+		final var address32 = new byte[32];
+		arraycopy(address20, 0, address32, 12, 20);
+		return address32;
+	}
+
+	//TODO: Convert Long to Headlong
+//	public static Address asAddress(final long id) {
+//		return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(id)));
+//	}
 
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
 		final byte[] solidityAddress = new byte[20];
