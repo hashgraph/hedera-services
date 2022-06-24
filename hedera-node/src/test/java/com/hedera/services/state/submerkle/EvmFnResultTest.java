@@ -25,11 +25,10 @@ import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -461,14 +460,14 @@ class EvmFnResultTest {
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
 				.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(cNum.toGrpcContractID())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteString.copyFrom(slot))
-								.setValueRead(ByteString.copyFrom(left))
-								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
-								.build())
-						.build())
+//				.addStateChanges(ContractStateChange.newBuilder()
+//						.setContractID(cNum.toGrpcContractID())
+//						.addStorageChanges(StorageChange.newBuilder()
+//								.setSlot(ByteString.copyFrom(slot))
+//								.setValueRead(ByteString.copyFrom(left))
+//								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
+//								.build())
+//						.build())
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.setGas(gas)
 				.setAmount(amount)
@@ -500,14 +499,14 @@ class EvmFnResultTest {
 				.setGasUsed(gasUsed)
 				.setContractCallResult(ByteString.copyFrom(result))
 				.setBloom(ByteString.copyFrom(bloom))
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(cNum.toGrpcContractID())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteString.copyFrom(slot))
-								.setValueRead(ByteString.copyFrom(left))
-								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
-								.build())
-						.build())
+//				.addStateChanges(ContractStateChange.newBuilder()
+//						.setContractID(cNum.toGrpcContractID())
+//						.addStorageChanges(StorageChange.newBuilder()
+//								.setSlot(ByteString.copyFrom(slot))
+//								.setValueRead(ByteString.copyFrom(left))
+//								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
+//								.build())
+//						.build())
 				.setGas(gas)
 				.setFunctionParameters(ByteString.copyFrom(functionParameters))
 				.setSenderId(senderId.toGrpcAccountId())
@@ -527,8 +526,8 @@ class EvmFnResultTest {
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
 				.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-				.addStateChanges(actual.getStateChanges(0))
-				.addStateChanges(actual.getStateChanges(1))
+//				.addStateChanges(actual.getStateChanges(0))
+//				.addStateChanges(actual.getStateChanges(1))
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.setGas(gas)
 				.setAmount(amount)

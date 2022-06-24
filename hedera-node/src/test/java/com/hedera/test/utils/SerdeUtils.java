@@ -97,20 +97,7 @@ public class SerdeUtils {
 				that.getLogInfoList().stream().map(SerdeUtils::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
 				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : EvmFnResult.EMPTY,
-				that.getStateChangesList().stream().collect(Collectors.toMap(
-						csc -> Address.wrap(Bytes.wrap(asEvmAddress(csc.getContractID()))),
-						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
-								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
-								sc -> Pair.of(
-										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
-										!sc.hasValueWritten() ? null :
-												Bytes.wrap(
-														sc.getValueWritten().getValue().toByteArray()).trimLeadingZeros()),
-								(l, r) -> l,
-								() -> new TreeMap<>(BytesComparator.INSTANCE)
-						)),
-						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE))),
+		new TreeMap<>(),
 				that.getGas(),
 				that.getAmount(),
 				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray(),

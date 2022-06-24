@@ -26,11 +26,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -113,14 +113,14 @@ class TransactionProcessingResultTest {
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
 		final var firstContractChangesRpc = ContractStateChange.newBuilder()
-				.setContractID(firstContract.getId().asGrpcContract())
+				.setContractId(firstContract.getId().asGrpcContract())
 				.addStorageChanges(StorageChange.newBuilder()
 						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
 						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
 						.build())
 				.build();
 		final var secondContractChangesRpc = ContractStateChange.newBuilder()
-				.setContractID(secondContract.getId().asGrpcContract())
+				.setContractId(secondContract.getId().asGrpcContract())
 				.addStorageChanges(StorageChange.newBuilder()
 						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
 						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
@@ -132,7 +132,7 @@ class TransactionProcessingResultTest {
 						.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(UInt256.valueOf(255L).trimLeadingZeros().toArrayUnsafe())))
 						.build())
 				.build();
-		expect.addAllStateChanges(List.of(firstContractChangesRpc, secondContractChangesRpc));
+//		expect.addAllStateChanges(List.of(firstContractChangesRpc, secondContractChangesRpc));
 
 		var result = TransactionProcessingResult.successful(
 				logList,

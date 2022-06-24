@@ -25,11 +25,9 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.stream.proto.StorageChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -397,12 +395,12 @@ public class EvmFnResult implements SelfSerializable {
 		if (evmAddress.length > 0) {
 			grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		}
-		stateChanges.forEach((address, slotAccesses) -> {
-			final var builder = ContractStateChange.newBuilder()
-					.setContractID(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
-			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
-			grpc.addStateChanges(builder);
-		});
+//		stateChanges.forEach((address, slotAccesses) -> {
+//			final var builder = ContractStateChange.newBuilder()
+//					.setContractId(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
+//			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
+//			grpc.addStateChanges(builder);
+//		});
 		grpc.setGas(gas);
 		grpc.setAmount(amount);
 		grpc.setFunctionParameters(ByteString.copyFrom(functionParameters));
