@@ -1,6 +1,5 @@
 package com.hedera.services.txns.util;
 
-import com.hedera.services.ServicesState;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;

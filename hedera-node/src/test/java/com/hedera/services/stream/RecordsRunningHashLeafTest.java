@@ -97,7 +97,7 @@ class RecordsRunningHashLeafTest {
 		diffWithoutNullValues.setHash(hash1);
 		diffWithoutNullValues.setHash(hash2);
 		diffWithoutNullValues.setHash(hash3);
-		assertFalse(runningHashLeaf.equals(diffWithoutNullValues));
+		assertNotEquals(runningHashLeaf, diffWithoutNullValues);
 	}
 
 	@Test
