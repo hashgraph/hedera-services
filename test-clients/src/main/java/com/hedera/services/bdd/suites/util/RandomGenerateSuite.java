@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -50,40 +51,41 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return List.of(
-				happyPathWorksForRangeAndBitString(),
-				failsInPreCheckForNegativeRange(),
-				usdFeeAsExpected()
+				happyPathWorksForRangeAndBitString()
+//				failsInPreCheckForNegativeRange(),
+//				usdFeeAsExpected()
 		);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
+		double baseFee = 0.0001;
+		double plusRangeFee = 0.0001;
+
+		final var baseTxn = "randomGenerate";
+		final var plusRangeTxn = "randomGenerateWithRange";
+
 		return defaultHapiSpec("createAnAccountWithStakingFields")
 				.given(
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
 						randomGenerate()
 								.payingWith("bob")
-								.via("randomGenerate")
+								.via(baseTxn)
 								.logged(),
-						getTxnRecord("randomGenerate")
+						getTxnRecord(baseTxn)
 								.hasOnlyPseudoRandomBitString()
-								.logged()
+								.logged(),
+						validateChargedUsd(baseTxn, baseFee)
 				).when(
 						randomGenerate(10)
 								.payingWith("bob")
-								.via("randomGenerateWithRange")
+								.via(plusRangeTxn)
 								.logged(),
-						getTxnRecord("randomGenerateWithRange")
+						getTxnRecord(plusRangeTxn)
 								.hasOnlyPseudoRandomNumberInRange(10)
-								.logged()
-				).then(
-						randomGenerate(0)
-								.payingWith("bob")
-								.via("randomGenerateWithZeroRange")
 								.logged(),
-						getTxnRecord("randomGenerateWithZeroRange")
-								.hasOnlyPseudoRandomBitString()
-								.logged()
+						validateChargedUsd(plusRangeTxn, baseFee)
+				).then(
 				);
 	}
 
@@ -116,6 +118,19 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.logged(),
 						getTxnRecord("randomGenerate")
 								.hasOnlyPseudoRandomBitString()
+								.logged(),
+
+						randomGenerate(10)
+								.payingWith("bob")
+								.via("randomGenerateWithRange1")
+								.logged(),
+						getTxnRecord("randomGenerateWithRange1")
+								.logged(),
+						randomGenerate(10)
+								.payingWith("bob")
+								.via("randomGenerateWithRange2")
+								.logged(),
+						getTxnRecord("randomGenerateWithRange2")
 								.logged()
 				).when(
 						randomGenerate(10)

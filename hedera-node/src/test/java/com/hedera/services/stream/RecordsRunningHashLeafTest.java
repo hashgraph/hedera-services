@@ -83,7 +83,8 @@ class RecordsRunningHashLeafTest {
 
 	@Test
 	void toStringTest() {
-		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s, " +
+						"nMinus1RunningHash: null, nMinus2RunningHash: null, nMinus3RunningHash: null",
 				runningHashLeaf.getHash(),
 				runningHash.getHash());
 		assertEquals(example, runningHashLeaf.toString());
@@ -91,7 +92,9 @@ class RecordsRunningHashLeafTest {
 
 	@Test
 	void hashCodeTest() {
-		assertEquals(Objects.hash(runningHash), runningHashLeaf.hashCode());
+		assertEquals(Objects.hash(runningHash, runningHashLeaf.getNMinus1RunningHash(),
+						runningHashLeaf.getNMinus2RunningHash(), runningHashLeaf.getNMinus3RunningHash()),
+				runningHashLeaf.hashCode());
 	}
 
 	@Test
@@ -113,6 +116,55 @@ class RecordsRunningHashLeafTest {
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
 		assertEquals(hash, leafForTestingRunningHash.currentRunningHash());
+	}
+
+	@Test
+	void updatesLastThreeRunningHashes() {
+		final var runningHash1 = new RunningHash();
+		// sets Hash for the RunningHash
+		runningHash1.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		// initializes a leaf with a RunningHash
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash1);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(null, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(null, leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash2 = new RunningHash();
+		runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash2);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(null, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash3 = new RunningHash();
+		runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash3);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash3.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash4 = new RunningHash();
+		runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash4);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash3.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash4.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
 	}
 
 	@Test
@@ -157,7 +209,7 @@ class RecordsRunningHashLeafTest {
 	@Test
 	void merkleMethodsWork() {
 		final var subject = new RecordsRunningHashLeaf();
-		assertEquals(RecordsRunningHashLeaf.CLASS_VERSION, subject.getVersion());
+		assertEquals(RecordsRunningHashLeaf.RELEASE_0280_VERSION, subject.getVersion());
 		assertEquals(RecordsRunningHashLeaf.CLASS_ID, subject.getClassId());
 	}
 }

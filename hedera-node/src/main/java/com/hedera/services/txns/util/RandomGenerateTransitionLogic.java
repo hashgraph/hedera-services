@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.MiscUtils.byteArrayToBinary;
+import static com.hedera.services.utils.MiscUtils.asBinaryString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -34,21 +34,26 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
-		final var pseudoRandomBytes = runningHashLeafSupplier.get().getRunningHash().getHash().getValue();
 
+		// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
+		final var nMinus3RunningHash = runningHashLeafSupplier.get().getNMinus3RunningHash();
+		if (nMinus3RunningHash == null || nMinus3RunningHash.getHash() == null) {
+			return;
+		}
+
+		final var pseudoRandomBytes = nMinus3RunningHash.getHash().getValue();
 		//generate binary string from the running hash of records
-		var randomBitString = byteArrayToBinary(pseudoRandomBytes);
+		var binaryVal = asBinaryString(pseudoRandomBytes);
 
 		final var range = op.getRange();
 		if (range > 0) {
 			// generate pseudorandom number in the given range
-			final var initialBitsValue = Integer.parseUnsignedInt(randomBitString.substring(0, 32), 2);
+			final var initialBitsValue = Integer.parseUnsignedInt(binaryVal.substring(0, 32), 2);
 			int pseudoRandomNumber = Math.abs((int) ((range * (long) initialBitsValue) >>> 32));
 			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
 		} else {
-			sideEffectsTracker.trackRandomBitString(randomBitString);
+			sideEffectsTracker.trackRandomBitString(binaryVal);
 		}
-		txnCtx.setStatus(SUCCESS);
 	}
 
 	@Override
@@ -68,7 +73,4 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		}
 		return OK;
 	}
-
-
-
 }
