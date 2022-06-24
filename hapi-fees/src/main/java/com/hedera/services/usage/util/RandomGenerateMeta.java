@@ -31,7 +31,7 @@ public class RandomGenerateMeta {
 	private final long msgBytesUsed;
 
 	public RandomGenerateMeta(RandomGenerateTransactionBody txn) {
-		msgBytesUsed = txn.getRange() > 0 ? INT_SIZE : 0; // Is this correct ?
+		msgBytesUsed = txn.getRange() > 0 ? INT_SIZE : 0;
 	}
 
 	public RandomGenerateMeta(RandomGenerateMeta.Builder builder) {

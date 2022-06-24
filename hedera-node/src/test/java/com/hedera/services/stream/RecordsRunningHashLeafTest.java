@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptoFactory;
@@ -28,13 +29,16 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,6 +83,21 @@ class RecordsRunningHashLeafTest {
 		final var sameButDifferent = runningHashLeaf;
 		assertEquals(runningHashLeaf, sameButDifferent);
 		assertNotEquals(runningHashLeaf, new Object());
+
+		// n-3 running hashes set
+		final var hash1 = new Hash(TxnUtils.randomUtf8Bytes(48));
+		final var hash2 = new Hash(TxnUtils.randomUtf8Bytes(48));
+		final var hash3 = new Hash(TxnUtils.randomUtf8Bytes(48));
+		runningHashLeaf.setHash(hash1);
+		runningHashLeaf.setHash(hash2);
+		runningHashLeaf.setHash(hash3);
+
+		final var diffWithoutNullValues = new RunningHash();
+		diffWithoutNullValues.setHash(runningHash.getHash());
+		diffWithoutNullValues.setHash(hash1);
+		diffWithoutNullValues.setHash(hash2);
+		diffWithoutNullValues.setHash(hash3);
+		assertFalse(runningHashLeaf.equals(diffWithoutNullValues));
 	}
 
 	@Test

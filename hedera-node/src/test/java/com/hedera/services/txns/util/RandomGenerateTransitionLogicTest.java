@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGenerateTransitionLogicTest {
@@ -174,6 +175,32 @@ class RandomGenerateTransitionLogicTest {
 		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
 		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
 		assertEquals(384, tracker.getPseudorandomBitString().length());
+		assertEquals(0, tracker.getPseudorandomNumber());
+	}
+
+	@Test
+	void nullHashesReturnNoRandomNumber(){
+		givenValidTxnCtx(0);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(null);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx, never()).setStatus(SUCCESS);
+		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+		assertEquals(0, tracker.getPseudorandomNumber());
+
+		// case 2
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(null);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx, never()).setStatus(SUCCESS);
+		assertTrue(tracker.getPseudorandomBitString().isEmpty());
 		assertEquals(0, tracker.getPseudorandomNumber());
 	}
 
