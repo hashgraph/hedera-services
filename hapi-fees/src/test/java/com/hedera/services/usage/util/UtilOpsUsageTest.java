@@ -63,9 +63,8 @@ class UtilOpsUsageTest {
 		var actual = new UsageAccumulator();
 		var expected = new UsageAccumulator();
 
-		var msgBytes = txn.getRandomGenerate().getSerializedSize();
 		expected.resetForTransaction(baseMeta, singleSigUsage);
-		expected.addBpt(msgBytes);
+		expected.addBpt(4);
 
 		subject.randomGenerateUsage(singleSigUsage, baseMeta, opMeta, actual);
 

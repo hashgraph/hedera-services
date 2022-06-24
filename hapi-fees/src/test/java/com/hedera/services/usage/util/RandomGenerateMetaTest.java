@@ -56,15 +56,22 @@ class RandomGenerateMetaTest {
 
 	@Test
 	void calculatesSizesAsExpected() {
-		final var canonicalTxn = TransactionBody.newBuilder()
+		var canonicalTxn = TransactionBody.newBuilder()
 				.setRandomGenerate(
 						RandomGenerateTransactionBody.newBuilder()
 								.setRange(10)
 				).build();
 
-		final var expectedMsgBytes = canonicalTxn.getRandomGenerate().getSerializedSize();
+		var subject = new RandomGenerateMeta(canonicalTxn.getRandomGenerate());
+		assertEquals(4, subject.getMsgBytesUsed());
 
-		final var subject = new RandomGenerateMeta(canonicalTxn.getRandomGenerate());
-		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
+		// without range
+		canonicalTxn = TransactionBody.newBuilder()
+				.setRandomGenerate(
+						RandomGenerateTransactionBody.newBuilder()
+				).build();
+
+		subject = new RandomGenerateMeta(canonicalTxn.getRandomGenerate());
+		assertEquals(0, subject.getMsgBytesUsed());
 	}
 }
