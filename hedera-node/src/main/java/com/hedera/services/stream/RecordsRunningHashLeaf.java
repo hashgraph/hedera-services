@@ -95,11 +95,10 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		runningHash = new RunningHash();
 		runningHash.setHash(in.readSerializable());
 
+		nMinus1RunningHash = new RunningHash();
+		nMinus2RunningHash = new RunningHash();
+		nMinus3RunningHash = new RunningHash();
 		if (version >= RELEASE_0280_VERSION) {
-			nMinus1RunningHash = new RunningHash();
-			nMinus2RunningHash = new RunningHash();
-			nMinus3RunningHash = new RunningHash();
-
 			nMinus1RunningHash.setHash(in.readSerializable());
 			nMinus2RunningHash.setHash(in.readSerializable());
 			nMinus3RunningHash.setHash(in.readSerializable());
