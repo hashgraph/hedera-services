@@ -12,3 +12,5 @@ state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+jasperDb.storagePath,                          /opt/hedera/services/data/saved
+jasperDb.iteratorInputBufferBytes,             16777216

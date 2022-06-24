@@ -2,6 +2,7 @@ package com.hedera.services.bdd.junit;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.utility.DockerImageName;
@@ -9,6 +10,8 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A Testcontainers container implementation of a Hedera main node. Useful for bringing up
@@ -24,17 +27,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         this.id = id;
         this.withExposedPorts(GRPC_PORT)
                 .withCommand("/bin/sh", "-c", "sleep 2 && ./start-services.sh")
-                .waitingFor(new WaitStrategy() {
-                    @Override
-                    public void waitUntilReady(WaitStrategyTarget waitStrategyTarget) {
-                    }
-
-                    @Override
-                    public WaitStrategy withStartupTimeout(Duration startupTimeout) {
-                        return this;
-                    }
-                })
-//                .waitingFor(Wait.forLogMessage(".*Now current platform status = ACTIVE.*", 1))
+                .waitingFor(Wait.forListeningPort())
                 .withEnv("NODE_ID", "" + id)
                 .withNetworkAliases("node_" + id)
                 .withCreateContainerCmdModifier(cmd -> cmd.withHostName("node_" + id));
@@ -96,10 +89,15 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         //noinspection StatementWithEmptyBody
         while (!isActive() && System.currentTimeMillis() < failAfter) {
             // Busy Loop
+            try {
+                MILLISECONDS.sleep(Math.min(10, timeout.toMillis() / 10));
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
         }
 
         if (!isActive()) {
-            throw new TimeoutException("Timed out waiting for node_" + id + " to become active");
+            throw new TimeoutException(String.format("Timed out waiting for node_%d to become active", id));
         }
     }
 }
