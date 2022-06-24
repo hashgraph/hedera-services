@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -98,6 +99,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -132,6 +134,8 @@ class HTSPrecompiledContractTest {
 	private BlockValues blockValues;
 	@Mock
 	private MessageFrame messageFrame;
+	@Mock
+	private PrecompileMessage precompileMessage;
 	@Mock
 	private InfoProvider infoProvider;
 	@Mock
@@ -583,6 +587,34 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
+	void callHtsDirectlyCorrectImplementationForDirectTokenERC20NameCall(){
+		//given
+		givenPrecompileMessageContext();
+		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(infrastructureFactory.newSideEffects()).willReturn(new SideEffectsTracker());
+		given(wrappedLedgers.wrapped(any())).willReturn(wrappedLedgers);
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+		given(precompileMessage.getInputData()).willReturn(input);
+		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall,
+				Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build()))
+				.willReturn(1L);
+		given(mockFeeObject.getNodeFee())
+				.willReturn(1L);
+		given(mockFeeObject.getNetworkFee())
+				.willReturn(1L);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		final var name = "name";
+		given(wrappedLedgers.nameOf(fungible)).willReturn(name);
+		given(encoder.encodeName(name)).willReturn(Bytes.of(1));
+		//when
+		subject.callHtsDirectly(precompileMessage);
+		//then
+		verify(precompileMessage,times(1)).setHtsOutputResult(Bytes.of(1));
+	}
+
+	@Test
 	void prepareFieldsWithAliasedMessageSender() {
 		givenFrameContext();
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -643,6 +675,15 @@ class HTSPrecompiledContractTest {
 		given(messageFrame.getSenderAddress()).willReturn(contractAddress);
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+	}
+
+	private void givenPrecompileMessageContext(){
+		given(precompileMessage.getSenderAddress()).willReturn(contractAddress);
+		given(precompileMessage.getLedgers()).willReturn(wrappedLedgers);
+		given(precompileMessage.getConsensusTime()).willReturn(TEST_CONSENSUS_TIME);
+		given(precompileMessage.getTokenID()).willReturn(fungible);
+		given(precompileMessage.getGasRemaining()).willReturn(AMOUNT);
+		given(precompileMessage.getValue()).willReturn(Wei.ZERO);
 	}
 
 	private void givenPricingUtilsContext() {

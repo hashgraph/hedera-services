@@ -83,6 +83,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportBalances());
 		assertTrue(subject.shouldExportTokenBalances());
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
+		assertTrue(subject.enableDirectHTSTokenCalls());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
 		assertFalse(subject.isAutoCreationEnabled());
@@ -338,6 +339,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
 		given(properties.getIntProperty("balances.exportPeriodSecs")).willReturn(i + 10);
 		given(properties.getBooleanProperty("balances.exportEnabled")).willReturn((i + 11) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.enableDirectTokenCalls")).willReturn((i + 11) % 2 == 0);
 		given(properties.getLongProperty("balances.nodeBalanceWarningThreshold")).willReturn(i + 12L);
 		given(properties.getStringProperty("balances.exportDir.path")).willReturn(balanceExportPaths[i % 2]);
 		given(properties.getBooleanProperty("balances.exportTokenBalances")).willReturn((i + 13) % 2 == 0);

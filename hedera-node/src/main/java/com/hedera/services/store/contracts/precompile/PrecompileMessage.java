@@ -158,7 +158,7 @@ public class PrecompileMessage {
 		private Bytes inputData;
 		private TokenID tokenID;
 
-		public Builder() {
+		private Builder() {
 		}
 
 		public Builder setLedgers(WorldLedgers ledgers) {

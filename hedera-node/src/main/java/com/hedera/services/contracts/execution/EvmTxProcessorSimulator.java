@@ -278,7 +278,7 @@ public class EvmTxProcessorSimulator {
 	private PrecompileMessage constructMessageAndCallPrecompileContract(Account sender, Instant consensusTime, WorldLedgers ledgers,
 																		Bytes payload, long gasAvailable, long value,
 																		Id token) {
-		PrecompileMessage message = new PrecompileMessage.Builder()
+		PrecompileMessage message = PrecompileMessage.builder()
 				.setLedgers(ledgers)
 				.setSenderAddress(sender.canonicalAddress())
 				.setValue(Wei.of(value))
