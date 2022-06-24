@@ -58,7 +58,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
@@ -161,7 +161,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 				final var hasSenderSig = KeyActivationUtils.validateKey(
 						frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
 						updater.aliases());
-				validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE);
 			}
 			if (i < numExplicitChanges) {
 				/* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
@@ -176,7 +176,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 							frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
 							ledgers, updater.aliases());
 				}
-				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+				validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE);
 			}
 		}
 

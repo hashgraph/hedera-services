@@ -43,7 +43,7 @@ import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /* --- Constructor functional interfaces for mocking --- */
@@ -91,7 +91,7 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 		final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE);
 
 		// --- Build the necessary infrastructure to execute the transaction ---
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
