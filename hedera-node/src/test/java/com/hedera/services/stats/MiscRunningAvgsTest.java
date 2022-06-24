@@ -31,8 +31,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class MiscRunningAvgsTest {
-	private static final double halfLife = 10.0;
 
+	private static final double halfLife = 10.0;
 	private Platform platform;
 	private RunningAvgFactory factory;
 

@@ -31,7 +31,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -83,19 +85,20 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						freezeMgmtSuccessCasesWork(),
-						kycMgmtFailureCasesWork(),
-						kycMgmtSuccessCasesWork(),
-						supplyMgmtSuccessCasesWork(),
-						wipeAccountFailureCasesWork(),
-						wipeAccountSuccessCasesWork(),
-						supplyMgmtFailureCasesWork(),
-						burnTokenFailsDueToInsufficientTreasuryBalance(),
-						frozenTreasuryCannotBeMintedOrBurned(),
-						revokedKYCTreasuryCannotBeMintedOrBurned(),
-						fungibleCommonMaxSupplyReachWork(),
-						mintingMaxLongValueWorks(),
-						nftMintProvidesMintedNftsAndNewTotalSupply(),
+//						freezeMgmtSuccessCasesWork(),
+//						kycMgmtFailureCasesWork(),
+//						kycMgmtSuccessCasesWork(),
+//						supplyMgmtSuccessCasesWork(),
+//						wipeAccountFailureCasesWork(),
+//						wipeAccountSuccessCasesWork(),
+//						supplyMgmtFailureCasesWork(),
+//						burnTokenFailsDueToInsufficientTreasuryBalance(),
+//						frozenTreasuryCannotBeMintedOrBurned(),
+//						revokedKYCTreasuryCannotBeMintedOrBurned(),
+//						fungibleCommonMaxSupplyReachWork(),
+//						mintingMaxLongValueWorks(),
+//						nftMintProvidesMintedNftsAndNewTotalSupply(),
+						createTestnetToken(),
 				}
 		);
 	}
@@ -103,6 +106,48 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	public boolean canRunConcurrent() {
 		return true;
+	}
+
+	private HapiApiSpec createTestnetToken() {
+		final var nfToken = "nonFungible";
+		final var fToken = "fungible";
+		return customHapiSpec("CreateTestnetToken").withProperties(Map.of(
+				"nodes", "34.94.106.61",
+				"default.payer", "0.0.50",
+				"default.payer.pemKeyLoc", "stabletestnet-account50.pem",
+				"default.payer.pemKeyPassphrase", "KbhO358JFbejUS4Omsp2"
+		)).given(
+//				getAccountBalance(DEFAULT_PAYER),
+//				tokenCreate(nfToken)
+//						.supplyKey(DEFAULT_PAYER)
+//						.wipeKey(DEFAULT_PAYER)
+//						.initialSupply(0)
+//						.tokenType(NON_FUNGIBLE_UNIQUE)
+//						.advertisingCreation(),
+//				mintToken(nfToken, List.of(
+//						ByteString.copyFromUtf8("a"),
+//						ByteString.copyFromUtf8("b"),
+//						ByteString.copyFromUtf8("c")
+//				))
+		).when(
+//				tokenCreate(fToken)
+//						.supplyKey(DEFAULT_PAYER)
+//						.wipeKey(DEFAULT_PAYER)
+//						.initialSupply(1_000_000)
+//						.tokenType(FUNGIBLE_COMMON)
+//						.advertisingCreation()
+		).then(
+//				getTokenInfo("0.0.46805666").logged(),
+//				getTokenInfo("0.0.46805667").logged()
+//				cryptoTransfer(TokenMovement.movingUnique("0.0.46805666", 1L, 2L)
+//						.between(DEFAULT_PAYER, "0.0.46018789"))
+//				cryptoTransfer(TokenMovement.moving(500_000, "0.0.46805667")
+//						.between(DEFAULT_PAYER, "0.0.46018789"))
+//				wipeTokenAccount("0.0.46805667", "0.0.46018789", 100_000)
+//						.signedBy(DEFAULT_PAYER)
+				wipeTokenAccount("0.0.46805666", "0.0.46018789", List.of(1L, 2L))
+						.signedBy(DEFAULT_PAYER)
+		);
 	}
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {

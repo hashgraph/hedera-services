@@ -45,7 +45,7 @@ public class ServicesStatsManager {
 		}
 	});
 
-	static final String SPEEDOMETER_UPDATE_THREAD_NAME_TPL = "SpeedometerUpdateThread%d";
+	static final String STATS_UPDATE_THREAD_NAME_TPL = "StatsUpdateThread%d";
 
 	private final HapiOpCounters opCounters;
 	private final MiscRunningAvgs runningAvgs;
@@ -62,6 +62,7 @@ public class ServicesStatsManager {
 			final MiscSpeedometers speedometers,
 			final HapiOpSpeedometers opSpeedometers,
 			final NodeLocalProperties properties,
+			final ThrottleUtilizations throttleUtilizations,
 			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
@@ -88,7 +89,7 @@ public class ServicesStatsManager {
 			pause.forMs(properties.statsHapiOpsSpeedometerUpdateIntervalMs());
 			opSpeedometers.updateAll();
 		});
-		updateThread.setName(String.format(SPEEDOMETER_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
+		updateThread.setName(String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
 		updateThread.start();
 	}
 }

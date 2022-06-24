@@ -71,6 +71,8 @@ class ServicesStatsManagerTest {
 	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+	@Mock
+	private ThrottleUtilizations throttleUtilizations;
 
 	ServicesStatsManager subject;
 
@@ -84,7 +86,7 @@ class ServicesStatsManagerTest {
 
 		subject = new ServicesStatsManager(
 				counters, runningAvgs, miscSpeedometers, speedometers,
-				properties,
+				properties, throttleUtilizations,
 				() -> storage, () -> bytecode);
 	}
 
@@ -119,7 +121,7 @@ class ServicesStatsManagerTest {
 		verify(platform).appStatInit();
 		// and:
 		verify(thread).start();
-		verify(thread).setName(String.format(ServicesStatsManager.SPEEDOMETER_UPDATE_THREAD_NAME_TPL, 123L));
+		verify(thread).setName(String.format(ServicesStatsManager.STATS_UPDATE_THREAD_NAME_TPL, 123L));
 		// and when:
 		captor.getValue().run();
 		// then:

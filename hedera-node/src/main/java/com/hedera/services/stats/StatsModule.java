@@ -22,11 +22,15 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.utils.MiscUtils;
 import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
+import java.util.List;
 
 @Module
 public final class StatsModule {
@@ -35,6 +39,17 @@ public final class StatsModule {
 	public static MiscRunningAvgs provideMiscRunningAvgs(final NodeLocalProperties nodeLocalProperties) {
 		return new MiscRunningAvgs(new RunningAvgFactory() {
 		}, nodeLocalProperties.statsRunningAvgHalfLifeSecs());
+	}
+
+	@Provides
+	@Singleton
+	public static ThrottleUtilizations provideThrottleUtilizations(
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final @HapiThrottle FunctionalityThrottling hapiThrottling,
+			final NodeLocalProperties nodeLocalProperties
+	) {
+		return new ThrottleUtilizations(handleThrottling, hapiThrottling, new RunningAvgFactory() {
+		}, List.of("FreeQueryLimits"), nodeLocalProperties.statsSpeedometerHalfLifeSecs());
 	}
 
 	@Provides
