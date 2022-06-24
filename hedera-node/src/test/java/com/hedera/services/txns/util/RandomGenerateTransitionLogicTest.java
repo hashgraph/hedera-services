@@ -103,7 +103,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithNoRange() {
 		givenValidTxnCtxWithoutRange();
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -121,7 +121,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithRange() {
 		givenValidTxnCtx(20);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -138,7 +138,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithMaxIntegerRange() {
 		givenValidTxnCtx(Integer.MAX_VALUE);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -163,7 +163,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void givenRangeZeroGivesBitString() {
 		givenValidTxnCtx(0);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

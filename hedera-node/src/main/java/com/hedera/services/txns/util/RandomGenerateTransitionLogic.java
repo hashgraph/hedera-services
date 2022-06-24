@@ -1,11 +1,14 @@
 package com.hedera.services.txns.util;
 
+import com.hedera.services.ServicesState;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import java.util.function.Function;
@@ -18,6 +21,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class RandomGenerateTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(RandomGenerateTransitionLogic.class);
+
 	private final TransactionContext txnCtx;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
@@ -38,11 +43,12 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
 		final var nMinus3RunningHash = runningHashLeafSupplier.get().getNMinus3RunningHash();
 		if (nMinus3RunningHash == null || nMinus3RunningHash.getHash() == null) {
+			log.info("No n-3 record running hash available to generate random number");
 			return;
 		}
 
+        //generate binary string from the running hash of records
 		final var pseudoRandomBytes = nMinus3RunningHash.getHash().getValue();
-		//generate binary string from the running hash of records
 		var binaryVal = asBinaryString(pseudoRandomBytes);
 
 		final var range = op.getRange();
@@ -54,6 +60,8 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		} else {
 			sideEffectsTracker.trackRandomBitString(binaryVal);
 		}
+
+		txnCtx.setStatus(SUCCESS);
 	}
 
 	@Override

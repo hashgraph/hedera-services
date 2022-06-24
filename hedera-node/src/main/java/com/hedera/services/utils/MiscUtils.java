@@ -284,6 +284,7 @@ public final class MiscUtils {
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
+	static final String RANDOM_GENERATE_METRIC = "randomGenerate";
 
 	private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -937,14 +938,6 @@ public final class MiscUtils {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(signedTxn.toByteString())
 				.build();
-	}
-
-	public static String byteArrayToBinaryString(byte[] bytes) {
-		StringBuilder result = new StringBuilder();
-		for (byte b1 : bytes) {
-			result.append(String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0'));
-		}
-		return result.toString();
 	}
 
 	public static String asBinaryString(final byte[] pseudoRandomBytes) {
