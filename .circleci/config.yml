@@ -1600,7 +1600,7 @@ jobs:
             
             # Build Platform
             cd /swirlds-platform;
-            cd regression/; git checkout update-services-jsons; cd .. ;
+            cd regression/; git checkout no-marker-console; cd .. ;
             ./mvnw clean install -DskipTests;
             
             # Build JRS
