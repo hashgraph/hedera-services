@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.27.0-SNAPSHOT</version>
+	<version>0.27.0</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -22,7 +21,7 @@
 		<url>https://github.com/hashgraph/hedera-services</url>
 		<connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
 		<developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-		<tag>HEAD</tag>
+		<tag>v0.27.0</tag>
 	</scm>
 
 	<developers>
@@ -265,7 +264,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-06-16T16:14:34Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-06-24T21:03:11Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>
