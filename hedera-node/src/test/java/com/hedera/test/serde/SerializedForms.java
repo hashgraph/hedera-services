@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
@@ -126,10 +127,9 @@ public class SerializedForms {
 	}
 
 	private static void generateSerializedData() {
-		GENERATOR_MAPPING.get(MerkleStakingInfo.class).run();
-//		for (var entry : GENERATOR_MAPPING.entrySet()) {
-//			entry.getValue().run();
-//		}
+  		for (var entry : GENERATOR_MAPPING.entrySet()) {
+  			entry.getValue().run();
+  		}
 	}
 
 	private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
@@ -195,7 +195,9 @@ public class SerializedForms {
 					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleStakingInfo.class, SeededPropertySource::nextStakingInfo,
-							MerkleStakingInfoSerdeTest.NUM_TEST_CASES)
+							MerkleStakingInfoSerdeTest.NUM_TEST_CASES),
+					entry(SerializableSemVers.class, SeededPropertySource::nextSerializableSemVers,
+							2 * MIN_TEST_CASES_PER_VERSION)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

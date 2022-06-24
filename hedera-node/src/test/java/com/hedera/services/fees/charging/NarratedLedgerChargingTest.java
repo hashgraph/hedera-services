@@ -89,8 +89,7 @@ class NarratedLedgerChargingTest {
 	void setUp() {
 		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
 		given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
-		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts,
-				accountNumbers);
+		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts, accountNumbers);
 		subject.setLedger(ledger);
 	}
 

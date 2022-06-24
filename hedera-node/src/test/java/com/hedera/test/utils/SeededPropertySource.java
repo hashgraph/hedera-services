@@ -23,6 +23,7 @@ package com.hedera.test.utils;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -77,6 +78,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -510,6 +512,11 @@ public class SeededPropertySource {
 		for (int i = 0; i < numBlocks; i++) {
 			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
 		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
 		return seeded;
 	}
 
@@ -1075,6 +1082,24 @@ public class SeededPropertySource {
 		return new MerkleAccountTokens(
 				new CopyOnWriteIds(nextInRangeLongs(3 * nextNonZeroInt(10)))
 		);
+	}
+
+	public SerializableSemVers nextSerializableSemVers() {
+		return new SerializableSemVers(nextSemVer(), nextSemVer());
+	}
+
+	private SemanticVersion nextSemVer() {
+		final var ans = SemanticVersion.newBuilder();
+		ans.setMajor(nextUnsignedInt())
+				.setMinor(nextUnsignedInt())
+				.setPatch(nextUnsignedInt());
+		if (nextBoolean()) {
+			ans.setPre(nextString(8));
+		}
+		if (nextBoolean()) {
+			ans.setBuild(nextString(8));
+		}
+		return ans.build();
 	}
 
 	public ContractKey nextContractKey() {
