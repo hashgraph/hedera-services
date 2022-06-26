@@ -247,4 +247,18 @@ class RecordsRunningHashLeafTest {
 		assertEquals(RecordsRunningHashLeaf.RELEASE_0280_VERSION, subject.getVersion());
 		assertEquals(RecordsRunningHashLeaf.CLASS_ID, subject.getClassId());
 	}
+
+	@Test
+	void serializationFailsThrowsException() throws ExecutionException, InterruptedException {
+		final var runningHash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		final var sout = mock(SerializableDataOutputStream.class);
+		final var subject = new RecordsRunningHashLeaf(runningHash);
+
+		given(runningHash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(InterruptedException.class);
+		final var msg = assertThrows(IOException.class, () -> subject.serialize(sout));
+		assertTrue(
+				msg.getMessage().contains("Got interrupted when getting runningHash when serializing RunningHashLeaf"));
+	}
 }

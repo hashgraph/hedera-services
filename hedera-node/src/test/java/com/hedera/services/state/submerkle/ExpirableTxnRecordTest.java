@@ -28,9 +28,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -51,7 +49,6 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PAR
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
-import static com.hedera.test.utils.TxnUtils.recordOne;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -154,7 +151,6 @@ class ExpirableTxnRecordTest {
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
 				.setPseudorandomNumber(10)
-				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
 				.build();
 	}
 
@@ -219,13 +215,12 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setPseudoRandomBitString(pseudoRandomBitString);
+		subject.setPseudoRandomNumber(10);
 
 		final var grpcSubject = subject.asGrpc();
 
@@ -451,7 +446,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=-1, pseudoRandomBitString=, " +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBitString=, " +
 				"parentConsensusTime=1970-01-15T06:56:07.000000890Z, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
@@ -479,8 +474,9 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=-1, pseudoRandomBitString=, " +
-				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0" +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBitString=, " +
+				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0" +
+				".0" +
 				".4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
 				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
