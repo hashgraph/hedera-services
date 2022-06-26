@@ -4,7 +4,7 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 @Singleton
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
+	public static final int MISSING_NUMBER = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 	private static final int MAX_BALANCE_CHANGES = 2048;
 	public static final int MAX_PSEUDORANDOM_BIT_STRING_LENGTH = 384;
@@ -85,7 +86,7 @@ public class SideEffectsTracker {
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	private String pseudorandomBitString = EMPTY_STRING;
-	private int pseudorandomNumber;
+	private int pseudorandomNumber = MISSING_NUMBER;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -445,7 +446,7 @@ public class SideEffectsTracker {
 	}
 
 	public boolean hasTrackedRandomData() {
-		return pseudorandomNumber > 0 || !pseudorandomBitString.isEmpty();
+		return pseudorandomNumber >= 0 || !pseudorandomBitString.isEmpty();
 	}
 
 	/**
@@ -459,7 +460,7 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
-		pseudorandomNumber = 0;
+		pseudorandomNumber = MISSING_NUMBER;
 		pseudorandomBitString = EMPTY_STRING;
 	}
 

@@ -197,6 +197,6 @@
 	"DEFAULT": 0
   },
   "RandomGenerate": {
-	"DEFAULT": 0.0001
+	"DEFAULT": 0.001
   }
 }

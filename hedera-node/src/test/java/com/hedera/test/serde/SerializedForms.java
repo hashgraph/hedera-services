@@ -126,7 +126,7 @@ public class SerializedForms {
 	}
 
 	private static void generateSerializedData() {
-		GENERATOR_MAPPING.get(RecordsRunningHashLeaf.class).run();
+		GENERATOR_MAPPING.get(ExpirableTxnRecord.class).run();
 //		for (var entry : GENERATOR_MAPPING.entrySet()) {
 //			entry.getValue().run();
 //		}

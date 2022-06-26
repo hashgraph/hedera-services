@@ -109,8 +109,6 @@ class ExpiringCreationsTest {
 	private ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor;
 	@Mock
 	private EthTxData ethTxData;
-	@Mock
-	private RandomGenerateMeta randomGenerateMeta;
 
 	private static final AccountID payer = asAccount("0.0.2");
 	private static final AccountID created = asAccount("1.0.2");
@@ -379,7 +377,7 @@ class ExpiringCreationsTest {
 		assertTrue(created.getPseudoRandomBitString().isEmpty());
 
 		// case 2
-		given(sideEffectsTracker.getPseudorandomNumber()).willReturn(0);
+		given(sideEffectsTracker.getPseudorandomNumber()).willReturn(-1);
 		given(sideEffectsTracker.getPseudorandomBitString()).willReturn(String.valueOf(mockString));
 		given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
 
@@ -392,7 +390,7 @@ class ExpiringCreationsTest {
 				customFeesCharged,
 				sideEffectsTracker).build();
 
-		assertEquals(0, created.getPseudoRandomNumber());
+		assertEquals(-1, created.getPseudoRandomNumber());
 		assertEquals(mockString.toString(), created.getPseudoRandomBitString());
 
 	}

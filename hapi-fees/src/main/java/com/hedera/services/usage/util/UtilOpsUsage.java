@@ -39,6 +39,6 @@ public class UtilOpsUsage {
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		var baseSize = randomGenerateMeta.getMsgBytesUsed();
-		accumulator.addBpt(baseSize); // since not stored in ram , only bpt is needed ?
+		accumulator.addBpt(baseSize);
 	}
 }

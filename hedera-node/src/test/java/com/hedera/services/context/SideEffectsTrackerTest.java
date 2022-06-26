@@ -398,7 +398,7 @@ class SideEffectsTrackerTest {
 
 		subject.reset();
 		assertFalse(subject.hasTrackedRandomData());
-		assertEquals(0, subject.getPseudorandomNumber());
+		assertEquals(-1, subject.getPseudorandomNumber());
 		assertEquals("", subject.getPseudorandomBitString());
 	}
 
@@ -415,7 +415,7 @@ class SideEffectsTrackerTest {
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
-	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
+
 	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
 	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =

@@ -4,7 +4,7 @@ package com.hedera.services.state.expiry;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,7 +192,7 @@ public class ExpiringCreations implements EntityCreator {
 		}
 
 		if (sideEffectsTracker.hasTrackedRandomData()) {
-			if (sideEffectsTracker.getPseudorandomNumber() > 0) {
+			if (sideEffectsTracker.getPseudorandomNumber() >= 0) {
 				baseRecord.setPseudoRandomNumber(sideEffectsTracker.getPseudorandomNumber());
 			} else {
 				baseRecord.setPseudoRandomBitString(sideEffectsTracker.getPseudorandomBitString());

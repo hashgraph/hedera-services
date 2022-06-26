@@ -4,7 +4,7 @@ package com.hedera.services.state.submerkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -82,6 +83,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
+
+	private static final byte NO_PRNG_OUTPUT = (byte) 0x00;
+	private static final byte PRNG_INT_OUTPUT = (byte) 0x01;
+	private static final byte PRNG_BYTES_OUTPUT = (byte) 0x02;
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
 	private long fee;
@@ -112,7 +117,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private ByteString alias = MISSING_ALIAS;
 	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 	private String pseudoRandomBitString = EMPTY_STRING;
-	private int pseudoRandomNumber;
+	private int pseudoRandomNumber = MISSING_NUMBER;
 
 	@Override
 	public void release() {
@@ -338,8 +343,15 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		out.writeByteArray(ethereumHash);
 		writeNullableSerializable(stakingRewardsPaid, out);
 
-		out.writeInt(pseudoRandomNumber);
-		out.writeNormalisedString(pseudoRandomBitString);
+		if (pseudoRandomNumber >= 0) {
+			out.writeByte(PRNG_INT_OUTPUT);
+			out.writeInt(pseudoRandomNumber);
+		} else if (!pseudoRandomBitString.isEmpty()) {
+			out.writeByte(PRNG_BYTES_OUTPUT);
+			out.writeNormalisedString(pseudoRandomBitString);
+		} else {
+			out.writeByte(NO_PRNG_OUTPUT);
+		}
 	}
 
 	@Override
@@ -392,8 +404,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (version >= RELEASE_0280_VERSION) {
-			pseudoRandomNumber = in.readInt();
-			pseudoRandomBitString = in.readNormalisedString(MAX_PSEUDORANDOM_BIT_STRING_LENGTH);
+			final var outputType = in.readByte();
+			if (outputType == PRNG_INT_OUTPUT) {
+				pseudoRandomNumber = in.readInt();
+			} else if (outputType == PRNG_BYTES_OUTPUT) {
+				pseudoRandomBitString = in.readNormalisedString(MAX_PSEUDORANDOM_BIT_STRING_LENGTH);
+			}
 		}
 	}
 
@@ -612,7 +628,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
-		if (pseudoRandomNumber > 0) {
+		if (pseudoRandomNumber >= 0) {
 			grpc.setPseudorandomNumber(pseudoRandomNumber);
 		} else if (!pseudoRandomBitString.isEmpty()) {
 			grpc.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString));
@@ -665,7 +681,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
 		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
-		private int pseudoRandomNumber;
+		private int pseudoRandomNumber = MISSING_NUMBER;
 		private String pseudoRandomBitString = EMPTY_STRING;
 		private boolean onlyExternalizedIfSuccessful = false;
 
@@ -876,7 +892,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
 			ethereumHash = MISSING_ETHEREUM_HASH;
-			pseudoRandomNumber = 0;
+			pseudoRandomNumber = MISSING_NUMBER;
 			pseudoRandomBitString = EMPTY_STRING;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {

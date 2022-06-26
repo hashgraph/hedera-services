@@ -114,7 +114,7 @@ class RandomGenerateTransitionLogicTest {
 		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
 		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
 		assertEquals(384, tracker.getPseudorandomBitString().length());
-		assertEquals(0, tracker.getPseudorandomNumber());
+		assertEquals(-1, tracker.getPseudorandomNumber());
 
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -175,7 +175,7 @@ class RandomGenerateTransitionLogicTest {
 		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
 		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
 		assertEquals(384, tracker.getPseudorandomBitString().length());
-		assertEquals(0, tracker.getPseudorandomNumber());
+		assertEquals(-1, tracker.getPseudorandomNumber());
 	}
 
 	@Test
@@ -189,7 +189,7 @@ class RandomGenerateTransitionLogicTest {
 
 		verify(txnCtx, never()).setStatus(SUCCESS);
 		assertTrue(tracker.getPseudorandomBitString().isEmpty());
-		assertEquals(0, tracker.getPseudorandomNumber());
+		assertEquals(-1, tracker.getPseudorandomNumber());
 
 		// case 2
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
@@ -201,7 +201,7 @@ class RandomGenerateTransitionLogicTest {
 
 		verify(txnCtx, never()).setStatus(SUCCESS);
 		assertTrue(tracker.getPseudorandomBitString().isEmpty());
-		assertEquals(0, tracker.getPseudorandomNumber());
+		assertEquals(-1, tracker.getPseudorandomNumber());
 	}
 
 	private void givenValidTxnCtx(int range) {
