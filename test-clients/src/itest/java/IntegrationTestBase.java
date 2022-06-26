@@ -51,7 +51,7 @@ public abstract class IntegrationTestBase extends TestBase {
      * Before any test runs, configure HapiApiSpec to use the Testcontainer we created
      */
     @BeforeAll
-    static void beforeAll() throws TimeoutException {
+    static void beforeAll() throws TimeoutException, IOException {
         NODE_0.waitUntilActive(Duration.ofSeconds(30));
 
         final var defaultProperties = JutilPropertySource.getDefaultInstance();
@@ -68,6 +68,12 @@ public abstract class IntegrationTestBase extends TestBase {
 
     @AfterAll
     static void afterAll() throws IOException {
+        NODE_0.stop();
+        archiveRunData();
+        NODE_0.start();
+    }
+
+    private static void archiveRunData() throws IOException {
         if (!WORKSPACE.exists()) {
             return;
         }
