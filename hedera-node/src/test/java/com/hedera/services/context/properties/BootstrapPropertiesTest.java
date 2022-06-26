@@ -193,7 +193,7 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.longTermEnabled", true),
+			entry("scheduling.longTermEnabled", false),
 			entry("scheduling.maxTxnPerSecond", 100L),
 			entry("scheduling.maxExpirationFutureSeconds", 5356800L),
 			entry("scheduling.whitelist", Set.of(
@@ -232,7 +232,9 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("entities.limitTokenAssociations", false)
+			entry("entities.limitTokenAssociations", false),
+			entry("hedera.recordStream.recordFileVersion", 5),
+			entry("hedera.recordStream.signatureFileVersion", 5)
 	);
 
 	@Test

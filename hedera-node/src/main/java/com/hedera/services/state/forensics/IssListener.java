@@ -24,11 +24,11 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.InvalidSignedStateListener;
-import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +63,7 @@ public class IssListener implements InvalidSignedStateListener {
 			Platform platform,
 			AddressBook addressBook,
 			SwirldState swirldsState,
-			Event[] events,
+			PlatformEvent[] events,
 			NodeId self, NodeId other,
 			long round, Instant consensusTime, long numConsEvents,
 			byte[] sig, byte[] hash

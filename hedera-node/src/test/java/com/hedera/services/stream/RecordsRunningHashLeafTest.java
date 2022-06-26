@@ -30,6 +30,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import io.netty.util.internal.StringUtil;
+import com.swirlds.common.threading.futures.StandardFuture;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,13 +41,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class RecordsRunningHashLeafTest {
@@ -138,6 +142,18 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
+	void propagatesFatalExecutionException() throws ExecutionException, InterruptedException {
+		final var delegate = mock(RunningHash.class);
+		final var future = mock(StandardFuture.class);
+
+		given(delegate.getFutureHash()).willReturn(future);
+		given(future.get()).willThrow(ExecutionException.class);
+		final var subject = new RecordsRunningHashLeaf(delegate);
+
+		assertThrows(IllegalStateException.class, subject::currentRunningHash);
+	}
+
+	@Test
 	void updatesLastThreeRunningHashes() {
 		final var runningHash1 = new RunningHash();
 		// sets Hash for the RunningHash
@@ -207,7 +223,7 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	void serializationDeserializationTest() throws IOException, InterruptedException {
+	void serializationDeserializationTest() throws IOException, InterruptedException, ExecutionException {
 		try (final var byteArrayOutputStream = new ByteArrayOutputStream();
 			 final var out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);
