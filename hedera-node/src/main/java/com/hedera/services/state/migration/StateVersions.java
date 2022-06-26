@@ -20,6 +20,12 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
+
+import javax.annotation.Nullable;
+
+import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
+
 /**
  * Gives the versions of the current and previous world states.
  */
@@ -45,8 +51,23 @@ public final class StateVersions {
 	public static final int RELEASE_0260_VERSION = 19;
 	public static final int RELEASE_0270_VERSION = 20;
 
+	public static final SerializableSemVers FIRST_025X_VERSION = forHapiAndHedera("0.25.1", "0.25.0");
+	public static final SerializableSemVers LAST_025X_VERSION = forHapiAndHedera("0.25.1", "0.25.4");
+	public static final SerializableSemVers FIRST_026X_VERSION = forHapiAndHedera("0.26.0", "0.26.0");
+	public static final SerializableSemVers LAST_026X_VERSION = forHapiAndHedera("0.26.0", "0.26.3");
+	public static final SerializableSemVers FIRST_027X_VERSION = forHapiAndHedera("0.27.0", "0.27.0");
+
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+
+	@Nullable
+	public static SerializableSemVers lastSoftwareVersionOf(final int stateVersion) {
+		return switch (stateVersion) {
+			case RELEASE_025X_VERSION -> LAST_025X_VERSION;
+			case RELEASE_0260_VERSION -> LAST_026X_VERSION;
+			default -> null;
+		};
+	}
 
 	private StateVersions() {
 		throw new UnsupportedOperationException("Utility Class");

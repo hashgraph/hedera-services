@@ -43,7 +43,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.fchashmap.FCHashMap;

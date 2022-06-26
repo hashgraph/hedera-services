@@ -39,7 +39,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 

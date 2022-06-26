@@ -22,6 +22,7 @@ package com.hedera.services.state.virtual.schedule;
 
 import com.google.common.collect.ImmutableMap;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -59,7 +60,7 @@ class ScheduleSecondVirtualValueTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ScheduleSecondVirtualValue(ids);
+		subject = new ScheduleSecondVirtualValue(ids, new SecondSinceEpocVirtualKey(3L));
 	}
 
 	@Test
@@ -73,11 +74,11 @@ class ScheduleSecondVirtualValueTest {
 		final var twoRef = two;
 
 		assertNotEquals(two, one);
-		assertEquals(two, twoRef);
-		assertEquals(one, three);
-		assertEquals(three, four);
-		assertEquals(three, five);
-		assertEquals(three, six);
+		assertSubjectEquals(two, twoRef);
+		assertSubjectEquals(one, three);
+		assertSubjectEquals(three, four);
+		assertSubjectEquals(three, five);
+		assertSubjectEquals(three, six);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), twoRef.hashCode());
@@ -113,6 +114,9 @@ class ScheduleSecondVirtualValueTest {
 		inOrder.verify(out).writeLong(80L);
 		inOrder.verify(out).writeLong(30L);
 		inOrder.verify(out).writeInt(40);
+		inOrder.verify(out).writeLong(3L);
+
+		inOrder.verifyNoMoreInteractions();
 	}
 
 	@Test
@@ -121,11 +125,12 @@ class ScheduleSecondVirtualValueTest {
 		final var defaultSubject = new ScheduleSecondVirtualValue();
 
 		given(in.readInt()).willReturn(2, 3, 20, 1, 40);
-		given(in.readLong()).willReturn(50L, 60L, 70L, 10L, 80L, 30L);
+		given(in.readLong()).willReturn(50L, 60L, 70L, 10L, 80L, 30L, 3L);
+		given(in.readByte()).willReturn((byte) 1);
 
 		defaultSubject.deserialize(in, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-		assertEquals(subject, defaultSubject);
+		assertSubjectEquals(subject, defaultSubject);
 	}
 
 	@Test
@@ -147,6 +152,9 @@ class ScheduleSecondVirtualValueTest {
 		inOrder.verify(buffer).putLong(80L);
 		inOrder.verify(buffer).putLong(30L);
 		inOrder.verify(buffer).putInt(40);
+		inOrder.verify(buffer).putLong(3L);
+
+		inOrder.verifyNoMoreInteractions();
 	}
 
 	@Test
@@ -155,11 +163,12 @@ class ScheduleSecondVirtualValueTest {
 		final var defaultSubject = new ScheduleSecondVirtualValue();
 
 		given(buffer.getInt()).willReturn(2, 3, 20, 1, 40);
-		given(buffer.getLong()).willReturn(50L, 60L, 70L, 10L, 80L, 30L);
+		given(buffer.get()).willReturn((byte) 1);
+		given(buffer.getLong()).willReturn(50L, 60L, 70L, 10L, 80L, 30L, 3L);
 
 		defaultSubject.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-		assertEquals(subject, defaultSubject);
+		assertSubjectEquals(subject, defaultSubject);
 	}
 
 	@Test
@@ -173,7 +182,7 @@ class ScheduleSecondVirtualValueTest {
 			copy.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
 					ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-			assertEquals(subject, copy);
+			assertSubjectEquals(subject, copy);
 
 			return copy;
 		});
@@ -189,7 +198,7 @@ class ScheduleSecondVirtualValueTest {
 			var copy = new ScheduleSecondVirtualValue();
 			copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-			assertEquals(subject, copy);
+			assertSubjectEquals(subject, copy);
 
 			return copy;
 		});
@@ -205,7 +214,7 @@ class ScheduleSecondVirtualValueTest {
 			copy.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
 					ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-			assertEquals(subject, copy);
+			assertSubjectEquals(subject, copy);
 
 
 			return copy;
@@ -223,7 +232,7 @@ class ScheduleSecondVirtualValueTest {
 			var copy = new ScheduleSecondVirtualValue();
 			copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-			assertEquals(subject, copy);
+			assertSubjectEquals(subject, copy);
 
 			return copy;
 		});
@@ -235,12 +244,22 @@ class ScheduleSecondVirtualValueTest {
 		check.call();
 		subject = new ScheduleSecondVirtualValue(otherIds);
 		check.call();
+		subject = new ScheduleSecondVirtualValue(otherIds, new SecondSinceEpocVirtualKey(3L));
+		check.call();
 	}
 
 	@Test
 	void merkleMethodsWork() {
 		assertEquals(ScheduleSecondVirtualValue.CURRENT_VERSION, subject.getVersion());
 		assertEquals(ScheduleSecondVirtualValue.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void setKeyWorks() {
+		subject.setKey(null);
+		assertEquals(new SecondSinceEpocVirtualKey(-1L), subject.getKey());
+		subject.setKey(new SecondSinceEpocVirtualKey(4L));
+		assertEquals(new SecondSinceEpocVirtualKey(4L), subject.getKey());
 	}
 
 	@Test
@@ -273,7 +292,7 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=10, nanos=20}=[50, 60, 70, 20, 6000], " +
 				"RichInstant{seconds=10, nanos=21}=[9020, 9120], " +
 				"RichInstant{seconds=30, nanos=40}=[80], " +
-				"RichInstant{seconds=200, nanos=20}=[9030]}}", subject.toString());
+				"RichInstant{seconds=200, nanos=20}=[9030]}, number=3}", subject.toString());
 
 		subject.copy();
 		final var instant = new RichInstant(210L, 20);
@@ -306,7 +325,7 @@ class ScheduleSecondVirtualValueTest {
 				"RichInstant{seconds=0, nanos=20}=[9030], " +
 				"RichInstant{seconds=10, nanos=20}=[60, 70, 20, 6000], " +
 				"RichInstant{seconds=30, nanos=40}=[80], " +
-				"RichInstant{seconds=200, nanos=20}=[9030]}}", subject.toString());
+				"RichInstant{seconds=200, nanos=20}=[9030]}, number=3}", subject.toString());
 
 		subject.copy();
 
@@ -318,6 +337,11 @@ class ScheduleSecondVirtualValueTest {
 	@Test
 	void toStringWorks() {
 		assertEquals("ScheduleSecondVirtualValue{ids={RichInstant{seconds=10, nanos=20}=[50, 60, 70], " +
-				"RichInstant{seconds=30, nanos=40}=[80]}}", subject.toString());
+				"RichInstant{seconds=30, nanos=40}=[80]}, number=3}", subject.toString());
+	}
+
+	private static void assertSubjectEquals(ScheduleSecondVirtualValue subject, ScheduleSecondVirtualValue value) {
+		assertEquals(subject, value);
+		assertEquals(subject.getKey(), value.getKey());
 	}
 }

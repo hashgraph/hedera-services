@@ -8,9 +8,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *	 http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,19 +19,18 @@ package com.hedera.services.records;
  * ‍
  */
 
-import java.time.Instant;
-import java.util.function.Supplier;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.swirlds.platform.state.TransactionHandler;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.function.Supplier;
+
+import static com.swirlds.platform.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 /**
  * Provides a tracker of the usable consensus time space during a
@@ -42,7 +41,7 @@ public class ConsensusTimeTracker {
 	private static final Logger log = LogManager.getLogger(ConsensusTimeTracker.class);
 
 	@VisibleForTesting
-	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+	static final long DEFAULT_NANOS_PER_INCORPORATE_CALL = MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 	private final GlobalDynamicProperties properties;
 	private final Supplier<MerkleNetworkContext> networkCtx;
