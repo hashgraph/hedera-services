@@ -597,7 +597,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			final var actualBitString = actualRecord.getPseudorandomBytes();
 			final var actualRandomNum = actualRecord.getPseudorandomNumber();
 			assertTrue(actualBitString.isEmpty());
-			assertTrue(actualRandomNum > 0 && actualRandomNum < pseudorandomNumberRange.get());
+			assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
 		}
 	}
 

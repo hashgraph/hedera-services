@@ -227,7 +227,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
 		assertTrue(subject.getAlias().isEmpty());
 		assertEquals("", subject.getPseudoRandomBitString());
-		assertEquals(0, subject.getPseudoRandomNumber());
+		assertEquals(-1, subject.getPseudoRandomNumber());
 	}
 
 	@Test

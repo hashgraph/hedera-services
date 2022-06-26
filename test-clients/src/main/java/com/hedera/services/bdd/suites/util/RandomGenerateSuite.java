@@ -58,13 +58,13 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
-		double baseFee = 0.0001;
-		double plusRangeFee = 0.0001;
+		double baseFee = 0.001;
+		double plusRangeFee = 0.00101;
 
 		final var baseTxn = "randomGenerate";
 		final var plusRangeTxn = "randomGenerateWithRange";
 
-		return defaultHapiSpec("createAnAccountWithStakingFields")
+		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
@@ -90,7 +90,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec failsInPreCheckForNegativeRange() {
-		return defaultHapiSpec("createAnAccountWithStakingFields")
+		return defaultHapiSpec("failsInPreCheckForNegativeRange")
 				.given(
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
@@ -108,7 +108,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec happyPathWorksForRangeAndBitString() {
-		return defaultHapiSpec("createAnAccountWithStakingFields")
+		return defaultHapiSpec("happyPathWorksForRangeAndBitString")
 				.given(
 						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
