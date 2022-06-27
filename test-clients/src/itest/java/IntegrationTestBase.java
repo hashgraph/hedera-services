@@ -2,11 +2,10 @@ import com.hedera.services.bdd.junit.HederaContainer;
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.Network;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
@@ -31,7 +30,6 @@ public abstract class IntegrationTestBase extends TestBase {
      * Using Testcontainers, create a node container. This code currently presupposes that a docker image has
      * been created out-of-band. The docker image name is supplied as TAG.
      */
-    @Container
     private static final HederaContainer NODE_0 = new HederaContainer(IMAGE, 0)
             .withClasspathResourceMappingDir("network/config")
             .withWorkspace(WORKSPACE)
@@ -42,6 +40,7 @@ public abstract class IntegrationTestBase extends TestBase {
      */
     @BeforeAll
     static void beforeAll() throws TimeoutException {
+        NODE_0.start();
         NODE_0.waitUntilActive(Duration.ofSeconds(30));
 
         final var defaultProperties = JutilPropertySource.getDefaultInstance();
@@ -54,5 +53,10 @@ public abstract class IntegrationTestBase extends TestBase {
                 defaultProperties.get("node.selector"),
                 Collections.emptyMap()
         );
+    }
+
+    @AfterAll
+    static void afterAll() {
+        NODE_0.stop();
     }
 }

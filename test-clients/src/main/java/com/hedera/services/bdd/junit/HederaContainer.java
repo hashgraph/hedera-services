@@ -3,8 +3,6 @@ package com.hedera.services.bdd.junit;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.containers.wait.strategy.WaitStrategy;
-import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
@@ -86,11 +84,10 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public void waitUntilActive(Duration timeout) throws TimeoutException {
         final var now = System.currentTimeMillis();
         final var failAfter = now + timeout.toMillis();
-        //noinspection StatementWithEmptyBody
         while (!isActive() && System.currentTimeMillis() < failAfter) {
             // Busy Loop
             try {
-                MILLISECONDS.sleep(Math.min(10, timeout.toMillis() / 10));
+                MILLISECONDS.sleep(Math.min(100, timeout.toMillis() / 10));
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }
