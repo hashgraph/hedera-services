@@ -26,7 +26,7 @@ import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,21 +47,21 @@ class MerkleScheduledTransactionsTest {
 
 	private MerkleScheduledTransactionsState state;
 
-	private VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
-	private VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
-	private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
+	private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
+	private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
+	private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
 
 	private MerkleScheduledTransactions subject;
 
 	@BeforeEach
 	void setup() {
-		byEquality = mock(VirtualMap.class);
+		byEquality = mock(MerkleMap.class);
 		given(byEquality.copy()).willReturn(byEquality);
 
-		byExpirationSecond = mock(VirtualMap.class);
+		byExpirationSecond = mock(MerkleMap.class);
 		given(byExpirationSecond.copy()).willReturn(byExpirationSecond);
 
-		byId = mock(VirtualMap.class);
+		byId = mock(MerkleMap.class);
 		given(byId.copy()).willReturn(byId);
 
 		state = mock(MerkleScheduledTransactionsState.class);
@@ -74,7 +74,7 @@ class MerkleScheduledTransactionsTest {
 
 	@Test
 	void equalsIncorporatesRecords() {
-		final var otherByExpirationSecond = mock(VirtualMap.class);
+		final var otherByExpirationSecond = mock(MerkleMap.class);
 
 		final var otherSubject = new MerkleScheduledTransactions(List.of(state, byId,
 				otherByExpirationSecond, byEquality));
@@ -198,7 +198,7 @@ class MerkleScheduledTransactionsTest {
 
 		assertEquals(5L, subject.getNumSchedules());
 
-		given(byId.size()).willReturn(4L);
+		given(byId.size()).willReturn(4);
 
 		assertEquals(4L, subject.getNumSchedules());
 	}

@@ -55,6 +55,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -381,6 +383,18 @@ public class SyntheticTxnFactory {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 				.build();
 		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+	}
+
+	public TransactionBody.Builder nodeStakeUpdate(
+			final Timestamp stakingPeriodEnd,
+			final List<NodeStake> nodeStakes
+	) {
+		final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
+				.setEndOfStakingPeriod(stakingPeriodEnd)
+				.addAllNodeStake(nodeStakes)
+				.build();
+
+		return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
 	}
 
 	public static class HbarTransfer {

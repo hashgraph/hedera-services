@@ -108,7 +108,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final PrecompileContractResult NO_RESULT = new PrecompileContractResult(
-					Bytes.EMPTY, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+					null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
@@ -432,6 +432,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final MessageFrame messageFrame
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
+			final var traceabilityOn = precompile.shouldAddTraceabilityFieldsToRecord();
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
 					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
@@ -442,11 +443,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
-					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
-							EvmFnResult.EMPTY,
-					null);
+					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
+					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
+					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
+					EntityId.fromAddress(senderAddress));
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}

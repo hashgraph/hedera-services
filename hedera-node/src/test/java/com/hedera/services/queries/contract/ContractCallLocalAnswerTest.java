@@ -90,7 +90,7 @@ class ContractCallLocalAnswerTest {
 	private final ContractID target = IdUtils.asContract("0.0.75231");
 	private final ByteString result = ByteString.copyFrom("Searching for images".getBytes());
 
-	private int gas = 123;
+	private long gas = 123;
 	private Transaction paymentTxn;
 
 	@Mock
@@ -133,7 +133,7 @@ class ContractCallLocalAnswerTest {
 
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
-		given(dynamicProperties.maxGas()).willReturn(gas);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
 		// expect:
 		assertEquals(OK, subject.checkValidity(query, view));
@@ -145,7 +145,7 @@ class ContractCallLocalAnswerTest {
 
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
-		given(dynamicProperties.maxGas()).willReturn(gas);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
 		// and:
 		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
@@ -170,7 +170,7 @@ class ContractCallLocalAnswerTest {
 	void rejectsGasLimitOverMaxGas() throws Throwable {
 
 		// given:
-		given(dynamicProperties.maxGas()).willReturn(gas-1);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas-1);
 		Query query = validQuery(COST_ANSWER, fee);
 
 		// expect:

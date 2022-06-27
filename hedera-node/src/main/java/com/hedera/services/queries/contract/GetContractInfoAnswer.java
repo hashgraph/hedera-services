@@ -23,6 +23,7 @@ package com.hedera.services.queries.contract;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -53,16 +54,19 @@ public class GetContractInfoAnswer implements AnswerService {
 	private final AliasManager aliasManager;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final RewardCalculator rewardCalculator;
 
 	@Inject
 	public GetContractInfoAnswer(
 			final AliasManager aliasManager,
 			final OptionValidator validator,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final RewardCalculator rewardCalculator
 	) {
 		this.aliasManager = aliasManager;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	@Override
@@ -159,7 +163,7 @@ public class GetContractInfoAnswer implements AnswerService {
 			}
 		} else {
 			final var info = view.infoForContract(
-					op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+					op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
 			if (info.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {

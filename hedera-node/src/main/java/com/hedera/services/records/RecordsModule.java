@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.hedera.services.context.annotations.StaticAccountMemo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
@@ -70,8 +71,9 @@ public interface RecordsModule {
 			final NodeLocalProperties nodeLocalProperties,
 			final @StaticAccountMemo String accountMemo,
 			final Hash initialHash,
-			final RecordStreamType streamType
-	) {
+			final RecordStreamType streamType,
+			final GlobalDynamicProperties globalDynamicProperties
+			) {
 		try {
 			return new RecordStreamManager(
 					platform,
@@ -79,7 +81,8 @@ public interface RecordsModule {
 					nodeLocalProperties,
 					accountMemo,
 					initialHash,
-					streamType);
+					streamType,
+					globalDynamicProperties);
 		} catch (NoSuchAlgorithmException | IOException fatal) {
 			throw new IllegalStateException("Could not construct record stream manager", fatal);
 		}

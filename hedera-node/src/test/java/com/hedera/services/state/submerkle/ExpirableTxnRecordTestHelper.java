@@ -74,6 +74,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setHbarAdjustments(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(
 								record.getTransferList().getAccountAmountsList()) : null)
+				.setStakingRewardsPaid(CurrencyAdjustments.fromGrpc(record.getPaidStakingRewardsList()))
 				.setContractCallResult(record.hasContractCallResult() ? SerdeUtils.fromGrpc(
 						record.getContractCallResult()) : null)
 				.setContractCreateResult(record.hasContractCreateResult() ? SerdeUtils.fromGrpc(

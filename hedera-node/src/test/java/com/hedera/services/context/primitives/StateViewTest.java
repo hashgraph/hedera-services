@@ -26,6 +26,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -36,7 +37,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -71,6 +74,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -97,6 +101,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.context.primitives.StateView.EMPTY_CTX;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
@@ -191,6 +196,8 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	private MerkleNetworkContext networkContext;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -209,6 +216,8 @@ class StateViewTest {
 
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	private StateView subject;
 
@@ -248,6 +257,8 @@ class StateViewTest {
 		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
 		tokenAccount.setNumAssociations(1);
 		tokenAccount.setNumPositiveBalances(0);
+		tokenAccount.setStakedId(10L);
+		tokenAccount.setDeclineReward(true);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -264,8 +275,9 @@ class StateViewTest {
 				.maxAutomaticAssociations(10)
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
+		stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
+		networkContext = mock(MerkleNetworkContext.class);
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
@@ -332,6 +344,7 @@ class StateViewTest {
 		children.setTokenAssociations(tokenRels);
 		children.setSpecialFiles(specialFiles);
 		children.setTokens(tokens);
+		children.setStakingInfo(stakingInfo);
 
 		networkInfo = mock(NetworkInfo.class);
 
@@ -563,7 +576,7 @@ class StateViewTest {
 		mockedStatic = mockStatic(StateView.class);
 		mockedStatic.when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo)).thenReturn(rels);
 
-		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
+		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).get();
 
 		assertEquals(cid, info.getContractID());
 		assertEquals(asAccount(cid), info.getAccountID());
@@ -600,7 +613,7 @@ class StateViewTest {
 		mockedStatic = mockStatic(StateView.class);
 		mockedStatic.when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo)).thenReturn(rels);
 
-		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
+		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).get();
 
 		assertEquals(cid, info.getContractID());
 		assertEquals(asAccount(cid), info.getAccountID());
@@ -703,11 +716,48 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+		final var actualResponse = subject.infoForAccount(
+				tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
 		assertEquals(expectedResponse, actualResponse.get());
+		mockedStatic.close();
+	}
+
+	@Test
+	void stakingInfoReturnedCorrectly() {
+		final var startPeriod = 10000L;
+		tokenAccount = MerkleAccountFactory.newAccount()
+				.isSmartContract(false)
+				.tokens(tokenId)
+				.get();
+		tokenAccount.setStakedId(-10L);
+		tokenAccount.setDeclineReward(false);
+		tokenAccount.setStakePeriodStart(startPeriod);
+		given(rewardCalculator.epochSecondAtStartOfPeriod(startPeriod)).willReturn(1_234_567L);
+
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+				.thenReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var expectedResponse = StakingInfo.newBuilder()
+				.setDeclineReward(false)
+				.setStakedNodeId(9L)
+				.setStakePeriodStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+				.build();
+
+		final var actualResponse = subject.infoForAccount(
+				tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+
+		assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
 		mockedStatic.close();
 	}
 
@@ -738,13 +788,17 @@ class StateViewTest {
 				.setContractAccountID(expectedAddress)
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build())
+						.setDeclineReward(true)
+						.build())
 				.build();
 
 		final var actualResponse =
-				subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+				subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+		mockedStatic.close();
 
 		assertEquals(expectedResponse, actualResponse.get());
-		mockedStatic.close();
 	}
 
 	@Test
@@ -775,9 +829,9 @@ class StateViewTest {
 				.build();
 
 		final var actualResponse = subject.accountDetails(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+		mockedStatic.close();
 
 		assertEquals(expectedResponse, actualResponse.get());
-		mockedStatic.close();
 	}
 
 	@Test
@@ -803,11 +857,16 @@ class StateViewTest {
 				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.setStakingInfo(StakingInfo.newBuilder()
+						.setDeclineReward(true)
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10L).build())
+						.build())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo);
-		assertEquals(expectedResponse, actualResponse.get());
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo,
+				rewardCalculator);
 		mockedStatic.close();
+		assertEquals(expectedResponse, actualResponse.get());
 	}
 
 	@Test
@@ -821,7 +880,8 @@ class StateViewTest {
 	void infoForMissingAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo,
+				rewardCalculator);
 
 		assertEquals(Optional.empty(), actualResponse);
 	}
@@ -833,7 +893,8 @@ class StateViewTest {
 		given(aliasManager.lookupIdBy(any())).willReturn(mockedEntityNum);
 		given(contracts.get(mockedEntityNum)).willReturn(null);
 
-		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo);
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo,
+				rewardCalculator);
 		assertEquals(Optional.empty(), actualResponse);
 
 	}
@@ -866,10 +927,25 @@ class StateViewTest {
 	}
 
 	@Test
+	void getStakingInfoAndContext() {
+		final var children = new MutableStateChildren();
+		children.setStakingInfo(stakingInfo);
+		children.setNetworkCtx(networkContext);
+
+		subject = new StateView(null, children, null);
+
+		final var actualStakingInfo = subject.stakingInfo();
+		final var actualNetworkContext = subject.networkCtx();
+
+		assertEquals(stakingInfo, actualStakingInfo);
+		assertEquals(networkContext, actualNetworkContext);
+	}
+
+	@Test
 	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
-		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).isEmpty());
+		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).isEmpty());
 	}
 
 	@Test
@@ -880,7 +956,7 @@ class StateViewTest {
 		mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
 		contract.setAccountKey(null);
 
-		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
+		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).get();
 
 		assertFalse(info.hasAdminKey());
 		mockedStatic.close();
@@ -894,7 +970,7 @@ class StateViewTest {
 		mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
 		contract.setAutoRenewAccount(null);
 
-		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
+		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).get();
 
 		assertFalse(info.hasAutoRenewAccountId());
 		mockedStatic.close();
@@ -1083,10 +1159,13 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_MM, subject.contracts());
 		assertSame(StateView.EMPTY_MM, subject.accounts());
 		assertSame(StateView.EMPTY_MM, subject.topics());
+		assertSame(StateView.EMPTY_MM, subject.stakingInfo());
+		assertSame(EMPTY_CTX, subject.networkCtx());
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
-		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).isEmpty());
-		assertTrue(subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo).isEmpty());
+		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator).isEmpty());
+		assertTrue(subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo,
+				rewardCalculator).isEmpty());
 		assertTrue(subject.tokenType(tokenId).isEmpty());
 		assertTrue(subject.infoForNft(targetNftId).isEmpty());
 		assertTrue(subject.infoForSchedule(scheduleId).isEmpty());

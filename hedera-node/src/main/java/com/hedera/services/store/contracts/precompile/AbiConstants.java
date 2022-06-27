@@ -26,9 +26,8 @@ import org.apache.tuweni.bytes.Bytes;
  * All ABI constants used by {@link Precompile} implementations, in one place for easy review.
  */
 public final class AbiConstants {
-
 	private AbiConstants() {
-		throw new IllegalStateException("Utility class");
+		throw new UnsupportedOperationException("Utility class");
 	}
 
 	// **** HIP-206 function selectors ****

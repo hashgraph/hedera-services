@@ -28,6 +28,7 @@ import com.swirlds.common.utility.CommonUtils;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -60,13 +61,21 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 			}
 			return seededAccount;
 		} else {
-			return getExpectedObject(propertySource);
+			final var seededAccount = getExpectedObject(propertySource);
+			if (version < RELEASE_0270_VERSION) {
+				seededAccount.setStakedToMe(0);
+				seededAccount.setDeclineReward(false);
+				seededAccount.setStakePeriodStart(-1);
+				seededAccount.setStakedNum(0);
+				seededAccount.setStakeAtStartOfLastRewardedPeriod(-1);
+			}
+			return seededAccount;
 		}
 	}
 
 	@Override
 	protected MerkleAccountState getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.next0260AccountState();
+		return propertySource.nextAccountState();
 	}
 
 	private static byte[] getForm(final int version, final int testCaseNo) {

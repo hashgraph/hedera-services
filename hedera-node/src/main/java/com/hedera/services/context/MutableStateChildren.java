@@ -20,12 +20,14 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -38,7 +40,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -67,6 +69,7 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<MerkleSpecialFiles> specialFiles;
 	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
 	private WeakReference<Map<ByteString, EntityNum>> aliases;
+	private WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private Instant signedAt = Instant.EPOCH;
 
 	public MutableStateChildren() {
@@ -166,6 +169,15 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return Objects.requireNonNull(stakingInfo.get());
+	}
+
+	public void setStakingInfo(MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo) {
+		this.stakingInfo = new WeakReference<>(stakingInfo);
+	}
+
+	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
 		return Objects.requireNonNull(runningHashLeaf.get());
 	}
@@ -201,5 +213,12 @@ public class MutableStateChildren implements StateChildren {
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 		aliases = new WeakReference<>(state.aliases());
+		stakingInfo = new WeakReference<>(state.stakingInfo());
+	}
+
+	/* --- used only in unit tests ---*/
+	@VisibleForTesting
+	public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
+		this.networkCtx = new WeakReference<>(networkCtx);
 	}
 }

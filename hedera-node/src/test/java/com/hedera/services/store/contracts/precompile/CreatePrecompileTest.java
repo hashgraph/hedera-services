@@ -114,6 +114,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -788,7 +789,7 @@ class CreatePrecompileTest {
 		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 
 		// and
 		verify(frame).setRevertReason(any());
