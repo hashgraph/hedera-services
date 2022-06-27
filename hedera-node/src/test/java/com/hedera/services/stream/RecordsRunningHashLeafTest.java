@@ -89,34 +89,45 @@ class RecordsRunningHashLeafTest {
 		assertNotEquals(runningHashLeaf, new Object());
 
 		// n-3 running hashes set
-		final var hash1 = new Hash(TxnUtils.randomUtf8Bytes(48));
-		final var hash2 = new Hash(TxnUtils.randomUtf8Bytes(48));
-		final var hash3 = new Hash(TxnUtils.randomUtf8Bytes(48));
-		runningHashLeaf.setHash(hash1);
-		runningHashLeaf.setHash(hash2);
-		runningHashLeaf.setHash(hash3);
+		final var hash1 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		final var hash2 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		final var hash3 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-		final var diffWithoutNullValues = new RunningHash();
-		diffWithoutNullValues.setHash(runningHash.getHash());
-		diffWithoutNullValues.setHash(hash1);
-		diffWithoutNullValues.setHash(hash2);
-		diffWithoutNullValues.setHash(hash3);
+		runningHashLeaf.setRunningHash(hash1);
+		runningHashLeaf.setRunningHash(hash2);
+		runningHashLeaf.setRunningHash(hash3);
+
+		final var diffWithoutNullValues = new RecordsRunningHashLeaf(runningHash);
+		diffWithoutNullValues.setRunningHash(hash1);
+		diffWithoutNullValues.setRunningHash(hash1);
+		diffWithoutNullValues.setRunningHash(hash3);
 		assertNotEquals(runningHashLeaf, diffWithoutNullValues);
+
+		final var sameDiffWithoutNullValues = new RecordsRunningHashLeaf(runningHash);
+		sameDiffWithoutNullValues.setRunningHash(hash1);
+		sameDiffWithoutNullValues.setRunningHash(hash2);
+		sameDiffWithoutNullValues.setRunningHash(hash3);
+		assertEquals(runningHashLeaf, sameDiffWithoutNullValues);
 	}
 
 	@Test
 	void toStringTest() {
 		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s, " +
-						"nMinus1RunningHash: null, nMinus2RunningHash: null, nMinus3RunningHash: null",
+						"nMinus1RunningHash: %s, nMinus2RunningHash: %s, nMinus3RunningHash: %s",
 				runningHashLeaf.getHash(),
-				runningHash.getHash());
+				runningHashLeaf.getRunningHash().getHash(),
+				runningHashLeaf.getNMinus1RunningHash().getHash(),
+				runningHashLeaf.getNMinus2RunningHash().getHash(),
+				runningHashLeaf.getNMinus3RunningHash().getHash());
 		assertEquals(example, runningHashLeaf.toString());
 	}
 
 	@Test
 	void hashCodeTest() {
-		assertEquals(Objects.hash(runningHash, runningHashLeaf.getNMinus1RunningHash(),
-						runningHashLeaf.getNMinus2RunningHash(), runningHashLeaf.getNMinus3RunningHash()),
+		assertEquals(Objects.hash(runningHashLeaf.getRunningHash(),
+						runningHashLeaf.getNMinus1RunningHash(),
+						runningHashLeaf.getNMinus2RunningHash(),
+						runningHashLeaf.getNMinus3RunningHash()),
 				runningHashLeaf.hashCode());
 	}
 

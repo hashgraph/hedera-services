@@ -43,8 +43,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -52,13 +53,14 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static java.util.stream.Collectors.joining;
 
 public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
 	public static final short NO_CHILD_TRANSACTIONS = 0;
+
+	private static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
 
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
@@ -116,7 +118,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 	private ByteString alias = MISSING_ALIAS;
 	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
-	private String pseudoRandomBitString = EMPTY_STRING;
+	private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 	private int pseudoRandomNumber = MISSING_NUMBER;
 
 	@Override
@@ -150,7 +152,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.alias = builder.alias;
 		this.ethereumHash = builder.ethereumHash;
 		this.pseudoRandomNumber = builder.pseudoRandomNumber;
-		this.pseudoRandomBitString = builder.pseudoRandomBitString;
+		this.pseudoRandomBytes = builder.pseudoRandomBytes;
 	}
 
 	/* --- Object --- */
@@ -175,7 +177,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("alias", alias.toStringUtf8())
 				.add("ethereumHash", CommonUtils.hex(ethereumHash))
 				.add("pseudoRandomNumber", pseudoRandomNumber)
-				.add("pseudoRandomBitString", pseudoRandomBitString);
+				.add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes));
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -250,7 +252,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.alias, that.alias) &&
 				Arrays.equals(this.ethereumHash, that.ethereumHash) &&
 				this.pseudoRandomNumber == that.pseudoRandomNumber &&
-				Objects.equals(this.pseudoRandomBitString, that.pseudoRandomBitString);
+				Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes);
 	}
 
 	@Override
@@ -278,7 +280,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				alias,
 				ethereumHash,
 				pseudoRandomNumber,
-				pseudoRandomBitString);
+				pseudoRandomBytes);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -346,9 +348,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (pseudoRandomNumber >= 0) {
 			out.writeByte(PRNG_INT_OUTPUT);
 			out.writeInt(pseudoRandomNumber);
-		} else if (!pseudoRandomBitString.isEmpty()) {
+		} else if (pseudoRandomBytes.length != 0) {
 			out.writeByte(PRNG_BYTES_OUTPUT);
-			out.writeNormalisedString(pseudoRandomBitString);
+			out.writeByteArray(pseudoRandomBytes);
 		} else {
 			out.writeByte(NO_PRNG_OUTPUT);
 		}
@@ -408,7 +410,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			if (outputType == PRNG_INT_OUTPUT) {
 				pseudoRandomNumber = in.readInt();
 			} else if (outputType == PRNG_BYTES_OUTPUT) {
-				pseudoRandomBitString = in.readNormalisedString(MAX_PSEUDORANDOM_BIT_STRING_LENGTH);
+				pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_BYTES_LENGTH);
 			}
 		}
 	}
@@ -541,16 +543,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.ethereumHash = ethereumHash;
 	}
 
-	public void setPseudoRandomBitString(final String pseudoRandomBitString) {
-		this.pseudoRandomBitString = pseudoRandomBitString;
+	public void setPseudoRandomBytes(final byte[] pseudoRandomBytes) {
+		this.pseudoRandomBytes = pseudoRandomBytes;
 	}
 
 	public void setPseudoRandomNumber(final int pseudoRandomNumber) {
 		this.pseudoRandomNumber = pseudoRandomNumber;
 	}
 
-	public String getPseudoRandomBitString() {
-		return pseudoRandomBitString;
+	public byte[] getPseudoRandomBytes() {
+		return pseudoRandomBytes;
 	}
 
 	public int getPseudoRandomNumber() {
@@ -630,8 +632,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		if (pseudoRandomNumber >= 0) {
 			grpc.setPseudorandomNumber(pseudoRandomNumber);
-		} else if (!pseudoRandomBitString.isEmpty()) {
-			grpc.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString));
+		} else if (pseudoRandomBytes.length != 0) {
+			grpc.setPseudorandomBytes(wrapUnsafely(pseudoRandomBytes));
 		}
 
 		return grpc.build();
@@ -682,7 +684,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private ByteString alias = MISSING_ALIAS;
 		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 		private int pseudoRandomNumber = MISSING_NUMBER;
-		private String pseudoRandomBitString = EMPTY_STRING;
+		private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		private boolean onlyExternalizedIfSuccessful = false;
 
 		public Builder setFee(long fee) {
@@ -790,8 +792,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setPseudoRandomBitString(final String pseudoRandomBitString) {
-			this.pseudoRandomBitString = pseudoRandomBitString;
+		public Builder setPseudoRandomBytes(final byte[] pseudoRandomBytes) {
+			this.pseudoRandomBytes = pseudoRandomBytes;
 			return this;
 		}
 
@@ -893,7 +895,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			alias = MISSING_ALIAS;
 			ethereumHash = MISSING_ETHEREUM_HASH;
 			pseudoRandomNumber = MISSING_NUMBER;
-			pseudoRandomBitString = EMPTY_STRING;
+			pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {
 				contractCallResult = null;
@@ -965,8 +967,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			onlyExternalizedIfSuccessful = true;
 		}
 
-		public String getPseudoRandomBitString() {
-			return pseudoRandomBitString;
+		public byte[] getPseudoRandomBytes() {
+			return pseudoRandomBytes;
 		}
 
 		public int getPseudoRandomNumber() {

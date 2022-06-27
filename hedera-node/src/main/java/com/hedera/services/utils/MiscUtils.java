@@ -44,14 +44,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;
@@ -70,7 +69,6 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
 import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -937,10 +935,5 @@ public final class MiscUtils {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(signedTxn.toByteString())
 				.build();
-	}
-
-	public static String asBinaryString(final byte[] pseudoRandomBytes) {
-		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
-		return StringUtils.leftPad(randomBitString, MAX_PSEUDORANDOM_BIT_STRING_LENGTH, "0");
 	}
 }

@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
@@ -66,7 +67,7 @@ class ExpirableTxnRecordTest {
 
 	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
 
-	private static final String pseudoRandomBitString = TxnUtils.random384BitBinaryText();
+	private static final byte[] pseudoRandomBytes = TxnUtils.randomUtf8Bytes(48);
 
 	private static final TokenID nft = IdUtils.asToken("0.0.2");
 	private static final TokenID tokenA = IdUtils.asToken("0.0.3");
@@ -150,6 +151,7 @@ class ExpirableTxnRecordTest {
 				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 				.setPseudorandomNumber(10)
 				.build();
 	}
@@ -166,7 +168,7 @@ class ExpirableTxnRecordTest {
 						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.setEthereumHash(ByteString.copyFrom(pretendHash))
 						.setPseudorandomNumber(10)
-						.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
+						.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 						.build());
 		setNonGrpcDefaultsOn(s);
 		return s;
@@ -236,14 +238,14 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomBytes(ByteString.copyFromUtf8(pseudoRandomBitString))
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 				.setPseudorandomNumber(10)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setPseudoRandomBitString(pseudoRandomBitString);
+		subject.setPseudoRandomBytes(pseudoRandomBytes);
 		subject.setPseudoRandomNumber(10);
 
 		final var grpcSubject = subject.asGrpc();
@@ -371,14 +373,14 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void equalsDetectsDiffPsudoRandomData() {
+	void equalsDetectsDiffPseudoRandomData() {
 		final var a = new ExpirableTxnRecord();
 		var b = ExpirableTxnRecord.newBuilder()
 				.setPseudoRandomNumber(10).build();
 		assertNotEquals(a, b);
 
 		b = ExpirableTxnRecord.newBuilder()
-				.setPseudoRandomBitString(pseudoRandomBitString).build();
+				.setPseudoRandomBytes(pseudoRandomBytes).build();
 		assertNotEquals(a, b);
 	}
 
@@ -446,7 +448,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBitString=, " +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
 				"parentConsensusTime=1970-01-15T06:56:07.000000890Z, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
@@ -474,7 +476,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBitString=, " +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
 				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0" +
 				".0" +
 				".4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +

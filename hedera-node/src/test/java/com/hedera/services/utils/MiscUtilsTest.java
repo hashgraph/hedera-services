@@ -144,6 +144,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
@@ -177,7 +178,6 @@ import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
-import static com.hedera.services.utils.MiscUtils.asBinaryString;
 import static com.hedera.services.utils.MiscUtils.asOrdinary;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
@@ -953,7 +953,8 @@ class MiscUtilsTest {
 	@Test
 	void convertsByteArrayToBinary() {
 		final var hashBytes = new Hash(TxnUtils.randomUtf8Bytes(48)).getValue();
-		assertEquals(byteArrayToBinaryString(hashBytes), asBinaryString(hashBytes));
+		assertEquals(Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
+				ByteBuffer.wrap(hashBytes, 0, 32).getInt());
 	}
 
 	public static String byteArrayToBinaryString(byte[] bytes) {

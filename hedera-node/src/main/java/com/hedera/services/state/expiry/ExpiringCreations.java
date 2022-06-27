@@ -195,7 +195,7 @@ public class ExpiringCreations implements EntityCreator {
 			if (sideEffectsTracker.getPseudorandomNumber() >= 0) {
 				baseRecord.setPseudoRandomNumber(sideEffectsTracker.getPseudorandomNumber());
 			} else {
-				baseRecord.setPseudoRandomBitString(sideEffectsTracker.getPseudorandomBitString());
+				baseRecord.setPseudoRandomBytes(sideEffectsTracker.getPseudorandomBytes());
 			}
 		}
 

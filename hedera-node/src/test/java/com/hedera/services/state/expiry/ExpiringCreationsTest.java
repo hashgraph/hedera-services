@@ -34,14 +34,12 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.util.RandomGenerateMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -374,11 +372,11 @@ class ExpiringCreationsTest {
 				sideEffectsTracker).build();
 
 		assertEquals(10, created.getPseudoRandomNumber());
-		assertTrue(created.getPseudoRandomBitString().isEmpty());
+		assertEquals(0, created.getPseudoRandomBytes().length);
 
 		// case 2
 		given(sideEffectsTracker.getPseudorandomNumber()).willReturn(-1);
-		given(sideEffectsTracker.getPseudorandomBitString()).willReturn(String.valueOf(mockString));
+		given(sideEffectsTracker.getPseudorandomBytes()).willReturn(mockString.toByteArray());
 		given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
 
 		created = subject.createTopLevelRecord(
@@ -391,7 +389,7 @@ class ExpiringCreationsTest {
 				sideEffectsTracker).build();
 
 		assertEquals(-1, created.getPseudoRandomNumber());
-		assertEquals(mockString.toString(), created.getPseudoRandomBitString());
+		assertArrayEquals(mockString.toByteArray(), created.getPseudoRandomBytes());
 
 	}
 	private void setupTracker() {
