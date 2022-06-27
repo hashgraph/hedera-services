@@ -26,15 +26,19 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
@@ -43,25 +47,60 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRever
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
-public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
+public class AllowancePrecompile implements Precompile { // extends AbstractReadOnlyPrecompile {
+	
+	private TokenID tokenId;
 	private TokenAllowanceWrapper allowanceWrapper;
+	protected final SyntheticTxnFactory syntheticTxnFactory;
+	protected final WorldLedgers ledgers;
+	protected final EncodingFacade encoder;
+	protected final DecodingFacade decoder;
+	protected final PrecompilePricingUtils pricingUtils;
 
 	public AllowancePrecompile(
-			final TokenID tokenId,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
 			final DecodingFacade decoder,
 			final PrecompilePricingUtils pricingUtils) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.ledgers = ledgers;
+		this.encoder = encoder;
+		this.decoder = decoder;
+		this.pricingUtils = pricingUtils;
 	}
 
 	@Override
+	public void run(final MessageFrame frame) {
+		// No changes to state to apply
+	}
+
+	@Override
+	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+		return 100;
+	}
+
+	@Override
+	public boolean shouldAddTraceabilityFieldsToRecord() {
+		return false;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
+	}
+
+
+
+	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final var tokenIdBytes = input.slice(4, 20);
+		tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenIdBytes.toArray());
 		final var nestedInput = input.slice(24);
 		allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, aliasResolver);
 
-		return super.body(input, aliasResolver);
+		return syntheticTxnFactory.createTransactionCall(1L, input);
 	}
 
 	@Override

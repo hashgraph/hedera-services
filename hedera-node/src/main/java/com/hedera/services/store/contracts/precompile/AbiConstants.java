@@ -54,6 +54,20 @@ public final class AbiConstants {
 	//dissociateToken(address account, address token)
 	public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
+	// ****  HIP-376 HTS function selectors and event signatures ****
+	//allowance(address token, address owner, address spender)
+	public static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
+	//approve(address token, address spender, uint256 amount)
+	//approve(address token, address to, uint256 tokenId)
+	public static final int ABI_ID_APPROVE = 0x095ea7b3;
+	//setApprovalForAll(address token, address operator, bool approved)
+	public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
+	//getApproved(address token, uint256 tokenId)
+	public static final int ABI_ID_GET_APPROVED = 0x081812fc;
+	//isApprovedForAll(address token, address owner, address operator)
+	public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
+	
+
 	// **** HIP-218 + HIP-376 function selectors and event signatures ****
 	//redirectForToken(address token, bytes memory data)
 	public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
@@ -72,17 +86,6 @@ public final class AbiConstants {
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
 	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
-	//allowance(address token, address owner, address spender)
-	public static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
-	//approve(address token, address spender, uint256 amount)
-	//approve(address token, address to, uint256 tokenId)
-	public static final int ABI_ID_APPROVE = 0x95ea7b3;
-	//setApprovalForAll(address token, address operator, bool approved)
-	public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
-	//getApproved(address token, uint256 tokenId)
-	public static final int ABI_ID_GET_APPROVED = 0x081812fc;
-	//isApprovedForAll(address token, address owner, address operator)
-	public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
 	//ownerOf(uint256 tokenId)
 	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)

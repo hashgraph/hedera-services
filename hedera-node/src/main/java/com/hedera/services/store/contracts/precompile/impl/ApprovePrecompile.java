@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -35,6 +36,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -58,12 +60,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
-public class ApprovePrecompile extends AbstractWritePrecompile {
-	private final TokenID tokenId;
-	private final boolean isFungible;
+public class ApprovePrecompile implements Precompile {
+
+	protected final WorldLedgers ledgers;
+	protected final DecodingFacade decoder;
+	protected final SideEffectsTracker sideEffects;
+	protected final SyntheticTxnFactory syntheticTxnFactory;
+	protected final InfrastructureFactory infrastructureFactory;
+	protected final PrecompilePricingUtils pricingUtils;
+	protected TransactionBody.Builder transactionBody;
 	private final EncodingFacade encoder;
 	private final Address senderAddress;
 	private final StateView currentView;
+	private TokenID tokenId;
+	private boolean isFungible;
 	private ApproveWrapper approveOp;
 	@Nullable
 	private EntityId operatorId;
@@ -72,8 +82,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
 
 	public ApprovePrecompile(
-			final TokenID tokenId,
-			final boolean isFungible,
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
@@ -83,16 +91,27 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 			final InfrastructureFactory infrastructureFactory,
 			final PrecompilePricingUtils pricingUtils,
 			final Address senderAddress) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
-		this.tokenId = tokenId;
-		this.isFungible = isFungible;
+		this.ledgers = ledgers;
+		this.decoder = decoder;
 		this.encoder = encoder;
-		this.senderAddress = senderAddress;
 		this.currentView = currentView;
+		this.sideEffects = sideEffects;
+		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.infrastructureFactory = infrastructureFactory;
+		this.pricingUtils = pricingUtils;
+		this.senderAddress = senderAddress;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final var tokenIdBytes = input.slice(4, 20);
+		tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenIdBytes.toArray());
+		//FIXME isFungible?
 		final var nestedInput = input.slice(24);
 		operatorId = EntityId.fromAddress(senderAddress);
 		approveOp = decoder.decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver);
@@ -162,7 +181,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 						transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 						grpcOperatorId);
 			} catch (InvalidTransactionException e) {
-				throw InvalidTransactionException.fromReverting(e.getResponseCode());
+				throw new InvalidTransactionException(e.getResponseCode(), true);
 			}
 		}
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);

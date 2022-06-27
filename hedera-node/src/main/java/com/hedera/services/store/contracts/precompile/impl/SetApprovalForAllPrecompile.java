@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -49,14 +50,23 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
-	private final TokenID tokenId;
+public class SetApprovalForAllPrecompile implements Precompile {
+
+
+	protected final WorldLedgers ledgers;
+	protected final DecodingFacade decoder;
+	protected final SideEffectsTracker sideEffects;
+	protected final SyntheticTxnFactory syntheticTxnFactory;
+	protected final InfrastructureFactory infrastructureFactory;
+	protected final PrecompilePricingUtils pricingUtils;
+	protected TransactionBody.Builder transactionBody;
+
+	private TokenID tokenId;
 	private final Address senderAddress;
 	private final StateView currentView;
 	private SetApprovalForAllWrapper setApprovalForAllWrapper;
 
 	public SetApprovalForAllPrecompile(
-			final TokenID tokenId,
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final StateView currentView,
@@ -66,14 +76,26 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 			final PrecompilePricingUtils pricingUtils,
 			final Address senderAddress
 	) {
-		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.tokenId = tokenId;
 		this.senderAddress = senderAddress;
 		this.currentView = currentView;
+		this.ledgers = ledgers;
+		this.decoder = decoder;
+		this.sideEffects = sideEffects;
+		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.infrastructureFactory = infrastructureFactory;
+		this.pricingUtils = pricingUtils;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
 	}
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final var tokenIdBytes = input.slice(4, 20);
+		tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenIdBytes.toArray());
 		final var nestedInput = input.slice(24);
 		setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, aliasResolver);
 		transactionBody = syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, tokenId);

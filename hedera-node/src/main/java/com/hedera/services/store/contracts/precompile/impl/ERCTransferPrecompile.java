@@ -112,7 +112,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 		try {
 			super.run(frame);
 		} catch (InvalidTransactionException e) {
-			throw InvalidTransactionException.fromReverting(e.getResponseCode());
+			throw new InvalidTransactionException(e.getResponseCode(), true);
 		}
 
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);

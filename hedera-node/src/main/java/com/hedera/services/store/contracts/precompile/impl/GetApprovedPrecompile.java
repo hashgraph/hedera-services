@@ -23,15 +23,19 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.function.UnaryOperator;
 
@@ -39,24 +43,57 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRever
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
-public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
+public class GetApprovedPrecompile implements Precompile {
 	GetApprovedWrapper getApprovedWrapper;
+	protected TokenID tokenId;
+	protected final SyntheticTxnFactory syntheticTxnFactory;
+	protected final WorldLedgers ledgers;
+	protected final EncodingFacade encoder;
+	protected final DecodingFacade decoder;
+	protected final PrecompilePricingUtils pricingUtils;
 
 	public GetApprovedPrecompile(
-			final TokenID tokenId,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final WorldLedgers ledgers,
 			final EncodingFacade encoder,
 			final DecodingFacade decoder,
 			final PrecompilePricingUtils pricingUtils) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.ledgers = ledgers;
+		this.encoder = encoder;
+		this.decoder = decoder;
+		this.pricingUtils = pricingUtils;
+	}
+
+
+	@Override
+	public void run(final MessageFrame frame) {
+		// No changes to state to apply
+	}
+
+	@Override
+	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+		return 100;
+	}
+
+	@Override
+	public boolean shouldAddTraceabilityFieldsToRecord() {
+		return false;
+	}
+
+	@Override
+	public long getGasRequirement(long blockTimestamp) {
+		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
 	}
 
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final var tokenIdBytes = input.slice(4, 20);
+		tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenIdBytes.toArray());
 		final var nestedInput = input.slice(24);
 		getApprovedWrapper = decoder.decodeGetApproved(nestedInput);
-		return super.body(input, aliasResolver);
+		return syntheticTxnFactory.createTransactionCall(1L, input);
 	}
 
 	@Override

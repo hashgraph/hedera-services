@@ -35,8 +35,8 @@ class InvalidTransactionExceptionTest {
 	void canBuildRevertingExceptionWithDetail() {
 		final var reason = "I don't like it!";
 		final var frameReason = Bytes.of(reason.getBytes());
-		final var revertingEx = InvalidTransactionException.fromReverting(
-				INVALID_ALLOWANCE_OWNER_ID, reason);
+		final var revertingEx = new InvalidTransactionException(
+				reason, INVALID_ALLOWANCE_OWNER_ID, true);
 
 		assertTrue(revertingEx.isReverting());
 		assertEquals(frameReason, revertingEx.getRevertReason());
@@ -45,8 +45,8 @@ class InvalidTransactionExceptionTest {
 	@Test
 	void canBuildRevertingExceptionNoDetail() {
 		final var frameReason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
-		final var revertingEx = InvalidTransactionException.fromReverting(
-				INVALID_ALLOWANCE_OWNER_ID);
+		final var revertingEx = new InvalidTransactionException(
+				INVALID_ALLOWANCE_OWNER_ID, true);
 
 		assertTrue(revertingEx.isReverting());
 		assertEquals(frameReason, revertingEx.getRevertReason());
