@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -207,5 +208,9 @@ public class TransactionProcessingResult {
 	 */
 	public ContractFunctionResult toGrpc() {
 		return EvmFnResult.fromCall(this).toGrpc();
+	}
+
+	public ContractStateChanges toContractStateChangesGrpc() {
+		return EvmFnResult.fromCall(this).toContractStateChangesGrpc();
 	}
 }
