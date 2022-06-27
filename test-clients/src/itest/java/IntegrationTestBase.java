@@ -34,7 +34,7 @@ public abstract class IntegrationTestBase extends TestBase {
      */
     @Container
     private static final HederaContainer NODE_0 = new HederaContainer(IMAGE, 0)
-            .withClasspathResourceMappingDir("config")
+            .withClasspathResourceMappingDir("network/config")
             .withWorkspace(WORKSPACE)
             .withNetwork(NETWORK);
 

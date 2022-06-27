@@ -30,7 +30,7 @@ public abstract class E2ETestBase extends TestBase {
      */
     @Container
     private static final HederaContainer NODE_0 = new HederaContainer(IMAGE, 0)
-            .withClasspathResourceMappingDir("config")
+            .withClasspathResourceMappingDir("network/config")
             .withWorkspace(WORKSPACE)
             .withNetwork(NETWORK);
 
@@ -40,7 +40,7 @@ public abstract class E2ETestBase extends TestBase {
      */
     @Container
     private static final HederaContainer NODE_1 = new HederaContainer(IMAGE, 1)
-            .withClasspathResourceMappingDir("config")
+            .withClasspathResourceMappingDir("network/config")
             .withWorkspace(WORKSPACE)
             .withNetwork(NETWORK);
 
@@ -50,7 +50,7 @@ public abstract class E2ETestBase extends TestBase {
      */
     @Container
     private static final HederaContainer NODE_2 = new HederaContainer(IMAGE, 2)
-            .withClasspathResourceMappingDir("config")
+            .withClasspathResourceMappingDir("network/config")
             .withWorkspace(WORKSPACE)
             .withNetwork(NETWORK);
 
