@@ -33,6 +33,7 @@ import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
@@ -42,7 +43,7 @@ import java.util.List;
 /**
  * The set of BDD tests that we can execute in parallel.
  */
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 public class ParallelIntegrationTests extends IntegrationTestBase {
 
     @Tag("integration")
