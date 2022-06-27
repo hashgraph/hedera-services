@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -69,22 +70,20 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
 						randomGenerate()
-								.payingWith("bob")
 								.via(baseTxn)
 								.logged(),
 						getTxnRecord(baseTxn)
-								.hasOnlyPseudoRandomBitString()
+								.hasOnlyPseudoRandomBytes()
 								.logged(),
-						validateChargedUsd(baseTxn, baseFee)
+						validateChargedUsdWithin(baseTxn, baseFee, 0)
 				).when(
 						randomGenerate(10)
-								.payingWith("bob")
 								.via(plusRangeTxn)
 								.logged(),
 						getTxnRecord(plusRangeTxn)
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged(),
-						validateChargedUsd(plusRangeTxn, plusRangeFee)
+						validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 1)
 				).then(
 				);
 	}
@@ -119,7 +118,8 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.logged(),
 						// n-1, n-2 running hash and running has set
 						getTxnRecord("randomGenerate")
-								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it already has n-3 running hash
+								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
+								// already has n-3 running hash
 								.logged(),
 						// n-1, n-2, n-3 running hash and running has set
 						randomGenerate(10)
@@ -127,7 +127,8 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.via("randomGenerateWithRange1")
 								.logged(),
 						getTxnRecord("randomGenerateWithRange1")
-								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it already has n-3 running hash
+								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
+								// already has n-3 running hash
 								.logged(),
 						randomGenerate()
 								.payingWith("bob")
@@ -148,7 +149,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.via("randomGenerateWithoutRange")
 								.logged(),
 						getTxnRecord("randomGenerateWithoutRange")
-								.hasOnlyPseudoRandomBitString()
+								.hasOnlyPseudoRandomBytes()
 								.logged(),
 
 						randomGenerate(0)
@@ -156,8 +157,22 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.via("randomGenerateWithZeroRange")
 								.logged(),
 						getTxnRecord("randomGenerateWithZeroRange")
-								.hasOnlyPseudoRandomBitString()
-								.logged()
+								.hasOnlyPseudoRandomBytes()
+								.logged(),
+
+						randomGenerate()
+								.range(Integer.MAX_VALUE)
+								.payingWith("bob")
+								.via("randomGenerateWithMaxRange")
+								.logged(),
+						getTxnRecord("randomGenerateWithMaxRange")
+								.hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE)
+								.logged(),
+
+						randomGenerate()
+								.range(Integer.MIN_VALUE)
+								.payingWith("bob")
+								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
 				);
 	}
 

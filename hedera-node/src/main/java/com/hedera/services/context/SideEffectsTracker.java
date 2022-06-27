@@ -49,7 +49,6 @@ import java.util.Map;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
-import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 
 /**
  * Extracts the side-effect tracking logic previously squashed into {@link com.hedera.services.ledger.HederaLedger}
@@ -85,7 +84,7 @@ public class SideEffectsTracker {
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
-	private String pseudorandomBitString = EMPTY_STRING;
+	private byte[] pseudorandomBytes = null;
 	private int pseudorandomNumber = MISSING_NUMBER;
 
 	@Inject
@@ -429,16 +428,16 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public void trackRandomBitString(final String binaryString) {
-		this.pseudorandomBitString = binaryString;
+	public void trackRandomBytes(final byte[] bytes) {
+		this.pseudorandomBytes = bytes;
 	}
 
 	public void trackRandomNumber(final int pseudoRandomNumber) {
 		this.pseudorandomNumber = pseudoRandomNumber;
 	}
 
-	public String getPseudorandomBitString() {
-		return pseudorandomBitString;
+	public byte[] getPseudorandomBytes() {
+		return pseudorandomBytes;
 	}
 
 	public int getPseudorandomNumber() {
@@ -446,7 +445,7 @@ public class SideEffectsTracker {
 	}
 
 	public boolean hasTrackedRandomData() {
-		return pseudorandomNumber >= 0 || !pseudorandomBitString.isEmpty();
+		return pseudorandomNumber >= 0 || (pseudorandomBytes != null && pseudorandomBytes.length > 0);
 	}
 
 	/**
@@ -461,7 +460,7 @@ public class SideEffectsTracker {
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
 		pseudorandomNumber = MISSING_NUMBER;
-		pseudorandomBitString = EMPTY_STRING;
+		pseudorandomBytes = null;
 	}
 
 	/**

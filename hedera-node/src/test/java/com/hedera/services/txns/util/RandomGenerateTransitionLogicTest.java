@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -111,9 +112,8 @@ class RandomGenerateTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
-		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
-		assertEquals(384, tracker.getPseudorandomBitString().length());
+		assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+		assertEquals(48, tracker.getPseudorandomBytes().length);
 		assertEquals(-1, tracker.getPseudorandomNumber());
 
 		verify(txnCtx).setStatus(SUCCESS);
@@ -130,7 +130,7 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
-		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+		assertNull(tracker.getPseudorandomBytes());
 
 		final var num = tracker.getPseudorandomNumber();
 		assertTrue(num >= 0 && num < 20);
@@ -147,7 +147,7 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
-		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+		assertNull(tracker.getPseudorandomBytes());
 
 		final var num = tracker.getPseudorandomNumber();
 		assertTrue(num >= 0 && num < Integer.MAX_VALUE);
@@ -172,9 +172,8 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
-		final var expectedBitString = new BigInteger(aFullHash.getValue()).toString(2);
-		assertEquals(StringUtils.leftPad(expectedBitString, 384, "0"), tracker.getPseudorandomBitString());
-		assertEquals(384, tracker.getPseudorandomBitString().length());
+		assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+		assertEquals(48, tracker.getPseudorandomBytes().length);
 		assertEquals(-1, tracker.getPseudorandomNumber());
 	}
 
@@ -188,7 +187,7 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx, never()).setStatus(SUCCESS);
-		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+		assertNull(tracker.getPseudorandomBytes());
 		assertEquals(-1, tracker.getPseudorandomNumber());
 
 		// case 2
@@ -200,7 +199,7 @@ class RandomGenerateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx, never()).setStatus(SUCCESS);
-		assertTrue(tracker.getPseudorandomBitString().isEmpty());
+		assertNull(tracker.getPseudorandomBytes());
 		assertEquals(-1, tracker.getPseudorandomNumber());
 	}
 
@@ -213,9 +212,5 @@ class RandomGenerateTransitionLogicTest {
 	private void givenValidTxnCtxWithoutRange() {
 		final var opBuilder = RandomGenerateTransactionBody.newBuilder();
 		randomGenerateTxn = TransactionBody.newBuilder().setRandomGenerate(opBuilder).build();
-	}
-
-	private AccountID ourAccount() {
-		return PAYER;
 	}
 }

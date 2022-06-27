@@ -938,9 +938,4 @@ public final class MiscUtils {
 				.setSignedTransactionBytes(signedTxn.toByteString())
 				.build();
 	}
-
-	public static String asBinaryString(final byte[] pseudoRandomBytes) {
-		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
-		return StringUtils.leftPad(randomBitString, MAX_PSEUDORANDOM_BIT_STRING_LENGTH, "0");
-	}
 }

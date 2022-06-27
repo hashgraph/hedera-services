@@ -90,7 +90,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
 
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
-	public static final int MAX_PSEUDORANDOM_BIT_STRING_LENGTH = 384;
+	public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 
 	private String txn;
 	private boolean scheduled = false;
@@ -132,7 +132,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
-	private boolean pseudorandomBitStringExpected = false;
+	private boolean pseudorandomBytesExpected = false;
 
 	private boolean noPseudoRandomData = false;
 	private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
@@ -292,14 +292,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasOnlyPseudoRandomBitString() {
-		pseudorandomBitStringExpected = true;
+	public HapiGetTxnRecord hasOnlyPseudoRandomBytes() {
+		pseudorandomBytesExpected = true;
 		pseudorandomNumberRange = Optional.empty();
 		return this;
 	}
 
 	public HapiGetTxnRecord hasOnlyPseudoRandomNumberInRange(int range) {
-		pseudorandomBitStringExpected = false;
+		pseudorandomBytesExpected = false;
 		pseudorandomNumberRange = Optional.of(range);
 		return this;
 	}
@@ -581,22 +581,22 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			assertNoStakingAccountFees(transferList);
 		}
 		if (noPseudoRandomData) {
-			final var actualBitString = actualRecord.getPseudorandomBytes();
+			final var actualByteString = actualRecord.getPseudorandomBytes();
 			final var actualRandomNum = actualRecord.getPseudorandomNumber();
-			assertEquals(0, actualBitString.size());
+			assertEquals(0, actualByteString.size());
 			assertEquals(0, actualRandomNum);
 		}
-		if (pseudorandomBitStringExpected) {
-			final var actualBitString = actualRecord.getPseudorandomBytes();
+		if (pseudorandomBytesExpected) {
+			final var actualByteString = actualRecord.getPseudorandomBytes();
 			final var actualRandomNum = actualRecord.getPseudorandomNumber();
-			assertEquals(MAX_PSEUDORANDOM_BIT_STRING_LENGTH, actualBitString.size());
+			assertEquals(MAX_PSEUDORANDOM_BYTES_LENGTH, actualByteString.size());
 			assertEquals(0, actualRandomNum);
 		}
 
 		if (pseudorandomNumberRange.isPresent()) {
-			final var actualBitString = actualRecord.getPseudorandomBytes();
+			final var actualByteString = actualRecord.getPseudorandomBytes();
 			final var actualRandomNum = actualRecord.getPseudorandomNumber();
-			assertTrue(actualBitString.isEmpty());
+			assertTrue(actualByteString.isEmpty());
 			assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
 		}
 	}

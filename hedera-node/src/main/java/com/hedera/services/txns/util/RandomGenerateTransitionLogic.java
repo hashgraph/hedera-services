@@ -6,15 +6,18 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.MiscUtils.asBinaryString;
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -45,22 +48,26 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 			log.info("No n-3 record running hash available to generate random number");
 			return;
 		}
-
-        //generate binary string from the running hash of records
+		//generate binary string from the running hash of records
 		final var pseudoRandomBytes = nMinus3RunningHash.getHash().getValue();
-		var binaryVal = asBinaryString(pseudoRandomBytes);
 
 		final var range = op.getRange();
 		if (range > 0) {
 			// generate pseudorandom number in the given range
-			final var initialBitsValue = Integer.parseUnsignedInt(binaryVal.substring(0, 32), 2);
-			int pseudoRandomNumber = Math.abs((int) ((range * (long) initialBitsValue) >>> 32));
+			final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
+			int pseudoRandomNumber = (int) ((range * (long) initialBitsValue) >>> 32);
+
 			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
 		} else {
-			sideEffectsTracker.trackRandomBitString(binaryVal);
+			sideEffectsTracker.trackRandomBytes(pseudoRandomBytes);
 		}
 
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	public static String asBinaryString(final byte[] pseudoRandomBytes) {
+		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
+		return StringUtils.leftPad(randomBitString, MAX_PSEUDORANDOM_BIT_STRING_LENGTH, "0");
 	}
 
 	@Override

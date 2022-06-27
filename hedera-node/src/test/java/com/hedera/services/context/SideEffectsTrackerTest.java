@@ -387,19 +387,19 @@ class SideEffectsTrackerTest {
 	@Test
 	void tracksAndResetsPseudoRandomDataCorrectly() {
 		final var num = 100;
-		final var bytes = TxnUtils.random384BitBinaryText();
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
 
 		subject.trackRandomNumber(num);
-		subject.trackRandomBitString(bytes);
+		subject.trackRandomBytes(bytes);
 
 		assertTrue(subject.hasTrackedRandomData());
 		assertEquals(100, subject.getPseudorandomNumber());
-		assertEquals(bytes, subject.getPseudorandomBitString());
+		assertEquals(bytes, subject.getPseudorandomBytes());
 
 		subject.reset();
 		assertFalse(subject.hasTrackedRandomData());
 		assertEquals(-1, subject.getPseudorandomNumber());
-		assertEquals("", subject.getPseudorandomBitString());
+		assertEquals(null, subject.getPseudorandomBytes());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;
