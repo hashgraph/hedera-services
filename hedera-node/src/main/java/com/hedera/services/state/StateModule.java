@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -76,7 +77,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -228,6 +229,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::accounts;
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+			final MutableStateChildren workingState
+	) {
+		return workingState::stakingInfo;
 	}
 
 	@Provides

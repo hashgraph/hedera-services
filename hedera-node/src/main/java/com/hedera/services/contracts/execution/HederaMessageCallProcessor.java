@@ -92,7 +92,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			frame.decrementRemainingGas(frame.getRemainingGas());
 			frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
 			frame.setState(EXCEPTIONAL_HALT);
-		} else if (output != null && !Bytes.EMPTY.equals(output)) {
+		} else if (output != null) {
 			frame.decrementRemainingGas(gasRequirement);
 			frame.setOutputData(output);
 			frame.setState(COMPLETED_SUCCESS);

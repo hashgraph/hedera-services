@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -81,6 +82,9 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
     Optional<LongConsumer> newNumObserver = Optional.empty();
     protected Optional<String> proxy = Optional.empty();
     protected Optional<Supplier<String>> explicitHexedParams = Optional.empty();
+    protected Optional<String> stakedAccountId = Optional.empty();
+    protected Optional<Long> stakedNodeId = Optional.empty();
+    protected boolean isDeclinedReward = false;
 
     protected HapiBaseContractCreate(String contract) {
         this.contract = contract;

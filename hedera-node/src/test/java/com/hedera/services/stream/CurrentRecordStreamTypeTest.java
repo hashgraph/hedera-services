@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.ActiveVersions;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -49,8 +50,16 @@ class CurrentRecordStreamTypeTest {
 			.setPre("zeta.123")
 			.setBuild("2b26be40")
 			.build();
-	private static final int[] expectedHeader = new int[] {
-			RecordStreamType.RECORD_VERSION, pretendSemVer.getMajor(), pretendSemVer.getMinor(),
+	private static final int[] expectedV5Header = new int[] {
+			5,
+			pretendSemVer.getMajor(),
+			pretendSemVer.getMinor(),
+			pretendSemVer.getPatch()
+	};
+	private static final int[] expectedV6Header = new int[] {
+			6,
+			pretendSemVer.getMajor(),
+			pretendSemVer.getMinor(),
 			pretendSemVer.getPatch()
 	};
 
@@ -58,6 +67,8 @@ class CurrentRecordStreamTypeTest {
 	private ActiveVersions activeVersions;
 	@Mock
 	private SemanticVersions semanticVersions;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@LoggingSubject
 	private CurrentRecordStreamType subject;
@@ -66,16 +77,30 @@ class CurrentRecordStreamTypeTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new CurrentRecordStreamType(semanticVersions);
+		subject = new CurrentRecordStreamType(semanticVersions, dynamicProperties);
 	}
 
 	@Test
 	void returnsCurrentStreamTypeFromResource() {
 		given(semanticVersions.getDeployed()).willReturn(activeVersions);
 		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
+		given(dynamicProperties.recordFileVersion()).willReturn(5);
+
 
 		final var header = subject.getFileHeader();
-		assertArrayEquals(expectedHeader, header);
+		assertArrayEquals(expectedV5Header, header);
+		assertSame(header, subject.getFileHeader());
+	}
+
+	@Test
+	void returnsCurrentStreamTypeFromResourceV6() {
+		given(semanticVersions.getDeployed()).willReturn(activeVersions);
+		given(activeVersions.protoSemVer()).willReturn(pretendSemVer);
+		given(dynamicProperties.recordFileVersion()).willReturn(6);
+
+		final var header = subject.getFileHeader();
+
+		assertArrayEquals(expectedV6Header, header);
 		assertSame(header, subject.getFileHeader());
 	}
 
@@ -87,5 +112,14 @@ class CurrentRecordStreamTypeTest {
 		subject.getFileHeader();
 
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Failed to load")));
+	}
+
+	@Test
+	void sigFileHeaderReturnsVersionFromDynamicProperties() {
+		given(dynamicProperties.recordSignatureFileVersion()).willReturn(6);
+
+		final var header = subject.getSigFileHeader();
+
+		assertArrayEquals(new byte[] {6}, header);
 	}
 }

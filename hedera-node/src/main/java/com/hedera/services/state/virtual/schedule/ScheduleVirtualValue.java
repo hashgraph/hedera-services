@@ -20,7 +20,6 @@ package com.hedera.services.state.virtual.schedule;
  * ‍
  */
 
-import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +44,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -56,6 +56,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
 
@@ -64,14 +66,17 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
-public class ScheduleVirtualValue implements VirtualValue {
+/**
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
+ * It should be moved back to VirtualMap in 0.28.
+ */
+public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualValue, Keyed<EntityNumVirtualKey> {
 
 	static final int CURRENT_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
-
-	private boolean immutable;
-
+	@Nullable
+	private long number;
 	@Nullable
 	private Key grpcAdminKey = null;
 	@Nullable
@@ -122,6 +127,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 		this.scheduledTxn = toCopy.scheduledTxn;
 		this.ordinaryScheduledTxn = toCopy.ordinaryScheduledTxn;
 		this.resolutionTime = toCopy.resolutionTime;
+		this.number = toCopy.number;
 
 		/* Signatories are mutable */
 		for (byte[] signatory : toCopy.signatories) {
@@ -266,7 +272,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
 				.add("adminKey", describe(adminKey))
-				.add("resolutionTime", resolutionTime);
+				.add("resolutionTime", resolutionTime)
+				.add("number", number);
 		return helper.toString();
 	}
 
@@ -299,6 +306,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 			in.readFully(bytes);
 			witnessValidSignature(bytes);
 		}
+		number = in.readLong();
 
 		initFromBodyBytes();
 	}
@@ -325,10 +333,11 @@ public class ScheduleVirtualValue implements VirtualValue {
 			out.writeInt(resolutionTime.getNanos());
 		}
 		out.writeInt(signatories.size());
-		for (byte[] key : signatories) {
-			out.writeInt(key.length);
-			out.write(key);
+		for (byte[] k : signatories) {
+			out.writeInt(k.length);
+			out.write(k);
 		}
+		out.writeLong(number);
 	}
 
 	@Override
@@ -356,6 +365,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 			in.get(bytes);
 			witnessValidSignature(bytes);
 		}
+		number = in.getLong();
 
 		initFromBodyBytes();
 	}
@@ -382,10 +392,11 @@ public class ScheduleVirtualValue implements VirtualValue {
 			out.putInt(resolutionTime.getNanos());
 		}
 		out.putInt(signatories.size());
-		for (byte[] key : signatories) {
-			out.putInt(key.length);
-			out.put(key);
+		for (byte[] k : signatories) {
+			out.putInt(k.length);
+			out.put(k);
 		}
+		out.putLong(number);
 	}
 
 	@Override
@@ -568,28 +579,6 @@ public class ScheduleVirtualValue implements VirtualValue {
 		}
 	}
 
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean isImmutable() {
-		return immutable;
-	}
-
-	@Transient
-	protected final void setImmutable(final boolean immutable) {
-		this.immutable = immutable;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void release() {
-		// nothing to release
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -627,4 +616,14 @@ public class ScheduleVirtualValue implements VirtualValue {
 
         return hasher.hash();
     }
+
+	@Override
+	public EntityNumVirtualKey getKey() {
+		return new EntityNumVirtualKey(number);
+	}
+
+	@Override
+	public void setKey(final EntityNumVirtualKey key) {
+		this.number = key == null ? -1 : key.getKeyAsLong();
+	}
 }
