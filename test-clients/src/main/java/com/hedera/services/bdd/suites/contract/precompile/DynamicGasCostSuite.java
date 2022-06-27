@@ -107,7 +107,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -761,14 +761,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								recordWith()
 										.status(SUCCESS),
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.MINT)
 																.withTotalSupply(0)
 																.withSerialNumbers()
-																.withStatus(INVALID_SIGNATURE)))),
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE)))),
 						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
 								recordWith()
 										.status(REVERTED_SUCCESS),

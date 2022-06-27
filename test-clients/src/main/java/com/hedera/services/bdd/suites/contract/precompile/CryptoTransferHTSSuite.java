@@ -69,7 +69,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoTransferHTSSuite extends HapiApiSuite {
@@ -877,11 +877,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								.hasTokenBalance(NFT_TOKEN, 0L),
                         childRecordsCheck(revertedFungibleTransferTxn, CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)))),
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)))),
                         childRecordsCheck(successfulFungibleTransferTxn, SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -898,11 +898,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple))),
 						childRecordsCheck(revertedNftTransferTxn, CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)))),
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)))),
 						childRecordsCheck(successfulNftTransferTxn, SUCCESS,
 								recordWith()
 										.status(SUCCESS)

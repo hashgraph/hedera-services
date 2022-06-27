@@ -55,11 +55,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
@@ -80,7 +80,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_BURN_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_DISSOCIATE_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -424,11 +428,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("delegateTransferCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE)
 														)
 										)
 						),
@@ -478,12 +482,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				.then(
 						childRecordsCheck("delegateBurnCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_BURN_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.BURN)
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_BURN_PRECOMPILE)
 														)
 										)
 						),
@@ -530,12 +534,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				.then(
 						childRecordsCheck("delegateBurnCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.MINT)
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_MINT_PRECOMPILE)
 																.withSerialNumbers()
 														)
 										)
@@ -1590,11 +1594,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("kycNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 														)
 										)
 						),
@@ -2161,11 +2165,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("frozenNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 														)
 										)
 						),
@@ -2241,11 +2245,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("vanillaNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 														)
 										)
 						),
@@ -2322,11 +2326,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("kycTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE))
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE))
 										)
 						),
 						childRecordsCheck("kycTokenAssociateTxn", SUCCESS,
@@ -2402,11 +2406,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("frozenTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE))
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE))
 										)
 						),
 						childRecordsCheck("frozenTokenAssociateTxn", SUCCESS,
@@ -2477,11 +2481,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("vanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)
+								.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 								.contractCallResult(
 										resultWith()
 												.contractCallResult(htsPrecompileResult()
-														.withStatus(INVALID_SIGNATURE))
+														.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE))
 								)
 
 						),
@@ -2541,11 +2545,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("delegateAssociateCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE)
 														)
 										)
 						),
@@ -2591,11 +2595,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("delegateDissociateCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_DISSOCIATE_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_DISSOCIATE_PRECOMPILE)
 														)
 										)
 						),
@@ -2704,12 +2708,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck(firstBurnTxn, SUCCESS,
 								recordWith()
-										.status(INVALID_SIGNATURE)
+										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_BURN_PRECOMPILE)
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.BURN)
-																.withStatus(INVALID_SIGNATURE)
+																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_BURN_PRECOMPILE)
 														)
 										)
 						),
