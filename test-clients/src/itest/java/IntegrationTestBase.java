@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
  */
 @Testcontainers
 @ExtendWith(ResultArchivingExtension.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTestBase extends TestBase {
     private static final File WORKSPACE = new File(System.getProperty("networkWorkspaceDir"));
 

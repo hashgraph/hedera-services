@@ -43,7 +43,7 @@ import java.util.List;
 /**
  * The set of BDD tests that we can execute in parallel.
  */
-@Execution(ExecutionMode.SAME_THREAD)
+@Execution(ExecutionMode.CONCURRENT)
 public class ParallelIntegrationTests extends IntegrationTestBase {
 
     @Tag("integration")
