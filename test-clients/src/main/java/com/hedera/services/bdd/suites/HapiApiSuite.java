@@ -80,6 +80,8 @@ public abstract class HapiApiSuite {
 	public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
 	public static final String FREEZE_ADMIN = HapiSpecSetup.getDefaultInstance().freezeAdminName();
 	public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
+	public static final String STAKING_REWARD = HapiSpecSetup.getDefaultInstance().stakingRewardAccountName();
+	public static final String NODE_REWARD = HapiSpecSetup.getDefaultInstance().nodeRewardAccountName();
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
 	public static final String DEFAULT_PAYER = HapiSpecSetup.getDefaultInstance().defaultPayerName();
 	public static final String DEFAULT_CONTRACT_SENDER = "DEFAULT_CONTRACT_SENDER";
@@ -217,7 +219,7 @@ public abstract class HapiApiSuite {
 	private void runAsync(Iterable<HapiApiSpec> specs) {
 		CompletableFuture[] futures = StreamSupport
 				.stream(specs.spliterator(), false)
-				.map(CompletableFuture::runAsync)
+				.map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
 				.toArray(n -> new CompletableFuture[n]);
 		CompletableFuture.allOf(futures).join();
 	}

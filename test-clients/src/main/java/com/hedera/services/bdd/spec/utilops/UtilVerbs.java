@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.SequentialID;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -59,6 +58,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
@@ -66,6 +66,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
+import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -77,7 +78,9 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
@@ -150,6 +153,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -338,6 +342,12 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation overridingAllOf(Map<String, String> explicit) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(explicit);
+	}
+
 	public static HapiSpecOperation resetToDefault(String... properties) {
 		var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
 		return fileUpdate(APP_PROPERTIES)
@@ -359,6 +369,22 @@ public class UtilVerbs {
 						bProperty, bValue));
 	}
 
+	public static HapiSpecOperation overridingThree(
+			final String aProperty,
+			final String aValue,
+			final String bProperty,
+			final String bValue,
+			final String cProperty,
+			final String cValue
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(
+						aProperty, aValue,
+						bProperty, bValue,
+						cProperty, cValue));
+	}
+
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
 		return new CustomSpecAssert((spec, log) -> {
 			spec.exportAccountBalances(acctBalanceFile);
@@ -369,6 +395,13 @@ public class UtilVerbs {
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
 		return new RecordStreamVerification(baseDir);
+	}
+
+	public static RecordFileChecker verifyRecordFile(Timestamp timestamp, List<Transaction> transactions, TransactionRecord... transactionRecord) {
+		var recordFileName = generateStreamFileNameFromInstant(
+				Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
+
+		return new RecordFileChecker(recordFileName, transactions, transactionRecord);
 	}
 
 	/* Some more complicated ops built from primitive sub-ops */
@@ -392,29 +425,27 @@ public class UtilVerbs {
 		});
 	}
 
-	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
-			ResponseCodeEnum parentalStatus,
-			TransactionRecordAsserts... childRecordAsserts) {
-		return withOpContext(
-				(spec, opLog) -> {
-					var distributeTx = getTxnRecord(parentTxnId);
-					allRunFor(spec, distributeTx);
-
-					var distributeTxId = distributeTx.getResponseRecord().getTransactionID();
-					SequentialID sequentialID = new SequentialID(distributeTxId);
-
-					for (TransactionRecordAsserts childRecordAssert : childRecordAsserts) {
-						childRecordAssert.txnId(sequentialID.nextChild());
-					}
-
-					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
-							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
-							.hasChildRecords(childRecordAsserts).logged());
-				});
-	}
-
 	public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
 		return childRecordsCheck(parentTxnId, parentalStatus);
+	}
+
+	public static HapiSpecOperation childRecordsCheck(
+			final String parentTxnId,
+			final ResponseCodeEnum parentalStatus,
+			final TransactionRecordAsserts... childRecordAsserts
+	) {
+		return withOpContext(
+				(spec, opLog) -> {
+					final var lookup = getTxnRecord(parentTxnId);
+					allRunFor(spec, lookup);
+					final var parentId = lookup.getResponseRecord().getTransactionID();
+					allRunFor(spec,
+							getTxnRecord(parentTxnId)
+									.andAllChildRecords()
+									.hasPriority(recordWith().status(parentalStatus).txnId(parentId))
+									.hasChildRecords(parentId, childRecordAsserts)
+									.logged());
+				});
 	}
 
 	public static Setting from(String name, String value) {
@@ -739,7 +770,8 @@ public class UtilVerbs {
 
 			HapiFileUpdate updateSubOp = fileUpdate(fileName)
 					.contents(byteString.substring(0, position))
-					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
+					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED,
+							SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 					.noLogging()
 					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);
@@ -893,7 +925,9 @@ public class UtilVerbs {
 		return validateRecordTransactionFees(txn,
 				Set.of(
 						HapiPropertySource.asAccount("0.0.3"),
-						HapiPropertySource.asAccount("0.0.98")));
+						HapiPropertySource.asAccount("0.0.98"),
+						HapiPropertySource.asAccount("0.0.800"),
+						HapiPropertySource.asAccount("0.0.801")));
 	}
 
 	public static HapiSpecOperation validateRecordTransactionFees(String txn, Set<AccountID> feeRecipients) {

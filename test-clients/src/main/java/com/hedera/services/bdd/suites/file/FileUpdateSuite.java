@@ -107,20 +107,18 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
 	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
 	private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
-	private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.consensusThrottleMaxGasLimit";
+	private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.maxGasPerSec";
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 	private static final String defaultMaxCustomFees =
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
-	private static final String defaultMaxTokenPerAccount =
-			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxRelsPerInfoQuery");
 	private static final String defaultMaxIndividualKvPairs =
 			HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
 	private static final String defaultMaxAggregateKvPairs =
 			HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
 	private static final String defaultMaxConsGasLimit = HapiSpecSetup.getDefaultNodeProps()
-			.get("contracts.consensusThrottleMaxGasLimit");
+			.get("contracts.maxGasPerSec");
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -398,11 +396,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT),
-						overriding("contracts.maxGas", "100")
+						overriding("contracts.maxGasPerSec", "100")
 				).when().then(
 						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
 								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 

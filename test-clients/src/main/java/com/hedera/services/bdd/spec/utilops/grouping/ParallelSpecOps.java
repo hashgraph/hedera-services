@@ -48,11 +48,12 @@ public class ParallelSpecOps extends UtilOp {
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		Map<String, Throwable> subErrors = new HashMap<>();
 
-		CompletableFuture future = CompletableFuture.allOf(
+		CompletableFuture<Void> future = CompletableFuture.allOf(
 				Stream.of(subs)
 						.map(op -> CompletableFuture.runAsync(
-								() -> op.execFor(spec).map(t -> subErrors.put(op.toString(), t))))
-						.toArray(n -> new CompletableFuture[n])
+								() -> op.execFor(spec).map(t -> subErrors.put(op.toString(), t)),
+								HapiApiSpec.getCommonThreadPool()))
+						.toArray(CompletableFuture[]::new)
 		);
 		future.join();
 

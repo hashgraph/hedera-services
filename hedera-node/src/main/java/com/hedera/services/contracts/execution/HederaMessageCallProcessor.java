@@ -84,7 +84,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {
-			output = contract.compute(frame.getInputData(), frame);
+			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
 			gasRequirement = contract.gasRequirement(frame.getInputData());
 		}
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);

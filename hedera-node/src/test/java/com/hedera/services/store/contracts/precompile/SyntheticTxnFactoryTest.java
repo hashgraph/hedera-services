@@ -25,6 +25,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -34,6 +42,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -46,6 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -305,6 +316,35 @@ class SyntheticTxnFactoryTest {
 				txnBody.getCryptoCreateAccount().getInitialBalance());
 		assertEquals(alias.toByteString(),
 				txnBody.getCryptoCreateAccount().getKey().toByteString());
+	}
+
+	@Test
+	void createsExpectedNodeStakeUpdate() {
+		final var now = Instant.now();
+		final var rewardRate = 10_000_000L;
+		final var timestamp = Timestamp.newBuilder()
+				.setSeconds(now.getEpochSecond())
+				.setNanos(now.getNano())
+				.build();
+		final var nodeStakes = List.of(
+				NodeStake.newBuilder()
+						.setStake(123_456_789L)
+						.setStakeRewarded(1_234_567L)
+						.build(),
+				NodeStake.newBuilder()
+						.setStake(987_654_321L)
+						.setStakeRewarded(54_321L)
+						.build()
+		);
+
+		final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
+
+		assertTrue(txnBody.hasNodeStakeUpdate());
+		assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
+		assertEquals(123_456_789L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStake());
+		assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
+		assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
+		assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
 	}
 
 	@Test

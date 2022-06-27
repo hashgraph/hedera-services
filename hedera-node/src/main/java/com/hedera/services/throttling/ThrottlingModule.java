@@ -28,7 +28,7 @@ import com.hedera.services.throttling.DeterministicThrottling.DeterministicThrot
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import dagger.Module;
 import dagger.Provides;
 

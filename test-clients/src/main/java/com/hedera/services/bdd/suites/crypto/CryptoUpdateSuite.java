@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -59,11 +60,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -121,9 +124,67 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateMaxAutoAssociationsWorks()
+						updateMaxAutoAssociationsWorks(),
+						updateStakingFieldsWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec updateStakingFieldsWorks() {
+		return defaultHapiSpec("updateStakingFieldsWorks")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						cryptoCreate("user")
+								.key(ADMIN_KEY)
+								.stakedAccountId("0.0.20")
+								.declinedReward(true),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.stakedAccountId("0.0.20")
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged()
+				)
+				.when(
+						cryptoUpdate("user")
+								.newStakedNodeId(0L)
+								.newDeclinedReward(false),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.stakedNodeId(0L)
+										.isDeclinedReward(false))
+								.logged(),
+						cryptoUpdate("user")
+								.newStakedNodeId(-1L),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.noStakingNodeId()
+										.isDeclinedReward(false))
+								.logged()
+				)
+				.then(
+						cryptoUpdate("user")
+								.key(ADMIN_KEY)
+								.newStakedAccountId("0.0.20")
+								.newDeclinedReward(true),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.stakedAccountId("0.0.20")
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged(),
+						cryptoUpdate("user")
+								.key(ADMIN_KEY)
+								.newStakedAccountId("0.0.0"),
+						getAccountInfo("user")
+								.has(AccountInfoAsserts.accountWith()
+										.noStakedAccountId()
+										.noStakingNodeId()
+										.isDeclinedReward(true))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
@@ -436,7 +497,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				).then(
 						cryptoUpdate("testAccount")
 								.key("updKey")
-								.hasPrecheck(BAD_ENCODING)
+								.hasPrecheck(INVALID_ADMIN_KEY)
 				);
 	}
 
@@ -459,9 +520,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("updateMaxAutoAssociationsWorks")
 				.given(
-						overridingTwo(
+						overridingThree(
 								"entities.limitTokenAssociations", "true",
-								"tokens.maxPerAccount", "" + 10),
+								"tokens.maxPerAccount", "" + 10,
+								"contracts.allowAutoAssociations", "true"),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						newKeyNamed(ADMIN_KEY),

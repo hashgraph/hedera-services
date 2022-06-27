@@ -59,15 +59,17 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
+	private static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
 	private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
 	private static final String LINE_WRAP = "\n    ";
 	private static final String NOT_EXTANT = "<NONE>";
 	private static final String NOT_AVAILABLE = "<N/A>";
-	private static final String NOT_AVAILABLE_SUFFIX = " <N/A>";
+	private static final String NOT_AVAILABLE_SUFFIX = "<N/A>";
 
 	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
@@ -77,10 +79,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
-	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int RELEASE_0260_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -93,8 +95,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private int stateVersion = UNRECORDED_STATE_VERSION;
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
-	@Nullable
-	private Instant lastMidnightBoundaryCheck = null;
 	@Nullable
 	private Instant consensusTimeOfLastHandledTxn = null;
 	private SequenceNumber seqNo;
@@ -113,6 +113,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = Long.MIN_VALUE;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
+	private boolean stakingRewardsActivated;
+	private long totalStakedRewardStart;
+	private long totalStakedStart;
+	private long pendingRewards;
 
 	public MerkleNetworkContext() {
 		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
@@ -142,13 +146,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.stateVersion = that.stateVersion;
 		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
 		this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
-		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
 		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = that.blockHashes.copy();
+		this.stakingRewardsActivated = that.stakingRewardsActivated;
+		this.totalStakedRewardStart = that.totalStakedRewardStart;
+		this.totalStakedStart = that.totalStakedStart;
+		this.pendingRewards = that.pendingRewards;
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -223,11 +230,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 	}
 
-	public void setLastMidnightBoundaryCheck(Instant lastMidnightBoundaryCheck) {
-		throwIfImmutable("Cannot update last midnight boundary check on an immutable context");
-		this.lastMidnightBoundaryCheck = lastMidnightBoundaryCheck;
-	}
-
 	public void setStateVersion(int stateVersion) {
 		throwIfImmutable("Cannot set state version on an immutable context");
 		this.stateVersion = stateVersion;
@@ -277,6 +279,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockNo;
 	}
 
+	public void setTotalStakedRewardStart(final long totalStakedRewardStart) {
+		throwIfImmutable("Cannot update Total StakedRewardStart on an immutable context");
+		this.totalStakedRewardStart = totalStakedRewardStart;
+	}
+
+	public void setTotalStakedStart(final long totalStakedStart) {
+		throwIfImmutable("Cannot update Total StakedStart on an immutable context");
+		this.totalStakedStart = totalStakedStart;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public MerkleNetworkContext copy() {
@@ -305,8 +317,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		readCongestionControlData(in);
 		// Added in 0.14
 		whenVersionHigherOrEqualTo0140(in);
-		// Added in 0.15
-		whenVersionHigherOrEqualTo0150(in);
+		// Added in 0.15 and removed in 0.27
+		whenVersionHigherOrEqualTo0150AndLessThan0270(in, version);
 		// Added in 0.19
 		preparedUpdateFileNum = in.readLong();
 		preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
@@ -322,6 +334,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			final var firstBlockTime = readNullable(in, RichInstant::from);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
+			if (version >= RELEASE_0270_VERSION) {
+				stakingRewardsActivated = in.readBoolean();
+				totalStakedRewardStart = in.readLong();
+				totalStakedStart = in.readLong();
+				pendingRewards = in.readLong();
+			}
 			blockHashes.clear();
 			in.readSerializable(true, () -> blockHashes);
 		}
@@ -355,9 +373,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		stateVersion = in.readInt();
 	}
 
-	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
-		final var lastBoundaryCheck = readNullable(in, RichInstant::from);
-		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+	private void whenVersionHigherOrEqualTo0150AndLessThan0270(final SerializableDataInputStream in,
+			final int version) throws IOException {
+		if (version < RELEASE_0270_VERSION) {
+			readNullable(in, RichInstant::from);
+		}
 	}
 
 	@Override
@@ -387,6 +407,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		try (final var out = new SerializableDataOutputStream(baos)) {
 			serializeNonHashData(out);
 			out.write(blockHashes.getHash().getValue());
+			out.writeLong(totalStakedRewardStart);
+			out.writeLong(totalStakedStart);
 		} catch (IOException | UncheckedIOException e) {
 			log.error("Hash computation failed", e);
 			return EMPTY_HASH;
@@ -396,7 +418,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0200_VERSION;
+		return RELEASE_0240_VERSION;
 	}
 
 	public String summarized() {
@@ -420,8 +442,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				pendingMaintenanceDesc +
 				"\n  Midnight rate set                          :: " +
 				midnightRates.readableRepr() +
-				"\n  Last midnight boundary check               :: " +
-				reprOf(lastMidnightBoundaryCheck) +
 				"\n  Next entity number                         :: " +
 				seqNo.current() +
 				"\n  Last scanned entity                        :: " +
@@ -430,16 +450,22 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				entitiesScannedThisSecond +
 				"\n  Entities touched last consensus second     :: " +
 				entitiesTouchedThisSecond +
-				"\n  Throttle usage snapshots are               ::" +
+				"\n  Throttle usage snapshots are               :: " +
 				usageSnapshotsDesc() +
-				"\n  Congestion level start times are           ::" +
+				"\n  Congestion level start times are           :: " +
 				congestionStartsDesc() +
 				"\n  Block number is                            :: " +
 				blockNo +
 				"\n  Block timestamp is                         :: " +
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
-				stringifiedBlockHashes();
+				stringifiedBlockHashes() +
+				"\n  Staking rewards activated                  :: " +
+				stakingRewardsActivated +
+				"\n  Total stake reward start this period       :: " +
+				totalStakedRewardStart +
+				"\n  Total stake start this period              :: " +
+				totalStakedStart;
 	}
 
 	public long getAlignmentBlockNo() {
@@ -540,10 +566,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return midnightRates;
 	}
 
-	public Instant lastMidnightBoundaryCheck() {
-		return lastMidnightBoundaryCheck;
-	}
-
 	public long lastScannedEntity() {
 		return lastScannedEntity;
 	}
@@ -558,6 +580,18 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public boolean areMigrationRecordsStreamed() {
 		return migrationRecordsStreamed;
+	}
+
+	public long getTotalStakedRewardStart() {
+		return totalStakedRewardStart;
+	}
+
+	public long getTotalStakedStart() {
+		return totalStakedStart;
+	}
+
+	public boolean areRewardsActivated() {
+		return stakingRewardsActivated;
 	}
 
 	/* --- Internal helpers --- */
@@ -605,7 +639,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(entitiesScannedThisSecond);
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
-		writeNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
 		out.writeLong(preparedUpdateFileNum);
 		out.writeByteArray(preparedUpdateFileHash);
 		out.writeLong(gasThrottleUsageSnapshot.used());
@@ -613,6 +646,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
 		out.writeLong(blockNo);
+		out.writeBoolean(stakingRewardsActivated);
+		out.writeLong(totalStakedRewardStart);
+		out.writeLong(totalStakedStart);
+		out.writeLong(pendingRewards);
 	}
 
 	private void reset(List<DeterministicThrottle> throttles, GasLimitDeterministicThrottle gasLimitThrottle) {
@@ -706,6 +743,42 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
+	public long pendingRewards() {
+		return pendingRewards;
+	}
+
+	public void setPendingRewards(final long pendingRewards) {
+		this.pendingRewards = pendingRewards;
+	}
+
+	public void increasePendingRewards(final long amount) {
+		safeUpdatePendingRewards(amount, +1);
+	}
+
+	public void decreasePendingRewards(final long amount) {
+		safeUpdatePendingRewards(amount, -1);
+	}
+
+	private void safeUpdatePendingRewards(final long amount, final long sigNum) {
+		if (amount < 0) {
+			throw new IllegalArgumentException("Cannot " + (sigNum < 0 ? "decrease " : "increase ")
+					+ "pendingRewards=" + pendingRewards
+					+ " by negative amount (" + amount + ")");
+		}
+		final var delta = sigNum * amount;
+		var newPendingRewards = pendingRewards + delta;
+		if (MAX_PENDING_REWARDS - pendingRewards < delta) {
+			log.warn("Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar",
+					amount, newPendingRewards);
+			newPendingRewards = MAX_PENDING_REWARDS;
+		} else if (newPendingRewards < 0) {
+			log.warn("Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+					amount, newPendingRewards);
+			newPendingRewards = 0;
+		}
+		pendingRewards = newPendingRewards;
+	}
+
 	public void markMigrationRecordsStreamed() {
 		this.migrationRecordsStreamed = true;
 	}
@@ -753,6 +826,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
 		return gasThrottleUsageSnapshot;
+	}
+
+	public void setStakingRewardsActivated(boolean stakingRewardsActivated) {
+		this.stakingRewardsActivated = stakingRewardsActivated;
 	}
 
 	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {

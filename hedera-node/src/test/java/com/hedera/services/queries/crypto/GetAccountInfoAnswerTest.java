@@ -26,12 +26,13 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -97,6 +98,8 @@ class GetAccountInfoAnswerTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
 	private OptionValidator optionValidator;
@@ -110,6 +113,8 @@ class GetAccountInfoAnswerTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RewardCalculator rewardCalculator;
 
 	private final MutableStateChildren children = new MutableStateChildren();
 
@@ -169,7 +174,6 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(missingRelKey, missingRel);
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
-		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
 		TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
@@ -189,15 +193,19 @@ class GetAccountInfoAnswerTest {
 				.cryptoAllowances(cryptoAllowances)
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.explicitNftAllowances(nftAllowances)
+				.stakedId(-1L)
+				.stakePeriodStart(12345678L)
+				.declineReward(false)
 				.get();
 
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 		children.setTokens(tokens);
+		children.setStakingInfo(stakingInfo);
 
 		view = new StateView(scheduleStore, children, networkInfo);
 
-		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
+		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties, rewardCalculator);
 	}
 
 	@Test
@@ -237,7 +245,7 @@ class GetAccountInfoAnswerTest {
 		// and:
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		given(view.infoForAccount(any(), any(), anyInt(), any())).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -273,6 +281,7 @@ class GetAccountInfoAnswerTest {
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		given(rewardCalculator.epochSecondAtStartOfPeriod(12345678L)).willReturn(12345678L);
 
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
@@ -298,6 +307,12 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
+
+		assertEquals(0L, info.getStakingInfo().getStakedNodeId());
+		assertFalse(info.getStakingInfo().hasStakedAccountId());
+		assertFalse(info.getStakingInfo().getDeclineReward());
+		assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
+		assertEquals(0L, info.getStakingInfo().getStakedToMe());
 
 		// and:
 		assertEquals(

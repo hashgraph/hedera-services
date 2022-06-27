@@ -33,6 +33,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
@@ -41,6 +42,7 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static java.util.Collections.unmodifiableMap;
 
@@ -74,12 +76,14 @@ public abstract class AccountCustomizer<
 		MAX_AUTOMATIC_ASSOCIATIONS,
 		USED_AUTOMATIC_ASSOCIATIONS,
 		ALIAS,
-		AUTO_RENEW_ACCOUNT_ID
+		AUTO_RENEW_ACCOUNT_ID,
+		DECLINE_REWARD,
+		STAKED_ID
 	}
 
 	private final Map<Option, P> optionProperties;
-	private final EnumMap<P, Object> changes;
 	private final ChangeSummaryManager<A, P> changeManager;
+	protected final EnumMap<P, Object> changes;
 
 	protected abstract T self();
 
@@ -121,7 +125,7 @@ public abstract class AccountCustomizer<
 	}
 
 	public T proxy(final EntityId option) {
-		if(option != null) {
+		if (option != null) {
 			changeManager.update(changes, optionProperties.get(PROXY), option);
 		}
 		return self();
@@ -168,9 +172,19 @@ public abstract class AccountCustomizer<
 	}
 
 	public T autoRenewAccount(final EntityId option) {
-		if(option != null) {
+		if (option != null) {
 			changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
 		}
+		return self();
+	}
+
+	public T isDeclinedReward(final boolean option) {
+		changeManager.update(changes, optionProperties.get(DECLINE_REWARD), option);
+		return self();
+	}
+
+	public T stakedId(final long option) {
+		changeManager.update(changes, optionProperties.get(STAKED_ID), option);
 		return self();
 	}
 }
