@@ -60,7 +60,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 	private HapiApiSpec usdFeeAsExpected() {
 		double baseFee = 0.001;
-		double plusRangeFee = 0.00101;
+		double plusRangeFee = 0.0010010316;
 
 		final var baseTxn = "randomGenerate";
 		final var plusRangeTxn = "randomGenerateWithRange";
@@ -70,20 +70,24 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
 						randomGenerate()
+								.payingWith("bob")
 								.via(baseTxn)
+								.blankMemo()
 								.logged(),
 						getTxnRecord(baseTxn)
 								.hasOnlyPseudoRandomBytes()
 								.logged(),
-						validateChargedUsdWithin(baseTxn, baseFee, 0)
+						validateChargedUsd(baseTxn, baseFee)
 				).when(
 						randomGenerate(10)
+								.payingWith("bob")
 								.via(plusRangeTxn)
+								.blankMemo()
 								.logged(),
 						getTxnRecord(plusRangeTxn)
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged(),
-						validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 1)
+						validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5)
 				).then(
 				);
 	}
@@ -95,10 +99,12 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 						randomGenerate(-10)
 								.payingWith("bob")
+								.blankMemo()
 								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
 								.logged(),
 						randomGenerate(0)
 								.payingWith("bob")
+								.blankMemo()
 								.hasPrecheck(OK)
 								.logged()
 				).when(
@@ -114,6 +120,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						// n-1 running hash and running has set
 						randomGenerate()
 								.payingWith("bob")
+								.blankMemo()
 								.via("randomGenerate")
 								.logged(),
 						// n-1, n-2 running hash and running has set
@@ -125,6 +132,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						randomGenerate(10)
 								.payingWith("bob")
 								.via("randomGenerateWithRange1")
+								.blankMemo()
 								.logged(),
 						getTxnRecord("randomGenerateWithRange1")
 								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
@@ -133,12 +141,14 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						randomGenerate()
 								.payingWith("bob")
 								.via("randomGenerate2")
+								.blankMemo()
 								.logged()
 				).when(
 						// should have pseudo random data
 						randomGenerate(10)
 								.payingWith("bob")
 								.via("randomGenerateWithRange")
+								.blankMemo()
 								.logged(),
 						getTxnRecord("randomGenerateWithRange")
 								.hasOnlyPseudoRandomNumberInRange(10)
@@ -147,6 +157,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						randomGenerate()
 								.payingWith("bob")
 								.via("randomGenerateWithoutRange")
+								.blankMemo()
 								.logged(),
 						getTxnRecord("randomGenerateWithoutRange")
 								.hasOnlyPseudoRandomBytes()
@@ -155,6 +166,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 						randomGenerate(0)
 								.payingWith("bob")
 								.via("randomGenerateWithZeroRange")
+								.blankMemo()
 								.logged(),
 						getTxnRecord("randomGenerateWithZeroRange")
 								.hasOnlyPseudoRandomBytes()
@@ -164,6 +176,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.range(Integer.MAX_VALUE)
 								.payingWith("bob")
 								.via("randomGenerateWithMaxRange")
+								.blankMemo()
 								.logged(),
 						getTxnRecord("randomGenerateWithMaxRange")
 								.hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE)
@@ -171,6 +184,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 						randomGenerate()
 								.range(Integer.MIN_VALUE)
+								.blankMemo()
 								.payingWith("bob")
 								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
 				);

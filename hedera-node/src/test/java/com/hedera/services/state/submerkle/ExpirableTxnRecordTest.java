@@ -447,7 +447,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=[], " +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
 				"parentConsensusTime=1970-01-15T06:56:07.000000890Z, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
@@ -475,7 +475,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=[], " +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
 				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0" +
 				".0" +
 				".4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +

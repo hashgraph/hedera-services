@@ -6,18 +6,15 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -63,11 +60,6 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		}
 
 		txnCtx.setStatus(SUCCESS);
-	}
-
-	public static String asBinaryString(final byte[] pseudoRandomBytes) {
-		var randomBitString = new BigInteger(1, pseudoRandomBytes).toString(2);
-		return StringUtils.leftPad(randomBitString, MAX_PSEUDORANDOM_BIT_STRING_LENGTH, "0");
 	}
 
 	@Override

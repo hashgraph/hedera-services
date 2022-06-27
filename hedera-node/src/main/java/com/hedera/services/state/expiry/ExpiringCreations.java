@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 

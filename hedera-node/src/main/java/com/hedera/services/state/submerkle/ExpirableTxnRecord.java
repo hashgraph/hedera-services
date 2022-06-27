@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BIT_STRING_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
@@ -177,7 +177,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("alias", alias.toStringUtf8())
 				.add("ethereumHash", CommonUtils.hex(ethereumHash))
 				.add("pseudoRandomNumber", pseudoRandomNumber)
-				.add("pseudoRandomBytes", pseudoRandomBytes);
+				.add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes));
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -252,7 +252,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.alias, that.alias) &&
 				Arrays.equals(this.ethereumHash, that.ethereumHash) &&
 				this.pseudoRandomNumber == that.pseudoRandomNumber &&
-				Objects.equals(this.pseudoRandomBytes, that.pseudoRandomBytes);
+				Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes);
 	}
 
 	@Override
@@ -410,7 +410,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			if (outputType == PRNG_INT_OUTPUT) {
 				pseudoRandomNumber = in.readInt();
 			} else if (outputType == PRNG_BYTES_OUTPUT) {
-				pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_BIT_STRING_LENGTH);
+				pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_BYTES_LENGTH);
 			}
 		}
 	}

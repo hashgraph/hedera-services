@@ -61,7 +61,7 @@ public class SideEffectsTracker {
 	public static final int MISSING_NUMBER = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 	private static final int MAX_BALANCE_CHANGES = 2048;
-	public static final int MAX_PSEUDORANDOM_BIT_STRING_LENGTH = 384;
+	public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
 	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];

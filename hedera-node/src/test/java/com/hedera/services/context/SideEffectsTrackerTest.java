@@ -402,6 +402,28 @@ class SideEffectsTrackerTest {
 		assertEquals(null, subject.getPseudorandomBytes());
 	}
 
+	@Test
+	void checksPseudoRandomDataIsSetCorrectly() {
+		final var num = 100;
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
+
+		subject.trackRandomNumber(num);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(bytes);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(new byte[0]);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomNumber(-1);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;
