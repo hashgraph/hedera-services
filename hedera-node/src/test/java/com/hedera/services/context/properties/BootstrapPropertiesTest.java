@@ -202,6 +202,7 @@ class BootstrapPropertiesTest {
 					TokenBurn,
 					ConsensusSubmitMessage)),
 			entry("sigs.expandFromLastSignedState", true),
+			entry("stats.hapiThrottlesToSample", "ThroughputLimits,"),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
