@@ -22,6 +22,7 @@ package com.hedera.services.txns.util;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.TxnUtils;
@@ -64,13 +65,15 @@ class RandomGenerateTransitionLogicTest {
 	private SignedTxnAccessor accessor;
 	@Mock
 	private RunningHash runningHash;
+	@Mock
+	private GlobalDynamicProperties properties;
 
 	private RandomGenerateTransitionLogic subject;
 	private TransactionBody randomGenerateTxn;
 
 	@BeforeEach
 	private void setup() {
-		subject = new RandomGenerateTransitionLogic(txnCtx, tracker, () -> runningHashLeaf);
+		subject = new RandomGenerateTransitionLogic(txnCtx, tracker, () -> runningHashLeaf, properties);
 	}
 
 	@Test
@@ -105,6 +108,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithNoRange() {
 		givenValidTxnCtxWithoutRange();
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
@@ -122,6 +126,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithRange() {
 		givenValidTxnCtx(20);
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
@@ -139,6 +144,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithMaxIntegerRange() {
 		givenValidTxnCtx(Integer.MAX_VALUE);
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
@@ -164,6 +170,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void givenRangeZeroGivesBitString() {
 		givenValidTxnCtx(0);
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
@@ -180,6 +187,7 @@ class RandomGenerateTransitionLogicTest {
 	@Test
 	void nullHashesReturnNoRandomNumber(){
 		givenValidTxnCtx(0);
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(null);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

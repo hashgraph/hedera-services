@@ -151,6 +151,7 @@ class ExpirableTxnRecordTest {
 				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 				.setPseudorandomNumber(10)
 				.build();
 	}
@@ -372,7 +373,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void equalsDetectsDiffPsudoRandomData() {
+	void equalsDetectsDiffPseudoRandomData() {
 		final var a = new ExpirableTxnRecord();
 		var b = ExpirableTxnRecord.newBuilder()
 				.setPseudoRandomNumber(10).build();

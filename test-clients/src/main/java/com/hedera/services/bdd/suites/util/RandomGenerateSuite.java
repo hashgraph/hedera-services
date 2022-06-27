@@ -26,11 +26,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
@@ -54,8 +56,37 @@ public class RandomGenerateSuite extends HapiApiSuite {
 		return List.of(
 				happyPathWorksForRangeAndBitString(),
 				failsInPreCheckForNegativeRange(),
-				usdFeeAsExpected()
+				usdFeeAsExpected(),
+				featureFlagWorks()
 		);
+	}
+
+	private HapiApiSpec featureFlagWorks() {
+		return defaultHapiSpec("featureFlagWorks")
+				.given(
+						overridingAllOf(Map.of(
+								"randomGeneration.isEnabled", "false"
+						)),
+						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
+						randomGenerate()
+								.payingWith("bob")
+								.via("baseTxn")
+								.blankMemo()
+								.logged(),
+						getTxnRecord("baseTxn")
+								.hasNoPseudoRandomData()
+								.logged()
+				).when(
+						randomGenerate(10)
+								.payingWith("bob")
+								.via("plusRangeTxn")
+								.blankMemo()
+								.logged(),
+						getTxnRecord("plusRangeTxn")
+								.hasNoPseudoRandomData()
+								.logged()
+				).then(
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
@@ -67,6 +98,9 @@ public class RandomGenerateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
+						overridingAllOf(Map.of(
+								"randomGeneration.isEnabled", "true"
+						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
 						randomGenerate()
@@ -95,8 +129,10 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	private HapiApiSpec failsInPreCheckForNegativeRange() {
 		return defaultHapiSpec("failsInPreCheckForNegativeRange")
 				.given(
+						overridingAllOf(Map.of(
+								"randomGeneration.isEnabled", "true"
+						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
-
 						randomGenerate(-10)
 								.payingWith("bob")
 								.blankMemo()
@@ -115,6 +151,9 @@ public class RandomGenerateSuite extends HapiApiSuite {
 	private HapiApiSpec happyPathWorksForRangeAndBitString() {
 		return defaultHapiSpec("happyPathWorksForRangeAndBitString")
 				.given(
+						overridingAllOf(Map.of(
+								"randomGeneration.isEnabled", "true"
+						)),
 						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 						// n-1 running hash and running has set

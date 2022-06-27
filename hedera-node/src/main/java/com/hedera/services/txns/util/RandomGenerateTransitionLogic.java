@@ -1,7 +1,28 @@
 package com.hedera.services.txns.util;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -10,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -19,6 +41,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+/**
+ * Provides the state transition for generating a pseudorandom bytes or pseudorandom number.
+ */
+@Singleton
 public class RandomGenerateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(RandomGenerateTransitionLogic.class);
 
@@ -26,17 +52,24 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
 
+	private final GlobalDynamicProperties properties;
+
 	@Inject
 	public RandomGenerateTransitionLogic(final TransactionContext txnCtx,
 			final SideEffectsTracker sideEffectsTracker,
-			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier) {
+			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier,
+			final GlobalDynamicProperties properties) {
 		this.txnCtx = txnCtx;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.runningHashLeafSupplier = runningHashLeafSupplier;
+		this.properties = properties;
 	}
 
 	@Override
 	public void doStateTransition() {
+		if (!properties.isRandomGenerationEnabled()) {
+			return;
+		}
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
 
 		// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
