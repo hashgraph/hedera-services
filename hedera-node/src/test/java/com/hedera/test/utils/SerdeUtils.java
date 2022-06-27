@@ -97,7 +97,7 @@ public class SerdeUtils {
 				that.getLogInfoList().stream().map(SerdeUtils::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
 				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : EvmFnResult.EMPTY,
-		new TreeMap<>(),
+		new TreeMap<>(), // TODO: fix this
 				that.getGas(),
 				that.getAmount(),
 				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray(),
