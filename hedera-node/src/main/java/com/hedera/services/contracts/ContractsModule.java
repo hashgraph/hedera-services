@@ -251,6 +251,18 @@ public interface ContractsModule {
 	@StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
 	PrecompiledContract bindExchangeRatePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
 
+	@Binds
+	@Singleton
+	@IntoMap
+	@StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
+	PrecompiledContract bindRandomGeneratePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
+
+	@Binds
+	@Singleton
+	@IntoMap
+	@StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
+	PrecompiledContract bindRandomGenerateWithRangePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
+
 	@Provides
 	@Singleton
 	static BiPredicate<Address, MessageFrame> provideAddressValidator(

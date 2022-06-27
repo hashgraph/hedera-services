@@ -132,6 +132,8 @@ public class GlobalDynamicProperties {
 	private long maxDailyStakeRewardThPerH;
 	private int recordFileVersion;
 	private int recordSignatureFileVersion;
+	private int randomGenerate;
+	private int randomGenerateWithRange;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -241,6 +243,8 @@ public class GlobalDynamicProperties {
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
+		randomGenerate = properties.getIntProperty("contracts.precompile.randomGenerate");
+		randomGenerateWithRange = properties.getIntProperty("contracts.precompile.randomGenerateWithRange");
 	}
 
 	public int maxTokensPerAccount() {
@@ -601,5 +605,13 @@ public class GlobalDynamicProperties {
 
 	public int recordSignatureFileVersion() {
 		return recordSignatureFileVersion;
+	}
+
+	public int randomGenerate() {
+		return randomGenerate;
+	}
+
+	public int randomGenerateWithRange() {
+		return randomGenerateWithRange;
 	}
 }
