@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -202,7 +203,10 @@ class BootstrapPropertiesTest {
 					TokenBurn,
 					ConsensusSubmitMessage)),
 			entry("sigs.expandFromLastSignedState", true),
-			entry("stats.hapiThrottlesToSample", "ThroughputLimits,"),
+			entry("stats.consThrottlesToSample",
+					List.of("<GAS>", "ThroughputLimits", "CreationLimits")),
+			entry("stats.hapiThrottlesToSample",
+					List.of("<GAS>", "ThroughputLimits", "OffHeapQueryLimits", "CreationLimits", "FreeQueryLimits")),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),

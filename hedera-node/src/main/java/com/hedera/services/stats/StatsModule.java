@@ -30,7 +30,6 @@ import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
-import java.util.List;
 
 @Module
 public final class StatsModule {
@@ -46,10 +45,10 @@ public final class StatsModule {
 	public static ThrottleUtilizations provideThrottleUtilizations(
 			final @HandleThrottle FunctionalityThrottling handleThrottling,
 			final @HapiThrottle FunctionalityThrottling hapiThrottling,
-			final NodeLocalProperties nodeLocalProperties
+			final NodeLocalProperties nodeProperties
 	) {
-		return new ThrottleUtilizations(handleThrottling, hapiThrottling, new RunningAvgFactory() {
-		}, List.of("FreeQueryLimits"), nodeLocalProperties.statsSpeedometerHalfLifeSecs());
+		return new ThrottleUtilizations(handleThrottling, hapiThrottling, nodeProperties, new RunningAvgFactory() {
+		}, nodeProperties.statsSpeedometerHalfLifeSecs());
 	}
 
 	@Provides

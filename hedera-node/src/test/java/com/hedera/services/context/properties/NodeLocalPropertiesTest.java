@@ -23,6 +23,8 @@ package com.hedera.services.context.properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
@@ -63,6 +65,8 @@ class NodeLocalPropertiesTest {
 		assertEquals(28, subject.prefetchQueueCapacity());
 		assertEquals(29, subject.prefetchThreadPoolSize());
 		assertEquals(30, subject.prefetchCodeCacheTtlSecs());
+		assertEquals(List.of("80"), subject.consThrottlesToSample());
+		assertEquals(List.of("81"), subject.hapiThrottlesToSample());
 	}
 
 	@Test
@@ -187,6 +191,8 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
 		given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
 		given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
+		given(properties.getStringsProperty("stats.consThrottlesToSample")).willReturn(List.of("" + (i + 79)));
+		given(properties.getStringsProperty("stats.hapiThrottlesToSample")).willReturn(List.of("" + (i + 80)));
 	}
 
 	static String logDir(int num) {

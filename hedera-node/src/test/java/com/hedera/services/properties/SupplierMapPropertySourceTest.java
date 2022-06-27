@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +44,7 @@ class SupplierMapPropertySourceTest {
 	private final String LONG_PROP = "a.long.prop";
 	private final String STRING_PROP = "a.string.prop";
 	private final String DOUBLE_PROP = "a.double.prop";
+	private final String CS_STRINGS_PROP = "a.cs_strings.prop";
 	private final String PROFILE_PROP = "a.profile.prop";
 	private final String BOOLEAN_PROP = "a.boolean.prop";
 	private final String MISSING_PROP = "a.missing.prop";
@@ -56,6 +58,7 @@ class SupplierMapPropertySourceTest {
 			STRING_PROP, () -> "cellar door",
 			PROFILE_PROP, () -> Profile.DEV,
 			BOOLEAN_PROP, () -> Boolean.TRUE,
+			CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
 			BAD_ACCOUNT_PROP, () -> "asdf",
 			GOOD_ACCOUNT_PROP, () -> "0.0.2",
 			ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)
@@ -126,5 +129,7 @@ class SupplierMapPropertySourceTest {
 		assertDoesNotThrow(() -> subject.getBooleanProperty(BOOLEAN_PROP));
 		assertThrows(ClassCastException.class, () -> subject.getProfileProperty(STRING_PROP));
 		assertDoesNotThrow(() -> subject.getProfileProperty(PROFILE_PROP));
+		assertThrows(ClassCastException.class, () -> subject.getStringsProperty(STRING_PROP));
+		assertDoesNotThrow(() -> subject.getStringsProperty(CS_STRINGS_PROP));
 	}
 }

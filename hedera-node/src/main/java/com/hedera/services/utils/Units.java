@@ -21,7 +21,6 @@ package com.hedera.services.utils;
  */
 
 public final class Units {
-
 	private Units() {
 		throw new UnsupportedOperationException("Utility Class");
 	}

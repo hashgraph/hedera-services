@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.Set;
 
 import static com.hedera.services.context.properties.EntityType.ACCOUNT;
@@ -132,6 +133,8 @@ public class GlobalDynamicProperties {
 	private long maxDailyStakeRewardThPerH;
 	private int recordFileVersion;
 	private int recordSignatureFileVersion;
+	private List<String> consThrottlesToSample;
+	private List<String> hapiThrottlesToSample;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -241,6 +244,8 @@ public class GlobalDynamicProperties {
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
+		consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
+		hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
 	}
 
 	public int maxTokensPerAccount() {
@@ -601,5 +606,13 @@ public class GlobalDynamicProperties {
 
 	public int recordSignatureFileVersion() {
 		return recordSignatureFileVersion;
+	}
+
+	public List<String> consThrottlesToSample() {
+		return consThrottlesToSample;
+	}
+
+	public List<String> hapiThrottlesToSample() {
+		return hapiThrottlesToSample;
 	}
 }

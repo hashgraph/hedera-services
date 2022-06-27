@@ -24,6 +24,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 
 @Singleton
 public class NodeLocalProperties {
@@ -63,6 +64,8 @@ public class NodeLocalProperties {
 	private int prefetchQueueCapacity;
 	private int prefetchThreadPoolSize;
 	private int prefetchCodeCacheTtlSecs;
+	private List<String> consThrottlesToSample;
+	private List<String> hapiThrottlesToSample;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -106,6 +109,8 @@ public class NodeLocalProperties {
 		prefetchQueueCapacity = properties.getIntProperty("hedera.prefetch.queueCapacity");
 		prefetchThreadPoolSize = properties.getIntProperty("hedera.prefetch.threadPoolSize");
 		prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
+		consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
+		hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
 	}
 
 	public int port() {
@@ -237,4 +242,12 @@ public class NodeLocalProperties {
 	public int prefetchThreadPoolSize() { return prefetchThreadPoolSize; }
 
 	public int prefetchCodeCacheTtlSecs() { return prefetchCodeCacheTtlSecs; }
+
+	public List<String> consThrottlesToSample() {
+		return consThrottlesToSample;
+	}
+
+	public List<String> hapiThrottlesToSample() {
+		return hapiThrottlesToSample;
+	}
 }
