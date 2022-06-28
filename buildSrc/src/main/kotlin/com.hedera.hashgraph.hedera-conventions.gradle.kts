@@ -46,10 +46,6 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
     }
-
-    maven {
-        url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
-    }
 }
 
 // Enable maven publications
