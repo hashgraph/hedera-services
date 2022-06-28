@@ -984,6 +984,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	@VisibleForTesting
 	public void clearRandomGenerateData() {
 		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
-		pseudoRandomNumber = -1;
+		pseudoRandomNumber = MISSING_NUMBER;
 	}
 }
