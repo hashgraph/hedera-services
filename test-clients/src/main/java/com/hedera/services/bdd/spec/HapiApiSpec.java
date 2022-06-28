@@ -507,6 +507,7 @@ public class HapiApiSpec implements Runnable {
 		defaultNodeAccount = String.format("0.0.%s", suggestedNode);
 		nodeSelectorFromCi = envNodeSelector;
 		otherOverrides = overrides;
+		ciPropsSource = null;
 	}
 
 	public static Def.Given defaultHapiSpec(String name) {

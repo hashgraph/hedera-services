@@ -2,6 +2,7 @@ package com.hedera.services.bdd.junit;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -95,23 +96,6 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
 
         if (!isActive()) {
             throw new TimeoutException(String.format("Timed out waiting for node_%d to become active", id));
-        }
-    }
-
-    public void waitUntilStopped(final Duration timeout) throws TimeoutException {
-        final long now = System.currentTimeMillis();
-        final long failAfter = now + timeout.toMillis();
-        while (isRunning() && System.currentTimeMillis() < failAfter) {
-            // Busy Loop
-            try {
-                MILLISECONDS.sleep(Math.min(100, timeout.toMillis() / 100));
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        if (isRunning()) {
-            throw new TimeoutException(String.format("Timed out waiting for node_%d to stop", id));
         }
     }
 }

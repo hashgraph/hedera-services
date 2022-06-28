@@ -143,9 +143,9 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
-          path: "test-clients/build/reports/tests/**"
+          path: "**/build/reports/tests/**"
 
-      - name: Show JRS Folder Structures
+      - name: Show Integration Test Folder Structures
         if: ${{ always() }}
         run: |
           if ! command -v tree >/dev/null 2>&1; then
@@ -164,7 +164,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Network Logs
-          path: "test-clients/build/network/**"
+          path: "test-clients/build/network/**/output/**"
 
       - name: SonarCloud Options
         id: sonar-cloud
