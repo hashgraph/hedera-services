@@ -79,6 +79,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -114,6 +115,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private int deserializedStateVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
+	/* Tasks to run after init. */
+	private List<Runnable> postInitTasks = new ArrayList<>();
 
 	/**
 	 * For scheduled transaction migration we need to initialize the new scheduled transactions' storage
@@ -148,12 +151,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	 * Log out the sizes the state children.
 	 */
 	 private void logStateChildrenSizes() {
-		 final var numUniqueTokens =
-				 getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap
-						 ? legacyUniqueTokens().size()
-						 : uniqueTokens().size();
-		log.info("  (@ {}) # NFTs               = {}",
+		 final var isLegacyUniqueToken = getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap;
+		 final var numUniqueTokens = isLegacyUniqueToken
+				 ? legacyUniqueTokens().size()
+				 : uniqueTokens().size();
+		 final var uniqueTokenStatus = isLegacyUniqueToken ? "(legacy)" : "";
+		log.info("  (@ {}) # NFTs {}              = {}",
 				StateChildIndices.UNIQUE_TOKENS,
+				uniqueTokenStatus,
 				numUniqueTokens);
 		log.info("  (@ {}) # token associations = {}",
 				StateChildIndices.TOKEN_ASSOCIATIONS,
@@ -239,6 +244,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				migrateFrom(deserializedVersion);
 			}
 		}
+		runPostInitTasks();
+	}
+
+	private void runPostInitTasks() {
+		for (Runnable task : postInitTasks) {
+			task.run();
+		}
+		postInitTasks.clear();
 	}
 
 	/* --- SwirldState --- */
@@ -326,16 +339,24 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			metadata = new StateMetadata(app, new FCHashMap<>());
 			// Log state before migration.
 			logStateChildrenSizes();
-			// This updates the working state accessor with our children
-			app.initializationFlow().runWith(this);
+			final Runnable initTask = () -> {
+				// This updates the working state accessor with our children
+				app.initializationFlow().runWith(this);
 
-			// Ensure the prefetch queue is created and thread pool is active instead of waiting
-			// for lazy-initialization to take place.
-			app.prefetchProcessor();
-			log.info("Created prefetch processor");
+				// Ensure the prefetch queue is created and thread pool is active instead of waiting
+				// for lazy-initialization to take place.
+				app.prefetchProcessor();
+				log.info("Created prefetch processor");
 
-			logSummary();
-			log.info("  --> Context initialized accordingly on Services node {}", selfId);
+				logSummary();
+				log.info("  --> Context initialized accordingly on Services node {}", selfId);
+
+			};
+			if (deployedVersion.equals(deserializedVersion)) {
+				initTask.run();
+			} else {
+				postInitTasks.add(initTask);
+			}
 		}
 	}
 
@@ -560,6 +581,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@VisibleForTesting
 	void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
+		log.info("Migrating from {}", deserializedVersion);
 		if (FIRST_026X_VERSION.isAfter(deserializedVersion)) {
 			iterableStorageMigrator.makeStorageIterable(
 					this,
