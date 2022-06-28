@@ -143,7 +143,16 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
-          path: "**/build/test-results/**"
+          path: "**/build/reports/**"
+
+      - name: Publish Test Network Logs
+        uses: actions/upload-artifact@v3
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        with:
+          name: Test Network Logs
+          path: |
+            **/build/network/*/archive/output/**
+            **/build/network/*/output/**
 
       - name: SonarCloud Options
         id: sonar-cloud
