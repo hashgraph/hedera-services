@@ -56,7 +56,8 @@ public abstract class IntegrationTestBase extends TestBase {
     }
 
     @AfterAll
-    static void afterAll() {
+    static void afterAll() throws TimeoutException {
         NODE_0.stop();
+        NODE_0.waitUntilStopped(Duration.ofMinutes(1));
     }
 }

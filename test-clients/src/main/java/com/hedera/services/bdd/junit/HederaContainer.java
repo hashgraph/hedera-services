@@ -81,7 +81,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         return this.getLogs().contains("Now current platform status = ACTIVE");
     }
 
-    public void waitUntilActive(Duration timeout) throws TimeoutException {
+    public void waitUntilActive(final Duration timeout) throws TimeoutException {
         final var now = System.currentTimeMillis();
         final var failAfter = now + timeout.toMillis();
         while (!isActive() && System.currentTimeMillis() < failAfter) {
@@ -95,6 +95,23 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
 
         if (!isActive()) {
             throw new TimeoutException(String.format("Timed out waiting for node_%d to become active", id));
+        }
+    }
+
+    public void waitUntilStopped(final Duration timeout) throws TimeoutException {
+        final long now = System.currentTimeMillis();
+        final long failAfter = now + timeout.toMillis();
+        while (isRunning() && System.currentTimeMillis() < failAfter) {
+            // Busy Loop
+            try {
+                MILLISECONDS.sleep(Math.min(100, timeout.toMillis() / 100));
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (isRunning()) {
+            throw new TimeoutException(String.format("Timed out waiting for node_%d to stop", id));
         }
     }
 }

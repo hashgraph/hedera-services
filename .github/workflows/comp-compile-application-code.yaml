@@ -143,7 +143,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
-          path: "test-clients/build/reports/**"
+          path: "test-clients/build/reports/tests/**"
 
       - name: Show JRS Folder Structures
         if: ${{ always() }}
