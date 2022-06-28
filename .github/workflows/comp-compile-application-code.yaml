@@ -164,7 +164,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Network Logs
-          path: test-clients/build/network/**
+          path: "test-clients/build/network/**"
 
       - name: SonarCloud Options
         id: sonar-cloud

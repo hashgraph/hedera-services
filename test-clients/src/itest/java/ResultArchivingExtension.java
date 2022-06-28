@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 public class ResultArchivingExtension implements AfterAllCallback {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss_SSS");
 
     @Override
     public void afterAll(final ExtensionContext ctx) throws Exception {
@@ -32,7 +35,7 @@ public class ResultArchivingExtension implements AfterAllCallback {
         }
 
         final File archiveFolder = new File(workspaceArchive,
-                String.format("%s%s%s", className, File.separator, Instant.now().toString()));
+                String.format("%s%s%s", className, File.separator, DATE_FORMATTER.format(Instant.now())));
         final File[] workspaceFiles = workspace.listFiles(
                 (dir, name) -> name != null && !name.trim().equals(workspaceArchive.getName()));
 
