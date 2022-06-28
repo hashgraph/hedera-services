@@ -29,7 +29,6 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,8 +55,6 @@ class RandomGenerateTransitionLogicTest {
 	@Mock
 	private SignedTxnAccessor accessor;
 	@Mock
-	private RunningHash runningHash;
-	@Mock
 	private GlobalDynamicProperties properties;
 
 	private RandomGenerateTransitionLogic subject;
@@ -80,6 +77,15 @@ class RandomGenerateTransitionLogicTest {
 	void rejectsInvalidRange() {
 		givenValidTxnCtx(-10000);
 		assertEquals(INVALID_RANDOM_GENERATE_RANGE, subject.semanticCheck().apply(randomGenerateTxn));
+	}
+
+	@Test
+	void returnsIfNotEnabled(){
+		given(properties.isRandomGenerationEnabled()).willReturn(false);
+		givenValidTxnCtx(10000);
+		subject.doStateTransition();
+
+		assertFalse(tracker.hasTrackedRandomData());
 	}
 
 	@Test

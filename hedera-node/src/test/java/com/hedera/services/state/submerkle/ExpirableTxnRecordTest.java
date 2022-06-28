@@ -47,6 +47,7 @@ import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PARENT_CONSENSUS_TIMESTAMP;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PSEUDORANDOM_BYTES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -238,15 +239,39 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.setPseudorandomBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
 				.setPseudorandomNumber(10)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setPseudoRandomBytes(pseudoRandomBytes);
+		subject.setPseudoRandomBytes(MISSING_PSEUDORANDOM_BYTES);
 		subject.setPseudoRandomNumber(10);
+
+		final var grpcSubject = subject.asGrpc();
+
+		var multiple = allToGrpc(List.of(subject, subject));
+
+		assertEquals(expected, grpcSubject);
+		assertEquals(List.of(expected, expected), multiple);
+	}
+
+	@Test
+	void asGrpcWithBothPseudoRandomBytesSetWorks() {
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
+				.toBuilder()
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomNumber(-1)
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.build();
+
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setPseudoRandomNumber(-1);
+		subject.setExpiry(0L);
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomBytes(pseudoRandomBytes);
 
 		final var grpcSubject = subject.asGrpc();
 

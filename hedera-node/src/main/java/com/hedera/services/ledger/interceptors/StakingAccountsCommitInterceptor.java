@@ -417,11 +417,11 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	}
 
 	private boolean shouldRememberStakeStartFor(
-			@NotNull final MerkleAccount account,
+			@Nullable final MerkleAccount account,
 			final long curStakedId,
 			final long reward
 	) {
-		if (curStakedId >= 0 || account.isDeclinedReward()) {
+		if (account == null || curStakedId >= 0 || account.isDeclinedReward()) {
 			// Alice cannot receive a reward for today, so nothing to remember here
 			return false;
 		}

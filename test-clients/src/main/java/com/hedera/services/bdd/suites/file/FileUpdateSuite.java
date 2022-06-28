@@ -65,11 +65,13 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -78,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -370,7 +373,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(285_000L)),
-						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
+						resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -387,7 +390,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(26_451)),
-						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
+						resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 
@@ -399,8 +402,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 						overriding("contracts.maxGasPerSec", "100")
 				).when().then(
 						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
-								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
+								.hasCostAnswerPrecheck(BUSY),
+						resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -466,27 +469,27 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
 		final var contract = "User";
-		final var gasToOffer = 4_000_000;
+		final var gasToOffer = Long.parseLong(defaultMaxConsGasLimit);
 		final var civilian = "payer";
 		final var unrefundedTxn = "unrefundedTxn";
 		final var refundedTxn = "refundedTxn";
 
 		return defaultHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
 				.given(
-						cryptoCreate(civilian),
+						overridingTwo(
+								CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit,
+								USE_GAS_THROTTLE_PROP, "true"),
+						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(contract),
 						contractCreate(contract),
 						contractCall(contract, "insert", 1, 4)
 								.payingWith(civilian)
 								.gas(gasToOffer)
-								.via(unrefundedTxn),
-						overridingTwo(
-								CONSENSUS_GAS_THROTTLE_PROP, "1",
-								USE_GAS_THROTTLE_PROP, "true")
+								.via(unrefundedTxn)
 				).when(
 						usableTxnIdNamed(refundedTxn).payerId(civilian),
 						contractCall(contract, "insert", 2, 4)
-								.payingWith(civilian)
+								.payingWith(GENESIS)
 								.gas(gasToOffer)
 								.hasAnyStatusAtAll()
 								.deferStatusResolution(),
@@ -504,19 +507,19 @@ public class FileUpdateSuite extends HapiApiSuite {
 							final var refundedOp = getTxnRecord(refundedTxn)
 									.assertingNothingAboutHashes();
 							allRunFor(spec, refundedOp, unrefundedOp);
-							assertEquals(
-									CONSENSUS_GAS_EXHAUSTED,
-									refundedOp.getResponseRecord().getReceipt().getStatus());
-							final var origFee = unrefundedOp.getResponseRecord().getTransactionFee();
-							final var feeSansRefund = refundedOp.getResponseRecord().getTransactionFee();
-							assertTrue(
-									feeSansRefund < origFee,
-									"Expected service fee to be refunded, but sans fee "
-											+ feeSansRefund + " was not less than " + origFee);
-						}),
-						overridingTwo(
-								CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit,
-								USE_GAS_THROTTLE_PROP, "false")
+							final var status = refundedOp.getResponseRecord().getReceipt().getStatus();
+							if (status == SUCCESS) {
+								log.info("Latency allowed gas throttle bucket to drain completely");
+							} else {
+								assertEquals(CONSENSUS_GAS_EXHAUSTED, status);
+								final var origFee = unrefundedOp.getResponseRecord().getTransactionFee();
+								final var feeSansRefund = refundedOp.getResponseRecord().getTransactionFee();
+								assertTrue(
+										feeSansRefund < origFee,
+										"Expected service fee to be refunded, but sans fee "
+												+ feeSansRefund + " was not less than " + origFee);
+							}
+						})
 				);
 	}
 
