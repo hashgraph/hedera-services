@@ -22,15 +22,14 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -48,6 +47,7 @@ import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PARENT_CONSENSUS_TIMESTAMP;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PSEUDORANDOM_BYTES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -67,6 +67,8 @@ class ExpirableTxnRecordTest {
 	private static final short numChildRecords = 2;
 
 	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
+
+	private static final byte[] pseudoRandomBytes = TxnUtils.randomUtf8Bytes(48);
 
 	private static final TokenID nft = IdUtils.asToken("0.0.2");
 	private static final TokenID tokenA = IdUtils.asToken("0.0.3");
@@ -124,17 +126,6 @@ class ExpirableTxnRecordTest {
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
-	private static final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
-			.setOwner(owner)
-			.setAmount(initialAllowance)
-			.setSpender(spender)
-			.build();
-	private static final TokenAllowance fungibleTokenAllowance = TokenAllowance.newBuilder()
-			.setOwner(owner)
-			.setAmount(initialAllowance)
-			.setSpender(spender)
-			.setTokenId(tokenA)
-			.build();
 
 	private ExpirableTxnRecord subject;
 
@@ -161,6 +152,8 @@ class ExpirableTxnRecordTest {
 				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.setPseudorandomNumber(10)
 				.build();
 	}
 
@@ -175,6 +168,8 @@ class ExpirableTxnRecordTest {
 						.addAllPaidStakingRewards(List.of(reward1, reward2))
 						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.setEthereumHash(ByteString.copyFrom(pretendHash))
+						.setPseudorandomNumber(10)
+						.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 						.build());
 		setNonGrpcDefaultsOn(s);
 		return s;
@@ -228,6 +223,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomNumber(10);
 
 		final var grpcSubject = subject.asGrpc();
 
@@ -236,6 +232,55 @@ class ExpirableTxnRecordTest {
 		assertEquals(expected, grpcSubject);
 		assertEquals(List.of(expected, expected), multiple);
 	}
+
+	@Test
+	void asGrpcWithBothPseudoRandomNumbersSetWorks() {
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
+				.toBuilder()
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
+				.setPseudorandomNumber(10)
+				.build();
+
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setExpiry(0L);
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomBytes(MISSING_PSEUDORANDOM_BYTES);
+		subject.setPseudoRandomNumber(10);
+
+		final var grpcSubject = subject.asGrpc();
+
+		var multiple = allToGrpc(List.of(subject, subject));
+
+		assertEquals(expected, grpcSubject);
+		assertEquals(List.of(expected, expected), multiple);
+	}
+
+	@Test
+	void asGrpcWithBothPseudoRandomBytesSetWorks() {
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
+				.toBuilder()
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.setEthereumHash(ByteString.copyFrom(pretendHash))
+				.setPseudorandomNumber(-1)
+				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.build();
+
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setPseudoRandomNumber(-1);
+		subject.setExpiry(0L);
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setPseudoRandomBytes(pseudoRandomBytes);
+
+		final var grpcSubject = subject.asGrpc();
+
+		var multiple = allToGrpc(List.of(subject, subject));
+
+		assertEquals(expected, grpcSubject);
+		assertEquals(List.of(expected, expected), multiple);
+	}
+
 
 	@Test
 	void nullEqualsWorks() {
@@ -353,6 +398,18 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
+	void equalsDetectsDiffPseudoRandomData() {
+		final var a = new ExpirableTxnRecord();
+		var b = ExpirableTxnRecord.newBuilder()
+				.setPseudoRandomNumber(10).build();
+		assertNotEquals(a, b);
+
+		b = ExpirableTxnRecord.newBuilder()
+				.setPseudoRandomBytes(pseudoRandomBytes).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
 	void equalsDetectsDiffTokenAdjusts() {
 		final var a = new ExpirableTxnRecord();
 		final var b = ExpirableTxnRecord.newBuilder()
@@ -409,17 +466,17 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null," +
-				" " +
+				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], stateChanges={}, " +
+				"evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, parentConsensusTime=1970-01-15T06:56:07" +
-				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
-				" +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
+				"parentConsensusTime=1970-01-15T06:56:07.000000890Z, tokenAdjustments=0.0.3" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
 				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
@@ -439,14 +496,15 @@ class ExpirableTxnRecordTest {
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
 				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], stateChanges={}, " +
+				"evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521, senderId=null}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <- +100, 0.0.8 <- +1000]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, " +
-				"ethereumHash=6e6f742d7265616c6c792d612d68617368, tokenAdjustments=0.0.3" +
-				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
-				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"ethereumHash=6e6f742d7265616c6c792d612d68617368, pseudoRandomNumber=10, pseudoRandomBytes=, " +
+				"tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0" +
+				".0" +
+				".4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
 				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +

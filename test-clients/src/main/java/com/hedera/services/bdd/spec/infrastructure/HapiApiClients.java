@@ -41,6 +41,7 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartContractServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
+import com.hederahashgraph.service.proto.java.UtilServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
@@ -69,6 +70,7 @@ public class HapiApiClients {
 	private static Map<String, ScheduleServiceBlockingStub> schedSvcStubs = new HashMap<>();
 	private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
 	private static Map<String, SmartContractServiceBlockingStub> scSvcStubs = new HashMap<>();
+	private static Map<String, UtilServiceGrpc.UtilServiceBlockingStub> utilSvcStubs = new HashMap<>();
 
 	private final AccountID defaultNode;
 	private final List<NodeConnectInfo> nodes;
@@ -123,6 +125,7 @@ public class HapiApiClients {
 			cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
 			freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
 			networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
+			utilSvcStubs.put(uri, UtilServiceGrpc.newBlockingStub(channel));
 		}
 	}
 
@@ -155,7 +158,8 @@ public class HapiApiClients {
 				cryptoSvcStubs.size() +
 				freezeSvcStubs.size() +
 				networkSvcStubs.size() +
-				scheduleSvcStubs.size();
+				scheduleSvcStubs.size() +
+				utilSvcStubs.size();
 	}
 
 	public static HapiApiClients clientsFor(HapiSpecSetup setup) {
@@ -194,6 +198,10 @@ public class HapiApiClients {
 		return schedSvcStubs.get(stubId(nodeId, useTls));
 	}
 
+	public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(AccountID nodeId, boolean useTls) {
+		return utilSvcStubs.get(stubId(nodeId, useTls));
+	}
+
 	private String stubId(AccountID nodeId, boolean useTls) {
 		return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
 	}
@@ -230,6 +238,7 @@ public class HapiApiClients {
 		cryptoSvcStubs.clear();
 		freezeSvcStubs.clear();
 		networkSvcStubs.clear();
+		utilSvcStubs.clear();
 	}
 
 	public static void tearDown() {

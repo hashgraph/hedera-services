@@ -27,6 +27,7 @@ import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.util.RandomGenerateMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
@@ -90,6 +91,11 @@ class ExpandHandleSpanMapAccessorTest {
 	@Test
 	void testsForTokenWipeMetaAsExpected() {
 		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+	}
+
+	@Test
+	void testsForRandomGenerateMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getRandomGenerateMeta(accessor));
 	}
 
 	@Test
@@ -215,5 +221,15 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setEthTxBodyMeta(accessor, txBody);
 		assertEquals(txBody, subject.getEthTxBodyMeta(accessor));
+	}
+
+	@Test
+	void testsForRandomGenerateMetaBody() {
+		final var opMeta = RandomGenerateMeta.newBuilder()
+				.msgBytesUsed(112)
+				.build();
+
+		subject.setRandomGenerateMeta(accessor, opMeta);
+		assertEquals(112, subject.getRandomGenerateMeta(accessor).getMsgBytesUsed());
 	}
 }
