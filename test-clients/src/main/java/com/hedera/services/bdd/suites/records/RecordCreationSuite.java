@@ -197,6 +197,10 @@ public class RecordCreationSuite extends HapiApiSuite {
 
 	private HapiApiSpec ensureSystemStateAsExpected() {
 		final var EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+		final var snapshot800 = "800startBalance";
+		final var snapshot801 = "801startBalance";
+		final var civilian = "civilian";
+		final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 		try {
 			final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
 			final var stylized121 = Files.readString(Paths.get(defaultPermissionsLoc));
@@ -216,8 +220,33 @@ public class RecordCreationSuite extends HapiApiSuite {
 									"staking.rewardRate", "100_000_000_000",
 									"staking.startThreshold", "100_000_000"
 							))
-					).when().then(
-							getAccountDetails("0.0.800")
+					).when(
+							cryptoCreate(civilian),
+							balanceSnapshot(snapshot800, STAKING_REWARD),
+							cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))
+									.payingWith(civilian)
+									.signedBy(civilian)
+									.exposingFeesTo(feeObs)
+									.logged(),
+							sourcing(() ->
+									getAccountBalance(STAKING_REWARD)
+											.hasTinyBars(changeFromSnapshot(snapshot800,
+															(long) (ONE_HBAR + ((feeObs.get().getNetworkFee()
+																	+ feeObs.get().getServiceFee()) * 0.1))))),
+							balanceSnapshot(snapshot801, NODE_REWARD),
+							cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
+									.payingWith(civilian)
+									.signedBy(civilian)
+									.logged(),
+							sourcing(() ->
+									getAccountBalance(NODE_REWARD)
+											.hasTinyBars(
+													changeFromSnapshot(snapshot801,
+															(long) (ONE_HBAR + ((feeObs.get().getNetworkFee()
+																	+ feeObs.get().getServiceFee()) * 0.1)))))
+
+					).then(
+							getAccountDetails(STAKING_REWARD)
 									.payingWith(GENESIS)
 									.has(accountWith()
 											.expiry(33197904000L, 0)
@@ -225,7 +254,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 											.memo("")
 											.noAlias()
 											.noAllowances()),
-							getAccountDetails("0.0.801")
+							getAccountDetails(NODE_REWARD)
 									.payingWith(GENESIS)
 									.has(accountWith()
 											.expiry(33197904000L, 0)
