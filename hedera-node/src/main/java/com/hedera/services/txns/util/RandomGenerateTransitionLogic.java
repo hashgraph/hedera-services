@@ -27,6 +27,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.Hash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +38,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -72,27 +74,32 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		}
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
 
-		// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
-		final var nMinus3RunningHash = runningHashLeafSupplier.get().getNMinus3RunningHash();
-		if (nMinus3RunningHash == null || nMinus3RunningHash.getHash() == null) {
+		Hash nMinus3RunningHash;
+		try {
+			// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
+			nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
+		} catch (InterruptedException e) {
+			log.error("Interrupted when computing n-3 running hash", e);
+			Thread.currentThread().interrupt();
+			return;
+		}
+
+		if (nMinus3RunningHash == null) {
 			log.info("No n-3 record running hash available to generate random number");
 			return;
 		}
-		//generate binary string from the running hash of records
-		final var pseudoRandomBytes = nMinus3RunningHash.getHash().getValue();
 
+		//generate binary string from the running hash of records
+		final var pseudoRandomBytes = nMinus3RunningHash.getValue();
 		final var range = op.getRange();
 		if (range > 0) {
 			// generate pseudorandom number in the given range
 			final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
 			int pseudoRandomNumber = (int) ((range * (long) initialBitsValue) >>> 32);
-
 			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
 		} else {
 			sideEffectsTracker.trackRandomBytes(pseudoRandomBytes);
 		}
-
-		txnCtx.setStatus(SUCCESS);
 	}
 
 	@Override
