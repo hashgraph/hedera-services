@@ -81,6 +81,8 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		try {
 			// should wait until runningHash has been calculated and set
 			out.writeSerializable(currentRunningHash(), true);
+			// It is guaranteed that the futureHash's of the preceding hashes will
+			// always be set once the current runningHash's future is set
 			out.writeSerializable(nMinus1RunningHash.getHash(), true);
 			out.writeSerializable(nMinus2RunningHash.getHash(), true);
 			out.writeSerializable(nMinus3RunningHash.getHash(), true);
@@ -191,6 +193,14 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 			return runningHash.getFutureHash().get();
 		} catch (ExecutionException e) {
 			throw new IllegalStateException("Unable to get current running hash", e);
+		}
+	}
+
+	public Hash nMinusThreeRunningHash() throws InterruptedException {
+		try {
+			return nMinus3RunningHash.getFutureHash().get();
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("Unable to get n-3 running hash", e);
 		}
 	}
 

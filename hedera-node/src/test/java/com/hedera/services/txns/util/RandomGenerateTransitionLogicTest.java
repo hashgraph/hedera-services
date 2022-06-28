@@ -26,34 +26,26 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigInteger;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGenerateTransitionLogicTest {
-	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final Hash aFullHash = new Hash(TxnUtils.randomUtf8Bytes(48));
 
 	private SideEffectsTracker tracker = new SideEffectsTracker();
@@ -106,11 +98,10 @@ class RandomGenerateTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPathWithNoRange() {
+	void followsHappyPathWithNoRange() throws InterruptedException {
 		givenValidTxnCtxWithoutRange();
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(aFullHash);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
@@ -119,22 +110,18 @@ class RandomGenerateTransitionLogicTest {
 		assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
 		assertEquals(48, tracker.getPseudorandomBytes().length);
 		assertEquals(-1, tracker.getPseudorandomNumber());
-
-		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
-	void followsHappyPathWithRange() {
+	void followsHappyPathWithRange() throws InterruptedException {
 		givenValidTxnCtx(20);
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(aFullHash);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(SUCCESS);
 		assertNull(tracker.getPseudorandomBytes());
 
 		final var num = tracker.getPseudorandomNumber();
@@ -142,17 +129,15 @@ class RandomGenerateTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPathWithMaxIntegerRange() {
+	void followsHappyPathWithMaxIntegerRange() throws InterruptedException {
 		givenValidTxnCtx(Integer.MAX_VALUE);
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(aFullHash);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(SUCCESS);
 		assertNull(tracker.getPseudorandomBytes());
 
 		final var num = tracker.getPseudorandomNumber();
@@ -168,45 +153,44 @@ class RandomGenerateTransitionLogicTest {
 	}
 
 	@Test
-	void givenRangeZeroGivesBitString() {
+	void givenRangeZeroGivesBitString() throws InterruptedException {
 		givenValidTxnCtx(0);
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(aFullHash);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(SUCCESS);
 		assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
 		assertEquals(48, tracker.getPseudorandomBytes().length);
 		assertEquals(-1, tracker.getPseudorandomNumber());
 	}
 
 	@Test
-	void nullHashesReturnNoRandomNumber(){
+	void nullHashesReturnNoRandomNumber() throws InterruptedException {
 		givenValidTxnCtx(0);
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(null);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
-		verify(txnCtx, never()).setStatus(SUCCESS);
 		assertNull(tracker.getPseudorandomBytes());
 		assertEquals(-1, tracker.getPseudorandomNumber());
+	}
 
-		// case 2
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(null);
+	@Test
+	void interruptedWhileGettingHash() throws InterruptedException {
+		givenValidTxnCtx(10);
+		given(properties.isRandomGenerationEnabled()).willReturn(true);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willThrow(InterruptedException.class);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
-		verify(txnCtx, never()).setStatus(SUCCESS);
 		assertNull(tracker.getPseudorandomBytes());
 		assertEquals(-1, tracker.getPseudorandomNumber());
 	}

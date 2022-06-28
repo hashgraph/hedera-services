@@ -277,7 +277,7 @@ public class SeededPropertySource {
 		final var next = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
 
 		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
-		subject.setSpender(new EntityId(0,0, spenderCode));
+		subject.setSpender(new EntityId(0, 0, spenderCode));
 		subject.setPrev(prev);
 		subject.setNext(next);
 		return subject;
@@ -473,6 +473,12 @@ public class SeededPropertySource {
 		}
 		if (seeded.getContractCreateResult() != null && nextBoolean()) {
 			seeded.getContractCreateResult().setSenderId(nextEntityId());
+		}
+		// added in 0.28
+		if (nextBoolean()) {
+			seeded.setPseudoRandomNumber(nextUnsignedInt());
+		} else {
+			seeded.setPseudoRandomBytes(nextBytes(48));
 		}
 		return seeded;
 	}

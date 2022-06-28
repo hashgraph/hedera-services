@@ -279,9 +279,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				packedParentConsensusTime,
 				alias,
 				ethereumHash,
-				pseudoRandomNumber,
-				pseudoRandomBytes);
-		return result * 31 + Arrays.hashCode(txnHash);
+				pseudoRandomNumber);
+		result =  result * 31 + Arrays.hashCode(txnHash);
+		return  result * 31 + Arrays.hashCode(pseudoRandomBytes);
 	}
 
 	/* --- SelfSerializable --- */
@@ -979,5 +979,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	@VisibleForTesting
 	void clearStakingRewardsPaid() {
 		stakingRewardsPaid = null;
+	}
+
+	@VisibleForTesting
+	public void clearRandomGenerateData() {
+		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+		pseudoRandomNumber = -1;
 	}
 }
