@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -614,14 +615,15 @@ public class ContractCallSuite extends HapiApiSuite {
 								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
 								.via(valueToTinycentCall)),
 						getTxnRecord(valueToTinycentCall).hasPriority(recordWith()
-								.contractCallResult(resultWith()
-										.resultViaFunctionName(
-												"approxUsdValue",
-												rateAware,
-												isLiteralResult(new Object[] {
-														BigInteger.valueOf(
-																minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
-												})))),
+										.contractCallResult(resultWith()
+												.resultViaFunctionName(
+														"approxUsdValue",
+														rateAware,
+														isLiteralResult(new Object[] {
+																BigInteger.valueOf(
+																		minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
+														}))))
+								.logged(),
 						sourcing(() -> contractCall(rateAware, "invalidCall")
 								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
@@ -637,16 +639,31 @@ public class ContractCallSuite extends HapiApiSuite {
 						uploadInitCode(randomGenerate),
 						contractCreate(randomGenerate)
 				).when(
-//						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
-//								.payingWith("bob")
-//								.via("randomBits")),
-//						getTxnRecord("randomBits").logged()
+						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
+								.payingWith("bob")
+								.via("randomBits")),
+						getTxnRecord("randomBits")
+								.hasPriority(recordWith()
+										.contractCallResult(resultWith()
+												.resultViaFunctionName(
+														"random256BitGenerator",
+														randomGenerate,
+														isRandomResult(new Object[] {
+																new byte[32] }))))
+								.logged()
 				).then(
 						sourcing(() -> contractCall(randomGenerate, "randomNumberGeneratorInRange", range)
 								.payingWith("bob")
 								.via("randomNumber")),
-						getTxnRecord("randomNumber").logged()
-				);
+						getTxnRecord("randomNumber")
+								.hasPriority(recordWith()
+										.contractCallResult(resultWith()
+												.resultViaFunctionName(
+														"randomNumberGeneratorInRange",
+														randomGenerate,
+														isRandomResult(new Object[] {
+																Integer.valueOf(range) }))))
+								.logged());
 	}
 
 	private HapiApiSpec imapUserExercise() {

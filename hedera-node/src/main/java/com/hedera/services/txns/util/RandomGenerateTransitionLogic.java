@@ -92,8 +92,7 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		final var range = op.getRange();
 		if (range > 0) {
 			// generate pseudorandom number in the given range
-			final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
-			int pseudoRandomNumber = (int) ((range * (long) initialBitsValue) >>> 32);
+			final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
 			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
 		} else {
 			sideEffectsTracker.trackRandomBytes(pseudoRandomBytes);
@@ -116,5 +115,10 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 			return INVALID_RANDOM_GENERATE_RANGE;
 		}
 		return OK;
+	}
+
+	public static final int randomNumFromBytes(final byte[] pseudoRandomBytes, final int range) {
+		final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
+		return (int) ((range * (long) initialBitsValue) >>> 32);
 	}
 }

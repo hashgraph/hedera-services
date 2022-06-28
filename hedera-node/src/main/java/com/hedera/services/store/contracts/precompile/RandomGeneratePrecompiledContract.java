@@ -21,12 +21,14 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
+import com.esaulpaugh.headlong.abi.LongType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.swirlds.common.crypto.Hash;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -42,18 +44,20 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import static com.hedera.services.txns.util.RandomGenerateTransitionLogic.randomNumFromBytes;
+
 /**
  * System contract to generate random numbers.
  */
 @Singleton
 public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContract {
 	private static final String PRECOMPILE_NAME = "RandomGenerate";
-	private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint32");
+	private static final LongType WORD_DECODER = TypeFactory.create("uint32");
 
 	//random256BitGenerator(uint256)
 	static final int RANDOM_256_BIT_GENERATOR_SELECTOR = 0x267dc6a3;
 	//randomNumberGeneratorInRange(uint32)
-	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x85b4610;
+	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x85b4610c;
 
 	public static final String RANDOM_GENERATE_PRECOMPILE_ADDRESS = "0x169";
 	private final GlobalDynamicProperties dynamicProperties;
@@ -82,7 +86,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 			return switch (selector) {
 				case RANDOM_256_BIT_GENERATOR_SELECTOR -> random256BitGenerator();
 				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> {
-					final var range = biValueFrom(input);
+					final var range = rangeValueFrom(input);
 					yield padded(randomNumGeneratorInRange(range));
 				}
 				default -> null;
@@ -93,35 +97,40 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	}
 
 	private Bytes padded(final int result) {
-		return Bytes32.leftPad(Bytes.wrap(Bytes.ofUnsignedShort(result)));
+		return Bytes32.leftPad(Bytes.ofUnsignedShort(result));
 	}
 
 	private int randomNumGeneratorInRange(final int range) {
 		final var hash = getHash();
-		if (hash.length == 0) {
+		if (invalidHash(hash)) {
 			return -1;
 		}
-		final var initialBitsValue = Math.abs(ByteBuffer.wrap(hash, 0, 4).getInt());
-		return (int) ((range * (long) initialBitsValue) >>> 32);
+		final var hashBytes = hash.getValue();
+		return randomNumFromBytes(hashBytes, range);
 	}
 
 	private Bytes random256BitGenerator() {
 		final var hash = getHash();
-		if (hash.length == 0) {
+		if (invalidHash(hash)) {
 			return Bytes.EMPTY;
 		}
-		return Bytes.wrap(hash, 0, 32);
+		final var hashBytes = hash.getValue();
+		return Bytes.wrap(hashBytes, 0, 32);
 	}
 
-	private int biValueFrom(final Bytes input) {
+	private Hash getHash() {
+		try {
+			return runningHashLeafSupplier.get().getNMinus3RunningHash().getFutureHash().get();
+		} catch (InterruptedException | ExecutionException e) {
+			return null;
+		}
+	}
+
+	private int rangeValueFrom(final Bytes input) {
 		return WORD_DECODER.decode(input.slice(4).toArrayUnsafe()).intValue();
 	}
 
-	private byte[] getHash() {
-		try {
-			return runningHashLeafSupplier.get().getNMinus3RunningHash().getFutureHash().get().getValue();
-		} catch (InterruptedException | ExecutionException e) {
-			return new byte[0];
-		}
+	private boolean invalidHash(final Hash hash) {
+		return hash == null || hash.getValue().length == 0;
 	}
 }

@@ -38,6 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -73,8 +74,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	    and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
     */
 	public ContractFnResultAsserts resultViaFunctionName(final String functionName,
-														 final String contractName,
-														 final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+			final String contractName,
+			final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
 		registerProvider((spec, o) -> {
 			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
@@ -152,7 +153,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
-	public ContractFnResultAsserts stateChanges(StateChange ...stateChanges) {
+	public ContractFnResultAsserts stateChanges(StateChange... stateChanges) {
 		registerProvider((spec, o) -> {
 			ContractFunctionResult result = (ContractFunctionResult) o;
 			Assertions.assertEquals(
@@ -244,6 +245,10 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return ignore -> actualObjs -> matchErrors(objs, actualObjs);
 	}
 
+	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
+		return ignore -> actualObjs -> asRandomResult(objs, actualObjs);
+	}
+
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
 		return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
 	}
@@ -264,6 +269,26 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 					}
 				} catch (Throwable T) {
 					return Optional.of(T);
+				}
+			}
+		} catch (Throwable T) {
+			return Optional.of(T);
+		}
+		return Optional.empty();
+	}
+
+	private static Optional<Throwable> asRandomResult(final Object[] expecteds, final Object[] actuals) {
+		try {
+			for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
+				Object expected = expecteds[i];
+				Object actual = actuals[i];
+				Assertions.assertNotNull(expected);
+				Assertions.assertNotNull(actual);
+				if (expected instanceof byte[]) {
+					Assertions.assertEquals(32, ((byte[]) actual).length);
+				} else {
+					Assertions.assertTrue(((BigInteger) actual).intValue() <= 0 &&
+							((BigInteger) actual).intValue() < ((BigInteger) actual).intValue());
 				}
 			}
 		} catch (Throwable T) {
