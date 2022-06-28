@@ -87,7 +87,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         while (!isActive() && System.currentTimeMillis() < failAfter) {
             // Busy Loop
             try {
-                MILLISECONDS.sleep(Math.min(100, timeout.toMillis() / 10));
+                MILLISECONDS.sleep(Math.min(100, timeout.toMillis() / 100));
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }

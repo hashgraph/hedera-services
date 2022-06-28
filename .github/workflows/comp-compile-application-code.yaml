@@ -131,19 +131,33 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@v3
 
-      - name: Publish Code Coverage Data
-        uses: actions/upload-artifact@v3
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        with:
-          name: Jacoco Data
-          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+#      - name: Publish Code Coverage Data
+#        uses: actions/upload-artifact@v3
+#        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+#        with:
+#          name: Jacoco Data
+#          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
 
       - name: Publish Test Reports
         uses: actions/upload-artifact@v3
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
-          path: "**/build/reports/**"
+          path: "test-clients/build/reports/**"
+
+      - name: Show JRS Folder Structures
+        if: ${{ always() }}
+        run: |
+          if ! command -v tree >/dev/null 2>&1; then
+            echo "::group::Install Tree Command"
+            sudo apt update
+            sudo apt install -y tree
+            echo "::endgroup::"
+          fi
+          
+          echo "::group::Show Network Folder Contents"
+          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
+          echo "::endgroup::"
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@v3
