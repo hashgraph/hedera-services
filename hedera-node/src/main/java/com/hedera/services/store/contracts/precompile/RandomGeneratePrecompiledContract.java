@@ -39,6 +39,7 @@ import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 /**
@@ -47,12 +48,12 @@ import java.util.function.Supplier;
 @Singleton
 public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContract {
 	private static final String PRECOMPILE_NAME = "RandomGenerate";
-	private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint256");
+	private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint32");
 
 	//random256BitGenerator(uint256)
 	static final int RANDOM_256_BIT_GENERATOR_SELECTOR = 0x267dc6a3;
 	//randomNumberGeneratorInRange(uint32)
-	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x267dc6b3;
+	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x85b4610;
 
 	public static final String RANDOM_GENERATE_PRECOMPILE_ADDRESS = "0x169";
 	private final GlobalDynamicProperties dynamicProperties;
@@ -78,10 +79,12 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		try {
 			final var selector = input.getInt(0);
-			final var range = biValueFrom(input);
 			return switch (selector) {
-				case RANDOM_256_BIT_GENERATOR_SELECTOR -> padded(random256BitGenerator());
-				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> padded(randomNumGeneratorInRange(range));
+				case RANDOM_256_BIT_GENERATOR_SELECTOR -> random256BitGenerator();
+				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> {
+					final var range = biValueFrom(input);
+					yield padded(randomNumGeneratorInRange(range));
+				}
 				default -> null;
 			};
 		} catch (Exception ignore) {
@@ -95,13 +98,19 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 
 	private int randomNumGeneratorInRange(final int range) {
 		final var hash = getHash();
+		if (hash.length == 0) {
+			return -1;
+		}
 		final var initialBitsValue = Math.abs(ByteBuffer.wrap(hash, 0, 4).getInt());
 		return (int) ((range * (long) initialBitsValue) >>> 32);
 	}
 
-	private int random256BitGenerator() {
+	private Bytes random256BitGenerator() {
 		final var hash = getHash();
-		return ByteBuffer.wrap(hash, 0, 256).getInt();
+		if (hash.length == 0) {
+			return Bytes.EMPTY;
+		}
+		return Bytes.wrap(hash, 0, 32);
 	}
 
 	private int biValueFrom(final Bytes input) {
@@ -109,6 +118,10 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	}
 
 	private byte[] getHash() {
-		return runningHashLeafSupplier.get().getNMinus3RunningHash().getHash().getValue();
+		try {
+			return runningHashLeafSupplier.get().getNMinus3RunningHash().getFutureHash().get().getValue();
+		} catch (InterruptedException | ExecutionException e) {
+			return new byte[0];
+		}
 	}
 }
