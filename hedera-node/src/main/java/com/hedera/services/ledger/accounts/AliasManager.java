@@ -42,6 +42,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -161,14 +162,20 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 *
 	 * @param accounts
 	 * 		the current accounts
+	 * @param observer
+	 * 		an observer to be called with each traversed account
 	 */
-	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
+	public void rebuildAliasesMap(
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final BiConsumer<EntityNum, MerkleAccount> observer
+	) {
 		final var numCreate2Aliases = new AtomicInteger();
 		final var numEOAliases = new AtomicInteger();
 		final var workingAliases = curAliases();
 		workingAliases.clear();
 		forEach(accounts, (k, v) -> {
 			final var alias = v.getAlias();
+			observer.accept(k, v);
 			if (!alias.isEmpty()) {
 				workingAliases.put(alias, k);
 				if (v.isSmartContract()) {
@@ -181,7 +188,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 						if (maybeLinkEvmAddress(jKey, v.getKey())) {
 							numEOAliases.incrementAndGet();
 						}
-					} catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException e) {
+					} catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
 						// any expected exception means no eth mapping
 					}
 				}
@@ -194,7 +201,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	/**
 	 * Ensures an alias is no longer in use, returning whether it previously was.
 	 *
-	 * @param alias the alias to forget
+	 * @param alias
+	 * 		the alias to forget
 	 * @return whether it was present
 	 */
 	public boolean forgetAlias(final ByteString alias) {

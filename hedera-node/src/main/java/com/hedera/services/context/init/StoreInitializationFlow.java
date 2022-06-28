@@ -38,12 +38,14 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Singleton
 public class StoreInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
 
 	private final TokenStore tokenStore;
+	private final AtomicLong numContracts;
 	private final AliasManager aliasManager;
 	private final ScheduleStore scheduleStore;
 	private final MutableStateChildren workingState;
@@ -55,6 +57,7 @@ public class StoreInitializationFlow {
 	@Inject
 	public StoreInitializationFlow(
 			final TokenStore tokenStore,
+			final AtomicLong numContracts,
 			final ScheduleStore scheduleStore,
 			final AliasManager aliasManager,
 			final MutableStateChildren workingState,
@@ -63,6 +66,7 @@ public class StoreInitializationFlow {
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
+		this.numContracts = numContracts;
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
@@ -84,7 +88,11 @@ public class StoreInitializationFlow {
 		scheduleStore.rebuildViews();
 		log.info("Store internal views rebuilt");
 
-		aliasManager.rebuildAliasesMap(workingState.accounts());
+		aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
+			if (account.isSmartContract()) {
+				numContracts.getAndIncrement();
+			}
+		});
 		log.info("Account aliases map rebuilt");
 	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
@@ -56,10 +58,13 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.utils.MiscUtils.SIZE_MASK;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -77,6 +82,8 @@ public class AutoCreationLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
+	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	private FeeCalculator feeCalculator;
 
@@ -91,15 +98,19 @@ public class AutoCreationLogic {
 			final AliasManager aliasManager,
 			final SigImpactHistorian sigImpactHistorian,
 			final StateView currentView,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.ids = ids;
 		this.txnCtx = txnCtx;
 		this.creator = creator;
+		this.accounts = accounts;
 		this.currentView = currentView;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -165,6 +176,9 @@ public class AutoCreationLogic {
 			final BalanceChange change,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
+		if ((accounts.get().size() & SIZE_MASK) >= dynamicProperties.maxNumAccounts()) {
+			return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
+		}
 		final var alias = change.alias();
 		final var key = asPrimitiveKeyUnchecked(alias);
 		final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
@@ -176,8 +190,6 @@ public class AutoCreationLogic {
 		change.setNewBalance(change.getAggregatedUnits());
 
 		final var sideEffects = new SideEffectsTracker();
-		// tbd - this is not correct, syntheticCreation.getTransactionID().getAccountID() is always the default account id instance
-		// and it only works because the fields we extract from the account id here should always be 0
 		final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
 		accountsLedger.create(newId);
 		change.replaceAliasWith(newId);

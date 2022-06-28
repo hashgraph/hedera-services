@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -44,6 +45,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,7 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,6 +70,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
+	private static final long maxNumAccounts = 10;
 	@Mock
 	private StateView currentView;
 	@Mock
@@ -87,15 +91,31 @@ class AutoCreationLogicTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private RecordsHistorian recordsHistorian;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private AutoCreationLogic subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new AutoCreationLogic(
-				syntheticTxnFactory, creator, ids, aliasManager, sigImpactHistorian, currentView, txnCtx);
+				syntheticTxnFactory, creator, ids, aliasManager,
+				sigImpactHistorian, currentView, txnCtx, dynamicProperties, () -> accounts);
 
 		subject.setFeeCalculator(feeCalculator);
+	}
+
+	@Test
+	void refusesToCreateBeyondMaxNumber() {
+		given(dynamicProperties.maxNumAccounts()).willReturn(maxNumAccounts);
+		given(accounts.size()).willReturn((int) maxNumAccounts);
+
+		final var input = wellKnownChange();
+
+		final var result = subject.create(input, accountsLedger);
+		assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, result.getLeft());
 	}
 
 	@Test
@@ -130,13 +150,15 @@ class AutoCreationLogicTest {
 				.willReturn(fees);
 		given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
 				.willReturn(mockBuilder);
+		given(dynamicProperties.maxNumAccounts()).willReturn(maxNumAccounts);
+		given(accounts.size()).willReturn((int) maxNumAccounts - 1);
 	}
 
 	private BalanceChange wellKnownChange() {
 		return BalanceChange.changingHbar(AccountAmount.newBuilder()
-				.setAmount(initialTransfer)
-				.setAccountID(AccountID.newBuilder().setAlias(alias).build())
-				.build(),
+						.setAmount(initialTransfer)
+						.setAccountID(AccountID.newBuilder().setAlias(alias).build())
+						.build(),
 				payer);
 	}
 

@@ -70,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -103,6 +104,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final AccountID STAKED_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(1000L).build();
 	private static final Instant consensusTime = Instant.now();
+	private static final long pretendMaxAccounts = 10;
 
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -242,6 +244,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
 
 		subject.doStateTransition();
 
@@ -264,8 +267,20 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
+	void failsIfMaxAccountsReached() {
+		givenValidTxnCtx();
+		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
+		given(accounts.size()).willReturn((int)pretendMaxAccounts + 1);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+	}
+
+	@Test
 	void translatesInsufficientPayerBalance() {
 		givenValidTxnCtx();
+		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
 		given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
 
 		subject.doStateTransition();
@@ -276,6 +291,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void translatesUnknownException() {
 		givenValidTxnCtx();
+		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
 		cryptoCreateTxn = cryptoCreateTxn.toBuilder()
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
