@@ -179,6 +179,23 @@ class TransactionalLedgerTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void committingUsesProvidedFinisherIfPresent() {
+		setupInterceptedTestLedger();
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things);
+		testLedger.commit();
+
+		verify(testInterceptor).finish(eq(0), any(TestAccount.class));
+		verify(testInterceptor).finish(eq(1), any(TestAccount.class));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void committingIncludesOnlyNonTransientDestructions() {
 		final ArgumentCaptor<EntityChangeSet<Long, TestAccount, TestAccountProperty>> captor =
 				forClass(EntityChangeSet.class);
@@ -389,7 +406,7 @@ class TransactionalLedgerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void recoversFromChangeSetDescriptionProblem() {
-		final CommitInterceptor<Long,  TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
+		final CommitInterceptor<Long, TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
 		willThrow(IllegalStateException.class).given(unhappy).preview(any());
 
 		setupTestLedger();
@@ -774,6 +791,8 @@ class TransactionalLedgerTest {
 
 	private void setupInterceptedAccountsLedger() {
 		setupAccountsLedger();
+
+
 		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker());
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}

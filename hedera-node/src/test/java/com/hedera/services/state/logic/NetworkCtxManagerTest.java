@@ -25,8 +25,10 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -56,7 +58,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
@@ -91,11 +92,16 @@ class NetworkCtxManagerTest {
 	private SignedTxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
+	@Mock
+	private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+	@Mock
+	private PropertySource propertySource;
 
 	private NetworkCtxManager subject;
 
 	@BeforeEach
 	void setUp() {
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
 		given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
 		subject = new NetworkCtxManager(
@@ -109,7 +115,9 @@ class NetworkCtxManagerTest {
 				handleThrottling,
 				() -> networkCtx,
 				txnCtx,
-				runningAvgs);
+				runningAvgs,
+				endOfStakingPeriodCalculator,
+				propertySource);
 	}
 
 	@Test
@@ -289,6 +297,15 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void relaxesIssInfoIfConsensusTimeOfRecentAlertIsEmpty() {
+		var oldMidnightRates = new ExchangeRates(
+			1, 12, 1_234_567L,
+			1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(issInfo.status()).willReturn(IssEventStatus.ONGOING_ISS);
 		given(issInfo.consensusTimeOfRecentAlert()).willReturn(Optional.empty());
 
@@ -301,6 +318,17 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void doesNothingWithIssInfoIfNotOngoing() {
+		// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
+
 		// when:
 		subject.advanceConsensusClockTo(sometime);
 
@@ -311,14 +339,24 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void advancesClockAsExpectedWhenFirstTxn() {
+	void advancesClockAsExpectedWhenFirstTxn() {// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(null);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		assertEquals(oldMidnightRates, curRates);
 	}
 
 	@Test
@@ -331,12 +369,10 @@ class NetworkCtxManagerTest {
 				1, 120, 1_234_567L,
 				1, 150, 2_345_678L);
 		// and:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
-		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(mockDynamicProps.ratesMidnightCheckInterval());
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 
-		given(shouldUpdateMidnightRates.test(lastBoundaryCheck, sometimeNextDay)).willReturn(true);
+		given(shouldUpdateMidnightRates.test(sometime, sometimeNextDay)).willReturn(true);
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
-		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(lastBoundaryCheck);
 		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -345,17 +381,14 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
 		assertEquals(oldMidnightRates, curRates);
 	}
 
 	@Test
 	void doesntUpdateRatesIfTestDoesntSayTooButDoesUpdateLastMidnightCheck() {
 		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		subject.setIsNextDay(shouldUpdateMidnightRates);
 
-		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval())));
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
@@ -363,42 +396,6 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
-	}
-
-	@Test
-	void doesntPerformMidnightCheckIfNotInInterval() {
-		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
-
-		given(networkCtx.lastMidnightBoundaryCheck())
-				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval() - 1)));
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.advanceConsensusClockTo(sometimeNextDay);
-
-		// then:
-		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx, never()).setLastMidnightBoundaryCheck(sometimeNextDay);
-		verifyNoInteractions(shouldUpdateMidnightRates);
-	}
-
-	@Test
-	void justUpdatesLastBoundaryCheckWhenItIsNull() {
-		// setup:
-		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
-
-		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(null);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.advanceConsensusClockTo(sometimeNextDay);
-
-		// then:
-		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
-		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
-		verifyNoInteractions(shouldUpdateMidnightRates);
 	}
 
 	@Test
@@ -433,6 +430,17 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void recognizesFirstTxnMustBeFirstInSecond() {
+		// setup:
+		var oldMidnightRates = new ExchangeRates(
+				1, 12, 1_234_567L,
+				1, 15, 2_345_678L);
+		var curRates = new ExchangeRates(
+				1, 120, 1_234_567L,
+				1, 150, 2_345_678L);
+
+		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
+
 		// when:
 		subject.advanceConsensusClockTo(sometimeNextDay);
 
@@ -469,10 +477,40 @@ class NetworkCtxManagerTest {
 		final var thenNextDay = Instant.parse("2021-06-08T00:00:00.00000Z");
 
 		// given:
-		final var updateTest = subject.getShouldUpdateMidnightRates();
+		final var updateTest = subject.getIsNextDay();
 
 		// then:
 		assertFalse(updateTest.test(now, thenSameDay));
 		assertTrue(updateTest.test(now, thenNextDay));
+	}
+
+	@Test
+	void nonDefaultPeriodShouldUpdateOnlyTrueOnDifferentMinutes() {
+		// setup:
+		final var now = Instant.parse("2021-06-07T23:59:58.369613Z");
+		final var thenSameMinute = now.plusSeconds(1);
+		final var thenNextMinute = now.plusSeconds(61);
+		given(propertySource.getLongProperty("staking.periodMins")).willReturn(1L);
+		given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
+
+		subject = new NetworkCtxManager(
+				issInfo,
+				nodeLocalProperties,
+				opCounters,
+				exchange,
+				systemFilesManager,
+				feeMultiplierSource,
+				mockDynamicProps,
+				handleThrottling,
+				() -> networkCtx,
+				txnCtx,
+				runningAvgs,
+				endOfStakingPeriodCalculator,
+				propertySource);
+
+		final BiPredicate<Instant, Instant> updateTest = subject::isNextPeriod;
+
+		assertFalse(updateTest.test(now, thenSameMinute));
+		assertTrue(updateTest.test(now, thenNextMinute));
 	}
 }

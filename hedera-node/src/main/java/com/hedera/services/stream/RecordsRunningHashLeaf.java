@@ -64,13 +64,10 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		try {
 			// should wait until runningHash has been calculated and set
-			out.writeSerializable(runningHash.getFutureHash().get(), true);
-		} catch (InterruptedException ex) {
+			out.writeSerializable(currentRunningHash(), true);
+		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
-					ex);
-		} catch (ExecutionException e) {
-			throw new RuntimeException(e);
+			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf", e);
 		}
 	}
 
@@ -148,7 +145,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		try {
 			return runningHash.getFutureHash().get();
 		} catch (ExecutionException e) {
-			throw new RuntimeException(e);
+			throw new IllegalStateException("Unable to get current running hash", e);
 		}
 	}
 }

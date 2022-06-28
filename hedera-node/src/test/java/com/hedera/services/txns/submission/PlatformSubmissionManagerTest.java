@@ -96,7 +96,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	void updatesRecordCacheWhenTxnIsCreated() {
 		// setup:
-		ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+		ArgumentCaptor<byte[]> captor =
+				ArgumentCaptor.forClass(byte[].class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 

@@ -99,6 +99,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			ledger.delete(id, beneficiary);
 			sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
+			txnCtx.recordBeneficiaryOfDeleted(id.getAccountNum(), beneficiary.getAccountNum());
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingEntityException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);

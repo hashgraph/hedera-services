@@ -91,7 +91,8 @@ class AccessorFactoryTest {
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
 
-		var triggered = subject.triggeredTxn(wipeTxn.getContents(), payerId, scheduleId, true, true);
+		var triggered = subject.triggeredTxn(
+				wipeTxn.getContents(), payerId, scheduleId, true, true);
 
 		assertTrue(triggered instanceof SignedTxnAccessor);
 

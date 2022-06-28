@@ -42,9 +42,23 @@ repositories {
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
     }
-
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
     }
 }
 

@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -126,6 +127,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -188,7 +190,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						canUseMirrorAliasesForNonContractXfers(),
 						canUseEip1014AliasesForXfers(),
 						cannotTransferFromImmutableAccounts(),
-//						nftTransfersHaveTransitiveClosure(),
+						nftTransfersHaveTransitiveClosure(),
 				}
 		);
 	}
@@ -441,9 +443,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var snapshot801 = "801startBalance";
 		final var multiKey = "swiss";
 		final var mutableToken = "token";
+		final var civilian = "civilian";
+		final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
 		return defaultHapiSpec("CannotTransferFromImmutableAccounts")
 				.given(
+						cryptoCreate(civilian),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"staking.fees.stakingRewardPercentage", "10",
+										"staking.fees.nodeRewardPercentage", "10"
+								)),
 						newKeyNamed(multiKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -452,14 +463,27 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(GENESIS)
 				).when(
 						balanceSnapshot(snapshot800, firstStakingFund),
-						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, firstStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(firstStakingFund).hasTinyBars(changeFromSnapshot(snapshot800, ONE_HBAR)),
+						cryptoTransfer(tinyBarsFromTo(civilian, firstStakingFund, ONE_HBAR))
+								.payingWith(civilian)
+								.signedBy(civilian)
+								.exposingFeesTo(feeObs)
+								.logged(),
+						sourcing(() ->
+								getAccountBalance(firstStakingFund)
+										.hasTinyBars(
+												changeFromSnapshot(snapshot800,
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1))))),
 
 						balanceSnapshot(snapshot801, secondStakingFund),
-						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, secondStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(secondStakingFund).hasTinyBars(changeFromSnapshot(snapshot801, ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(civilian, secondStakingFund, ONE_HBAR))
+								.payingWith(civilian)
+								.signedBy(civilian)
+								.logged(),
+						sourcing(() ->
+								getAccountBalance(secondStakingFund)
+										.hasTinyBars(
+												changeFromSnapshot(snapshot801,
+														(long) (ONE_HBAR + ((feeObs.get().getNetworkFee() + feeObs.get().getServiceFee()) * 0.1)))))
 				).then(
 						// Even the treasury cannot withdraw from an immutable contract
 						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))
@@ -941,10 +965,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.supplyKey(multipurpose)
 								.initialSupply(0),
 						mintToken(nftType, List.of(copyFromUtf8("Hot potato!"))).via(mintTxn),
-						getTxnRecord(mintTxn).logged(),
+						getTxnRecord(mintTxn).logged()
+				).when(
 						cryptoTransfer(movingUnique(nftType, 1L)
 								.between(TOKEN_TREASURY, aParty))
-				).when(
+				).then(
 						cryptoTransfer((spec, b) -> {
 									final var registry = spec.registry();
 									final var aId = registry.getAccountID(aParty);
@@ -960,28 +985,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						)
 								.via(hotTxn)
 								.signedBy(DEFAULT_PAYER, aParty, bParty, cParty)
-				).then(
-						getTxnRecord(hotTxn)
-								.hasPriority(recordWith()
-										.tokenTransfers(new BaseErroringAssertsProvider<>() {
-											@Override
-											public ErroringAsserts<List<TokenTransferList>> assertsFor(
-													final HapiApiSpec spec
-											) {
-												return tokenTransfers -> {
-													try {
-														assertEquals(1, tokenTransfers.size(),
-																"No transfers appeared");
-														final var changes = tokenTransfers.get(0);
-//														assertEquals(1, changes.getNftTransfersCount(),
-//																"Transitive closure didn't happen");
-													} catch (Throwable failure) {
-														return List.of(failure);
-													}
-													return Collections.emptyList();
-												};
-											}
-										})).logged()
+								.hasPrecheck(INVALID_ACCOUNT_AMOUNTS)
 				);
 	}
 

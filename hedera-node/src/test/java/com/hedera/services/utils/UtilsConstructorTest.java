@@ -43,6 +43,7 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
+import com.hedera.services.ledger.accounts.staking.StakingUtils;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
@@ -53,8 +54,9 @@ import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -65,6 +67,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.throttling.ThrottlingModule;
@@ -93,7 +96,9 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
-			ReleaseTwentyFiveMigration.class,
+			AbiConstants.class,
+			Units.class,
+			AbiConstants.class,
 			MapValueListUtils.class,
 			HFileMetaSerde.class,
 			IoUtils.class,
@@ -164,7 +169,11 @@ class UtilsConstructorTest {
 			SerializationUtils.class,
 			KeyPackingUtils.class,
 			IterableStorageUtils.class,
-			EthereumLogicModule.class
+			EthereumLogicModule.class,
+			ReleaseTwentySevenMigration.class,
+			ByteUtils.class,
+			Units.class,
+			StakingUtils.class
 	));
 
 	@Test

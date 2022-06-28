@@ -20,12 +20,16 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
@@ -45,7 +49,10 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -58,6 +65,7 @@ public class NetworkCtxManager {
 	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
+	private final long stakingPeriod;
 	private final IssEventInfo issInfo;
 	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
@@ -67,9 +75,10 @@ public class NetworkCtxManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
 	private final TransactionContext txnCtx;
 
-	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
+	private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
 
 	@Inject
 	public NetworkCtxManager(
@@ -83,7 +92,9 @@ public class NetworkCtxManager {
 			final @HandleThrottle FunctionalityThrottling handleThrottling,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final TransactionContext txnCtx,
-			final MiscRunningAvgs runningAvgs
+			final MiscRunningAvgs runningAvgs,
+			final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator,
+			final @CompositeProps PropertySource propertySource
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -97,6 +108,8 @@ public class NetworkCtxManager {
 		this.dynamicProperties = dynamicProperties;
 		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
+		this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
+		this.stakingPeriod = propertySource.getLongProperty("staking.periodMins");
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -118,28 +131,15 @@ public class NetworkCtxManager {
 	public void advanceConsensusClockTo(Instant consensusTime) {
 		final var networkCtxNow = networkCtx.get();
 		final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
-		final var lastMidnightBoundaryCheck = networkCtxNow.lastMidnightBoundaryCheck();
-
-		if (lastMidnightBoundaryCheck != null) {
-			final long intervalSecs = dynamicProperties.ratesMidnightCheckInterval();
-			final long elapsedInterval = consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond();
-
-			/* We only check whether the midnight rates should be updated every intervalSecs in consensus time */
-			if (elapsedInterval >= intervalSecs) {
-				/* If the lastMidnightBoundaryCheck was in a different UTC day, we update the midnight rates */
-				if (shouldUpdateMidnightRates.test(lastMidnightBoundaryCheck, consensusTime)) {
-					networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
-				}
-				/* And mark this as the last time we checked the midnight boundary */
-				networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
-			}
-		} else {
-			/* The first transaction after genesis will initialize the lastMidnightBoundaryCheck */
-			networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
-		}
 
 		if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
 			consensusSecondJustChanged = true;
+			// We're in a new second, so check if it's the first of a UTC calendar day; there are
+			// some special actions that trigger on the first transaction after midnight
+			if (lastConsensusTime == null || isNextPeriod(lastConsensusTime, consensusTime)) {
+				networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
+				endOfStakingPeriodCalculator.updateNodes(consensusTime);
+			}
 		} else {
 			consensusSecondJustChanged = false;
 		}
@@ -153,6 +153,16 @@ public class NetworkCtxManager {
 					issInfo.relax();
 				}
 			}, issInfo::relax);
+		}
+	}
+
+	@VisibleForTesting
+	boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
+		if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
+			return isNextDay.test(lastConsensusTime, consensusTime);
+		} else {
+			return getPeriod(consensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
+					!= getPeriod(lastConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
 		}
 	}
 
@@ -172,7 +182,8 @@ public class NetworkCtxManager {
 	 *     <li>The congestion pricing multiplier.</li>
 	 * </ol>
 	 *
-	 * @param op the transaction just handled
+	 * @param op
+	 * 		the type of transaction just handled
 	 */
 	public void finishIncorporating(@Nonnull HederaFunctionality op) {
 		opCounters.countHandled(op);
@@ -216,11 +227,11 @@ public class NetworkCtxManager {
 		this.gasUsedThisConsSec = gasUsedThisConsSec;
 	}
 
-	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {
-		this.shouldUpdateMidnightRates = shouldUpdateMidnightRates;
+	void setIsNextDay(BiPredicate<Instant, Instant> isNextDay) {
+		this.isNextDay = isNextDay;
 	}
 
-	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
-		return shouldUpdateMidnightRates;
+	BiPredicate<Instant, Instant> getIsNextDay() {
+		return isNextDay;
 	}
 }

@@ -143,8 +143,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxGas() {
-		return 300_000;
+	public long maxGasPerSec() {
+		return 300_000L;
 	}
 
 	@Override
@@ -223,11 +223,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int feesMinCongestionPeriod() {
 		return minCongestionPeriod;
-	}
-
-	@Override
-	public long ratesMidnightCheckInterval() {
-		return 1L;
 	}
 
 	@Override

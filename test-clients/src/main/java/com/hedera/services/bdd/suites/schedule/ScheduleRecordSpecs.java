@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -194,6 +196,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("CanScheduleChunkedMessages")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10"
+						)),
 						cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
 						createTopic(ofGeneralInterest)
 				).when(
@@ -218,12 +224,16 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().defaultNode(),
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).assertingOnlyPriority().logged(),
 						getTxnRecord("begin").scheduled().hasPriority(recordWith()
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged()
 				).then(
@@ -238,9 +248,15 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged(),
-						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)
+						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L),
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", HapiSpecSetup.getDefaultNodeProps().get("staking.fees.nodeRewardPercentage"),
+								"staking.fees.stakingRewardPercentage", HapiSpecSetup.getDefaultNodeProps().get("staking.fees.stakingRewardPercentage")
+						))
 				);
 	}
 

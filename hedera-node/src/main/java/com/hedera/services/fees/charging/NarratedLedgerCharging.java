@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
@@ -35,6 +36,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 /**
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
@@ -64,17 +67,23 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private EntityNum nodeId;
 	private EntityNum payerId;
 
+	private final AccountID stakingRewardAccountId;
+	private final AccountID nodeRewardAccountId;
+
 	@Inject
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			AccountNumbers accountNumbers
 	) {
 		this.accounts = accounts;
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
+		stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
+		nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
 	}
 
 	@Override
@@ -162,7 +171,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 			return;
 		}
 		ledger.adjustBalance(grpcNodeId, +nodeFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
+		adjustFundingAndStakingBalances(+(networkFee + serviceFee));
 		totalCharged = nodeFee + networkFee + serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 		serviceFeeCharged = true;
@@ -173,7 +182,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		if (payerExempt) {
 			return;
 		}
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
+		adjustFundingAndStakingBalances(+serviceFee);
 		totalCharged = serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 		serviceFeeCharged = true;
@@ -187,7 +196,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		if (!serviceFeeCharged) {
 			throw new IllegalStateException("NarratedCharging asked to refund service fee to un-charged payer");
 		}
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), -serviceFee);
+		adjustFundingAndStakingBalances(-serviceFee);
 		ledger.adjustBalance(grpcPayerId, +serviceFee);
 		totalCharged -= serviceFee;
 	}
@@ -202,7 +211,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		}
 		long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
 		ledger.adjustBalance(grpcNodeId, +chargeableNodeFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +networkFee);
+		adjustFundingAndStakingBalances(+networkFee);
 		totalCharged = networkFee + chargeableNodeFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
 	}
@@ -212,7 +221,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		initEffPayerBalance(nodeId);
 		long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
 		ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
-		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
+		adjustFundingAndStakingBalances(+chargeableNetworkFee);
 	}
 
 	private void initEffPayerBalance(EntityNum effPayerId) {
@@ -223,5 +232,31 @@ public class NarratedLedgerCharging implements NarratedCharging {
 					+ " is missing!");
 		}
 		effPayerStartingBalance = payerAccount.getBalance();
+	}
+
+	private void adjustFundingAndStakingBalances(final long totalAdjustment) {
+		long fundingAdjustment = totalAdjustment;
+		if (dynamicProperties.isStakingEnabled()) {
+			final var nodeRewardAdjustment = nodeRewardFractionOf(totalAdjustment);
+			if (nodeRewardAdjustment != 0) {
+				ledger.adjustBalance(nodeRewardAccountId, nodeRewardAdjustment);
+			}
+			final var stakingRewardAdjustment = stakingRewardFractionOf(totalAdjustment);
+			if (stakingRewardAdjustment != 0) {
+				ledger.adjustBalance(stakingRewardAccountId, stakingRewardAdjustment);
+			}
+			fundingAdjustment -= (nodeRewardAdjustment + stakingRewardAdjustment);
+		}
+		if (fundingAdjustment != 0) {
+			ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAdjustment);
+		}
+	}
+
+	private long stakingRewardFractionOf(final long totalFee) {
+		return (dynamicProperties.getStakingRewardPercent() * totalFee) / 100;
+	}
+
+	private long nodeRewardFractionOf(final long totalFee) {
+		return (dynamicProperties.getNodeRewardPercent() * totalFee) / 100;
 	}
 }

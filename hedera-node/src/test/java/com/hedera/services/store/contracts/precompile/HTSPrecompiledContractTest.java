@@ -541,7 +541,7 @@ class HTSPrecompiledContractTest {
 		var result = subject.computePrecompile(input, messageFrame);
 
 		// then
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	@Test
@@ -558,7 +558,7 @@ class HTSPrecompiledContractTest {
 
 		// then
 		var result = subject.computePrecompile(input, messageFrame);
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	@Test
@@ -576,7 +576,7 @@ class HTSPrecompiledContractTest {
 		var result = subject.computePrecompile(input, messageFrame);
 
 		// then
-		assertEquals(Bytes.EMPTY, result.getOutput());
+		assertNull(result.getOutput());
 		assertNull(subject.getPrecompile());
 	}
 
