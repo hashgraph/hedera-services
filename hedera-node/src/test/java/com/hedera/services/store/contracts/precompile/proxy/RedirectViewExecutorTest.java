@@ -46,14 +46,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -99,7 +99,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedNAME() {
-		prerequisites(ABI_ID_NAME, fungibleTokenAddress);
+		prerequisites(ABI_ID_ERC_NAME, fungibleTokenAddress);
 
 		final var result = "name";
 
@@ -111,7 +111,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedSYMBOL() {
-		prerequisites(ABI_ID_SYMBOL, fungibleTokenAddress);
+		prerequisites(ABI_ID_ERC_SYMBOL, fungibleTokenAddress);
 
 		final var result = "symbol";
 
@@ -123,7 +123,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedDECIMALS() {
-		prerequisites(ABI_ID_DECIMALS, fungibleTokenAddress);
+		prerequisites(ABI_ID_ERC_DECIMALS, fungibleTokenAddress);
 
 		final var result = 1;
 
@@ -136,7 +136,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedTOTAL_SUPPY_TOKEN() {
-		prerequisites(ABI_ID_TOTAL_SUPPLY_TOKEN, fungibleTokenAddress);
+		prerequisites(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN, fungibleTokenAddress);
 
 		final var result = 1L;
 
@@ -148,7 +148,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedBALANCE_OF_TOKEN() {
-		Bytes nestedInput = prerequisites(ABI_ID_BALANCE_OF_TOKEN, fungibleTokenAddress);
+		Bytes nestedInput = prerequisites(ABI_ID_ERC_BALANCE_OF_TOKEN, fungibleTokenAddress);
 
 		final var result = 1L;
 
@@ -162,7 +162,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedOWNER_OF_NFT() {
-		Bytes nestedInput = prerequisites(ABI_ID_OWNER_OF_NFT, nonfungibleTokenAddress);
+		Bytes nestedInput = prerequisites(ABI_ID_ERC_OWNER_OF_NFT, nonfungibleTokenAddress);
 
 		final var result = Address.fromHexString("0x000000000000013");
 		final var serialNum = 1L;
@@ -178,7 +178,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedTOKEN_URI_NFT() {
-		Bytes nestedInput = prerequisites(ABI_ID_TOKEN_URI_NFT, nonfungibleTokenAddress);
+		Bytes nestedInput = prerequisites(ABI_ID_ERC_TOKEN_URI_NFT, nonfungibleTokenAddress);
 
 		final var result = "some metadata";
 		final var serialNum = 1L;

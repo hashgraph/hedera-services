@@ -111,20 +111,20 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER_FROM;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -281,7 +281,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void name() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_NAME)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -310,7 +310,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void symbol() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_SYMBOL)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -344,7 +344,7 @@ class ERC721PrecompilesTest {
 				EntityNum.fromLong(receiver.getAccountNum()));
 		allowances.add(fcTokenAllowanceId);
 
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_IS_APPROVED_FOR_ALL));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
@@ -383,7 +383,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void isApprovedForAllWorksWithOperatorMissing() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_IS_APPROVED_FOR_ALL));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
@@ -423,7 +423,7 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
 		givenPricingUtilsContext();
@@ -486,7 +486,7 @@ class ERC721PrecompilesTest {
 		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -542,7 +542,7 @@ class ERC721PrecompilesTest {
 	@Test
 	void approveSpender0WhenOwner() {
 		givenPricingUtilsContext();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -603,7 +603,7 @@ class ERC721PrecompilesTest {
 	@Test
 	void approveSpender0WhenGrantedApproveForAll() {
 		givenPricingUtilsContext();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -663,7 +663,7 @@ class ERC721PrecompilesTest {
 	@Test
 	void approveSpender0NoGoodIfNotPermissioned() {
 		givenPricingUtilsContext();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -701,7 +701,7 @@ class ERC721PrecompilesTest {
 	@Test
 	void validatesImpliedNftApprovalDeletion() {
 		givenPricingUtilsContext();
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -758,7 +758,7 @@ class ERC721PrecompilesTest {
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
 
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -811,7 +811,7 @@ class ERC721PrecompilesTest {
 		List<TokenAllowance> tokenAllowances = new ArrayList<>();
 		List<NftAllowance> nftAllowances = new ArrayList<>();
 
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SET_APPROVAL_FOR_ALL));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 		givenLedgers();
 		givenPricingUtilsContext();
@@ -871,7 +871,7 @@ class ERC721PrecompilesTest {
 				EntityNum.fromLong(receiver.getAccountNum()));
 		allowances.add(fcTokenAllowanceId);
 
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_GET_APPROVED));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(wrappedLedgers.nfts()).willReturn(nfts);
@@ -906,7 +906,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void totalSupply() {
-		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN)));
+		Bytes pretendArguments = givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN)));
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -934,7 +934,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void balanceOf() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_BALANCE_OF_TOKEN));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -967,7 +967,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void ownerOfHappyPathWorks() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -1001,7 +1001,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void ownerOfRevertsWithMissingNft() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -1141,7 +1141,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void erc721SystemFailureSurfacesResult() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -1169,7 +1169,7 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void tokenURI() {
-		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOKEN_URI_NFT));
+		Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
 		Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
 		given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -1211,7 +1211,8 @@ class ERC721PrecompilesTest {
 
 	@Test
 	void decimalsNotSupported() {
-		Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(Bytes.of(Integers.toBytes(ABI_ID_DECIMALS)));
+		Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(Bytes.of(Integers.toBytes(
+				ABI_ID_ERC_DECIMALS)));
 		given(wrappedLedgers.typeOf(token)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.prepareFields(frame);
 
