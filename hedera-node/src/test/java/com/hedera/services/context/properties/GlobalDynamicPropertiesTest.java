@@ -434,6 +434,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
 		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
+		given(properties.getLongProperty("contracts.precompile.randomGenerateGasCost")).willReturn(i + 80L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

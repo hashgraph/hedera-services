@@ -71,7 +71,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 
 	@Override
 	public long gasRequirement(Bytes bytes) {
-		return dynamicProperties.exchangeRateGasReq();
+		return dynamicProperties.randomGenerateGasCost();
 	}
 
 	@Override

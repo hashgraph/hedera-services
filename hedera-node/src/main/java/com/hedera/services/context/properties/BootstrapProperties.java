@@ -230,8 +230,6 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.precompile.htsDefaultGasCost",
 			"contracts.precompile.exportRecordResults",
 			"contracts.precompile.htsEnableTokenCreate",
-			"contracts.precompile.randomGenerate",
-			"contracts.precompile.randomGenerateWithRange",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
 			"fees.percentCongestionMultipliers",
@@ -295,7 +293,8 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.allowances.maxAccountLimit",
 			"hedera.allowances.isEnabled",
 			"entities.limitTokenAssociations",
-			"randomGeneration.isEnabled"
+			"randomGeneration.isEnabled",
+			"contracts.precompile.randomGenerateGasCost"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -472,8 +471,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.precompile.htsDefaultGasCost", AS_LONG),
 			entry("contracts.precompile.exportRecordResults", AS_BOOLEAN),
 			entry("contracts.precompile.htsEnableTokenCreate", AS_BOOLEAN),
-			entry("contracts.precompile.randomGenerate", AS_INT),
-			entry("contracts.precompile.randomGenerateWithRange", AS_INT),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
@@ -496,6 +493,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
 			entry("entities.limitTokenAssociations", AS_BOOLEAN),
-			entry("randomGeneration.isEnabled", AS_BOOLEAN)
+			entry("randomGeneration.isEnabled", AS_BOOLEAN),
+			entry("contracts.precompile.randomGenerateGasCost", AS_LONG)
 	);
 }

@@ -637,10 +637,10 @@ public class ContractCallSuite extends HapiApiSuite {
 						uploadInitCode(randomGenerate),
 						contractCreate(randomGenerate)
 				).when(
-						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
-								.payingWith("bob")
-								.via("randomBits")),
-						getTxnRecord("randomBits").logged()
+//						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
+//								.payingWith("bob")
+//								.via("randomBits")),
+//						getTxnRecord("randomBits").logged()
 				).then(
 						sourcing(() -> contractCall(randomGenerate, "randomNumberGeneratorInRange", range)
 								.payingWith("bob")

@@ -312,8 +312,7 @@ public class TxnFactory {
 				.setInitialBalance(setup.defaultContractBalance())
 				.setMemo(setup.defaultMemo())
 				.setShardID(setup.defaultShard())
-				.setRealmID(setup.defaultRealm())
-				.setProxyAccountID(setup.defaultProxy());
+				.setRealmID(setup.defaultRealm());
 	}
 
 	public Consumer<FileCreateTransactionBody.Builder> defaultDef_FileCreateTransactionBody() {
