@@ -284,6 +284,24 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void aNewAccountShouldNotHaveStakeStartUpdated() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(BALANCE, 2 * counterpartyBalance);
+		changes.include(counterpartyId, null, keyOnlyChanges);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance - 1);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0] = NA;
+
+		subject.preview(changes);
+
+		assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+	}
+
+	@Test
 	void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
 		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
