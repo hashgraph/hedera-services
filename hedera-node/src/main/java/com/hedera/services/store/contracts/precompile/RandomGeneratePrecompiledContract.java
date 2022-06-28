@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,14 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
@@ -33,6 +37,7 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.function.Supplier;
 
@@ -44,28 +49,24 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	private static final String PRECOMPILE_NAME = "RandomGenerate";
 	private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint256");
 
-	//tinycentsToTinybars(uint256)
-	static final int TO_TINYBARS_SELECTOR = 0x2e3cff6a;
-	//tinybarsToTinycents(uint256)
-	static final int TO_TINYCENTS_SELECTOR = 0x43a88229;
+	//random256BitGenerator(uint256)
+	static final int RANDOM_256_BIT_GENERATOR_SELECTOR = 0x267dc6a3;
+	//randomNumberGeneratorInRange(uint32)
+	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x267dc6b3;
 
-	public static final String EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS = "0x168";
-
-	private final HbarCentExchange exchange;
-	private final Supplier<Instant> consensusNow;
+	public static final String RANDOM_GENERATE_PRECOMPILE_ADDRESS = "0x169";
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
 
 	@Inject
 	public RandomGeneratePrecompiledContract(
 			final GasCalculator gasCalculator,
-			final HbarCentExchange exchange,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<Instant> consensusNow
+			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier
 	) {
 		super(PRECOMPILE_NAME, gasCalculator);
-		this.exchange = exchange;
-		this.consensusNow = consensusNow;
 		this.dynamicProperties = dynamicProperties;
+		this.runningHashLeafSupplier = runningHashLeafSupplier;
 	}
 
 	@Override
@@ -77,13 +78,10 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		try {
 			final var selector = input.getInt(0);
-			final var amount = biValueFrom(input);
-			final var activeRate = exchange.activeRate(consensusNow.get());
+			final var range = biValueFrom(input);
 			return switch (selector) {
-				case TO_TINYBARS_SELECTOR -> padded(
-						fromAToB(amount, activeRate.getHbarEquiv(), activeRate.getCentEquiv()));
-				case TO_TINYCENTS_SELECTOR -> padded(
-						fromAToB(amount, activeRate.getCentEquiv(), activeRate.getHbarEquiv()));
+				case RANDOM_256_BIT_GENERATOR_SELECTOR -> padded(random256BitGenerator());
+				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> padded(randomNumGeneratorInRange(range));
 				default -> null;
 			};
 		} catch (Exception ignore) {
@@ -91,15 +89,26 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 		}
 	}
 
-	private BigInteger fromAToB(final BigInteger aAmount, final int bEquiv, final int aEquiv) {
-		return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
+	private Bytes padded(final int result) {
+		return Bytes32.leftPad(Bytes.wrap(Bytes.ofUnsignedShort(result)));
 	}
 
-	private BigInteger biValueFrom(final Bytes input) {
-		return WORD_DECODER.decode(input.slice(4).toArrayUnsafe());
+	private int randomNumGeneratorInRange(final int range) {
+		final var hash = getHash();
+		final var initialBitsValue = Math.abs(ByteBuffer.wrap(hash, 0, 4).getInt());
+		return (int) ((range * (long) initialBitsValue) >>> 32);
 	}
 
-	private Bytes padded(final BigInteger result) {
-		return Bytes32.leftPad(Bytes.wrap(result.toByteArray()));
+	private int random256BitGenerator() {
+		final var hash = getHash();
+		return ByteBuffer.wrap(hash, 0, 256).getInt();
+	}
+
+	private int biValueFrom(final Bytes input) {
+		return WORD_DECODER.decode(input.slice(4).toArrayUnsafe()).intValue();
+	}
+
+	private byte[] getHash() {
+		return runningHashLeafSupplier.get().getNMinus3RunningHash().getHash().getValue();
 	}
 }

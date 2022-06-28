@@ -149,50 +149,51 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				deletedContractsCannotBeUpdated(),
-				sendHbarsToAddressesMultipleTimes(),
-				sendHbarsToDifferentAddresses(),
-				sendHbarsFromDifferentAddressessToAddress(),
-				sendHbarsFromAndToDifferentAddressess(),
-				transferNegativeAmountOfHbars(),
-				transferToCaller(),
-				transferZeroHbarsToCaller(),
-				transferZeroHbars(),
-				sendHbarsToOuterContractFromDifferentAddresses(),
-				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses(),
-				contractCreationStoragePriceMatchesFinalExpiry(),
-				whitelistingAliasedContract(),
-				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
-				exchangeRatePrecompileWorks(),
-				canMintAndTransferInSameContractOperation(),
-				workingHoursDemo(),
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst(),
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				deletedContractsCannotBeUpdated(),
+//				sendHbarsToAddressesMultipleTimes(),
+//				sendHbarsToDifferentAddresses(),
+//				sendHbarsFromDifferentAddressessToAddress(),
+//				sendHbarsFromAndToDifferentAddressess(),
+//				transferNegativeAmountOfHbars(),
+//				transferToCaller(),
+//				transferZeroHbarsToCaller(),
+//				transferZeroHbars(),
+//				sendHbarsToOuterContractFromDifferentAddresses(),
+//				sendHbarsToCallerFromDifferentAddresses(),
+//				bitcarbonTestStillPasses(),
+//				contractCreationStoragePriceMatchesFinalExpiry(),
+//				whitelistingAliasedContract(),
+//				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
+//				exchangeRatePrecompileWorks(),
+//				canMintAndTransferInSameContractOperation(),
+//				workingHoursDemo(),
+				randomGeneratePrecompileWorks()
 		});
 	}
 
@@ -624,6 +625,27 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() -> contractCall(rateAware, "invalidCall")
 								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+				);
+	}
+
+	private HapiApiSpec randomGeneratePrecompileWorks() {
+		final var range = 100;
+		final var randomGenerate = "RandomGeneratePrecompile";
+		return defaultHapiSpec("randomGeneratePrecompileWorks")
+				.given(
+						cryptoCreate("bob"),
+						uploadInitCode(randomGenerate),
+						contractCreate(randomGenerate)
+				).when(
+						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
+								.payingWith("bob")
+								.via("randomBits")),
+						getTxnRecord("randomBits").logged()
+				).then(
+						sourcing(() -> contractCall(randomGenerate, "randomNumberGeneratorInRange", range)
+								.payingWith("bob")
+								.via("randomNumber")),
+						getTxnRecord("randomNumber").logged()
 				);
 	}
 
