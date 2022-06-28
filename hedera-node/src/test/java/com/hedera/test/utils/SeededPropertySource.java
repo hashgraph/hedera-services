@@ -477,7 +477,7 @@ public class SeededPropertySource {
 		// added in 0.28
 		if (nextBoolean()) {
 			seeded.setPseudoRandomNumber(nextUnsignedInt());
-		} else {
+		} else if (nextBoolean()) {
 			seeded.setPseudoRandomBytes(nextBytes(48));
 		}
 		return seeded;
