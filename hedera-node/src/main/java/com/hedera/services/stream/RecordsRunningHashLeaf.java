@@ -227,9 +227,4 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	public RunningHash getNMinus1RunningHash() {
 		return nMinus1RunningHash;
 	}
-
-	@VisibleForTesting
-	public RunningHash setNMinus1RunningHash(final RunningHash hash) {
-		return this.nMinus1RunningHash = hash;
-	}
 }

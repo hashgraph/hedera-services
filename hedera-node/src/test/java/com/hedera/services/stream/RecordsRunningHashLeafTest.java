@@ -237,6 +237,30 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
+	void IllegalStateExceptionExceptionThrownForNMinusThreeRunningHash() throws ExecutionException, InterruptedException {
+		final var nMinus3Hash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		given(nMinus3Hash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(ExecutionException.class);
+
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(nMinus3Hash);
+		final var runningHash2 = new RunningHash();
+		runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash2);
+
+		final var runningHash3 = new RunningHash();
+		runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash3);
+
+		final var runningHash4 = new RunningHash();
+		runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash4);
+
+		final var msg = assertThrows(IllegalStateException.class, () -> leafForTestingRunningHash.nMinusThreeRunningHash());
+		assertTrue(msg.getMessage().contains("Unable to get n-3 running hash"));
+	}
+
+	@Test
 	void updateRunningHashInvalidateHashTest() {
 		final var runningHash = new RunningHash();
 		// sets Hash for the RunningHash
