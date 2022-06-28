@@ -60,7 +60,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
 	public static final short NO_CHILD_TRANSACTIONS = 0;
 
-	private static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
+	public static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
 
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
