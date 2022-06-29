@@ -41,35 +41,34 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.txns.util.RandomGenerateTransitionLogic.randomNumFromBytes;
 
 /**
- * System contract to generate random numbers.
+ * System contract to generate random numbers. This will generate 256-bit pseudorandom number when no range is provided.
+ * If a given 32-bit range is provided returns a pseudorandom 32-bit integer X in the range 0 <= X < range.
+ * The pseudorandom number is generated using n-3 record's running hash.
  */
 @Singleton
 public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContract {
 	private static final String PRECOMPILE_NAME = "RandomGenerate";
 	private static final LongType WORD_DECODER = TypeFactory.create("uint32");
-
 	//random256BitGenerator(uint256)
 	static final int RANDOM_256_BIT_GENERATOR_SELECTOR = 0x267dc6a3;
 	//randomNumberGeneratorInRange(uint32)
 	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x85b4610c;
-
 	public static final String RANDOM_GENERATE_PRECOMPILE_ADDRESS = "0x169";
+
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
 
 	@Inject
-	public RandomGeneratePrecompiledContract(
-			final GasCalculator gasCalculator,
+	public RandomGeneratePrecompiledContract(final GasCalculator gasCalculator,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier
-	) {
+			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier) {
 		super(PRECOMPILE_NAME, gasCalculator);
 		this.dynamicProperties = dynamicProperties;
 		this.runningHashLeafSupplier = runningHashLeafSupplier;
 	}
 
 	@Override
-	public long gasRequirement(Bytes bytes) {
+	public long gasRequirement(final Bytes bytes) {
 		return dynamicProperties.randomGenerateGasCost();
 	}
 
@@ -90,7 +89,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	private Bytes randomNumberGeneratorInRange(final Bytes input) {
 		final var range = rangeValueFrom(input);
 		// if range is invalid fail here
-		validateInput(range);
+		validateTrue(range >= 0, ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE);
 
 		final var randomNum = generateRandomNumberFromHash(range);
 		// if hash is invalid or not present returns null
@@ -102,7 +101,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 
 	private int generateRandomNumberFromHash(final int range) {
 		final var hash = getHash();
-		if (invalidHash(hash)) {
+		if (hash == null) {
 			return -1;
 		}
 		final var hashBytes = hash.getValue();
@@ -111,23 +110,16 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 
 	private Bytes random256BitGenerator() {
 		final var hash = getHash();
-		if (invalidHash(hash)) {
+		if (hash == null) {
 			return null;
 		}
 		final var hashBytes = hash.getValue();
 		return Bytes.wrap(hashBytes, 0, 32);
 	}
 
-	private void validateInput(final int range) {
-		validateTrue(range >= 0, ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE);
-		// can we validate and throw or ignore and just return
-		// null ?
-	}
-
 	private Bytes padded(final int result) {
 		return Bytes32.leftPad(Bytes.ofUnsignedInt(result));
 	}
-
 
 	private Hash getHash() {
 		try {
@@ -140,9 +132,5 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 
 	private int rangeValueFrom(final Bytes input) {
 		return WORD_DECODER.decode(input.slice(4).toArrayUnsafe()).intValue();
-	}
-
-	private boolean invalidHash(final Hash hash) {
-		return hash == null;
 	}
 }
