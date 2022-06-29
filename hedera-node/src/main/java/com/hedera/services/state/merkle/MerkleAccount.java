@@ -161,8 +161,8 @@ public class MerkleAccount extends PartialNaryMerkleInternal implements MerkleIn
 				addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
 			} else {
 				log.error(
-						"Third child of account unexpected type {}",
-						getChild(2).getClass().getSimpleName());
+						"Third child of account {} had unexpected type {}",
+						state(), getChild(2).getClass().getSimpleName());
 			}
 		}
 	}

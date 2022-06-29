@@ -33,15 +33,13 @@ public final class StatsModule {
 	@Provides
 	@Singleton
 	public static MiscRunningAvgs provideMiscRunningAvgs(final NodeLocalProperties nodeLocalProperties) {
-		return new MiscRunningAvgs(new RunningAvgFactory() {
-		}, nodeLocalProperties.statsRunningAvgHalfLifeSecs());
+		return new MiscRunningAvgs(nodeLocalProperties.statsRunningAvgHalfLifeSecs());
 	}
 
 	@Provides
 	@Singleton
 	public static MiscSpeedometers provideMiscSpeedometers(final NodeLocalProperties nodeLocalProperties) {
-		return new MiscSpeedometers(new SpeedometerFactory() {
-		}, nodeLocalProperties.statsSpeedometerHalfLifeSecs());
+		return new MiscSpeedometers(nodeLocalProperties.statsSpeedometerHalfLifeSecs());
 	}
 
 	@Provides
@@ -50,21 +48,16 @@ public final class StatsModule {
 			final HapiOpCounters counters,
 			final NodeLocalProperties nodeLocalProperties
 	) {
-		return new HapiOpSpeedometers(
-				counters,
-				new SpeedometerFactory() {
-				},
-				nodeLocalProperties,
-				MiscUtils::baseStatNameOf);
+		return new HapiOpSpeedometers(counters, nodeLocalProperties, MiscUtils::baseStatNameOf);
 	}
 
 	@Provides
 	@Singleton
 	public static HapiOpCounters provideHapiOpCounters(
 			final MiscRunningAvgs runningAvgs,
-			final TransactionContext txnCtx) {
-		return new HapiOpCounters(new CounterFactory() {
-		}, runningAvgs, txnCtx, MiscUtils::baseStatNameOf);
+			final TransactionContext txnCtx
+	) {
+		return new HapiOpCounters(runningAvgs, txnCtx, MiscUtils::baseStatNameOf);
 	}
 
 	private StatsModule() {

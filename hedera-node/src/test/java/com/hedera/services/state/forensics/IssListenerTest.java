@@ -21,14 +21,13 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.CommonUtils;
 import org.hamcrest.Matchers;
@@ -99,6 +98,8 @@ class IssListenerTest {
 
 	@Test
 	void onlyLogsIfConfiguredInfo() {
+		given(info.shouldLogThisRound()).willReturn(true);
+
 		subject.notifyError(
 				platform, book, state, new PlatformEvent[0],
 				self, other, round, consensusTime, numConsEvents, sig, hash);

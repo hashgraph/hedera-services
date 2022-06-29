@@ -87,10 +87,10 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025x_CHILDREN;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0260_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
+import static com.hedera.services.state.migration.StateVersions.FIRST_028X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -198,7 +198,6 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 		super.addDeserializedChildren(children, version);
 		deserializedStateVersion = version;
 	}
-
 	@Override
 	public void init(
 			final Platform platform,
@@ -556,10 +555,14 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 					StateChildIndices.STAKING_INFO,
 					stakingInfoBuilder.buildStakingInfoMap(addressBook(), new BootstrapProperties()));
 		}
-		// we know for a fact that we need to migrate scheduled transactions if they are a MerkleMap, the version
-		// doesn't really matter.
+		// We know for a fact that we need to migrate scheduled transactions if they are a MerkleMap
 		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
 			scheduledTxnsMigrator.accept(this);
+		}
+		if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
+			// These accounts were created with an (unnecessary) MerkleAccountTokens child; remove it
+			accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
+			accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
 		}
 
 		// Keep the MutableStateChildren up-to-date (no harm done if they are already are)

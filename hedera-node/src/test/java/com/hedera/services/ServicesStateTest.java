@@ -90,6 +90,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -219,7 +220,7 @@ class ServicesStateTest {
 
 	@Test
 	void doesNoMigrationsForLateEnoughVersion() {
-		mockMigrators();
+		mockMigratorsOnly();
 		subject.setMetadata(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
@@ -301,7 +302,7 @@ class ServicesStateTest {
 
 	@Test
 	void doesScheduledTxnMigrationRegardlessOfVersion() {
-		mockMigrators();
+		mockMigratorsOnly();
 
 		subject.setMetadata(metadata);
 		given(metadata.app()).willReturn(app);
@@ -531,7 +532,7 @@ class ServicesStateTest {
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		assertEquals(StateChildIndices.NUM_POST_0260_CHILDREN, subject.getMinimumChildCount());
+		assertEquals(StateChildIndices.NUM_025x_CHILDREN, subject.getMinimumChildCount());
 	}
 
 	@Test
@@ -682,6 +683,7 @@ class ServicesStateTest {
 	@Test
 	void nonGenesisInitWithOldVersionMarksMigrationRecordsNotStreamed() {
 		mockMigrators();
+		givenSpecialAccountsForMigration();
 		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
 		given(vmf.apply(any())).willReturn(virtualMapFactory);
 		subject.setMetadata(metadata);
@@ -827,34 +829,44 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void testLoading0263State() {
+	void testLoading0253State() {
 		ClassLoaderHelper.loadClassPathDependencies();
-		assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.25.3/SignedState.swh"));
+		final AtomicReference<SignedState> ref = new AtomicReference<>();
+		assertDoesNotThrow(() -> ref.set(loadSignedState(signedStateDir + "v0.25.3/SignedState.swh")));
+		final var mockPlatform = createMockPlatformWithCrypto();
+		ref.get().getSwirldState().init(
+				mockPlatform,
+				createPretendBookFrom(mockPlatform),
+				new DualStateImpl(),
+				RESTART,
+				null);
 	}
 
 	@Test
 	void testGenesisState() {
 		ClassLoaderHelper.loadClassPathDependencies();
-		final var swirldDualState = new DualStateImpl();
 		final var servicesState = new ServicesState();
 		final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
 		recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
 		servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-		final var platform = createMockPlatform();
-		final var nodeId = platform.getSelfId().getId();
-		final var address = new Address(
-				nodeId, "", "", 1L, false, null, -1, null, -1, null, -1, null, -1,
-				null, null, (SerializablePublicKey) null, "");
-		final var addressBook = new AddressBook(List.of(address));
+		final var platform = createMockPlatformWithCrypto();
 		final var app = createApp(platform);
 
 		APPS.save(platform.getSelfId().getId(), app);
 		assertDoesNotThrow(() -> servicesState.init(
 				platform,
-				addressBook,
-				swirldDualState,
+				createPretendBookFrom(platform),
+				new DualStateImpl(),
 				InitTrigger.GENESIS,
 				null));
+	}
+
+	private AddressBook createPretendBookFrom(final Platform platform) {
+		final var nodeId = platform.getSelfId().getId();
+		final var address = new Address(
+				nodeId, "", "", 1L, false, null, -1, null, -1, null, -1, null, -1,
+				null, null, (SerializablePublicKey) null, "");
+		return new AddressBook(List.of(address));
 	}
 
 	private static ServicesApp createApp(Platform platform) {
@@ -867,20 +879,19 @@ class ServicesStateTest {
 				.build();
 	}
 
-	private static Platform createMockPlatform() {
+	private Platform createMockPlatformWithCrypto() {
 		final var platform = mock(Platform.class);
 		when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
 		when(platform.getCryptography()).thenReturn(new CryptoEngine());
+		assertNotNull(platform.getCryptography());
 		return platform;
 	}
-
 	private static SignedState loadSignedState(final String path) throws IOException {
 		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.signedState());
 		return signedPair.signedState();
 	}
-
 	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {
 		subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
@@ -912,6 +923,11 @@ class ServicesStateTest {
 	}
 
 	private void mockMigrators() {
+		mockMigratorsOnly();
+		givenSpecialAccountsForMigration();
+	}
+
+	private void mockMigratorsOnly() {
 		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
 		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
 		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
@@ -919,6 +935,7 @@ class ServicesStateTest {
 		ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
 		ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
 	}
+
 
 	private void unmockMigrators() {
 		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
@@ -928,5 +945,10 @@ class ServicesStateTest {
 		ServicesState.setScheduledTransactionsMigrator(
 				LongTermScheduledTransactionsMigration::migrateScheduledTransactions);
 		ServicesState.setStakingInfoBuilder(ReleaseTwentySevenMigration::buildStakingInfoMap);
+	}
+
+	private void givenSpecialAccountsForMigration() {
+		given(accounts.get(EntityNum.fromLong(800L))).willReturn(new MerkleAccount());
+		given(accounts.get(EntityNum.fromLong(801L))).willReturn(new MerkleAccount());
 	}
 }

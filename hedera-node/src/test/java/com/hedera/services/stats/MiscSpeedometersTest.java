@@ -20,64 +20,55 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.statistics.StatEntry;
-import com.swirlds.common.statistics.StatsSpeedometer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.given;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+
+@ExtendWith(MockitoExtension.class)
 class MiscSpeedometersTest {
 	private static final double halfLife = 10.0;
 
+	@Mock
 	private Platform platform;
-	private SpeedometerFactory factory;
+	@Mock
+	private SpeedometerMetric syncVerifies;
+	@Mock
+	private SpeedometerMetric txnRejections;
 
 	private MiscSpeedometers subject;
 
 	@BeforeEach
 	void setup() {
-		factory = mock(SpeedometerFactory.class);
 		platform = mock(Platform.class);
 
-		subject = new MiscSpeedometers(factory, halfLife);
+		subject = new MiscSpeedometers(halfLife);
 	}
 
 	@Test
 	void registersExpectedStatEntries() {
-		final var sync = mock(StatEntry.class);
-		final var rejections = mock(StatEntry.class);
-		given(factory.from(
-				argThat(MiscSpeedometers.Names.SYNC_VERIFICATIONS::equals),
-				argThat(MiscSpeedometers.Descriptions.SYNC_VERIFICATIONS::equals),
-				any())).willReturn(sync);
-		given(factory.from(
-				argThat(MiscSpeedometers.Names.PLATFORM_TXN_REJECTIONS::equals),
-				argThat(MiscSpeedometers.Descriptions.PLATFORM_TXN_REJECTIONS::equals),
-				any())).willReturn(rejections);
+		subject.setSyncVerifications(syncVerifies);
+		subject.setPlatformTxnRejections(txnRejections);
 
 		subject.registerWith(platform);
 
-		verify(platform).addAppStatEntry(sync);
-		verify(platform).addAppStatEntry(rejections);
+		verify(platform).addAppMetrics(syncVerifies, txnRejections);
 	}
 
 	@Test
 	void cyclesExpectedSpeedometers() {
-		final var sync = mock(StatsSpeedometer.class);
-		final var rejections = mock(StatsSpeedometer.class);
-		subject.syncVerifications = sync;
-		subject.platformTxnRejections = rejections;
-
 		subject.cycleSyncVerifications();
 		subject.cyclePlatformTxnRejections();
 
-		verify(rejections).update(1.0);
-		verify(sync).update(1.0);
+		assertNotEquals(0.0, subject.getPlatformTxnRejections().getStatsBuffered().getMean());
+		assertNotEquals(0.0, subject.getSyncVerifications().getStatsBuffered().getMean());
 	}
 }

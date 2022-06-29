@@ -20,100 +20,100 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.system.Platform;
 
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_DEPRECATED_TXNS_NAME;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL;
-import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC_TPL;
-import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
+import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 public class HapiOpCounters {
 	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
-
-	private final CounterFactory counter;
 	private final MiscRunningAvgs runningAvgs;
 	private final TransactionContext txnCtx;
 	private final Function<HederaFunctionality, String> statNameFn;
 
-	EnumMap<HederaFunctionality, AtomicLong> receivedOps = new EnumMap<>(HederaFunctionality.class);
-	EnumMap<HederaFunctionality, AtomicLong> handledTxns = new EnumMap<>(HederaFunctionality.class);
-	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
-	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
-	AtomicLong receivedDeprecatedTxns;
+	private final EnumMap<HederaFunctionality, Counter> receivedOps = new EnumMap<>(HederaFunctionality.class);
+	private final EnumMap<HederaFunctionality, Counter> handledTxns = new EnumMap<>(HederaFunctionality.class);
+	private final EnumMap<HederaFunctionality, Counter> submittedTxns = new EnumMap<>(HederaFunctionality.class);
+	private final EnumMap<HederaFunctionality, Counter> answeredQueries = new EnumMap<>(HederaFunctionality.class);
+	private final Counter deprecatedTxns;
 
 	public HapiOpCounters(
-			final CounterFactory counter,
 			final MiscRunningAvgs runningAvgs,
 			final TransactionContext txnCtx,
 			final Function<HederaFunctionality, String> statNameFn
 	) {
 		this.txnCtx = txnCtx;
-		this.counter = counter;
 		this.statNameFn = statNameFn;
 		this.runningAvgs = runningAvgs;
 
 		Arrays.stream(allFunctions.get())
 				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
 				.forEach(function -> {
-					receivedOps.put(function, new AtomicLong());
+					receivedOps.put(
+							function,
+							counterFor(function, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL));
 					if (QUERY_FUNCTIONS.contains(function)) {
-						answeredQueries.put(function, new AtomicLong());
+						answeredQueries.put(
+								function,
+								counterFor(function, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL));
 					} else {
-						submittedTxns.put(function, new AtomicLong());
-						handledTxns.put(function, new AtomicLong());
+						submittedTxns.put(
+								function,
+								counterFor(function, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL));
+						handledTxns.put(
+								function,
+								counterFor(function, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL));
 					}
 				});
-		receivedDeprecatedTxns = new AtomicLong();
+		deprecatedTxns = new Counter(
+				STAT_CATEGORY,
+				COUNTER_DEPRECATED_TXNS_NAME,
+				COUNTER_RECEIVED_DEPRECATED_DESC,
+				Counter.CounterMode.INCREASE_ONLY);
+	}
+
+	private Counter counterFor(final HederaFunctionality function, final String nameTpl, final String descTpl) {
+		final var baseName = statNameFn.apply(function);
+		return new Counter(
+				STAT_CATEGORY,
+				String.format(nameTpl, baseName),
+				String.format(descTpl, baseName),
+				Counter.CounterMode.INCREASE_ONLY);
 	}
 
 	public void registerWith(final Platform platform) {
-		registerCounters(platform, receivedOps, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
-		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
-		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
-		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
-		registerCounter(platform, receivedDeprecatedTxns, COUNTER_RECEIVED_DEPRECATED_NAME_TPL,
-				COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
+		registerCounters(platform, receivedOps);
+		registerCounters(platform, submittedTxns);
+		registerCounters(platform, handledTxns);
+		registerCounters(platform, answeredQueries);
+		platform.addAppMetrics(deprecatedTxns);
 	}
 
-	private void registerCounter(
-			final Platform platform,
-			final AtomicLong counters,
-			final String nameTpl,
-			final String descTpl
-	) {
-		platform.addAppStatEntry(counter.from(nameTpl, descTpl, counters::get));
-	}
-
-	private void registerCounters(
-			final Platform platform,
-			final Map<HederaFunctionality, AtomicLong> counters,
-			final String nameTpl,
-			final String descTpl
-	) {
-		for (final var entry : counters.entrySet()) {
-			final var baseName = statNameFn.apply(entry.getKey());
-			final var fullName = String.format(nameTpl, baseName);
-			final var description = String.format(descTpl, baseName);
-			platform.addAppStatEntry(counter.from(fullName, description, entry.getValue()::get));
-		}
+	private void registerCounters(final Platform platform, final Map<HederaFunctionality, Counter> counters) {
+		platform.addAppMetrics(counters.values().toArray(Metric[]::new));
 	}
 
 	public void countReceived(final HederaFunctionality op) {
@@ -153,19 +153,49 @@ public class HapiOpCounters {
 	}
 
 	private void safeIncrement(
-			final Map<HederaFunctionality, AtomicLong> counters,
+			final Map<HederaFunctionality, Counter> counters,
 			final HederaFunctionality function
 	) {
 		if (!IGNORED_FUNCTIONS.contains(function)) {
-			counters.get(function).getAndIncrement();
+			counters.get(function).increment();
 		}
 	}
 
 	public void countDeprecatedTxnReceived() {
-		receivedDeprecatedTxns.getAndIncrement();
+		deprecatedTxns.increment();
 	}
 
 	public long receivedDeprecatedTxnSoFar() {
-		return receivedDeprecatedTxns.get();
+		return deprecatedTxns.get();
+	}
+
+	@VisibleForTesting
+	EnumMap<HederaFunctionality, Counter> getReceivedOps() {
+		return receivedOps;
+	}
+
+	@VisibleForTesting
+	EnumMap<HederaFunctionality, Counter> getHandledTxns() {
+		return handledTxns;
+	}
+
+	@VisibleForTesting
+	EnumMap<HederaFunctionality, Counter> getSubmittedTxns() {
+		return submittedTxns;
+	}
+
+	@VisibleForTesting
+	EnumMap<HederaFunctionality, Counter> getAnsweredQueries() {
+		return answeredQueries;
+	}
+
+	@VisibleForTesting
+	Counter getDeprecatedTxns() {
+		return deprecatedTxns;
+	}
+
+	@VisibleForTesting
+	static void setAllFunctions(Supplier<HederaFunctionality[]> allFunctions) {
+		HapiOpCounters.allFunctions = allFunctions;
 	}
 }

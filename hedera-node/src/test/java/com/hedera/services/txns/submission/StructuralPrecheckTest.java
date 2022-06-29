@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.stats.CounterFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -64,11 +63,10 @@ class StructuralPrecheckTest {
 	private StructuralPrecheck subject;
 
 	private TransactionContext txnCtx = mock(TransactionContext.class);
-	private CounterFactory factory = mock(CounterFactory.class);
 	private Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
 	private MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
 
-	private HapiOpCounters counters = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
+	private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
 	@BeforeEach
 	void setUp() {

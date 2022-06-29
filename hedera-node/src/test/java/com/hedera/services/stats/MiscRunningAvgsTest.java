@@ -20,83 +20,58 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.statistics.StatEntry;
-import com.swirlds.common.statistics.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+
+@ExtendWith(MockitoExtension.class)
 class MiscRunningAvgsTest {
 	private static final double halfLife = 10.0;
 
+	@Mock
 	private Platform platform;
-	private RunningAvgFactory factory;
 
+	@Mock
+	private RunningAverageMetric gasPerSec;
+	@Mock
+	private RunningAverageMetric waitMs;
+	@Mock
+	private RunningAverageMetric retries;
+	@Mock
+	private RunningAverageMetric submitSizes;
+	@Mock
+	private RunningAverageMetric queueSize;
+	@Mock
+	private RunningAverageMetric hashS;
 	private MiscRunningAvgs subject;
 
 	@BeforeEach
-	void setup() throws Exception {
-		factory = mock(RunningAvgFactory.class);
+	void setup() {
 		platform = mock(Platform.class);
 
-		subject = new MiscRunningAvgs(factory, halfLife);
+		subject = new MiscRunningAvgs(halfLife);
 	}
 
 	@Test
 	void registersExpectedStatEntries() {
-		final var retries = mock(StatEntry.class);
-		final var waitMs = mock(StatEntry.class);
-		final var queueSizes = mock(StatEntry.class);
-		final var submitSizes = mock(StatEntry.class);
-		final var gasPerSec = mock(StatEntry.class);
-		given(factory.from(
-				MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES,
-				MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES,
-				subject.accountLookupRetries)).willReturn(retries);
-		given(factory.from(
-				MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS,
-				MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS,
-				subject.accountRetryWaitMs)).willReturn(waitMs);
-		given(factory.from(
-				MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-				MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-				subject.writeQueueSizeRecordStream)).willReturn(queueSizes);
-		given(factory.from(
-				MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-				MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-				subject.handledSubmitMessageSize)).willReturn(submitSizes);
-		given(factory.from(
-				MiscRunningAvgs.Names.GAS_PER_CONSENSUS_SEC,
-				MiscRunningAvgs.Descriptions.GAS_PER_CONSENSUS_SEC,
-				subject.gasPerConsSec)).willReturn(gasPerSec);
+		setMocks();
 
 		subject.registerWith(platform);
 
-		verify(platform).addAppStatEntry(retries);
-		verify(platform).addAppStatEntry(waitMs);
-		verify(platform).addAppStatEntry(queueSizes);
-		verify(platform).addAppStatEntry(submitSizes);
-		verify(platform).addAppStatEntry(gasPerSec);
+		verify(platform).addAppMetrics(gasPerSec, waitMs, retries, submitSizes, queueSize, hashS);
 	}
 
 	@Test
 	void recordsToExpectedAvgs() {
-		final var retries = mock(StatsRunningAverage.class);
-		final var waitMs = mock(StatsRunningAverage.class);
-		final var queueSize = mock(StatsRunningAverage.class);
-		final var submitSizes = mock(StatsRunningAverage.class);
-		final var hashS = mock(StatsRunningAverage.class);
-		final var gasPerSec = mock(StatsRunningAverage.class);
-		subject.accountLookupRetries = retries;
-		subject.accountRetryWaitMs = waitMs;
-		subject.handledSubmitMessageSize = submitSizes;
-		subject.writeQueueSizeRecordStream = queueSize;
-		subject.hashQueueSizeRecordStream = hashS;
-		subject.gasPerConsSec = gasPerSec;
+		setMocks();
 
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
@@ -111,5 +86,14 @@ class MiscRunningAvgsTest {
 		verify(queueSize).recordValue(4.0);
 		verify(hashS).recordValue(5);
 		verify(gasPerSec).recordValue(6L);
+	}
+
+	private void setMocks() {
+		subject.setAccountLookupRetries(retries);
+		subject.setAccountRetryWaitMs(waitMs);
+		subject.setHandledSubmitMessageSize(submitSizes);
+		subject.setWriteQueueSizeRecordStream(queueSize);
+		subject.setHashQueueSizeRecordStream(hashS);
+		subject.setGasPerConsSec(gasPerSec);
 	}
 }

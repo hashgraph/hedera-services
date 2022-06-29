@@ -20,33 +20,33 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.statistics.StatsSpeedometer;
+
+import static com.hedera.services.stats.ServicesStatsManager.SPEEDOMETER_FORMAT;
+import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 
 public class MiscSpeedometers {
-	private final SpeedometerFactory speedometer;
+	private SpeedometerMetric syncVerifications;
+	private SpeedometerMetric platformTxnRejections;
 
-	StatsSpeedometer syncVerifications;
-	StatsSpeedometer platformTxnRejections;
-
-	public MiscSpeedometers(final SpeedometerFactory speedometer, final double halfLife) {
-		this.speedometer = speedometer;
-
-		syncVerifications = new StatsSpeedometer(halfLife);
-		platformTxnRejections = new StatsSpeedometer(halfLife);
+	public MiscSpeedometers(final double halfLife) {
+		syncVerifications = new SpeedometerMetric(
+				STAT_CATEGORY,
+				Names.SYNC_VERIFICATIONS,
+				Descriptions.SYNC_VERIFICATIONS,
+				SPEEDOMETER_FORMAT,
+				halfLife);
+		platformTxnRejections = new SpeedometerMetric(
+				STAT_CATEGORY,
+				Names.PLATFORM_TXN_REJECTIONS,
+				Descriptions.PLATFORM_TXN_REJECTIONS,
+				SPEEDOMETER_FORMAT,
+				halfLife);
 	}
-
 	public void registerWith(final Platform platform) {
-		platform.addAppStatEntry(
-				speedometer.from(
-						Names.SYNC_VERIFICATIONS,
-						Descriptions.SYNC_VERIFICATIONS,
-						syncVerifications));
-		platform.addAppStatEntry(
-				speedometer.from(
-						Names.PLATFORM_TXN_REJECTIONS,
-						Descriptions.PLATFORM_TXN_REJECTIONS,
-						platformTxnRejections));
+		platform.addAppMetrics(syncVerifications, platformTxnRejections);
 	}
 
 	public void cycleSyncVerifications() {
@@ -75,5 +75,25 @@ public class MiscSpeedometers {
 		private Descriptions() {
 			throw new UnsupportedOperationException("Utility Class");
 		}
+	}
+
+	@VisibleForTesting
+	void setSyncVerifications(final SpeedometerMetric syncVerifications) {
+		this.syncVerifications = syncVerifications;
+	}
+
+	@VisibleForTesting
+	void setPlatformTxnRejections(final SpeedometerMetric platformTxnRejections) {
+		this.platformTxnRejections = platformTxnRejections;
+	}
+
+	@VisibleForTesting
+	SpeedometerMetric getSyncVerifications() {
+		return syncVerifications;
+	}
+
+	@VisibleForTesting
+	SpeedometerMetric getPlatformTxnRejections() {
+		return platformTxnRejections;
 	}
 }

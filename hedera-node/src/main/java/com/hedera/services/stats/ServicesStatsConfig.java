@@ -38,25 +38,25 @@ public final class ServicesStatsConfig {
 
 	static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
 	static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
-	static final String COUNTER_RECEIVED_DEPRECATED_NAME_TPL = "DeprTxnsRcv";
+	static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
 	static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
 	static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";
 	static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
 	static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
 	static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
 	static final String SPEEDOMETER_SUBMITTED_NAME_TPL = "%sSub/sec";
-	static final String SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL = "DeprTxnsRcv/sec";
+	static final String SPEEDOMETER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv/sec";
 
 	static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
 	static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
-	static final String COUNTER_RECEIVED_DEPRECATED_DESC_TPL = "number of deprecated txns received";
+	static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
 	static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
 	static final String COUNTER_SUBMITTED_DESC_TPL = "number of %s submitted";
 	static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";
 	static final String SPEEDOMETER_RECEIVED_DESC_TPL = "number of %s received per second";
 	static final String SPEEDOMETER_ANSWERED_DESC_TPL = "number of %s answered per second";
 	static final String SPEEDOMETER_SUBMITTED_DESC_TPL = "number of %s submitted per second";
-	static final String SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL = "number of deprecated txns received per second";
+	static final String SPEEDOMETER_DEPRECATED_TXNS_DESC = "number of deprecated txns received per second";
 
 	public static final String SYSTEM_DELETE_METRIC = "systemDelete";
 	public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";

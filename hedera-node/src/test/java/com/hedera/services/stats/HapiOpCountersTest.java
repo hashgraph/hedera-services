@@ -26,7 +26,6 @@ import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.statistics.StatEntry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,16 +40,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 class HapiOpCountersTest {
 	private Platform platform;
-	private CounterFactory factory;
 	private MiscRunningAvgs runningAvgs;
 	private TransactionContext txnCtx;
 	private Function<HederaFunctionality, String> statNameFn;
@@ -59,20 +57,18 @@ class HapiOpCountersTest {
 
 	@BeforeEach
 	void setup() {
-		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
+		HapiOpCounters.setAllFunctions(() -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo,
 				ConsensusSubmitMessage,
-				NONE
-		};
+				NONE });
 
 		txnCtx = mock(TransactionContext.class);
 		platform = mock(Platform.class);
-		factory = mock(CounterFactory.class);
 		statNameFn = HederaFunctionality::toString;
 		runningAvgs = mock(MiscRunningAvgs.class);
 
-		subject = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
+		subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 	}
 
 	@AfterEach
@@ -82,76 +78,28 @@ class HapiOpCountersTest {
 
 	@Test
 	void beginsRationally() {
-		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
-		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
-		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
-		assertEquals(0, subject.receivedDeprecatedTxns.get());
-		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
+		assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
+		assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
+		assertTrue(subject.getHandledTxns().containsKey(CryptoTransfer));
+		assertEquals(0, subject.getDeprecatedTxns().get());
+		assertFalse(subject.getAnsweredQueries().containsKey(CryptoTransfer));
 
-		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
-		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
-		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
-		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
+		assertTrue(subject.getReceivedOps().containsKey(TokenGetInfo));
+		assertTrue(subject.getAnsweredQueries().containsKey(TokenGetInfo));
+		assertFalse(subject.getSubmittedTxns().containsKey(TokenGetInfo));
+		assertFalse(subject.getHandledTxns().containsKey(TokenGetInfo));
 
-		assertFalse(subject.receivedOps.containsKey(NONE));
-		assertFalse(subject.submittedTxns.containsKey(NONE));
-		assertFalse(subject.answeredQueries.containsKey(NONE));
-		assertFalse(subject.handledTxns.containsKey(NONE));
+		assertFalse(subject.getReceivedOps().containsKey(NONE));
+		assertFalse(subject.getSubmittedTxns().containsKey(NONE));
+		assertFalse(subject.getAnsweredQueries().containsKey(NONE));
+		assertFalse(subject.getHandledTxns().containsKey(NONE));
 	}
 
 	@Test
 	void registersExpectedStatEntries() {
-		final var transferRcv = mock(StatEntry.class);
-		final var transferSub = mock(StatEntry.class);
-		final var transferHdl = mock(StatEntry.class);
-		final var transferDeprecatedRcv = mock(StatEntry.class);
-		final var tokenInfoRcv = mock(StatEntry.class);
-		final var tokenInfoAns = mock(StatEntry.class);
-		final var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
-		final var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
-		final var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
-		final var xferRcvDeprecatedName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_NAME_TPL);
-		final var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
-		final var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
-		final var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
-		final var xferRcvDeprecatedDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
-		final var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
-		final var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
-		final var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
-		final var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
-		given(factory.from(
-				argThat(xferRcvName::equals),
-				argThat(xferRcvDesc::equals),
-				any())).willReturn(transferRcv);
-		given(factory.from(
-				argThat(xferSubName::equals),
-				argThat(xferSubDesc::equals),
-				any())).willReturn(transferSub);
-		given(factory.from(
-				argThat(xferHdlName::equals),
-				argThat(xferHdlDesc::equals),
-				any())).willReturn(transferHdl);
-		given(factory.from(
-				argThat(xferRcvDeprecatedName::equals),
-				argThat(xferRcvDeprecatedDesc::equals),
-				any())).willReturn(transferDeprecatedRcv);
-		given(factory.from(
-				argThat(infoRcvName::equals),
-				argThat(infoRcvDesc::equals),
-				any())).willReturn(tokenInfoRcv);
-		given(factory.from(
-				argThat(infoAnsName::equals),
-				argThat(infoAnsDesc::equals),
-				any())).willReturn(tokenInfoAns);
-
 		subject.registerWith(platform);
 
-		verify(platform).addAppStatEntry(transferRcv);
-		verify(platform).addAppStatEntry(transferSub);
-		verify(platform).addAppStatEntry(transferHdl);
-		verify(platform).addAppStatEntry(transferDeprecatedRcv);
-		verify(platform).addAppStatEntry(tokenInfoRcv);
-		verify(platform).addAppStatEntry(tokenInfoAns);
+		verify(platform, times(5)).addAppMetrics(any());
 	}
 
 	@Test

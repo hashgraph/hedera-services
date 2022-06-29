@@ -38,6 +38,9 @@ import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 @Singleton
 public class ServicesStatsManager {
+	public static String STAT_CATEGORY = "app";
+	public static String SPEEDOMETER_FORMAT = "%,13.2f";
+	public static String RUNNING_AVG_FORMAT = "%,13.6f";
 	static Pause pause = SLEEPING_PAUSE;
 	static Function<Runnable, Thread> loopFactory = loop -> new Thread(() -> {
 		while (true) {
