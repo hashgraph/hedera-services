@@ -246,7 +246,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	}
 
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
-		return ignore -> actualObjs -> asRandomResult(objs, actualObjs);
+		return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
 	}
 
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
@@ -277,7 +277,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return Optional.empty();
 	}
 
-	private static Optional<Throwable> asRandomResult(final Object[] expecteds, final Object[] actuals) {
+	private static Optional<Throwable> validateRandomResult(final Object[] expecteds, final Object[] actuals) {
 		try {
 			for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
 				Object expected = expecteds[i];
@@ -285,10 +285,13 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 				Assertions.assertNotNull(expected);
 				Assertions.assertNotNull(actual);
 				if (expected instanceof byte[]) {
-					Assertions.assertEquals(32, ((byte[]) actual).length);
+					Assertions.assertEquals(((byte[]) expected).length, ((byte[]) actual).length);
+				} else if (expected instanceof Integer) {
+					Assertions.assertTrue(((BigInteger) actual).intValue() >= 0 &&
+							((BigInteger) actual).intValue() < ((Integer) expected).intValue());
 				} else {
-					Assertions.assertTrue(((BigInteger) actual).intValue() <= 0 &&
-							((BigInteger) actual).intValue() < ((BigInteger) actual).intValue());
+					throw new Exception(
+							String.format("Invalid Random result, expected %s , actual %s", expecteds[i], actuals[i]));
 				}
 			}
 		} catch (Throwable T) {
