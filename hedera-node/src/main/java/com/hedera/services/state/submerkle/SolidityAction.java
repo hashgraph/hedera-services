@@ -4,24 +4,12 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.stream.proto.ContractAction;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.serdes.IoUtils.readNullable;
-import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
-
-public class SolidityAction implements SelfSerializable {
-    public static final int MAX_BYTES = 32 * 1024;
-    private static final int SOLIDITY_ADDRESS_LENGTH = 20;
-
+public class SolidityAction {
     private static final byte[] MISSING_BYTES = new byte[0];
 
     private ContractActionType callType;
@@ -69,43 +57,6 @@ public class SolidityAction implements SelfSerializable {
         this.error = error;
         this.callDepth = callDepth;
     }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        callType = ContractActionType.values()[in.readInt()];
-        callingAccount = readNullableSerializable(in);
-        callingContract = readNullableSerializable(in);
-        gas = in.readLong();
-        input = in.readByteArray(MAX_BYTES);
-        recipientAccount = readNullableSerializable(in);
-        recipientContract = readNullableSerializable(in);
-        invalidSolidityAddress = readNullable(in, i -> i.readByteArray(SOLIDITY_ADDRESS_LENGTH));
-        value = in.readLong();
-        gasUsed = in.readLong();
-        output = readNullable(in, i -> i.readByteArray(MAX_BYTES));
-        revertReason = readNullable(in, i -> i.readByteArray(MAX_BYTES));
-        error = readNullable(in, i -> i.readByteArray(MAX_BYTES));
-        callDepth = in.readInt();
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeInt(callType.ordinal());
-        writeNullableSerializable(callingAccount, out);
-        writeNullableSerializable(callingAccount, out);
-        out.writeLong(gas);
-        out.writeByteArray(input);
-        writeNullableSerializable(recipientAccount, out);
-        writeNullableSerializable(recipientContract, out);
-        writeNullable(invalidSolidityAddress, out, (d, o) -> o.writeByteArray(d));
-        out.writeLong(value);
-        out.writeLong(gasUsed);
-        writeNullable(output, out, (d, o) -> o.writeByteArray(d));
-        writeNullable(revertReason, out, (d, o) -> o.writeByteArray(d));
-        writeNullable(error, out, (d, o) -> o.writeByteArray(d));
-        out.writeInt(callDepth);
-    }
-
 
     @Override
     public boolean equals(final Object o) {
@@ -171,17 +122,6 @@ public class SolidityAction implements SelfSerializable {
                 .add("callDepth", callDepth)
                 .toString();
     }
-
-    @Override
-    public long getClassId() {
-        return 0;
-    }
-
-    @Override
-    public int getVersion() {
-        return 0;
-    }
-
 
     public ContractActionType getCallType() {
         return callType;
