@@ -81,12 +81,8 @@ public class HTSTestsUtil {
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-	public static final Bytes invalidFullPrefixAssociate =
-			UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_ASSOCIATE_PRECOMPILE_VALUE);
-	public static final Bytes invalidFullPrefixTokenCreate =
-			UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_TOKEN_CREATE_PRECOMPILE_VALUE);
-	public static final Bytes invalidFullPrefixTransfer =
-			UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_TRANSFER_PRECOMPILE_VALUE);
+	public static final Bytes invalidFullPrefix =
+			UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE_VALUE);
 	public static final Bytes missingNftResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
