@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +91,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.markSpecAsBee
 import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -99,7 +101,7 @@ public class HapiApiSpec implements Runnable {
 					0,
 					10_000,
 					250,
-					TimeUnit.MILLISECONDS,
+					MILLISECONDS,
 					new SynchronousQueue<>());
 
 	static final Logger log = LogManager.getLogger(HapiApiSpec.class);
@@ -309,8 +311,9 @@ public class HapiApiSpec implements Runnable {
 							secsWait);
 					try {
 						Thread.sleep(1000);
-					} catch (InterruptedException e) {
+					} catch (InterruptedException ignored) {
 						log.error("Error while waiting to connect to server");
+						Thread.currentThread().interrupt();
 					}
 				}
 			}
@@ -423,8 +426,9 @@ public class HapiApiSpec implements Runnable {
 										break;
 									} else {
 										try {
-											Thread.sleep(500L);
+											MILLISECONDS.sleep(500);
 										} catch (InterruptedException ignored) {
+											Thread.currentThread().interrupt();
 										}
 									}
 								}
@@ -444,6 +448,7 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
+	@SuppressWarnings({ "java:S899", "ResultOfMethodCallIgnored" })
 	public void offerFinisher(HapiSpecOpFinisher finisher) {
 		pendingOps.offer(finisher);
 	}
@@ -480,7 +485,7 @@ public class HapiApiSpec implements Runnable {
 		return ratesProvider;
 	}
 
-	private static Map ciPropsSource;
+	private static Map<String, String> ciPropsSource;
 	private static String dynamicNodes;
 	private static String tlsFromCi;
 	private static String txnFromCi;
@@ -522,15 +527,15 @@ public class HapiApiSpec implements Runnable {
 					.collect(joining(","));
 			String ciPropertiesMap = Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
 			log.info("CI_PROPERTIES_MAP: " + ciPropertiesMap);
-			ciPropsSource = new HashMap<String, String>() {{
-				this.put("node.selector", nodeSelectorFromCi);
-				this.put("nodes", dynamicNodes);
-				this.put("default.payer", defaultPayer);
-				this.put("default.node", defaultNodeAccount);
-				this.put("ci.properties.map", ciPropertiesMap);
-				this.put("tls", tlsFromCi);
-				this.put("txn", txnFromCi);
-			}};
+			ciPropsSource = new HashMap<String, String>();
+			ciPropsSource.put("node.selector", nodeSelectorFromCi);
+			ciPropsSource.put("nodes", dynamicNodes);
+			ciPropsSource.put("default.payer", defaultPayer);
+			ciPropsSource.put("default.node", defaultNodeAccount);
+			ciPropsSource.put("ci.properties.map", ciPropertiesMap);
+			ciPropsSource.put("tls", tlsFromCi);
+			ciPropsSource.put("txn", txnFromCi);
+
 			final var explicitCiProps = MapPropertySource.parsedFromCommaDelimited(ciPropertiesMap);
 			if (explicitCiProps.has(CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES)) {
 				ciPropsSource.put("warnings.suppressUnrecoverableNetworkFailures", "true");
@@ -681,9 +686,11 @@ public class HapiApiSpec implements Runnable {
 			}
 			File file = new File(costSnapshotFilePath());
 			CharSink sink = Files.asCharSink(file, StandardCharsets.UTF_8);
-			deserializedCosts.store(sink.openBufferedStream(), "Cost snapshot");
+			try (final Writer writer = sink.openBufferedStream()) {
+				deserializedCosts.store(writer, "Cost snapshot");
+			}
 		} catch (Exception e) {
-			log.warn("Couldn't take cost snapshot to file '" + costSnapshotFile() + "!", e);
+			log.warn("Couldn't take cost snapshot to file '{}'!", costSnapshotFile(), e);
 		}
 	}
 

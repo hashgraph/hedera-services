@@ -454,6 +454,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				));
 	}
 
+	@SuppressWarnings("java:S5960")
 	private void assertFeeInChildRecord(
 			final TransactionRecord parent,
 			final TransactionRecord child,
@@ -475,6 +476,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 			break;
 		}
 		final var fee = newAccountFunding - receivedBalance;
+
 		assertEquals(fee, child.getTransactionFee(), "Child record did not specify deducted fee");
 	}
 
