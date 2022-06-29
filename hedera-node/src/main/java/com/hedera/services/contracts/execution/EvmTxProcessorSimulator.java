@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.TxProcessorUtil;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -46,13 +47,11 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.COMPLETED_SUCCESS;
 import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.EXCEPTIONAL_HALT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
 
 @Singleton
@@ -131,47 +130,21 @@ public class EvmTxProcessorSimulator {
 		populateCommonFields(sender);
 		final long gasPrice = getLivePrice(consensusTime);
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
-		var allowanceCharged = Wei.ZERO;
-		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
-		MutableAccount mutableSender = getMutableAccount(senderAccount);
 		final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
 		MutableAccount mutableRelayer = getMutableAccount(relayerAccount);
 
 		if (intrinsicGas > gasLimit) {
 			throw new InvalidTransactionException(INSUFFICIENT_GAS);
 		}
-		final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
-
-		if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
-			// If sender set gas price to 0, relayer pays all the fees
-			validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
-			senderCanAffordGas(gasCost, (gasCost), mutableRelayer);
-			allowanceCharged = gasCost;
-		} else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
-			// If sender gas price < current gas price, pay the difference from gas allowance
-			var senderFee =
-					Wei.of(userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit)).divide(WEIBARS_TO_TINYBARS));
-			validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
-			final var remainingFee = gasCost.subtract(senderFee);
-			validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
-			validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
-			mutableSender.decrementBalance(senderFee);
-			mutableRelayer.decrementBalance(remainingFee);
-			allowanceCharged = remainingFee;
-		} else {
-			// If user gas price >= current gas price, sender pays all fees
-			senderCanAffordGas(gasCost, gasCost, mutableSender);
-		}
-		// In any case, the sender must have sufficient balance to pay for any value sent
-		final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
-		validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
-		//construct the PrecompileMessage here
-		PrecompileMessage message = constructMessageAndCallPrecompileContract(sender, consensusTime, ledgers,
+		var allowanceCharged = TxProcessorUtil.chargeForEth(
+				userOfferedGasPrice, gasCost, maxGasAllowanceInTinybars, mutableSender,
+				mutableRelayer, Wei.ZERO, gasPrice, gasLimit, value);
+		PrecompileMessage message = constructMessageAndCallPrecompileContract(
+				sender, consensusTime, ledgers,
 				payload, gasLimit, value, tokenId);
 		calculateGasUsedByTransaction(gasLimit, message);
 
 		final long refunded = calculateRefundEth(gasLimit, gasPrice, mutableRelayer, allowanceCharged);
-		// Send fees to coinbase
 		sendFeesToCoinbase(gasLimit, gasPrice, refunded);
 
 		updater.commit();
@@ -203,7 +176,8 @@ public class EvmTxProcessorSimulator {
 
 	private void calculateGasUsedByTransaction(final long txGasLimit, PrecompileMessage message) {
 		var usedGas = txGasLimit - message.getGasRemaining();
-		gasUsedByTransaction = Math.max(usedGas, txGasLimit - txGasLimit * dynamicProperties.maxGasRefundPercentage() / 100);
+		gasUsedByTransaction = Math.max(
+				usedGas, txGasLimit - txGasLimit * dynamicProperties.maxGasRefundPercentage() / 100);
 	}
 
 	private PrecompileMessage constructMessageAndCallPrecompileContract(Account sender, Instant consensusTime, WorldLedgers ledgers,
