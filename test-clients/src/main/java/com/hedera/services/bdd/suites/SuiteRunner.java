@@ -211,7 +211,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -226,20 +225,19 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class SuiteRunner {
+	private static final Random RANDOM = new Random();
 	private static final Logger log = LogManager.getLogger(SuiteRunner.class);
 	private static final int SUITE_NAME_WIDTH = 32;
 
 	private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
 	private static final HapiSpecSetup.TxnProtoStructure DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
 	private static final HapiSpecSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
-
-	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
 	private static final String DEFAULT_PAYER_ID = "0.0.2";
 
-	private static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
-	private static List<HapiApiSuite> suitesToDetail = new ArrayList<>();
+	private static final List<HapiApiSuite> SUITES_TO_DETAIL = new ArrayList<>();
 
+	@SuppressWarnings({"java:S1171", "java:S3599", "java:S125"})
 	private static final Map<String, Supplier<HapiApiSuite[]>> CATEGORY_MAP = new HashMap<>() {{
 		/* Convenience entries, uncomment locally to run CI jobs */
 //		put("CiConsensusAndCryptoJob", aof(
@@ -517,20 +515,20 @@ public class SuiteRunner {
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* Specify the network to run legacy SC tests instead of using suiterunner */
-	private static final String LEGACY_SMART_CONTRACT_TESTS = "SmartContractAggregatedTests";
 	private static String payerId = DEFAULT_PAYER_ID;
 
+	@SuppressWarnings("java:S2440")
 	public static void main(String... args) throws Exception {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
 		new org.ethereum.crypto.HashUtil();
 
 		String[] effArgs = trueArgs(args);
-		log.info("Effective args :: " + List.of(effArgs));
-		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
+		log.info("Effective args :: {}", List.of(effArgs));
+		if (Arrays.asList(effArgs).contains("-CI")) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
-			expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
+			int expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
 					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
@@ -579,16 +577,15 @@ public class SuiteRunner {
 	 * @param defaultNode
 	 */
 	private static void createPayerAccount(String nodes, String defaultNode) {
-		Random r = new Random();
 		try {
-			Thread.sleep(r.nextInt(5000));
+			Thread.sleep(RANDOM.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
 			if (!isIdLiteral(payerId)) {
 				payerId = DEFAULT_PAYER_ID;
 			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (InterruptedException ignored) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -600,19 +597,19 @@ public class SuiteRunner {
 	}
 
 	private static Map<String, String> arbitraryOverrides(String[] effArgs) {
-		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*?)=(.*)");
+		var miscOverridePattern = Pattern.compile("([^-].*?)=(.*)");
 		return Stream.of(effArgs)
-				.map(arg -> MISC_OVERRIDE_PATTERN.matcher(arg))
+				.map(miscOverridePattern::matcher)
 				.filter(Matcher::matches)
 				.collect(toMap(m -> m.group(1), m -> m.group(2)));
 	}
 
 	private static String[] trueArgs(String[] args) {
 		String ciArgs = Optional.ofNullable(System.getenv("DSL_SUITE_RUNNER_ARGS")).orElse("");
-		log.info("Args from CircleCI environment: |" + ciArgs + "|");
+		log.info("Args from CircleCI environment: |{}|", ciArgs);
 
 		return StringUtils.isNotEmpty(ciArgs)
-				? Stream.of(args, new Object[] { "-CI" }, getEffectiveDSLSuiteRunnerArgs(ciArgs))
+				? Stream.of(args, new String[] { "-CI" }, getEffectiveDSLSuiteRunnerArgs(ciArgs))
 				.flatMap(Stream::of)
 				.toArray(String[]::new)
 				: args;
@@ -633,9 +630,8 @@ public class SuiteRunner {
 		if (Arrays.asList(ciArgs).contains("ALL_SUITES")) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
 			effectiveArgs.addAll(Stream.of(ciArgs).
-					filter(e -> !e.equals("ALL_SUITES")).
-					collect(Collectors.toList()));
-			log.info("Effective args when running ALL_SUITES : " + effectiveArgs);
+					filter(e -> !e.equals("ALL_SUITES")).toList());
+			log.info("Effective args when running ALL_SUITES : {}", effectiveArgs);
 			return effectiveArgs.toArray(new String[0]);
 		}
 
@@ -648,9 +644,8 @@ public class SuiteRunner {
 	}
 
 	private static void summarizeResults(Map<String, List<CategoryResult>> byRunType) {
-		byRunType.entrySet().stream().forEach(entry -> {
-			log.info("============== " + entry.getKey() + " run results ==============");
-			List<CategoryResult> results = entry.getValue();
+		byRunType.forEach((key, results) -> {
+			log.info("============== {} run results ==============", key);
 			for (CategoryResult result : results) {
 				log.info(result.summary);
 				for (HapiApiSuite failed : result.failedSuites) {
@@ -658,7 +653,7 @@ public class SuiteRunner {
 							.filter(HapiApiSpec::notOk)
 							.map(HapiApiSpec::toString)
 							.collect(joining(", "));
-					log.info("  --> Problems in suite '" + failed.name() + "' :: " + specList);
+					log.info("  --> Problems in suite '{}' :: {}", failed.name(), specList);
 				}
 				globalPassFlag &= result.failedSuites.isEmpty();
 			}
@@ -666,7 +661,7 @@ public class SuiteRunner {
 		log.info("============== SuiteRunner finished ==============");
 
 		/* Print detail summaries for analysis by HapiClientValidator */
-		suitesToDetail.forEach(HapiApiSuite::summarizeDeferredResults);
+		SUITES_TO_DETAIL.forEach(HapiApiSuite::summarizeDeferredResults);
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
@@ -683,6 +678,7 @@ public class SuiteRunner {
 		}
 	}
 
+	@SuppressWarnings("java:S3864")
 	private static void collectTargetCategories(List<String> args) {
 		targetCategories = args
 				.stream()
@@ -691,8 +687,8 @@ public class SuiteRunner {
 				.peek(cs -> List.of(cs.suites).forEach(suite -> {
 					suite.skipClientTearDown();
 					suite.deferResultsSummary();
-					suitesToDetail.add(suite);
-				})).collect(toList());
+					SUITES_TO_DETAIL.add(suite);
+				})).toList();
 	}
 
 	private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {
@@ -726,7 +722,7 @@ public class SuiteRunner {
 				IntStream.range(0, inputs.length)
 						.mapToObj(i -> runAsync(() -> outputs.set(i, f.apply(inputs[i])),
 								HapiApiSpec.getCommonThreadPool()))
-						.toArray(n -> new CompletableFuture[n]));
+						.toArray(CompletableFuture[]::new));
 		future.join();
 		return outputs;
 	}
@@ -751,7 +747,7 @@ public class SuiteRunner {
 		}
 	}
 
-	static private String rightPadded(String s, int width) {
+	private static String rightPadded(String s, int width) {
 		if (s.length() == width) {
 			return s;
 		} else if (s.length() > width) {
@@ -762,21 +758,13 @@ public class SuiteRunner {
 		}
 	}
 
-//	@SafeVarargs
-//	public static <T> Supplier<T[]> aof(Supplier<T>... items) {
-//		return () -> (T[]) List.of(items)
-//				.stream()
-//				.map(Supplier::get)
-//				.toArray();
-//	}
-
+	@SafeVarargs
 	public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
 		return () -> {
 			HapiApiSuite[] suites = new HapiApiSuite[items.length];
 			for (int i = 0; i < items.length; i++) {
 				suites[i] = items[i].get();
 			}
-			;
 			return suites;
 		};
 	}

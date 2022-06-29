@@ -242,7 +242,7 @@ public class HapiApiSpec implements Runnable {
         if (!suitePrefix.endsWith(ETH_SUFFIX)) {
             ops = Stream.of(given, when, then)
                     .flatMap(Arrays::stream)
-                    .collect(toList());
+                    .toList();
         } else {
             if (!isEthereumAccountCreatedForSpec(this)) {
                 initializeEthereumAccountForSpec(this);
@@ -251,7 +251,7 @@ public class HapiApiSpec implements Runnable {
             ops = UtilVerbs.convertHapiCallsToEthereumCalls(
                     Stream.of(given, when, then)
                             .flatMap(Arrays::stream)
-                            .collect(Collectors.toList()));
+                            .toList());
         }
 
         exec(ops);
@@ -353,7 +353,7 @@ public class HapiApiSpec implements Runnable {
             List<HapiSpecOperation> creationOps = entities.requiredCreations();
             if (!creationOps.isEmpty()) {
                 log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
-                ops = Stream.concat(creationOps.stream(), ops.stream()).collect(toList());
+                ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
             }
         }
 
@@ -367,7 +367,7 @@ public class HapiApiSpec implements Runnable {
                 status = FAILED;
                 break;
             } else {
-                log.info("'" + name + "' finished initial execution of " + op);
+                log.info("'{}' finished initial execution of {}", name, op);
             }
         }
         allOpsSubmitted.set(true);
@@ -406,7 +406,7 @@ public class HapiApiSpec implements Runnable {
                                         try {
                                             op.finishFor(this);
                                         } catch (Throwable t) {
-                                            log.warn(logPrefix() + op + " failed!");
+                                            log.warn("{}{} failed!", logPrefix(),op);
                                             finishingError.set(Optional.of(t));
                                         }
                                     }
@@ -641,8 +641,9 @@ public class HapiApiSpec implements Runnable {
                 .toString();
     }
 
+    @SuppressWarnings("java:S2629")
     public synchronized void recordPayment(Payment payment) {
-        log.info(logPrefix() + "+ cost snapshot :: " + payment);
+        log.info("{}+ cost snapshot :: {}", logPrefix(), payment);
         costs.add(payment);
     }
 
@@ -707,7 +708,7 @@ public class HapiApiSpec implements Runnable {
                     Integer.valueOf(meta.substring(0, i)),
                     Payment.fromEntry(meta.substring(i + 1), amount));
         });
-        return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
+        return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).toList();
     }
 
     private String costSnapshotFile() {

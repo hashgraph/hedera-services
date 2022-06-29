@@ -70,16 +70,16 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 			"a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
 	private static final Key VALID_ED_25519_KEY = Key.newBuilder().setEd25519(ALIAS_CONTENT).build();
 	private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
-	public static final String AUTO_MEMO = "auto-created account";
-	public static final String VALID_ALIAS = "validAlias";
-	public static final String PAYER = "payer";
-	public static final String TRANSFER_TXN = "transferTxn";
-	public static final String ALIAS = "alias";
-	public static final String PAYER_1 = "payer1";
-	public static final String ALIAS_2 = "alias2";
-	public static final String PAYER_4 = "payer4";
-	public static final String TRANSFER_TXN_2 = "transferTxn2";
-	public static final String TRANSFER_ALIAS = "transferAlias";
+	private static final String AUTO_MEMO = "auto-created account";
+	private static final String VALID_ALIAS = "validAlias";
+	private static final String PAYER = "payer";
+	private static final String TRANSFER_TXN = "transferTxn";
+	private static final String ALIAS = "alias";
+	private static final String PAYER_1 = "payer1";
+	private static final String ALIAS_2 = "alias2";
+	private static final String PAYER_4 = "payer4";
+	private static final String TRANSFER_TXN_2 = "transferTxn2";
+	private static final String TRANSFER_ALIAS = "transferAlias";
 
 	public static void main(String... args) {
 		new AutoAccountCreationSuite().runSuiteAsync();

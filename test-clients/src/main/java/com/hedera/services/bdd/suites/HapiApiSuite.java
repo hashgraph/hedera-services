@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -45,11 +46,14 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAI
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
 
 public abstract class HapiApiSuite {
+
+	private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
+
 	public enum FinalOutcome {
 		SUITE_PASSED, SUITE_FAILED
 	}
 
-	private static final Random r = new Random();
+	private static final Random RANDOM = new Random();
 
 	protected abstract Logger getResultsLogger();
 	public abstract List<HapiApiSpec> getSpecsInSuite();
@@ -114,7 +118,6 @@ public abstract class HapiApiSuite {
 		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
-//		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
 		return simpleName;
 	}
 
@@ -146,14 +149,10 @@ public abstract class HapiApiSuite {
 	}
 
 	public FinalOutcome runSuiteAsync() {
-//		runSuite(this::runAsync);
-//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runAsync);
 	}
 
 	public FinalOutcome runSuiteSync() {
-//		runSuite(this::runSync);
-//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runSync);
 	}
 
@@ -161,10 +160,11 @@ public abstract class HapiApiSuite {
 		return completedSpecs.stream().allMatch(HapiApiSpec::ok) ? SUITE_PASSED : SUITE_FAILED;
 	}
 
+	@SuppressWarnings("java:S2629")
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
 		suiteRunnerCounter++;
 		if (!getDeferResultsSummary()) {
-			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
+			getResultsLogger().info(STARTING_SUITE, name());
 		}
 
 		List<HapiApiSpec> specs = getSpecsInSuite();
@@ -179,12 +179,13 @@ public abstract class HapiApiSuite {
 		return finalOutcomeFor(finalSpecs);
 	}
 
+	@SuppressWarnings({"java:S3358", "java:S3740"})
 	public static HapiSpecOperation[] flattened(Object... ops) {
 		return Stream
 				.of(ops)
-				.map(op -> (op instanceof HapiSpecOperation)
-						? new HapiSpecOperation[] { (HapiSpecOperation) op }
-						: ((op instanceof List) ? ((List) op).toArray(
+				.map(op -> (op instanceof HapiSpecOperation hapiOp)
+						? new HapiSpecOperation[] { hapiOp }
+						: ((op instanceof List list) ? list.toArray(
 						new HapiSpecOperation[0]) : (HapiSpecOperation[]) op))
 				.flatMap(Stream::of)
 				.toArray(HapiSpecOperation[]::new);
@@ -195,16 +196,17 @@ public abstract class HapiApiSuite {
 		return Arrays.stream(specLists).flatMap(List::stream).toList();
 	}
 
-	protected HapiSpecOperation[] asOpArray(int N, Function<Integer, HapiSpecOperation> factory) {
-		return IntStream.range(0, N).mapToObj(factory::apply).toArray(HapiSpecOperation[]::new);
+	protected HapiSpecOperation[] asOpArray(int n, IntFunction<HapiSpecOperation> factory) {
+		return IntStream.range(0, n).mapToObj(factory).toArray(HapiSpecOperation[]::new);
 	}
 
+	@SuppressWarnings("java:S2629")
 	private void summarizeResults(Logger log) {
 		if (getDeferResultsSummary()) {
 			return;
 		}
-		log.info("-------------- STARTING " + name() + " SUITE --------------");
-		log.info("-------------- RESULTS OF " + name() + " SUITE --------------");
+		log.info(STARTING_SUITE, name());
+		log.info("-------------- RESULTS OF {} SUITE --------------", name());
 		for (HapiApiSpec spec : finalSpecs) {
 			log.info(spec);
 		}
@@ -217,14 +219,14 @@ public abstract class HapiApiSuite {
 	}
 
 	private void runAsync(Iterable<HapiApiSpec> specs) {
-		CompletableFuture[] futures = StreamSupport
+		final CompletableFuture[] futures = StreamSupport
 				.stream(specs.spliterator(), false)
 				.map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
-				.toArray(n -> new CompletableFuture[n]);
+				.toArray(CompletableFuture[]::new);
 		CompletableFuture.allOf(futures).join();
 	}
 
 	public static String salted(String str) {
-		return str + r.nextInt(1_234_567);
+		return str + RANDOM.nextInt(1_234_567);
 	}
 }
