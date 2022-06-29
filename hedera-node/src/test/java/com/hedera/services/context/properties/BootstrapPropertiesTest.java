@@ -234,7 +234,8 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.isEnabled", true),
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
-			entry("hedera.recordStream.signatureFileVersion", 5)
+			entry("hedera.recordStream.signatureFileVersion", 5),
+			entry("randomGeneration.isEnabled", true)
 	);
 
 	@Test
