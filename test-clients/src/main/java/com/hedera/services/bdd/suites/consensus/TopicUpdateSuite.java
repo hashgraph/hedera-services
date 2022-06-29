@@ -270,7 +270,6 @@ public class TopicUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("expirationTimestampIsValidated")
 				.given(
 						createTopic("testTopic")
-								.via("testTopicCreation")
 								.autoRenewPeriod(validAutoRenewPeriod)
 				)
 				.when()
