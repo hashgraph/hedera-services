@@ -47,21 +47,15 @@ class RunningAvgFactoryTest {
 
 		// when:
 		StatEntry entry = subject.from(name, desc, runningAvg);
-		// and:
-		var resetRunningAvg = entry.init.apply(halfLife);
-		// and:
-		entry.reset.accept(halfLife);
+		entry.init();
+		entry.reset();
 
 		// then:
-		assertEquals("app", entry.category);
-		assertEquals(name, entry.name);
-		assertEquals(desc, entry.desc);
-		assertEquals("%,13.6f", entry.format);
-		assertSame(runningAvg, entry.buffered);
-		// and:
-		assertSame(runningAvg, resetRunningAvg);
+		assertEquals("app", entry.getCategory());
+		assertEquals(name, entry.getName());
+		assertEquals(desc, entry.getDescription());
+		assertEquals("%,13.6f", entry.getFormat());
+		assertSame(runningAvg, entry.getStatsBuffered());
 		verify(runningAvg, times(2)).reset(halfLife);
-		// and:
-		assertEquals(something, entry.statsStringSupplier.get());
 	}
 }

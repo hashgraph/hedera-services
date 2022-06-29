@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -43,12 +44,11 @@ class CounterFactoryTest {
 		StatEntry counter = subject.from(name, desc, pretend);
 
 		// then:
-		assertEquals("app", counter.category);
-		assertEquals(name, counter.name);
-		assertEquals(desc, counter.desc);
-		assertEquals("%d", counter.format);
-		assertNull(counter.buffered);
-		assertNull(counter.init);
-		assertSame(pretend, counter.statsStringSupplier);
+		assertEquals("app", counter.getCategory());
+		assertEquals(name, counter.getName());
+		assertEquals(desc, counter.getDescription());
+		assertEquals("%d", counter.getFormat());
+		assertNull(counter.getStatsBuffered());
+		assertDoesNotThrow(counter::init);
 	}
 }

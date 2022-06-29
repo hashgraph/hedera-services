@@ -32,7 +32,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 
-public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
+public class MerkleAccount extends PartialNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -56,7 +56,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	static {
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
-
 	private static final int RELEASE_0240_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
@@ -68,18 +67,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	@Override
-	public void setKey(EntityNum phi) {
-		state().setNumber(phi.intValue());
+	public void setKey(EntityNum num) {
+		state().setNumber(num.intValue());
 	}
 
 	// Order of Merkle node children
 	public static final class ChildIndices {
 		private static final int STATE = 0;
-		private static final int RELEASE_090_RECORDS = 1;
-		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
-		static final int NUM_090_CHILDREN = 3;
-		static final int NUM_0240_CHILDREN = 2;
-
+		private static final int RECORDS = 1;
+		static final int NUM_POST_0240_CHILDREN = 2;
 		private ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
 		}
@@ -91,7 +87,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -111,8 +106,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	@Override
-	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_0240_CHILDREN;
+	public int getMinimumChildCount() {
+		return ChildIndices.NUM_POST_0240_CHILDREN;
 	}
 
 	// --- FastCopyable ---
@@ -130,9 +125,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 
 		setImmutable(true);
-		return getNumberOfChildren() == ChildIndices.NUM_090_CHILDREN ?
-				new MerkleAccount(List.of(state().copy(), records().copy(), tokens().copy()), this) :
-				new MerkleAccount(List.of(state().copy(), records().copy()), this);
+		return new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
 	// ---- Object ----
@@ -162,25 +155,22 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/* ----  Merkle children  ---- */
+	public void forgetThirdChildIfPlaceholder() {
+		if (getNumberOfChildren() == 3) {
+			if (getChild(2) instanceof MerkleAccountTokensPlaceholder) {
+				addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
+			} else {
+				log.error(
+						"Third child of account unexpected type {}",
+						getChild(2).getClass().getSimpleName());
+			}
+		}
+	}
 	public MerkleAccountState state() {
 		return getChild(ChildIndices.STATE);
 	}
-
 	public FCQueue<ExpirableTxnRecord> records() {
-		return getChild(ChildIndices.RELEASE_090_RECORDS);
-	}
-
-	public MerkleAccountTokens tokens() {
-		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
-	}
-
-	public void setTokens(final MerkleAccountTokens tokens) {
-		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
-	}
-
-	public void forgetAssociatedTokens() {
-		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
+		return getChild(ChildIndices.RECORDS);
 	}
 
 	// ----  Bean  ----
@@ -192,7 +182,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		throwIfImmutable("Cannot change this account's owned NFTs if it's immutable.");
 		state().setNftsOwned(nftsOwned);
 	}
-
 	public boolean isTokenTreasury() {
 		return state().isTokenTreasury();
 	}

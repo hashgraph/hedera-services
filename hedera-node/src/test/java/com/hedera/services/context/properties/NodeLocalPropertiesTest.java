@@ -59,7 +59,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(25, subject.numExecutionTimesToTrack());
 		assertEquals(26, subject.issResetPeriod());
-		assertEquals(27, subject.issRoundsToDump());
+		assertEquals(27, subject.issRoundsToLog());
 		assertEquals(28, subject.prefetchQueueCapacity());
 		assertEquals(29, subject.prefetchThreadPoolSize());
 		assertEquals(30, subject.prefetchCodeCacheTtlSecs());
@@ -91,7 +91,6 @@ class NodeLocalPropertiesTest {
 		assertFalse(subject.exportAccountsOnStartup());
 		assertEquals(Profile.PROD, subject.nettyMode());
 		assertEquals(24L, subject.nettyStartRetryIntervalMs());
-		assertTrue(subject.shouldDumpFcmsOnIss());
 	}
 
 	@Test
@@ -112,7 +111,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(24, subject.nettyStartRetries());
 		assertEquals(26, subject.numExecutionTimesToTrack());
 		assertEquals(27, subject.issResetPeriod());
-		assertEquals(28, subject.issRoundsToDump());
+		assertEquals(28, subject.issRoundsToLog());
 		assertEquals(29, subject.prefetchQueueCapacity());
 		assertEquals(30, subject.prefetchThreadPoolSize());
 		assertEquals(31, subject.prefetchCodeCacheTtlSecs());
@@ -146,7 +145,6 @@ class NodeLocalPropertiesTest {
 		assertTrue(subject.exportAccountsOnStartup());
 		assertEquals(Profile.TEST, subject.nettyMode());
 		assertEquals(25L, subject.nettyStartRetryIntervalMs());
-		assertFalse(subject.shouldDumpFcmsOnIss());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -180,10 +178,9 @@ class NodeLocalPropertiesTest {
 		given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
 		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
-		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
 		given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
 		given(properties.getIntProperty("iss.resetPeriod")).willReturn(i + 25);
-		given(properties.getIntProperty("iss.roundsToDump")).willReturn(i + 26);
+		given(properties.getIntProperty("iss.roundsToLog")).willReturn(i + 26);
 		given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
 		given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
 		given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);

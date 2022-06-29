@@ -54,8 +54,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -85,7 +86,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_025x_CHILDREN;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0260_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
@@ -99,7 +100,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 /**
  * The Merkle tree root of the Hedera Services world state.
  */
-public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
+public class ServicesState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -144,7 +145,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/**
 	 * Log out the sizes the state children.
 	 */
-	 private void logStateChildrenSizes() {
+	private void logStateChildrenSizes() {
 		log.info("  (@ {}) # NFTs               = {}",
 				StateChildIndices.UNIQUE_TOKENS,
 				uniqueTokens().size());
@@ -183,24 +184,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public int getMinimumChildCount(int version) {
-		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
-			return NUM_POST_0210_CHILDREN;
-		} else if (version == CURRENT_VERSION) {
-			return NUM_POST_0260_CHILDREN;
-		} else {
-			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
-		}
+	public int getMinimumChildCount() {
+		return NUM_025x_CHILDREN;
 	}
 
 	@Override
 	public int getMinimumSupportedVersion() {
 		return MINIMUM_SUPPORTED_VERSION;
-	}
-
-	@Override
-	public void initialize() {
-		// The new STAKING_INFO child is added in the migration step for consistency
 	}
 
 	@Override
@@ -371,11 +361,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
-	@Override
-	public void noMoreTransactions() {
-		// no-op
-	}
-
 	/* --- FastCopyable --- */
 	@Override
 	public synchronized ServicesState copy() {
@@ -393,7 +378,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public synchronized void archive() {
 		if (metadata != null) {
-			metadata.archive();
+			metadata.release();
 		}
 
 		topics().archive();
@@ -406,7 +391,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- MerkleNode --- */
 	@Override
-	protected synchronized void onRelease() {
+	public synchronized void release() {
 		if (metadata != null) {
 			metadata.release();
 		}
@@ -523,7 +508,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
-		setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
+		setChild(StateChildIndices.STAKING_INFO,
+				stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
@@ -540,13 +526,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator = ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
+	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator =
+			ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
 	private static IterableStorageMigrator iterableStorageMigrator = ReleaseTwentySixMigration::makeStorageIterable;
 	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
 	private static StakingInfoBuilder stakingInfoBuilder = ReleaseTwentySevenMigration::buildStakingInfoMap;
 	private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory = VirtualMapFactory::new;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
-	private static Consumer<ServicesState> scheduledTxnsMigrator = LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
+	private static Consumer<ServicesState> scheduledTxnsMigrator =
+			LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
 	@VisibleForTesting
 	void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
@@ -592,7 +580,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface StakingInfoBuilder {
-		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook, BootstrapProperties bootstrapProperties);
+		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook,
+				BootstrapProperties bootstrapProperties);
 	}
 
 	@FunctionalInterface

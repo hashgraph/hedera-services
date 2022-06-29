@@ -39,10 +39,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import javax.annotation.Nullable;
@@ -66,7 +67,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * @deprecated Scheduled transactions are now stored in {@link MerkleScheduledTransactions}
  */
 @Deprecated(since = "0.27")
-public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
+public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
 	static final int RELEASE_0180_VERSION = 2;
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;

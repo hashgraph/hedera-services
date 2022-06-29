@@ -48,20 +48,16 @@ class SpeedometerFactoryTest {
 		// when:
 		StatEntry entry = subject.from(name, desc, speedometer);
 		// and:
-		var resetSpeedometer = entry.init.apply(halfLife);
+		entry.init();
 		// and:
-		entry.reset.accept(halfLife);
+		entry.getValueAndReset();
 
 		// then:
-		assertEquals("app", entry.category);
-		assertEquals(name, entry.name);
-		assertEquals(desc, entry.desc);
-		assertEquals("%,13.2f", entry.format);
-		assertSame(speedometer, entry.buffered);
-		// and:
-		assertSame(speedometer, resetSpeedometer);
+		assertEquals("app", entry.getCategory());
+		assertEquals(name, entry.getName());
+		assertEquals(desc, entry.getDescription());
+		assertEquals("%,13.2f", entry.getFormat());
+		assertSame(speedometer, entry.getStatsBuffered());
 		verify(speedometer, times(2)).reset(halfLife);
-		// and:
-		assertEquals(something, entry.statsStringSupplier.get());
 	}
 }

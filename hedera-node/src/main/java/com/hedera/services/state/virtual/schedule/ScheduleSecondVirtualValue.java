@@ -34,7 +34,8 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 
@@ -47,8 +48,8 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
  * It should be moved back to VirtualMap in 0.28.
  */
-public class ScheduleSecondVirtualValue extends AbstractMerkleLeaf
-		implements VirtualValue, Keyed<SecondSinceEpocVirtualKey> {
+public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
+		implements VirtualValue, Keyed<SecondSinceEpocVirtualKey>, MerkleLeaf {
 
 	static final int CURRENT_VERSION = 1;
 

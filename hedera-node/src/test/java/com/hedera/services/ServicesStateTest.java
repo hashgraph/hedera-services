@@ -71,9 +71,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.SignedStateFileManager;
 import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.platform.state.SignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -393,7 +393,7 @@ class ServicesStateTest {
 	void onReleaseAndArchiveNoopIfMetadataNull() {
 		setAllMmsTo(mock(MerkleMap.class));
 		Assertions.assertDoesNotThrow(subject::archive);
-		Assertions.assertDoesNotThrow(subject::onRelease);
+		Assertions.assertDoesNotThrow(subject::release);
 	}
 
 	@Test
@@ -402,7 +402,7 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		// when:
-		subject.onRelease();
+		subject.release();
 
 		// then:
 		verify(metadata).release();
@@ -419,14 +419,8 @@ class ServicesStateTest {
 		subject.archive();
 
 		// then:
-		verify(metadata).archive();
+		verify(metadata).release();
 		verify(mockMm, times(6)).archive();
-	}
-
-	@Test
-	void noMoreTransactionsIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::noMoreTransactions);
 	}
 
 	@Test
@@ -537,19 +531,7 @@ class ServicesStateTest {
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		assertEquals(
-				StateChildIndices.NUM_POST_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_POST_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0260_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_POST_0260_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.CURRENT_VERSION));
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
+		assertEquals(StateChildIndices.NUM_POST_0260_CHILDREN, subject.getMinimumChildCount());
 	}
 
 	@Test
@@ -845,7 +827,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void testNftsFromSignedStateV25() {
+	void testLoading0263State() {
 		ClassLoaderHelper.loadClassPathDependencies();
 		assertDoesNotThrow(() -> loadSignedState(signedStateDir + "v0.25.3/SignedState.swh"));
 	}

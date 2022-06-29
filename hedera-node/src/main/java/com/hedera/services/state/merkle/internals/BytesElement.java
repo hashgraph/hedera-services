@@ -21,15 +21,16 @@ package com.hedera.services.state.merkle.internals;
  */
 
 import com.google.common.base.MoreObjects;
+import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public class BytesElement implements FCQueueElement {
+public class BytesElement implements FastCopyable, SerializableHashable {
 	private static final int CURRENT_VERSION = 1;
 	private static final long CLASS_ID = 0xd1b1fc6b87447a02L;
 

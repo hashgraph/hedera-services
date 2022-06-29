@@ -26,7 +26,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,7 +37,7 @@ import java.io.IOException;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
+public class MerkleTokenRelStatus extends PartialMerkleLeaf implements Keyed<EntityNumPair>, MerkleLeaf {
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
