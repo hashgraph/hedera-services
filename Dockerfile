@@ -1,13 +1,13 @@
-## Installs OpenJDK17 and openssl (used by Swirlds Platform to 
-## generate node keys for e.g. signing states), then copies 
+## Installs OpenJDK17 and openssl (used by Swirlds Platform to
+## generate node keys for e.g. signing states), then copies
 ## required libraries and startup assets for a node with:
-##  * Configuration from /opt/hedera/services/config-mount; and, 
-##  * Logs at /opt/hedera/services/output; and, 
+##  * Configuration from /opt/hedera/services/config-mount; and,
+##  * Logs at /opt/hedera/services/output; and,
 ##  * Saved states under /opt/hedera/services/output
 FROM ubuntu:21.10 AS base-runtime
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y dos2unix openssl libsodium23
+    apt-get install -y dos2unix openssl libsodium23 bind9-host
 
 # JDK
 RUN apt-get install -y software-properties-common && \
@@ -23,7 +23,7 @@ RUN mkdir /opt/hedera/services/data/onboard
 RUN mkdir /opt/hedera/services/output
 RUN mkdir /opt/hedera/services/config-mount
 
-## Builds the HederaNode.jar from the current source tree and creates 
+## Builds the HederaNode.jar from the current source tree and creates
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
 
@@ -61,7 +61,7 @@ RUN ./gradlew assemble copyLib copyApp
 
 ## Finishes by copying the Services JAR to the base runtime
 FROM base-runtime AS final-image
-COPY image-utils/ /opt/hedera/services 
+COPY image-utils/ /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib

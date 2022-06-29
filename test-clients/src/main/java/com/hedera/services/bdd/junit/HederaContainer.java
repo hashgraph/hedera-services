@@ -2,8 +2,8 @@ package com.hedera.services.bdd.junit;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
@@ -23,25 +23,39 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
 
     public HederaContainer(DockerImageName dockerImageName, int id) {
         super(dockerImageName);
+        final String nodeName = "node_" + id;
         this.id = id;
         this.withExposedPorts(GRPC_PORT)
                 .withCommand("/bin/sh", "-c", "sleep 2 && ./start-services.sh")
-                .waitingFor(Wait.forListeningPort())
+                .waitingFor(new WaitStrategy() {
+                    @Override
+                    public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
+                        // Intentionally empty
+                    }
+
+                    @Override
+                    public WaitStrategy withStartupTimeout(final Duration duration) {
+                        return null;
+                    }
+                })
                 .withEnv("NODE_ID", "" + id)
-                .withNetworkAliases("node_" + id)
-                .withCreateContainerCmdModifier(cmd -> cmd.withHostName("node_" + id));
+                .withEnv("CI_WAIT_FOR_PEERS", "true")
+                .withNetworkAliases(nodeName)
+                .withCreateContainerCmdModifier(cmd -> cmd.withHostName(nodeName));
     }
 
     /**
      * Specify the directory within the classpath to find the config-mount files
-     * @param dir The dir
+     *
+     * @param dir
+     *         The dir
      * @return this
      */
     public HederaContainer withClasspathResourceMappingDir(String dir) {
         return this.withClasspathResourceMapping(
-                dir + "/config.txt",
-                "/opt/hedera/services/config-mount/config.txt",
-                BindMode.READ_ONLY)
+                        dir + "/config.txt",
+                        "/opt/hedera/services/config-mount/config.txt",
+                        BindMode.READ_ONLY)
                 .withClasspathResourceMapping(
                         dir + "/api-permission.properties",
                         "/opt/hedera/services/config-mount/api-permission.properties",
