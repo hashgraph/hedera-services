@@ -48,30 +48,24 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
     }
-	maven {   
-		url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
     }
-
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits")
     }
-
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
     }
-
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots")
     }
-
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
-	}
-
-	maven {
+    }
+    maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
     }
-
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
     }
@@ -176,11 +170,16 @@ tasks.getByName<Test>("itest") {
         override fun beforeSuite(suite: TestDescriptor) {
             logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
         }
-        override fun beforeTest(testDescriptor: TestDescriptor) { }
+
+        override fun beforeTest(testDescriptor: TestDescriptor) {}
         override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
-            logger.lifecycle(SimpleDateFormat.getDateTimeInstance().format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name)
+            logger.lifecycle(
+                SimpleDateFormat.getDateTimeInstance()
+                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
+            )
         }
-        override fun afterSuite(suite: TestDescriptor, result: TestResult) { }
+
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
     })
 }
 
@@ -195,4 +194,21 @@ tasks.jacocoTestReport {
     val testExtension: JacocoTaskExtension = tasks.test.get().extensions.getByType<JacocoTaskExtension>()
     val iTestExtension: JacocoTaskExtension = tasks.getByName("itest").extensions.getByType<JacocoTaskExtension>()
     executionData.from(testExtension.destinationFile, iTestExtension.destinationFile)
+}
+
+// Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
+// have them in the gradle.properties defintions.
+sonarqube {
+    properties {
+        property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.organization", "hashgraph")
+        property("sonar.projectKey", "com.hedera.hashgraph:hedera-services")
+        property("sonar.projectName", "Hedera Services")
+        property("sonar.projectVersion", project.version)
+        property("sonar.projectDescription", "Hedera Services (crypto, file, contract, consensus) on the Platform")
+        property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
+        property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
+        property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
+        property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
+    }
 }
