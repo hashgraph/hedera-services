@@ -131,7 +131,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 				sender = super.ledgers.canonicalAddress(asTypedEvmAddress(fungibleTransfer.sender()));
 			}
 			if (fungibleTransfer.receiver() != null) {
-				receiver = super.ledgers.canonicalAddress(asTypedEvmAddress(fungibleTransfer.receiver()));;
+				receiver = super.ledgers.canonicalAddress(asTypedEvmAddress(fungibleTransfer.receiver()));
 				amount = BigInteger.valueOf(fungibleTransfer.amount());
 			}
 		}
