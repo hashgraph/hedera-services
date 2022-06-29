@@ -21,7 +21,6 @@
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -214,15 +213,13 @@ import org.junit.jupiter.api.TestFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 
-class E2EPackageRunner extends TestBase {
+class EndToEndPackageRunner extends TestBase {
 
 	@BeforeAll
 	static void beforeAll() {

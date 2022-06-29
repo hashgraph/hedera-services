@@ -35,7 +35,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
 
                     @Override
                     public WaitStrategy withStartupTimeout(final Duration duration) {
-                        return null;
+                        return this;
                     }
                 })
                 .withEnv("NODE_ID", "" + id)
@@ -111,5 +111,10 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         if (!isActive()) {
             throw new TimeoutException(String.format("Timed out waiting for node_%d to become active", id));
         }
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        return super.equals(o);
     }
 }
