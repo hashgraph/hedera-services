@@ -20,30 +20,24 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.LongType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.Hash;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.txns.util.RandomGenerateTransitionLogic.randomNumFromBytes;
 
 /**
@@ -85,22 +79,28 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 			final var selector = input.getInt(0);
 			return switch (selector) {
 				case RANDOM_256_BIT_GENERATOR_SELECTOR -> random256BitGenerator();
-				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> {
-					final var range = rangeValueFrom(input);
-					yield padded(randomNumGeneratorInRange(range));
-				}
+				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> randomNumberGeneratorInRange(input);
 				default -> null;
 			};
-		} catch (Exception ignore) {
-			return null;
+		} catch (IndexOutOfBoundsException ignore) {
+			return null; // should we ignore all exceptions and return null ?
 		}
 	}
 
-	private Bytes padded(final int result) {
-		return Bytes32.leftPad(Bytes.ofUnsignedShort(result));
+	private Bytes randomNumberGeneratorInRange(final Bytes input) {
+		final var range = rangeValueFrom(input);
+		// if range is invalid fail here
+		validateInput(range);
+
+		final var randomNum = generateRandomNumberFromHash(range);
+		// if hash is invalid or not present returns null
+		if (randomNum == -1) {
+			return null;
+		}
+		return padded(randomNum);
 	}
 
-	private int randomNumGeneratorInRange(final int range) {
+	private int generateRandomNumberFromHash(final int range) {
 		final var hash = getHash();
 		if (invalidHash(hash)) {
 			return -1;
@@ -112,11 +112,22 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	private Bytes random256BitGenerator() {
 		final var hash = getHash();
 		if (invalidHash(hash)) {
-			return Bytes.EMPTY;
+			return null;
 		}
 		final var hashBytes = hash.getValue();
 		return Bytes.wrap(hashBytes, 0, 32);
 	}
+
+	private void validateInput(final int range) {
+		validateTrue(range >= 0, ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE);
+		// can we validate and throw or ignore and just return
+		// null ?
+	}
+
+	private Bytes padded(final int result) {
+		return Bytes32.leftPad(Bytes.ofUnsignedInt(result));
+	}
+
 
 	private Hash getHash() {
 		try {

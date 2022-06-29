@@ -333,6 +333,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
 		assertEquals(66L, subject.exchangeRateGasReq());
+		assertEquals(82L, subject.randomGenerateGasCost());
 	}
 
 	private void givenPropsWithSeed(int i) {
