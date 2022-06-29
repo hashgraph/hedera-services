@@ -121,6 +121,7 @@ class RandomGeneratePrecompiledContractTest {
 		var result = subject.compute(random256BitGeneratorInput(), frame);
 		assertEquals(32, result.toArray().length);
 
+		// hash is null
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
 				new RunningHash(null));
 		result = subject.compute(random256BitGeneratorInput(), frame);

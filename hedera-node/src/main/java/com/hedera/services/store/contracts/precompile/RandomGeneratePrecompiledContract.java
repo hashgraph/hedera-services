@@ -133,6 +133,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 		try {
 			return runningHashLeafSupplier.get().getNMinus3RunningHash().getFutureHash().get();
 		} catch (InterruptedException | ExecutionException e) {
+			Thread.currentThread().interrupt();
 			return null;
 		}
 	}
@@ -142,6 +143,6 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 	}
 
 	private boolean invalidHash(final Hash hash) {
-		return hash == null || hash.getValue().length == 0;
+		return hash == null;
 	}
 }
