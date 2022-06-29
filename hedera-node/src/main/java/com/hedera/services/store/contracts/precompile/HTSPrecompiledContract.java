@@ -215,6 +215,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return result == null ? PrecompiledContract.PrecompileContractResult.halt((Bytes) null, Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
+	public void callHtsDirectly(PrecompileMessage message) {
+		final var inputData = message.getInputData();
+		final var now = message.getConsensusTime();
+		sideEffectsTracker = infrastructureFactory.newSideEffects();
+		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
+		senderAddress = message.getSenderAddress();
+		infoProvider = new DirectCallsInfoProvider(message);
+		resetPrecompileFields();
+
+		precompile = constructRedirectPrecompile(inputData.getInt(0), message.getTokenID());
+		gasRequirement = defaultGas();
+
+		if (precompile != null) {
+			decodeInput(inputData, message::unaliased);
+			gasRequirement = precompile.getGasRequirement(now);
+			message.setHtsOutputResult(computeInternal(infoProvider));
+		} else if (transactionBody == null) {
+			message.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+		}
+		message.setGasRequired(gasRequirement);
+	}
+
 	void prepareFields(final MessageFrame frame) {
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = infrastructureFactory.newSideEffects();
@@ -288,47 +310,47 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Precompile constructRedirectPrecompile(int functionSelector, TokenID tokenId) {
 		final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
 		final var functionId = AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-		Precompile precompile;
+		Precompile nestedPrecompile;
 
 		if (AbiConstants.ABI_ID_NAME == functionSelector) {
-			precompile = new NamePrecompile(
+			nestedPrecompile = new NamePrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_SYMBOL == functionSelector) {
-			precompile = new SymbolPrecompile(
+			nestedPrecompile = new SymbolPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_DECIMALS == functionSelector) {
 			if (!isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			precompile = new DecimalsPrecompile(
+			nestedPrecompile = new DecimalsPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN == functionSelector) {
-			precompile = new TotalSupplyPrecompile(
+			nestedPrecompile = new TotalSupplyPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_BALANCE_OF_TOKEN == functionSelector) {
-			precompile = new BalanceOfPrecompile(
+			nestedPrecompile = new BalanceOfPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_OWNER_OF_NFT == functionSelector) {
 			if (isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			precompile = new OwnerOfPrecompile(
+			nestedPrecompile = new OwnerOfPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_TOKEN_URI_NFT == functionSelector) {
 			if (isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			precompile = new TokenURIPrecompile(
+			nestedPrecompile = new TokenURIPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_ERC_TRANSFER == functionSelector) {
 			if (!isFungibleToken) {
 				throw new InvalidTransactionException(
 						NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 			}
-			precompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+			nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 					ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 					impliedTransfersMarshal);
@@ -336,7 +358,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+			nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 					ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 					impliedTransfersMarshal);
@@ -344,61 +366,40 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new AllowancePrecompile(
+			nestedPrecompile = new AllowancePrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_APPROVE == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new ApprovePrecompile(
+			nestedPrecompile = new ApprovePrecompile(
 					tokenId, isFungibleToken, ledgers, decoder, encoder, currentView, sideEffectsTracker,
 					syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress);
 		} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new SetApprovalForAllPrecompile(
+			nestedPrecompile = new SetApprovalForAllPrecompile(
 					tokenId, ledgers, decoder, currentView, sideEffectsTracker, syntheticTxnFactory,
 					infrastructureFactory, precompilePricingUtils, senderAddress);
 		} else if (AbiConstants.ABI_ID_GET_APPROVED == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new GetApprovedPrecompile(
+			nestedPrecompile = new GetApprovedPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else if (AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL == functionSelector) {
 			if (!dynamicProperties.areAllowancesEnabled()) {
 				throw new InvalidTransactionException(NOT_SUPPORTED);
 			}
-			precompile = new IsApprovedForAllPrecompile(
+			nestedPrecompile = new IsApprovedForAllPrecompile(
 					tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 		} else {
-			precompile = null;
+			nestedPrecompile = null;
 		}
-		return precompile;
+		return nestedPrecompile;
 	}
 
-	public void callHtsDirectly(PrecompileMessage message) {
-		final var inputData = message.getInputData();
-		final var now = message.getConsensusTime();
-		sideEffectsTracker = infrastructureFactory.newSideEffects();
-		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
-		senderAddress = message.getSenderAddress();
-		infoProvider = new DirectCallsInfoProvider(message);
-		resetPrecompileFields();
-
-		precompile = constructRedirectPrecompile(inputData.getInt(0), message.getTokenID());
-		gasRequirement = defaultGas();
-
-		if (precompile != null) {
-			decodeInput(inputData, message::unaliased);
-			gasRequirement = precompile.getGasRequirement(now);
-			message.setHtsOutputResult(computeInternal(infoProvider));
-		} else if (transactionBody == null) {
-			message.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
-		}
-		message.setGasRequired(gasRequirement);
-	}
 
 	/* --- Helpers --- */
 	private void resetPrecompileFields() {

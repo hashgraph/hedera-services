@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
-import com.google.common.base.Preconditions;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
@@ -59,7 +58,7 @@ public class PrecompileMessage {
 							  Long gasRemaining, Bytes inputData, TokenID tokenID) {
 		state = State.NOT_STARTED;
 		revertReason = Optional.empty();
-		logs = new ArrayList();
+		logs = new ArrayList<>();
 		this.ledgers = ledgers;
 		this.senderAddress = senderAddress;
 		this.value = value;
@@ -196,19 +195,8 @@ public class PrecompileMessage {
 			return this;
 		}
 
-		private void validate() {
-			Preconditions.checkState(this.gasRemaining != null, "Missing Precompile message getGasRemaining price");
-			Preconditions.checkState(this.inputData != null, "Missing Precompile message input data");
-			Preconditions.checkState(this.senderAddress != null, "Missing Precompile message sender");
-			Preconditions.checkState(this.value != null, "Missing Precompile message  value");
-			Preconditions.checkState(this.consensusTime != null, "Missing Precompile message consensusTime");
-			Preconditions.checkState(this.ledgers != null, "Missing Precompile message Ledgers");
-			Preconditions.checkState(this.tokenID != null, "Missing Precompile message TokenID");
-		}
-
 
 		public PrecompileMessage build() {
-			validate();
 			return new PrecompileMessage(this.ledgers, this.senderAddress, this.value, this.consensusTime,
 					this.gasRemaining, this.inputData, this.tokenID);
 		}

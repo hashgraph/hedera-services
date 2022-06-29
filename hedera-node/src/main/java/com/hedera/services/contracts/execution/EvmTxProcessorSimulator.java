@@ -30,7 +30,6 @@ import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -44,7 +43,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
@@ -66,6 +64,12 @@ public class EvmTxProcessorSimulator {
 	private final HTSPrecompiledContract htsPrecompiledContract;
 	private Optional<ExceptionalHaltReason> exceptionalHaltReason;
 	private final HederaMutableWorldState worldState;
+	private long intrinsicGas;
+	private HederaWorldState.Updater updater;
+	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+	private long gasUsedByTransaction;
+	private MutableAccount mutableSender;
+
 
 	@Inject
 	public EvmTxProcessorSimulator(GasCalculator gasCalculator, LivePricesSource livePricesSource,
@@ -75,8 +79,6 @@ public class EvmTxProcessorSimulator {
 		this.dynamicProperties = dynamicProperties;
 		this.htsPrecompiledContract = htsPrecompiledContract;
 		this.worldState = worldState;
-		exceptionalHaltReason = Optional.empty();
-
 	}
 
 	public TransactionProcessingResult execute(
@@ -88,72 +90,29 @@ public class EvmTxProcessorSimulator {
 			final Address mirrorReceiver,
 			final Id tokenId,
 			final WorldLedgers ledgers) {
-
-		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
+		populateCommonFields(sender);
+		final long gasPrice = getLivePrice(consensusTime);
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
-		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
-		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
-		final MutableAccount mutableSender = getMutableAccount(senderAccount);
 
 		if (intrinsicGas > gasLimit) {
 			throw new InvalidTransactionException(INSUFFICIENT_GAS);
 		}
-		final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
-		validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-		mutableSender.decrementBalance(gasCost);
+		senderCanAffordGas(gasCost, upfrontCost, mutableSender);
 
-		var gasAvailable = gasLimit - intrinsicGas;
-		//construct the PrecompileMessage here
-		PrecompileMessage message = constructMessageAndCallPrecompileContract(sender, consensusTime, ledgers,
-				payload, gasAvailable, value, tokenId);
-		//and calculate the gas used for the hts call
-		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, message.getGasRemaining());
-		final long sbhRefund = updater.getSbhRefund();
+		PrecompileMessage message = constructMessageAndCallPrecompileContract(
+				sender, consensusTime, ledgers,
+				payload, gasLimit, value, tokenId);
+		calculateGasUsedByTransaction(gasLimit, message);
 
-		// return gas price to accounts
-		final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
-		final Wei refundedWei = Wei.of(refunded * gasPrice);
-
-		if (refundedWei.greaterThan(Wei.ZERO)) {
-			mutableSender.incrementBalance(refundedWei);
-		}
-
-		// Send fees to coinbase
-		final long coinbaseFee = gasLimit - refunded;
-		MutableAccount mutableCoinbase = getMutableAccount(updater.getOrCreate(
-				Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()));
-		mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
-
-		if (dynamicProperties.shouldEnableTraceability()) {
-			stateChanges = updater.getFinalStateChanges();
-		} else {
-			stateChanges = Map.of();
-		}
+		final long refunded = calculateRefund(gasLimit, gasPrice);
+		sendFeesToCoinbase(gasLimit, gasPrice, refunded);
 
 		updater.commit();
 
-		if (message.getState() == COMPLETED_SUCCESS) {
-			return TransactionProcessingResult.successful(
-					message.getLogs(),
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					message.getHtsOutputResult(),
-					mirrorReceiver,
-					stateChanges);
-		} else {
-			return TransactionProcessingResult.failed(
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					message.getRevertReason(),
-					exceptionalHaltReason,
-					stateChanges);
-		}
-
+		return buildTransactionResult(
+				message, gasUsedByTransaction,
+				gasPrice, mirrorReceiver, stateChanges);
 	}
 
 	public TransactionProcessingResult executeEth(
@@ -169,14 +128,12 @@ public class EvmTxProcessorSimulator {
 			final Id tokenId,
 			final WorldLedgers ledgers) {
 
-		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+		populateCommonFields(sender);
+		final long gasPrice = getLivePrice(consensusTime);
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
-		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
-		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
-		final MutableAccount mutableSender = getMutableAccount(senderAccount);
 		var allowanceCharged = Wei.ZERO;
+		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+		MutableAccount mutableSender = getMutableAccount(senderAccount);
 		final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
 		MutableAccount mutableRelayer = getMutableAccount(relayerAccount);
 
@@ -188,9 +145,7 @@ public class EvmTxProcessorSimulator {
 		if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
 			// If sender set gas price to 0, relayer pays all the fees
 			validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
-			final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
-			validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-			mutableRelayer.decrementBalance(gasCost);
+			senderCanAffordGas(gasCost, (gasCost), mutableRelayer);
 			allowanceCharged = gasCost;
 		} else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
 			// If sender gas price < current gas price, pay the difference from gas allowance
@@ -205,79 +160,56 @@ public class EvmTxProcessorSimulator {
 			allowanceCharged = remainingFee;
 		} else {
 			// If user gas price >= current gas price, sender pays all fees
-			final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
-			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-			mutableSender.decrementBalance(gasCost);
+			senderCanAffordGas(gasCost, gasCost, mutableSender);
 		}
 		// In any case, the sender must have sufficient balance to pay for any value sent
 		final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
 		validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
-
-		var gasAvailable = gasLimit - intrinsicGas;
-
 		//construct the PrecompileMessage here
 		PrecompileMessage message = constructMessageAndCallPrecompileContract(sender, consensusTime, ledgers,
-				payload, gasAvailable, value, tokenId);
+				payload, gasLimit, value, tokenId);
+		calculateGasUsedByTransaction(gasLimit, message);
 
-		// calculate the gas used for the hts call
-		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, message.getGasRemaining());
-		final long sbhRefund = updater.getSbhRefund();
-
-		// return gas price to accounts
-		final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
-		final Wei refundedWei = Wei.of(refunded * gasPrice);
-
-		if (refundedWei.greaterThan(Wei.ZERO)) {
-			if (allowanceCharged.greaterThan(Wei.ZERO)) {
-				// If allowance has been charged, we always try to refund relayer first
-				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
-					mutableRelayer.incrementBalance(allowanceCharged);
-					mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
-				} else {
-					mutableRelayer.incrementBalance(refundedWei);
-				}
-			} else {
-				mutableSender.incrementBalance(refundedWei);
-			}
-		}
+		final long refunded = calculateRefundEth(gasLimit, gasPrice, mutableRelayer, allowanceCharged);
 		// Send fees to coinbase
-		final long coinbaseFee = gasLimit - refunded;
-		MutableAccount mutableCoinbase = getMutableAccount(updater.getOrCreate(
-				Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()));
-		mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
-
-		if (dynamicProperties.shouldEnableTraceability()) {
-			stateChanges = updater.getFinalStateChanges();
-		} else {
-			stateChanges = Map.of();
-		}
+		sendFeesToCoinbase(gasLimit, gasPrice, refunded);
 
 		updater.commit();
+		return buildTransactionResult(
+				message, gasUsedByTransaction, gasPrice,
+				mirrorReceiver, stateChanges);
+	}
 
-		if (message.getState() == COMPLETED_SUCCESS) {
-			return TransactionProcessingResult.successful(
-					new ArrayList<>(),
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					message.getHtsOutputResult(),
-					mirrorReceiver,
-					stateChanges);
-		} else {
-			return TransactionProcessingResult.failed(
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					message.getRevertReason(),
-					exceptionalHaltReason,
-					stateChanges);
-		}
+	private void populateCommonFields(Account sender) {
+		updater = (HederaWorldState.Updater) worldState.updater();
+		exceptionalHaltReason = Optional.empty();
+		intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
+		stateChanges = dynamicProperties.shouldEnableTraceability() ?
+				updater.getFinalStateChanges() : Map.of();
+		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+		mutableSender = getMutableAccount(senderAccount);
+	}
 
+	private long getLivePrice(Instant consensusTime) {
+		return livePricesSource.currentGasPrice(consensusTime,
+				HederaFunctionality.ContractCall);
+	}
+
+	private void senderCanAffordGas(Wei gasCost, Wei upfrontCost, MutableAccount mutableAccount) {
+		final var senderCanAffordGas = mutableAccount.getBalance().compareTo(upfrontCost) >= 0;
+		validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+		mutableAccount.decrementBalance(gasCost);
+	}
+
+	private void calculateGasUsedByTransaction(final long txGasLimit, PrecompileMessage message) {
+		var usedGas = txGasLimit - message.getGasRemaining();
+		gasUsedByTransaction = Math.max(usedGas, txGasLimit - txGasLimit * dynamicProperties.maxGasRefundPercentage() / 100);
 	}
 
 	private PrecompileMessage constructMessageAndCallPrecompileContract(Account sender, Instant consensusTime, WorldLedgers ledgers,
-																		Bytes payload, long gasAvailable, long value,
+																		Bytes payload, long gasLimit, long value,
 																		Id token) {
+		final var gasAvailable = gasLimit - intrinsicGas;
 		PrecompileMessage message = PrecompileMessage.builder()
 				.setLedgers(ledgers)
 				.setSenderAddress(sender.canonicalAddress())
@@ -285,7 +217,7 @@ public class EvmTxProcessorSimulator {
 				.setConsensusTime(consensusTime)
 				.setGasRemaining(gasAvailable)
 				.setInputData(payload)
-				.setTokenID(buildTokenId(token))
+				.setTokenID(token.asGrpcToken())
 				.build();
 
 		//call the hts
@@ -307,28 +239,71 @@ public class EvmTxProcessorSimulator {
 		return message;
 	}
 
+	private long calculateRefund(long gasLimit, long gasPrice) {
+		final long refunded = gasLimit - gasUsedByTransaction + updater.getSbhRefund();
+		final Wei refundedWei = Wei.of(refunded * gasPrice);
+
+		if (refundedWei.greaterThan(Wei.ZERO)) {
+			mutableSender.incrementBalance(refundedWei);
+		}
+		return refunded;
+
+	}
+
+	private long calculateRefundEth(long gasLimit, long gasPrice, MutableAccount
+			mutableRelayer, Wei allowanceCharged) {
+		final long refunded = gasLimit - gasUsedByTransaction + updater.getSbhRefund();
+		final Wei refundedWei = Wei.of(refunded * gasPrice);
+
+		if (refundedWei.greaterThan(Wei.ZERO)) {
+			if (allowanceCharged.greaterThan(Wei.ZERO)) {
+				// If allowance has been charged, we always try to refund relayer first
+				if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
+					mutableRelayer.incrementBalance(allowanceCharged);
+					mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
+				} else {
+					mutableRelayer.incrementBalance(refundedWei);
+				}
+			} else {
+				mutableSender.incrementBalance(refundedWei);
+			}
+		}
+		return refunded;
+	}
+
+	private void sendFeesToCoinbase(long gasLimit, long gasPrice, long refunded) {
+		final long coinbaseFee = gasLimit - refunded;
+		MutableAccount mutableCoinbase = getMutableAccount(updater.getOrCreate(
+				Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()));
+		mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
+	}
+
+	private TransactionProcessingResult buildTransactionResult(PrecompileMessage message,
+															   long gasUsedByTransaction,
+															   long gasPrice, Address mirrorReceiver,
+															   Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+		if (message.getState() == COMPLETED_SUCCESS) {
+			return TransactionProcessingResult.successful(
+					message.getLogs(),
+					gasUsedByTransaction,
+					updater.getSbhRefund(),
+					gasPrice,
+					message.getHtsOutputResult(),
+					mirrorReceiver,
+					stateChanges);
+		} else {
+			return TransactionProcessingResult.failed(
+					gasUsedByTransaction,
+					updater.getSbhRefund(),
+					gasPrice,
+					message.getRevertReason(),
+					exceptionalHaltReason,
+					stateChanges);
+		}
+	}
+
 	private MutableAccount getMutableAccount(EvmAccount senderAccount) {
 		return senderAccount.getMutable();
 	}
 
-	private TokenID buildTokenId(Id token){
-		return  TokenID.newBuilder()
-				.setShardNum(token.shard())
-				.setRealmNum(token.realm())
-				.setTokenNum(token.num())
-				.build();
-	}
-
-	private long calculateGasUsedByTX(final long txGasLimit, final long remainingGas) {
-		long gasUsedByTransaction = txGasLimit - remainingGas;
-		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
-
-		return gasUsedByTransaction;
-	}
-
-	private long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-		return livePricesSource.currentGasPrice(consensusTime,
-				isEthTxn ? HederaFunctionality.EthereumTransaction : HederaFunctionality.ContractCall);
-	}
 }

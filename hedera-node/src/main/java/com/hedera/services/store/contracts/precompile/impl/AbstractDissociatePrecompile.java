@@ -37,7 +37,6 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import javax.inject.Provider;
 import java.util.Objects;

@@ -71,5 +71,4 @@ public record DirectCallsInfoProvider(PrecompileMessage precompileMessage) imple
 	public void addLog(Log log) {
 		precompileMessage.addLog(log);
 	}
-
 }

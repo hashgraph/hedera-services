@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,14 +61,11 @@ public final class KeyActivationUtils {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param provider
-	 * 		provides the current frame or precompile message
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
-	 * @param ledgers the current Hedera world state
-	 * @param aliases the current Hedera contract aliases
+	 * @param provider       provides the current frame or precompile message
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
+	 * @param ledgers        the current Hedera world state
+	 * @param aliases        the current Hedera contract aliases
 	 * @return whether the implied key is active
 	 */
 	public static boolean validateKey(
@@ -79,11 +76,14 @@ public final class KeyActivationUtils {
 			final Optional<ContractAliases> aliases
 	) {
 		//logic for direct token account calls
-		if(provider instanceof DirectCallsInfoProvider){
-			final var message =((DirectCallsInfoProvider) provider).precompileMessage();
+		if (provider instanceof DirectCallsInfoProvider directProvider) {
+			final var message = directProvider.precompileMessage();
 			return activationTest.apply(false, target, message.getSenderAddress(), ledgers);
 		}
-		final var frame = ((EVMInfoProvider)provider).messageFrame();
+		if (aliases.isEmpty()) {
+			return false;
+		}
+		final var frame = ((EVMInfoProvider) provider).messageFrame();
 		final var recipient = aliases.get().resolveForEvm(frame.getRecipientAddress());
 		final var sender = aliases.get().resolveForEvm(frame.getSenderAddress());
 
