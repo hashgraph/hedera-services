@@ -158,7 +158,7 @@ public abstract class HapiApiSuite {
 	}
 
 	protected FinalOutcome finalOutcomeFor(List<HapiApiSpec> completedSpecs) {
-		return completedSpecs.stream().allMatch(HapiApiSpec::OK) ? SUITE_PASSED : SUITE_FAILED;
+		return completedSpecs.stream().allMatch(HapiApiSpec::ok) ? SUITE_PASSED : SUITE_FAILED;
 	}
 
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {

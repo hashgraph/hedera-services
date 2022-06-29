@@ -655,7 +655,7 @@ public class SuiteRunner {
 				log.info(result.summary);
 				for (HapiApiSuite failed : result.failedSuites) {
 					String specList = failed.getFinalSpecs().stream()
-							.filter(HapiApiSpec::NOT_OK)
+							.filter(HapiApiSpec::notOk)
 							.map(HapiApiSpec::toString)
 							.collect(joining(", "));
 					log.info("  --> Problems in suite '" + failed.name() + "' :: " + specList);
@@ -713,7 +713,7 @@ public class SuiteRunner {
 
 	private static CategoryResult summaryOf(String category, HapiApiSuite[] suites, List<HapiApiSuite> failed) {
 		int numPassed = suites.length - failed.size();
-		String summary = category + " :: " + numPassed + "/" + suites.length + " suites ran OK";
+		String summary = category + " :: " + numPassed + "/" + suites.length + " suites ran ok";
 		return new CategoryResult(summary, failed);
 	}
 
