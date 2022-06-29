@@ -210,5 +210,7 @@ sonarqube {
         property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
         property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
+
+        property("sonar.coverage.exclusions", "com/hedera/services/bdd/suites/SuiteRunner.java")
     }
 }

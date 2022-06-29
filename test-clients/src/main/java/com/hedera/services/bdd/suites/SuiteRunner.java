@@ -331,7 +331,7 @@ public class SuiteRunner {
 		put("CreateTopicPerfSuite", aof(CreateTopicPerfSuite::new));
 		put("MixedOpsMemoPerfSuite", aof(MixedOpsMemoPerfSuite::new));
 		put("FileContractMemoPerfSuite", aof(FileContractMemoPerfSuite::new));
-		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+		//put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
 		put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
 		put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
 		/* Functional tests - RECONNECT */
@@ -361,7 +361,7 @@ public class SuiteRunner {
 		put("AutoAccountCreationsBeforeReconnect", aof(AutoAccountCreationsBeforeReconnect::new));
 		/* Functional tests - AUTORENEW */
 		put("AutoRemovalCasesSuite", aof(AutoRemovalCasesSuite::new));
-		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
+		//put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		put("GracePeriodRestrictionsSuite", aof(GracePeriodRestrictionsSuite::new));
 		put("MacroFeesChargedSanityCheckSuite", aof(MacroFeesChargedSanityCheckSuite::new));
 		put("NoGprIfNoAutoRenewSuite", aof(NoGprIfNoAutoRenewSuite::new));
@@ -430,7 +430,7 @@ public class SuiteRunner {
 		put("GlobalPropertiesSuite", aof(GlobalPropertiesSuite::new));
 		put("StaticCallOperationSuite", aof(StaticCallOperationSuite::new));
 		put("SStoreOperationLoadTest", aof(SStoreOperationLoadTest::new));
-		put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
+		//put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
 		put("ContractCallLocalPerfSuite", aof(ContractCallLocalPerfSuite::new));
 		put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
 		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
