@@ -97,7 +97,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
 		final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for mint precompile!");
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

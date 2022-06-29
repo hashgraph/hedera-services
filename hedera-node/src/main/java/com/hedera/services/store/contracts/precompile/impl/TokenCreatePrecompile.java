@@ -209,8 +209,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 		final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 		final var treasuryHasSigned = KeyActivationUtils.validateKey(
 				frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-		validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
-		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE));
+		validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for token create precompile!");
+		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for token create precompile!"));
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

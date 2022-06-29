@@ -94,7 +94,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 		final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for dissociate precompile!");
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
