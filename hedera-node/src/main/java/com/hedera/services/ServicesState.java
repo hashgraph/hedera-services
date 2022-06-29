@@ -312,12 +312,17 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting
-			// for lazy-initialization to take place.
+			// for lazy-initialization to take place
 			app.prefetchProcessor();
 			log.info("Created prefetch processor");
 
 			logSummary();
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);
+
+			if (trigger == GENESIS) {
+				app.sysAccountsCreator().ensureSystemAccounts(app.backingAccounts(), app.workingState().addressBook());
+				app.sysFilesManager().createManagedFilesIfMissing();
+			}
 		}
 	}
 

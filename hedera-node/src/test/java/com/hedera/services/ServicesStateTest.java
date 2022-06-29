@@ -20,6 +20,8 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
@@ -28,6 +30,8 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.initialization.SystemAccountsCreator;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -87,6 +91,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -197,6 +202,10 @@ class ServicesStateTest {
 	private Consumer<ServicesState> scheduledTxnsMigrator;
 	@Mock
 	private BootstrapProperties bootstrapProperties;
+	@Mock
+	private SystemAccountsCreator accountsCreator;
+	@Mock
+	private SystemFilesManager systemFilesManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -577,6 +586,9 @@ class ServicesStateTest {
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
+		given(app.sysAccountsCreator()).willReturn(accountsCreator);
+		given(app.workingState()).willReturn(workingState);
+		given(app.sysFilesManager()).willReturn(systemFilesManager);
 
 		// when:
 		subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
@@ -836,7 +848,7 @@ class ServicesStateTest {
 		final var mockPlatform = createMockPlatformWithCrypto();
 		ref.get().getSwirldState().init(
 				mockPlatform,
-				createPretendBookFrom(mockPlatform),
+				createPretendBookFrom(mockPlatform, false),
 				new DualStateImpl(),
 				RESTART,
 				null);
@@ -855,17 +867,30 @@ class ServicesStateTest {
 		APPS.save(platform.getSelfId().getId(), app);
 		assertDoesNotThrow(() -> servicesState.init(
 				platform,
-				createPretendBookFrom(platform),
+				createPretendBookFrom(platform, true),
 				new DualStateImpl(),
 				InitTrigger.GENESIS,
 				null));
 	}
 
-	private AddressBook createPretendBookFrom(final Platform platform) {
+	private AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
+		final var pubKey = mock(PublicKey.class);
+		given(pubKey.getAlgorithm()).willReturn("EC");
+		if (withKeyDetails) {
+			given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
+		}
 		final var nodeId = platform.getSelfId().getId();
 		final var address = new Address(
-				nodeId, "", "", 1L, false, null, -1, null, -1, null, -1, null, -1,
-				null, null, (SerializablePublicKey) null, "");
+				nodeId,
+				"", "",
+				1L,
+				false,
+				null, -1,
+				Ints.toByteArray(123456789), -1,
+				null, -1,
+				null, -1,
+				new SerializablePublicKey(pubKey), null, new SerializablePublicKey(pubKey),
+				"");
 		return new AddressBook(List.of(address));
 	}
 

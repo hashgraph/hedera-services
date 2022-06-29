@@ -25,6 +25,12 @@ public interface SystemFilesManager {
 	void createNodeDetailsIfMissing();
 	void createUpdateFilesIfMissing();
 
+	default void createManagedFilesIfMissing() {
+		createAddressBookIfMissing();
+		createNodeDetailsIfMissing();
+		createUpdateFilesIfMissing();
+	}
+
 	/* Ensure files 0.0.111 and 0.0.112 exist in state, creating them
 	 * from the FeeSchedules.json and bootstrap.properties resources/files
 	 * if they are missing. (The {@code HfsSystemFilesManager} will signal interested

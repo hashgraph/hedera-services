@@ -39,6 +39,7 @@ import java.util.Locale;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -71,19 +72,20 @@ public class ServicesMain implements SwirldMain {
 			app = APPS.get(nodeId.getId());
 			initApp();
 		} catch (IllegalArgumentException iae) {
+			iae.printStackTrace();
 			log.error("No app present for {}", nodeId, iae);
 			throw new AssertionError("Cannot continue without an app");
 		}
 	}
 
 	@Override
-	public void platformStatusChange(PlatformStatus status) {
+	public void platformStatusChange(final PlatformStatus status) {
 		final var nodeId = app.nodeId();
 		log.info("Now current platform status = {} in HederaNode#{}.", status, nodeId);
 		app.platformStatus().set(status);
 		if (status == ACTIVE) {
 			app.recordStreamManager().setInFreeze(false);
-		} else if (status == MAINTENANCE) {
+		} else if (status == FREEZE_COMPLETE) {
 			app.recordStreamManager().setInFreeze(true);
 		} else {
 			log.info("Platform {} status set to : {}", nodeId, status);
@@ -135,11 +137,8 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void doStagedInit() {
-		initSystemFiles();
+		loadSystemFiles();
 		log.info("System files rationalized");
-
-		createSystemAccountsIfNeeded();
-		log.info("System accounts initialized");
 
 		validateLedgerState();
 		log.info("Ledger state ok");
@@ -158,16 +157,8 @@ public class ServicesMain implements SwirldMain {
 		app.accountsExporter().toFile(app.workingState().accounts());
 	}
 
-	private void initSystemFiles() {
-		final var sysFilesManager = app.sysFilesManager();
-		sysFilesManager.createAddressBookIfMissing();
-		sysFilesManager.createNodeDetailsIfMissing();
-		sysFilesManager.createUpdateFilesIfMissing();
+	private void loadSystemFiles() {
 		app.networkCtxManager().loadObservableSysFilesIfNeeded();
-	}
-
-	private void createSystemAccountsIfNeeded() {
-		app.sysAccountsCreator().ensureSystemAccounts(app.backingAccounts(), app.workingState().addressBook());
 	}
 
 	private void startNettyIfAppropriate() {

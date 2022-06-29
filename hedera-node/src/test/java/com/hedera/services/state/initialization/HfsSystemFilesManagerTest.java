@@ -236,6 +236,18 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
+	void createsEverything() {
+		final var sub = mock(SystemFilesManager.class);
+		willCallRealMethod().given(sub).createManagedFilesIfMissing();
+
+		sub.createManagedFilesIfMissing();
+
+		verify(sub).createAddressBookIfMissing();
+		verify(sub).createNodeDetailsIfMissing();
+		verify(sub).createUpdateFilesIfMissing();
+	}
+
+	@Test
 	void canMarkFilesNotLoaded() {
 		subject.setObservableFilesLoaded();
 		assertTrue(subject.areObservableFilesLoaded());
