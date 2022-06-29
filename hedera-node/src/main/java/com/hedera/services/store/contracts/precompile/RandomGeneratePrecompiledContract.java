@@ -42,7 +42,7 @@ import static com.hedera.services.txns.util.RandomGenerateTransitionLogic.random
 
 /**
  * System contract to generate random numbers. This will generate 256-bit pseudorandom number when no range is provided.
- * If a given 32-bit range is provided returns a pseudorandom 32-bit integer X in the range 0 <= X < range.
+ * If a given 32-bit range is provided returns a pseudorandom 32-bit integer X belonging to [0, range).
  * The pseudorandom number is generated using n-3 record's running hash.
  */
 @Singleton
