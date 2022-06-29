@@ -27,6 +27,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.threading.futures.StandardFuture;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -39,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 import static com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract.RANDOM_256_BIT_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract.RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR;
@@ -48,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGeneratePrecompiledContractTest {
@@ -125,12 +128,28 @@ class RandomGeneratePrecompiledContractTest {
 		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
 				new RunningHash(null));
 		result = subject.compute(random256BitGeneratorInput(), frame);
-		assertEquals(null, result);
+		assertNull(result);
 
 		final var range = r.nextInt(0, Integer.MAX_VALUE);
 		result = subject.compute(randomNumberGeneratorInput(range), frame);
 		final var randomNumberBytes = result;
-		assertEquals(null, randomNumberBytes);
+		assertNull(randomNumberBytes);
+	}
+
+	@Test
+	void interruptedExceptionReturnsNull() throws ExecutionException, InterruptedException {
+		final var runningHash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
+		given(runningHash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(InterruptedException.class);
+
+		var result = subject.compute(random256BitGeneratorInput(), frame);
+		assertNull(result);
+
+		final var range = r.nextInt(0, Integer.MAX_VALUE);
+		result = subject.compute(randomNumberGeneratorInput(range), frame);
+		assertNull(result);
 	}
 
 	private static Bytes random256BitGeneratorInput() {
