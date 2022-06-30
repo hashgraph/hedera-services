@@ -566,7 +566,6 @@ class HTSPrecompiledContractTest {
 		var result = subject.computePrecompile(input, messageFrame);
 		assertNull(result.getOutput());
 	}
-
 	@Test
 	void computeReturnsNullForTokenCreateWhenNotEnabled() {
 		// given
@@ -609,7 +608,7 @@ class HTSPrecompiledContractTest {
 		given(wrappedLedgers.nameOf(fungible)).willReturn(name);
 		given(encoder.encodeName(name)).willReturn(Bytes.of(1));
 		//when
-		subject.callHtsDirectly(precompileMessage);
+		subject.callHtsPrecompileDirectly(precompileMessage);
 		//then
 		verify(precompileMessage,times(1)).setHtsOutputResult(Bytes.of(1));
 	}

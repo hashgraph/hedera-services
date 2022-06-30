@@ -60,9 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
@@ -192,23 +190,19 @@ abstract class EvmTxProcessor {
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
-		final MutableAccount mutableSender = senderAccount.getMutable();
+		final MutableAccount mutableSender = TxProcessorUtil.getMutableSender(updater,sender);
 
 		var allowanceCharged = Wei.ZERO;
 		MutableAccount mutableRelayer = null;
 		if (relayer != null) {
-			final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
-			mutableRelayer = relayerAccount.getMutable();
+			mutableRelayer = TxProcessorUtil.getMutableRelayer(updater,relayer);
 		}
 		if (!isStatic) {
 			if (intrinsicGas > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 			if (relayer == null) {
-				final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
-				validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-				mutableSender.decrementBalance(gasCost);
+				TxProcessorUtil.senderCanAffordGas(gasCost, upfrontCost, mutableSender);
 			} else {
 				allowanceCharged = TxProcessorUtil.chargeForEth(
 						userOfferedGasPrice, gasCost, maxGasAllowanceInTinybars, mutableSender,
@@ -254,36 +248,23 @@ abstract class EvmTxProcessor {
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 
-		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-		final long sbhRefund = updater.getSbhRefund();
+		var gasUsedByTransaction = TxProcessorUtil.calculateGasUsedByTX(gasCalculator,gasLimit,
+				                           initialFrame, dynamicProperties.maxGasRefundPercentage());
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 		if (isStatic) {
 			stateChanges = Map.of();
 		} else {
 			// return gas price to accounts
-			final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
-			final Wei refundedWei = Wei.of(refunded * gasPrice);
-
-			if (refundedWei.greaterThan(Wei.ZERO)) {
-				if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
-					// If allowance has been charged, we always try to refund relayer first
-					if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
-						mutableRelayer.incrementBalance(allowanceCharged);
-						mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
-					} else {
-						mutableRelayer.incrementBalance(refundedWei);
-					}
-				} else {
-					mutableSender.incrementBalance(refundedWei);
-				}
-			}
+			final long refunded = relayer != null ?
+					TxProcessorUtil.calculateRefundEth(gasLimit, gasPrice, mutableRelayer, allowanceCharged,
+							updater.getSbhRefund(), mutableSender, gasUsedByTransaction) :
+					TxProcessorUtil.calculateRefund(gasLimit, gasPrice,
+							gasUsedByTransaction, updater.getSbhRefund(), mutableSender);
 
 			// Send fees to coinbase
-			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-			final long coinbaseFee = gasLimit - refunded;
+			TxProcessorUtil.sendFeesToCoinbase(updater, dynamicProperties, gasLimit, gasPrice, refunded);
 
-			mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
 			if (dynamicProperties.shouldEnableTraceability()) {
@@ -297,41 +278,13 @@ abstract class EvmTxProcessor {
 		}
 
 		// Externalise result
-		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-			return TransactionProcessingResult.successful(
-					initialFrame.getLogs(),
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					initialFrame.getOutputData(),
-					mirrorReceiver,
-					stateChanges);
-		} else {
-			return TransactionProcessingResult.failed(
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason(),
-					stateChanges);
-		}
-	}
-
-	private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
-		long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
-		/* Return leftover gas */
-		final long selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount() *
-						Math.min(
-								initialFrame.getSelfDestructs().size(),
-								gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
-
-		gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
-
-		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-		gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
-
-		return gasUsedByTransaction;
+		final var isCompletedSuccess = initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS;
+		return TxProcessorUtil.buildTransactionResult(
+				isCompletedSuccess, initialFrame.getLogs(),
+				updater.getSbhRefund(), gasUsedByTransaction,
+				gasPrice, mirrorReceiver, initialFrame.getOutputData(),
+				initialFrame.getRevertReason(), initialFrame.getExceptionalHaltReason(),
+				stateChanges);
 	}
 
 	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {

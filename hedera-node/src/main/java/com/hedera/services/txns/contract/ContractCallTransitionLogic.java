@@ -23,7 +23,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.contracts.execution.EvmTxProcessorSimulator;
+import com.hedera.services.contracts.execution.DirectCallsTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -71,7 +71,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final AliasManager aliasManager;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final EntityAccess entityAccess;
-	private final EvmTxProcessorSimulator evmTxSimulator;
+	private final DirectCallsTxProcessor directCallsTxProcessor;
 
 	@Inject
 	public ContractCallTransitionLogic(
@@ -85,7 +85,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			final SigImpactHistorian sigImpactHistorian,
 			final AliasManager aliasManager,
 			final EntityAccess entityAccess,
-			final EvmTxProcessorSimulator evmTxSimulator
+			final DirectCallsTxProcessor directCallsTxProcessor
 	) {
 		this.txnCtx = txnCtx;
 		this.aliasManager = aliasManager;
@@ -97,7 +97,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.entityAccess = entityAccess;
-		this.evmTxSimulator = evmTxSimulator;
+		this.directCallsTxProcessor = directCallsTxProcessor;
 	}
 
 	@Override
@@ -136,13 +136,16 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		if (relayerId == null) {
 			if (isDirectTokenCall) {
-				result = evmTxSimulator.execute(
+				result = directCallsTxProcessor.execute(
 						sender,
 						op.getGas(),
 						op.getAmount(),
 						callData,
 						txnCtx.consensusTime(),
 						aliasManager.resolveForEvm(receiver.canonicalAddress()),
+						null,
+						0,
+						null,
 						targetId,
 						entityAccess.worldLedgers());
 			} else {
@@ -158,7 +161,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			sender.incrementEthereumNonce();
 			accountStore.commitAccount(sender);
 			if (isDirectTokenCall) {
-				result = evmTxSimulator.executeEth(
+				result = directCallsTxProcessor.execute(
 						sender,
 						op.getGas(),
 						op.getAmount(),

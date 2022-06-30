@@ -215,7 +215,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return result == null ? PrecompiledContract.PrecompileContractResult.halt((Bytes) null, Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
-	public void callHtsDirectly(PrecompileMessage message) {
+	public void callHtsPrecompileDirectly(PrecompileMessage message) {
 		final var inputData = message.getInputData();
 		final var now = message.getConsensusTime();
 		sideEffectsTracker = infrastructureFactory.newSideEffects();
