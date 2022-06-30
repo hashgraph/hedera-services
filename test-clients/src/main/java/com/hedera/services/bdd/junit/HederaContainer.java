@@ -1,20 +1,34 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */ 
 package com.hedera.services.bdd.junit;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import java.io.File;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.utility.DockerImageName;
 
-import java.io.File;
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 /**
- * A Testcontainers container implementation of a Hedera main node. Useful for bringing up
- * a new container as part of a cluster of Hedera main nodes.
+ * A Testcontainers container implementation of a Hedera main node. Useful for bringing up a new
+ * container as part of a cluster of Hedera main nodes.
  */
 public class HederaContainer extends GenericContainer<HederaContainer> {
     public static final int GRPC_PORT = 50211;
@@ -27,17 +41,19 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         this.id = id;
         this.withExposedPorts(GRPC_PORT)
                 .withCommand("/bin/sh", "-c", "sleep 2 && ./start-services.sh")
-                .waitingFor(new WaitStrategy() {
-                    @Override
-                    public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
-                        // Intentionally empty
-                    }
+                .waitingFor(
+                        new WaitStrategy() {
+                            @Override
+                            public void waitUntilReady(
+                                    final WaitStrategyTarget waitStrategyTarget) {
+                                // Intentionally empty
+                            }
 
-                    @Override
-                    public WaitStrategy withStartupTimeout(final Duration duration) {
-                        return this;
-                    }
-                })
+                            @Override
+                            public WaitStrategy withStartupTimeout(final Duration duration) {
+                                return this;
+                            }
+                        })
                 .withEnv("NODE_ID", "" + id)
                 .withEnv("CI_WAIT_FOR_PEERS", "true")
                 .withNetworkAliases(nodeName)
@@ -47,8 +63,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     /**
      * Specify the directory within the classpath to find the config-mount files
      *
-     * @param dir
-     *         The dir
+     * @param dir The dir
      * @return this
      */
     public HederaContainer withClasspathResourceMappingDir(String dir) {
@@ -88,8 +103,14 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         final var savedPath = new File(workspace, "saved/node_" + id);
         outputPath.mkdirs();
         savedPath.mkdirs();
-        return this.withFileSystemBind(outputPath.getAbsolutePath(), "/opt/hedera/services/output", BindMode.READ_WRITE)
-                .withFileSystemBind(savedPath.getAbsolutePath(), "/opt/hedera/services/data/saved", BindMode.READ_WRITE);
+        return this.withFileSystemBind(
+                        outputPath.getAbsolutePath(),
+                        "/opt/hedera/services/output",
+                        BindMode.READ_WRITE)
+                .withFileSystemBind(
+                        savedPath.getAbsolutePath(),
+                        "/opt/hedera/services/data/saved",
+                        BindMode.READ_WRITE);
     }
 
     public boolean isActive() {
@@ -109,7 +130,8 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         }
 
         if (!isActive()) {
-            throw new TimeoutException(String.format("Timed out waiting for node_%d to become active", id));
+            throw new TimeoutException(
+                    String.format("Timed out waiting for node_%d to become active", id));
         }
     }
 
