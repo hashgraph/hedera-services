@@ -144,6 +144,9 @@ class FeesJsonToProtoSerdeTest {
 		str = "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES";
 		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, stringToSubType(str));
 
+		str = "SCHEDULE_CREATE_CONTRACT_CALL";
+		assertEquals(SubType.SCHEDULE_CREATE_CONTRACT_CALL, stringToSubType(str));
+
 		str = "blah";
 		assertEquals(SubType.DEFAULT, stringToSubType(str));
 	}

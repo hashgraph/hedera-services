@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -289,6 +289,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -363,6 +364,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- BackingStore implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -527,7 +529,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			final var id = pendingChanges.id(i);
 			final var cachedEntity = pendingChanges.entity(i);
 			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
-			entities.put(id, finalized(id, entity, pendingChanges.changes(i)));
+			final var changesForEntity = pendingChanges.changes(i);
+			commitInterceptor.finish(i, entity);
+			entities.put(id, finalized(id, entity, changesForEntity));
 		}
 		createdKeys.clear();
 		changedKeys.clear();
@@ -575,7 +579,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private void throwIfMissing(K id) {
 		if (!exists(id)) {
-			throw new MissingAccountException(id);
+			throw new MissingEntityException(id);
 		}
 	}
 

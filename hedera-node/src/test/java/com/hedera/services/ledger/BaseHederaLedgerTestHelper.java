@@ -251,7 +251,7 @@ public class BaseHederaLedgerTestHelper {
 		mutableEntityAccess = mock(MutableEntityAccess.class);
 		final var autoCreationLogic = mock(AutoCreationLogic.class);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, 
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
                                 accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);

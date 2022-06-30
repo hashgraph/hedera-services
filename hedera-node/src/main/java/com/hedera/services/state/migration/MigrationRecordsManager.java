@@ -22,9 +22,11 @@ package com.hedera.services.state.migration;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -44,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -51,7 +54,6 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
-import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -66,20 +68,21 @@ import static com.hedera.services.state.initialization.BackedSystemAccountsCreat
 public class MigrationRecordsManager {
 	private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
 
+	private static boolean expiryJustEnabled = false;
 	private static final Key immutableKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 	private static final String MEMO = "Release 0.24.1 migration record";
-	private static final String CONTRACT_UPGRADE_MEMO = "Contract {} was renewed during 0.26.0 upgrade. New expiry: " +
-			"{}" +
-			" .";
+	static final String AUTO_RENEW_MEMO_TPL = "Contract {} was renewed during 0.26.0 upgrade; new expiry is {}";
 
 	private final EntityCreator creator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final ConsensusTimeTracker consensusTimeTracker;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AccountNumbers accountNumbers;
 
 	@Inject
 	public MigrationRecordsManager(
@@ -87,15 +90,19 @@ public class MigrationRecordsManager {
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx,
+			final ConsensusTimeTracker consensusTimeTracker,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final SyntheticTxnFactory syntheticTxnFactory
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final AccountNumbers accountNumbers
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
 		this.networkCtx = networkCtx;
+		this.consensusTimeTracker = consensusTimeTracker;
 		this.creator = creator;
 		this.accounts = accounts;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.accountNumbers = accountNumbers;
 	}
 
 	/**
@@ -106,17 +113,25 @@ public class MigrationRecordsManager {
 	 */
 	public void publishMigrationRecords(final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
-		if (curNetworkCtx.areMigrationRecordsStreamed()) {
+
+		if ((!consensusTimeTracker.unlimitedPreceding()) || curNetworkCtx.areMigrationRecordsStreamed()) {
 			return;
 		}
 
-		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
+		// After release 0.24.1, we publish creation records for 0.0.800 [stakingRewardAccount] and
+		// 0.0.801 [nodeRewardAccount] _only_ on a network reset
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+			final var stakingFundAccounts = List.of(
+					EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
+					EntityNum.fromLong(accountNumbers.nodeRewardAccount())
+			);
+			stakingFundAccounts.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
 		} else {
-			// publish the migration records for 0.26.0, for granting free auto-renewal when starting from a saved state
-			publishContractFreeAutoRenewalRecords();
+			// Publish free auto-renewal migration records if expiry is just being enabled
+			if (expiryJustEnabled) {
+				publishContractFreeAutoRenewalRecords();
+			}
 		}
 
 		curNetworkCtx.markMigrationRecordsStreamed();
@@ -150,8 +165,9 @@ public class MigrationRecordsManager {
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 				// for 0.26.0 migration we use the contract account's hbar since auto-renew accounts are not set
-				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
-				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry,
+						contractNum.toGrpcAccountId());
+				final var memo = String.format(AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)
 						.setReceipt(syntheticSuccessReceipt);
@@ -165,5 +181,10 @@ public class MigrationRecordsManager {
 	@VisibleForTesting
 	void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
 		this.sideEffectsFactory = sideEffectsFactory;
+	}
+
+	@VisibleForTesting
+	static void setExpiryJustEnabled(boolean expiryJustEnabled) {
+		MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
 	}
 }

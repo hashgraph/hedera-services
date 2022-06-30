@@ -25,7 +25,6 @@ package com.hedera.services.contracts.operation;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -35,6 +34,7 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 
 /**
@@ -62,12 +62,12 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 			final Address address = Words.toAddress(frame.popStackItem());
 			if (!addressValidator.test(address, frame)) {
 				return new OperationResult(
-						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+						OptionalLong.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
 			final var account = frame.getWorldUpdater().get(address);
 			boolean accountIsWarm = frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
-			Optional<Gas> optionalCost = Optional.of(this.cost(accountIsWarm));
-			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {
+			OptionalLong optionalCost = OptionalLong.of(this.cost(accountIsWarm));
+			if (frame.getRemainingGas() < optionalCost.getAsLong()) {
 				return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
 				if (!account.isEmpty()) {
@@ -80,7 +80,7 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 			}
 		} catch (final FixedStack.UnderflowException ufe) {
 			return new OperationResult(
-					Optional.of(cost(true)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+					OptionalLong.of(cost(true)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 		}
 	}
 }

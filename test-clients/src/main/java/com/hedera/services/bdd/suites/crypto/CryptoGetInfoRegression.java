@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -207,7 +208,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 
 	private HapiApiSpec succeedsNormally() {
 		long balance = 1_234_567L;
-		long autoRenew = 5_555_555L;
+		long autoRenew = 6999999L;
 		long sendThresh = 1_111L;
 		long receiveThresh = 2_222L;
 		long expiry = Instant.now().getEpochSecond() + autoRenew;
@@ -217,26 +218,39 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				.given(
 						newKeyNamed("misc").shape(misc)
 				).when(
+						cryptoCreate("noStakingTarget")
+								.key("misc")
+								.balance(balance),
 						cryptoCreate("target")
 								.key("misc")
-								.proxy("1.2.3")
 								.balance(balance)
-								.sendThreshold(sendThresh)
-								.receiveThreshold(receiveThresh)
-								.receiverSigRequired(true)
-								.autoRenewSecs(autoRenew)
+								.stakedNodeId(0L),
+						cryptoCreate("targetWithStakedAccountId")
+								.key("misc")
+								.balance(balance)
+								.stakedAccountId("0.0.20")
 				).then(
+						getAccountInfo("noStakingTarget")
+								.has(accountWith()
+										.accountId("noStakingTarget")
+										.stakedNodeId(-1L) // stakedNodeId is -1 only if no staking info is present. Will be 0 if staked account id is present.
+										.noStakedAccountId()
+										.key("misc")
+										.balance(balance)
+								).logged(),
 						getAccountInfo("target")
 								.has(accountWith()
 										.accountId("target")
-										.solidityId("target")
-										.proxy("1.2.3")
+										.noStakingNodeId()
 										.key("misc")
 										.balance(balance)
-										.sendThreshold(sendThresh)
-										.receiveThreshold(receiveThresh)
-										.expiry(expiry, 5L)
-										.autoRenew(autoRenew)
+								).logged(),
+						getAccountInfo("targetWithStakedAccountId")
+								.has(accountWith()
+										.accountId("targetWithStakedAccountId")
+										.stakedAccountId("0.0.20")
+										.key("misc")
+										.balance(balance)
 								).logged()
 				);
 	}

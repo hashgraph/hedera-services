@@ -90,7 +90,7 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxGas", "" + MAX_CONTRACT_GAS,
+										"contracts.maxGasPerSec", "" + MAX_CONTRACT_GAS,
 										"contracts.throttle.throttleByGas", "false")))
 				.when()
 				.then();
@@ -112,7 +112,7 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxGas", "" + GAS_TO_OFFER
+										"contracts.maxGasPerSec", "" + GAS_TO_OFFER
 								)),
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -155,7 +155,7 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxGas", "" + MAX_CONTRACT_GAS
+										"contracts.maxGasPerSec", "" + MAX_CONTRACT_GAS
 								)),
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -262,7 +262,7 @@ public class SStoreSuite extends HapiApiSuite {
 							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
 						}),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit")
 				);
 	}
 

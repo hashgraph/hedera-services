@@ -84,7 +84,7 @@ class CodeCacheTest {
 	void returnsCachedValue() {
 		Address demoAddress = Address.fromHexString("aaa");
 		BytesKey key = new BytesKey(demoAddress.toArray());
-		Code code = new Code();
+		Code code = Code.EMPTY;
 		
 		codeCache.cacheValue(key, code);
 

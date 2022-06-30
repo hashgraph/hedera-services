@@ -29,11 +29,15 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
+import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 /**
@@ -67,7 +71,8 @@ public class RationalizedSigMeta {
 	private final JKey payerReqSig;
 	private final List<JKey> othersReqSigs;
 	private final List<TransactionSignature> rationalizedSigs;
-	private final Function<byte[], TransactionSignature> pkToVerifiedSigFn;
+
+	private Function<byte[], TransactionSignature> pkToVerifiedSigFn;
 
 	private RationalizedSigMeta() {
 		payerReqSig = null;
@@ -120,6 +125,22 @@ public class RationalizedSigMeta {
 			};
 		}
 		return new RationalizedSigMeta(payerReqSig, othersReqSigs, rationalizedSigs, verifiedSigsFn);
+	}
+
+	/**
+	 * Given a (possibly multi-sig) Hedera key, removes signatures of all its cryptographic keys from
+	 * the internal public-key-to-signature mapping.
+	 *
+	 * @param key the Hedera key whose signatures should be revoked
+	 */
+	public void revokeCryptoSigsFrom(final JKey key) {
+		final Set<BytesKey> revokedKeys = new HashSet<>();
+		visitSimpleKeys(key, publicKey ->
+				revokedKeys.add(new BytesKey(publicKey.primitiveKeyIfPresent())));
+
+		final var wrappedFn = pkToVerifiedSigFn;
+		pkToVerifiedSigFn = publicKey ->
+				revokedKeys.contains(new BytesKey(publicKey)) ? INVALID_MISSING_SIG : wrappedFn.apply(publicKey);
 	}
 
 	public boolean couldRationalizePayer() {

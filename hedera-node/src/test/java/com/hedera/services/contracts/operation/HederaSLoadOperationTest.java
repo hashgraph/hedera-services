@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -41,10 +40,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -70,11 +71,8 @@ class HederaSLoadOperationTest {
 	@Mock
 	EvmAccount evmAccount;
 
-	@Mock
-	Bytes keyBytesMock;
-
-	@Mock
-	Bytes valueBytesMock;
+	final Bytes keyBytesMock = Bytes.of(1,2,3,4);
+	final Bytes valueBytesMock = Bytes.of(4,3,2,1);
 
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
@@ -89,7 +87,7 @@ class HederaSLoadOperationTest {
 	void executesProperlyWithColdSuccess() {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 
@@ -99,7 +97,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var coldResult = subject.execute(messageFrame, evm);
 
-		final var expectedColdResult = new Operation.OperationResult(Optional.of(Gas.of(20L)), Optional.empty());
+		final var expectedColdResult = new Operation.OperationResult(OptionalLong.of(20L), Optional.empty());
 
 		assertEquals(expectedColdResult.getGasCost(), coldResult.getGasCost());
 		assertEquals(expectedColdResult.getHaltReason(), coldResult.getHaltReason());
@@ -112,7 +110,7 @@ class HederaSLoadOperationTest {
 	void executesProperlyWithWarmSuccess() {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -120,7 +118,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var warmResult = subject.execute(messageFrame, evm);
 
-		final var expectedWarmResult = new Operation.OperationResult(Optional.of(Gas.of(30L)), Optional.empty());
+		final var expectedWarmResult = new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
 
 		assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
 		assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
@@ -133,10 +131,10 @@ class HederaSLoadOperationTest {
 	void executeHaltsForInsufficientGas() {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
+		given(messageFrame.getRemainingGas()).willReturn(0L);
 
-		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(30L)),
+		final var expectedHaltResult = new Operation.OperationResult(OptionalLong.of(30L),
 				Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
 		final var haltResult = subject.execute(messageFrame, evm);
@@ -158,7 +156,7 @@ class HederaSLoadOperationTest {
 	void executeWithOverFlowException() {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -167,6 +165,7 @@ class HederaSLoadOperationTest {
 		doThrow(new FixedStack.OverflowException()).when(messageFrame).pushStackItem(any());
 
 		final var result = subject.execute(messageFrame, evm);
+		assertTrue(result.getHaltReason().isPresent());
 		assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason().get());
 	}
 
@@ -182,8 +181,8 @@ class HederaSLoadOperationTest {
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
 
-		given(gasCalculator.getSloadOperationGasCost()).willReturn(Gas.of(10));
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(20));
-		given(gasCalculator.getColdSloadCost()).willReturn(Gas.of(10));
+		given(gasCalculator.getSloadOperationGasCost()).willReturn(10L);
+		given(gasCalculator.getWarmStorageReadCost()).willReturn(20L);
+		given(gasCalculator.getColdSloadCost()).willReturn(10L);
 	}
 }

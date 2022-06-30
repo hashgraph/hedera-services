@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractStorageListRemoval;
+import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -48,7 +48,7 @@ public class ContractGC {
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
 	// Revisit after release 0.27 to see if VirtualMap.getForModify() has been rehabilitated
-	private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::overwritingRemoveFromMapValueList;
+	private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
 
 	@Inject
 	public ContractGC(
@@ -87,7 +87,7 @@ public class ContractGC {
 			final ContractKey rootKey,
 			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		final var listRemoval = new ContractStorageListRemoval(contractNum.longValue(), storage);
+		final var listRemoval = new ContractStorageListMutation(contractNum.longValue(), storage);
 		var i = maxKvPairs;
 		var n = 0;
 		var contractKey = rootKey;
@@ -109,7 +109,7 @@ public class ContractGC {
 
 	@FunctionalInterface
 	interface RemovalFacilitation {
-		ContractKey removeNext(ContractKey key, ContractKey root, ContractStorageListRemoval listRemoval);
+		ContractKey removeNext(ContractKey key, ContractKey root, ContractStorageListMutation listRemoval);
 	}
 
 	@VisibleForTesting

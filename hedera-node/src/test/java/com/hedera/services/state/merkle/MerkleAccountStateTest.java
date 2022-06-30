@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.exceptions.MutabilityException;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,12 +39,11 @@ import java.util.Collections;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,11 +94,23 @@ class MerkleAccountStateTest {
 	private static final int otherNumPositiveBalances = 3;
 	private static final int numTreasuryTitles = 23;
 	private static final int otherNumTreasuryTitles = 32;
+	private static final long stakedToMe = 12_345L;
+	private static final long otherStakedToMe = 4_567_890L;
+	private static final long stakePeriodStart = 786L;
+	private static final long otherStakePeriodStart = 945L;
+	private static final long stakedNum = 1111L;
+	private static final long otherStakedNum = 5L;
+	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+	private static final long otherBalanceAtStartOfLastRewardedPeriod = 678_324_546L;
+	private static final boolean declineReward = false;
+	private static final boolean otherDeclinedReward = true;
 
 	private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
 	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
 	private static final EntityNum tokenForAllowance = EntityNum.fromLong(2000L);
 	private static final long headTokenNum = tokenForAllowance.longValue();
+	private static final long headNftId = 4000L;
+	private static final long headNftSerialNum = 1L;
 	private static final Long cryptoAllowance = 10L;
 	private static final Long tokenAllowanceVal = 1L;
 
@@ -145,44 +157,60 @@ class MerkleAccountStateTest {
 				headTokenNum,
 				numTreasuryTitles,
 				ethereumNonce,
-				autoRenewAccountId);
+				autoRenewAccountId,
+				headNftId,
+				headNftSerialNum,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declineReward,
+				balanceAtStartOfLastRewardedPeriod);
+	}
+
+	@Test
+	void onlyHasAutoRenewAccountIfSetToNonMissing() {
+		final var otherSubject = new MerkleAccountState();
+		assertFalse(otherSubject.hasAutoRenewAccount());
+		otherSubject.setAutoRenewAccount(EntityId.MISSING_ENTITY_ID);
+		assertFalse(otherSubject.hasAutoRenewAccount());
+		otherSubject.setAutoRenewAccount(autoRenewAccountId);
+		assertTrue(otherSubject.hasAutoRenewAccount());
 	}
 
 	@Test
 	void toStringWorks() {
-		final var desired = "MerkleAccountState{number=123 <-> 0.0.123, key=ed25519: " +
-				"\"abcdefghijklmnopqrstuvwxyz012345\"\n" +
-				", expiry=1234567, balance=555555, autoRenewSecs=234567, memo=A memo, deleted=true, " +
-				"smartContract=true," +
-				" numContractKvPairs=123, receiverSigRequired=true, proxy=EntityId{shard=1, realm=2, num=3}, " +
-				"nftsOwned=150, alreadyUsedAutoAssociations=1233, maxAutoAssociations=1234, " +
-				"alias=bbbbbbbbbbbbbbbbbbbbb, cryptoAllowances={EntityNum{value=1000}=10}, " +
-				"fungibleTokenAllowances={FcTokenAllowanceId{tokenNum=2000, spenderNum=1000}=1}, " +
-				"approveForAllNfts=[FcTokenAllowanceId{tokenNum=2000, spenderNum=3000}], " +
-				"firstContractStorageKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060, " +
-				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23, ethereumNonce=0, " +
-				"autoRenewAccount=EntityId{shard=4, realm=5, num=6}}";
-		assertEquals(desired, subject.toString());
-	}
-
-	@Test
-	void getterWorksForNullStorageKey() {
-		subject.setFirstUint256Key(null);
-		assertNull(subject.getFirstContractStorageKey());
-		assertEquals(0, subject.getFirstUint256KeyNonZeroBytes());
-	}
-
-	@Test
-	void getterWorksForTypedStorageKey() {
-		final var expected = new ContractKey(numFromCode(number), explicitFirstKey);
-		final var actual = subject.getFirstContractStorageKey();
-		assertEquals(expected, actual);
-	}
-
-	@Test
-	void settingFirstKeyUpdatesNonZeroBytes() {
-		subject.setFirstUint256Key(otherExplicitFirstKey);
-		assertEquals(otherNumNonZeroBytesInFirst, subject.getFirstUint256KeyNonZeroBytes());
+		assertEquals("MerkleAccountState{number=123 <-> 0.0.123, " +
+						"key=" + MiscUtils.describe(key) + ", " +
+						"expiry=" + expiry + ", " +
+						"balance=" + balance + ", " +
+						"autoRenewSecs=" + autoRenewSecs + ", " +
+						"memo=" + memo + ", " +
+						"deleted=" + deleted + ", " +
+						"smartContract=" + smartContract + ", " +
+						"numContractKvPairs=" + kvPairs + ", " +
+						"receiverSigRequired=" + receiverSigRequired + ", " +
+						"proxy=" + proxy + ", nftsOwned=" + nftsOwned + ", " +
+						"alreadyUsedAutoAssociations=" + usedAutoAssociations + ", " +
+						"maxAutoAssociations=" + maxAutoAssociations + ", " +
+						"alias=" + alias.toStringUtf8() + ", " +
+						"cryptoAllowances=" + cryptoAllowances + ", " +
+						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
+						"approveForAllNfts=" + approveForAllNfts + ", " +
+						"firstContractStorageKey=" + readableContractStorageKey(explicitFirstKey) + ", " +
+						"numAssociations=" + associatedTokensCount + ", " +
+						"numPositiveBalances=" + numPositiveBalances + ", " +
+						"headTokenId=" + headTokenNum + ", " +
+						"numTreasuryTitles=" + numTreasuryTitles + ", " +
+						"ethereumNonce=" + ethereumNonce + ", " +
+						"autoRenewAccount=" + autoRenewAccountId + ", " +
+						"headNftId=" + headNftId + ", " +
+						"headNftSerialNum=" + headNftSerialNum + ", " +
+						"stakedToMe=" + stakedToMe + ", " +
+						"stakePeriodStart=" + stakePeriodStart + ", " +
+						"stakedNum=" + stakedNum + ", " +
+						"declineReward=" + declineReward + ", " +
+						"balanceAtStartOfLastRewardedPeriod=" + balanceAtStartOfLastRewardedPeriod + "}",
+				subject.toString());
 	}
 
 	@Test
@@ -212,6 +240,12 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(nftsOwned));
 		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
+		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
+		assertThrows(MutabilityException.class, () -> subject.setStakedToMe(otherStakedToMe));
+		assertThrows(MutabilityException.class, () -> subject.setStakePeriodStart(otherStakePeriodStart));
+		assertThrows(MutabilityException.class, () -> subject.setStakedNum(otherStakedNum));
+		assertThrows(MutabilityException.class, () -> subject.setDeclineReward(otherDeclinedReward));
+		assertThrows(MutabilityException.class, () -> subject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
 	}
 
 	@Test
@@ -220,7 +254,6 @@ class MerkleAccountStateTest {
 		subject.setNumTreasuryTitles(0);
 		assertFalse(subject.isTokenTreasury());
 	}
-
 
 	@Test
 	void copyWorks() {
@@ -384,8 +417,43 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void equalsWorksForStakedToMe() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakedToMe(otherStakedToMe);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForStakePeriodStart() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakePeriodStart(otherStakePeriodStart);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForStakedNum() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakedNum(otherStakedNum);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForDeclineReward() {
+		final var otherSubject = subject.copy();
+		otherSubject.setDeclineReward(otherDeclinedReward);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForBalanceAtStartOfLastRewardedPeriod() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0260_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0270_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -447,5 +515,4 @@ class MerkleAccountStateTest {
 		subject.setAutoRenewAccount(account);
 		assertEquals(account, subject.getAutoRenewAccount());
 	}
-
 }

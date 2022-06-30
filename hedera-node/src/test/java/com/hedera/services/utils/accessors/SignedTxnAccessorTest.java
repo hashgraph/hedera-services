@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -77,8 +78,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -638,6 +639,23 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void setGenerateRandomMetaWorks() {
+		final var op = RandomGenerateTransactionBody.newBuilder().setRange(10).build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setRandomGenerate(op)
+				.build());
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getRandomGenerateMeta(accessor);
+
+		assertEquals(4, expandedMeta.getMsgBytesUsed());
+	}
+
+	@Test
 	void getGasLimitWorksForCreate() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setGas(123456789L)
@@ -712,6 +730,84 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void markThrottleExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+		subject.markThrottleExempt();
+		assertTrue(subject.throttleExempt());
+
+	}
+
+	@Test
+	void throttleExemptWorksWithExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2"));
+
+		assertTrue(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNonExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNullPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(null);
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void markCongestionExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertFalse(subject.congestionExempt());
+		subject.markCongestionExempt();
+		assertTrue(subject.congestionExempt());
+	}
+
+	@Test
 	void toLoggableStringWorks() throws InvalidProtocolBufferException {
 		TransactionBody someTxn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
@@ -734,7 +830,7 @@ class SignedTxnAccessorTest {
 		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
 				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +

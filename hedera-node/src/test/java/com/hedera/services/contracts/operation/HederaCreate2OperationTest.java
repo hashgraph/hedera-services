@@ -28,7 +28,6 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Create2Operation;
@@ -45,11 +44,12 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreate2OperationTest {
-	private static final Gas baseGas = Gas.of(100);
+	private static final long baseGas = 100L;
 	private static final Bytes salt = Bytes.fromHexString("0x2a");
 	private static final Bytes oneOffsetStackItem = Bytes.of(10);
 	private static final Bytes twoOffsetStackItem = Bytes.of(20);
 	private static final MutableBytes initcode = MutableBytes.of((byte) 0xaa);
+	private Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
@@ -59,8 +59,6 @@ class HederaCreate2OperationTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private HederaStackedWorldStateUpdater stackedUpdater;
-	@Mock
-	private Address recipientAddr;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock

@@ -22,12 +22,16 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
@@ -41,13 +45,14 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 public class ReleaseTwentySixMigration {
 	private static final Logger log = LogManager.getLogger(ReleaseTwentySixMigration.class);
 
 	public static final int THREAD_COUNT = 32;
-	public static final int INSERTIONS_PER_COPY = 100;
+	public static final int INSERTIONS_PER_COPY = 10_000;
 	public static final int SEVEN_DAYS_IN_SECONDS = 604800;
 	private static final RandomExtended random = new RandomExtended(8682588012L);
 
@@ -65,7 +70,7 @@ public class ReleaseTwentySixMigration {
 			log.info("Migrating contract storage into iterable VirtualMap with {} threads", THREAD_COUNT);
 			final var watch = StopWatch.createStarted();
 			migrationUtility.extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
-			log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
+			logDone(watch);
 		} catch (InterruptedException e) {
 			log.error("Interrupted while making contract storage iterable", e);
 			Thread.currentThread().interrupt();
@@ -73,6 +78,38 @@ public class ReleaseTwentySixMigration {
 		}
 		migrator.finish();
 		initializingState.setChild(CONTRACT_STORAGE, migrator.getMigratedStorage());
+	}
+
+	public static void buildAccountNftsOwnedLinkedList(
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
+	) {
+
+		log.info("Migrating {} NFTs into iterable form", uniqueTokens.size());
+		final var watch = StopWatch.createStarted();
+		for (final var nftId : uniqueTokens.keySet()) {
+			var nft = uniqueTokens.getForModify(nftId);
+			final var owner = nft.getOwner();
+			final var tokenNum = nftId.getHiOrderAsLong();
+			final var serialNum = nftId.getLowOrderAsLong();
+
+			if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
+				var merkleAccount = accounts.getForModify(owner.asNum());
+
+				if (merkleAccount.getHeadNftId() != MISSING_ID.num()) {
+					var currHeadNftNum = merkleAccount.getHeadNftId();
+					var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
+					var currHeadNftId = EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
+					var currHeadNft = uniqueTokens.getForModify(currHeadNftId);
+
+					currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
+					nft.setNext(NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
+				}
+				merkleAccount.setHeadNftId(tokenNum);
+				merkleAccount.setHeadNftSerialNum(serialNum);
+			}
+		}
+		logDone(watch);
 	}
 
 	public static void grantFreeAutoRenew(
@@ -87,6 +124,10 @@ public class ReleaseTwentySixMigration {
 				setNewExpiry(upgradeTime, contracts, id, random);
 			}
 		});
+		logDone(watch);
+	}
+
+	private static void logDone(final StopWatch watch) {
 		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
 	}
 

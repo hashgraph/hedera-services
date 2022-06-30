@@ -1,0 +1,56 @@
+{
+    "buckets": [
+        {
+            "name": "A",
+            "burstPeriod": 2,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoUpdate",
+                        "CryptoTransfer",
+                        "ConsensusSubmitMessage"
+                    ],
+                    "opsPerSec": 10000
+                },
+                {
+                    "operations": [
+                        "CryptoCreate",
+                        "ConsensusSubmitMessage"
+                    ],
+                    "opsPerSec": 10000
+                }
+            ]
+        },
+        {
+            "name": "B",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoCreate"
+                    ],
+                    "opsPerSec": 1000000
+                }
+            ]
+        },
+        {
+            "name": "C",
+            "burstPeriod": 3,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoCreate"
+                    ],
+                    "opsPerSec": 2
+                },
+                {
+                    "operations": [
+                        "CryptoUpdate",
+                        "CryptoDelete"
+                    ],
+                    "opsPerSec": 100
+                }
+            ]
+        }
+    ]
+}

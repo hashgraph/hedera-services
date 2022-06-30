@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -65,6 +66,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	private final NodeLocalProperties nodeProperties;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final CallLocalEvmTxProcessor evmTxProcessor;
+	private final StaticBlockMetaProvider blockMetaProvider;
 
 	@Inject
 	public ContractCallLocalResourceUsage(
@@ -75,7 +77,8 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			final CallLocalEvmTxProcessor evmTxProcessor,
 			final EntityIdSource ids,
 			final OptionValidator validator,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final StaticBlockMetaProvider blockMetaProvider
 	) {
 		this.accountStore = accountStore;
 		this.evmTxProcessor = evmTxProcessor;
@@ -85,6 +88,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		this.properties = properties;
 		this.nodeProperties = nodeProperties;
 		this.usageEstimator = usageEstimator;
+		this.blockMetaProvider = blockMetaProvider;
 	}
 
 	@Override
@@ -110,17 +114,23 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	) {
 		try {
 			final var op = query.getContractCallLocal();
+
 			ContractCallLocalResponse response;
 			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, properties);
-				final var codeCache = new CodeCache(nodeProperties, entityAccess);
-				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
-				evmTxProcessor.setWorldState(worldState);
-
-				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
-				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
+				final var blockMetaSource = blockMetaProvider.getSource();
+				if (blockMetaSource.isEmpty()) {
+					response = dummyResponse(op.getContractID());
+				} else {
+					final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
+					final var codeCache = new CodeCache(nodeProperties, entityAccess);
+					final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
+					evmTxProcessor.setWorldState(worldState);
+					evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
+					response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
+					queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
+				}
 			}
 			final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
 					op.getFunctionParameters().size(),
@@ -130,7 +140,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
 					.build();
 		} catch (final Exception internal) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, internal);
+			log.warn("Usage estimation unexpectedly failed for {}", query, internal);
 			throw new IllegalStateException(internal);
 		}
 	}

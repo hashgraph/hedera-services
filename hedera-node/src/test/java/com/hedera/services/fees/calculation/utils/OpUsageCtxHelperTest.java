@@ -200,8 +200,10 @@ class OpUsageCtxHelperTest {
 		given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);
 		given(merkleAccount.getFungibleTokenAllowances()).willReturn(tokenAllowance);
 		given(merkleAccount.getApproveForAllNfts()).willReturn(nftAllowance);
+		given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 
-		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
+		final var ctx = subject.ctxForCryptoAllowance(accessor);
 
 		assertEquals(memo, ctx.currentMemo());
 		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
@@ -226,8 +228,10 @@ class OpUsageCtxHelperTest {
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
 		given(workingView.accounts()).willReturn(new MerkleMap<>());
+		given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 
-		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
+		final var ctx = subject.ctxForCryptoAllowance(accessor);
 
 		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
 		assertEquals(Collections.emptySet(), ctx.currentNftAllowances());

@@ -49,11 +49,11 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 	private final SortedSet<EntityNum> presentContractNums = new TreeSet<>();
 	private final Map<EntityNum, ContractKey> rootKeys = new HashMap<>();
 	private final Map<EntityNum, Integer> numNonZeroKvPairs = new HashMap<>();
-	private final Map<EntityNum, IterableContractValue> rootValues = new HashMap<>();
 	private final MerkleMap<EntityNum, MerkleAccount> contracts;
 	private final SizeLimitedStorage.IterableStorageUpserter storageUpserter;
 
 	private int numInsertions = 0;
+	private int numSkipped = 0;
 	private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
 
 	public KvPairIterationMigrator(
@@ -72,23 +72,29 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 	public void accept(final Pair<ContractKey, ContractValue> kvPair) throws InterruptedException {
 		final var key = kvPair.getKey();
 		final var contractNum = EntityNum.fromLong(key.getContractId());
+		if (!contracts.containsKey(contractNum)) {
+			log.warn("Skipping K/V pair ({}, {}) for missing contract 0.0.{}",
+					kvPair.getKey(), kvPair.getValue(), contractNum.longValue());
+			return;
+		}
 		presentContractNums.add(contractNum);
 		final var nonIterableValue = kvPair.getValue();
 		if (ZERO_VALUE.equals(nonIterableValue)) {
+			numSkipped++;
 			return;
 		}
 		numNonZeroKvPairs.merge(contractNum, 1, Integer::sum);
 		var rootKey = rootKeys.get(contractNum);
-		final var rootValue = rootValues.get(contractNum);
 		final var iterableValue = IterableContractValue.from(nonIterableValue.asUInt256());
-		rootKey = storageUpserter.upsertMapping(key, iterableValue, rootKey, rootValue, iterableContractStorage);
+		rootKey = storageUpserter.upsertMapping(key, iterableValue, rootKey, null, iterableContractStorage);
 		numInsertions++;
 		if (numInsertions % insertionsPerCopy == 0) {
 			final var copy = iterableContractStorage.copy();
+			log.info("After {} insertions, the iterable storage map had root hash {}",
+					numInsertions, iterableContractStorage.getRight().getHash());
 			iterableContractStorage.release();
 			iterableContractStorage = copy;
 		}
-		rootValues.put(contractNum, iterableValue);
 		rootKeys.put(contractNum, rootKey);
 	}
 
@@ -104,8 +110,11 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 			if (rootKey != null) {
 				contract.setFirstUint256StorageKey(rootKey.getKey());
 			}
-			log.info("Migrated {} k/v pairs from contract {}",
-					contract.getNumContractKvPairs(), contractNum.toIdString());
+			log.debug("Migrated {} k/v pairs from contract {}",
+					contract.getNumContractKvPairs(),
+					contractNum.toIdString());
 		});
+
+		log.info("Migration summary: {} k/v pairs migrated. {} skipped.", numInsertions, numSkipped);
 	}
 }

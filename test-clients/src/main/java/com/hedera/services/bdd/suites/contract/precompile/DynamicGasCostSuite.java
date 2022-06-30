@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
@@ -40,11 +41,13 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -59,6 +62,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -84,6 +88,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -129,7 +134,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	public static final String ZERO_GAS_COST = "0";
 	public static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
 	public static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
-	public static final String BOOTSTRAP_PROPERTIES = "src/main/resource/bootstrap.properties";
 
 	private static final String SAFE_OPERATIONS_CONTRACT = "SafeOperations";
 
@@ -143,7 +147,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -381,6 +385,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000"
+						)),
 						newKeyNamed(adminKey),
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
@@ -388,7 +400,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
-								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
@@ -550,14 +561,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						contractCreate(ercContract).omitAdminKey(),
 						contractCreate(pc2User)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(pc2User, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
 								.via(creation2),
 						captureOneChildCreate2MetaFor(
 								"Precompile user", creation2, userMirrorAddr, userAliasAddr),
+						sourcing(() -> getAliasedContractBalance(userAliasAddr.get())
+								.hasId(accountIdFromHexedMirrorAddress(userMirrorAddr.get()))),
 						withOpContext((spec, opLog) ->
 								userLiteralId.set(
 										asContractString(
@@ -652,8 +664,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.omitAdminKey()
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -747,14 +758,35 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck(helperMintFail, SUCCESS,
 								/* First record is of helper creation */
-								recordWith().status(SUCCESS),
-								recordWith().status(INVALID_SIGNATURE)),
+								recordWith()
+										.status(SUCCESS),
+								recordWith()
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withTotalSupply(0)
+																.withSerialNumbers()
+																.withStatus(INVALID_SIGNATURE)))),
 						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith().status(REVERTED_SUCCESS),
-								recordWith().status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
 						childRecordsCheck(nftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith().status(REVERTED_SUCCESS),
-								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(ACCOUNT_STILL_OWNS_NFTS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(ACCOUNT_STILL_OWNS_NFTS)))),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
 						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id)
@@ -812,8 +844,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildDonor", salt)
 								.sending(1_000)
 								.payingWith(GENESIS)
@@ -865,8 +896,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.adminKey(adminKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -938,8 +968,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1008,8 +1037,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1069,8 +1097,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1159,7 +1186,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("mintDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1225,7 +1253,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("burnDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1281,7 +1310,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("associateDynamicGasDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1341,7 +1371,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("dissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1414,7 +1445,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleAssociateDefaultCostTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1489,7 +1521,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleDissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1566,7 +1599,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1643,7 +1677,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokenTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1729,7 +1764,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokensTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1816,7 +1852,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftsTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+												UtilVerbs.resetToDefault(HTS_DEFAULT_GAS_COST,
+														MAX_REFUND_PERCENT_OF_GAS_LIMIT)
 										)
 						)
 				).then(
@@ -1847,22 +1884,32 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 			final AtomicReference<String> mirrorAddr,
 			final AtomicReference<String> create2Addr
 	) {
-		return captureChildCreate2MetaFor(2, 0, desc, creation2, mirrorAddr, create2Addr);
+		return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
 	}
 
 	public static HapiSpecOperation captureChildCreate2MetaFor(
-			final int numExpectedChildren,
-			final int childOfInterest,
+			final int givenNumExpectedChildren,
+			final int givenChildOfInterest,
 			final String desc,
 			final String creation2,
 			final AtomicReference<String> mirrorAddr,
 			final AtomicReference<String> create2Addr
 	) {
 		return withOpContext((spec, opLog) -> {
-			final var lookup = getTxnRecord(creation2).andAllChildRecords();
+			final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
 			allRunFor(spec, lookup);
 			final var response = lookup.getResponse().getTransactionGetRecord();
-			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount(), "Wrong # of children");
+			final var numRecords = response.getChildTransactionRecordsCount();
+			int numExpectedChildren = givenNumExpectedChildren;
+			int childOfInterest = givenChildOfInterest;
+			if (numRecords == numExpectedChildren + 1) {
+				// This transaction may have had a preceding record for the end-of-day staking calculations
+				if (TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
+					numExpectedChildren++;
+					childOfInterest++;
+				}
+			}
+			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
 			final var create2Record = response.getChildTransactionRecords(childOfInterest);
 			final var create2Address =
 					create2Record.getContractCreateResult().getEvmAddress().getValue();

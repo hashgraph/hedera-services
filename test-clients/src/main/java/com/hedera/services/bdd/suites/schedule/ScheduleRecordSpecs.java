@@ -21,13 +21,16 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -37,6 +40,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -44,13 +49,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -64,32 +73,29 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						executionTimeIsAvailable(),
-						deletionTimeIsAvailable(),
-						allRecordsAreQueryable(),
-						schedulingTxnIdFieldsNotAllowed(),
-						canonicalScheduleOpsHaveExpectedUsdFees(),
-						canScheduleChunkedMessages(),
-						noFeesChargedIfTriggeredPayerIsInsolvent(),
-						noFeesChargedIfTriggeredPayerIsUnwilling(),
-				}
-		);
+		return withAndWithoutLongTermEnabled(() -> List.of(
+			executionTimeIsAvailable(),
+			deletionTimeIsAvailable(),
+			allRecordsAreQueryable(),
+			schedulingTxnIdFieldsNotAllowed(),
+			canonicalScheduleOpsHaveExpectedUsdFees(),
+			canScheduleChunkedMessages(),
+			noFeesChargedIfTriggeredPayerIsInsolvent(),
+			noFeesChargedIfTriggeredPayerIsUnwilling()
+		));
 	}
 
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
 		return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
 				.given(
+						overriding("scheduling.whitelist", "CryptoTransfer,ContractCall"),
+						uploadInitCode("SimpleUpdate"),
 						cryptoCreate("otherPayer"),
 						cryptoCreate("payingSender"),
 						cryptoCreate("receiver")
-								.receiverSigRequired(true)
+								.receiverSigRequired(true),
+						contractCreate("SimpleUpdate").gas(300_000L)
 				).when(
 						scheduleCreate("canonical",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
@@ -104,6 +110,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.via("canonicalSigning")
 								.payingWith("payingSender")
 								.alsoSigningWith("receiver"),
+
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
@@ -113,11 +120,24 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.adminKey("payingSender"),
 						scheduleDelete("tbd")
 								.via("canonicalDeletion")
-								.payingWith("payingSender")
+								.payingWith("payingSender"),
+
+						scheduleCreate("contractCall",
+								contractCall("SimpleUpdate", "set", 5, 42)
+										.gas(10_000L)
+										.memo("")
+										.fee(ONE_HBAR)
+						)
+								.payingWith("otherPayer")
+								.via("canonicalContractCall")
+								.adminKey("otherPayer")
+
 				).then(
+						overriding("scheduling.whitelist", HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist")),
 						validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
 						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
+						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
+						validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0)
 				);
 	}
 
@@ -132,6 +152,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						)
 								.alsoSigningWith(GENESIS, "unwillingPayer")
 								.via("simpleXferSchedule")
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 								.designatingPayer("unwillingPayer")
 								.savingExpectedScheduledTxnId()
 				).then(
@@ -154,6 +176,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						)
 								.alsoSigningWith(GENESIS, "insolventPayer")
 								.via("simpleXferSchedule")
+								// prevent multiple runs of this test causing duplicates
+								.withEntityMemo("" + new SecureRandom().nextLong())
 								.designatingPayer("insolventPayer")
 								.savingExpectedScheduledTxnId()
 				).then(
@@ -172,6 +196,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("CanScheduleChunkedMessages")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10"
+						)),
 						cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
 						createTopic(ofGeneralInterest)
 				).when(
@@ -196,12 +224,16 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().defaultNode(),
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).assertingOnlyPriority().logged(),
 						getTxnRecord("begin").scheduled().hasPriority(recordWith()
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged()
 				).then(
@@ -216,9 +248,15 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
 										spec.setup().fundingAccount(),
+										spec.setup().stakingRewardAccount(),
+										spec.setup().nodeRewardAccount(),
 										spec.registry().getAccountID("payingSender")
 								)))).logged(),
-						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)
+						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L),
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", HapiSpecSetup.getDefaultNodeProps().get("staking.fees.nodeRewardPercentage"),
+								"staking.fees.stakingRewardPercentage", HapiSpecSetup.getDefaultNodeProps().get("staking.fees.stakingRewardPercentage")
+						))
 				);
 	}
 

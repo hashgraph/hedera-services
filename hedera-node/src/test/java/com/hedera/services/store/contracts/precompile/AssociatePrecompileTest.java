@@ -20,21 +20,22 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -46,14 +47,17 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.AssociateLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
-import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -61,7 +65,6 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -71,14 +74,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
@@ -86,6 +94,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentRecipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
@@ -95,19 +104,18 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class AssociatePrecompileTest {
-	@Mock
-	private Bytes pretendArguments;
-	@Mock
-	private OptionValidator validator;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -125,19 +133,11 @@ class AssociatePrecompileTest {
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
 	private AssociateLogic associateLogic;
-	@Mock
-	private HTSPrecompiledContract.AssociateLogicFactory associateLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -173,32 +173,40 @@ class AssociatePrecompileTest {
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
+	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private CreateChecks createChecks;
+	private AssetsLoader assetLoader;
 	@Mock
-	private EntityIdSource entityIdSource;
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+
+	private static final long TEST_SERVICE_FEE = 5_000_000;
+	private static final long TEST_NETWORK_FEE = 400_000;
+	private static final long TEST_NODE_FEE = 300_000;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws IOException {
+		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+		canonicalPrices.put(HederaFunctionality.TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
+				infrastructureFactory);
 
-		subject.setAssociateLogicFactory(associateLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
@@ -206,7 +214,8 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenFailurePathWorks() {
 		// given:
 		givenCommonFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false,
@@ -228,7 +237,7 @@ class AssociatePrecompileTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -239,8 +248,9 @@ class AssociatePrecompileTest {
 	@Test
 	void computeAssociateTokenFailurePathWorksWithNullLedgers() {
 		// given:
-		givenCommonFrameContext();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		givenFrameContextWithDelegateCallFromParent();
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false,
@@ -262,7 +272,7 @@ class AssociatePrecompileTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -272,18 +282,19 @@ class AssociatePrecompileTest {
 
 	@Test
 	void computeAssociateTokenHappyPathWorksWithDelegateCall() {
+		givenPricingUtilsContext();
 		given(frame.getContractAddress()).willReturn(contractAddress);
 		given(frame.getRecipientAddress()).willReturn(contractAddress);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -292,12 +303,10 @@ class AssociatePrecompileTest {
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -312,11 +321,12 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -327,10 +337,62 @@ class AssociatePrecompileTest {
 	}
 
 	@Test
+	void computeAssociateTokenBadSyntax() {
+		givenPricingUtilsContext();
+		given(frame.getContractAddress()).willReturn(contractAddress);
+		given(frame.getRecipientAddress()).willReturn(contractAddress);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(300L);
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(frame.getRecipientAddress()).willReturn(recipientAddress);
+		givenLedgers();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+		given(decoder.decodeAssociation(eq(pretendArguments), any()))
+				.willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(true,
+				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
+				wrappedLedgers))
+				.willReturn(true);
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
+				.willReturn(tokenStore);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(associateLogic.validateSyntax(any())).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+		given(creator.createUnsuccessfulSyntheticRecord(TOKEN_ID_REPEATED_IN_TOKEN_LIST)).willReturn(mockRecordBuilder);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+		subject.computeInternal(frame);
+
+		verify(wrappedLedgers, never()).commit();
+	}
+
+	@Test
 	void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
 		givenFrameContextWithDelegateCallFromParent();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -338,12 +400,11 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(true, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -355,7 +416,7 @@ class AssociatePrecompileTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -369,7 +430,8 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
 		givenFrameContextWithEmptyMessageFrameStack();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -377,12 +439,11 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -398,8 +459,8 @@ class AssociatePrecompileTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -413,7 +474,8 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
 		givenFrameContextWithoutParentFrame();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(eq(pretendArguments), any()))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -421,12 +483,11 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
 				wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -443,7 +504,7 @@ class AssociatePrecompileTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -457,7 +518,8 @@ class AssociatePrecompileTest {
 	void computeMultiAssociateTokenHappyPathWorks() {
 		givenCommonFrameContext();
 		givenLedgers();
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
 		given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
 				.willReturn(multiAssociateOp);
 		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
@@ -465,12 +527,11 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(false,
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
+		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
+		given(associateLogic.validateSyntax(any())).willReturn(OK);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -487,7 +548,7 @@ class AssociatePrecompileTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -495,6 +556,56 @@ class AssociatePrecompileTest {
 		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForAssociateTokens() {
+		// given
+		givenFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
+		given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
+		final var builder = TokenAssociateTransactionBody.newBuilder();
+		builder.setAccount(multiDissociateOp.accountId());
+		builder.addAllTokens(multiDissociateOp.tokenIds());
+		given(syntheticTxnFactory.createAssociate(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForAssociateToken() {
+		// given
+		givenFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
+		given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
+		final var builder = TokenAssociateTransactionBody.newBuilder();
+		builder.setAccount(associateOp.accountId());
+		builder.addAllTokens(associateOp.tokenIds());
+		given(syntheticTxnFactory.createAssociate(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
 	}
 
 	private void givenFrameContextWithDelegateCallFromParent() {
@@ -522,7 +633,7 @@ class AssociatePrecompileTest {
 		given(frame.getMessageFrameStack()).willReturn(frameDeque);
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -539,4 +650,15 @@ class AssociatePrecompileTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	}
+
+	private void givenFrameContext() {
+		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+	}
 }

@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -40,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.hedera.services.contracts.operation.HederaSStoreOperation.EIP_1706_MINIMUM;
 import static com.hedera.services.contracts.operation.HederaSStoreOperation.ILLEGAL_STATE_CHANGE_RESULT;
@@ -91,7 +91,7 @@ class HederaSStoreOperationTest {
 		given(frame.isStatic()).willReturn(true);
 
 		final var expected = new Operation.OperationResult(
-				Optional.of(storageCost.plus(coldSloadCost)), Optional.of(ILLEGAL_STATE_CHANGE));
+				OptionalLong.of(storageCost + coldSloadCost), Optional.of(ILLEGAL_STATE_CHANGE));
 
 		final var actual = subject.execute(frame, evm);
 
@@ -117,7 +117,7 @@ class HederaSStoreOperationTest {
 		givenColdSlot();
 		givenRemainingGas(storageCost);
 		final var expected = new Operation.OperationResult(
-				Optional.of(storageCost.plus(coldSloadCost)), Optional.of(INSUFFICIENT_GAS));
+				OptionalLong.of(storageCost + coldSloadCost), Optional.of(INSUFFICIENT_GAS));
 
 		final var actual = subject.execute(frame, evm);
 
@@ -131,7 +131,7 @@ class HederaSStoreOperationTest {
 		givenRemainingGas(sufficientRemainingGas);
 		given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value)).willReturn(storageRefundAmount);
 		final var expected = new Operation.OperationResult(
-				Optional.of(storageCost.plus(coldSloadCost)), Optional.empty());
+				OptionalLong.of(storageCost + coldSloadCost), Optional.empty());
 
 		final var actual = subject.execute(frame, evm);
 
@@ -148,7 +148,7 @@ class HederaSStoreOperationTest {
 		givenRemainingGas(sufficientRemainingGas);
 		given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value)).willReturn(storageRefundAmount);
 		final var expected = new Operation.OperationResult(
-				Optional.of(storageCost.plus(coldSloadCost)), Optional.empty());
+				OptionalLong.of(storageCost + coldSloadCost), Optional.empty());
 		final var messageStack = new ArrayDeque<MessageFrame>();
 		messageStack.add(frame);
 		given(frame.getMessageFrameStack()).willReturn(messageStack);
@@ -189,16 +189,16 @@ class HederaSStoreOperationTest {
 		assertEquals(expected.getHaltReason(), actual.getHaltReason());
 	}
 
-	private void givenRemainingGas(final Gas amount) {
+	private void givenRemainingGas(final long amount) {
 		given(frame.getRemainingGas()).willReturn(amount);
 	}
 
 	private static final UInt256 key = UInt256.fromBytes(Bytes.fromHexStringLenient("0x1234"));
 	private static final UInt256 value = UInt256.fromBytes(Bytes.fromHexStringLenient("0x5678"));
-	private static final Gas storageCost = Gas.of(10);
-	private static final Gas coldSloadCost = Gas.of(32);
-	private static final Gas storageRefundAmount = Gas.of(16);
-	private static final Gas sufficientRemainingGas = Gas.of(EIP_1706_MINIMUM).plus(Gas.of(1L));
-	private static final Gas insufficientRemainingGas = Gas.of(EIP_1706_MINIMUM).minus(Gas.of(1L));
+	private static final long storageCost = 10;
+	private static final long coldSloadCost = 32;
+	private static final long storageRefundAmount = 16;
+	private static final long sufficientRemainingGas = EIP_1706_MINIMUM + 1L;
+	private static final long insufficientRemainingGas = EIP_1706_MINIMUM - 1L;
 	private static final Address recipient = Address.ALTBN128_ADD;
 }

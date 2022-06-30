@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

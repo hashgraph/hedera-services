@@ -51,8 +51,8 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public void leakUnusedGasPreviouslyReserved(long value) {
-		delegate.leakUnusedGasPreviouslyReserved(value);
+	public void leakUnusedGasPreviouslyReserved(TxnAccessor accessor, long value) {
+		delegate.leakUnusedGasPreviouslyReserved(accessor, value);
 	}
 
 	@Override
@@ -73,6 +73,11 @@ public class HapiThrottling implements FunctionalityThrottling {
 	@Override
 	public void rebuildFor(ThrottleDefinitions defs) {
 		delegate.rebuildFor(defs);
+	}
+
+	@Override
+	public void resetUsage() {
+		delegate.resetUsage();
 	}
 
 	@Override

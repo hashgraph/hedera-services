@@ -57,10 +57,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
@@ -79,7 +76,6 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -148,7 +144,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
+	protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
 		var accountDoesNotExist = !accountsLedger.exists(aId);
 		if (accountDoesNotExist) {
 			return INVALID_ACCOUNT_ID;
@@ -158,15 +154,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (deleted) {
 			return ACCOUNT_DELETED;
 		}
-
-		var detached = properties.shouldAutoRenewSomeEntityType()
-				&& !(boolean) accountsLedger.get(aId, IS_SMART_CONTRACT)
-				&& (long) accountsLedger.get(aId, BALANCE) == 0L
-				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(aId, EXPIRY));
-		if (detached) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		}
-		return OK;
+		return validator.expiryStatusGiven(accountsLedger, aId);
 	}
 
 	@Override
@@ -353,7 +341,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
 		final var fromNumPositiveBalances = (int) accountsLedger.get(from, NUM_POSITIVE_BALANCES);
 		final var toNumPositiveBalances = (int) accountsLedger.get(to, NUM_POSITIVE_BALANCES);
-
 		final var isTreasuryReturn = tokenTreasury.equals(to);
 		if (isTreasuryReturn) {
 			nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);

@@ -20,25 +20,28 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -52,12 +55,14 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.CreateLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,7 +75,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -89,13 +93,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
@@ -121,11 +129,7 @@ import static org.mockito.Mockito.when;
 class CreatePrecompileTest {
 
 	@Mock
-	private Bytes pretendArguments;
-	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private OptionValidator validator;
 	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
@@ -138,8 +142,6 @@ class CreatePrecompileTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -167,25 +169,15 @@ class CreatePrecompileTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private StateView stateView;
-	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private CreateChecks createChecks;
-	@Mock
-	private EntityIdSource entityIdSource;
-	@Mock
-	private HTSPrecompiledContract.CreateLogicFactory createLogicFactory;
 	@Mock
 	private CreateLogic createLogic;
 	@Mock
@@ -193,7 +185,11 @@ class CreatePrecompileTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	private InfrastructureFactory infrastructureFactory;
+	@Mock
+	private AssetsLoader assetLoader;
+	@Mock
+	private HbarCentExchange exchange;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -210,15 +206,12 @@ class CreatePrecompileTest {
 
 	@BeforeEach
 	void setUp() {
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setCreateLogicFactory(createLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
@@ -227,7 +220,7 @@ class CreatePrecompileTest {
 		// given
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -237,7 +230,7 @@ class CreatePrecompileTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
 		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
 		given(mockSynthBodyBuilder.build())
@@ -251,7 +244,7 @@ class CreatePrecompileTest {
 		// then
 		assertEquals(
 				subject.getPrecompile().getMinimumFeeInTinybars(timestamp),
-				subject.gasRequirement(pretendArguments).toLong()
+				subject.gasRequirement(pretendArguments)
 		);
 		final var tinyBarsRequirement =
 				EXPECTED_TINYBARS_REQUIREMENT - subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
@@ -273,7 +266,7 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 
 		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
 		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
 		given(mockSynthBodyBuilder.build())
@@ -322,29 +315,30 @@ class CreatePrecompileTest {
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 				))
 		);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
-//	@Test
-//	void createNonFungibleHappyPathWorks() {
-//		// test-specific preparations
-//		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
-//				new TokenCreateWrapper.TokenKeyWrapper(
-//						1,
-//						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
-//								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
-//				))
-//		);
-//		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
-//		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-//		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
-//		given(ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID)).willReturn()
-//
-//		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
-//	}
+	@Test
+	void createNonFungibleHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						1,
+						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
+								new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH], null)
+				))
+		);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
+		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
+		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+	}
 
 	@Test
 	void createFungibleWithFeesHappyPathWorks() {
@@ -361,34 +355,36 @@ class CreatePrecompileTest {
 				)));
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
 		tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
 		given(decoder.decodeFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 
-		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
 	}
 
-//	@Test
-//	void createNonFungibleWithFeesHappyPathWorks() {
-//		// test-specific preparations
-//		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
-//				new TokenCreateWrapper.TokenKeyWrapper(
-//						1,
-//						new TokenCreateWrapper.KeyValueWrapper(
-//								true,
-//								null,
-//								new byte[] { },
-//								new byte[] { },
-//								null))
-//		));
-//		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
-//		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
-//		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
-//		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-//		given(accounts.get(any(), any()))
-//				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
-//
-//		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
-//	}
+	@Test
+	void createNonFungibleWithFeesHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						1,
+						new TokenCreateWrapper.KeyValueWrapper(
+								true,
+								null,
+								new byte[] { },
+								new byte[] { },
+								null))
+		));
+		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID))).willReturn(EntityId.fromGrpcAccountId(account));
+		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(accounts.get(any(), eq(KEY)))
+				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+	}
 
 	@Test
 	void createFailurePath() {
@@ -398,7 +394,7 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
 								1,
@@ -429,6 +425,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -449,14 +446,14 @@ class CreatePrecompileTest {
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
 		givenValidGasCalculation();
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
 								1,
@@ -482,6 +479,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -505,14 +503,14 @@ class CreatePrecompileTest {
 		givenMinimalFrameContext();
 		givenValidGasCalculation();
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
 		final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
 		when(keyValueMock.getKeyValueType())
 				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
@@ -536,6 +534,7 @@ class CreatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
@@ -728,7 +727,7 @@ class CreatePrecompileTest {
 		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
 	}
 
-	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper) {
+	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper, Bytes pretendArguments) {
 		givenMinimalFrameContext();
 		givenLedgers();
 		givenValidGasCalculation();
@@ -745,17 +744,12 @@ class CreatePrecompileTest {
 		final var tokenCreateValidator = Mockito.mock(Function.class);
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(typedTokenStore);
-		given(createLogicFactory.newTokenCreateLogic(
-				accountStore,
-				typedTokenStore,
-				dynamicProperties,
-				sigImpactHistorian,
-				entityIdSource,
-				validator
-		)).willReturn(createLogic);
+		given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore))
+				.willReturn(createLogic);
+		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 		given(recordsHistorian.nextFollowingChildConsensusTime())
 				.willReturn(pendingChildConsTime);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -768,10 +762,10 @@ class CreatePrecompileTest {
 
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertEquals(successResult, result);
+		assertEquals(successResult, result.getOutput());
 		// and:
 		verify(createLogic).create(
 				pendingChildConsTime.getEpochSecond(),
@@ -787,15 +781,15 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 
 		// when:
-		final var result = subject.compute(pretendArguments, frame);
+		final var result = subject.computePrecompile(pretendArguments, frame);
 
 		// then:
-		assertNull(result);
+		assertNull(result.getOutput());
 
 		// and
 		verify(frame).setRevertReason(any());
@@ -808,7 +802,7 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(frame.getRemainingGas()).willReturn(100_000L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

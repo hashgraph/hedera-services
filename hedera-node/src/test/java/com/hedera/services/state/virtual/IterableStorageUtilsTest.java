@@ -20,8 +20,11 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,33 @@ class IterableStorageUtilsTest {
 	private final IterableContractValue rootValue = new IterableContractValue(rootEvmValue.toArray());
 	private final IterableContractValue nextValue = new IterableContractValue(nextEvmValue.toArray());
 	private final IterableContractValue targetValue = new IterableContractValue(targetEvmValue.toArray());
+
+	@Test
+	void canListOwnedNfts() {
+		final var aKey = EntityNumPair.fromLongs(666L, 1L);
+		final var bKey = EntityNumPair.fromLongs(777L, 2L);
+		final var cKey = EntityNumPair.fromLongs(888L, 3L);
+		final var sixesNft = new MerkleUniqueToken();
+		sixesNft.setKey(aKey);
+		sixesNft.setNext(bKey.asNftNumPair());
+		final var sevensNft = new MerkleUniqueToken();
+		sevensNft.setKey(bKey);
+		sevensNft.setNext(cKey.asNftNumPair());
+		final var eightsNft = new MerkleUniqueToken();
+		eightsNft.setKey(cKey);
+
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		nfts.put(aKey, sixesNft);
+		nfts.put(bKey, sevensNft);
+		nfts.put(cKey, eightsNft);
+
+		final var expected = "[0.0.666.1, 0.0.777.2, 0.0.888.3]";
+
+		assertEquals("[]", IterableStorageUtils.joinedOwnedNfts(null, nfts));
+		final var readable = IterableStorageUtils.joinedOwnedNfts(aKey, nfts);
+
+		assertEquals(expected, readable);
+	}
 
 	@Test
 	void canListStorageValues() {

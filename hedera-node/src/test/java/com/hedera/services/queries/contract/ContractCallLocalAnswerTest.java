@@ -24,7 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -62,6 +64,7 @@ import java.util.TreeMap;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -74,7 +77,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -88,7 +90,7 @@ class ContractCallLocalAnswerTest {
 	private final ContractID target = IdUtils.asContract("0.0.75231");
 	private final ByteString result = ByteString.copyFrom("Searching for images".getBytes());
 
-	private int gas = 123;
+	private long gas = 123;
 	private Transaction paymentTxn;
 
 	@Mock
@@ -111,13 +113,18 @@ class ContractCallLocalAnswerTest {
 	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private StaticBlockMetaProvider blockMetaProvider;
+	@Mock
+	private BlockMetaSource blockMetaSource;
 
 	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalAnswer(
-				ids, aliasManager, accountStore, validator, entityAccess, dynamicProperties, nodeLocalProperties, evmTxProcessor);
+				ids, aliasManager, accountStore, validator, entityAccess,
+				dynamicProperties, nodeLocalProperties, evmTxProcessor, blockMetaProvider);
 	}
 
 	@Test
@@ -126,7 +133,7 @@ class ContractCallLocalAnswerTest {
 
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
-		given(dynamicProperties.maxGas()).willReturn(gas);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
 		// expect:
 		assertEquals(OK, subject.checkValidity(query, view));
@@ -138,7 +145,7 @@ class ContractCallLocalAnswerTest {
 
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
-		given(dynamicProperties.maxGas()).willReturn(gas);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
 		// and:
 		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
@@ -163,7 +170,7 @@ class ContractCallLocalAnswerTest {
 	void rejectsGasLimitOverMaxGas() throws Throwable {
 
 		// given:
-		given(dynamicProperties.maxGas()).willReturn(gas-1);
+		given(dynamicProperties.maxGasPerSec()).willReturn(gas-1);
 		Query query = validQuery(COST_ANSWER, fee);
 
 		// expect:
@@ -218,14 +225,16 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	void throwsOnAvailCtxWithNoCachedResponse() throws Throwable {
+	void failsOnAvailCtxWithNoCachedResponse() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
 
-		// expect:
-		assertThrows(IllegalStateException.class,
-				() -> subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx));
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
+
+		var opResponse = response.getContractCallLocal();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(FAIL_INVALID, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
@@ -249,6 +258,23 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
+	void getsCallResponseWhenNoBlockMetaAvailable() throws Throwable {
+		// setup:
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+
+		final var transactionProcessingResult = TransactionProcessingResult
+				.failed(0, 0, 1, Optional.empty(),
+						Optional.empty(), new TreeMap<>());
+
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		var opResponse = response.getContractCallLocal();
+		assertTrue(opResponse.hasHeader(), "Missing response header");
+		assertEquals(BUSY, opResponse.getHeader().getNodeTransactionPrecheckCode());
+	}
+
+	@Test
 	void getsCallResponseWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
@@ -261,6 +287,7 @@ class ContractCallLocalAnswerTest {
 		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
 				.willReturn(transactionProcessingResult);
+		given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -275,6 +302,7 @@ class ContractCallLocalAnswerTest {
 	void translatesFailWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+		given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);

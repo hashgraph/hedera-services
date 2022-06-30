@@ -30,14 +30,13 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -48,11 +47,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -63,10 +62,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -95,7 +96,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -179,15 +180,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								.hasTokenBalance(FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple),
 						getAccountBalance(SENDER)
 								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - 2 * toSendEachTuple),
-						childRecordsCheck(repeatedIdsPrecompileXferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -2 * toSendEachTuple)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple)
-								)
-						)
-				);
+						childRecordsCheck(repeatedIdsPrecompileXferTxn, SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(htsPrecompileResult()
+                                                                .withStatus(SUCCESS)
+                                                        )
+                                        )
+                                        .tokenTransfers(
+                                                SomeFungibleTransfers.changingFungibleBalances()
+                                                        .including(FUNGIBLE_TOKEN, SENDER, -2 * toSendEachTuple)
+                                                        .including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForFungibleToken() {
@@ -195,6 +200,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
 				.given(
+						overriding("contracts.allowAutoAssociations", "true"),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
 						cryptoCreate(TOKEN_TREASURY),
@@ -244,15 +250,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountBalance(SENDER)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 150),
 						getTokenInfo(FUNGIBLE_TOKEN).logged(),
-						childRecordsCheck(cryptoTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -50)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 50)
-								)
-						)
-				);
+						childRecordsCheck(cryptoTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												SomeFungibleTransfers.changingFungibleBalances()
+														.including(FUNGIBLE_TOKEN, SENDER, -50)
+														.including(FUNGIBLE_TOKEN, RECEIVER, 50))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
@@ -312,16 +322,20 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountBalance(SENDER)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 150),
 						getTokenInfo(FUNGIBLE_TOKEN).logged(),
-						childRecordsCheck(cryptoTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -50)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 30)
-												.including(FUNGIBLE_TOKEN, RECEIVER2, 20)
-								)
-						)
-				);
+						childRecordsCheck(cryptoTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												SomeFungibleTransfers.changingFungibleBalances()
+														.including(FUNGIBLE_TOKEN, SENDER, -50)
+														.including(FUNGIBLE_TOKEN, RECEIVER, 30)
+														.including(FUNGIBLE_TOKEN, RECEIVER2, 20))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForNonFungibleToken() {
@@ -383,14 +397,18 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountInfo(SENDER).hasOwnedNfts(0),
 						getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
 						getTokenInfo(NFT_TOKEN).logged(),
-						childRecordsCheck("cryptoTransferTxn", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										NonFungibleTransfers.changingNFTBalances()
-												.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-								)
-						)
-				);
+						childRecordsCheck("cryptoTransferTxn", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												NonFungibleTransfers.changingNFTBalances()
+														.including(NFT_TOKEN, SENDER, RECEIVER, 1L))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
@@ -466,15 +484,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountInfo(SENDER2).hasOwnedNfts(0),
 						getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
 						getTokenInfo(NFT_TOKEN).logged(),
-						childRecordsCheck(cryptoTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										NonFungibleTransfers.changingNFTBalances()
-												.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-												.including(NFT_TOKEN, SENDER2, RECEIVER2, 2L)
-								)
-						)
-				);
+						childRecordsCheck(cryptoTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												NonFungibleTransfers.changingNFTBalances()
+														.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
+														.including(NFT_TOKEN, SENDER2, RECEIVER2, 2L))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
@@ -566,16 +588,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountInfo(SENDER2).hasOwnedNfts(0),
 						getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
 						getTokenInfo(NFT_TOKEN).logged(),
-						childRecordsCheck(cryptoTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -45L)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 45L)
-								).tokenTransfers(NonFungibleTransfers.changingNFTBalances()
-										.including(NFT_TOKEN, SENDER2, RECEIVER2, 1L))
-						)
-				);
+						childRecordsCheck(cryptoTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))
+										.tokenTransfers(
+												SomeFungibleTransfers.changingFungibleBalances()
+														.including(FUNGIBLE_TOKEN, SENDER, -45L)
+														.including(FUNGIBLE_TOKEN, RECEIVER, 45L)
+										).tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+												.including(NFT_TOKEN, SENDER2, RECEIVER2, 1L))));
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
@@ -683,20 +708,24 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountInfo(SENDER2).hasOwnedNfts(0),
 						getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
 						getTokenInfo(NFT_TOKEN).logged(),
-						childRecordsCheck(cryptoTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -45L)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 45L)
-												.including(FUNGIBLE_TOKEN, SENDER2, -32L)
-												.including(FUNGIBLE_TOKEN, RECEIVER2, 32L)
-								).tokenTransfers(NonFungibleTransfers.changingNFTBalances()
-										.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-										.including(NFT_TOKEN, SENDER2, RECEIVER2, 2L)
-								)
-						)
-				);
+						childRecordsCheck(cryptoTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												SomeFungibleTransfers.changingFungibleBalances()
+														.including(FUNGIBLE_TOKEN, SENDER, -45L)
+														.including(FUNGIBLE_TOKEN, RECEIVER, 45L)
+														.including(FUNGIBLE_TOKEN, SENDER2, -32L)
+														.including(FUNGIBLE_TOKEN, RECEIVER2, 32L)
+										).tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+												.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
+												.including(NFT_TOKEN, SENDER2, RECEIVER2, 2L))));
 	}
 
 	private HapiApiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
@@ -846,28 +875,45 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountBalance(CONTRACT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
 								.hasTokenBalance(NFT_TOKEN, 0L),
-						childRecordsCheck(revertedFungibleTransferTxn, CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck(successfulFungibleTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										SomeFungibleTransfers.changingFungibleBalances()
-												.including(FUNGIBLE_TOKEN, SENDER, -toSendEachTuple)
-												.including(FUNGIBLE_TOKEN, CONTRACT, -toSendEachTuple)
-												.including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple)
-								)
-						),
-						childRecordsCheck(revertedNftTransferTxn, CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck(successfulNftTransferTxn, SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										NonFungibleTransfers.changingNFTBalances()
-												.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-												.including(NFT_TOKEN, CONTRACT, RECEIVER, 2L)
-								)
-						)
-				);
+                        childRecordsCheck(revertedFungibleTransferTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_SIGNATURE)))),
+                        childRecordsCheck(successfulFungibleTransferTxn, SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(htsPrecompileResult()
+                                                                .withStatus(SUCCESS)
+                                                        )
+                                        )
+                                        .tokenTransfers(
+                                                SomeFungibleTransfers.changingFungibleBalances()
+                                                        .including(FUNGIBLE_TOKEN, SENDER, -toSendEachTuple)
+                                                        .including(FUNGIBLE_TOKEN, CONTRACT, -toSendEachTuple)
+                                                        .including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple))),
+						childRecordsCheck(revertedNftTransferTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_SIGNATURE)))),
+						childRecordsCheck(successfulNftTransferTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)))
+										.tokenTransfers(
+												NonFungibleTransfers.changingNFTBalances()
+														.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
+														.including(NFT_TOKEN, CONTRACT, RECEIVER, 2L))));
 	}
 
 

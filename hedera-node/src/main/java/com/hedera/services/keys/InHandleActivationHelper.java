@@ -155,7 +155,7 @@ public class InHandleActivationHelper {
 	}
 
 	@FunctionalInterface
-	interface Activation {
+	public interface Activation {
 		boolean test(
 				JKey key,
 				Function<byte[], TransactionSignature> sigsFn,

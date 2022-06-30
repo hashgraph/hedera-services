@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"bytes","name":"logMessage","type":"bytes"}],"name":"startChain","outputs":[],"stateMutability":"nonpayable","type":"function"}]

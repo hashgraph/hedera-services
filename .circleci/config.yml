@@ -437,9 +437,13 @@ commands:
             else
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
-
-            gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/<< parameters.result_path >>/"
-
+            
+            cd assets
+            original_path="<< parameters.result_path >>"
+            prefix_removed=${original_path//assets\//}
+            gsutil -m rsync -r ${prefix_removed} "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/${prefix_removed}/"
+            cd -
+            
             tar -czvf /results.tar.gz  /swirlds-platform/regression/<< parameters.result_path >>
           when: always
 
@@ -579,23 +583,10 @@ commands:
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
               -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
-              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
+              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
+              --slack-api-token="${SLACK_API_TOKEN}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
-
-  run-jrs-experiment:
-    description: Run JRS experiment json
-    parameters:
-      experiment-name:
-        type: string
-        default: ""
-    steps:
-      - run:
-          name: Run experiment << parameters.experiment-name >>.json
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
   build-executor:
@@ -1015,6 +1006,29 @@ workflows:
           result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Abort-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1597,12 +1611,23 @@ jobs:
           name: Checkout swirlds-platform repos and build
           command: |
             sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
-            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            
+            # Git Clone for Platform
+            cd /
+            export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
-            cd /swirlds-platform;
-            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
-            mvn --no-transfer-progress clean install -DskipTests;
+            
+            # Git Clone JRS Separately
+            mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            
+            # Build Platform
+            cd /swirlds-platform
+            ./mvnw clean install -DskipTests;
+            
+            # Build JRS
+            cd /swirlds-platform/regression
+            ./mvnw clean install
 
       - run:
           name: Save PEM file to keys folder
@@ -1739,14 +1764,14 @@ jobs:
             set -x;
             set +e;
             cd /swirlds-platform/regression
-            CI_RESULTS_LOG=$(find results/4N_1C -name hapi-client-combined.log)
+            CI_RESULTS_LOG=$(find assets/results/4N_1C -name hapi-client-combined.log)
             grep $CI_RESULTS_LOG -e 'status=ERROR' -e 'status=FAILED'
             if [ "$?" -eq "0" ]; then
               exit 1
             else
               exit 0
             fi
-            SAMPLE_NODE_LOG=$(find results/4N_1C -name hgcaa.log | head -1)
+            SAMPLE_NODE_LOG=$(find assets/results/4N_1C -name hgcaa.log | head -1)
             grep $SAMPLE_NODE_LOG -e 'IssListener - In round'
             if [ "$?" -eq "0" ]; then
               exit 1

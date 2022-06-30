@@ -23,10 +23,12 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -195,6 +197,21 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		return this;
 	}
 
+	public HapiContractCreate stakedAccountId(String idLit) {
+		stakedAccountId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiContractCreate stakedNodeId(long idLit) {
+		stakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiContractCreate declinedReward(boolean isDeclined) {
+		isDeclinedReward = isDeclined;
+		return this;
+	}
+
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		if (omitAdminKey || useDeprecatedAdminKey) {
@@ -294,6 +311,13 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 								payer.ifPresent(s -> b.setAutoRenewAccountId(asId(s, spec)));
 							}
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
+
+							if (stakedAccountId.isPresent()) {
+								b.setStakedAccountId(asId(stakedAccountId.get(), spec));
+							} else if (stakedNodeId.isPresent()) {
+								b.setStakedNodeId(stakedNodeId.get());
+							}
+							b.setDeclineReward(isDeclinedReward);
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);

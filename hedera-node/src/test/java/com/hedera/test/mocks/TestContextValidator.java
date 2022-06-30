@@ -20,7 +20,10 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -33,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -89,6 +93,19 @@ public enum TestContextValidator implements OptionValidator {
 	@Override
 	public JKey attemptDecodeOrThrow(final Key k) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum expiryStatusGiven(long balance, long expiry, boolean isContract) {
+		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum expiryStatusGiven(
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+			final AccountID id
+	) {
+		return id.getAccountNum() == 666_666L ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : OK;
 	}
 
 	@Override

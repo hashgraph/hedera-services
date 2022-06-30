@@ -188,13 +188,13 @@ class JKeyListTest {
 
 	public static Key randomValidECDSASecp256K1Key() {
 		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
-				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
 		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}
 
 	public static Key randomInvalidECDSASecp256K1Key() {
 		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x06 })
-				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
 		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}
 }

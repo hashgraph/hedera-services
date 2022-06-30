@@ -35,6 +35,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private long gracePeriod = 604800;
 	private boolean useAutoRenew = true;
 	private boolean useContractAutoRenew = true;
+	private boolean schedulingLongTermEnabled = false;
 	private boolean exportBalances = true;
 	private CongestionMultipliers currentMultipliers = defaultMultipliers;
 	private boolean throttleByGas;
@@ -142,8 +143,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxGas() {
-		return 300_000;
+	public long maxGasPerSec() {
+		return 300_000L;
 	}
 
 	@Override
@@ -225,11 +226,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public long ratesMidnightCheckInterval() {
-		return 1L;
-	}
-
-	@Override
 	public boolean shouldThrottleByGas() {
 		return throttleByGas;
 	}
@@ -265,5 +261,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public boolean shouldAutoRenewAccounts() {
 		return useAutoRenew;
+	}
+
+	@Override
+	public boolean schedulingLongTermEnabled() {
+		return schedulingLongTermEnabled;
+	}
+
+	public void enableSchedulingLongTerm() {
+		schedulingLongTermEnabled = true;
 	}
 }

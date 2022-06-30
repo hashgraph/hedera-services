@@ -23,6 +23,7 @@ package com.hedera.test.utils;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -36,15 +37,16 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -65,22 +67,25 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.time.Instant;
@@ -94,6 +99,7 @@ import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
@@ -215,9 +221,9 @@ public class SeededPropertySource {
 
 	public FcCustomFee.FeeType nextFeeType() {
 		// size of FcCustomFee.FeeType.class.getEnumConstants() in 0.25
-		return nextFeeType(3);  
+		return nextFeeType(3);
 	}
-	
+
 	public FcCustomFee.FeeType nextFeeType(final int range) {
 		final var choices = FcCustomFee.FeeType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
@@ -227,7 +233,7 @@ public class SeededPropertySource {
 		// size of TokenType.class.getEnumConstants() in 0.25
 		return nextTokenType(2);
 	}
-	
+
 	public TokenType nextTokenType(final int range) {
 		final var choices = TokenType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
@@ -237,27 +243,44 @@ public class SeededPropertySource {
 		// size of TokenSupplyType.class.getEnumConstants() in 0.25
 		return nextTokenSupplyType(2);
 	}
-	
+
 	public TokenSupplyType nextTokenSupplyType(final int range) {
 		final var choices = TokenSupplyType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
-	public MerkleSchedule nextSchedule() {
-		final var seeded = new MerkleSchedule();
-		seeded.setExpiry(nextUnsignedLong());
-		seeded.setBodyBytes(nextSerializedTransactionBody());
-		if (nextBoolean()) {
-			seeded.markDeleted(nextInstant());
-		} else if (nextBoolean()) {
-			seeded.markExecuted(nextInstant());
-		}
-		final var numSignatures = SEEDED_RANDOM.nextInt(10);
-		for (int i = 0; i < numSignatures; i++) {
-			seeded.witnessValidSignature(nextBytes(nextBoolean() ? 32 : 33));
-		}
-		seeded.setKey(nextNum());
-		return seeded;
+	public byte[] nextSerializedLegacyScheduleCreateTransactionBody() {
+		return TransactionBody.newBuilder()
+				.setTransactionID(nextTxnId().toGrpc())
+				.setMemo(nextString(50))
+				.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+						.setAdminKey(Key.newBuilder().setECDSASecp256K1(
+								ByteString.copyFrom(nextBytes(20))))
+						.setMemo(nextString(20))
+						.setPayerAccountID(nextEntityId().toGrpcAccountId())
+						.setScheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+								.setMemo(nextString(20))
+								.setTransactionFee(nextLong())
+						)
+				)
+				.build()
+				.toByteArray();
+	}
+
+	public MerkleUniqueToken next0260UniqueToken() {
+		final var ownerCode = SEEDED_RANDOM.nextInt(1234);
+		final var spenderCode = SEEDED_RANDOM.nextInt(1234);
+		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
+		final var metadata = nextBytes(10);
+		final var numbers = SEEDED_RANDOM.nextLong(1234);
+		final var prev = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var next = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+
+		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		subject.setSpender(new EntityId(0, 0, spenderCode));
+		subject.setPrev(prev);
+		subject.setNext(next);
+		return subject;
 	}
 
 	/**
@@ -336,13 +359,20 @@ public class SeededPropertySource {
 				nextInRangeLong(),
 				0,
 				0,
-				null);
+				null,
+				0,
+				0,
+				0,
+				-1,
+				0,
+				false,
+				-1);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
 	}
 
-	public MerkleAccountState next0260AccountState() {
+	public MerkleAccountState nextAccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
@@ -370,13 +400,25 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				firstContractKey,
 				firstKeyBytes,
-				nextUnsignedInt(),
+				nextUnsignedLong(),
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedInt(),
 				nextUnsignedLong(),
-				nextEntityId());
+				nextEntityId(),
+				nextInRangeLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextInRangeLong(),
+				nextBoolean(),
+				nextUnsignedLong());
+	}
+
+	public MerkleScheduledTransactionsState nextScheduledTransactionsState() {
+		return new MerkleScheduledTransactionsState(
+				nextLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -420,6 +462,9 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
 		}
+		if (nextBoolean()) {
+			builder.setStakingRewardsPaid(nextCurrencyAdjustments());
+		}
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
@@ -429,10 +474,30 @@ public class SeededPropertySource {
 		if (seeded.getContractCreateResult() != null && nextBoolean()) {
 			seeded.getContractCreateResult().setSenderId(nextEntityId());
 		}
+		// added in 0.28
+		if (nextBoolean()) {
+			seeded.setPseudoRandomNumber(nextUnsignedInt());
+		} else if (nextBoolean()) {
+			seeded.setPseudoRandomBytes(nextBytes(48));
+		}
 		return seeded;
 	}
 
-	public MerkleNetworkContext nextNetworkContext() {
+	public MerkleStakingInfo nextStakingInfo() {
+		final var MAX_REWARD_HISTORY = 366;
+		final var ans = new MerkleStakingInfo(
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLong(),
+				nextLongs(MAX_REWARD_HISTORY));
+		return ans;
+	}
+
+	public MerkleNetworkContext next0260NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
@@ -444,10 +509,48 @@ public class SeededPropertySource {
 		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
 		seeded.setStateVersion(nextUnsignedInt());
 		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
-		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
+		nextNullableInstant();
 		seeded.setPreparedUpdateFileNum(nextInRangeLong());
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
+		final var numBlocks = nextNonZeroInt(16);
+		final var anInstant = nextInstant();
+		for (int i = 0; i < numBlocks; i++) {
+			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
+		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
+		return seeded;
+	}
+
+	public MerkleNetworkContext next0270NetworkContext() {
+		final var numThrottles = 5;
+		final var seeded = new MerkleNetworkContext();
+		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
+		seeded.setSeqNo(nextSeqNo());
+		seeded.updateLastScannedEntity(nextInRangeLong());
+		seeded.setMidnightRates(nextExchangeRates());
+		seeded.setUsageSnapshots(nextUsageSnapshots(numThrottles));
+		seeded.setGasThrottleUsageSnapshot(nextUsageSnapshot());
+		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
+		seeded.setStateVersion(nextUnsignedInt());
+		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
+		seeded.setPreparedUpdateFileNum(nextInRangeLong());
+		seeded.setPreparedUpdateFileHash(nextBytes(48));
+		seeded.setMigrationRecordsStreamed(nextBoolean());
+		final var numBlocks = nextNonZeroInt(16);
+		final var anInstant = nextInstant();
+		for (int i = 0; i < numBlocks; i++) {
+			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
+		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
 		return seeded;
 	}
 
@@ -536,6 +639,10 @@ public class SeededPropertySource {
 
 	public int nextInt() {
 		return SEEDED_RANDOM.nextInt();
+	}
+
+	public int nextInt(int bound) {
+		return SEEDED_RANDOM.nextInt(bound);
 	}
 
 	public TxnId nextTxnId() {
@@ -923,19 +1030,12 @@ public class SeededPropertySource {
 				.toByteArray();
 	}
 
-	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
-		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
+	public org.hyperledger.besu.datatypes.Hash nextEthHash() {
+		return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(nextBytes(32)));
 	}
 
-	public MerkleUniqueToken nextMerkleUniqueToken() {
-		final var seeded = new MerkleUniqueToken(
-				nextNonZeroInt(Integer.MAX_VALUE),
-				nextBytes(nextNonZeroInt(100)),
-				nextUnsignedLong(),
-				nextUnsignedLong()
-		);
-		seeded.setSpender(EntityNum.fromInt(nextNonZeroInt(Integer.MAX_VALUE)).toEntityId());
-		return seeded;
+	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
+		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
 	}
 
 	public FcTokenAllowance nextFcTokenAllowance() {
@@ -944,8 +1044,8 @@ public class SeededPropertySource {
 				Longs.asList(nextLongs(nextNonZeroInt(100))));
 	}
 
-	public FilePart nextFilePart() {
-		return new FilePart(nextBytes(nextNonZeroInt(1000)));
+	public BytesElement nextFilePart() {
+		return new BytesElement(nextBytes(nextNonZeroInt(1000)));
 	}
 
 	public MerkleEntityId nextMerkleEntityId() {
@@ -988,6 +1088,24 @@ public class SeededPropertySource {
 		return new MerkleAccountTokens(
 				new CopyOnWriteIds(nextInRangeLongs(3 * nextNonZeroInt(10)))
 		);
+	}
+
+	public SerializableSemVers nextSerializableSemVers() {
+		return new SerializableSemVers(nextSemVer(), nextSemVer());
+	}
+
+	private SemanticVersion nextSemVer() {
+		final var ans = SemanticVersion.newBuilder();
+		ans.setMajor(nextUnsignedInt())
+				.setMinor(nextUnsignedInt())
+				.setPatch(nextUnsignedInt());
+		if (nextBoolean()) {
+			ans.setPre(nextString(8));
+		}
+		if (nextBoolean()) {
+			ans.setBuild(nextString(8));
+		}
+		return ans.build();
 	}
 
 	public ContractKey nextContractKey() {

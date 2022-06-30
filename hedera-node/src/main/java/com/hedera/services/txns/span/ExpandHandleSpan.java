@@ -29,6 +29,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 
+
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
@@ -89,7 +90,7 @@ public class ExpandHandleSpan {
 	}
 
 	private SwirldsTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = factory.nonTriggeredTxn(transaction.getContentsDirect());
+		final var accessor = factory.nonTriggeredTxn(transaction.getContents());
 		spanMapManager.expandSpan(accessor);
 		return PlatformTxnAccessor.from(accessor, transaction);
 	}

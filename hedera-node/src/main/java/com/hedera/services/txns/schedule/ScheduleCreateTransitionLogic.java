@@ -22,11 +22,10 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -41,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -62,31 +60,39 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK,
 			NO_NEW_VALID_SIGNATURES);
 
+	private final GlobalDynamicProperties properties;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final InHandleActivationHelper activationHelper;
 	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
+	private final ScheduleProcessing scheduleProcessing;
 
-	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
-	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
+	SigMapScheduleClassifier classifier;
+	SignatoryUtils.ScheduledSigningsWitness signingsWitness;
 
 	@Inject
 	public ScheduleCreateTransitionLogic(
+			final GlobalDynamicProperties properties,
 			final ScheduleStore store,
 			final TransactionContext txnCtx,
 			final InHandleActivationHelper activationHelper,
 			final OptionValidator validator,
 			final ScheduleExecutor executor,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final ScheduleProcessing scheduleProcessing
 	) {
+		this.properties = properties;
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.activationHelper = activationHelper;
 		this.validator = validator;
 		this.executor = executor;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.scheduleProcessing = scheduleProcessing;
+		classifier = scheduleProcessing.classifier;
+		signingsWitness = scheduleProcessing.signingsWitness;
 	}
 
 	@Override
@@ -116,6 +122,13 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		final var throttleResult = scheduleProcessing.checkFutureThrottlesForCreate(scheduleId, schedule);
+
+		if (throttleResult != OK) {
+			abortWith(throttleResult);
+			return;
+		}
+
 		final var payerKey = txnCtx.activePayerKey();
 		final var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
 		final var validScheduleKeys = classifier.validScheduleKeys(
@@ -124,7 +137,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
 		final var signingOutcome =
-				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper,
+						properties.schedulingLongTermEnabled() && schedule.calculatedWaitForExpiry());
+
 		if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 			abortWith(signingOutcome.getLeft());
 			return;
@@ -132,22 +147,17 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
-			final var expiringEntity = new ExpiringEntity(
-					EntityId.fromGrpcScheduleId(scheduleId),
-					store::expire,
-					schedule.expiry());
-			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));
 		}
 
 		var finalOutcome = OK;
 		if (Boolean.TRUE.equals(signingOutcome.getRight())) {
-			finalOutcome = executor.processExecution(scheduleId, store, txnCtx);
+			finalOutcome = executor.processImmediateExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
 		sigImpactHistorian.markEntityChanged(scheduleId.getScheduleNum());
 	}
 
-	private void completeContextWith(ScheduleID scheduleID, MerkleSchedule schedule, ResponseCodeEnum finalOutcome) {
+	private void completeContextWith(ScheduleID scheduleID, ScheduleVirtualValue schedule, ResponseCodeEnum finalOutcome) {
 		txnCtx.setCreated(scheduleID);
 		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
 		txnCtx.setStatus(finalOutcome);

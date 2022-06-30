@@ -20,7 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -35,6 +34,7 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -52,6 +52,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
@@ -71,8 +72,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0250_ALPHA_VERSION = 11;
 	static final int RELEASE_0250_VERSION = 12;
 	static final int RELEASE_0260_VERSION = 13;
-	private static final int CURRENT_VERSION = RELEASE_0260_VERSION;
-
+	static final int RELEASE_0270_VERSION = 14;
+	private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	public static final String DEFAULT_MEMO = "";
@@ -103,7 +104,18 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numPositiveBalances;
 	private long headTokenId;
 	private int numTreasuryTitles;
+	private long headNftId;
+	private long headNftSerialNum;
 	private long ethereumNonce;
+	private long stakedToMe;
+	// default value and if this account stakes to an account value is -1. It will be set to the time when the account
+	// starts staking to a node.
+	private long stakePeriodStart = -1;
+	// if -ve we are staking to a node, if +ve we are staking to an account and 0 if not staking to anyone.
+	// When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
+	private long stakedNum;
+	private boolean declineReward;
+	private long stakeAtStartOfLastRewardedPeriod = -1;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -144,6 +156,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numTreasuryTitles = that.numTreasuryTitles;
 		this.ethereumNonce = that.ethereumNonce;
 		this.autoRenewAccount = that.autoRenewAccount;
+		this.headNftId = that.headNftId;
+		this.headNftSerialNum = that.headNftSerialNum;
+		this.stakedToMe = that.stakedToMe;
+		this.stakePeriodStart = that.stakePeriodStart;
+		this.stakedNum = that.stakedNum;
+		this.declineReward = that.declineReward;
+		this.stakeAtStartOfLastRewardedPeriod = that.stakeAtStartOfLastRewardedPeriod;
 	}
 
 	public MerkleAccountState(
@@ -172,7 +191,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final long headTokenId,
 			final int numTreasuryTitles,
 			final long ethereumNonce,
-			final EntityId autoRenewAccount
+			final EntityId autoRenewAccount,
+			final long headNftId,
+			final long headNftSerialNum,
+			final long stakedToMe,
+			final long stakePeriodStart,
+			final long stakedNum,
+			final boolean declineReward,
+			final long stakeAtStartOfLastRewardedPeriod
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -200,6 +226,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numTreasuryTitles = numTreasuryTitles;
 		this.ethereumNonce = ethereumNonce;
 		this.autoRenewAccount = autoRenewAccount;
+		this.headNftId = headNftId;
+		this.headNftSerialNum = headNftSerialNum;
+		this.stakedToMe = stakedToMe;
+		this.stakePeriodStart = stakePeriodStart;
+		this.stakedNum = stakedNum;
+		this.declineReward = declineReward;
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -231,6 +264,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		proxy = readNullableSerializable(in);
 		// Added in 0.16
 		nftsOwned = in.readLong();
+		// Added in 0.18 -- updated in 0.25
 		if (version >= RELEASE_0250_ALPHA_VERSION) {
 			maxAutoAssociations = in.readInt();
 			usedAutoAssociations = in.readInt();
@@ -270,6 +304,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				}
 			}
 			autoRenewAccount = readNullableSerializable(in);
+			headNftId = in.readLong();
+			headNftSerialNum = in.readLong();
+		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakedToMe = in.readLong();
+			stakePeriodStart = in.readLong();
+			stakedNum = in.readLong();
+			declineReward = in.readBoolean();
+			stakeAtStartOfLastRewardedPeriod = in.readLong();
 		}
 	}
 
@@ -302,6 +345,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}
 		writeNullableSerializable(autoRenewAccount, out);
+		out.writeLong(headNftId);
+		out.writeLong(headNftSerialNum);
+		out.writeLong(stakedToMe);
+		out.writeLong(stakePeriodStart);
+		out.writeLong(stakedNum);
+		out.writeBoolean(declineReward);
+		out.writeLong(stakeAtStartOfLastRewardedPeriod);
 	}
 
 	/* --- Copyable --- */
@@ -345,7 +395,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numPositiveBalances == that.numPositiveBalances &&
 				this.headTokenId == that.headTokenId &&
 				this.numTreasuryTitles == that.numTreasuryTitles &&
-				Objects.equals(this.autoRenewAccount, that.autoRenewAccount);
+				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
+				this.headNftId == that.headNftId &&
+				this.headNftSerialNum == that.headNftSerialNum &&
+				this.stakedToMe == that.stakedToMe &&
+				this.stakePeriodStart == that.stakePeriodStart &&
+				this.stakedNum == that.stakedNum &&
+				this.declineReward == that.declineReward &&
+				this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod;
 	}
 
 	@Override
@@ -374,7 +431,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				headTokenId,
 				numTreasuryTitles,
 				ethereumNonce,
-				autoRenewAccount);
+				autoRenewAccount,
+				headNftId,
+				headNftSerialNum,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declineReward,
+				stakeAtStartOfLastRewardedPeriod);
 	}
 
 	/* --- Bean --- */
@@ -406,6 +470,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("numTreasuryTitles", numTreasuryTitles)
 				.add("ethereumNonce", ethereumNonce)
 				.add("autoRenewAccount", autoRenewAccount)
+				.add("headNftId", headNftId)
+				.add("headNftSerialNum", headNftSerialNum)
+				.add("stakedToMe", stakedToMe)
+				.add("stakePeriodStart", stakePeriodStart)
+				.add("stakedNum", stakedNum)
+				.add("declineReward", declineReward)
+				.add("balanceAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
 				.toString();
 	}
 
@@ -551,6 +622,24 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.headTokenId = headTokenId;
 	}
 
+	public long getHeadNftId() {
+		return headNftId;
+	}
+
+	public void setHeadNftId(final long headNftId) {
+		assertMutable("headNftId");
+		this.headNftId = headNftId;
+	}
+
+	public long getHeadNftSerialNum() {
+		return headNftSerialNum;
+	}
+
+	public void setHeadNftSerialNum(final long headNftSerialNum) {
+		assertMutable("headNftSerialNum");
+		this.headNftSerialNum = headNftSerialNum;
+	}
+
 	public int getNumContractKvPairs() {
 		return numContractKvPairs;
 	}
@@ -658,6 +747,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		}
 	}
 
+	public boolean hasAutoRenewAccount() {
+		return autoRenewAccount != null && !autoRenewAccount.equals(MISSING_ENTITY_ID);
+	}
+
+	@Nullable
 	public EntityId getAutoRenewAccount() {
 		return autoRenewAccount;
 	}
@@ -666,14 +760,54 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoRenewAccount = autoRenewAccount;
 	}
 
+	public long getStakedToMe() {
+		return stakedToMe;
+	}
+
+	public void setStakedToMe(final long stakedToMe) {
+		assertMutable("stakedToMe");
+		this.stakedToMe = stakedToMe;
+	}
+
+	public long getStakePeriodStart() {
+		return stakePeriodStart;
+	}
+
+	public void setStakePeriodStart(final long stakePeriodStart) {
+		assertMutable("stakePeriodStart");
+		this.stakePeriodStart = stakePeriodStart;
+	}
+
+	public long getStakedNum() {
+		return stakedNum;
+	}
+
+	public void setStakedNum(final long stakedNum) {
+		assertMutable("stakedNum");
+		this.stakedNum = stakedNum;
+	}
+
+	public boolean isDeclineReward() {
+		return declineReward;
+	}
+
+	public void setDeclineReward(final boolean declineReward) {
+		assertMutable("declineReward");
+		this.declineReward = declineReward;
+	}
+
+	public long getStakeAtStartOfLastRewardedPeriod() {
+		return stakeAtStartOfLastRewardedPeriod;
+	}
+
+	public void setStakeAtStartOfLastRewardedPeriod(final long stakeAtStartOfLastRewardedPeriod) {
+		assertMutable("balanceAtStartOfLastRewardedPeriod");
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
 		}
-	}
-
-	@VisibleForTesting
-	byte getFirstUint256KeyNonZeroBytes() {
-		return firstUint256KeyNonZeroBytes;
 	}
 }

@@ -26,6 +26,8 @@ import com.hedera.services.ledger.properties.TestAccountProperty;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
@@ -57,7 +59,8 @@ public final class TestAccountCustomizer extends
 		OPTION_PROPERTIES.put(MAX_AUTOMATIC_ASSOCIATIONS, LONG);
 		OPTION_PROPERTIES.put(USED_AUTOMATIC_ASSOCIATIONS, LONG);
 		OPTION_PROPERTIES.put(AUTO_RENEW_ACCOUNT_ID, OBJ);
-
+		OPTION_PROPERTIES.put(DECLINE_REWARD, FLAG);
+		OPTION_PROPERTIES.put(STAKED_ID, OBJ);
 	}
 
 	public TestAccountCustomizer(final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {

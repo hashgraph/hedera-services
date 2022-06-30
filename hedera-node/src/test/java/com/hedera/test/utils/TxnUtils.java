@@ -56,6 +56,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -234,6 +235,17 @@ public class TxnUtils {
 			i += rnd.length;
 		}
 		return data;
+	}
+
+	public static String random384BitBinaryText() {
+		Random rand = new Random();
+		// Use to collect result
+		String result = "";
+		for (int i = 0; i < 384; ++i) {
+			// Collect the random number
+			result = (Math.abs(rand.nextInt() % 2)) + result;
+		}
+		return result;
 	}
 
 	public static ByteString randomUtf8ByteString(int n) {

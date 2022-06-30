@@ -85,13 +85,20 @@ class MerkleAccountTest {
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
 	private static final long lastAssociatedTokenNum = 456;
+	private static final long lastAssociatedNftNum = 4587;
+	private static final long lastAssociatedNftSerial = 2;
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	private static final FcTokenAllowanceId tokenAllowanceKey =
-			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
+			FcTokenAllowanceId.from(EntityNum.fromLong(2000L), EntityNum.fromLong(1000L));
+	private static final long stakedToMe = 12_345L;
+	private static final long stakePeriodStart = 786L;
+	private static final long stakedNum = 1111L;
+	private static final boolean declinedReward = false;
+	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -142,9 +149,21 @@ class MerkleAccountTest {
 				lastAssociatedTokenNum,
 				numTreasuryTitles,
 				ethereumNonce,
-				autoRenewAccountId);
+				autoRenewAccountId,
+				lastAssociatedNftNum,
+				lastAssociatedNftSerial,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declinedReward,
+				balanceAtStartOfLastRewardedPeriod);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
+	}
+
+	@Test
+	void totalStakeIsSumOfBalanceAndStakedToMe() {
+		assertEquals(balance + stakedToMe, subject.totalStake());
 	}
 
 	@Test
@@ -256,6 +275,11 @@ class MerkleAccountTest {
 		assertEquals(state.getHeadTokenId(), subject.getHeadTokenId());
 		assertEquals(state.getNumTreasuryTitles(), subject.getNumTreasuryTitles());
 		assertEquals(state.isTokenTreasury(), subject.isTokenTreasury());
+		assertEquals(state.getStakedToMe(), subject.getStakedToMe());
+		assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
+		assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
+		assertEquals(state.getStakedNum(), subject.getStakedId());
+		assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.totalStakeAtStartOfLastRewardedPeriod());
 	}
 
 	@Test
@@ -295,6 +319,11 @@ class MerkleAccountTest {
 		subject.setNumPositiveBalances(0);
 		subject.setNumAssociations(0);
 		subject.setNumTreasuryTitles(numTreasuryTitles);
+		subject.setStakedToMe(stakedToMe);
+		subject.setStakePeriodStart(stakePeriodStart);
+		subject.setDeclineReward(declinedReward);
+		subject.setStakedId(-stakedNum);
+		subject.setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -318,6 +347,14 @@ class MerkleAccountTest {
 		verify(delegate).setNumAssociations(0);
 		verify(delegate).setHeadTokenId(lastAssociatedTokenNum);
 		verify(delegate).setNumTreasuryTitles(numTreasuryTitles);
+		verify(delegate).setStakedNum(-stakedNum);
+		verify(delegate).setStakedToMe(stakedToMe);
+		verify(delegate).setStakePeriodStart(stakePeriodStart);
+		verify(delegate).setDeclineReward(declinedReward);
+		verify(delegate).setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+
+		subject.setStakedId(stakedNum);
+		verify(delegate).setStakedNum(stakedNum);
 	}
 
 	@Test
@@ -400,5 +437,38 @@ class MerkleAccountTest {
 		subject.release();
 
 		verify(payerRecords).decrementReferenceCount();
+	}
+
+	@Test
+	void checksIfMayHavePendingReward() {
+		assertFalse(subject.mayHavePendingReward());
+
+		subject.setStakedId(-1L);
+		assertTrue(subject.mayHavePendingReward());
+
+		subject.setDeclineReward(true);
+		assertFalse(subject.mayHavePendingReward());
+	}
+
+	@Test
+	void checksIfRewardedSinceLastStakeMetaChange() {
+		state.setStakeAtStartOfLastRewardedPeriod(-1L);
+		assertFalse(subject.hasBeenRewardedSinceLastStakeMetaChange());
+		state.setStakeAtStartOfLastRewardedPeriod(123L);
+		assertTrue(subject.hasBeenRewardedSinceLastStakeMetaChange());
+	}
+
+	@Test
+	void getsNodeStakedIdCorrectly() {
+		var subject = new MerkleAccount();
+
+		subject.setStakedId(-1L);
+		assertEquals(0L, subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(1L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
+
+		subject.setStakedId(0L);
+		assertThrows(IllegalStateException.class, () -> subject.getStakedNodeAddressBookId());
 	}
 }

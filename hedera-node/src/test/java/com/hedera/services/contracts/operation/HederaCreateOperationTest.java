@@ -28,7 +28,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.Assertions;
@@ -43,7 +42,9 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
-	private static final Gas baseGas = Gas.of(100);
+	private static final long baseGas = 100L;
+	
+	private final Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
 	@Mock
 	private MessageFrame frame;
@@ -51,8 +52,6 @@ class HederaCreateOperationTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private HederaWorldUpdater hederaWorldUpdater;
-	@Mock
-	private Address recipientAddr;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock

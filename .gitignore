@@ -7,6 +7,7 @@
 *.pass
 !test-clients/yahcli/localhost/keys/*.pass
 *.words
+*.hexed
 
 # Yahcli
 test-clients/yahcli/assets/yahcli.jar
@@ -64,6 +65,7 @@ hs_err_pid*
 !test-clients/src/main/resource/testSystemFiles/*.json
 !test-clients/yahcli/run/test/local/assets/*.json
 .circleci/*.yml-excerpt
+hedera-node/data/jasperdb/
 hedera-node/temp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
@@ -125,7 +127,12 @@ test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
 test-clients/devops-utils/validation-scenarios/files/*-application.properties
 test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
+# Maven
 target
+
+# Gradle
+.gradle
+build
 
 # Mac system
 .DS_Store

@@ -30,6 +30,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,8 @@ class KvPairIterationMigratorTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
+	@Mock
+	private VirtualRootNode<ContractKey, IterableContractValue> rootNode;
 
 	private KvPairIterationMigrator subject;
 
@@ -70,13 +73,15 @@ class KvPairIterationMigratorTest {
 				tailKey, iterableTailValue, null, null, iterableContractStorage)
 		).willReturn(tailKey);
 		given(storageUpserter.upsertMapping(
-				rootKey, iterableRootValue, tailKey, iterableTailValue, iterableContractStorage)
+				rootKey, iterableRootValue, tailKey, null, iterableContractStorage)
 		).willReturn(rootKey);
+		given(iterableContractStorage.getRight()).willReturn(rootNode);
 
 		subject.accept(Pair.of(tailKey, tailValue));
 		subject.accept(Pair.of(zeroKey, zeroValue));
 		subject.accept(Pair.of(rootKey, rootValue));
 		subject.accept(Pair.of(otherZeroKey, zeroValue));
+		subject.accept(Pair.of(missingKey, tailValue));
 		subject.finish();
 
 		verify(iterableContractStorage, times(2)).copy();
@@ -88,18 +93,23 @@ class KvPairIterationMigratorTest {
 
 
 	private void givenMutableContract(final long num, final MerkleAccount contract) {
-		given(accounts.getForModify(EntityNum.fromLong(num))).willReturn(contract);
+		final var key = EntityNum.fromLong(num);
+		given(accounts.containsKey(key)).willReturn(true);
+		given(accounts.getForModify(key)).willReturn(contract);
 	}
 
 	private static final long contractNum = 666;
 	private static final long otherContractNum = 777;
+	private static final long missingContractNum = 888;
 	private static final AccountID contractId = AccountID.newBuilder().setAccountNum(contractNum).build();
+	private static final AccountID missingId = AccountID.newBuilder().setAccountNum(missingContractNum).build();
 	private static final UInt256 rootEvmKey = UInt256.fromHexString("0xaabbcc");
 	private static final UInt256 zeroEvmKey = UInt256.fromHexString("0xbbccdd");
 	private static final UInt256 tailEvmKey = UInt256.fromHexString("0xffeedd");
 	private static final ContractKey zeroKey = ContractKey.from(contractNum, zeroEvmKey);
 	private static final ContractKey otherZeroKey = ContractKey.from(otherContractNum, zeroEvmKey);
 	private static final ContractKey rootKey = ContractKey.from(contractId, rootEvmKey);
+	private static final ContractKey missingKey = ContractKey.from(missingId, rootEvmKey);
 	private static final ContractKey tailKey = ContractKey.from(contractId, tailEvmKey);
 	public static final ContractValue zeroValue = ContractValue.from(ZERO);
 	private static final UInt256 rootEvmValue =

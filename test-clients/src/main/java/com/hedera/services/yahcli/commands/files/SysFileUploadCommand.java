@@ -105,11 +105,14 @@ public class SysFileUploadCommand implements Callable<Integer> {
 
 		delegate.runSuiteSync();
 
-		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-			COMMON_MESSAGES.info("SUCCESS - Uploaded all requested system files");
-		} else {
-			COMMON_MESSAGES.warn("FAILED Uploading requested system files");
-			return 1;
+		final var finalSpecs = delegate.getFinalSpecs();
+		if (!finalSpecs.isEmpty()) {
+			if (finalSpecs.get(0).getStatus() == PASSED) {
+				COMMON_MESSAGES.info("SUCCESS - Uploaded all requested system files");
+			} else {
+				COMMON_MESSAGES.warn("FAILED Uploading requested system files");
+				return 1;
+			}
 		}
 
 		return 0;

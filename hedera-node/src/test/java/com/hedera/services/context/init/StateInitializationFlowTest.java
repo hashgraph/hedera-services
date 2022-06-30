@@ -27,7 +27,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -92,7 +92,7 @@ class StateInitializationFlowTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
+	private MerkleScheduledTransactions schedules;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
@@ -119,7 +119,6 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);
@@ -142,7 +141,6 @@ class StateInitializationFlowTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
-		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);

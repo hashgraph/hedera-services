@@ -22,11 +22,11 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -34,9 +34,13 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
+
+import static com.hedera.services.utils.EntityIdUtils.numOfMirror;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.
@@ -49,14 +53,18 @@ import java.util.function.BiPredicate;
  * beneficiary address is the same as the address being destructed
  */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
+	private final TransactionContext txnCtx;
+
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
 	public HederaSelfDestructOperation(
 			final GasCalculator gasCalculator,
+			final TransactionContext txnCtx,
 			final BiPredicate<Address, MessageFrame> addressValidator
 	) {
 		super(gasCalculator);
+		this.txnCtx = txnCtx;
 		this.addressValidator = addressValidator;
 	}
 
@@ -65,32 +73,45 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
 		final var toBeDeleted = frame.getRecipientAddress();
-		final var beneficiary = updater.get(beneficiaryAddress);
 		if (!addressValidator.test(beneficiaryAddress, frame)) {
 			return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
 		}
+		final var beneficiary = updater.get(beneficiaryAddress);
 
-		if (toBeDeleted.equals(beneficiaryAddress)) {
-			return reversionWith(beneficiary,
-					HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
+		final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater);
+		if (exceptionalHaltReason != null) {
+			return reversionWith(beneficiary, exceptionalHaltReason);
 		}
-		if (updater.contractIsTokenTreasury(toBeDeleted)) {
-			return reversionWith(beneficiary,
-					HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
-		}
-		if (updater.contractHasAnyBalance(toBeDeleted)) {
-			return reversionWith(beneficiary,
-					HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-		}
-		if (updater.contractOwnsNfts(toBeDeleted)) {
-			return reversionWith(beneficiary,
-					HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS);
-		}
+		final var tbdNum = numOfMirror(updater.permissivelyUnaliased(toBeDeleted.toArrayUnsafe()));
+		final var beneficiaryNum = numOfMirror(updater.permissivelyUnaliased(beneficiaryAddress.toArrayUnsafe()));
+		txnCtx.recordBeneficiaryOfDeleted(tbdNum, beneficiaryNum);
+
 		return super.execute(frame, evm);
 	}
 
+	@Nullable
+	private ExceptionalHaltReason reasonToHalt(
+			final Address toBeDeleted,
+			final Address beneficiaryAddress,
+			final HederaStackedWorldStateUpdater updater
+	) {
+		if (toBeDeleted.equals(beneficiaryAddress)) {
+			return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
+		}
+		if (updater.contractIsTokenTreasury(toBeDeleted)) {
+			return HederaExceptionalHaltReason.CONTRACT_IS_TREASURY;
+		}
+		if (updater.contractHasAnyBalance(toBeDeleted)) {
+			return HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+		}
+		if (updater.contractOwnsNfts(toBeDeleted)) {
+			return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+		}
+		return null;
+	}
+
 	private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
-		final Gas cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
-		return new OperationResult(Optional.of(cost), Optional.of(reason));
+		final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
+		return new OperationResult(OptionalLong.of(cost), Optional.of(reason));
 	}
 }

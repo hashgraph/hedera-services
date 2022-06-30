@@ -35,7 +35,7 @@ import java.time.Instant;
 import java.util.SplittableRandom;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -56,7 +56,7 @@ class MerkleNetworkContextBlockSyncTest {
 			swirldHashes[i] = new byte[48];
 			blockHashes[i] = new byte[32];
 			r.nextBytes(swirldHashes[i]);
-			System.arraycopy(swirldHashes[i], 16, blockHashes[i], 0, 32);
+			System.arraycopy(swirldHashes[i], 0, blockHashes[i], 0, 32);
 		}
 		r.nextBytes(unmatchedHash);
 	}

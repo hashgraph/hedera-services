@@ -79,7 +79,7 @@ public class LogsSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(logWith().noTopics().longValue(15))
 										).gasUsed(22_285))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
 	}
 
 	private HapiApiSpec log1Works() {
@@ -97,7 +97,7 @@ public class LogsSuite extends HapiApiSuite {
 												eventSignatureOf("Log1(uint256)"),
 												parsedToByteString(15))))
 								).gasUsed(22_583))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
 	}
 
 	private HapiApiSpec log2Works() {
@@ -117,7 +117,7 @@ public class LogsSuite extends HapiApiSuite {
 														parsedToByteString(1),
 														parsedToByteString(2))))
 										).gasUsed(23_112))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
 	}
 
 	private HapiApiSpec log3Works() {
@@ -138,7 +138,7 @@ public class LogsSuite extends HapiApiSuite {
 														parsedToByteString(2),
 														parsedToByteString(3))))
 										).gasUsed(23_638))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
 	}
 
 	private HapiApiSpec log4Works() {
@@ -162,6 +162,6 @@ public class LogsSuite extends HapiApiSuite {
 																parsedToByteString(2),
 																parsedToByteString(3))))
 										).gasUsed(24_294))),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
 	}
 }

@@ -65,6 +65,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
@@ -94,9 +95,13 @@ public class HapiSpecRegistry {
 		// The default contract sender is the default payer unless using Ethereum transactions
 		saveAccountId(DEFAULT_CONTRACT_SENDER, setup.defaultPayer());
 		saveKey(DEFAULT_CONTRACT_SENDER, asKeyList(genesisKey));
+		saveAccountId(DEFAULT_CONTRACT_RECEIVER, setup.fundingAccount());
+		saveKey(DEFAULT_CONTRACT_RECEIVER, asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());
+		saveAccountId(setup.stakingRewardAccountName(), setup.stakingRewardAccount());
+		saveAccountId(setup.nodeRewardAccountName(), setup.nodeRewardAccount());
 
 		saveAccountId(setup.strongControlName(), setup.strongControlAccount());
 		saveKey(setup.strongControlName(), asKeyList(genesisKey));
@@ -768,6 +773,10 @@ public class HapiSpecRegistry {
 			remove(name, TransactionRecord.class);
 		} catch (Exception ignore) {
 		}
+	}
+
+	public boolean hasTransactionRecord(String name) {
+		return has(name, TransactionRecord.class);
 	}
 
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {

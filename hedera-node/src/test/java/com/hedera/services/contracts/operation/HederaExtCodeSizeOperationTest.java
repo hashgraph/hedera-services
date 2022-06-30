@@ -23,7 +23,6 @@ package com.hedera.services.contracts.operation;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -37,6 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
@@ -62,18 +62,14 @@ class HederaExtCodeSizeOperationTest {
 	@Mock
 	EVM evm;
 	@Mock
-	private Account acc;
-	@Mock
-	private Address accountAddr;
-	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	HederaExtCodeSizeOperation subject;
 
 	@BeforeEach
 	void setUp() {
-		given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(Gas.of(10L));
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(2L));
+		given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
+		given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
 		subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
 	}
@@ -86,7 +82,7 @@ class HederaExtCodeSizeOperationTest {
 		var opResult = subject.execute(mf, evm);
 
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-		assertEquals(Optional.of(Gas.of(12L)), opResult.getGasCost());
+		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
 	}
 
 	@Test
@@ -96,7 +92,7 @@ class HederaExtCodeSizeOperationTest {
 		var opResult = subject.execute(mf, evm);
 
 		assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
-		assertEquals(Optional.of(Gas.of(12L)), opResult.getGasCost());
+		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
 	}
 
 	@Test
@@ -109,7 +105,7 @@ class HederaExtCodeSizeOperationTest {
 		// and:
 		given(mf.popStackItem()).willReturn(ethAddressInstance);
 		given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
-		given(mf.getRemainingGas()).willReturn(Gas.of(100));
+		given(mf.getRemainingGas()).willReturn(100L);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		// when:
@@ -117,6 +113,6 @@ class HederaExtCodeSizeOperationTest {
 
 		// then:
 		assertEquals(Optional.empty(), opResult.getHaltReason());
-		assertEquals(Optional.of(Gas.of(12L)), opResult.getGasCost());
+		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
 	}
 }

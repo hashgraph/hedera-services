@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -401,6 +402,11 @@ public class TxnFactory {
 	}
 
 	public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder> defaultDef_TokenFeeScheduleUpdateTransactionBody() {
+		return builder -> {
+		};
+	}
+
+	public Consumer<RandomGenerateTransactionBody.Builder> defaultDef_RandomGenerateTransactionBody() {
 		return builder -> {
 		};
 	}

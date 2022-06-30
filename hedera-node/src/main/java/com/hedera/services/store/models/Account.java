@@ -452,8 +452,6 @@ public class Account {
 	}
 
 	public int getTotalAllowances() {
-		return cryptoAllowances.size() +
-				fungibleTokenAllowances.size() +
-				approveForAllNfts.size();
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
 	}
 }

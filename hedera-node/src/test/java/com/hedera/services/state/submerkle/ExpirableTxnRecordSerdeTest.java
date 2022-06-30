@@ -24,7 +24,9 @@ import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -36,7 +38,7 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 
 	@Override
 	protected int getNumTestCasesFor(int version) {
-		return version == RELEASE_0230_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+		return NUM_TEST_CASES;
 	}
 
 	@Override
@@ -47,10 +49,7 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	@Override
 	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
 		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
-		if (version == RELEASE_0230_VERSION) {
-			// Always empty before 0.25
-		}
-		if (version < ExpirableTxnRecord.RELEASE_0260_VERSION) {
+		if (version < RELEASE_0260_VERSION) {
 			// Ethereum hash added in release 0.26
 			seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);
 			// sender ID add in release 0.26
@@ -60,6 +59,12 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 			if (seeded.getContractCreateResult() != null) {
 				seeded.getContractCreateResult().setSenderId(null);
 			}
+		}
+		if (version < RELEASE_0270_VERSION) {
+			seeded.clearStakingRewardsPaid();
+		}
+		if (version < RELEASE_0280_VERSION) {
+			seeded.clearRandomGenerateData();
 		}
 		return seeded;
 	}

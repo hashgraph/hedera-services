@@ -46,6 +46,37 @@ public class MerkleScheduleSerdeTest extends SelfSerializableDataTest<MerkleSche
 
 	@Override
 	protected MerkleSchedule getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextSchedule();
+		return nextSchedule(propertySource);
 	}
+
+	public static MerkleSchedule nextSchedule(final SeededPropertySource propertySource) {
+		return nextSchedule(propertySource, null, null);
+	}
+
+	public static MerkleSchedule nextSchedule(final SeededPropertySource propertySource, Long expiry,
+			byte[] bodyBytes) {
+		final var seeded = new MerkleSchedule();
+		if (expiry != null) {
+			seeded.setExpiry(expiry);
+		} else {
+			seeded.setExpiry(propertySource.nextUnsignedLong());
+		}
+		if (bodyBytes != null) {
+			seeded.setBodyBytes(bodyBytes);
+		} else {
+			seeded.setBodyBytes(propertySource.nextSerializedTransactionBody());
+		}
+		if (propertySource.nextBoolean()) {
+			seeded.markDeleted(propertySource.nextInstant());
+		} else if (propertySource.nextBoolean()) {
+			seeded.markExecuted(propertySource.nextInstant());
+		}
+		final var numSignatures = propertySource.nextInt(10);
+		for (int i = 0; i < numSignatures; i++) {
+			seeded.witnessValidSignature(propertySource.nextBytes(propertySource.nextBoolean() ? 32 : 33));
+		}
+		seeded.setKey(propertySource.nextNum());
+		return seeded;
+	}
+
 }

@@ -67,7 +67,9 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.util.HapiRandomGenerate;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.ethereum.core.CallTransaction;
@@ -75,8 +77,10 @@ import org.ethereum.core.CallTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -339,10 +343,6 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, params);
 	}
 
-	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
-		return new HapiContractCall(abi, contract, params);
-	}
-
 	/**
 	 * This method allows the developer to invoke a contract function by the name of the called contract and the name
 	 * of the desired function and make an ethereum call
@@ -357,6 +357,24 @@ public class TxnVerbs {
 	public static HapiEthereumCall ethereumCall(String contract, String functionName, Object... params) {
 		final var abi = getABIFor(FUNCTION, functionName, contract);
 		return new HapiEthereumCall(abi, contract, params);
+	}
+
+	public static HapiEthereumCall ethereumCallWithFunctionAbi(boolean isTokenFlow, String contract, String abi,
+			Object... params) {
+		return new HapiEthereumCall(isTokenFlow, abi, contract, params);
+	}
+
+	/**
+	 * This method allows the developer to transfer hbars to an <b>account that's not a smart contract</b> through an
+	 * Ethereum transaction.
+	 *
+	 * @param account
+	 * 		the name of the account in the registry
+	 * @param amount
+	 * 		the amount of tinybars to be transferred from the Ethereum transaction sender to the specified account
+	 */
+	public static HapiEthereumCall ethereumCryptoTransfer(String account, long amount) {
+		return new HapiEthereumCall(account, amount);
 	}
 
 	/**
@@ -377,6 +395,10 @@ public class TxnVerbs {
 
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
 		return new HapiContractCall(abi, contract, fn);
+	}
+
+	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
+		return new HapiContractCall(abi, contract, params);
 	}
 
 	public static HapiEthereumContractCreate ethereumContractCreate(final String contractName) {
@@ -441,12 +463,43 @@ public class TxnVerbs {
 	 * 		the name(s) of the contract(s), which are to be deployed
 	 */
 	public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
+		return uploadInitCode(Optional.empty(), contractsNames);
+	}
+
+	public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			for (String contractName : contractsNames) {
 				final var path = getResourcePath(contractName, ".bin");
-				ops.add(createLargeFile(GENESIS, contractName, extractByteCode(path)));
+				ops.add(createLargeFile(payer.orElse(GENESIS), contractName, extractByteCode(path)));
 			}
+			allRunFor(spec, ops);
+		});
+	}
+
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final long expiry,
+			final String payingWith, final LongConsumer exposingTo) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			final var path = getResourcePath(contractName, ".bin");
+			final var file = new HapiFileCreate(contractName).payingWith(payingWith).exposingNumTo(exposingTo).expiry(
+					expiry);
+			final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+			ops.add(file);
+			ops.add(updatedFile);
+			allRunFor(spec, ops);
+		});
+	}
+
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName,
+			final ResponseCodeEnum... statuses) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			final var path = getResourcePath(contractName, ".bin");
+			final var file = new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
+			final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+			ops.add(file);
+			ops.add(updatedFile);
 			allRunFor(spec, ops);
 		});
 	}
@@ -484,5 +537,14 @@ public class TxnVerbs {
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
+	}
+
+	/* UTIL */
+	public static HapiRandomGenerate randomGenerate() {
+		return new HapiRandomGenerate();
+	}
+
+	public static HapiRandomGenerate randomGenerate(int range) {
+		return new HapiRandomGenerate(range);
 	}
 }

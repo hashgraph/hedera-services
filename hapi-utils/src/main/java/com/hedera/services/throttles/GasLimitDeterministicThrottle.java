@@ -79,6 +79,15 @@ public class GasLimitDeterministicThrottle {
 	}
 
 	/**
+	 * Returns the used capacity of the throttle.
+	 *
+	 * @return the used capacity of the throttle.
+	 */
+	public long getUsed() {
+		return delegate.bucket().capacityUsed();
+	}
+
+	/**
 	 * Used to release some capacity previously reserved by calling {@link GasLimitDeterministicThrottle#allow(Instant, long)}
 	 * without having to wait for the natural leakage.
 	 *
@@ -107,5 +116,18 @@ public class GasLimitDeterministicThrottle {
 		final var bucket = delegate.bucket();
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
+	}
+
+	public void resetUsage() {
+		resetLastAllowedUse();
+		final var bucket = delegate.bucket();
+		bucket.resetUsed(0);
+	}
+
+	public void reclaimLastAllowedUse() {
+		delegate.reclaimLastAllowedUse();
+	}
+	public void resetLastAllowedUse() {
+		delegate.resetLastAllowedUse();
 	}
 }

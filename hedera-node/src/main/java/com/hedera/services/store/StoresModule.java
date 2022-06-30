@@ -20,24 +20,32 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
+import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
+import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
+import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
-import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -67,7 +75,8 @@ public interface StoresModule {
 
 	@Binds
 	@Singleton
-	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
 
 	@Binds
 	@Singleton
@@ -76,15 +85,15 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			final SideEffectsTracker sideEffectsTracker
+			final UniqueTokensLinkManager uniqueTokensLinkManager,
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
 	) {
-		final var uniqueTokensLedger =  new TransactionalLedger<>(
+		final var uniqueTokensLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
-				backingNfts,
+				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		return uniqueTokensLedger;
 	}
@@ -130,14 +139,31 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final RewardCalculator rewardCalculator,
+			final StakeChangeManager stakeChangeManager,
+			final StakePeriodManager stakePeriodManager,
+			final StakeInfoManager stakeInfoManager,
+			final AccountNumbers accountNumbers,
+			final TransactionContext txnCtx
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new StakingAccountsCommitInterceptor(
+				sideEffectsTracker,
+				networkCtx,
+				dynamicProperties,
+				rewardCalculator,
+				stakeChangeManager,
+				stakePeriodManager,
+				stakeInfoManager,
+				accountNumbers,
+				txnCtx);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

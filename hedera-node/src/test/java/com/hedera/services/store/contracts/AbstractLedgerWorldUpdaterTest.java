@@ -25,12 +25,15 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -38,6 +41,8 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -45,10 +50,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -79,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -113,9 +121,11 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
-	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 	@Mock
 	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
+	@Mock
+	private AccountsCommitInterceptor accountsCommitInterceptor;
 	@Mock
 	private ContractCustomizer customizer;
 	@Mock
@@ -124,6 +134,14 @@ class AbstractLedgerWorldUpdaterTest {
 	private StaticEntityAccess staticEntityAccess;
 	@Mock
 	private WorldLedgers mockLedgers;
+	@Mock
+	private MerkleNetworkContext networkCtx;
+	@Mock
+	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+	@Mock
+	private RewardCalculator rewardCalculator;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -139,7 +157,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void isPossibleToWrapStaticLedgers() {
 		final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 		subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
-		assertDoesNotThrow(()-> subject.wrappedTrackingLedgers(sideEffectsTracker));
+		assertDoesNotThrow(() -> subject.wrappedTrackingLedgers(sideEffectsTracker));
 	}
 
 	@Test
@@ -171,6 +189,36 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.revert();
 
 		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
+	}
+
+	@Test
+	void revertsCommittedChildIdsSourceIdsIfCreated() {
+		final var firstChildSourceId = 123;
+		final var mySourceId = 666;
+		final var secondChildSourceId = 456;
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+		subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
+		subject.revert();
+
+		verify(recordsHistorian).revertChildRecordsFromSource(mySourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(firstChildSourceId);
+		verify(recordsHistorian).revertChildRecordsFromSource(secondChildSourceId);
+	}
+
+	@Test
+	void notOkToCommitFromDifferentHistorians() {
+		final var otherHistorian = mock(RecordsHistorian.class);
+		final var firstChildSourceId = 123;
+		final var secondChildSourceId = 456;
+
+		subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.addCommittedRecordSourceId(secondChildSourceId, otherHistorian));
 	}
 
 	@Test
@@ -299,10 +347,15 @@ class AbstractLedgerWorldUpdaterTest {
 		/* Get the wrapped accounts for the updater */
 		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
+		final var aAccountMock = mock(MerkleAccount.class);
+		final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+		backingAccounts.put(aAccount, aAccountMock);
+		wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
 
 		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
 		wrappedAccounts.create(aAccount);
 		wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+		wrappedAccounts.put(aAccount, aAccountMock);
 
 		/* Verify we cannot commit the illegal change */
 		assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
@@ -540,7 +593,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nfts();
-		trackingNfts.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		trackingNfts.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);

@@ -70,7 +70,7 @@ public class GlobalDynamicProperties {
 	private long maxTxnDuration;
 	private long minTxnDuration;
 	private int minValidityBuffer;
-	private int maxGas;
+	private long maxGasPerSec;
 	private int chainId;
 	private byte[] chainIdBytes;
 	private long defaultContractLifetime;
@@ -85,12 +85,16 @@ public class GlobalDynamicProperties {
 	private long minAutoRenewDuration;
 	private Duration grpcMinAutoRenewDuration;
 	private int localCallEstRetBytes;
+	private boolean schedulingLongTermEnabled;
+	private long schedulingMaxTxnPerSecond;
+	private long schedulingMaxExpirationFutureSeconds;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
+	private long maxPrecedingRecords;
+	private long maxFollowingRecords;
 	private Set<HederaFunctionality> schedulingWhitelist;
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
-	private long ratesMidnightCheckInterval;
 	private boolean areNftsEnabled;
 	private long maxNftMints;
 	private int maxXferBalanceChanges;
@@ -99,10 +103,8 @@ public class GlobalDynamicProperties {
 	private String upgradeArtifactsLoc;
 	private boolean throttleByGas;
 	private int contractMaxRefundPercentOfGasLimit;
-	private long frontendThrottleMaxGasLimit;
-	private long consensusThrottleMaxGasLimit;
+	private long scheduleThrottleMaxGasLimit;
 	private long htsDefaultGasCost;
-	private long triggerTxnWindBackNanos;
 	private int changeHistorianMemorySecs;
 	private boolean autoCreationEnabled;
 	private boolean expandSigsFromLastSignedState;
@@ -123,6 +125,18 @@ public class GlobalDynamicProperties {
 	private long storageSlotLifetime;
 	private ContractStoragePriceTiers storagePriceTiers;
 	private boolean itemizeStorageFees;
+	private int maxReturnedNftsPerTouch;
+	private long exchangeRateGasReq;
+	private long stakingRewardRate;
+	private long stakingStartThreshold;
+	private int nodeRewardPercent;
+	private int stakingRewardPercent;
+	private boolean contractAutoAssociationsEnabled;
+	private boolean stakingEnabled;
+	private long maxDailyStakeRewardThPerH;
+	private int recordFileVersion;
+	private int recordSignatureFileVersion;
+	private boolean randomGenerationEnabled;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -166,7 +180,7 @@ public class GlobalDynamicProperties {
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
-		maxGas = properties.getIntProperty("contracts.maxGas");
+		maxGasPerSec = properties.getLongProperty("contracts.maxGasPerSec");
 		chainId = properties.getIntProperty("contracts.chainId");
 		chainIdBytes = Integers.toBytes(chainId);
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
@@ -180,11 +194,15 @@ public class GlobalDynamicProperties {
 		grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
+		schedulingLongTermEnabled = properties.getBooleanProperty("scheduling.longTermEnabled");
+		schedulingMaxTxnPerSecond = properties.getLongProperty("scheduling.maxTxnPerSecond");
+		schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
+		maxPrecedingRecords = properties.getLongProperty("consensus.handle.maxPrecedingRecords");
+		maxFollowingRecords = properties.getLongProperty("consensus.handle.maxFollowingRecords");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
-		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
 		areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
 		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
@@ -194,10 +212,8 @@ public class GlobalDynamicProperties {
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
-		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
-		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
 		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
-		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
 		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
 		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
@@ -218,10 +234,22 @@ public class GlobalDynamicProperties {
 		limitTokenAssociations = properties.getBooleanProperty("entities.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
+		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 		storageSlotLifetime = properties.getLongProperty("contract.storageSlotLifetime");
 		storagePriceTiers = properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers");
 		itemizeStorageFees = properties.getBooleanProperty("contracts.itemizeStorageFees");
+		exchangeRateGasReq = properties.getLongProperty("contracts.precompile.exchangeRateGasCost");
+		stakingRewardRate = properties.getLongProperty("staking.rewardRate");
+		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
+		nodeRewardPercent = properties.getIntProperty("staking.fees.nodeRewardPercentage");
+		stakingRewardPercent = properties.getIntProperty("staking.fees.stakingRewardPercentage");
+		contractAutoAssociationsEnabled = properties.getBooleanProperty("contracts.allowAutoAssociations");
+		maxDailyStakeRewardThPerH = properties.getLongProperty("staking.maxDailyStakeRewardThPerH");
+		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
+		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
+		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
+		randomGenerationEnabled = properties.getBooleanProperty("randomGeneration.isEnabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -332,8 +360,8 @@ public class GlobalDynamicProperties {
 		return minValidityBuffer;
 	}
 
-	public int maxGas() {
-		return maxGas;
+	public long maxGasPerSec() {
+		return maxGasPerSec;
 	}
 
 	public int chainId() {
@@ -388,8 +416,28 @@ public class GlobalDynamicProperties {
 		return scheduledTxExpiryTimeSecs;
 	}
 
+	public boolean schedulingLongTermEnabled() {
+		return schedulingLongTermEnabled;
+	}
+
+	public long schedulingMaxTxnPerSecond() {
+		return schedulingMaxTxnPerSecond;
+	}
+
+	public long schedulingMaxExpirationFutureSeconds() {
+		return schedulingMaxExpirationFutureSeconds;
+	}
+
 	public int messageMaxBytesAllowed() {
 		return messageMaxBytesAllowed;
+	}
+
+	public long maxPrecedingRecords() {
+		return maxPrecedingRecords;
+	}
+
+	public long maxFollowingRecords() {
+		return maxFollowingRecords;
 	}
 
 	public Set<HederaFunctionality> schedulingWhitelist() {
@@ -402,10 +450,6 @@ public class GlobalDynamicProperties {
 
 	public int feesMinCongestionPeriod() {
 		return feesMinCongestionPeriod;
-	}
-
-	public long ratesMidnightCheckInterval() {
-		return ratesMidnightCheckInterval;
 	}
 
 	public boolean areNftsEnabled() {
@@ -440,20 +484,12 @@ public class GlobalDynamicProperties {
 		return contractMaxRefundPercentOfGasLimit;
 	}
 
-	public long frontendThrottleGasLimit() {
-		return frontendThrottleMaxGasLimit;
-	}
-
-	public long consensusThrottleGasLimit() {
-		return consensusThrottleMaxGasLimit;
+	public long scheduleThrottleMaxGasLimit() {
+		return scheduleThrottleMaxGasLimit;
 	}
 
 	public long htsDefaultGasCost() {
 		return htsDefaultGasCost;
-	}
-
-	public long triggerTxnWindBackNanos() {
-		return triggerTxnWindBackNanos;
 	}
 
 	public int changeHistorianMemorySecs() {
@@ -542,5 +578,53 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldItemizeStorageFees() {
 		return itemizeStorageFees;
+        }
+
+	public int getMaxReturnedNftsPerTouch() {
+		return maxReturnedNftsPerTouch;
+	}
+
+	public long exchangeRateGasReq() {
+		return exchangeRateGasReq;
+	}
+
+	public long getStakingRewardRate() {
+		return stakingRewardRate;
+	}
+
+	public long getStakingStartThreshold() {
+		return stakingStartThreshold;
+	}
+
+	public int getNodeRewardPercent() {
+		return nodeRewardPercent;
+	}
+
+	public int getStakingRewardPercent() {
+		return stakingRewardPercent;
+	}
+
+	public boolean areContractAutoAssociationsEnabled() {
+		return contractAutoAssociationsEnabled;
+	}
+
+	public boolean isStakingEnabled() {
+		return stakingEnabled;
+	}
+
+	public long maxDailyStakeRewardThPerH() {
+		return maxDailyStakeRewardThPerH;
+	}
+
+	public int recordFileVersion() {
+		return recordFileVersion;
+	}
+
+	public int recordSignatureFileVersion() {
+		return recordSignatureFileVersion;
+	}
+
+	public boolean isRandomGenerationEnabled() {
+		return randomGenerationEnabled;
 	}
 }

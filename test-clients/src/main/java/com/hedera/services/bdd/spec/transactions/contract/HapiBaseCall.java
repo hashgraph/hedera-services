@@ -25,13 +25,13 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.ethereum.util.ByteUtil;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 import static org.ethereum.crypto.HashUtil.sha3;
 
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
@@ -49,6 +49,7 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected String abi;
     protected String contract;
     protected Optional<Long> gas = Optional.empty();
+    protected String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
     protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
         byte[] callData = new byte[] { };

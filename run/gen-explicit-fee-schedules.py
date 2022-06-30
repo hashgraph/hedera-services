@@ -5,6 +5,7 @@
 
 import json
 
+provider_types = ['node', 'network', 'service']
 providers = ['nodedata', 'networkdata', 'servicedata']
 typed_schedules = {}
 with open('hedera-node/src/main/resources/feeSchedules.json', 'r') as fin:
@@ -20,8 +21,8 @@ with open('hedera-node/src/main/resources/feeSchedules.json', 'r') as fin:
         for typed_prices in prices_list:
             this_type = typed_prices.get('subType', 'DEFAULT')
             this_type_prices = {}
-            for provider in providers:
-                this_type_prices[provider] = typed_prices[provider]
+            for provider, ptype in zip(providers, provider_types):
+                this_type_prices[ptype] = typed_prices[provider]
             prices_by_type[this_type] = this_type_prices
         typed_schedules[function] = prices_by_type
 

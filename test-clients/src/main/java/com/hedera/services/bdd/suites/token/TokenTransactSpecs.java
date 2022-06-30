@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +37,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
-import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.NoFungibleTransfers.changingNoFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.NoNftTransfers.changingNoNftOwners;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -76,6 +74,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -113,7 +112,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -279,6 +278,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var treasury = "treasury";
 		final var beneficiary = "beneficiary";
 		final var unluckyBeneficiary = "unluckyBeneficiary";
+		final var thirdParty = "thirdParty";
 		final var uniqueToken = "unique";
 		final var fungibleToken = "fungible";
 		final var multiPurpose = "multiPurpose";
@@ -300,15 +300,20 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
 						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
 						cryptoCreate(unluckyBeneficiary),
+						cryptoCreate(thirdParty).maxAutomaticTokenAssociations(1),
 						tokenAssociate(unluckyBeneficiary, uniqueToken),
 						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
-						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary)
+						getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary),
+						cryptoTransfer(
+								movingUnique(uniqueToken, 2L)
+										.between(treasury, thirdParty)
+						)
 				).when(
 						cryptoTransfer(
 								movingUnique(uniqueToken, 1L)
 										.between(treasury, beneficiary),
 								moving(500, fungibleToken).between(treasury, beneficiary),
-								movingUnique(uniqueToken, 1L)
+								movingUnique(uniqueToken, 2L)
 										.between(treasury, unluckyBeneficiary)
 						).via(transferTxn).hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)
 				).then(
@@ -660,6 +665,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("autoAssociationWorksForContracts")
 				.given(
+						overriding("contracts.allowAutoAssociations", "true"),
 						newKeyNamed("supplyKey"),
 						uploadInitCode(theContract),
 						contractCreate(theContract)

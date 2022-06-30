@@ -20,7 +20,10 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.NotNull;
@@ -28,13 +31,39 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static com.hedera.services.utils.MapValueListUtils.overwritingRemoveFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.removeFromMapValueList;
 
 public class IterableStorageUtils {
+	private static final String NO_ITERABLE_NFTS = "[]";
 	private static final String NO_ITERABLE_STORAGE = "[]";
 
 	private IterableStorageUtils() {
 		throw new UnsupportedOperationException("Utility Class");
+	}
+
+	public static String joinedOwnedNfts(
+			final EntityNumPair firstKey,
+			final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
+	) {
+		if (firstKey == null) {
+			return NO_ITERABLE_NFTS;
+		}
+		final var sb = new StringBuilder("[");
+		var isFirstValue = true;
+		EntityNumPair nextKey = firstKey;
+		while (!EntityNumPair.MISSING_NUM_PAIR.equals(nextKey)) {
+			final var value = Objects.requireNonNull(nfts.get(nextKey),
+					"Linked key " + nextKey + " had no mapped value");
+			sb
+					.append(isFirstValue ? "" : ", ")
+					.append("0.0.")
+					.append(value.getKey().getHiOrderAsLong())
+					.append(".")
+					.append(value.getKey().getLowOrderAsLong());
+			isFirstValue = false;
+			nextKey = value.getNext().asEntityNumPair();
+		}
+		return sb.append("]").toString();
 	}
 
 	public static String joinedStorageMappings(
@@ -142,7 +171,7 @@ public class IterableStorageUtils {
 			@NotNull final ContractKey root,
 			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		return overwritingRemoveFromMapValueList(key, root, new ContractStorageListRemoval(key.getContractId(), storage));
+		return removeFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
 	}
 
 	private static ContractKey internalUpsertMapping(

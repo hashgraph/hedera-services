@@ -54,6 +54,7 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
+import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -79,6 +80,7 @@ import static com.hedera.services.contracts.operation.HederaSStoreOperation.FRON
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 
 @Module(includes = {
@@ -250,6 +252,11 @@ public interface ContractsModule {
 	@StringKey(HTS_PRECOMPILED_CONTRACT_ADDRESS)
 	PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
 
+	@Binds
+	@Singleton
+	@IntoMap
+	@StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
+	PrecompiledContract bindExchangeRatePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
 
 	@Provides
 	@Singleton

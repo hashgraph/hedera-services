@@ -20,7 +20,6 @@ package com.hedera.services.store;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,25 +36,19 @@ import javax.inject.Singleton;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class AccountStore {
 	private final OptionValidator validator;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final BackingStore<AccountID, MerkleAccount> accounts;
 
 	@Inject
-	public AccountStore(
-			final OptionValidator validator,
-			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> accounts
-	) {
+	public AccountStore(final OptionValidator validator, final BackingStore<AccountID, MerkleAccount> accounts) {
 		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
 	}
 
@@ -210,16 +203,9 @@ public class AccountStore {
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : nonExistingCode);
 		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
-		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()),
-				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
-
-	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.shouldAutoRenewSomeEntityType() && balance == 0) {
-			return !validator.isAfterConsensusSecond(expiry);
-		} else {
-			return false;
-		}
+		final var expiryStatus = validator.expiryStatusGiven(
+				merkleAccount.getBalance(), merkleAccount.getExpiry(), merkleAccount.isSmartContract());
+		validateTrue(expiryStatus == OK, expiryStatus);
 	}
 
 	public OptionValidator getValidator() {

@@ -122,5 +122,11 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 			}
 			updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
 		}
+		if (thisRecordSourceId != UNKNOWN_RECORD_SOURCE_ID) {
+			wrapped.addCommittedRecordSourceId(thisRecordSourceId, recordsHistorian);
+		}
+		if (!committedRecordSourceIds.isEmpty()) {
+			committedRecordSourceIds.forEach(id -> wrapped.addCommittedRecordSourceId(id, recordsHistorian));
+		}
 	}
 }

@@ -37,7 +37,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -192,7 +191,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		GlobalDynamicProperties dynamicProperties;
 
 		private int numAllocatedIds = 0;
-		private Gas sbhRefund = Gas.ZERO;
+		private long sbhRefund = 0L;
 
 		protected Updater(
 				final HederaWorldState world,
@@ -255,13 +254,13 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
-		public Gas getSbhRefund() {
+		public long getSbhRefund() {
 			return sbhRefund;
 		}
 
 		@Override
-		public void addSbhRefund(Gas refund) {
-			sbhRefund = sbhRefund.plus(refund);
+		public void addSbhRefund(long refund) {
+			sbhRefund = sbhRefund + refund;
 		}
 
 		@Override
@@ -272,7 +271,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				wrapped.reclaimContractId();
 				numAllocatedIds--;
 			}
-			sbhRefund = Gas.ZERO;
+			sbhRefund = 0L;
 		}
 
 		@Override

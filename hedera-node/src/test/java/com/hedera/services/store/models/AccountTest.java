@@ -35,7 +35,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.security.PublicKey;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -200,11 +199,10 @@ class AccountTest {
 
 	@Test
 	void toStringAsExpected() {
-		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
-				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
-				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null" +
-				subject.getAlias().toStringUtf8() + ", numAssociations=" + numAssociations +", numPositiveBalances="+
-				numPositiveBalances + ", ethereumNonce=0}";
+		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5, " +
+				"alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=, cryptoAllowances=null, " +
+				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=2, " +
+				"ethereumNonce=0}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

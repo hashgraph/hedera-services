@@ -30,6 +30,7 @@ import com.hederahashgraph.fee.FeeObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 
@@ -102,11 +103,11 @@ public final class OverflowCheckingCalc {
 	}
 
 	public static long tinycentsToTinybars(final long amount, final ExchangeRate rate) {
-		final var product = amount * rate.getHbarEquiv();
-		if (product < 0) {
+		final var hbarEquiv = rate.getHbarEquiv();
+		if (productWouldOverflow(amount, hbarEquiv)) {
 			return FeeBuilder.getTinybarsFromTinyCents(rate, amount);
 		}
-		return product / rate.getCentEquiv();
+		return amount * hbarEquiv / rate.getCentEquiv();
 	}
 
 	private long networkFeeInTinycents(final UsageAccumulator usage, final FeeComponents networkPrices) {

@@ -81,7 +81,6 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final var transactionBody = transactionContext.accessor().getTxn();
-		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
 		final var submitKey = op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
@@ -103,7 +102,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Do business logic --- */
 		final var expirationTime = transactionContext.consensusTime().plusSeconds(autoRenewPeriod.getSeconds());
-		final var topicId = entityIdSource.newTopicId(payerAccountId);
+		final var topicId = entityIdSource.newTopicId(transactionContext.activePayer());
 		final var topic = Topic.fromGrpcTopicCreate(
 				Id.fromGrpcTopic(topicId),
 				submitKey,

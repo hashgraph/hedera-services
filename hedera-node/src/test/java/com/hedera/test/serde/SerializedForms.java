@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
@@ -30,14 +31,18 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.merkle.MerkleStakingInfoSerdeTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -56,12 +61,9 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractKeySerializer;
-import com.hedera.services.state.virtual.ContractKeySupplier;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
@@ -125,9 +127,9 @@ public class SerializedForms {
 	}
 
 	private static void generateSerializedData() {
-		for (var entry : GENERATOR_MAPPING.entrySet()) {
-			entry.getValue().run();
-		}
+  		for (var entry : GENERATOR_MAPPING.entrySet()) {
+  			entry.getValue().run();
+  		}
 	}
 
 	private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
@@ -162,13 +164,15 @@ public class SerializedForms {
 					entry(FcTokenAllowanceId.class, SeededPropertySource::nextAllowanceId, MIN_TEST_CASES_PER_VERSION),
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
-					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+					entry(BytesElement.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState,
 							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
+					entry(MerkleNetworkContext.class, SeededPropertySource::next0270NetworkContext,
 							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
-					entry(MerkleSchedule.class, SeededPropertySource::nextSchedule,
+					entry(MerkleScheduledTransactionsState.class, SeededPropertySource::nextScheduledTransactionsState,
+							MerkleScheduledTransactionsStateSerdeTest.NUM_TEST_CASES),
+					entry(MerkleSchedule.class, MerkleScheduleSerdeTest::nextSchedule,
 							MerkleScheduleSerdeTest.NUM_TEST_CASES),
 					entry(MerkleSpecialFiles.class, SeededPropertySource::nextMerkleSpecialFiles,
 							MIN_TEST_CASES_PER_VERSION),
@@ -176,7 +180,7 @@ public class SerializedForms {
 					entry(MerkleTokenRelStatus.class, SeededPropertySource::nextMerkleTokenRelStatus,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
-					entry(MerkleUniqueToken.class, SeededPropertySource::nextMerkleUniqueToken,
+					entry(MerkleUniqueToken.class, SeededPropertySource::next0260UniqueToken,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,
@@ -189,7 +193,11 @@ public class SerializedForms {
 					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
-							MIN_TEST_CASES_PER_VERSION)
+							MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleStakingInfo.class, SeededPropertySource::nextStakingInfo,
+							MerkleStakingInfoSerdeTest.NUM_TEST_CASES),
+					entry(SerializableSemVers.class, SeededPropertySource::nextSerializableSemVers,
+							2 * MIN_TEST_CASES_PER_VERSION)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

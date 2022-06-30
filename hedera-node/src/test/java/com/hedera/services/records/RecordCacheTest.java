@@ -266,7 +266,7 @@ class RecordCacheTest {
 		final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		final var accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		final var accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
@@ -303,9 +303,11 @@ class RecordCacheTest {
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		willCallRealMethod().given(factory).triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		willCallRealMethod().given(factory).triggeredTxn(
+				signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
 
-		final var accessor = factory.triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		final var accessor = factory.triggeredTxn(
+				signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())

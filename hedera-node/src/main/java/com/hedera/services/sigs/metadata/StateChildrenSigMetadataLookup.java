@@ -30,6 +30,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -177,7 +178,8 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.getScheduleNum());
 		}
-		final var schedule = stateChildren.schedules().get(EntityNum.fromScheduleId(id));
+		final var schedule = stateChildren.schedules().byId().get(
+				new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
 		if (schedule == null) {
 			return SafeLookupResult.failure(MISSING_SCHEDULE);
 		} else {

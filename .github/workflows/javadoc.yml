@@ -2,7 +2,7 @@ name: JavaDoc
 
 on:
   pull_request:
-    branches: [ master, release/**, eth-tx-interop ]
+    branches: [ master, release/** ]
   push:
     branches: [ master, release/** ]
     tags: [ v* ]

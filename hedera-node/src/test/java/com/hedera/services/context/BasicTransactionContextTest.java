@@ -149,6 +149,8 @@ class BasicTransactionContextTest {
 	@Mock
 	private SignedTxnAccessor accessor;
 	@Mock
+	private SignedTxnAccessor accessor2;
+	@Mock
 	private SwirldsTxnAccessor swirldsTxnAccessor;
 	@Mock
 	private TransactionBody txn;
@@ -184,6 +186,17 @@ class BasicTransactionContextTest {
 		subject.resetFor(accessor, now, memberId);
 
 		verify(narratedCharging).resetForTxn(accessor, memberId);
+	}
+
+	@Test
+	void throwIaeIfNoRecordedDeletionsOrDeletionNotRecorded() {
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		subject.recordBeneficiaryOfDeleted(124L, 356L);
+		subject.recordBeneficiaryOfDeleted(125L, 357L);
+		assertEquals(2, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		assertEquals(356L, subject.getBeneficiaryOfDeleted(124L));
 	}
 
 	@Test
@@ -267,6 +280,7 @@ class BasicTransactionContextTest {
 		subject.setTargetedContract(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.setAssessedCustomFees(Collections.emptyList());
+		subject.recordBeneficiaryOfDeleted(1L, 2L);
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -274,6 +288,8 @@ class BasicTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(1L));
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
 		// and:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
@@ -623,6 +639,13 @@ class BasicTransactionContextTest {
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void throwsOnMoreThanOneTrigger() {
+		subject.trigger(accessor);
+		subject.trigger(accessor);
+		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor2));
 	}
 
 	@Test

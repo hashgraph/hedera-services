@@ -34,8 +34,8 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.InProgressChildRecord;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -176,9 +176,11 @@ public class AutoCreationLogic {
 		change.setNewBalance(change.getAggregatedUnits());
 
 		final var sideEffects = new SideEffectsTracker();
-		final var newAccountId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
-		accountsLedger.create(newAccountId);
-		change.replaceAliasWith(newAccountId);
+		// tbd - this is not correct, syntheticCreation.getTransactionID().getAccountID() is always the default account id instance
+		// and it only works because the fields we extract from the account id here should always be 0
+		final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
+		accountsLedger.create(newId);
+		change.replaceAliasWith(newId);
 		JKey jKey = asFcKeyUnchecked(key);
 		final var customizer = new HederaAccountCustomizer()
 				.key(jKey)
@@ -188,15 +190,15 @@ public class AutoCreationLogic {
 				.isReceiverSigRequired(false)
 				.isSmartContract(false)
 				.alias(alias);
-		customizer.customize(newAccountId, accountsLedger);
-		sideEffects.trackAutoCreation(newAccountId, alias);
+		customizer.customize(newId, accountsLedger);
+		sideEffects.trackAutoCreation(newId, alias);
 		final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
 		childRecord.setFee(fee);
 		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		pendingCreations.add(inProgress);
-		/* If the transaction fails, we will get an opportunity to unlink this alias in reclaimPendingAliases() */
-		aliasManager.link(alias, EntityNum.fromAccountId(newAccountId));
-		aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newAccountId));
+		// If the transaction fails, we will get an opportunity to unlink this alias in reclaimPendingAliases()
+		aliasManager.link(alias, EntityNum.fromAccountId(newId));
+		aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
 		return Pair.of(OK, fee);
 	}

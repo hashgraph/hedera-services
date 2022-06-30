@@ -32,7 +32,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -42,6 +41,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
@@ -52,10 +52,10 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 	private static final int MAX_STACK_DEPTH = 1024;
 
 	protected static final Operation.OperationResult INVALID_RESPONSE = new OperationResult(
-			Optional.of(Gas.ZERO), Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
+			OptionalLong.of(0L), Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 	protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
 			new Operation.OperationResult(
-					Optional.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+					OptionalLong.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 
 	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
@@ -90,39 +90,37 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			return UNDERFLOW_RESPONSE;
 		}
 
-		final Gas cost = cost(frame);
-		final Optional<Gas> optionalCost = Optional.ofNullable(cost);
-		if (cost != null) {
-			if (frame.isStatic()) {
-				return haltWith(optionalCost, ILLEGAL_STATE_CHANGE);
-			} else if (frame.getRemainingGas().compareTo(cost) < 0) {
-				return new Operation.OperationResult(
-						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-			}
-			final Wei value = Wei.wrap(frame.getStackItem(0));
+		final long cost = cost(frame);
+		final OptionalLong optionalCost = OptionalLong.of(cost);
+		if (frame.isStatic()) {
+			return haltWith(optionalCost, ILLEGAL_STATE_CHANGE);
+		} else if (frame.getRemainingGas() < cost) {
+			return new Operation.OperationResult(
+					optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		}
+		final Wei value = Wei.wrap(frame.getStackItem(0));
 
-			final Address address = frame.getRecipientAddress();
-			final MutableAccount account = frame.getWorldUpdater().getAccount(address).getMutable();
+		final Address address = frame.getRecipientAddress();
+		final MutableAccount account = frame.getWorldUpdater().getAccount(address).getMutable();
 
-			frame.clearReturnData();
+		frame.clearReturnData();
 
-			if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
-				fail(frame);
-			} else {
-				spawnChildMessage(frame);
-			}
+		if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
+			fail(frame);
+		} else {
+			spawnChildMessage(frame);
 		}
 
 		return new Operation.OperationResult(optionalCost, Optional.empty());
 	}
 
-	static Operation.OperationResult haltWith(final Optional<Gas> optionalCost, final ExceptionalHaltReason reason) {
+	static Operation.OperationResult haltWith(final OptionalLong optionalCost, final ExceptionalHaltReason reason) {
 		return new Operation.OperationResult(optionalCost, Optional.of(reason));
 	}
 
 	protected abstract boolean isEnabled();
 
-	protected abstract Gas cost(final MessageFrame frame);
+	protected abstract long cost(final MessageFrame frame);
 
 	protected abstract Address targetContractAddress(MessageFrame frame);
 
@@ -136,7 +134,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 	private void spawnChildMessage(final MessageFrame frame) {
 		// memory cost needs to be calculated prior to memory expansion
-		final Gas cost = cost(frame);
+		final long cost = cost(frame);
 		frame.decrementRemainingGas(cost);
 
 		final Address address = frame.getRecipientAddress();
@@ -151,7 +149,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 		final Address contractAddress = targetContractAddress(frame);
 
-		final Gas childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
+		final long childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
 		frame.decrementRemainingGas(childGasStipend);
 
 		final MessageFrame childFrame =
@@ -168,7 +166,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 						.sender(frame.getRecipientAddress())
 						.value(value)
 						.apparentValue(value)
-						.code(new Code(inputData, Hash.EMPTY))
+						.code(Code.createLegacyCode(inputData, Hash.EMPTY))
 						.blockValues(frame.getBlockValues())
 						.depth(frame.getMessageStackDepth() + 1)
 						.completer(child -> complete(frame, child))

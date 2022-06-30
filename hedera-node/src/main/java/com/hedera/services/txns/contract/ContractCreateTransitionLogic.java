@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -34,6 +35,7 @@ import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -41,24 +43,30 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -68,9 +76,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
 @Singleton
 public class ContractCreateTransitionLogic implements TransitionLogic {
@@ -87,6 +98,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final NodeInfo nodeInfo;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	@Inject
@@ -102,7 +115,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final CreateEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
 			final SigImpactHistorian sigImpactHistorian,
-			final SyntheticTxnFactory syntheticTxnFactory
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
@@ -116,21 +131,25 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
+		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
-		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
+		final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
+		doStateTransitionOperation(contractCreateTxn, senderId, false,null, 0,null);
 	}
 
 	public void doStateTransitionOperation(
 			final TransactionBody contractCreateTxn,
 			final Id senderId,
-			final boolean incrementCounter,
-			final boolean createSyntheticRecord
+			final boolean createSyntheticRecord,
+			final Id relayerId,
+			final long maxGasAllowance,
+			final BigInteger userOfferedGasPrice
 	) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
@@ -155,22 +174,36 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
 
 		// --- Do the business logic ---
-		if (incrementCounter) {
-			sender.incrementEthereumNonce();
-			accountStore.commitAccount(sender);
-		}
-
 		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+		if (!properties.areContractAutoAssociationsEnabled()) {
+			hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+		}
 		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {
-			result = evmTxProcessor.execute(
-					sender,
-					newContractAddress,
-					op.getGas(),
-					op.getInitialBalance(),
-					codeWithConstructorArgs,
-					consensusTime);
+			if (relayerId == null) {
+				result = evmTxProcessor.execute(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime);
+			} else {
+				sender.incrementEthereumNonce();
+				accountStore.commitAccount(sender);
+
+				result = evmTxProcessor.executeEth(
+						sender,
+						newContractAddress,
+						op.getGas(),
+						op.getInitialBalance(),
+						codeWithConstructorArgs,
+						consensusTime,
+						accountStore.loadAccount(relayerId),
+						userOfferedGasPrice,
+						maxGasAllowance);
+			}
 		} finally {
 			worldState.resetHapiSenderCustomizer();
 		}
@@ -226,12 +259,28 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-		if (op.getGas() > properties.maxGas()) {
+		if (op.getGas() > properties.maxGasPerSec()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		if (properties.areTokenAssociationsLimited() &&
 				op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+		}
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
+		final var stakedIdCase = op.getStakedIdCase().name();
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!properties.isStakingEnabled() && (electsStakingId || op.getDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId && !validator.isValidStakedId(
+				stakedIdCase,
+				op.getStakedAccountId(),
+				op.getStakedNodeId(),
+				accounts.get(),
+				nodeInfo)) {
+			return INVALID_STAKING_ID;
 		}
 		return validator.memoCheck(op.getMemo());
 	}

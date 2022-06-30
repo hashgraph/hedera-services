@@ -25,7 +25,9 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -38,6 +40,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -59,6 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -104,6 +108,10 @@ class ContractCallLocalResourceUsageTest {
 	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private BlockMetaSource blockMetaSource;
+	@Mock
+	private StaticBlockMetaProvider blockMetaProvider;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -115,7 +123,7 @@ class ContractCallLocalResourceUsageTest {
 	private void setup() {
 		subject = new ContractCallLocalResourceUsage(
 				usageEstimator, properties, nodeLocalProperties,
-				accountStore, evmTxProcessor, ids, validator, aliasManager);
+				accountStore, evmTxProcessor, ids, validator, aliasManager, blockMetaProvider);
 	}
 
 	@Test
@@ -149,6 +157,7 @@ class ContractCallLocalResourceUsageTest {
 				params.size(),
 				estimateResponse.getFunctionResult(),
 				ANSWER_ONLY)).willReturn(nonGasUsage);
+		given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
 		final var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
 		final var actualUsage2 = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);

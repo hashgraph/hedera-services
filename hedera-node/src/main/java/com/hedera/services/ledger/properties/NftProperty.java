@@ -70,5 +70,5 @@ public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
 		public Function<MerkleUniqueToken, Object> getter() {
 			return MerkleUniqueToken::getSpender;
 		}
-	}
+	},
 }

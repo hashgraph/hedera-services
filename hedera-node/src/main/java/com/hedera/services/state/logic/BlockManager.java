@@ -130,7 +130,7 @@ public class BlockManager {
 	 * @param gasLimit the gas limit of the operation
 	 * @return the block metadata for the operation
 	 */
-	public HederaBlockValues computeProvisionalBlockValues(@NotNull final Instant now, final long gasLimit) {
+	public HederaBlockValues computeBlockValues(@NotNull final Instant now, final long gasLimit) {
 		ensureProvisionalBlockMeta(now);
 		if (provisionalBlockNo < 0) {
 			// Must be after 0.26 upgrade, but before the first block re-numbering
@@ -151,7 +151,7 @@ public class BlockManager {
 	 * @param blockNo a block number
 	 * @return the expected hash of that block
 	 */
-	public org.hyperledger.besu.datatypes.Hash getProvisionalBlockHash(final long blockNo) {
+	public org.hyperledger.besu.datatypes.Hash getBlockHash(final long blockNo) {
 		assertProvisionalValuesAreComputed();
 		// We don't update the network context state with the hash of a just-finished block until right
 		// before we stream the record that will cause mirror nodes to _also_ finish that block; so we
@@ -174,7 +174,7 @@ public class BlockManager {
 		provisionalBlockIsNew = willCreateNewBlock(now);
 		if (provisionalBlockIsNew) {
 			try {
-				provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().getLatestBlockHash());
+				provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().currentRunningHash());
 			} catch (InterruptedException e) {
 				provisionalBlockIsNew = false;
 				// This is almost certainly fatal, hence the ERROR log level

@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -51,6 +52,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -79,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -213,6 +216,24 @@ class UsageBasedFeeCalculatorTest {
 
 		// expect:
 		assertEquals(-(gas * expectedGasPrice + sent), subject.estimatedNonFeePayerAdjustments(accessor, at));
+	}
+
+	@Test
+	void estimatesEthereumTransactionChanges() throws Throwable {
+		// setup:
+		long gas = 1_234L, sent = 5_432L;
+		signedTxn = newSignedContractCall()
+				.payer(asAccountString(payer))
+				.gas(gas)
+				.sending(sent)
+				.txnValidStart(at)
+				.get();
+		accessor = Mockito.spy(new SignedTxnAccessor(signedTxn));
+
+		given(accessor.getFunction()).willReturn(EthereumTransaction);
+
+		// expect:
+		assertEquals(0, subject.estimatedNonFeePayerAdjustments(accessor, at));
 	}
 
 	@Test
@@ -578,7 +599,7 @@ class UsageBasedFeeCalculatorTest {
 
 	private class NestedMultiplierSource implements FeeMultiplierSource {
 		@Override
-		public long currentMultiplier() {
+		public long currentMultiplier(final TxnAccessor accessor) {
 			return suggestedMultiplier.get();
 		}
 
@@ -588,7 +609,7 @@ class UsageBasedFeeCalculatorTest {
 		}
 
 		@Override
-		public void updateMultiplier(Instant consensusNow) {
+		public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
 			/* No-op. */
 		}
 

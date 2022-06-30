@@ -20,12 +20,22 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -35,14 +45,21 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -56,6 +73,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.tuweni.bytes.Bytes;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
@@ -63,6 +81,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
@@ -82,26 +101,14 @@ public class SyntheticTxnFactory {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public TransactionBody.Builder synthCryptoTransfer(final CurrencyAdjustments adjustments) {
-		final var opBuilder = CryptoTransferTransactionBody.newBuilder();
-		final var nums = adjustments.getAccountNums();
-		final var changes = adjustments.getHbars();
-		for (int i = 0; i < nums.length; i++) {
-			opBuilder.getTransfersBuilder()
-					.addAccountAmounts(AccountAmount.newBuilder()
-							.setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
-							.setAmount(changes[i]));
-		}
-		return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
-	}
-
 	/**
 	 * Given an instance of {@link EthTxData} populated from a raw Ethereum transaction, synthesizes a
 	 * {@link TransactionBody} for use during precheck. In the case of a {@code ContractCreate}, if the
 	 * call data is missing, replaces it with dummy initcode (it is not the job of precheck to look up
 	 * initcode from a file).
 	 *
-	 * @param ethTxData the Ethereum transaction data available in precheck
+	 * @param ethTxData
+	 * 		the Ethereum transaction data available in precheck
 	 * @return the pre-checkable HAPI transaction
 	 */
 	public TransactionBody synthPrecheckContractOpFromEth(EthTxData ethTxData) {
@@ -120,7 +127,8 @@ public class SyntheticTxnFactory {
 	 * synthesize a builder for an appropriate HAPI TransactionBody---ContractCall if the given
 	 * {@code ethTxData} has a "to" address, and ContractCreate otherwise.
 	 *
-	 * @param ethTxData the populated Ethereum transaction data
+	 * @param ethTxData
+	 * 		the populated Ethereum transaction data
 	 * @return an optional of the HAPI transaction builder if it could be synthesized
 	 */
 	public Optional<TransactionBody.Builder> synthContractOpFromEth(final EthTxData ethTxData) {
@@ -133,6 +141,19 @@ public class SyntheticTxnFactory {
 			}
 			return Optional.of(synthCreateOpFromEth(ethTxData));
 		}
+	}
+
+	public TransactionBody.Builder synthCryptoTransfer(final CurrencyAdjustments adjustments) {
+		final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+		final var nums = adjustments.getAccountNums();
+		final var changes = adjustments.getHbars();
+		for (int i = 0; i < nums.length; i++) {
+			opBuilder.getTransfersBuilder()
+					.addAccountAmounts(AccountAmount.newBuilder()
+							.setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
+							.setAmount(changes[i]));
+		}
+		return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
 	}
 
 	public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
@@ -153,7 +174,7 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry,
-			final AccountID payerForAutoRenew) {
+														  final AccountID payerForAutoRenew) {
 		final var op = ContractUpdateTransactionBody.newBuilder()
 				.setContractID(contractNum.toGrpcContractID())
 				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
@@ -216,11 +237,68 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
+	public TransactionBody.Builder createFungibleApproval(final ApproveWrapper approveWrapper) {
+		return createNonfungibleApproval(approveWrapper, null, null);
+	}
+
+	public TransactionBody.Builder createNonfungibleApproval(
+			final ApproveWrapper approveWrapper,
+			@Nullable final EntityId ownerId,
+			@Nullable final EntityId operatorId
+	) {
+		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+		if (approveWrapper.isFungible()) {
+			builder.addTokenAllowances(TokenAllowance.newBuilder()
+					.setTokenId(approveWrapper.token())
+					.setSpender(approveWrapper.spender())
+					.setAmount(approveWrapper.amount().longValue())
+					.build());
+		} else {
+			final var op = NftAllowance.newBuilder()
+							.setTokenId(approveWrapper.token())
+							.setSpender(approveWrapper.spender())
+							.addSerialNumbers(approveWrapper.serialNumber().longValue());
+			if (ownerId != null) {
+				op.setOwner(ownerId.toGrpcAccountId());
+				if (!ownerId.equals(operatorId)) {
+					op.setDelegatingSpender(Objects.requireNonNull(operatorId).toGrpcAccountId());
+				}
+			}
+			builder.addNftAllowances(op.build());
+		}
+		return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
+	}
+
+	public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final EntityId owner) {
+		final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
+		builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder().setOwner(owner.toGrpcAccountId())
+						.setTokenId(approveWrapper.token())
+						.addAllSerialNumbers(List.of(approveWrapper.serialNumber().longValue()))
+						.build()))
+				.build();
+		return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
+	}
+
+	public TransactionBody.Builder createApproveAllowanceForAllNFT(
+			final SetApprovalForAllWrapper setApprovalForAllWrapper,
+			final TokenID tokenID
+	) {
+		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+
+		builder.addNftAllowances(NftAllowance.newBuilder()
+				.setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
+				.setTokenId(tokenID)
+				.setSpender(setApprovalForAllWrapper.to())
+				.build());
+
+		return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
+	}
+
 	/**
 	 * Given a list of {@link TokenTransferWrapper}s, where each wrapper gives changes scoped to a particular
 	 * {@link TokenID}, returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
 	 * consolidates the wrappers.
-	 *
+	 * <p>
 	 * If two wrappers both refer to the same token, their transfer lists are merged as specified in the
 	 * {@link SyntheticTxnFactory#mergeTokenTransfers(TokenTransferList.Builder, TokenTransferList.Builder)}
 	 * helper method.
@@ -321,31 +399,68 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
 	}
 
+	public TransactionBody.Builder nodeStakeUpdate(
+			final Timestamp stakingPeriodEnd,
+			final List<NodeStake> nodeStakes
+	) {
+		final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
+				.setEndOfStakingPeriod(stakingPeriodEnd)
+				.addAllNodeStake(nodeStakes)
+				.build();
+
+		return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
+	}
+
 	public static class HbarTransfer {
 		protected final long amount;
 		protected final AccountID sender;
 		protected final AccountID receiver;
+		protected final boolean isApproval;
 
-		public HbarTransfer(long amount, AccountID sender, AccountID receiver) {
+		public HbarTransfer(long amount, boolean isApproval, AccountID sender, AccountID receiver) {
 			this.amount = amount;
+			this.isApproval = isApproval;
 			this.sender = sender;
 			this.receiver = receiver;
 		}
 
 		public AccountAmount senderAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build();
+			return AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).setIsApproval(isApproval).build();
 		}
 
 		public AccountAmount receiverAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build();
+			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).setIsApproval(
+					isApproval).build();
+		}
+
+		public AccountID sender() {
+			return sender;
+		}
+
+		public AccountID receiver() {
+			return receiver;
+		}
+
+		public long amount() {
+			return amount;
+		}
+
+		public boolean isApproval() {
+			return isApproval;
 		}
 	}
 
 	public static class FungibleTokenTransfer extends HbarTransfer {
 		private final TokenID denomination;
 
-		public FungibleTokenTransfer(long amount, TokenID denomination, AccountID sender, AccountID receiver) {
-			super(amount, sender, receiver);
+		public FungibleTokenTransfer(
+				long amount,
+				boolean isApproval,
+				TokenID denomination,
+				AccountID sender,
+				AccountID receiver
+		) {
+			super(amount, isApproval, sender, receiver);
 			this.denomination = denomination;
 		}
 
@@ -356,15 +471,42 @@ public class SyntheticTxnFactory {
 
 	public static class NftExchange {
 		private final long serialNo;
+
 		private final TokenID tokenType;
 		private final AccountID sender;
 		private final AccountID receiver;
+		private final boolean isApproval;
 
-		public NftExchange(long serialNo, TokenID tokenType, AccountID sender, AccountID receiver) {
+		public NftExchange(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver
+		) {
+			this(serialNo, tokenType, sender, receiver, false);
+		}
+
+		public static NftExchange fromApproval(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver
+		) {
+			return new NftExchange(serialNo, tokenType, sender, receiver, true);
+		}
+
+		private NftExchange(
+				final long serialNo,
+				final TokenID tokenType,
+				final AccountID sender,
+				final AccountID receiver,
+				final boolean isApproval
+		) {
 			this.serialNo = serialNo;
 			this.tokenType = tokenType;
 			this.sender = sender;
 			this.receiver = receiver;
+			this.isApproval = isApproval;
 		}
 
 		public NftTransfer asGrpc() {
@@ -372,18 +514,27 @@ public class SyntheticTxnFactory {
 					.setSenderAccountID(sender)
 					.setReceiverAccountID(receiver)
 					.setSerialNumber(serialNo)
+					.setIsApproval(isApproval)
 					.build();
 		}
 
 		public TokenID getTokenType() {
 			return tokenType;
 		}
+
+		public long getSerialNo() {
+			return serialNo;
+		}
+
+		public boolean isApproval() {
+			return isApproval;
+		}
 	}
 
 	/**
 	 * Merges the fungible and non-fungible transfers from one token transfer list into another. (Of course,
 	 * at most one of these merges can be sensible; a token cannot be both fungible _and_ non-fungible.)
-	 *
+	 * <p>
 	 * Fungible transfers are "merged" by summing up all the amount fields for each unique account id that
 	 * appears in either list.  NFT exchanges are "merged" by checking that each exchange from either list
 	 * appears at most once.

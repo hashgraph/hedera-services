@@ -7,7 +7,7 @@ contract Whitelister {
         whitelist[_toBePermitted] = true;
     }
 
-    function isWhitelisted() public returns(bool) {
-        return whitelist[address(msg.sender)];
+    function isWhitelisted(address whitelister) public returns(bool) {
+        return whitelist[whitelister];
     }
 }

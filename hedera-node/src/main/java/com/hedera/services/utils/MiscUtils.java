@@ -22,12 +22,14 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -40,11 +42,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
@@ -62,6 +65,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -150,6 +154,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -276,6 +281,7 @@ public final class MiscUtils {
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
+	static final String RANDOM_GENERATE_METRIC = "randomGenerate";
 
 	private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -352,6 +358,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
 		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+		BASE_STAT_NAMES.put(RandomGenerate, RANDOM_GENERATE_METRIC);
 		/* Queries */
 		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
 		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -493,6 +500,13 @@ public final class MiscUtils {
 				.build();
 	}
 
+	public static Timestamp asTimestamp(final RichInstant when) {
+		return Timestamp.newBuilder()
+				.setSeconds(when.getSeconds())
+				.setNanos(when.getNanos())
+				.build();
+	}
+
 	public static Instant timestampToInstant(final Timestamp timestamp) {
 		return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
@@ -570,28 +584,6 @@ public final class MiscUtils {
 		} else {
 			return Instant.ofEpochSecond(oldSecs, newNanos);
 		}
-	}
-
-	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
-		if (txn.hasCryptoTransfer()) {
-			return CryptoTransfer;
-		}
-		if (txn.hasConsensusSubmitMessage()) {
-			return ConsensusSubmitMessage;
-		}
-		if (txn.hasTokenMint()) {
-			return TokenMint;
-		}
-		if (txn.hasTokenBurn()) {
-			return TokenBurn;
-		}
-		if (txn.hasCryptoApproveAllowance()) {
-			return CryptoApproveAllowance;
-		}
-		if (txn.hasCryptoDeleteAllowance()) {
-			return CryptoDeleteAllowance;
-		}
-		return NONE;
 	}
 
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
@@ -724,6 +716,9 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
+		if (txn.hasRandomGenerate()) {
+			return RandomGenerate;
+		}
 		throw new UnknownHederaFunctionality();
 	}
 
@@ -749,10 +744,15 @@ public final class MiscUtils {
 				.collect(toSet());
 	}
 
-	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn) {
+	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn,
+			final TransactionID scheduledTxnTransactionId) {
 		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
-				.setMemo(scheduledTxn.getMemo());
+				.setMemo(scheduledTxn.getMemo())
+				.setTransactionID(TransactionID.newBuilder()
+						.mergeFrom(scheduledTxnTransactionId)
+						.setScheduled(true)
+						.build());
 		if (scheduledTxn.hasContractCall()) {
 			ordinary.setContractCall(scheduledTxn.getContractCall());
 		} else if (scheduledTxn.hasContractCreateInstance()) {
@@ -821,8 +821,29 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
+		} else if (scheduledTxn.hasRandomGenerate()) {
+			ordinary.setRandomGenerate(scheduledTxn.getRandomGenerate());
 		}
 		return ordinary.build();
+	}
+
+
+	/**
+	 * @param functionality
+	 * 		any {@link HederaFunctionality}
+	 * @return true if the functionality could possibly be allowed to be scheduled.
+	 * 		Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
+	 * 		The scheduling.whitelist configuration property is separate from this and provides the final list
+	 * 		of functionality that can be scheduled.
+	 */
+	public static boolean isSchedulable(final HederaFunctionality functionality) {
+		if (functionality == null) {
+			return false;
+		}
+		return switch (functionality) {
+			case ScheduleCreate, ScheduleSign -> false;
+			default -> !QUERY_FUNCTIONS.contains(functionality);
+		};
 	}
 
 	/**
@@ -877,6 +898,17 @@ public final class MiscUtils {
 	 */
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
+	}
+
+	public static long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function,
+			@Nullable Supplier<EthTxData> getEthData) {
+		return switch (function) {
+			case ContractCreate -> txn.getContractCreateInstance().getGas();
+			case ContractCall -> txn.getContractCall().getGas();
+			case EthereumTransaction -> getEthData != null ? getEthData.get().gasLimit() :
+					EthTxData.populateEthTxData(txn.getEthereumTransaction().getEthereumData().toByteArray()).gasLimit();
+			default -> 0L;
+		};
 	}
 
 	/**

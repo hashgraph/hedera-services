@@ -70,7 +70,7 @@ class NetworkUtilizationTest {
 		subject.trackUserTxn(accessor, consensusNow);
 
 		verify(handleThrottling).shouldThrottleTxn(accessor);
-		verify(feeMultiplierSource).updateMultiplier(consensusNow);
+		verify(feeMultiplierSource).updateMultiplier(accessor, consensusNow);
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class NetworkUtilizationTest {
 		subject.trackFeePayments(consensusNow);
 
 		verify(handleThrottling).shouldThrottleTxn(STAND_IN_CRYPTO_TRANSFER);
-		verify(feeMultiplierSource).updateMultiplier(consensusNow);
+		verify(feeMultiplierSource).updateMultiplier(STAND_IN_CRYPTO_TRANSFER, consensusNow);
 	}
 
 

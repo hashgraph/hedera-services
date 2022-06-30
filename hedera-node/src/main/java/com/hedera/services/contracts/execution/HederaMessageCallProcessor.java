@@ -24,7 +24,6 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -75,20 +74,21 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			final MessageFrame frame,
 			final OperationTracer operationTracer
 	) {
-		final Gas gasRequirement;
+		final long gasRequirement;
 		final Bytes output;
 		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
 			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-			if (frame.getState() == REVERT)
+			if (frame.getState() == REVERT) {
 				return;
+			}
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {
-			output = contract.compute(frame.getInputData(), frame);
+			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
 			gasRequirement = contract.gasRequirement(frame.getInputData());
 		}
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-		if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
+		if (frame.getRemainingGas() < gasRequirement) {
 			frame.decrementRemainingGas(frame.getRemainingGas());
 			frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
 			frame.setState(EXCEPTIONAL_HALT);

@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractStorageListRemoval;
+import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -83,15 +83,15 @@ class ContractGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(ContractStorageListRemoval.class))).willReturn(interKey);
+				any(ContractStorageListMutation.class))).willReturn(interKey);
 		given(removalFacilitation.removeNext(
 				eq(interKey),
 				eq(interKey),
-				any(ContractStorageListRemoval.class))).willReturn(tailKey);
+				any(ContractStorageListMutation.class))).willReturn(tailKey);
 		given(removalFacilitation.removeNext(
 				eq(tailKey),
 				eq(tailKey),
-				any(ContractStorageListRemoval.class))).willReturn(null);
+				any(ContractStorageListMutation.class))).willReturn(null);
 
 		final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 
@@ -105,7 +105,7 @@ class ContractGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(ContractStorageListRemoval.class))).willReturn(interKey);
+				any(ContractStorageListMutation.class))).willReturn(interKey);
 
 		final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 

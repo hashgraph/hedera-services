@@ -35,17 +35,15 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
-	private static final String OPERATIONS_PAYER = "payer";
 	private static final String ACCOUNT1 = "acc1";
 	private static final String CONTRACT = "GameItems";
 
@@ -61,50 +59,45 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 	}
 
 	private HapiApiSpec erc1155() {
-		final var PAYER_KEY = "payerKey";
-		final var FILE_KEY_LIST = "fileKeyList";
-
 		return defaultHapiSpec("ERC-1155")
 				.given(
-						newKeyNamed(PAYER_KEY),
-						newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
 						cryptoCreate(ACCOUNT1),
-						cryptoCreate(OPERATIONS_PAYER).balance(ONE_MILLION_HBARS).key(PAYER_KEY),
 						uploadInitCode(CONTRACT)
 				)
 				.when()
 				.then(
-						contractCreate(CONTRACT).via("contractCreate").payingWith(OPERATIONS_PAYER),
-						getTxnRecord("contractCreate").logged(), // 121618 gas
-						getAccountBalance(OPERATIONS_PAYER).logged(), // started with 1M hbars
+						contractCreate(CONTRACT).via("contractCreate").payingWith(DEFAULT_CONTRACT_SENDER),
+						getTxnRecord("contractCreate").logged(),
+						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
 						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
-						getAccountInfo(OPERATIONS_PAYER).savingSnapshot(OPERATIONS_PAYER + "Info"),
+						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
 						withOpContext((spec, log) -> {
 							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
-							final var operationsPayerAddress = spec.registry().getAccountInfo(OPERATIONS_PAYER + "Info").getContractAccountID();
+							final var senderAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID();
+
 							final var ops = new ArrayList<HapiSpecOperation>();
 
 							/* approve for other accounts */
 							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
-									accountOneAddress, true
+									unhex(accountOneAddress), true
 							)
 									.via("acc1ApproveCall")
-									.payingWith(OPERATIONS_PAYER)
+									.payingWith(DEFAULT_CONTRACT_SENDER)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(approveCall);
 
 							/* mint to the contract owner */
 							final var mintCall = contractCall(CONTRACT, "mintToken",
-									0, 10, operationsPayerAddress
+									0, 10, unhex(senderAddress)
 							)
 									.via("contractMintCall")
-									.payingWith(OPERATIONS_PAYER)
+									.payingWith(DEFAULT_CONTRACT_SENDER)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(mintCall);
 
 							/* transfer from - account to account */
 							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
-									operationsPayerAddress, accountOneAddress,
+									senderAddress, accountOneAddress,
 									0, // token id 
 									1, // amount 
 									"0x0"

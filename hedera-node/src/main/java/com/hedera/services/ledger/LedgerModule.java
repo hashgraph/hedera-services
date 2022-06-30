@@ -21,7 +21,6 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokens;
@@ -63,7 +62,6 @@ public interface LedgerModule {
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final RecordsHistorian recordsHistorian,
-			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final AutoCreationLogic autoCreationLogic,
 			final TransferLogic transferLogic
@@ -75,7 +73,6 @@ public interface LedgerModule {
 				validator,
 				sideEffectsTracker,
 				recordsHistorian,
-				dynamicProperties,
 				accountsLedger,
 				transferLogic,
 				autoCreationLogic);

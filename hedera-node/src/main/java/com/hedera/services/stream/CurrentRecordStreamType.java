@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
@@ -34,12 +35,14 @@ public class CurrentRecordStreamType implements RecordStreamType {
 	private static final Logger log = LogManager.getLogger(CurrentRecordStreamType.class);
 
 	private final SemanticVersions semanticVersions;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private int[] fileHeader = null;
 
 	@Inject
-	public CurrentRecordStreamType(final SemanticVersions semanticVersions) {
+	public CurrentRecordStreamType(final SemanticVersions semanticVersions, final GlobalDynamicProperties dynamicProperties) {
 		this.semanticVersions = semanticVersions;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -51,7 +54,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 				log.error("Failed to load HAPI proto versions, record stream files may be unusable");
 			}
 			fileHeader = new int[] {
-					RECORD_VERSION,
+					dynamicProperties.recordFileVersion(),
 					protoSemVer.getMajor(),
 					protoSemVer.getMinor(),
 					protoSemVer.getPatch()
@@ -59,5 +62,10 @@ public class CurrentRecordStreamType implements RecordStreamType {
 			log.info("Record stream file header is {}", () -> Arrays.toString(fileHeader));
 		}
 		return fileHeader;
+	}
+
+	@Override
+	public byte[] getSigFileHeader() {
+		return new byte[] { (byte) dynamicProperties.recordSignatureFileVersion()};
 	}
 }

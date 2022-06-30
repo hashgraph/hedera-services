@@ -22,7 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -175,6 +175,23 @@ class TransactionalLedgerTest {
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
 		verify(backingTestAccounts).put(1L, expectedCommit);
 		assertTrue(testLedger.getCreatedKeys().isEmpty());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void committingUsesProvidedFinisherIfPresent() {
+		setupInterceptedTestLedger();
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things);
+		testLedger.commit();
+
+		verify(testInterceptor).finish(eq(0), any(TestAccount.class));
+		verify(testInterceptor).finish(eq(1), any(TestAccount.class));
 	}
 
 	@Test
@@ -389,7 +406,7 @@ class TransactionalLedgerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void recoversFromChangeSetDescriptionProblem() {
-		final CommitInterceptor<Long,  TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
+		final CommitInterceptor<Long, TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
 		willThrow(IllegalStateException.class).given(unhappy).preview(any());
 
 		setupTestLedger();
@@ -455,7 +472,7 @@ class TransactionalLedgerTest {
 
 		testLedger.begin();
 
-		assertThrows(MissingAccountException.class, () -> testLedger.set(0L, OBJ, things[0]));
+		assertThrows(MissingEntityException.class, () -> testLedger.set(0L, OBJ, things[0]));
 	}
 
 	@Test
@@ -774,6 +791,8 @@ class TransactionalLedgerTest {
 
 	private void setupInterceptedAccountsLedger() {
 		setupAccountsLedger();
+
+
 		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker());
 		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}

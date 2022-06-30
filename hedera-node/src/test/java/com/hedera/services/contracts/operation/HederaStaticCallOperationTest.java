@@ -28,7 +28,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -46,6 +45,7 @@ import java.util.function.BiPredicate;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -65,16 +65,13 @@ class HederaStaticCallOperationTest {
 	@Mock
 	private Account acc;
 	@Mock
-	private Address accountAddr;
-	@Mock
-	private Gas cost;
-	@Mock
 	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
 	@Mock
 	private Map<String, PrecompiledContract> precompiledContractMap;
 
+	private final long cost = 100L;
 	private HederaStaticCallOperation subject;
 
 	@BeforeEach
@@ -87,7 +84,7 @@ class HederaStaticCallOperationTest {
 		commonSetup(evmMsgFrame, worldUpdater, acc);
 		given(worldUpdater.get(any())).willReturn(null);
 		given(calc.callOperationGasCost(
-				any(), any(), anyLong(),
+				any(), anyLong(), anyLong(),
 				anyLong(), anyLong(), anyLong(),
 				any(), any(), any())
 		).willReturn(cost);
@@ -102,14 +99,15 @@ class HederaStaticCallOperationTest {
 		var opRes = subject.execute(evmMsgFrame, evm);
 
 		assertEquals(opRes.getHaltReason(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		assertEquals(opRes.getGasCost().get(), cost);
+		assertTrue(opRes.getGasCost().isPresent());
+		assertEquals(opRes.getGasCost().getAsLong(), cost);
 	}
 
 	@Test
 	void executesAsExpected() {
 		commonSetup(evmMsgFrame, worldUpdater, acc);
 		given(calc.callOperationGasCost(
-				any(), any(), anyLong(),
+				any(), anyLong(), anyLong(),
 				anyLong(), anyLong(), anyLong(),
 				any(), any(), any())
 		).willReturn(cost);
@@ -122,9 +120,9 @@ class HederaStaticCallOperationTest {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
-		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
+		given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
-		given(acc.getAddress()).willReturn(accountAddr);
+		given(acc.getAddress()).willReturn(Address.ZERO);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
@@ -132,6 +130,7 @@ class HederaStaticCallOperationTest {
 		
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
-		assertEquals(opRes.getGasCost().get(), cost);
+		assertTrue(opRes.getGasCost().isPresent());
+		assertEquals(opRes.getGasCost().getAsLong(), cost);
 	}
 }

@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
@@ -34,14 +33,17 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;
 
 public class HapiSpecSetup {
@@ -80,7 +82,7 @@ public class HapiSpecSetup {
 	public static HapiSpecSetup getDefaultInstance() {
 		return DEFAULT_INSTANCE;
 	}
-	private final HapiPropertySource props;
+	private HapiPropertySource props;
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
@@ -88,6 +90,18 @@ public class HapiSpecSetup {
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
+	}
+
+	/**
+	 * Add new properties that would merge with existing ones, if a property already
+	 * exist then override it with new value
+	 * @param props
+	 * 		A map of new properties
+	 */
+	public void addOverrides(final Map<String, Object> props) {
+		this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
+		System.out.println("addOverrides = " + this.props);
+
 	}
 
 	public FileID addressBookId() {
@@ -150,7 +164,7 @@ public class HapiSpecSetup {
 		return props.getLong("default.contract.balance.tinyBars");
 	}
 	public String defaultContractPath() {
-		return ContractResources.bytecodePath(props.get("default.contract.bytecode"));
+		return bytecodePath(props.get("default.contract.bytecode"));
 	}
 	public long defaultCreateGas() {
 		return props.getLong("default.create.gas");
@@ -352,6 +366,10 @@ public class HapiSpecSetup {
 	public long statusWaitTimeoutMs() {
 		return props.getLong("status.wait.timeout.ms");
 	}
+	public AccountID nodeRewardAccount() { return asAccount("0.0.801"); }
+	public AccountID stakingRewardAccount() { return asAccount("0.0.800"); }
+	public String nodeRewardAccountName() { return "NODE_REWARD"; }
+	public String stakingRewardAccountName() { return "STAKING_REWARD"; }
 	public FileID throttleDefinitionsId() {
 		return props.getFile("throttle.definitions.id");
 	}

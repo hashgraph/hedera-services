@@ -183,6 +183,8 @@ import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleLongTermSignSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RunTransfers;
@@ -308,13 +310,13 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part2")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuite(DelegatePrecompileSuite::new),
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
 				extractSpecsFromSuite(DynamicGasCostSuite::new),
 				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -322,22 +324,11 @@ class E2EPackageRunner {
 	@Tag("contract.precompile.part2.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2Eth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
-		);
-	}
-
-	@Tag("contract")
-	@Tag("contract.precompile")
-	@Tag("contract.precompile.part2.eth.failing")
-	@TestFactory
-	Collection<DynamicContainer> contractPrecompile2EthFailing() {
-		return List.of(
-				extractSpecsFromSuiteForEth(DynamicGasCostSuite::new),
-				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -352,14 +343,14 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.openzeppelin.eth.failing")
+	@Tag("contract.openzeppelin.eth")
 	@TestFactory
-	Collection<DynamicContainer> contractOpenZeppelinEthFailing() {
-		return List.of(
+	Collection<DynamicContainer> contractOpenZeppelinEth() {
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
 				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -406,7 +397,7 @@ class E2EPackageRunner {
 	@Tag("contract.opcodes.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpcodesEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallOperationSuite::new),
@@ -419,7 +410,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
 				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
 				extractSpecsFromSuiteForEth(SStoreSuite::new)
-		);
+		});
 	}
 
 	@Tag("contract")
@@ -442,24 +433,16 @@ class E2EPackageRunner {
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
-		return List.of(
+		return List.of(new DynamicContainer[] {
 				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+				extractSpecsFromSuiteForEth(ContractCallSuite::new),
+				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+				extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
 				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
-				extractSpecsFromSuiteForEth(ContractUpdateSuite::new),
-				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
-				extractSpecsFromSuiteForEth(ContractDeleteSuite::new)
-		);
-	}
-
-	@Tag("contract")
-	@Tag("contract.hapi.eth.failing")
-	@TestFactory
-	Collection<DynamicContainer> contractHapiEthFailing() {
-		return List.of(
-				extractSpecsFromSuiteForEth(ContractCallSuite::new),
-				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new)
-		);
+				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
+				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
+		});
 	}
 
 	@Tag("contract")
@@ -732,7 +715,9 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ScheduleExecutionSpecs::new),
 				extractSpecsFromSuite(ScheduleExecutionSpecStateful::new),
 				extractSpecsFromSuite(ScheduleRecordSpecs::new),
-				extractSpecsFromSuite(ScheduleSignSpecs::new)
+				extractSpecsFromSuite(ScheduleSignSpecs::new),
+				extractSpecsFromSuite(ScheduleLongTermExecutionSpecs::new),
+				extractSpecsFromSuite(ScheduleLongTermSignSpecs::new)
 		);
 	}
 
@@ -806,7 +791,8 @@ class E2EPackageRunner {
 							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
 							s.run();
 							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
-									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, " +
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}," +
+											" " +
 											"while " +
 											"executing " +
 											"SPEC {" + s.getName() + ETH_SUFFIX + "}");

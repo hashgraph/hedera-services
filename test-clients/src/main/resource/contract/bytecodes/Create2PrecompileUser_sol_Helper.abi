@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"address","name":"token_type","type":"address"},{"internalType":"bytes[]","name":"metadata","type":"bytes[]"}],"name":"mintNft","outputs":[],"stateMutability":"nonpayable","type":"function"}]

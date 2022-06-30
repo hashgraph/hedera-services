@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.FastCopyable;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,21 +47,45 @@ public class MapValueListUtils {
 	 * @param <V> the type of value in the map
 	 * @return the new root of the list, for convenience
 	 */
-	public static @Nullable
-	<K, V extends FastCopyable> K inPlaceInsertAtMapValueListHead(
+	@NotNull
+	public static <K, V extends FastCopyable> K insertInPlaceAtMapValueListHead(
 			@NotNull final K key,
 			@NotNull final V value,
 			@Nullable final K rootKey,
 			@Nullable final V rootValue,
 			@NotNull final MapValueListMutation<K, V> listMutation
 	) {
-		listMutation.put(key, value);
-		if (rootKey != null) {
-			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
-			listMutation.updateNext(value, rootKey);
-			listMutation.updatePrev(nextValue, key);
-		}
-		return key;
+		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, true);
+	}
+
+	/**
+	 * Links the given key/value at the front of the linked list in the map represented by the given
+	 * {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of
+	 * the "adjacent" value(s) as needed. Uses {@link MapValueListMutation#getForModify(Object)}.
+	 *
+	 * @param key
+	 * 		the key of the new mapping
+	 * @param value
+	 * 		the value of the new mapping
+	 * @param rootKey
+	 * 		the root of the in-scope linked list
+	 * @param rootValue
+	 * 		the mutable value at the root of the in-scope linked list
+	 * @param listMutation
+	 * 		the facilitator representing the map that contains the linked list
+	 * @param <K> the type of key in the map
+	 * @param <V> the type of value in the map
+	 * @return the new root of the list, for convenience
+	 */
+	@NotNull
+	public static <K, V extends FastCopyable> K linkInPlaceAtMapValueListHead(
+			@NotNull final K key,
+			@NotNull final V value,
+			@Nullable final K rootKey,
+			@Nullable final V rootValue,
+			@NotNull final MapValueListMutation<K, V> listMutation
+	) {
+		return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, false);
 	}
 
 	/**
@@ -77,12 +102,12 @@ public class MapValueListUtils {
 	 * @return the new root key, for convenience
 	 */
 	public static @Nullable
-	<K, V extends FastCopyable> K inPlaceRemoveFromMapValueList(
+	<K, V extends FastCopyable> K removeInPlaceFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		return internalRemoveFromMapValueList(key, root, listRemoval, true);
+		return internalDetachFromMapValueList(key, root, listRemoval, true, true, false);
 	}
 
 	/**
@@ -99,26 +124,69 @@ public class MapValueListUtils {
 	 * @return the new root key, for convenience
 	 */
 	public static @Nullable
-	<K, V extends FastCopyable> K overwritingRemoveFromMapValueList(
+	<K, V extends FastCopyable> K removeFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		return internalRemoveFromMapValueList(key, root, listRemoval, false);
+		return internalDetachFromMapValueList(key, root, listRemoval, false, true, false);
 	}
 
-	private static @Nullable
-	<K, V extends FastCopyable> K internalRemoveFromMapValueList(
+	/**
+	 * Unlinks the value of the given key from its containing linked list in the map represented by the
+	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
+	 * "adjacent" value(s) as needed and resets the next and prev pointers of this value. Uses
+	 * {@link MapValueListMutation#getForModify(Object)}.
+	 *
+	 * @param key
+	 * 		the key of the mapping to unlink
+	 * @param root
+	 * 		the key of the root mapping in the affected node's list
+	 * @param listRemoval
+	 * 		the facilitator representing the underlying map
+	 * @return the new root key, for convenience
+	 */
+	public static @Nullable
+	<K, V extends FastCopyable> K unlinkInPlaceFromMapValueList(
+			@NotNull final K key,
+			@NotNull final K root,
+			@NotNull final MapValueListMutation<K, V> listRemoval
+	) {
+		return internalDetachFromMapValueList(key, root, listRemoval, true, false, true);
+	}
+
+	@VisibleForTesting
+	static @Nullable
+	<K, V extends FastCopyable> K internalDetachFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval,
-			final boolean useGetForModify
+			final boolean useGetForModify,
+			final boolean removeFromMap,
+			final boolean resetPointers
 	) {
 		final var value = Objects.requireNonNull(listRemoval.get(key), () -> "Missing key " + key);
-		listRemoval.remove(key);
+		if (removeFromMap) {
+			listRemoval.remove(key);
+		}
 
 		final var nextKey = listRemoval.next(value);
 		final var prevKey = listRemoval.prev(value);
+		if (resetPointers) {
+			final V mutableValue;
+			if (useGetForModify) {
+				mutableValue = listRemoval.getForModify(key);
+			} else {
+				// Reset the next and prev pointers on the node that we are unlinking
+				mutableValue = value.copy();
+			}
+			listRemoval.markAsTail(mutableValue);
+			listRemoval.markAsHead(mutableValue);
+			if (!useGetForModify) {
+				listRemoval.put(key, mutableValue);
+			}
+		}
+
 		if (nextKey != null) {
 			final var nextValue = useGetForModify
 					? Objects.requireNonNull(listRemoval.getForModify(nextKey), () -> "Missing next key " + nextKey)
@@ -150,6 +218,26 @@ public class MapValueListUtils {
 			}
 		}
 		return key.equals(root) ? nextKey : root;
+	}
+
+	@NotNull
+	private static <K, V extends FastCopyable> K internalAddFirstInPlaceForMapValueList(
+			@NotNull final K key,
+			@NotNull final V value,
+			@Nullable final K rootKey,
+			@Nullable final V rootValue,
+			@NotNull final MapValueListMutation<K, V> listMutation,
+			final boolean insertIntoMap
+	) {
+		if (insertIntoMap) {
+			listMutation.put(key, value);
+		}
+		if (rootKey != null) {
+			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
+			listMutation.updateNext(value, rootKey);
+			listMutation.updatePrev(nextValue, key);
+		}
+		return key;
 	}
 
 	private MapValueListUtils() {

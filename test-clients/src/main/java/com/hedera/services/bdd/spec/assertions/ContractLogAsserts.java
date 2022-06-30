@@ -22,12 +22,14 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import org.junit.jupiter.api.Assertions;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.copyOfRange;
@@ -52,6 +54,18 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 			AccountID expected = spec.registry().getAccountID(account);
 			AccountID actual = accountFromBytes(data, start);
 			Assertions.assertEquals(expected, actual, "Bad account in log data, starting at byte " + start);
+		});
+		return this;
+	}
+
+	public ContractLogAsserts ecdsaAliasStartingAt(String aliasKey, int start) {
+		registerProvider((spec, o) -> {
+			byte[] data = dataFrom(o);
+			System.out.println("Length of event: " + data.length);
+			ByteString alias = spec.registry().aliasIdFor(aliasKey).getAlias();
+			byte[] expected = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+			byte[] actual = Arrays.copyOfRange(data, start, start + 20);
+			Assertions.assertArrayEquals(expected, actual, "Bad alias in log data, starting at byte " + start);
 		});
 		return this;
 	}

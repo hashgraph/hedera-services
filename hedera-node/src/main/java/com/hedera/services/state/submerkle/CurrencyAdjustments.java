@@ -29,6 +29,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -120,13 +121,19 @@ public class CurrencyAdjustments implements SelfSerializable {
 	/* --- Helpers --- */
 	public TransferList toGrpc() {
 		var grpc = TransferList.newBuilder();
+		grpc.addAllAccountAmounts(asAccountAmountsList());
+		return grpc.build();
+	}
+
+	public List<AccountAmount> asAccountAmountsList() {
+		final List<AccountAmount> changes = new ArrayList<>();
 		for (int i = 0; i < hbars.length; i++) {
-			grpc.addAccountAmounts(AccountAmount.newBuilder()
+			changes.add(AccountAmount.newBuilder()
 					.setAmount(hbars[i])
 					.setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
 					.build());
 		}
-		return grpc.build();
+		return changes;
 	}
 
 	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {

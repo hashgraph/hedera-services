@@ -22,13 +22,16 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -38,6 +41,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -67,6 +72,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -86,15 +92,18 @@ import com.swirlds.virtualmap.VirtualValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -120,12 +129,13 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+	static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
-	public static final StateView EMPTY_VIEW = new StateView(null, null, null);
+	public static final StateView EMPTY_VIEW = new StateView(null, new MutableStateChildren(), null);
 
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
@@ -142,7 +152,7 @@ public class StateView {
 
 	public StateView(
 			@Nullable final ScheduleStore scheduleStore,
-			@Nullable final StateChildren stateChildren,
+			final StateChildren stateChildren,
 			final NetworkInfo networkInfo
 	) {
 		this.scheduleStore = scheduleStore;
@@ -305,7 +315,10 @@ public class StateView {
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
 					.setSigners(signatoriesList)
-					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
+					.setExpirationTime(Timestamp.newBuilder()
+							.setSeconds(schedule.calculatedExpirationTime().getSeconds())
+							.setNanos(schedule.calculatedExpirationTime().getNanos()))
+					.setWaitForExpiry(schedule.calculatedWaitForExpiry());
 			schedule.memo().ifPresent(info::setMemo);
 			if (schedule.isDeleted()) {
 				info.setDeletionTime(schedule.deletionTime());
@@ -425,7 +438,8 @@ public class StateView {
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
 			final AccountID id,
 			final AliasManager aliasManager,
-			final int maxTokensForAccountInfo
+			final int maxTokensForAccountInfo,
+			final RewardCalculator rewardCalculator
 	) {
 		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
@@ -447,7 +461,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asHexedEvmAddress(accountID))
+				.setContractAccountID(getContractAccountId(account.getAccountKey(), accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
 				.setEthereumNonce(account.getEthereumNonce());
@@ -458,7 +472,55 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		info.setStakingInfo(stakingInfo(account, rewardCalculator));
+
 		return Optional.of(info.build());
+	}
+
+	private String getContractAccountId(final JKey key, final AccountID accountID) {
+		// If we can recover an Ethereum EOA address from the account key, we should return that
+		final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+		if (evmAddress != null) {
+			return Bytes.wrap(evmAddress).toUnprefixedHexString();
+		} else {
+			return asHexedEvmAddress(accountID);
+		}
+	}
+
+	/**
+	 * Builds {@link StakingInfo} object for the {@link com.hederahashgraph.api.proto.java.CryptoGetInfo} and
+	 * {@link com.hederahashgraph.api.proto.java.ContractGetInfo}
+	 *
+	 * @param account
+	 * 		given account for which info is queried
+	 * @return staking info
+	 */
+	public StakingInfo stakingInfo(final MerkleAccount account, final RewardCalculator rewardCalculator) {
+		// will be updated with pending_reward in future PR
+		final var stakingInfo = StakingInfo.newBuilder()
+				.setDeclineReward(account.isDeclinedReward())
+				.setStakedToMe(account.getStakedToMe());
+
+		final var stakedNum = account.getStakedId();
+		if (stakedNum < 0) {
+			// Staked num for a node is (-nodeId -1)
+			stakingInfo.setStakedNodeId(-stakedNum - 1);
+		} else if (stakedNum > 0) {
+			stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
+		}
+
+		if (account.getStakePeriodStart() > 0) {
+			final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
+			stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(startSecond).build());
+			if (account.mayHavePendingReward()) {
+				final var info = stateChildren.stakingInfo();
+				final var nodeStakingInfo = info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
+				final var pendingReward = rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
+				stakingInfo.setPendingReward(pendingReward);
+			}
+		}
+
+		return stakingInfo.build();
 	}
 
 	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
@@ -518,7 +580,8 @@ public class StateView {
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
 			final ContractID id,
 			final AliasManager aliasManager,
-			final int maxTokensForAccountInfo
+			final int maxTokensForAccountInfo,
+			final RewardCalculator rewardCalculator
 	) {
 		final var contractNum = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractNum);
@@ -539,8 +602,10 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId())
 				.setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
+		if (contract.hasAutoRenewAccount()) {
+			info.setAutoRenewAccountId(Objects.requireNonNull(contract.getAutoRenewAccount()).toGrpcAccountId());
+		}
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
@@ -551,11 +616,13 @@ public class StateView {
 			info.addAllTokenRelationships(tokenRels);
 		}
 
+		info.setStakingInfo(stakingInfo(contract, rewardCalculator));
+
 		try {
 			final var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
-			return Optional.of(info.build());
+			// Leave the admin key empty if it can't be decoded
 		}
 
 		return Optional.of(info.build());
@@ -737,5 +804,14 @@ public class StateView {
 	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	/* --- used only in unit tests ---*/
+	public MerkleNetworkContext networkCtx() {
+		return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
+	}
+
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
 	}
 }

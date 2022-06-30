@@ -56,7 +56,7 @@ class OverflowCheckingCalcTest {
 		final var highFee = Long.MAX_VALUE / rateTinycentComponent;
 		final var expectedTinybarFee = FeeBuilder.getTinybarsFromTinyCents(someRate, highFee);
 
-		final long computedTinybarFee = subject.tinycentsToTinybars(highFee, someRate);
+		final long computedTinybarFee = OverflowCheckingCalc.tinycentsToTinybars(highFee, someRate);
 
 		assertEquals(expectedTinybarFee, computedTinybarFee);
 	}

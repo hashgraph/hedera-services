@@ -11,4 +11,16 @@ contract EmitBlockTimestamp {
         bytes32 hash = blockhash(blockNo);
         emit Hash(blockNo, hash);
     }
+
+    function getLastBlockHash() external view returns (bytes32) {
+        return blockhash(block.number - 1);
+    }
+
+    function getLastBlockMeta() external view returns (
+        uint bNo, 
+        bytes32 bHash
+    ) {
+        bNo = block.number - 1; 
+        bHash = blockhash(bNo);
+    }
 }

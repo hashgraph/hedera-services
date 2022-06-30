@@ -1,0 +1,38 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "payable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "somebody",
+        "type": "address"
+      }
+    ],
+    "name": "Target",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "toFirst",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "toSecond",
+        "type": "address"
+      }
+    ],
+    "name": "donate",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

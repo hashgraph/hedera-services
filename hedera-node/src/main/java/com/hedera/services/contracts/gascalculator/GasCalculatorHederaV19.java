@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
@@ -53,24 +52,24 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
 	}
 
 	@Override
-	public Gas transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
-		return Gas.ZERO;
+	public long transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
+		return 0L;
 	}
 
 	@Override
-	public Gas codeDepositGasCost(final int codeSize) {
-		return Gas.ZERO;
+	public long codeDepositGasCost(final int codeSize) {
+		return 0L;
 	}
 
 	@Override
-	public Gas logOperationGasCost(
+	public long logOperationGasCost(
 			final MessageFrame frame,
 			final long dataOffset,
 			final long dataLength,
 			final int numTopics) {
 		final var gasCost = GasCalculatorHederaUtil.
 				logOperationGasCost(usagePrices, exchange, frame, getLogStorageDuration(), dataOffset, dataLength, numTopics);
-		return super.logOperationGasCost(frame, dataOffset, dataLength, numTopics).max(gasCost);
+		return Math.max(super.logOperationGasCost(frame, dataOffset, dataLength, numTopics), gasCost);
 	}
 
 	long getLogStorageDuration() {

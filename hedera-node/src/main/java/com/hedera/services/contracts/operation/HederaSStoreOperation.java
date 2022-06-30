@@ -26,13 +26,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheExistingValue;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
@@ -44,26 +44,26 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
  */
 public class HederaSStoreOperation extends AbstractOperation {
 	static final OperationResult ILLEGAL_STATE_CHANGE_RESULT = new OperationResult(
-			Optional.empty(), Optional.of(ILLEGAL_STATE_CHANGE));
+			OptionalLong.empty(), Optional.of(ILLEGAL_STATE_CHANGE));
 	public static final long FRONTIER_MINIMUM = 0L;
 	public static final long EIP_1706_MINIMUM = 2300L;
 
-	private final Gas minumumGasRemaining;
+	private final long minumumGasRemaining;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OperationResult insufficientMinimumGasRemainingResult;
 
 	@Inject
 	public HederaSStoreOperation(
-			final long primitiveMinimumGasRemaining,
+			final long minimumGasRemaining,
 			final GasCalculator gasCalculator,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(0x55, "SSTORE", 2, 0, 1, gasCalculator);
 		this.dynamicProperties = dynamicProperties;
 
-		minumumGasRemaining = Gas.of(primitiveMinimumGasRemaining);
+		this.minumumGasRemaining = minimumGasRemaining;
 		insufficientMinimumGasRemainingResult = new OperationResult(
-				Optional.of(minumumGasRemaining), Optional.of(INSUFFICIENT_GAS));
+				OptionalLong.of(minumumGasRemaining), Optional.of(INSUFFICIENT_GAS));
 	}
 
 	@Override
@@ -78,17 +78,16 @@ public class HederaSStoreOperation extends AbstractOperation {
 
 		final var slotIsWarm = frame.warmUpStorage(address, key);
 		final var calculator = gasCalculator();
-		final var gasCost = calculator
-				.calculateStorageCost(account, key, value)
-				.plus(slotIsWarm ? Gas.ZERO : calculator.getColdSloadCost());
-		final var gasCostWrapper = Optional.of(gasCost);
+		final var gasCost = calculator.calculateStorageCost(account, key, value)
+				+ (slotIsWarm ? 0L : calculator.getColdSloadCost());
+		final var gasCostWrapper = OptionalLong.of(gasCost);
 
 		final var remainingGas = frame.getRemainingGas();
 		if (frame.isStatic()) {
 			return new OperationResult(gasCostWrapper, Optional.of(ILLEGAL_STATE_CHANGE));
-		} else if (remainingGas.compareTo(gasCost) < 0) {
+		} else if (remainingGas < gasCost) {
 			return new OperationResult(gasCostWrapper, Optional.of(INSUFFICIENT_GAS));
-		} else if (remainingGas.compareTo(minumumGasRemaining) <= 0) {
+		} else if (remainingGas <= minumumGasRemaining) {
 			return insufficientMinimumGasRemainingResult;
 		} else {
 			if (dynamicProperties.shouldEnableTraceability()) {

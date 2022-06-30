@@ -22,14 +22,15 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.hedera.services.context.annotations.StaticAccountMemo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.crypto.Hash;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -70,8 +71,9 @@ public interface RecordsModule {
 			final NodeLocalProperties nodeLocalProperties,
 			final @StaticAccountMemo String accountMemo,
 			final Hash initialHash,
-			final RecordStreamType streamType
-	) {
+			final RecordStreamType streamType,
+			final GlobalDynamicProperties globalDynamicProperties
+			) {
 		try {
 			return new RecordStreamManager(
 					platform,
@@ -79,7 +81,8 @@ public interface RecordsModule {
 					nodeLocalProperties,
 					accountMemo,
 					initialHash,
-					streamType);
+					streamType,
+					globalDynamicProperties);
 		} catch (NoSuchAlgorithmException | IOException fatal) {
 			throw new IllegalStateException("Could not construct record stream manager", fatal);
 		}

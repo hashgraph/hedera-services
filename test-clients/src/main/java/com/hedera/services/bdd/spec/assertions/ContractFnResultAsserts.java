@@ -130,6 +130,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
+	public ContractFnResultAsserts approxGasUsed(final long expected, final double allowedPercentDeviation) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			final var actual = result.getGasUsed();
+			final var epsilon = allowedPercentDeviation * actual / 100.0;
+			Assertions.assertEquals(
+					expected, (double) result.getGasUsed(), epsilon,
+					"Wrong amount of gas used");
+		});
+		return this;
+	}
+
 	public ContractFnResultAsserts gasUsed(long gasUsed) {
 		registerProvider((spec, o) -> {
 			ContractFunctionResult result = (ContractFunctionResult) o;

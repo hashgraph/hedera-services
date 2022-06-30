@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -37,6 +36,7 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.apache.tuweni.bytes.Bytes32.leftPad;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
@@ -58,12 +58,12 @@ public class HederaLogOperation extends AbstractOperation {
 		final long dataLocation = clampedToLong(frame.popStackItem());
 		final long numBytes = clampedToLong(frame.popStackItem());
 
-		final Gas cost = gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
-		final Optional<Gas> optionalCost = Optional.of(cost);
+		final long cost = gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
+		final OptionalLong optionalCost = OptionalLong.of(cost);
 		if (frame.isStatic()) {
 			return new OperationResult(
 					optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
-		} else if (frame.getRemainingGas().compareTo(cost) < 0) {
+		} else if (frame.getRemainingGas() < cost) {
 			return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 		}
 

@@ -103,7 +103,7 @@ public class WorldStateTokenAccount implements Account {
 	private Code interpolatedCode() {
 		if (interpolatedCode == null) {
 			final var interpolatedBytecode = proxyBytecodeFor(address);
-			interpolatedCode = new Code(interpolatedBytecode, Hash.hash(interpolatedBytecode));
+			interpolatedCode = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
 		}
 		return interpolatedCode;
 	}

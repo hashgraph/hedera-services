@@ -86,6 +86,13 @@ public class Utils {
 		return solidityAddress;
 	}
 
+	public static byte[] asAddressInTopic(final byte[] solidityAddress) {
+		final byte[] topicAddress = new byte[32];
+
+		arraycopy(solidityAddress, 0, topicAddress, 12, 20);
+		return topicAddress;
+	}
+
 	public static ByteString extractByteCode(String path) {
 		try {
 			final var bytes = Files.readAllBytes(Path.of(path));

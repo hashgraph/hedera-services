@@ -56,17 +56,22 @@ public abstract class HapiApiSuite {
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
+	private static final int BYTES_PER_KB = 1024;
+	public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
 	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 	public static final long ONE_HBAR = 100_000_000L;
-	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
+	public static final long TINY_PARTS_PER_WHOLE = 100_000_000L;
+	public static final long FIVE_HBARS = 5 * ONE_HBAR;
 	public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
+	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
 	public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
 	public static final String RELAYER = "RELAYER";
 	public static final KeyShape SECP_256K1_SHAPE = KeyShape.SECP256K1;
 	public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
+	public static final String SECP_256K1_RECEIVER_SOURCE_KEY = "secp256k1ReceiverAlias";
 	public static final String TOKEN_TREASURY = "treasury";
 	public static final String NONSENSE_KEY = "Jabberwocky!";
 	public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
@@ -75,9 +80,12 @@ public abstract class HapiApiSuite {
 	public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
 	public static final String FREEZE_ADMIN = HapiSpecSetup.getDefaultInstance().freezeAdminName();
 	public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
+	public static final String STAKING_REWARD = HapiSpecSetup.getDefaultInstance().stakingRewardAccountName();
+	public static final String NODE_REWARD = HapiSpecSetup.getDefaultInstance().nodeRewardAccountName();
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
 	public static final String DEFAULT_PAYER = HapiSpecSetup.getDefaultInstance().defaultPayerName();
 	public static final String DEFAULT_CONTRACT_SENDER = "DEFAULT_CONTRACT_SENDER";
+	public static final String DEFAULT_CONTRACT_RECEIVER = "DEFAULT_CONTRACT_RECEIVER";
 	public static final String ADDRESS_BOOK_CONTROL = HapiSpecSetup.getDefaultInstance().addressBookControlName();
 	public static final String FEE_SCHEDULE_CONTROL = HapiSpecSetup.getDefaultInstance().feeScheduleControlName();
 	public static final String EXCHANGE_RATE_CONTROL = HapiSpecSetup.getDefaultInstance().exchangeRatesControlName();
@@ -114,7 +122,7 @@ public abstract class HapiApiSuite {
 		return finalSpecs;
 	}
 
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return false;
 	}
 
@@ -211,7 +219,7 @@ public abstract class HapiApiSuite {
 	private void runAsync(Iterable<HapiApiSpec> specs) {
 		CompletableFuture[] futures = StreamSupport
 				.stream(specs.spliterator(), false)
-				.map(CompletableFuture::runAsync)
+				.map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
 				.toArray(n -> new CompletableFuture[n]);
 		CompletableFuture.allOf(futures).join();
 	}

@@ -38,6 +38,8 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.util.RandomGenerateMeta;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -56,6 +58,7 @@ import org.bouncycastle.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.LongPredicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -67,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -83,6 +87,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
 	private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
@@ -112,6 +117,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private HederaFunctionality function;
 	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
+	private boolean throttleExempt;
+	private boolean congestionExempt;
+
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
@@ -285,6 +293,31 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
+	public boolean throttleExempt() {
+		if (throttleExempt) {
+			return true;
+		}
+		var p = getPayer();
+		if (p != null) {
+			return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
+		}
+		return false;
+	}
+
+	public void markThrottleExempt() {
+		this.throttleExempt = true;
+	}
+
+	@Override
+	public boolean congestionExempt() {
+		return congestionExempt;
+	}
+
+	public void markCongestionExempt() {
+		this.congestionExempt = true;
+	}
+
+	@Override
 	public ScheduleID getScheduleRef() {
 		return scheduleRef;
 	}
@@ -373,12 +406,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public long getGasLimitForContractTx() {
-		return switch (getFunction()) {
-			case ContractCreate -> getTxn().getContractCreateInstance().getGas();
-			case ContractCall -> getTxn().getContractCall().getGas();
-			case EthereumTransaction -> getSpanMapAccessor().getEthTxDataMeta(this).gasLimit();
-			default -> 0L;
-		};
+		return MiscUtils.getGasLimitForContractTx(getTxn(), getFunction(),
+				() -> getSpanMapAccessor().getEthTxDataMeta(this));
 	}
 
 	private void setBaseUsageMeta() {
@@ -423,6 +452,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoDeleteAllowanceUsageMeta();
 		} else if (function == EthereumTransaction) {
 			setEthTxDataMeta();
+		} else if (function == RandomGenerate) {
+			setRandomGenerateUsageMeta();
 		}
 	}
 
@@ -510,12 +541,17 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
 	}
 
+	private void setRandomGenerateUsageMeta() {
+		final var randomGenerateUsageMeta = new RandomGenerateMeta(txn.getRandomGenerate());
+		SPAN_MAP_ACCESSOR.setRandomGenerateMeta(this, randomGenerateUsageMeta);
+	}
+
 	private void setEthTxDataMeta() {
 		var hapiTx = txn.getEthereumTransaction();
 		final var ethTxData = EthTxData.populateEthTxData(hapiTx.getEthereumData().toByteArray());
 		SPAN_MAP_ACCESSOR.setEthTxDataMeta(this, ethTxData);
 	}
-	
+
 	@Override
 	public SubType getSubType() {
 		if (function == CryptoTransfer) {

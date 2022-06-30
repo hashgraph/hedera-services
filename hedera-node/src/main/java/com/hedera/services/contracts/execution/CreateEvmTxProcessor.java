@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.logic.BlockManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -39,6 +38,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -60,8 +60,8 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockManager blockManager
-        ) {
+			final InHandleBlockMetaSource blockMetaSource
+	) {
 		super(
 				worldState,
 				livePricesSource,
@@ -69,7 +69,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				blockManager);
+				blockMetaSource);
 		this.codeCache = codeCache;
 	}
 
@@ -81,7 +81,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Bytes code,
 			final Instant consensusTime
 	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
 		return super.execute(
 				sender,
@@ -93,7 +93,39 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				true,
 				consensusTime,
 				false,
-				receiver);
+				receiver,
+				null,
+				0,
+				null);
+	}
+
+	public TransactionProcessingResult executeEth(
+			final Account sender,
+			final Address receiver,
+			final long providedGasLimit,
+			final long value,
+			final Bytes code,
+			final Instant consensusTime,
+			final Account relayer,
+			final BigInteger providedMaxGasPrice,
+			final long maxGasAllowance
+	) {
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				receiver,
+				providedMaxGasPrice,
+				maxGasAllowance,
+				relayer);
 	}
 
 	@Override
@@ -114,7 +146,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				.address(to)
 				.contract(to)
 				.inputData(Bytes.EMPTY)
-				.code(new Code(payload, Hash.hash(payload)))
+				.code(Code.createLegacyCode(payload, Hash.hash(payload)))
 				.build();
 	}
 }

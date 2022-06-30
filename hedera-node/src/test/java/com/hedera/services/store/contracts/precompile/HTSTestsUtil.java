@@ -23,7 +23,16 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -50,6 +59,7 @@ public class HTSTestsUtil {
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
+	public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
@@ -69,7 +79,9 @@ public class HTSTestsUtil {
 			Dissociation.singleDissociation(account, nonFungible);
 	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	public static final Bytes missingNftResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	public static final TokenID fungible = IdUtils.asToken("0.0.888");
@@ -89,7 +101,6 @@ public class HTSTestsUtil {
 	public static final MintWrapper fungibleMintMaxAmount =
 			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final Long serialNumber = 1L;
-	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
 
 	public static final Association multiAssociateOp =
@@ -159,6 +170,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					receiver
@@ -166,6 +178,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					sender,
 					null
@@ -173,6 +186,7 @@ public class HTSTestsUtil {
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
 					AMOUNT,
+					false,
 					token,
 					null,
 					receiver

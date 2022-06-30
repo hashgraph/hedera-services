@@ -27,7 +27,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
@@ -54,17 +53,17 @@ public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
 	}
 
 	@Override
-	public Gas codeDepositGasCost(final int codeSize) {
-		return Gas.ZERO;
+	public long codeDepositGasCost(final int codeSize) {
+		return 0L;
 	}
 
 	@Override
-	public Gas transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
-		return Gas.ZERO;
+	public long transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
+		return 0L;
 	}
 
 	@Override
-	public Gas logOperationGasCost(
+	public long logOperationGasCost(
 			final MessageFrame frame,
 			final long dataOffset,
 			final long dataLength,
@@ -73,51 +72,51 @@ public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
 	}
 
 	@Override
-	public Gas getBalanceOperationGasCost() {
+	public long getBalanceOperationGasCost() {
 		// Frontier gas cost
-		return Gas.of(20L);
+		return 20L;
 	}
 
 	@Override
-	protected Gas expOperationByteGasCost() {
+	protected long expOperationByteGasCost() {
 		// Frontier gas cost
-		return Gas.of(10L);
+		return 10L;
 	}
 
 	@Override
-	protected Gas extCodeBaseGasCost() {
+	protected long extCodeBaseGasCost() {
 		// Frontier gas cost
-		return Gas.of(20L);
+		return 20L;
 	}
 
 	@Override
-	public Gas getSloadOperationGasCost() {
+	public long getSloadOperationGasCost() {
 		// Frontier gas cost
-		return Gas.of(50L);
+		return 50L;
 	}
 
 	@Override
-	public Gas callOperationBaseGasCost() {
+	public long callOperationBaseGasCost() {
 		// Frontier gas cost
-		return Gas.of(40L);
+		return 40L;
 	}
 
 	@Override
-	public Gas getExtCodeSizeOperationGasCost() {
+	public long getExtCodeSizeOperationGasCost() {
 		// Frontier gas cost
-		return Gas.of(20L);
+		return 20L;
 	}
 
 	@Override
-	public Gas extCodeHashOperationGasCost() {
+	public long extCodeHashOperationGasCost() {
 		// Constantinople gas cost
-		return Gas.of(400L);
+		return 400L;
 	}
 
 	@Override
-	public Gas selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {
+	public long selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {
 		// Frontier gas cost
-		return Gas.of(0);
+		return 0;
 	}
 
 	private long getLogStorageDuration() {

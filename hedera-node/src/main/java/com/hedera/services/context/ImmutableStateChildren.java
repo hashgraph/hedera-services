@@ -24,8 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -37,7 +38,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -57,7 +58,7 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private final WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private final WeakReference<MerkleScheduledTransactions> schedules;
 	private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
 	private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
@@ -66,6 +67,7 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleSpecialFiles> specialFiles;
 	private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
 	private final WeakReference<Map<ByteString, EntityNum>> aliases;
+	private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
 	private final Instant signedAt;
 
 	public ImmutableStateChildren(ServicesState state) {
@@ -84,6 +86,7 @@ public class ImmutableStateChildren implements StateChildren {
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 		aliases = new WeakReference<>(state.aliases());
+		stakingInfo = new WeakReference<>(state.stakingInfo());
 	}
 
 	@Override
@@ -117,7 +120,7 @@ public class ImmutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
+	public MerkleScheduledTransactions schedules() {
 		return Objects.requireNonNull(schedules.get());
 	}
 
@@ -144,6 +147,11 @@ public class ImmutableStateChildren implements StateChildren {
 	@Override
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return Objects.requireNonNull(uniqueTokens.get());
+	}
+
+	@Override
+	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+		return Objects.requireNonNull(stakingInfo.get());
 	}
 
 	@Override

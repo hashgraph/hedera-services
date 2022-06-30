@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.26.0-SNAPSHOT</version>
+	<version>0.28.0-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -27,16 +27,34 @@
 
 	<developers>
 		<developer>
+			<name>Abhishek Pandey</name>
+			<email>abhishek.pandey@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
+		</developer>
+		<developer>
 			<name>Anirudh Ghanta</name>
 			<email>anirudh.ghanta@hedera.com</email>
 			<organization>Hedera Hashgraph, LLC</organization>
 			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
+			<name>Cesar Vazquez</name>
+			<email>cesarvazquez@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
 			<name>Jeffrey Tang</name>
 			<email>jeffrey@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Leo Jiang</name>
+			<email>leo.jiang@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
 			<name>Michael Tinker</name>
@@ -55,6 +73,18 @@
 			<email>nosh@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Qian Qiu</name>
+			<email>qianqiu@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Quan Nguyen</name>
+			<email>quan.nguyen@hedera.com</email>
+			<organization>Hedera Hashgraph, LLC</organization>
+			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 	</developers>
 
@@ -81,6 +111,14 @@
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
+			<id>proto-staging</id>
+			<name>Protobufs staging</name>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1531</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
 			<id>besu</id>
 			<name>Hyperledger Besu</name>
 			<url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
@@ -96,12 +134,54 @@
 			</snapshots>
 		</repository>
 		<repository>
+			<id>platform-maven-prerelease-channel</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
-			<id>sdk-staging</id>
-			<name>0.26.x SDK</name>
-			<url>https://oss.sonatype.org/content/repositories/comswirlds-1295</url>
+		</repository>
+		<repository>
+			<id>maven-develop-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-adhoc-commits</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-daily-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>platform-maven-develop-snapshots</id>
+			<url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
 	<distributionManagement>
@@ -142,26 +222,26 @@
 		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
-		<besu.version>21.10.9</besu.version>
-		<besu-native.version>0.4.3</besu-native.version>
+		<besu.version>22.4.1</besu.version>
+		<besu-native.version>0.5.0</besu-native.version>
 		<bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
 		<commons-io.version>2.11.0</commons-io.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
-		<dagger.version>2.41</dagger.version>
+		<dagger.version>2.42</dagger.version>
 		<eddsa.version>0.3.0</eddsa.version>
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.1-jre</guava.version>
-		<hapi-proto.version>0.26.0-SNAPSHOT</hapi-proto.version>
+		<hapi-proto.version>0.28.0-random-SNAPSHOT</hapi-proto.version>
 		<headlong.version>6.1.1</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.26.0-alpha.2</swirlds.version>
-		<tuweni.version>2.1.0</tuweni.version>
+		<swirlds.version>0.27.1</swirlds.version>
+		<tuweni.version>2.2.0</tuweni.version>
 
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
@@ -185,7 +265,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-04-02T00:14:21Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-06-16T16:14:34Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>
@@ -193,7 +273,6 @@
 		<module>hapi-fees</module>
 		<module>hedera-node</module>
 		<module>test-clients</module>
-		<module>benchmarks</module>
 	</modules>
 
 	<build>
@@ -410,6 +489,12 @@
 				<groupId>org.hyperledger.besu</groupId>
 				<artifactId>evm</artifactId>
 				<version>${besu.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.hyperledger.besu</groupId>
+						<artifactId>secp256r1</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.hyperledger.besu</groupId>
@@ -604,7 +689,12 @@
 		<dependency>
 			<groupId>org.apache.tuweni</groupId>
 			<artifactId>tuweni-bytes</artifactId>
-			<version>2.1.0</version>
+			<version>${tuweni.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tuweni</groupId>
+			<artifactId>tuweni-units</artifactId>
+			<version>${tuweni.version}</version>
 		</dependency>
 		<!-- Test dependencies -->
 		<dependency>

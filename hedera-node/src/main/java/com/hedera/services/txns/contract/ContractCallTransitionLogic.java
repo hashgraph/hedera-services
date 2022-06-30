@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
@@ -46,6 +47,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -98,14 +100,16 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCallTxn, senderId, false);
+		final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
+		doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
 	}
 
 	public void doStateTransitionOperation(
 			final TransactionBody contractCallTxn,
 			final Id senderId,
-			final boolean incrementCounter
+			final Id relayerId,
+			final long maxGasAllowanceInTinybars,
+			final BigInteger offeredGasPrice
 	) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
@@ -123,18 +127,30 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				: Bytes.EMPTY;
 
 		// --- Do the business logic ---
-		if (incrementCounter) {
+		TransactionProcessingResult result;
+		if (relayerId == null) {
+			result = evmTxProcessor.execute(
+					sender,
+					receiver.canonicalAddress(),
+					op.getGas(),
+					op.getAmount(),
+					callData,
+					txnCtx.consensusTime());
+		} else {
 			sender.incrementEthereumNonce();
 			accountStore.commitAccount(sender);
-		}
 
-		final var result = evmTxProcessor.execute(
-				sender,
-				receiver.canonicalAddress(),
-				op.getGas(),
-				op.getAmount(),
-				callData,
-				txnCtx.consensusTime());
+			result = evmTxProcessor.executeEth(
+					sender,
+					receiver.canonicalAddress(),
+					op.getGas(),
+					op.getAmount(),
+					callData,
+					txnCtx.consensusTime(),
+					offeredGasPrice,
+					accountStore.loadAccount(relayerId),
+					maxGasAllowanceInTinybars);
+		}
 
 		// --- Persist changes into state ---
 		final var createdContracts = worldState.getCreatedContractIds();
@@ -167,7 +183,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		if (op.getAmount() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-		if (op.getGas() > properties.maxGas()) {
+		if (op.getGas() > properties.maxGasPerSec()) {
 			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		return OK;

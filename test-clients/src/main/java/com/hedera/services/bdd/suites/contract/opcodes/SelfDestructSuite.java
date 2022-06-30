@@ -56,7 +56,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
 						HSCS_EVM_008_SelfDestructInConstructorWorks(),
-						HSCS_EVM_008_SelfDestructWhenCalling(),
+						HSCS_EVM_008_SelfDestructWhenCalling()
 				}
 		);
 	}
@@ -93,7 +93,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 		final var contract = "SelfDestructCallable";
 		return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
 				.given(
-						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
 						uploadInitCode(contract)
 				)
 				.when(

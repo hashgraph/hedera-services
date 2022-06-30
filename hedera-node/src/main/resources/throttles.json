@@ -16,6 +16,7 @@
 			"CryptoDelete",
 			"CryptoGetInfo",
 			"CryptoGetAccountRecords",
+			"RandomGenerate",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",
@@ -63,8 +64,8 @@
 		  "operations": [
 			"ContractCall",
 			"ContractCreate",
-            "EthereumTransaction"
-          ]
+                        "EthereumTransaction"
+                   ]
 		},
 		{
 		  "opsPerSec": 3000,

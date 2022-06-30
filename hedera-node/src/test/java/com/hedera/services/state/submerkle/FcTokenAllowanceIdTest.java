@@ -54,11 +54,13 @@ class FcTokenAllowanceIdTest {
 		final var one = subject;
 		final var two = FcTokenAllowanceId.from(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
 		final var three = FcTokenAllowanceId.from(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
+		final var four = FcTokenAllowanceId.from(tokenNum.toGrpcTokenId(), spenderNum.toGrpcAccountId());
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
 		assertEquals(one, three);
+		assertEquals(three, four);
 
 		assertEquals(one.hashCode(), three.hashCode());
 		assertNotEquals(one.hashCode(), two.hashCode());

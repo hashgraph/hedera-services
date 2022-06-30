@@ -1,4 +1,4 @@
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.0;
 
 contract Whitelister {
     mapping(address => bool) public whitelist;
@@ -7,7 +7,11 @@ contract Whitelister {
         whitelist[_toBePermitted] = true;
     }
 
-    function isWhitelisted() public returns(bool) {
+    function isSenderWhitelisted() public returns(bool) {
         return whitelist[address(msg.sender)];
+    }
+
+    function isWhitelisted(address _toBeChecked) public returns(bool) {
+        return whitelist[_toBeChecked];
     }
 }

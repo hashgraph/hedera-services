@@ -27,7 +27,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -38,6 +37,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheExistingValue;
 
@@ -48,8 +48,8 @@ import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheE
 public class HederaSLoadOperation extends AbstractOperation {
 
 
-	private final Optional<Gas> warmCost;
-	private final Optional<Gas> coldCost;
+	private final OptionalLong warmCost;
+	private final OptionalLong coldCost;
 
 	private final OperationResult warmSuccess;
 	private final OperationResult coldSuccess;
@@ -58,9 +58,9 @@ public class HederaSLoadOperation extends AbstractOperation {
 	@Inject
 	public HederaSLoadOperation(final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
 		super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
-		final Gas baseCost = gasCalculator.getSloadOperationGasCost();
-		warmCost = Optional.of(baseCost.plus(gasCalculator.getWarmStorageReadCost()));
-		coldCost = Optional.of(baseCost.plus(gasCalculator.getColdSloadCost()));
+		final long baseCost = gasCalculator.getSloadOperationGasCost();
+		warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
+		coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
 
 		warmSuccess = new OperationResult(warmCost, Optional.empty());
 		coldSuccess = new OperationResult(coldCost, Optional.empty());
@@ -75,8 +75,8 @@ public class HederaSLoadOperation extends AbstractOperation {
 			final Account account = worldUpdater.get(address);
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
 			final boolean slotIsWarm = frame.warmUpStorage(address, key);
-			final Optional<Gas> optionalCost = slotIsWarm ? warmCost : coldCost;
-			if (frame.getRemainingGas().compareTo(optionalCost.orElse(Gas.ZERO)) < 0) {
+			final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
+			if (frame.getRemainingGas() < optionalCost.orElse(0L)) {
 				return new OperationResult(
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {

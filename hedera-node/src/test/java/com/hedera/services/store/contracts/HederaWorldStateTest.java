@@ -40,7 +40,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -152,9 +151,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void newContractAddress() {
-		final var sponsor = mock(Address.class);
-		given(sponsor.toArrayUnsafe())
-				.willReturn(new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+		final var sponsor = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 		given(ids.newContractId(any())).willReturn(ContractID.newBuilder().setContractNum(1).build());
 		var addr = subject.newContractAddress(sponsor);
 		assertNotEquals(addr, sponsor);
@@ -294,7 +291,7 @@ class HederaWorldStateTest {
 		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
 
 		var actualSubject = subject.updater();
-		var mockTbdAccount = mock(Address.class);
+		var mockTbdAccount = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 		actualSubject.deleteAccount(tbdAddress);
 
 		assertFailsWith(actualSubject::commit, ResponseCodeEnum.FAIL_INVALID);
@@ -322,10 +319,10 @@ class HederaWorldStateTest {
 
 		actualSubject.revert();
 
-		actualSubject.addSbhRefund(Gas.of(234L));
-		assertEquals(234L, actualSubject.getSbhRefund().toLong());
+		actualSubject.addSbhRefund(234L);
+		assertEquals(234L, actualSubject.getSbhRefund());
 		actualSubject.revert();
-		assertEquals(0, actualSubject.getSbhRefund().toLong());
+		assertEquals(0L, actualSubject.getSbhRefund());
 		verify(ids, times(3)).reclaimLastId();
 		assertTrue(actualSubject.getStateChanges().isEmpty());
 	}

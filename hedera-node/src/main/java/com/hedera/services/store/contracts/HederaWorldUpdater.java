@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
  */
 
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -47,7 +46,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 *
 	 * @return the amount of Gas to refund;
 	 */
-	Gas getSbhRefund();
+	long getSbhRefund();
 
 	/**
 	 * Used to keep track of SBH gas refunds between all instances of HederaWorldUpdater. Lower level updaters should
@@ -56,7 +55,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * @param refund
 	 * 	the amount of Gas to refund;
 	 */
-	void addSbhRefund(Gas refund);
+	void addSbhRefund(long refund);
 
 	void countIdsAllocatedByStacked(int n);
 }

@@ -20,13 +20,14 @@ package com.hedera.services.store.contracts.precompile.proxy;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.BalanceOfWrapper;
-import com.hedera.services.store.contracts.precompile.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
@@ -38,22 +39,21 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,8 +62,6 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class RedirectViewExecutorTest {
-	@Mock
-	private Bytes input;
 	@Mock
 	private MessageFrame frame;
 	@Mock
@@ -76,10 +74,6 @@ class RedirectViewExecutorTest {
 	private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
 	@Mock
 	private WorldLedgers worldLedgers;
-	@Mock
-	private Bytes nestedInput;
-	@Mock
-	private Address tokenAddress;
 	@Mock
 	private BlockValues blockValues;
 	@Mock
@@ -96,23 +90,16 @@ class RedirectViewExecutorTest {
 	public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 	public static final Address nonfungibleTokenAddress = nonfungibleId.asEvmAddress();
 
-	private static final long timestamp = 10l;
+	private static final long timestamp = 10L;
 	private static final Timestamp resultingTimestamp = Timestamp.newBuilder().setSeconds(timestamp).build();
-	private static final Gas gas = Gas.of(100L);
+	private static final long gas = 100L;
 	private static final Bytes answer = Bytes.of(1);
 
 	RedirectViewExecutor subject;
 
-	@BeforeEach
-	void setup() {
-		given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
-		given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
-		this.subject = new RedirectViewExecutor(input, frame, encodingFacade, decodingFacade, redirectGasCalculator);
-	}
-
 	@Test
 	void computeCostedNAME() {
-		prerequisites(ABI_ID_NAME);
+		prerequisites(ABI_ID_NAME, fungibleTokenAddress);
 
 		final var result = "name";
 
@@ -124,7 +111,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedSYMBOL() {
-		prerequisites(ABI_ID_SYMBOL);
+		prerequisites(ABI_ID_SYMBOL, fungibleTokenAddress);
 
 		final var result = "symbol";
 
@@ -136,7 +123,7 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedDECIMALS() {
-		prerequisites(ABI_ID_DECIMALS);
+		prerequisites(ABI_ID_DECIMALS, fungibleTokenAddress);
 
 		final var result = 1;
 
@@ -149,9 +136,9 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedTOTAL_SUPPY_TOKEN() {
-		prerequisites(ABI_ID_TOTAL_SUPPLY_TOKEN);
+		prerequisites(ABI_ID_TOTAL_SUPPLY_TOKEN, fungibleTokenAddress);
 
-		final var result = 1l;
+		final var result = 1L;
 
 		given(worldLedgers.totalSupplyOf(fungible)).willReturn(result);
 		given(encodingFacade.encodeTotalSupply(result)).willReturn(answer);
@@ -161,9 +148,9 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedBALANCE_OF_TOKEN() {
-		prerequisites(ABI_ID_BALANCE_OF_TOKEN);
+		Bytes nestedInput = prerequisites(ABI_ID_BALANCE_OF_TOKEN, fungibleTokenAddress);
 
-		final var result = 1l;
+		final var result = 1L;
 
 		given(decodingFacade.decodeBalanceOf(eq(nestedInput), any())).willReturn(balanceOfWrapper);
 		given(balanceOfWrapper.accountId()).willReturn(account);
@@ -175,11 +162,10 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedOWNER_OF_NFT() {
-		prerequisites(ABI_ID_OWNER_OF_NFT);
-		given(tokenAddress.toArrayUnsafe()).willReturn(nonfungibleTokenAddress.toArray());
+		Bytes nestedInput = prerequisites(ABI_ID_OWNER_OF_NFT, nonfungibleTokenAddress);
 
 		final var result = Address.fromHexString("0x000000000000013");
-		final var serialNum = 1l;
+		final var serialNum = 1L;
 
 		given(decodingFacade.decodeOwnerOf(nestedInput)).willReturn(ownerOfAndTokenURIWrapper);
 		given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
@@ -192,11 +178,10 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedTOKEN_URI_NFT() {
-		prerequisites(ABI_ID_TOKEN_URI_NFT);
-		given(tokenAddress.toArrayUnsafe()).willReturn(nonfungibleTokenAddress.toArray());
+		Bytes nestedInput = prerequisites(ABI_ID_TOKEN_URI_NFT, nonfungibleTokenAddress);
 
 		final var result = "some metadata";
-		final var serialNum = 1l;
+		final var serialNum = 1L;
 
 		given(decodingFacade.decodeTokenUriNFT(nestedInput)).willReturn(ownerOfAndTokenURIWrapper);
 		given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
@@ -208,17 +193,24 @@ class RedirectViewExecutorTest {
 
 	@Test
 	void computeCostedNOT_SUPPORTED() {
-		prerequisites(0);
+		prerequisites(0xffffffff, fungibleTokenAddress);
 		TxnUtils.assertFailsWith(() -> subject.computeCosted(), ResponseCodeEnum.NOT_SUPPORTED);
 	}
 
-	void prerequisites(int descriptor) {
-		given(input.slice(4, 20)).willReturn(tokenAddress);
-		given(tokenAddress.toArrayUnsafe()).willReturn(fungibleTokenAddress.toArray());
-		given(input.slice(24)).willReturn(nestedInput);
-		given(nestedInput.getInt(0)).willReturn(descriptor);
+	Bytes prerequisites(int descriptor, Bytes tokenAddress) {
+		given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
+		given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
+		Bytes nestedInput = Bytes.of(Integers.toBytes(descriptor));
+		Bytes input = Bytes.concatenate(
+				Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+				tokenAddress,
+				nestedInput);
 		given(frame.getBlockValues()).willReturn(blockValues);
 		given(blockValues.getTimestamp()).willReturn(timestamp);
 		given(redirectGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
+		given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
+		given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
+		this.subject = new RedirectViewExecutor(input, frame, encodingFacade, decodingFacade, redirectGasCalculator);
+		return nestedInput;
 	}
 }

@@ -88,6 +88,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -426,6 +428,7 @@ class ApproveAllowanceChecksTest {
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 		given(ownerAccount.getNumAssociations()).willReturn(1);
 		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -531,6 +534,7 @@ class ApproveAllowanceChecksTest {
 
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
 
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner, view));

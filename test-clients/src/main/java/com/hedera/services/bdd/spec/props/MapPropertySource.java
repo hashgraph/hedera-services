@@ -56,6 +56,10 @@ public class MapPropertySource implements HapiPropertySource {
 		this.props = props;
 	}
 
+	public Map getProps() {
+		return props;
+	}
+
 	@Override
 	public String get(String property) {
 		return (String)props.get(property);

@@ -28,12 +28,18 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.pricing.AssetsLoader;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,11 +80,16 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
@@ -105,7 +116,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -271,7 +282,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMint")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
@@ -379,7 +390,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var multiKey = "purpose";
 		final var nestedTransferTxn = "nestedTransferTxn";
 
-		final long expectedGasUsage = 1_063_830L;
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
 						newKeyNamed(multiKey),
@@ -430,50 +440,53 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn));
 							}
 						}),
-						withOpContext((spec, opLog) -> allRunFor(spec,
-										childRecordsCheck(nestedTransferTxn, SUCCESS,
-												recordWith()
-														.status(SUCCESS)
-														.contractCallResult(
-																resultWith()
-																		.gasUsed(expectedGasUsage)
-																		.contractCallResult(htsPrecompileResult()
-																				.forFunction(
-																						HTSPrecompileResult.FunctionType.MINT)
-																				.withStatus(SUCCESS)
-																				.withTotalSupply(1L)
-																				.withSerialNumbers(1L)
-																		)
-																		.gas(3_838_738L)
-																		.amount(0L)
-																		.functionParameters(functionParameters()
-																				.forFunction(
-																						FunctionParameters.PrecompileFunction.MINT)
-																				.withTokenAddress(asAddress(spec.registry()
-																						.getTokenID(nonFungibleToken)))
-																				.withAmount(0L)
-																				.withMetadata(List.of("Test metadata " +
-																						"1"))
-																				.build()
-																		)
-														),
-												recordWith()
-														.status(SUCCESS)
-														.contractCallResult(
-																resultWith()
-																		.contractCallResult(htsPrecompileResult()
-																				.forFunction(
-																						HTSPrecompileResult.FunctionType.SUCCESS)
-																				.withStatus(SUCCESS)
-																		)
-														)
-														.tokenTransfers(NonFungibleTransfers
-																.changingNFTBalances()
-																.including(nonFungibleToken, TOKEN_TREASURY,
-																		theRecipient, 1)
-														)
-										)
-								)
+						withOpContext((spec, opLog) -> {
+									final var expectedGasUsage = expectedPrecompileGasFor(
+											spec, TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+									allRunFor(spec,
+											childRecordsCheck(nestedTransferTxn, SUCCESS,
+													recordWith()
+															.status(SUCCESS)
+															.contractCallResult(
+																	resultWith()
+																			.approxGasUsed(expectedGasUsage, 5)
+																			.contractCallResult(htsPrecompileResult()
+																					.forFunction(
+																							HTSPrecompileResult.FunctionType.MINT)
+																					.withStatus(SUCCESS)
+																					.withTotalSupply(1L)
+																					.withSerialNumbers(1L)
+																			)
+																			.gas(3_838_738L)
+																			.amount(0L)
+																			.functionParameters(functionParameters()
+																					.forFunction(
+																							FunctionParameters.PrecompileFunction.MINT)
+																					.withTokenAddress(asAddress(spec.registry()
+																							.getTokenID(nonFungibleToken)))
+																					.withAmount(0L)
+																					.withMetadata(List.of("Test " +
+																							"metadata " +
+																							"1"))
+																					.build()
+																			)
+															),
+													recordWith()
+															.status(SUCCESS)
+															.contractCallResult(
+																	resultWith()
+																			.contractCallResult(htsPrecompileResult()
+																					.withStatus(SUCCESS)
+																			)
+															)
+															.tokenTransfers(NonFungibleTransfers
+																	.changingNFTBalances()
+																	.including(nonFungibleToken, TOKEN_TREASURY,
+																			theRecipient, 1)
+															)
+											)
+									);
+								}
 						)
 				);
 	}
@@ -592,14 +605,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0),
 						childRecordsCheck(nestedMintTxn, CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(SUCCESS)
-										.newTotalSupply(1)
-										.serialNos(List.of(1L)),
+										.status(REVERTED_SUCCESS)
+										.newTotalSupply(0)
+										.serialNos(List.of()),
 								recordWith()
 										.contractCallResult(
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
-																.forFunction(HTSPrecompileResult.FunctionType.FAILED)
 																.withStatus(INVALID_TOKEN_ID)
 														)
 										)
@@ -621,7 +633,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMintFailure")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount).balance(5 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(mintContractByteCode).payingWith(theAccount),
 						tokenCreate(fungibleToken)
@@ -640,28 +652,30 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(theContract, "mintFungibleToken", amount)
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(2_000_000L)
-								.hasKnownStatus(SUCCESS),
+								.gas(2_000_000L),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						//we don`t have child record because the decoding is failing.
+						// The parent continues execution since we don`t have revert() in the smart contract.
 						emptyChildRecordsCheck(firstMintTxn, SUCCESS)
 				);
 	}
 
 	private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
-
 		final var theAccount = "anybody";
 		final var amount = 10L;
 		final var fungibleToken = "fungibleToken";
 		final var multiKey = "purpose";
 		final var theContract = "MintContract";
 		final var firstMintTxn = "firstMintTxn";
+		final var baselineMintWithEnoughGas = "baselineMintWithEnoughGas";
 
+		final AtomicLong expectedInsufficientGas = new AtomicLong();
 		final AtomicLong fungibleNum = new AtomicLong();
 
 		return defaultHapiSpec("gasCostNotMetSetsInsufficientGasStatusInChildRecord")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount).balance(5 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
@@ -677,14 +691,34 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(theContract, "mintFungibleToken", amount)
-								.via(firstMintTxn)
+								.via(baselineMintWithEnoughGas)
 								.payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(48_000),
+								.gas(64_000L),
+						withOpContext((spec, opLog) -> {
+							final var expectedPrecompileGas = expectedPrecompileGasFor(
+									spec, TokenMint, TOKEN_FUNGIBLE_COMMON);
+							final var baselineCostLookup = getTxnRecord(baselineMintWithEnoughGas)
+									.andAllChildRecords()
+									.logged()
+									.assertingNothing();
+							allRunFor(spec, baselineCostLookup);
+							final var baselineGas = baselineCostLookup.getResponseRecord()
+									.getContractCallResult()
+									.getGasUsed();
+							expectedInsufficientGas.set(baselineGas - expectedPrecompileGas);
+						}),
+						sourcing(() ->
+								contractCall(theContract, "mintFungibleToken", amount)
+										.via(firstMintTxn)
+										.payingWith(theAccount)
+										.alsoSigningWithFullPrefix(multiKey)
+										.gas(expectedInsufficientGas.get())
+										.hasKnownStatus(INSUFFICIENT_GAS)),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(fungibleToken).hasTotalSupply(0),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 0),
-						childRecordsCheck(firstMintTxn, SUCCESS,
+						getTokenInfo(fungibleToken).hasTotalSupply(amount),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount),
+						childRecordsCheck(firstMintTxn, INSUFFICIENT_GAS,
 								recordWith()
 										.contractCallResult(
 												resultWith()
@@ -697,6 +731,33 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										)
 						)
 				);
+	}
+
+	private long expectedPrecompileGasFor(
+			final HapiApiSpec spec,
+			final HederaFunctionality function,
+			final SubType type
+	) {
+		final var gasThousandthsOfTinycentPrice = spec.fees()
+				.getCurrentOpFeeData()
+				.get(ContractCall)
+				.get(DEFAULT)
+				.getServicedata()
+				.getGas();
+		final var assetsLoader = new AssetsLoader();
+		final BigDecimal hapiUsdPrice;
+		try {
+			hapiUsdPrice = assetsLoader.loadCanonicalPrices()
+					.get(function)
+					.get(type);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		final var precompileTinycentPrice = hapiUsdPrice
+				.multiply(BigDecimal.valueOf(1.2))
+				.multiply(BigDecimal.valueOf(100 * 100_000_000L))
+				.longValueExact();
+		return (precompileTinycentPrice * 1000 / gasThousandthsOfTinycentPrice);
 	}
 
 	@NotNull

@@ -88,6 +88,7 @@ public class ValidateTokensDeleteAfterReconnect extends HapiApiSuite {
 								.logging()
 				)
 				.when(
+						sleepFor(30000),
 						getAccountBalance(GENESIS)
 								.setNode(reconnectingNode)
 								.unavailableNode(),

@@ -20,25 +20,26 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -49,18 +50,20 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.token.process.DissociationFactory;
-import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
@@ -69,7 +72,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -86,13 +88,13 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -131,13 +133,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TransferPrecompilesTest {
 	@Mock
-	private Bytes pretendArguments;
-	@Mock
 	private HederaTokenStore hederaTokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private OptionValidator validator;
 	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
@@ -156,12 +154,6 @@ class TransferPrecompilesTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private TransferLogic transferLogic;
 	@Mock
@@ -186,15 +178,12 @@ class TransferPrecompilesTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	private final EntityIdSource ids = NOOP_ID_SOURCE;
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private ImpliedTransfers impliedTransfers;
-	@Mock
-	private DissociationFactory dissociationFactory;
 	@Mock
 	private ImpliedTransfersMeta impliedTransfersMeta;
 	@Mock
@@ -204,39 +193,46 @@ class TransferPrecompilesTest {
 	@Mock
 	private StateView stateView;
 	@Mock
-	private PrecompilePricingUtils precompilePricingUtils;
-	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
+	private InfrastructureFactory infrastructureFactory;
 	@Mock
-	private CreateChecks createChecks;
+	private AssetsLoader assetLoader;
 	@Mock
-	private EntityIdSource entityIdSource;
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+
+	private static final long TEST_SERVICE_FEE = 5_000_000;
+	private static final long TEST_NETWORK_FEE = 400_000;
+	private static final long TEST_NODE_FEE = 300_000;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
+		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setTransferLogicFactory(transferLogicFactory);
-		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
+				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test
 	void transferFailsFastGivenWrongSyntheticValidity() {
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -249,7 +245,6 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
 				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -263,14 +258,14 @@ class TransferPrecompilesTest {
 		given(creator.createUnsuccessfulSyntheticRecord(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
 				.willReturn(mockRecordBuilder);
 		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
-		given(frame.getRemainingGas()).willReturn(Gas.of(100L));
+		given(frame.getRemainingGas()).willReturn(100L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getInputData()).willReturn(pretendArguments);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -285,8 +280,10 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -297,18 +294,11 @@ class TransferPrecompilesTest {
 		given(decoder.decodeTransferTokens(eq(pretendArguments), any()))
 				.willReturn(Collections.singletonList(tokensTransferList));
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -326,15 +316,14 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -347,12 +336,15 @@ class TransferPrecompilesTest {
 
 	@Test
 	void abortsIfImpliedCustomFeesCannotBeAssessed() {
+		givenPricingUtilsContext();
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 
@@ -367,7 +359,6 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -384,7 +375,7 @@ class TransferPrecompilesTest {
 		// when:
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
 		assertEquals(statusResult, result);
@@ -392,8 +383,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenWithSenderOnlyHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
@@ -403,18 +397,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -432,15 +419,14 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -453,8 +439,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenWithReceiverOnlyHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(syntheticTxnFactory.createCryptoTransfer(
@@ -465,18 +454,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -494,14 +476,13 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -514,8 +495,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferNftsHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -526,18 +510,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(nftsTransferList));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -555,15 +532,14 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -576,6 +552,8 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferNftHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+
 		final var recipientAddr = Address.ALTBN128_ADD;
 		final var senderId = Id.fromGrpcAccount(sender);
 		final var receiverId = Id.fromGrpcAccount(receiver);
@@ -583,6 +561,7 @@ class TransferPrecompilesTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -593,19 +572,12 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(nftTransferList));
 
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 		given(worldUpdater.aliases()).willReturn(aliases);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -623,14 +595,13 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -654,8 +625,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void cryptoTransferHappyPathWorks() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(
 				mockSynthBodyBuilder);
@@ -665,19 +639,10 @@ class TransferPrecompilesTest {
 		given(decoder.decodeCryptoTransfer(eq(pretendArguments), any()))
 				.willReturn(Collections.singletonList(nftTransferList));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
-
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -695,15 +660,14 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -717,25 +681,19 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferFailsAndCatchesProperly() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenPricingUtilsContext();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
-
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(decoder.decodeTransferToken(eq(pretendArguments), any())).willReturn(
 				Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
@@ -743,7 +701,6 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
@@ -769,8 +726,8 @@ class TransferPrecompilesTest {
 
 		// when:
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -783,17 +740,149 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferWithWrongInput() {
+		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(decoder.decodeTransferToken(eq(pretendArguments), any())).willThrow(new IndexOutOfBoundsException());
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
 		subject.prepareFields(frame);
-		var result = subject.compute(pretendArguments, frame);
+		var result = subject.computePrecompile(pretendArguments, frame);
 
 		assertDoesNotThrow(() -> subject.prepareComputation(pretendArguments, a -> a));
-		assertNull(result);
+		assertNull(result.getOutput());
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferNfts() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferNft() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForSingleCryptoTransfer() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForMultipleCryptoTransfers() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(
+						CryptoTransferTransactionBody.newBuilder()
+								.addTokenTransfers(TokenTransferList.newBuilder().build())
+								.addTokenTransfers(TokenTransferList.newBuilder().build())
+								.addTokenTransfers(TokenTransferList.newBuilder().build())));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferMultipleTokens() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
+	}
+
+	@Test
+	void gasRequirementReturnsCorrectValueForTransferSingleToken() {
+		// given
+		givenMinFrameContext();
+		givenPricingUtilsContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(input, a -> a);
+		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(EXPECTED_GAS_PRICE, result);
 	}
 
 	private void givenFrameContext() {
@@ -815,7 +904,7 @@ class TransferPrecompilesTest {
 	private void givenMinimalFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getRemainingGas()).willReturn(300L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -827,5 +916,16 @@ class TransferPrecompilesTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+	private void givenPricingUtilsContext() {
+		given(exchange.rate(any())).willReturn(exchangeRate);
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	}
+
+	private void givenMinFrameContext() {
+		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 }

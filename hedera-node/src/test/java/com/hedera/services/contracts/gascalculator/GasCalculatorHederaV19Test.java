@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hederahashgraph.api.proto.java.*;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,12 +66,12 @@ class GasCalculatorHederaV19Test {
 
     @Test
     void gasDepositCost() {
-        assertEquals(Gas.ZERO, subject.codeDepositGasCost(1));
+        assertEquals(0L, subject.codeDepositGasCost(1));
     }
 
     @Test
     void transactionIntrinsicGasCost() {
-        assertEquals(Gas.ZERO, subject.transactionIntrinsicGasCost(Bytes.of(1, 2, 3), true));
+        assertEquals(0L, subject.transactionIntrinsicGasCost(Bytes.of(1, 2, 3), true));
     }
 
     @Test
@@ -97,7 +96,7 @@ class GasCalculatorHederaV19Test {
         given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
         given(hbarCentExchange.rate(timestamp)).willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
 
-        assertEquals(Gas.of(1516), subject.logOperationGasCost(messageFrame, 1L, 2L, 3));
+        assertEquals(1516L, subject.logOperationGasCost(messageFrame, 1L, 2L, 3));
         verify(messageFrame).getGasPrice();
         verify(messageFrame).getBlockValues();
         verify(messageFrame).getContextVariable("HederaFunctionality");
