@@ -27,6 +27,8 @@ import dagger.Provides;
 
 import javax.inject.Singleton;
 
+import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+
 @Module
 public interface PropertiesModule {
 	@Provides
@@ -34,6 +36,12 @@ public interface PropertiesModule {
 	@CompositeProps
 	static PropertySource providePropertySource(PropertySources propertySources) {
 		return propertySources.asResolvingSource();
+	}
+
+	@Provides
+	@Singleton
+	static SemanticVersions provideSemanticVersions() {
+		return SEMANTIC_VERSIONS;
 	}
 
 	@Binds

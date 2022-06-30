@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -96,6 +97,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -1045,7 +1047,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec payableSuccess() {
 		return defaultHapiSpec("PayableSuccess")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "1000000"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "1000000"),
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
 						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000)
 				).when(
@@ -1056,14 +1058,14 @@ public class ContractCallSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(
 														logWith().longAtBytes(depositAmount, 24))))),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
 	HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
 		return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "1000000"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "1000000"),
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT)
 				).when(
 						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1077,7 +1079,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall(SIMPLE_UPDATE_CONTRACT,
 								"set", BigInteger.valueOf(15), BigInteger.valueOf(434)).gas(350_000L)
 								.hasKnownStatus(CONTRACT_DELETED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -1160,8 +1162,16 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000",
+								"contracts.maxRefundPercentOfGasLimit", "100",
+								"contracts.throttle.throttleByGas", "false"
+						)),
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
@@ -1475,12 +1485,12 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT),
 						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-						UtilVerbs.overriding("contracts.maxGas", "100")
+						UtilVerbs.overriding("contracts.maxGasPerSec", "100")
 				).when().then(
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42)).gas(101L
 								)
 								.hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -1850,19 +1860,27 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
 				.given(
 						withOpContext((spec, log) -> {
-							if(!spec.isUsingEthCalls()) {
-								spec.registry().saveAccountId(DEFAULT_CONTRACT_RECEIVER, spec.setup().strongControlAccount());
+							if (!spec.isUsingEthCalls()) {
+								spec.registry().saveAccountId(DEFAULT_CONTRACT_RECEIVER,
+										spec.setup().strongControlAccount());
 							}
 							final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
-							final var transfer1 = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+							final var transfer1 = cryptoTransfer(
+									tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
 									.via("autoAccount");
 
-							final var nestedTransferringUpload = uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT);
-							final var createFirstNestedContract = contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L);
-							final var createSecondNestedContract = contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L);
-							final var transfer2 = cryptoTransfer(TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
-							final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfo").payingWith(GENESIS);
-							allRunFor(spec, keyCreation, transfer1, nestedTransferringUpload, createFirstNestedContract, createSecondNestedContract, transfer2, saveSnapshot);
+							final var nestedTransferringUpload = uploadInitCode(NESTED_TRANSFERRING_CONTRACT,
+									NESTED_CONTRACT);
+							final var createFirstNestedContract = contractCustomCreate(NESTED_CONTRACT, "1").balance(
+									10_000L);
+							final var createSecondNestedContract = contractCustomCreate(NESTED_CONTRACT, "2").balance(
+									10_000L);
+							final var transfer2 = cryptoTransfer(
+									TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
+							final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(
+									"accountInfo").payingWith(GENESIS);
+							allRunFor(spec, keyCreation, transfer1, nestedTransferringUpload, createFirstNestedContract,
+									createSecondNestedContract, transfer2, saveSnapshot);
 						})
 				)
 				.when(
@@ -1880,7 +1898,8 @@ public class ContractCallSuite extends HapiApiSuite {
 											.via(transferTxn).logged(),
 
 									getTxnRecord(transferTxn).saveTxnRecordToRegistry("txn").payingWith(GENESIS),
-									getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot("accountInfoAfterCall").payingWith(GENESIS));
+									getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(
+											"accountInfoAfterCall").payingWith(GENESIS));
 						})
 				)
 				.then(

@@ -42,7 +42,7 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
 	@Override
 	protected int getNumTestCasesFor(final int version) {
-		return version == MerkleNetworkContext.RELEASE_0200_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+		return NUM_TEST_CASES;
 	}
 
 	@Override
@@ -52,20 +52,21 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
 	@Override
 	protected MerkleNetworkContext getExpectedObject(final int version, final int testCaseNo) {
-		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextNetworkContext();
-		if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
-			seeded.setBlockNo(Long.MIN_VALUE);
-			seeded.setFirstConsTimeOfCurrentBlock(null);
-			seeded.getBlockHashes().clear();
-			if (version == MerkleNetworkContext.RELEASE_0200_VERSION) {
-				seeded.setMigrationRecordsStreamed(false);
+		if (version < MerkleNetworkContext.RELEASE_0270_VERSION) {
+			final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).next0260NetworkContext();
+			if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
+				seeded.setBlockNo(Long.MIN_VALUE);
+				seeded.setFirstConsTimeOfCurrentBlock(null);
+				seeded.getBlockHashes().clear();
 			}
+			return seeded;
+		} else {
+			return SeededPropertySource.forSerdeTest(version, testCaseNo).next0270NetworkContext();
 		}
-		return seeded;
 	}
 
 	@Override
 	protected MerkleNetworkContext getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextNetworkContext();
+		return propertySource.next0270NetworkContext();
 	}
 }

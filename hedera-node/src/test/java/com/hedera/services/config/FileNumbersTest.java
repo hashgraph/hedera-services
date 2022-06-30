@@ -56,8 +56,6 @@ class FileNumbersTest {
 		given(properties.getLongProperty("files.throttleDefinitions")).willReturn(123L);
 		given(properties.getEntityNumRange("files.softwareUpdateRange")).willReturn(Pair.of(150L, 159L));
 
-		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
-
 		subject = new FileNumbers(hederaNumbers, properties);
 	}
 

@@ -87,6 +87,7 @@ import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -123,9 +124,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -142,6 +144,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
@@ -155,6 +158,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
+import static com.hedera.services.utils.MiscUtils.RANDOM_GENERATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
@@ -231,6 +235,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -560,6 +565,7 @@ class MiscUtilsTest {
 			put("TokenUnpause", new BodySetter<>(TokenUnpauseTransactionBody.class));
 			put("TokenPause", new BodySetter<>(TokenPauseTransactionBody.class));
 			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
+			put("RandomGenerate", new BodySetter<>(RandomGenerateTransactionBody.class));
 		}};
 
 		setters.forEach((bodyType, setter) -> {
@@ -638,6 +644,7 @@ class MiscUtilsTest {
 			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
+			put(RANDOM_GENERATE_METRIC, new BodySetter<>(RandomGenerateTransactionBody.class));
 		}};
 
 		setters.forEach((stat, setter) -> {
@@ -774,6 +781,7 @@ class MiscUtilsTest {
 			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
 			put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
+			put(RandomGenerate, new BodySetter<>(RandomGenerateTransactionBody.class));
 		}};
 
 		setters.forEach((function, setter) -> {
@@ -889,6 +897,7 @@ class MiscUtilsTest {
 
 		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
 	}
+
 	@Test
 	void getGasLimitWorksForEthTxn() throws UnknownHederaFunctionality {
 		final var gasLimit = 1234L;
@@ -939,6 +948,21 @@ class MiscUtilsTest {
 	@Test
 	void ethereumTxnIsConsensusThrottled() {
 		assertTrue(isGasThrottled(EthereumTransaction));
+	}
+
+	@Test
+	void convertsByteArrayToBinary() {
+		final var hashBytes = new Hash(TxnUtils.randomUtf8Bytes(48)).getValue();
+		assertEquals(Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
+				ByteBuffer.wrap(hashBytes, 0, 32).getInt());
+	}
+
+	public static String byteArrayToBinaryString(byte[] bytes) {
+		StringBuilder result = new StringBuilder();
+		for (byte b1 : bytes) {
+			result.append(String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0'));
+		}
+		return result.toString();
 	}
 
 	@SuppressWarnings("unchecked")

@@ -4,7 +4,7 @@ package com.hedera.services.state.submerkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -42,6 +43,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -56,6 +60,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
 	public static final short NO_CHILD_TRANSACTIONS = 0;
 
+	public static final byte[] MISSING_PSEUDORANDOM_BYTES = new byte[0];
+
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
@@ -65,10 +71,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
-	static final int RELEASE_0230_VERSION = 7;
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0260_VERSION = 9;
-	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 10;
+
+	static final int RELEASE_0280_VERSION = 11;
+	static final int CURRENT_VERSION = RELEASE_0280_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
@@ -78,9 +86,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
 
+	private static final byte NO_PRNG_OUTPUT = (byte) 0x00;
+	private static final byte PRNG_INT_OUTPUT = (byte) 0x01;
+	private static final byte PRNG_BYTES_OUTPUT = (byte) 0x02;
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
-
 	private long fee;
 	private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 	private short numChildRecords = NO_CHILD_TRANSACTIONS;
@@ -91,6 +101,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private TxnReceipt receipt;
 	private RichInstant consensusTime;
 	private CurrencyAdjustments hbarAdjustments;
+	private CurrencyAdjustments stakingRewardsPaid;
 	private EvmFnResult contractCallResult;
 	private EvmFnResult contractCreateResult;
 	// IMPORTANT: This class depends on the invariant that if any of the
@@ -107,6 +118,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 	private ByteString alias = MISSING_ALIAS;
 	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
+	private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+	private int pseudoRandomNumber = MISSING_NUMBER;
 
 	@Override
 	public void release() {
@@ -125,6 +138,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.memo = builder.memo;
 		this.fee = builder.fee;
 		this.hbarAdjustments = builder.hbarAdjustments;
+		this.stakingRewardsPaid = builder.stakingRewardsPaid;
 		this.contractCallResult = builder.contractCallResult;
 		this.contractCreateResult = builder.contractCreateResult;
 		this.tokens = builder.tokens;
@@ -137,6 +151,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.numChildRecords = builder.numChildRecords;
 		this.alias = builder.alias;
 		this.ethereumHash = builder.ethereumHash;
+		this.pseudoRandomNumber = builder.pseudoRandomNumber;
+		this.pseudoRandomBytes = builder.pseudoRandomBytes;
 	}
 
 	/* --- Object --- */
@@ -156,9 +172,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("contractCreation", contractCreateResult)
 				.add("contractCall", contractCallResult)
 				.add("hbarAdjustments", hbarAdjustments)
+				.add("stakingRewardsPaid", stakingRewardsPaid)
 				.add("scheduleRef", scheduleRef)
 				.add("alias", alias.toStringUtf8())
-				.add("ethereumHash", CommonUtils.hex(ethereumHash));
+				.add("ethereumHash", CommonUtils.hex(ethereumHash))
+				.add("pseudoRandomNumber", pseudoRandomNumber)
+				.add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes));
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -224,13 +243,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.contractCallResult, that.contractCallResult) &&
 				Objects.equals(this.contractCreateResult, that.contractCreateResult) &&
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
+				Objects.equals(this.stakingRewardsPaid, that.stakingRewardsPaid) &&
 				Objects.equals(this.tokens, that.tokens) &&
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
 				Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees) &&
 				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
 				Objects.equals(this.alias, that.alias) &&
-				Arrays.equals(this.ethereumHash, that.ethereumHash);
+				Arrays.equals(this.ethereumHash, that.ethereumHash) &&
+				this.pseudoRandomNumber == that.pseudoRandomNumber &&
+				Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes);
 	}
 
 	@Override
@@ -244,6 +266,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				contractCallResult,
 				contractCreateResult,
 				hbarAdjustments,
+				stakingRewardsPaid,
 				expiry,
 				submittingMember,
 				tokens,
@@ -255,8 +278,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				numChildRecords,
 				packedParentConsensusTime,
 				alias,
-				ethereumHash);
-		return result * 31 + Arrays.hashCode(txnHash);
+				ethereumHash,
+				pseudoRandomNumber);
+		result =  result * 31 + Arrays.hashCode(txnHash);
+		return  result * 31 + Arrays.hashCode(pseudoRandomBytes);
 	}
 
 	/* --- SelfSerializable --- */
@@ -272,7 +297,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0230_VERSION;
+		return RELEASE_0250_VERSION;
 	}
 
 	@Override
@@ -318,6 +343,17 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		out.writeByteArray(alias.toByteArray());
 		out.writeByteArray(ethereumHash);
+		writeNullableSerializable(stakingRewardsPaid, out);
+
+		if (pseudoRandomNumber >= 0) {
+			out.writeByte(PRNG_INT_OUTPUT);
+			out.writeInt(pseudoRandomNumber);
+		} else if (pseudoRandomBytes.length != 0) {
+			out.writeByte(PRNG_BYTES_OUTPUT);
+			out.writeByteArray(pseudoRandomBytes);
+		} else {
+			out.writeByte(NO_PRNG_OUTPUT);
+		}
 	}
 
 	@Override
@@ -363,6 +399,19 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		// Added in 0.26
 		if (version >= RELEASE_0260_VERSION) {
 			ethereumHash = in.readByteArray(Integer.MAX_VALUE);
+		}
+		// Added in 0.27
+		if (version >= RELEASE_0270_VERSION) {
+			stakingRewardsPaid = readNullableSerializable(in);
+		}
+
+		if (version >= RELEASE_0280_VERSION) {
+			final var outputType = in.readByte();
+			if (outputType == PRNG_INT_OUTPUT) {
+				pseudoRandomNumber = in.readInt();
+			} else if (outputType == PRNG_BYTES_OUTPUT) {
+				pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_BYTES_LENGTH);
+			}
 		}
 	}
 
@@ -442,10 +491,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return contractCreateResult;
 	}
 
-	public CurrencyAdjustments getHbarAdjustments() {
-		return hbarAdjustments;
-	}
-
 	public long getExpiry() {
 		return expiry;
 	}
@@ -498,6 +543,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.ethereumHash = ethereumHash;
 	}
 
+	public void setPseudoRandomBytes(final byte[] pseudoRandomBytes) {
+		this.pseudoRandomBytes = pseudoRandomBytes;
+	}
+
+	public void setPseudoRandomNumber(final int pseudoRandomNumber) {
+		this.pseudoRandomNumber = pseudoRandomNumber;
+	}
+
+	public byte[] getPseudoRandomBytes() {
+		return pseudoRandomBytes;
+	}
+
+	public int getPseudoRandomNumber() {
+		return pseudoRandomNumber;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public boolean isImmutable() {
@@ -537,6 +598,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (hbarAdjustments != null) {
 			grpc.setTransferList(hbarAdjustments.toGrpc());
 		}
+		if (stakingRewardsPaid != null) {
+			grpc.addAllPaidStakingRewards(stakingRewardsPaid.asAccountAmountsList());
+		}
 		if (contractCallResult != null) {
 			grpc.setContractCallResult(contractCallResult.toGrpc());
 		}
@@ -566,6 +630,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
+		if (pseudoRandomNumber >= 0) {
+			grpc.setPseudorandomNumber(pseudoRandomNumber);
+		} else if (pseudoRandomBytes.length != 0) {
+			grpc.setPseudorandomBytes(wrapUnsafely(pseudoRandomBytes));
+		}
+
 		return grpc.build();
 	}
 
@@ -602,6 +672,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 		private short numChildRecords = NO_CHILD_TRANSACTIONS;
 		private CurrencyAdjustments hbarAdjustments;
+		private CurrencyAdjustments stakingRewardsPaid;
 		private EvmFnResult contractCallResult;
 		private EvmFnResult contractCreateResult;
 		private List<EntityId> tokens;
@@ -612,7 +683,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
 		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
-
+		private int pseudoRandomNumber = MISSING_NUMBER;
+		private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		private boolean onlyExternalizedIfSuccessful = false;
 
 		public Builder setFee(long fee) {
@@ -652,6 +724,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public Builder setHbarAdjustments(CurrencyAdjustments hbarAdjustments) {
 			this.hbarAdjustments = hbarAdjustments;
+			return this;
+		}
+
+		public Builder setStakingRewardsPaid(CurrencyAdjustments stakingRewardsPaid) {
+			this.stakingRewardsPaid = stakingRewardsPaid;
 			return this;
 		}
 
@@ -714,6 +791,17 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			this.ethereumHash = ethereumHash;
 			return this;
 		}
+
+		public Builder setPseudoRandomBytes(final byte[] pseudoRandomBytes) {
+			this.pseudoRandomBytes = pseudoRandomBytes;
+			return this;
+		}
+
+		public Builder setPseudoRandomNumber(final int pseudoRandomNumber) {
+			this.pseudoRandomNumber = pseudoRandomNumber;
+			return this;
+		}
+
 
 		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
@@ -796,6 +884,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		private void nullOutSideEffectFields(boolean removeCallResult) {
 			hbarAdjustments = null;
+			stakingRewardsPaid = null;
 			contractCreateResult = null;
 			tokens = NO_TOKENS;
 			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
@@ -805,6 +894,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
 			ethereumHash = MISSING_ETHEREUM_HASH;
+			pseudoRandomNumber = MISSING_NUMBER;
+			pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 			/*- if this is a revert of a child record we want to have contractCallResult -*/
 			if (removeCallResult) {
 				contractCallResult = null;
@@ -813,6 +904,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public CurrencyAdjustments getHbarAdjustments() {
 			return hbarAdjustments;
+		}
+
+		public CurrencyAdjustments getStakingRewardsPaid() {
+			return stakingRewardsPaid;
 		}
 
 		public EvmFnResult getContractCallResult() {
@@ -871,5 +966,24 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
 		}
+
+		public byte[] getPseudoRandomBytes() {
+			return pseudoRandomBytes;
+		}
+
+		public int getPseudoRandomNumber() {
+			return pseudoRandomNumber;
+		}
+	}
+
+	@VisibleForTesting
+	void clearStakingRewardsPaid() {
+		stakingRewardsPaid = null;
+	}
+
+	@VisibleForTesting
+	public void clearRandomGenerateData() {
+		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+		pseudoRandomNumber = MISSING_NUMBER;
 	}
 }

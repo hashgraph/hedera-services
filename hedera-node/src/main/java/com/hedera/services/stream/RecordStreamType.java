@@ -29,7 +29,6 @@ import com.swirlds.common.stream.StreamType;
  * from properties filtering during the Maven build, all the specializations are static and will change very rarely.
  */
 public interface RecordStreamType extends StreamType {
-	int RECORD_VERSION = 5;
 	String RECORD_DESCRIPTION = "records";
 	String RECORD_EXTENSION = "rcd";
 	String RECORD_SIG_EXTENSION = "rcd_sig";
@@ -58,11 +57,4 @@ public interface RecordStreamType extends StreamType {
 		return RECORD_SIG_EXTENSION;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	default byte[] getSigFileHeader() {
-		return new byte[] { (byte) RECORD_VERSION };
-	}
 }

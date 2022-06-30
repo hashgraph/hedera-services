@@ -166,7 +166,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec gasLimitWorks() {
-		final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas"));
+		final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
 		return defaultHapiSpec("gasLimitWorks")
 				.given(
 						uploadInitCode(CONTRACT),

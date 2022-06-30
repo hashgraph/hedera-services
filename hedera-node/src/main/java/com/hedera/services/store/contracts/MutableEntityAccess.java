@@ -80,7 +80,8 @@ public class MutableEntityAccess implements EntityAccess {
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
-				tokensLedger);
+				tokensLedger
+		);
 
 		ledger.setMutableEntityAccess(this);
 	}

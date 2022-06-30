@@ -25,8 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
-import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -41,7 +39,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -126,6 +123,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -188,7 +186,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						canUseMirrorAliasesForNonContractXfers(),
 						canUseEip1014AliasesForXfers(),
 						cannotTransferFromImmutableAccounts(),
-//						nftTransfersHaveTransitiveClosure(),
+						nftTransfersCannotRepeatSerialNos(),
 				}
 		);
 	}
@@ -435,10 +433,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private HapiApiSpec cannotTransferFromImmutableAccounts() {
 		final var contract = "PayableConstructor";
-		final var firstStakingFund = "0.0.800";
-		final var secondStakingFund = "0.0.801";
-		final var snapshot800 = "800startBalance";
-		final var snapshot801 = "801startBalance";
 		final var multiKey = "swiss";
 		final var mutableToken = "token";
 
@@ -450,58 +444,48 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.balance(ONE_HBAR)
 								.immutable()
 								.payingWith(GENESIS)
-				).when(
-						balanceSnapshot(snapshot800, firstStakingFund),
-						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, firstStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(firstStakingFund).hasTinyBars(changeFromSnapshot(snapshot800, ONE_HBAR)),
-
-						balanceSnapshot(snapshot801, secondStakingFund),
-						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, secondStakingFund, ONE_HBAR))
-								.signedBy(DEFAULT_PAYER),
-						getAccountBalance(secondStakingFund).hasTinyBars(changeFromSnapshot(snapshot801, ONE_HBAR))
-				).then(
+				).when( ).then(
 						// Even the treasury cannot withdraw from an immutable contract
 						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						// Even the treasury cannot withdraw staking funds
-						cryptoTransfer(tinyBarsFromTo(firstStakingFund, FUNDING, ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(STAKING_REWARD, FUNDING, ONE_HBAR))
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(tinyBarsFromTo(secondStakingFund, FUNDING, ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(NODE_REWARD, FUNDING, ONE_HBAR))
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						// Immutable accounts cannot be updated or deleted
-						cryptoUpdate(firstStakingFund)
+						cryptoUpdate(STAKING_REWARD)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoDelete(firstStakingFund)
+						cryptoDelete(STAKING_REWARD)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR).hasKnownStatus(INVALID_ACCOUNT_ID),
 						// Immutable accounts cannot serve any role for tokens
 						tokenCreate(mutableToken).adminKey(multiKey),
-						tokenAssociate(secondStakingFund, mutableToken)
+						tokenAssociate(NODE_REWARD, mutableToken)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						tokenUpdate(mutableToken)
 								.payingWith(GENESIS).signedBy(GENESIS, multiKey).fee(ONE_HBAR)
-								.treasury(firstStakingFund)
+								.treasury(STAKING_REWARD)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						tokenCreate("notToBe")
-								.treasury(firstStakingFund)
+								.treasury(STAKING_REWARD)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						tokenCreate("notToBe")
-								.autoRenewAccount(secondStakingFund)
+								.autoRenewAccount(NODE_REWARD)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
 						tokenCreate("notToBe")
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.withCustom(fixedHbarFee(5 * ONE_HBAR, firstStakingFund))
+								.withCustom(fixedHbarFee(5 * ONE_HBAR, STAKING_REWARD))
 								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
 						// Immutable accounts cannot be topic auto-renew accounts
 						createTopic("notToBe")
-								.autoRenewAccountId(secondStakingFund)
+								.autoRenewAccountId(NODE_REWARD)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
 						// Immutable accounts cannot be schedule transaction payers
@@ -509,13 +493,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
 						)
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.designatingPayer(firstStakingFund)
+								.designatingPayer(STAKING_REWARD)
 								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						// Immutable accounts cannot approve or adjust allowances
 						cryptoApproveAllowance()
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.addCryptoAllowance(secondStakingFund, FUNDING, 100L)
+								.addCryptoAllowance(NODE_REWARD, FUNDING, 100L)
 								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID)
 				);
 	}
@@ -917,7 +901,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nftTransfersHaveTransitiveClosure() {
+	private HapiApiSpec nftTransfersCannotRepeatSerialNos() {
 		final var aParty = "aParty";
 		final var bParty = "bParty";
 		final var cParty = "cParty";
@@ -927,7 +911,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var hotTxn = "hotTxn";
 		final var mintTxn = "mintTxn";
 
-		return defaultHapiSpec("NftTransfersHaveTransitiveClosure")
+		return defaultHapiSpec("NftTransfersCannotRepeatSerialNos")
 				.given(
 						newKeyNamed(multipurpose),
 						cryptoCreate(TOKEN_TREASURY),
@@ -941,10 +925,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.supplyKey(multipurpose)
 								.initialSupply(0),
 						mintToken(nftType, List.of(copyFromUtf8("Hot potato!"))).via(mintTxn),
-						getTxnRecord(mintTxn).logged(),
+						getTxnRecord(mintTxn).logged()
+				).when(
 						cryptoTransfer(movingUnique(nftType, 1L)
 								.between(TOKEN_TREASURY, aParty))
-				).when(
+				).then(
 						cryptoTransfer((spec, b) -> {
 									final var registry = spec.registry();
 									final var aId = registry.getAccountID(aParty);
@@ -960,28 +945,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						)
 								.via(hotTxn)
 								.signedBy(DEFAULT_PAYER, aParty, bParty, cParty)
-				).then(
-						getTxnRecord(hotTxn)
-								.hasPriority(recordWith()
-										.tokenTransfers(new BaseErroringAssertsProvider<>() {
-											@Override
-											public ErroringAsserts<List<TokenTransferList>> assertsFor(
-													final HapiApiSpec spec
-											) {
-												return tokenTransfers -> {
-													try {
-														assertEquals(1, tokenTransfers.size(),
-																"No transfers appeared");
-														final var changes = tokenTransfers.get(0);
-//														assertEquals(1, changes.getNftTransfersCount(),
-//																"Transitive closure didn't happen");
-													} catch (Throwable failure) {
-														return List.of(failure);
-													}
-													return Collections.emptyList();
-												};
-											}
-										})).logged()
+								.hasPrecheck(INVALID_ACCOUNT_AMOUNTS)
 				);
 	}
 

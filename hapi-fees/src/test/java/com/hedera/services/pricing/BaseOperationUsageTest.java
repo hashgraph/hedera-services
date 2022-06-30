@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -146,6 +147,14 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(ScheduleCreate, SCHEDULE_CREATE_CONTRACT_CALL);
 		verify(mock).scheduleCreateWithContractCall();
+	}
+
+	@Test
+	void picksRandomGenerateOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(RandomGenerate, DEFAULT);
+		verify(mock).randomGenerate();
 	}
 
 	@Test

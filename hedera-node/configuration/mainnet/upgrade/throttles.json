@@ -38,7 +38,8 @@
 			"TokenGetAccountNftInfos",
 			"TokenGetNftInfos",
 			"CryptoApproveAllowance",
-			"CryptoDeleteAllowance"
+			"CryptoDeleteAllowance",
+			"RandomGenerate"
 		  ]
 		},
 		{

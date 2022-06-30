@@ -162,7 +162,7 @@ public class WorldLedgers {
 		if (!areMutable()) {
 			throw new IllegalStateException("Static ledgers cannot be used to get owner if present");
 		}
-		return nftsLedger.contains(nftId) ? explicitOwnerOfExtant(nftId): null;
+		return nftsLedger.contains(nftId) ? explicitOwnerOfExtant(nftId) : null;
 	}
 
 	public Address ownerOf(final NftId nftId) {
@@ -307,7 +307,8 @@ public class WorldLedgers {
 				wrappedTokenRelsLedger,
 				wrappedAccountsLedger,
 				wrappedNftsLedger,
-				wrappedTokensLedger);
+				wrappedTokensLedger
+		);
 	}
 
 	public ContractAliases aliases() {

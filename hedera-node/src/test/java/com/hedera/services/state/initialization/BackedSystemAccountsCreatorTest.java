@@ -27,11 +27,10 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -40,8 +39,8 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,6 +101,8 @@ class BackedSystemAccountsCreatorTest {
 		given(hederaNums.shard()).willReturn(shard);
 		accountNums = mock(AccountNumbers.class);
 		given(accountNums.treasury()).willReturn(2L);
+		given(accountNums.stakingRewardAccount()).willReturn(800L);
+		given(accountNums.nodeRewardAccount()).willReturn(801L);
 		properties = mock(PropertySource.class);
 		legacyReader = mock(LegacyEd25519KeyReader.class);
 
@@ -301,7 +302,6 @@ class BackedSystemAccountsCreatorTest {
 	private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
 		MerkleAccount hAccount = new HederaAccountCustomizer()
 				.isReceiverSigRequired(false)
-				.proxy(EntityId.MISSING_ENTITY_ID)
 				.isDeleted(false)
 				.expiry(expiry)
 				.memo("")
