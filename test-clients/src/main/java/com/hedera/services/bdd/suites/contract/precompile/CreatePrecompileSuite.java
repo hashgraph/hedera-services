@@ -120,7 +120,6 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return false;
 	}
 
-	//TODO: Fix contract name in TokenCreateContract.sol
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
