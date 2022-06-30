@@ -280,10 +280,6 @@
 			<groupId>com.swirlds</groupId>
 			<artifactId>swirlds-virtualmap</artifactId>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>com.hedera.hashgraph</groupId>-->
-<!--			<artifactId>ethereumj-core</artifactId>-->
-<!--		</dependency>-->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
