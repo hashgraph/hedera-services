@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class MintPrecompile extends AbstractWritePrecompile {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
+	private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
@@ -97,7 +98,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
 		final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for mint precompile!");
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, MINT);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

@@ -133,6 +133,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * </ol>
  */
 public class TokenCreatePrecompile extends AbstractWritePrecompile {
+	private static final String TOKEN_CREATE = String.format(FAILURE_MESSAGE, "token create");
 	private final EncodingFacade encoder;
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
@@ -209,8 +210,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 		final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 		final var treasuryHasSigned = KeyActivationUtils.validateKey(
 				frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-		validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for token create precompile!");
-		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for token create precompile!"));
+		validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE);
+		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE));
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

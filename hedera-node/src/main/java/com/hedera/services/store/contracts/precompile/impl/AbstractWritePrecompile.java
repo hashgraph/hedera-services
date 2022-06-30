@@ -30,6 +30,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
+	protected static final String FAILURE_MESSAGE = "Invalid full prefix for %s precompile!";
 	protected final WorldLedgers ledgers;
 	protected final DecodingFacade decoder;
 	protected final SideEffectsTracker sideEffects;
@@ -55,6 +56,6 @@ public abstract class AbstractWritePrecompile implements Precompile {
 
 	@Override
 	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
+		return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
 	}
 }

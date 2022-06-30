@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
+	private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
 	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
 	private final int functionId;
@@ -161,7 +162,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 				final var hasSenderSig = KeyActivationUtils.validateKey(
 						frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
 						updater.aliases());
-				validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for transfer precompile!");
+				validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
 			}
 			if (i < numExplicitChanges) {
 				/* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
@@ -176,7 +177,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 							frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
 							ledgers, updater.aliases());
 				}
-				validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for transfer precompile!");
+				validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
 			}
 		}
 

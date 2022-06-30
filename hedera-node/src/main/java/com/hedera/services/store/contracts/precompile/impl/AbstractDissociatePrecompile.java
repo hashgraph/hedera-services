@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public abstract class AbstractDissociatePrecompile implements Precompile {
+	private static final String DISSOCIATE = "Invalid full prefix for dissociate precompile!";
 	private final WorldLedgers ledgers;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
@@ -94,7 +95,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 		final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for dissociate precompile!");
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, DISSOCIATE);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

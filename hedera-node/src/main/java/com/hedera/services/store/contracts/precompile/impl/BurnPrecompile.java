@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class BurnPrecompile extends AbstractWritePrecompile {
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
+	private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
 	private final EncodingFacade encoder;
 	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
@@ -91,7 +92,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 		final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
 				frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, "Invalid full prefix for burn precompile!");
+		validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, BURN);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
