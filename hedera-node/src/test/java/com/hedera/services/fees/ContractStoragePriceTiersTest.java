@@ -31,6 +31,7 @@ import static com.hedera.services.fees.ContractStoragePriceTiers.cappedMultiplic
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ContractStoragePriceTiersTest {
@@ -179,7 +180,7 @@ class ContractStoragePriceTiersTest {
 				"prices=[100000, 500000, 100000000]}";
 
 		assertEquals(a, d);
-		assertNotEquals(a, null);
+		assertNotNull(a);
 		assertNotEquals(a, b);
 		assertNotEquals(a, c);
 		assertEquals(a, e);
