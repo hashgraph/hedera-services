@@ -212,5 +212,11 @@ sonarqube {
         property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
 
         property("sonar.coverage.exclusions", "**/SuiteRunner.java,**/EndToEndPackageRunner.java")
+
+        // Ignored to match pom.xml setup
+        property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
+        property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S125")
+        property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
+        property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S1874")
     }
 }

@@ -696,14 +696,14 @@ public class SuiteRunner {
 		List<HapiApiSuite> failed = IntStream.range(0, suites.length)
 				.filter(i -> outcomes.get(i) != FinalOutcome.SUITE_PASSED)
 				.mapToObj(i -> suites[i])
-				.collect(toList());
+				.toList();
 		return summaryOf(category, suites, failed);
 	}
 
 	private static CategoryResult runSuitesSync(String category, HapiApiSuite[] suites) {
 		List<HapiApiSuite> failed = Stream.of(suites)
 				.filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
-				.collect(toList());
+				.toList();
 		return summaryOf(category, suites, failed);
 	}
 
