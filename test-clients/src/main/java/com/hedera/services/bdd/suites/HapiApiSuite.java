@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -56,6 +55,7 @@ public abstract class HapiApiSuite {
 	private static final Random RANDOM = new Random();
 
 	protected abstract Logger getResultsLogger();
+
 	public abstract List<HapiApiSpec> getSpecsInSuite();
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
@@ -115,7 +115,7 @@ public abstract class HapiApiSuite {
 	public String name() {
 		String simpleName = this.getClass().getSimpleName();
 
-		simpleName =  !simpleName.endsWith("Suite")
+		simpleName = !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
 		return simpleName;
@@ -179,7 +179,7 @@ public abstract class HapiApiSuite {
 		return finalOutcomeFor(finalSpecs);
 	}
 
-	@SuppressWarnings({"java:S3358", "java:S3740"})
+	@SuppressWarnings({ "java:S3358", "java:S3740" })
 	public static HapiSpecOperation[] flattened(Object... ops) {
 		return Stream
 				.of(ops)

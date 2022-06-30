@@ -219,6 +219,7 @@ import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 
+@SuppressWarnings({"java:S2699", "java:S3577"})
 class EndToEndPackageRunner extends TestBase {
 
 	@BeforeAll

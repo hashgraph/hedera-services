@@ -671,10 +671,10 @@ public class SuiteRunner {
 	private static List<CategoryResult> runTargetCategories() {
 		if (runAsync) {
 			return accumulateAsync(
-					targetCategories.stream().toArray(n -> new CategorySuites[n]),
+					targetCategories.toArray(CategorySuites[]::new),
 					sbc -> runSuitesAsync(sbc.category, sbc.suites));
 		} else {
-			return targetCategories.stream().map(sbc -> runSuitesSync(sbc.category, sbc.suites)).collect(toList());
+			return targetCategories.stream().map(sbc -> runSuitesSync(sbc.category, sbc.suites)).toList();
 		}
 	}
 

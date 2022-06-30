@@ -67,7 +67,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -83,7 +82,6 @@ import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 public class HapiApiSpec implements Runnable {
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
@@ -158,7 +156,7 @@ public class HapiApiSpec implements Runnable {
 
     public void incrementNumLedgerOps() {
         int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
-        ledgerOpCountCallbacks.stream().forEach(c -> c.accept(newNumLedgerOps));
+        ledgerOpCountCallbacks.forEach(c -> c.accept(newNumLedgerOps));
     }
 
     public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
@@ -285,7 +283,7 @@ public class HapiApiSpec implements Runnable {
             String secs = setup().ciPropertiesMap().get("secondsWaitingServerUp");
             if (secs != null) {
                 secsWait = Integer.parseInt(secs);
-                secsWait = secsWait >= 0 ? secsWait : 0;
+                secsWait = Math.max(secsWait, 0);
             }
         }
         while (secsWait >= 0) {
@@ -293,7 +291,7 @@ public class HapiApiSpec implements Runnable {
                 ratesProvider.init();
                 feeCalculator.init();
                 return true;
-            } catch (Throwable t) {
+            } catch (final Throwable t) {
                 secsWait--;
                 if (secsWait < 0) {
                     log.error("Fees failed to initialize! Please check if server is down...", t);
@@ -406,7 +404,7 @@ public class HapiApiSpec implements Runnable {
                                         try {
                                             op.finishFor(this);
                                         } catch (Throwable t) {
-                                            log.warn("{}{} failed!", logPrefix(),op);
+                                            log.warn("{}{} failed!", logPrefix(), op);
                                             finishingError.set(Optional.of(t));
                                         }
                                     }
