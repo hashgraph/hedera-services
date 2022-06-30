@@ -100,7 +100,7 @@ class CallLocalExecutorTest {
 
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>());
+						callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -128,7 +128,7 @@ class CallLocalExecutorTest {
 
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>());
+						callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
 		final var expected = response(OK,transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -149,7 +149,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap());
+						Collections.emptyMap(), new ArrayList<>());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -170,7 +170,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap());
+						Collections.emptyMap(), new ArrayList<>());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(entityAccess.isTokenAccount(any())).willReturn(true);
@@ -190,7 +190,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), Collections.emptyMap());
+						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), Collections.emptyMap(), Collections.emptyList());
 		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -211,7 +211,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap());
+						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap(),  Collections.emptyList());
 		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -232,7 +232,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())),
-						Optional.empty(), Collections.emptyMap());
+						Optional.empty(), Collections.emptyMap(), Collections.emptyList());
 		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));

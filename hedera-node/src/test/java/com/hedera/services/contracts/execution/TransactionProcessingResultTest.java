@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,7 +142,8 @@ class TransactionProcessingResultTest {
 				1234L,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				contractStateChanges);
+				contractStateChanges,
+				new ArrayList<>());
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -179,7 +181,7 @@ class TransactionProcessingResultTest {
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
 		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,
-				Optional.of(exception),Map.of());
+				Optional.of(exception),Map.of(), new ArrayList<>());
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
@@ -197,7 +199,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 
 		assertEquals(GAS_PRICE, result.getGasPrice());
 	}
@@ -211,7 +214,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 	}
@@ -225,7 +229,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 
 		assertEquals(GAS_USAGE, result.getGasUsed());
 	}
@@ -239,7 +244,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 
 		assertTrue(result.isSuccessful());
 	}

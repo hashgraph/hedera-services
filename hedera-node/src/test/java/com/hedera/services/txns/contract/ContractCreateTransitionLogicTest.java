@@ -66,6 +66,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -373,7 +374,8 @@ class ContractCreateTransitionLogicTest {
 				124L,
 				Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -431,7 +433,8 @@ class ContractCreateTransitionLogicTest {
 				124L,
 				Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -497,7 +500,8 @@ class ContractCreateTransitionLogicTest {
 				124L,
 				Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -545,7 +549,7 @@ class ContractCreateTransitionLogicTest {
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
 				124L, Optional.empty(), Optional.empty(),
-				Map.of());
+				Map.of(), new ArrayList<>());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -591,7 +595,8 @@ class ContractCreateTransitionLogicTest {
 				124L,
 				Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
@@ -652,7 +657,8 @@ class ContractCreateTransitionLogicTest {
 				124L,
 				Bytes.EMPTY,
 				contractAccount.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				new ArrayList<>());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();

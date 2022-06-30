@@ -332,7 +332,8 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getOutputData(),
 					mirrorReceiver,
-					stateChanges);
+					stateChanges,
+					hederaTracer.getActions());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction,
@@ -340,7 +341,8 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
-					stateChanges);
+					stateChanges,
+					hederaTracer.getActions());
 		}
 	}
 

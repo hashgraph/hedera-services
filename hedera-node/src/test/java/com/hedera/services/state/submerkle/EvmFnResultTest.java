@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -164,7 +165,7 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
 				Optional.empty(),
-				stateChanges);
+				stateChanges, new ArrayList<>());
 
 		final var actual = EvmFnResult.fromCall(input);
 
@@ -193,7 +194,8 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Bytes.wrap(result),
 				recipient,
-				stateChanges);
+				stateChanges,
+				new ArrayList<>());
 		input.setCreatedContracts(grpcCreatedContractIds);
 
 		final var actual = EvmFnResult.fromCall(input);
@@ -232,7 +234,8 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Bytes.wrap(result),
 				recipient,
-				stateChanges);
+				stateChanges,
+				new ArrayList<>());
 		input.setCreatedContracts(grpcCreatedContractIds);
 
 		final var actual = EvmFnResult.fromCreate(input, evmAddress);

@@ -23,6 +23,9 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.SolidityAction;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -66,6 +69,7 @@ public class TransactionProcessingResult {
 	private final Optional<Address> recipient;
 	private final Optional<ExceptionalHaltReason> haltReason;
 	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+	private final List<SolidityAction> actions;
 
 	private List<ContractID> createdContracts = Collections.emptyList();
 
@@ -75,7 +79,8 @@ public class TransactionProcessingResult {
 			final long gasPrice,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final List<SolidityAction> actions
 	) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
@@ -87,7 +92,8 @@ public class TransactionProcessingResult {
 				Optional.empty(),
 				revertReason,
 				haltReason,
-				stateChanges);
+				stateChanges,
+				actions);
 	}
 
 	public static TransactionProcessingResult successful(
@@ -97,7 +103,8 @@ public class TransactionProcessingResult {
 			final long gasPrice,
 			final Bytes output,
 			final Address recipient,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final List<SolidityAction> actions
 	) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
@@ -109,7 +116,8 @@ public class TransactionProcessingResult {
 				Optional.of(recipient),
 				Optional.empty(),
 				Optional.empty(),
-				stateChanges);
+				stateChanges,
+				actions);
 	}
 
 	 private TransactionProcessingResult(
@@ -122,7 +130,8 @@ public class TransactionProcessingResult {
 			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final List<SolidityAction> actions
 	 ) {
 		this.logs = logs;
 		this.output = output;
@@ -134,6 +143,7 @@ public class TransactionProcessingResult {
 		this.haltReason = haltReason;
 		this.revertReason = revertReason;
 		this.stateChanges = stateChanges;
+		this.actions = actions;
 	}
 
 	/**
@@ -212,5 +222,13 @@ public class TransactionProcessingResult {
 
 	public ContractStateChanges toContractStateChangesGrpc() {
 		return EvmFnResult.fromCall(this).toContractStateChangesGrpc();
+	}
+
+	public ContractActions toContractActionsGrpc() {
+		ContractActions.Builder contractActions = ContractActions.newBuilder();
+
+		actions.forEach(action -> contractActions.addContractActions(action.toGrpc()));
+
+		return contractActions.build();
 	}
 }

@@ -57,6 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -264,7 +265,7 @@ class ContractCallLocalAnswerTest {
 
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
-						Optional.empty(), new TreeMap<>());
+						Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -281,7 +282,7 @@ class ContractCallLocalAnswerTest {
 
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(),
-						Optional.empty(), new TreeMap<>());
+						Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
 		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));

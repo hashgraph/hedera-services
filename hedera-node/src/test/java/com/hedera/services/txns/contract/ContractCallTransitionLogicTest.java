@@ -52,6 +52,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -136,7 +137,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
-				contractAccount.getId().asEvmAddress(), Map.of());
+				contractAccount.getId().asEvmAddress(), Map.of(), new ArrayList<>());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
 				txnCtx.consensusTime()))
 				.willReturn(results);
@@ -164,7 +165,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
-				contractAccount.getId().asEvmAddress(), Map.of());
+				contractAccount.getId().asEvmAddress(), Map.of(), new ArrayList<>());
 		given(evmTxProcessor.executeEth(
 				senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
 				txnCtx.consensusTime(), biOfferedGasPrice, relayerAccount, maxGas))
@@ -198,7 +199,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
-				contractAccount.getId().asEvmAddress(), Map.of());
+				contractAccount.getId().asEvmAddress(), Map.of(), new ArrayList<>());
 		given(evmTxProcessor.execute(senderAccount,
 				new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())).canonicalAddress(),
 				gas, sent,
@@ -240,7 +241,7 @@ class ContractCallTransitionLogicTest {
 		// and:
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY,
-				contractAccount.getId().asEvmAddress(), Map.of());
+				contractAccount.getId().asEvmAddress(), Map.of(), new ArrayList<>());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
