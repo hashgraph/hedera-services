@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -31,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -132,7 +135,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
+												contractCreate(THE_CONTRACT, asHeadlongAddress(asAddress(spec.registry().getTokenID(TOKEN))))
 														.payingWith(ALICE)
 														.via("creationTx")
 														.gas(GAS_TO_OFFER)
@@ -141,7 +144,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
-						contractCall(THE_CONTRACT, "burnTokenWithEvent", 1, new ArrayList<Long>()
+						contractCall(THE_CONTRACT, "burnTokenWithEvent", BigInteger.valueOf(1), new long[]{}
 						)
 								.payingWith(ALICE)
 								.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -219,7 +222,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
+												contractCreate(THE_CONTRACT, asHeadlongAddress(asAddress(spec.registry().getTokenID(TOKEN))))
 														.payingWith(ALICE)
 														.via("creationTx")
 														.gas(GAS_TO_OFFER)
@@ -436,8 +439,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
+	private Address getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+		return asAddress(HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract)));
 	}
 
 	@Override

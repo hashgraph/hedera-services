@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -75,6 +76,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
@@ -129,15 +131,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(new HapiApiSpec[] {
-				fungibleTokenCreateHappyPath(),
-				fungibleTokenCreateWithFeesHappyPath(),
-				nonFungibleTokenCreateHappyPath(),
-				nonFungibleTokenCreateWithFeesHappyPath(),
-				fungibleTokenCreateThenQueryAndTransfer(),
-				nonFungibleTokenCreateThenQuery(),
-				inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-				inheritsSenderAutoRenewAccountForTokenCreate(),
-				createTokenWithDefaultExpiryAndEmptyKeys()
+				fungibleTokenCreateHappyPath(), // TODO: given selector does not match: expected: 1191a272, found: 00000000!
+				fungibleTokenCreateWithFeesHappyPath(), // given selector does not match: expected: 091cc899, found: 00000000!
+				nonFungibleTokenCreateHappyPath(), // given selector does not match: expected: 475337ad, found: 00000000!
+				nonFungibleTokenCreateWithFeesHappyPath(), // given selector does not match: expected: fbdd95d6, found: 00000000!
+				fungibleTokenCreateThenQueryAndTransfer(), // given selector does not match: expected: 24553206, found: 00000000!
+				nonFungibleTokenCreateThenQuery(), // given selector does not match: expected: d6fa40ae, found: 00000000!
+				inheritsSenderAutoRenewAccountIfAnyForNftCreate(), // given selector does not match: expected: 801ecdbf, found: 00000000!
+				inheritsSenderAutoRenewAccountForTokenCreate(), // given selector does not match: expected: 1191a272, found: 00000000!
+				createTokenWithDefaultExpiryAndEmptyKeys() // given selector does not match: expected: 801ecdbf, found: 00000000!
 		});
 	}
 
@@ -198,15 +200,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD,
-														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE))))
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
@@ -290,9 +292,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getAccountID(feeCollector)),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD)
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
@@ -374,9 +376,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						withOpContext((spec, ignore) -> {
 							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
 							final var subop2 = contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-									asAddress(spec.registry().getAccountID(ACCOUNT)),
+									asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-									new byte[] { },
+									Address.wrap("0x0000000000000000000000000000000000000000"),
 									AUTO_RENEW_PERIOD
 							).via(FIRST_CREATE_TXN)
 									.gas(GAS_TO_OFFER)
@@ -440,15 +442,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														new byte[] { }, // set empty autoRenewAccount
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														Address.wrap("0x0000000000000000000000000000000000000000"), // set empty autoRenewAccount
 														AUTO_RENEW_PERIOD,
-														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE))))
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
@@ -497,9 +499,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 							final var subop2 = contractCall(
 									TOKEN_CREATE_CONTRACT,
 									"createNFTTokenWithKeysAndExpiry",
-									asAddress(spec.registry().getAccountID(ACCOUNT)),
+									asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-									asAddress(spec.registry().getAccountID(ACCOUNT)),
+									asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 									AUTO_RENEW_PERIOD
 							).via(FIRST_CREATE_TXN)
 									.gas(GAS_TO_OFFER)
@@ -586,10 +588,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT,
 														"createNonFungibleTokenWithCustomFees",
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getAccountID(feeCollector)),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD)
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
@@ -662,7 +664,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenThenQueryAndTransfer",
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -731,8 +733,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createNonFungibleTokenThenQuery",
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -803,7 +805,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									balanceSnapshot(ACCOUNT_BALANCE, spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT);
 							final var hapiContractCall =
 									contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithEmptyKeysArray",
-											asAddress(spec.registry().getAccountID(ACCOUNT)),
+											asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 											AUTO_RENEW_PERIOD)
 											.via(FIRST_CREATE_TXN)
 											.gas(GAS_TO_OFFER)
@@ -845,7 +847,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT,
 														"createTokenWithKeyWithMultipleValues",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -882,8 +884,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithInvalidFixedFee",
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -970,7 +972,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithInvalidExpiry",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -1024,10 +1026,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT,
 														"createNonFungibleTokenWithInvalidRoyaltyFee",
-														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getAccountID(feeCollector)),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD)
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
@@ -1069,9 +1071,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-														Utils.asSolidityAddress(0, 0, 999_999_999L),
+														asHeadlongAddress(Utils.asSolidityAddress(0, 0, 999_999_999L)),
 														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)
@@ -1121,9 +1123,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														asAddress(spec.registry().getAccountID(feeCollector)),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(feeCollector))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD)
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
@@ -1168,9 +1170,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														"createTokenWithAllCustomFeesAvailable",
 														spec.registry().getKey(
 																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-														Utils.asSolidityAddress(0, 0, 15252L),
-														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(Utils.asSolidityAddress(0, 0, 15252L)),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD)
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
@@ -1220,9 +1222,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 							final long sentAmount = ONE_HBAR / 100;
 							final var hapiContractCall =
 									contractCall(TOKEN_CREATE_CONTRACT, "createNFTTokenWithKeysAndExpiry",
-											asAddress(spec.registry().getAccountID(ACCOUNT)),
+											asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 											spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-											asAddress(spec.registry().getAccountID(ACCOUNT)),
+											asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 											AUTO_RENEW_PERIOD
 									)
 											.via(FIRST_CREATE_TXN)
@@ -1270,8 +1272,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(TOKEN_CREATE_CONTRACT, "delegateCallCreate",
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
 														AUTO_RENEW_PERIOD
 												)
 														.via(FIRST_CREATE_TXN)

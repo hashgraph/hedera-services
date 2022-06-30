@@ -20,10 +20,10 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -61,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.TBD_TOKEN;
@@ -198,8 +199,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenDelete(TBD_TOKEN),
 												tokenDelete(tbdUniqToken),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(zeroBalanceFrozenID.get()),
-														asAddress(tbdTokenID.get())
+														asHeadlongAddress(asAddress(zeroBalanceFrozenID.get())),
+														asHeadlongAddress(asAddress(tbdTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(zeroBalanceFrozen)
 														.gas(GAS_TO_OFFER)
@@ -207,8 +208,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord(
 														"dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(zeroBalanceUnfrozenID.get()),
-														asAddress(tbdTokenID.get())
+														asHeadlongAddress(asAddress(zeroBalanceUnfrozenID.get())),
+														asHeadlongAddress(asAddress(tbdTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(zeroBalanceUnfrozen)
 														.gas(GAS_TO_OFFER)
@@ -216,8 +217,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord(
 														"dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(nonZeroBalanceFrozenID.get()),
-														asAddress(tbdTokenID.get())
+														asHeadlongAddress(asAddress(nonZeroBalanceFrozenID.get())),
+														asHeadlongAddress(asAddress(tbdTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(nonZeroBalanceFrozen)
 														.gas(GAS_TO_OFFER)
@@ -225,8 +226,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord(
 														"dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(nonZeroBalanceUnfrozenID.get()),
-														asAddress(tbdTokenID.get())
+														asHeadlongAddress(asAddress(nonZeroBalanceUnfrozenID.get())),
+														asHeadlongAddress(asAddress(tbdTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(nonZeroBalanceUnfrozen)
 														.gas(GAS_TO_OFFER)
@@ -234,7 +235,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord(
 														"dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(CONTRACT, "tokenDissociate",
-														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get())
+														asHeadlongAddress(asAddress(treasuryID.get())),
+														asHeadlongAddress(asAddress(tbdUniqueTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(TOKEN_TREASURY)
 														.gas(GAS_TO_OFFER)
@@ -308,7 +310,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														, spec)),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(OUTER_CONTRACT, "dissociateAssociateContractCall",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+														asHeadlongAddress(asAddress(accountID.get())),
+														asHeadlongAddress(asAddress(vanillaTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("nestedDissociateTxn")
@@ -371,9 +374,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
 												contractCall(CONTRACT, "tokensDissociate",
-														asAddress(accountID.get()), List.of(
-																asAddress(vanillaTokenID.get()),
-																asAddress(knowableTokenTokenID.get()))
+														asHeadlongAddress(asAddress(accountID.get())),
+														new Address[] {
+																asHeadlongAddress(asAddress(vanillaTokenID.get())),
+																asHeadlongAddress(asAddress(knowableTokenTokenID.get()))
+														}
 												)
 														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("multipleDissociationTxn")
@@ -411,7 +416,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+	private Address getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
 		return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
 	}
 }

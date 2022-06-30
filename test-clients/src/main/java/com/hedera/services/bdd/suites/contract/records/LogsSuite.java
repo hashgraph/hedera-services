@@ -26,6 +26,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -72,7 +73,7 @@ public class LogsSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 				).when(
-						contractCall(CONTRACT, "log0", 15).via("log0")
+						contractCall(CONTRACT, "log0", BigInteger.valueOf(15)).via("log0")
 				).then(
 						getTxnRecord("log0").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -89,7 +90,7 @@ public class LogsSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 				).when(
-						contractCall(CONTRACT, "log1", 15).via("log1")
+						contractCall(CONTRACT, "log1", BigInteger.valueOf(15)).via("log1")
 				).then(
 						getTxnRecord("log1").logged().hasPriority(recordWith().contractCallResult(resultWith()
 								.logs(inOrder(logWith().noData().withTopicsInOrder(
@@ -107,7 +108,7 @@ public class LogsSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 				).when(
-						contractCall(CONTRACT, "log2", 1, 2).via("log2")
+						contractCall(CONTRACT, "log2", BigInteger.valueOf(1), BigInteger.valueOf(2)).via("log2")
 				).then(
 						getTxnRecord("log2").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -127,7 +128,7 @@ public class LogsSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 				).when(
-						contractCall(CONTRACT, "log3", 1, 2, 3).via("log3")
+						contractCall(CONTRACT, "log3", BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3)).via("log3")
 				).then(
 						getTxnRecord("log3").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -148,7 +149,7 @@ public class LogsSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 				).when(
-						contractCall(CONTRACT, "log4", 1, 2, 3, 4).via("log4")
+						contractCall(CONTRACT, "log4", BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3), BigInteger.valueOf(4)).via("log4")
 				).then(
 						getTxnRecord("log4").logged().hasPriority(
 								recordWith().contractCallResult(

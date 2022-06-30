@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -39,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class ExtCodeCopyOperationSuite extends HapiApiSuite {
@@ -67,15 +69,15 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
 				).when(
 				)
 				.then(
-						contractCall(contract, "codeCopyOf", INVALID_ADDRESS)
+						contractCall(contract, "codeCopyOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(contract, "codeCopyOf", INVALID_ADDRESS)
+						contractCallLocal(contract, "codeCopyOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
 							final var contractID = spec.registry().getContractId(contract);
-							final var accountSolidityAddress = asHexedSolidityAddress(accountID);
-							final var contractAddress = asHexedSolidityAddress(contractID);
+							final var accountSolidityAddress = asHeadlongAddress(asSolidityAddress(accountID));
+							final var contractAddress = asHeadlongAddress(asSolidityAddress(contractID));
 
 							final var call = contractCall(contract, "codeCopyOf",
 									accountSolidityAddress)

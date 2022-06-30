@@ -26,6 +26,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERC721ContractInteractions extends HapiApiSuite {
@@ -57,7 +59,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
 
     private HapiApiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
-        final var NFT_ID = 1;
+        final var NFT_ID = BigInteger.valueOf(1);
         final var CREATE_TX = "create";
         final var MINT_TX = "mint";
         final var APPROVE_TX = "approve";
@@ -78,8 +80,8 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                         QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
 
                         withOpContext((spec, log) -> {
-                            final var contractCreatorId = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID();
-                            final var nftSenderId = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER).getContractAccountID();
+                            final var contractCreatorId = asAddress(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID());
+                            final var nftSenderId = asAddress(spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER).getContractAccountID());
 
                             final var mintParams = new Object[]{nftSenderId, NFT_ID};
                             final var approveParams = new Object[]{contractCreatorId, NFT_ID};

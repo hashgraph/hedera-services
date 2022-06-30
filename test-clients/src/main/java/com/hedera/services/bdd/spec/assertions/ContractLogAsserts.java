@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
@@ -86,6 +87,26 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 			Assertions.assertEquals(expected, actual, "Bad long value in log data: " + actual);
 		});
 		return this;
+	}
+
+	public ContractLogAsserts bigIntegerValue(BigInteger expected) {
+		registerProvider((spec, o) -> {
+			byte[] data = dataFrom(o);
+//			BigInteger actual = new BigInteger(result);
+			long actual = Longs.fromByteArray(copyOfRange(data, data.length - 8, data.length));
+			Assertions.assertEquals(expected.longValueExact(), actual, "Bad big integer value in log data: " + actual);
+		});
+		return this;
+	}
+
+	public static byte[] reverse(byte[] arr) {
+		byte[] temp = new byte[arr.length];
+		for(int i = arr.length - 1; i > -1; i --){
+			temp[arr.length - i -1] = arr[i];
+		}
+		arr = temp;
+
+		return arr;
 	}
 
 	public ContractLogAsserts noTopics() {

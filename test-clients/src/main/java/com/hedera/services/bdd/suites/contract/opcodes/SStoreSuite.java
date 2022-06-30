@@ -123,7 +123,7 @@ public class SStoreSuite extends HapiApiSuite {
 							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
-								final var subOp1 = contractCall(contract, "growTo", sizeNow)
+								final var subOp1 = contractCall(contract, "growTo", BigInteger.valueOf(sizeNow))
 										.gas(GAS_TO_OFFER)
 										.logged();
 								subOps.add(subOp1);
@@ -138,6 +138,7 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int i = 0; i < numberOfIterations; i++) {
 								final var subOp1 = contractCall(contract, "changeArray",
+										//TODO : Integer -> BigInteger
 										ThreadLocalRandom.current().nextInt(1000))
 										.logged();
 								subOps.add(subOp1);
@@ -166,11 +167,11 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
 								final var subOp1 = contractCall(contract, "growChild",
-										0, kbPerStep, 17)
+										BigInteger.valueOf(0), BigInteger.valueOf(kbPerStep), BigInteger.valueOf(17))
 										.gas(MAX_CONTRACT_GAS)
 										.via("small" + childKbStorage);
 								final var subOp2 = contractCall(contract, "growChild",
-										1, kbPerStep, 19)
+										BigInteger.valueOf(1), BigInteger.valueOf(kbPerStep), BigInteger.valueOf(19))
 										.gas(MAX_CONTRACT_GAS)
 										.via("large" + childKbStorage);
 								final var subOp3 = getTxnRecord("small" + childKbStorage).logged();
@@ -180,19 +181,19 @@ public class SStoreSuite extends HapiApiSuite {
 						})
 				).then(flattened(
 						valuesMatch(contract, 19, 17, 19),
-						contractCall(contract, "setZeroReadOne", 23),
+						contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
 						valuesMatch(contract, 23, 23, 19),
-						contractCall(contract, "setBoth", 29),
+						contractCall(contract, "setBoth", BigInteger.valueOf(29)),
 						valuesMatch(contract, 29, 29, 29)
 				));
 	}
 
 	private HapiSpecOperation[] valuesMatch(final String contract, final long parent, final long child0, final long child1) {
 		return new HapiSpecOperation[]{
-				contractCallLocal(contract, "getChildValue", 0)
+				contractCallLocal(contract, "getChildValue", BigInteger.valueOf(0))
 						.has(resultWith().resultThruAbi(getABIFor(FUNCTION, "getChildValue", contract),
 						isLiteralResult(new Object[]{BigInteger.valueOf(child0)}))),
-				contractCallLocal(contract, "getChildValue", 1)
+				contractCallLocal(contract, "getChildValue", BigInteger.valueOf(1))
 						.has(resultWith().resultThruAbi(getABIFor(FUNCTION, "getChildValue", contract),
 						isLiteralResult(new Object[]{BigInteger.valueOf(child1)}))),
 				contractCallLocal(contract, "getMyValue")
@@ -215,7 +216,7 @@ public class SStoreSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.via("creationTx")
 								.gas(GAS_LIMIT),
-						contractCall(contract, "twoSSTOREs", Bytes.fromHexString("0x05").toArray()
+						contractCall(contract, "twoSSTOREs", Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005").toArray()
 						)
 								.gas(GAS_LIMIT)
 								.via("storageTx")
@@ -243,8 +244,8 @@ public class SStoreSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
-						contractCall(contract, "holdTemporary", 10).via("tempHoldTx"),
-						contractCall(contract, "holdPermanently", 10).via("permHoldTx")
+						contractCall(contract, "holdTemporary", BigInteger.valueOf(10)).via("tempHoldTx"),
+						contractCall(contract, "holdPermanently", BigInteger.valueOf(10)).via("permHoldTx")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var subop01 = getTxnRecord("tempHoldTx")

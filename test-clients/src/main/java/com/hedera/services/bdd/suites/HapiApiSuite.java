@@ -83,6 +83,7 @@ public abstract class HapiApiSuite {
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
 	public static final String DEFAULT_PAYER = HapiSpecSetup.getDefaultInstance().defaultPayerName();
 	public static final String DEFAULT_CONTRACT_SENDER = "DEFAULT_CONTRACT_SENDER";
+	public static final String DEFAULT_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 	public static final String DEFAULT_CONTRACT_RECEIVER = "DEFAULT_CONTRACT_RECEIVER";
 	public static final String ADDRESS_BOOK_CONTROL = HapiSpecSetup.getDefaultInstance().addressBookControlName();
 	public static final String FEE_SCHEDULE_CONTROL = HapiSpecSetup.getDefaultInstance().feeScheduleControlName();

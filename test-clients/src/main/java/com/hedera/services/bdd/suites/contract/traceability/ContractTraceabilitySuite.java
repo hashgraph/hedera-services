@@ -37,15 +37,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -572,8 +573,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 															final int slot0,
 															final int slot1,
 															final int slot2) {
-		if (suffix.equals(FIRST)) return contractCreate(contract, slot0, slot1, slot2).gas(300_000);
-		return contractCustomCreate(contract, suffix, slot0, slot1, slot2).gas(300_000);
+		if (suffix.equals(FIRST)) return contractCreate(contract, BigInteger.valueOf(slot0), BigInteger.valueOf(slot1), BigInteger.valueOf(slot2)).gas(300_000);
+		return contractCustomCreate(contract, suffix, BigInteger.valueOf(slot0), BigInteger.valueOf(slot1), BigInteger.valueOf(slot2)).gas(300_000);
 	}
 
 

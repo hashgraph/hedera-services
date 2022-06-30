@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -30,19 +31,20 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
@@ -74,16 +76,16 @@ public class BalanceOperationSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 				).then(
-						contractCall(contract, "balanceOf", INVALID_ADDRESS)
+						contractCall(contract, "balanceOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(contract, "balanceOf", INVALID_ADDRESS)
+						contractCallLocal(contract, "balanceOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext(
 								(spec, opLog) -> {
 									final var id = spec.registry().getAccountID(ACCOUNT);
 									final var contractID = spec.registry().getContractId(contract);
-									final var solidityAddress = asHexedSolidityAddress(id);
-									final var contractAddress = asHexedSolidityAddress(contractID);
+									final var solidityAddress = asHeadlongAddress(asSolidityAddress(id));
+									final var contractAddress = asHeadlongAddress(asSolidityAddress(contractID));
 
 									final var call = contractCall(contract, "balanceOf", solidityAddress)
 											.via("callRecord");

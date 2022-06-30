@@ -314,7 +314,7 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuite(DelegatePrecompileSuite::new),
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
-				extractSpecsFromSuite(DynamicGasCostSuite::new),
+				extractSpecsFromSuite(DynamicGasCostSuite::new), // TODO : Different structure of tests, needs more attention
 				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
 		});
 	}
@@ -450,6 +450,7 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> contractTraceability() {
 		return List.of(
+				//TODO: Find where Address is set to fix String != Address
 				extractSpecsFromSuite(ContractTraceabilitySuite::new)
 		);
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -77,6 +78,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -412,7 +414,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												spec,
 												contractCreate(NESTED_MINT_CONTRACT,
 														getNestedContractAddress(MINT_NFT_CONTRACT, spec),
-														asAddress(spec.registry().getTokenID(nonFungibleToken)))
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(nonFungibleToken))))
 														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
@@ -421,9 +423,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(NESTED_MINT_CONTRACT,
 														"sendNFTAfterMint",
-														asAddress(spec.registry().getAccountID(TOKEN_TREASURY)),
-														asAddress(spec.registry().getAccountID(theRecipient)),
-														Arrays.asList("Test metadata 1"), 1L)
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(theRecipient))),
+														new String[] {"Test metadata 1"}, 1L)
 														.payingWith(GENESIS)
 														.alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
@@ -520,13 +522,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(contract,
-														asAddress(spec.registry().getTokenID(fungibleToken))),
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(fungibleToken)))),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														contract))),
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
 												contractCall(contract, "revertMintAfterFailedMint",
-														asAddress(spec.registry().getAccountID(theAccount)),
-														asAddress(spec.registry().getAccountID(theRecipient)), 20
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(theAccount))),
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(theRecipient))), 20
 												)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(failedMintTxn)
@@ -584,15 +586,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												spec,
 												contractCreate(outerContract,
 														getNestedContractAddress(nestedContract, spec),
-														asAddress(spec.registry().getTokenID(nonFungibleToken)))
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(nonFungibleToken))))
 														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 																outerContract))),
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
 												contractCall(outerContract, "revertMintAfterFailedAssociate",
-														asAddress(spec.registry().getAccountID(theAccount)),
-														Arrays.asList("Test metadata 1")
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(theAccount))),
+														new String[] {"Test metadata 1"}
 												)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(MULTI_KEY)
 														.via(nestedMintTxn)
@@ -645,6 +647,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
 				).when(
 						uploadInitCode(theContract),
+						// TODO: Investigate this case - Long to Address
 						sourcing(() -> contractCreate(theContract, fungibleNum.get())
 								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER))
@@ -686,6 +689,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
 				).when(
 						uploadInitCode(theContract),
+						// TODO : Long to Address
 						sourcing(() -> contractCreate(theContract, fungibleNum.get())
 								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER))
@@ -761,7 +765,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+	private Address getNestedContractAddress(final String contract, final HapiApiSpec spec) {
 		return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 

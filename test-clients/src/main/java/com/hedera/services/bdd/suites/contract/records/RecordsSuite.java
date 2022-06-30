@@ -29,14 +29,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
@@ -57,7 +58,7 @@ public class RecordsSuite extends HapiApiSuite {
 
 	HapiApiSpec bigCall() {
 		final var contract = "BigBig";
-		final int byteArraySize = (int) (87.5 * 1_024);
+		final long byteArraySize = (long) (87.5 * 1_024);
 
 		return defaultHapiSpec("BigRecord")
 				.given(
@@ -83,7 +84,7 @@ public class RecordsSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract).balance(10_000L).via("createTx")
 				).when(
-						contractCall(contract, "transferToChild", 10_000).via("transferTx")
+						contractCall(contract, "transferToChild", BigInteger.valueOf(10_000)).via("transferTx")
 				).then(
 						assertionsHold(
 								(spec, ctxLog) -> {

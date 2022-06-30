@@ -20,8 +20,8 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -29,11 +29,11 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,9 +49,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -60,7 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-//import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -142,7 +142,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						contractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-								"performLessThanFourBytesFunctionCall", ACCOUNT_ADDRESS, TOKEN_ADDRESS
+								"performLessThanFourBytesFunctionCall", asHeadlongAddress(ACCOUNT_ADDRESS), asHeadlongAddress(TOKEN_ADDRESS)
 						)
 								.notTryingAsHexedliteral()
 								.via("Function call with less than 4 bytes txn")
@@ -160,8 +160,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						contractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-								"performInvalidlyFormattedFunctionCall", ACCOUNT_ADDRESS,
-								List.of(TOKEN_ADDRESS, TOKEN_ADDRESS)
+								"performInvalidlyFormattedFunctionCall", asHeadlongAddress(ACCOUNT_ADDRESS),
+								new Address[] {asHeadlongAddress(TOKEN_ADDRESS), asHeadlongAddress(TOKEN_ADDRESS)}
 						)
 								.notTryingAsHexedliteral()
 								.via("Invalid Abi Function call txn")
@@ -179,7 +179,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				).when(
 						contractCall(
 								THE_GRACEFULLY_FAILING_CONTRACT, "performNonExistingServiceFunctionCall",
-								ACCOUNT_ADDRESS, TOKEN_ADDRESS
+								asHeadlongAddress(ACCOUNT_ADDRESS), asHeadlongAddress(TOKEN_ADDRESS)
 						)
 								.notTryingAsHexedliteral()
 								.via("nonExistingFunctionCallTxn")
@@ -212,13 +212,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "nonSupportedFunction",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+														asHeadlongAddress(asAddress(accountID.get())), asHeadlongAddress(asAddress(vanillaTokenID.get()))
 												)
 														.payingWith(GENESIS)
 														.via("notSupportedFunctionCallTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+														asHeadlongAddress(asAddress(accountID.get())), asHeadlongAddress(asAddress(vanillaTokenID.get()))
 												)
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
@@ -267,14 +267,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), invalidAbiArgument
+														asHeadlongAddress(asAddress(accountID.get())), Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(invalidAbiArgument)))
 												)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+														asHeadlongAddress(asAddress(accountID.get())), asHeadlongAddress(asAddress(vanillaTokenID.get()))
 												)
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
@@ -355,12 +355,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(THE_CONTRACT, "tokensAssociate",
-														asAddress(accountID.get()),
-														List.of(
-																asAddress(frozenTokenID.get()),
-																asAddress(unfrozenTokenID.get()),
-																asAddress(kycTokenID.get()),
-																asAddress(vanillaTokenID.get()))
+														asHeadlongAddress(asAddress(accountID.get())),
+														new Address[] {
+																asHeadlongAddress(asAddress(frozenTokenID.get())),
+																asHeadlongAddress(asAddress(unfrozenTokenID.get())),
+																asHeadlongAddress(asAddress(kycTokenID.get())),
+																asHeadlongAddress(asAddress(vanillaTokenID.get()))
+														}
 												)
 														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("MultipleTokensAssociationsTxn")
@@ -410,9 +411,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(OUTER_CONTRACT, asAddress(getNestedContractAddress(INNER_CONTRACT, spec))),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
 												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+														asHeadlongAddress(asAddress(accountID.get())),
+														asHeadlongAddress(asAddress(vanillaTokenID.get()))
 												)
 														.alsoSigningWithFullPrefix(ACCOUNT)
 														.via("nestedAssociateTxn")
@@ -476,14 +478,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														asHeadlongAddress(asAddress(accountID.get())),
+														asHeadlongAddress(asAddress(vanillaTokenID.get())))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()),
-														asAddress(secondVanillaTokenID.get()))
+														asHeadlongAddress(asAddress(accountID.get())),
+														asHeadlongAddress(asAddress(secondVanillaTokenID.get())))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
 														.gas(GAS_TO_OFFER)
@@ -526,7 +529,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						contractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-								"performInvalidlyFormattedSingleFunctionCall", ACCOUNT_ADDRESS
+								"performInvalidlyFormattedSingleFunctionCall", asHeadlongAddress(ACCOUNT_ADDRESS)
 						)
 								.notTryingAsHexedliteral()
 								.via("Invalid Single Abi Call txn")
@@ -557,7 +560,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	public static String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
-		return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
+	// TODO: Wrong status! Expected SUCCESS, was INVALID_SOLIDITY_ADDRESS! - Fix
+	public static Address getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+		return asHeadlongAddress(asAddress(spec.registry().getContractId(outerContract)));
 	}
 }

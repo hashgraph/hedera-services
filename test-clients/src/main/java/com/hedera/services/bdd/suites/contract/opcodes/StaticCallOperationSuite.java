@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -62,11 +64,11 @@ public class StaticCallOperationSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 				).then(
-						contractCall(contract, "staticcall", INVALID_ADDRESS)
+						contractCall(contract, "staticcall", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							final var id = spec.registry().getAccountID(DEFAULT_PAYER);
-							final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+							final var solidityAddress = asHeadlongAddress(HapiPropertySource.asSolidityAddress(id));
 
 							final var contractCall = contractCall(contract, "staticcall",
 									solidityAddress)

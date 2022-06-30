@@ -39,15 +39,14 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ContractMusicalChairsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
@@ -84,7 +83,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 						(spec, opLog) ->
 								allRunFor(
 										spec,
-										contractCreate(contract, unhex(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID())
+										contractCreate(contract, asAddress(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER).getContractAccountID())
 										)
 												.payingWith(dj)
 								)

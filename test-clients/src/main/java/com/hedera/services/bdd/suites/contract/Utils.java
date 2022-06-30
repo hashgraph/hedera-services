@@ -42,17 +42,15 @@ import org.json.JSONTokener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -88,6 +86,9 @@ public class Utils {
 			return Address.wrap(Address.toChecksumAddress(prefix + id));
 		} else if (id.length() == 42 && (id.startsWith("0x"))) {
 			return Address.wrap(Address.toChecksumAddress(id));
+		} else if (id.length() == 20) {
+			final var result = hex(id.getBytes());
+			return Address.wrap(Address.toChecksumAddress(prefix + result));
 		} else {
 			return Address.wrap(Address.toChecksumAddress(prefix + address));
 		}

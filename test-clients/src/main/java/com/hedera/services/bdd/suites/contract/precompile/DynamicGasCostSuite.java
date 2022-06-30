@@ -94,6 +94,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.aliasContractIdKey;
 import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContractKey;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -232,8 +233,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var tcValue = 1_234L;
 		final var creation = "creation";
 		final var contract = "RevertingCreateFactory";
-		final var foo = 22;
-		final var salt = 23;
+		final var foo = BigInteger.valueOf(22);
+		final var salt = BigInteger.valueOf(23);
 		final var timesToFail = 7;
 		final AtomicLong factoryEntityNum = new AtomicLong();
 		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -253,7 +254,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
-								"getBytecode", factoryEvmAddress.get(), foo
+								"getBytecode", asAddress(factoryEvmAddress.get()), foo
 						)
 								.exposingTypedResultsTo(results -> {
 									final var tcInitcode = (byte[]) results[0];
@@ -266,7 +267,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inParallel(IntStream.range(0, timesToFail).mapToObj(i ->
 										sourcing(() -> contractCall(
 												contract,
-												"deploy", testContractInitcode.get(), salt
+												"deploy", asHeadlongAddress(testContractInitcode.get()), salt
 										)
 												.payingWith(GENESIS)
 												.gas(4_000_000L)
@@ -286,7 +287,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var creation = "creation";
 		final var contract = "RevertingCreateFactory";
 
-		final var foo = 22;
+		final var foo = BigInteger.valueOf(22);
 		final var timesToFail = 7;
 		final AtomicLong factoryEntityNum = new AtomicLong();
 		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -306,7 +307,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
-								"getBytecode", factoryEvmAddress.get(), foo
+								"getBytecode", asAddress(factoryEvmAddress.get()), foo
 						)
 								.exposingTypedResultsTo(results -> {
 									final var tcInitcode = (byte[]) results[0];
@@ -319,7 +320,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inParallel(IntStream.range(0, timesToFail).mapToObj(i ->
 										sourcing(() -> contractCall(
 												contract,
-												"deploy", testContractInitcode.get()
+												"deploy", asHeadlongAddress(testContractInitcode.get())
 										)
 												.payingWith(GENESIS)
 												.gas(4_000_000L)
@@ -344,10 +345,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						tokenCreate(token)
-								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id)))))
+								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(asHeadlongAddress(asAddress(HapiPropertySource.asToken(id))).toString()))
 				).when(
 						sourcing(() -> contractCreate(
-								contract, tokenMirrorAddr.get()
+								contract, asAddress(tokenMirrorAddr.get())
 						)
 								.payingWith(GENESIS)
 								.omitAdminKey()
@@ -366,7 +367,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var creation2 = "create2Txn";
 		final var contract = "Create2Factory";
 		final var testContract = "TestContract";
-		final var salt = 42;
+		final var salt = BigInteger.valueOf(42);
 		final var adminKey = "adminKey";
 		final var replAdminKey = "replAdminKey";
 		final var entityMemo = "JUST DO IT";
@@ -400,7 +401,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
-								"getBytecode", factoryEvmAddress.get(), salt
+								"getBytecode", asAddress(factoryEvmAddress.get()), salt
 						)
 								.exposingTypedResultsTo(results -> {
 									final var tcInitcode = (byte[]) results[0];
@@ -411,7 +412,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.nodePayment(ONE_HBAR)),
 						sourcing(() -> contractCallLocal(
 								contract,
-								"getAddress", testContractInitcode.get(), salt
+								"getAddress", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.exposingTypedResultsTo(results -> {
 									log.info("Contract reported address results {}", results);
@@ -425,7 +426,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						overriding("contracts.allowCreate2", "false"),
 						sourcing(() -> contractCall(
 								contract,
-								"deploy", testContractInitcode.get(), salt
+								"deploy", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -437,7 +438,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						// https://github.com/hashgraph/hedera-services/issues/2867 - cannot re-create same address
 						sourcing(() -> contractCall(
 								contract,
-								"wronglyDeployTwice", testContractInitcode.get(), salt
+								"wronglyDeployTwice", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -447,7 +448,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
 						sourcing(() -> contractCall(
 								contract,
-								"deploy", testContractInitcode.get(), salt
+								"deploy", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -457,7 +458,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						logIt("Deleted the deployed CREATE2 contract using HAPI"),
 						sourcing(() -> contractCall(
 								contract,
-								"deploy", testContractInitcode.get(), salt
+								"deploy", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -491,7 +492,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						sourcing(() -> contractCall(
 								contract,
-								"deploy", testContractInitcode.get(), salt
+								"deploy", asHeadlongAddress(testContractInitcode.get()), salt
 						)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -613,10 +614,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(ft).exposingCreatedIdTo(id ->
-								tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id)))))
+								tokenMirrorAddr.set(asHeadlongAddress(asSolidityAddress(HapiPropertySource.asToken(id))).toString()))
 				).when(
 						uploadInitCode(immediateChildAssoc),
-						sourcing(() -> contractCreate(immediateChildAssoc, tokenMirrorAddr.get())
+						sourcing(() -> contractCreate(immediateChildAssoc, asAddress(tokenMirrorAddr.get()))
 								.gas(2_000_000)
 								.adminKey(multiKey)
 								.payingWith(GENESIS)

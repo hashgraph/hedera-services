@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,6 +69,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -115,7 +118,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
+//				positiveSpecs()
 				negativeSpecs()
 		);
 	}
@@ -181,7 +184,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(theContract,
-														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(tokenWithHbarFee))))
 										)
 						),
 						tokenAssociate(alice, tokenWithHbarFee),
@@ -198,8 +201,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(theContract, "transferToAddress",
-												asAddress(spec.registry().getAccountID(alice)),
-												asAddress(spec.registry().getAccountID(bob)),
+												asHeadlongAddress(asAddress(spec.registry().getAccountID(alice))),
+												asHeadlongAddress(asAddress(spec.registry().getAccountID(bob))),
 												1L, 2L)
 												.payingWith(bob)
 												.alsoSigningWithFullPrefix(alice)
@@ -250,7 +253,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(theContract,
-														asAddress(spec.registry().getTokenID(A_TOKEN))
+														asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN)))
 												)
 														.via("creationTx")
 										)
@@ -261,7 +264,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						// If we are using Ethereum transactions, the DEFAULT_CONTRACT_SENDER signature will have to
 						// be validated via EthTxSigs, because in any case only DEFAULT_PAYER signs this call
-						contractCall(theContract, "depositTokens", 50)
+						contractCall(theContract, "depositTokens", 50L)
 								.gas(GAS_TO_OFFER)
 								.via("zeno"),
 						contractCall(theContract, "withdrawTokens")
@@ -325,7 +328,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theSecondReceiver),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
@@ -346,18 +349,18 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
-									final var accounts = List.of(sender, receiver1, receiver2);
-									final var amounts = List.of(-10L, 5L, 5L);
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(theSecondReceiver)));
+									final var accounts = new Address[] {sender, receiver1, receiver2};
+									final var amounts = new long[] {-10, 5, 5};
 
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "distributeTokens",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray()
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													accounts,
+													amounts
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
@@ -428,21 +431,21 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
-									final var accounts = List.of(sender, receiver1, receiver2);
-									final var amounts = List.of(-10L, 5L, 5L);
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(SECOND_RECEIVER)));
+									final var accounts = new Address[] {sender, receiver1, receiver2};
+									final var amounts = new long[] {-10L, 5L, 5L};
 
 									/* --- HSCS-PREC-009 --- */
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(FEE_COLLECTOR)))
 											)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
@@ -454,11 +457,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(FEE_COLLECTOR)))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
@@ -470,11 +473,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(RECEIVER))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
@@ -596,22 +599,22 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
-									final var accounts = List.of(sender, receiver1, receiver2);
-									final var amounts = List.of(-10L, 5L, 5L);
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(SECOND_RECEIVER)));
+									final var accounts = new Address[] {sender, receiver1, receiver2};
+									final var amounts = new long[] {-10L, 5L, 5L};
 
 									/* --- HSCS-PREC-009 --- */
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS,
 													"feeDistributionAfterTransferStaticNestedCall",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(FEE_COLLECTOR)))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
 													.gas(GAS_TO_OFFER)
@@ -623,11 +626,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 											spec,
 											contractCall(VERSATILE_TRANSFERS,
 													"feeDistributionAfterTransferStaticNestedCall",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(FEE_COLLECTOR)))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
@@ -640,11 +643,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 											spec,
 											contractCall(VERSATILE_TRANSFERS,
 													"feeDistributionAfterTransferStaticNestedCall",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(RECEIVER))
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+													accounts,
+													amounts,
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)))
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
 													.gas(GAS_TO_OFFER)
@@ -774,12 +777,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 													.between(TOKEN_TREASURY, ACCOUNT)));
 									allRunFor(spec,
 											contractCall(outerContract, "feeDistributionAfterTransfer",
-													asAddress(tokenID.get()),
-													asAddress(senderAccountID.get()),
-													asAddress(tokenReceiverAccountID.get()),
-													asAddress(hbarReceiverAccountID.get()),
+													asHeadlongAddress(asAddress(tokenID.get())),
+													asHeadlongAddress(asAddress(senderAccountID.get())),
+													asHeadlongAddress(asAddress(tokenReceiverAccountID.get())),
+													asHeadlongAddress(asAddress(hbarReceiverAccountID.get())),
 													AMOUNT_TO_SEND,
-													CUSTOM_HBAR_FEE_AMOUNT)
+													BigInteger.valueOf(CUSTOM_HBAR_FEE_AMOUNT))
 													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
@@ -842,9 +845,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var tokenAddress = asAddress(spec.registry().getTokenID(NFT));
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var tokenAddress = asHeadlongAddress(asAddress(spec.registry().getTokenID(NFT)));
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
 
 									allRunFor(
 											spec,
@@ -915,12 +918,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var tokenAddress = asAddress(spec.registry().getTokenID(NFT));
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var theSenders = List.of(sender, sender);
-									final var theReceivers = List.of(receiver, receiver);
-									final var theSerialNumbers = List.of(1L, 2L);
+									final var tokenAddress = asHeadlongAddress(asAddress(spec.registry().getTokenID(NFT)));
+									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+									final var receiver = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var theSenders = new Address[] {sender, sender};
+									final var theReceivers = new Address[] {receiver, receiver};
+									final var theSerialNumbers = new long[] {1L, 2L};
 
 									allRunFor(
 											spec,
@@ -990,18 +993,18 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+									final var receiver1 = asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+									final var receiver2 = asHeadlongAddress(asAddress(spec.registry().getAccountID(theSecondReceiver)));
 
-									final var accounts = List.of(receiver1, receiver2);
-									final var amounts = List.of(5L, 5L);
+									final var accounts = new Address[] {receiver1, receiver2};
+									final var amounts = new long[] {5L, 5L};
 
 									allRunFor(
 											spec,
 											contractCall(VERSATILE_TRANSFERS, "distributeTokens",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray()
+													asHeadlongAddress(asAddress(spec.registry().getTokenID(A_TOKEN))),
+													accounts,
+													amounts
 											)
 													.alsoSigningWithFullPrefix(ACCOUNT)
 													.gas(GAS_TO_OFFER)
@@ -1023,7 +1026,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+	private Address getNestedContractAddress(final String contract, final HapiApiSpec spec) {
 		return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 

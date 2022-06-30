@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.swirlds.common.utility.CommonUtils.unhex;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
@@ -72,14 +73,14 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
 						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
 						withOpContext((spec, log) -> {
-							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
-							final var senderAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID();
+							final var accountOneAddress = asAddress(spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID());
+							final var senderAddress = asAddress(spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID());
 
 							final var ops = new ArrayList<HapiSpecOperation>();
 
 							/* approve for other accounts */
 							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
-									unhex(accountOneAddress), true
+									accountOneAddress, true
 							)
 									.via("acc1ApproveCall")
 									.payingWith(DEFAULT_CONTRACT_SENDER)
@@ -88,7 +89,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 
 							/* mint to the contract owner */
 							final var mintCall = contractCall(CONTRACT, "mintToken",
-									0, 10, unhex(senderAddress)
+									BigInteger.valueOf(0), BigInteger.valueOf(10), senderAddress
 							)
 									.via("contractMintCall")
 									.payingWith(DEFAULT_CONTRACT_SENDER)
@@ -98,9 +99,9 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 							/* transfer from - account to account */
 							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
 									senderAddress, accountOneAddress,
-									0, // token id 
-									1, // amount 
-									"0x0"
+									BigInteger.valueOf(0), // token id
+									BigInteger.valueOf(1), // amount
+									"0x0".getBytes()
 							).via("contractTransferFromCall").payingWith(ACCOUNT1)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(transferCall);

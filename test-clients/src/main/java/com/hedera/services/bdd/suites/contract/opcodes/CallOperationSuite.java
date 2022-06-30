@@ -20,23 +20,26 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class CallOperationSuite extends HapiApiSuite {
@@ -67,11 +70,11 @@ public class CallOperationSuite extends HapiApiSuite {
 						contractCreate(contract)
 				).when(
 				).then(
-						contractCall(contract, "call", INVALID_ADDRESS)
+						contractCall(contract, "call", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							final var id = spec.registry().getAccountID(ACCOUNT);
-							final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+							final var solidityAddress = asHeadlongAddress(HapiPropertySource.asSolidityAddress(id));
 
 							final var contractCall = contractCall(contract, "call", solidityAddress)
 									.sending(EXPECTED_BALANCE);
@@ -91,10 +94,10 @@ public class CallOperationSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
-						contractCall(contract, "setVar1", 35),
+						contractCall(contract, "setVar1", BigInteger.valueOf(35)),
 						contractCallLocal(contract, "getVar1")
 								.logged(),
-						contractCall(contract, "callContract", INVALID_ADDRESS, 222)
+						contractCall(contract, "callContract", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)), BigInteger.valueOf(222))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 				).then(
 						contractCallLocal(contract, "getVar1")
