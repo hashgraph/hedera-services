@@ -9,6 +9,7 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
+			"RandomGenerate",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",

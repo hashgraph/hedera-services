@@ -72,7 +72,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0250_ALPHA_VERSION = 11;
 	static final int RELEASE_0250_VERSION = 12;
 	static final int RELEASE_0260_VERSION = 13;
-	private static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+	static final int RELEASE_0270_VERSION = 14;
+	private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	public static final String DEFAULT_MEMO = "";
@@ -106,6 +107,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long headNftId;
 	private long headNftSerialNum;
 	private long ethereumNonce;
+	private long stakedToMe;
+	// default value and if this account stakes to an account value is -1. It will be set to the time when the account
+	// starts staking to a node.
+	private long stakePeriodStart = -1;
+	// if -ve we are staking to a node, if +ve we are staking to an account and 0 if not staking to anyone.
+	// When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
+	private long stakedNum;
+	private boolean declineReward;
+	private long stakeAtStartOfLastRewardedPeriod = -1;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -148,6 +158,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoRenewAccount = that.autoRenewAccount;
 		this.headNftId = that.headNftId;
 		this.headNftSerialNum = that.headNftSerialNum;
+		this.stakedToMe = that.stakedToMe;
+		this.stakePeriodStart = that.stakePeriodStart;
+		this.stakedNum = that.stakedNum;
+		this.declineReward = that.declineReward;
+		this.stakeAtStartOfLastRewardedPeriod = that.stakeAtStartOfLastRewardedPeriod;
 	}
 
 	public MerkleAccountState(
@@ -178,7 +193,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final long ethereumNonce,
 			final EntityId autoRenewAccount,
 			final long headNftId,
-			final long headNftSerialNum
+			final long headNftSerialNum,
+			final long stakedToMe,
+			final long stakePeriodStart,
+			final long stakedNum,
+			final boolean declineReward,
+			final long stakeAtStartOfLastRewardedPeriod
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -208,6 +228,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoRenewAccount = autoRenewAccount;
 		this.headNftId = headNftId;
 		this.headNftSerialNum = headNftSerialNum;
+		this.stakedToMe = stakedToMe;
+		this.stakePeriodStart = stakePeriodStart;
+		this.stakedNum = stakedNum;
+		this.declineReward = declineReward;
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -282,6 +307,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			headNftId = in.readLong();
 			headNftSerialNum = in.readLong();
 		}
+		if (version >= RELEASE_0270_VERSION) {
+			stakedToMe = in.readLong();
+			stakePeriodStart = in.readLong();
+			stakedNum = in.readLong();
+			declineReward = in.readBoolean();
+			stakeAtStartOfLastRewardedPeriod = in.readLong();
+		}
 	}
 
 	@Override
@@ -315,6 +347,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		writeNullableSerializable(autoRenewAccount, out);
 		out.writeLong(headNftId);
 		out.writeLong(headNftSerialNum);
+		out.writeLong(stakedToMe);
+		out.writeLong(stakePeriodStart);
+		out.writeLong(stakedNum);
+		out.writeBoolean(declineReward);
+		out.writeLong(stakeAtStartOfLastRewardedPeriod);
 	}
 
 	/* --- Copyable --- */
@@ -360,7 +397,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numTreasuryTitles == that.numTreasuryTitles &&
 				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
 				this.headNftId == that.headNftId &&
-				this.headNftSerialNum == that.headNftSerialNum;
+				this.headNftSerialNum == that.headNftSerialNum &&
+				this.stakedToMe == that.stakedToMe &&
+				this.stakePeriodStart == that.stakePeriodStart &&
+				this.stakedNum == that.stakedNum &&
+				this.declineReward == that.declineReward &&
+				this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod;
 	}
 
 	@Override
@@ -391,7 +433,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				ethereumNonce,
 				autoRenewAccount,
 				headNftId,
-				headNftSerialNum);
+				headNftSerialNum,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declineReward,
+				stakeAtStartOfLastRewardedPeriod);
 	}
 
 	/* --- Bean --- */
@@ -425,6 +472,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("headNftId", headNftId)
 				.add("headNftSerialNum", headNftSerialNum)
+				.add("stakedToMe", stakedToMe)
+				.add("stakePeriodStart", stakePeriodStart)
+				.add("stakedNum", stakedNum)
+				.add("declineReward", declineReward)
+				.add("balanceAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
 				.toString();
 	}
 
@@ -706,6 +758,51 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public void setAutoRenewAccount(final EntityId autoRenewAccount) {
 		this.autoRenewAccount = autoRenewAccount;
+	}
+
+	public long getStakedToMe() {
+		return stakedToMe;
+	}
+
+	public void setStakedToMe(final long stakedToMe) {
+		assertMutable("stakedToMe");
+		this.stakedToMe = stakedToMe;
+	}
+
+	public long getStakePeriodStart() {
+		return stakePeriodStart;
+	}
+
+	public void setStakePeriodStart(final long stakePeriodStart) {
+		assertMutable("stakePeriodStart");
+		this.stakePeriodStart = stakePeriodStart;
+	}
+
+	public long getStakedNum() {
+		return stakedNum;
+	}
+
+	public void setStakedNum(final long stakedNum) {
+		assertMutable("stakedNum");
+		this.stakedNum = stakedNum;
+	}
+
+	public boolean isDeclineReward() {
+		return declineReward;
+	}
+
+	public void setDeclineReward(final boolean declineReward) {
+		assertMutable("declineReward");
+		this.declineReward = declineReward;
+	}
+
+	public long getStakeAtStartOfLastRewardedPeriod() {
+		return stakeAtStartOfLastRewardedPeriod;
+	}
+
+	public void setStakeAtStartOfLastRewardedPeriod(final long stakeAtStartOfLastRewardedPeriod) {
+		assertMutable("balanceAtStartOfLastRewardedPeriod");
+		this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
 	}
 
 	private void assertMutable(String proximalField) {

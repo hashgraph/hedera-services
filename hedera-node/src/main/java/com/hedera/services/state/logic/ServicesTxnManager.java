@@ -23,6 +23,7 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
@@ -54,6 +55,7 @@ public class ServicesTxnManager {
 	private final MigrationRecordsManager migrationRecordsManager;
 	private final RecordStreaming recordStreaming;
 	private final BlockManager blockManager;
+	private final RewardCalculator rewardCalculator;
 
 	@Inject
 	public ServicesTxnManager(
@@ -66,7 +68,8 @@ public class ServicesTxnManager {
 			final RecordsHistorian recordsHistorian,
 			final MigrationRecordsManager migrationRecordsManager,
 			final RecordStreaming recordStreaming,
-			final BlockManager blockManager
+			final BlockManager blockManager,
+			final RewardCalculator rewardCalculator
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -78,6 +81,7 @@ public class ServicesTxnManager {
 		this.migrationRecordsManager = migrationRecordsManager;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
 		this.blockManager = blockManager;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	private boolean needToPublishMigrationRecords = true;
@@ -92,6 +96,7 @@ public class ServicesTxnManager {
 			sigImpactHistorian.setChangeTime(consensusTime);
 			recordsHistorian.clearHistory();
 			blockManager.reset();
+			rewardCalculator.reset();
 			ledger.begin();
 
 			if (needToPublishMigrationRecords) {

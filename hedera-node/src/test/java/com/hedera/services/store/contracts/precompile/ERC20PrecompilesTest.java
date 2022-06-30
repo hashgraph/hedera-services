@@ -150,6 +150,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -355,7 +356,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         final var result = subject.computePrecompile(pretendArguments, frame);
-        assertEquals(Bytes.EMPTY, result.getOutput());
+        assertNull(result.getOutput());
     }
 
     @Test

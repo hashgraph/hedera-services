@@ -44,6 +44,7 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +94,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -108,6 +110,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -123,7 +126,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
 	private static final String defaultMaxGas =
-			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas");
+			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
 	public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
 
 	public static void main(String... args) {
@@ -157,10 +160,73 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						createContractWithStakingFields()
 //						canCallPendingContractSafely(),
 				}
 		);
 	}
+
+	HapiApiSpec createContractWithStakingFields() {
+		final var contract = "CreateTrivial";
+		return defaultHapiSpec("createContractWithStakingFields")
+				.given(
+						uploadInitCode(contract),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(true)
+								.stakedNodeId(0),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged()
+				).when(
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(true)
+								.stakedAccountId("0.0.10"),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(true)
+										.noStakingNodeId()
+										.stakedAccountId("0.0.10"))
+								.logged()
+				).then(
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedNodeId(0),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakedAccountId()
+										.stakedNodeId(0))
+								.logged(),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedAccountId("0.0.10"),
+						getContractInfo(contract)
+								.has(contractWith()
+										.isDeclinedReward(false)
+										.noStakingNodeId()
+										.stakedAccountId("0.0.10"))
+								.logged(),
+						/*-- sentinel values throw ---*/
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedAccountId("0.0.0")
+								.hasPrecheck(INVALID_STAKING_ID),
+						contractCreate(contract)
+								.adminKey(THRESHOLD)
+								.declinedReward(false)
+								.stakedNodeId(-1L)
+								.hasPrecheck(INVALID_STAKING_ID)
+				);
+	}
+
 
 	private HapiApiSpec autoAssociationSlotsAppearsInInfo() {
 		final int maxAutoAssociations = 100;
@@ -219,11 +285,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
 		final var contract = "FibonacciPlus";
+		final var expiry = Instant.now().getEpochSecond() + 1000;
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-						uploadSingleInitCode(contract, 1000, GENESIS, createdFileNum::set),
+						UtilVerbs.overriding("ledger.autoRenewPeriod.minDuration", "10"),
+						uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
 										contractCustomCreate(contract, String.valueOf(i), numSlots)
@@ -244,7 +312,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn)),
-						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas")
+						UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"),
+						UtilVerbs.resetToDefault("ledger.autoRenewPeriod.minDuration")
 				);
 	}
 
@@ -323,6 +392,14 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec createEmptyConstructor() {
 		return defaultHapiSpec("EmptyConstructor")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000"
+						)),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
 
@@ -350,7 +427,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.proxy("0.0.3")
+								.stakedNodeId(0)
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
@@ -738,12 +815,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "100"),
+						UtilVerbs.overriding("contracts.maxGasPerSec", "100"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
 						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetToDefault("contracts.maxGas")
+						UtilVerbs.resetToDefault("contracts.maxGasPerSec")
 				);
 	}
 
@@ -885,7 +962,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", "" + amount
+						"contracts.maxGasPerSec", "" + amount
 				));
 	}
 
@@ -894,7 +971,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(EXCHANGE_RATE_CONTROL)
 				.overridingProps(Map.of(
-						"contracts.maxGas", defaultMaxGas
+						"contracts.maxGasPerSec", defaultMaxGas
 				));
 	}
 

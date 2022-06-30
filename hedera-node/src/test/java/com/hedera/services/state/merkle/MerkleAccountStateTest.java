@@ -94,6 +94,16 @@ class MerkleAccountStateTest {
 	private static final int otherNumPositiveBalances = 3;
 	private static final int numTreasuryTitles = 23;
 	private static final int otherNumTreasuryTitles = 32;
+	private static final long stakedToMe = 12_345L;
+	private static final long otherStakedToMe = 4_567_890L;
+	private static final long stakePeriodStart = 786L;
+	private static final long otherStakePeriodStart = 945L;
+	private static final long stakedNum = 1111L;
+	private static final long otherStakedNum = 5L;
+	private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+	private static final long otherBalanceAtStartOfLastRewardedPeriod = 678_324_546L;
+	private static final boolean declineReward = false;
+	private static final boolean otherDeclinedReward = true;
 
 	private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
 	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
@@ -149,7 +159,12 @@ class MerkleAccountStateTest {
 				ethereumNonce,
 				autoRenewAccountId,
 				headNftId,
-				headNftSerialNum);
+				headNftSerialNum,
+				stakedToMe,
+				stakePeriodStart,
+				stakedNum,
+				declineReward,
+				balanceAtStartOfLastRewardedPeriod);
 	}
 
 	@Test
@@ -189,7 +204,12 @@ class MerkleAccountStateTest {
 						"ethereumNonce=" + ethereumNonce + ", " +
 						"autoRenewAccount=" + autoRenewAccountId + ", " +
 						"headNftId=" + headNftId + ", " +
-						"headNftSerialNum=" + headNftSerialNum + "}",
+						"headNftSerialNum=" + headNftSerialNum + ", " +
+						"stakedToMe=" + stakedToMe + ", " +
+						"stakePeriodStart=" + stakePeriodStart + ", " +
+						"stakedNum=" + stakedNum + ", " +
+						"declineReward=" + declineReward + ", " +
+						"balanceAtStartOfLastRewardedPeriod=" + balanceAtStartOfLastRewardedPeriod + "}",
 				subject.toString());
 	}
 
@@ -221,11 +241,11 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
 		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
-		assertThrows(MutabilityException.class, () -> subject.setNumAssociations(5));
-		assertThrows(MutabilityException.class, () -> subject.setNumPositiveBalances(5));
-		assertThrows(MutabilityException.class, () -> subject.setHeadTokenId(5L));
-		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(nftsOwned));
-		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
+		assertThrows(MutabilityException.class, () -> subject.setStakedToMe(otherStakedToMe));
+		assertThrows(MutabilityException.class, () -> subject.setStakePeriodStart(otherStakePeriodStart));
+		assertThrows(MutabilityException.class, () -> subject.setStakedNum(otherStakedNum));
+		assertThrows(MutabilityException.class, () -> subject.setDeclineReward(otherDeclinedReward));
+		assertThrows(MutabilityException.class, () -> subject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod));
 	}
 
 	@Test
@@ -234,7 +254,6 @@ class MerkleAccountStateTest {
 		subject.setNumTreasuryTitles(0);
 		assertFalse(subject.isTokenTreasury());
 	}
-
 
 	@Test
 	void copyWorks() {
@@ -398,8 +417,43 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void equalsWorksForStakedToMe() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakedToMe(otherStakedToMe);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForStakePeriodStart() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakePeriodStart(otherStakePeriodStart);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForStakedNum() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakedNum(otherStakedNum);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForDeclineReward() {
+		final var otherSubject = subject.copy();
+		otherSubject.setDeclineReward(otherDeclinedReward);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForBalanceAtStartOfLastRewardedPeriod() {
+		final var otherSubject = subject.copy();
+		otherSubject.setStakeAtStartOfLastRewardedPeriod(otherBalanceAtStartOfLastRewardedPeriod);
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0260_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0270_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -461,5 +515,4 @@ class MerkleAccountStateTest {
 		subject.setAutoRenewAccount(account);
 		assertEquals(account, subject.getAutoRenewAccount());
 	}
-
 }

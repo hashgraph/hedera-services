@@ -54,4 +54,15 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	default boolean completesPendingRemovals() {
 		return false;
 	}
+
+	/**
+	 * Gives the interceptor a chance to finish any pending work with the mutable version of the
+	 * entity being committed from the given index of the previewed change set.
+	 *
+	 * @param i the index of the entity being committed
+	 * @param mutableEntity the mutable entity
+	 */
+	default void finish(final int i, final A mutableEntity) {
+		// No-op
+	}
 }

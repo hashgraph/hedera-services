@@ -39,6 +39,7 @@ import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.token.TokenLogicModule;
+import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -62,7 +63,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 		ContractLogicModule.class,
 		EthereumLogicModule.class,
 		ScheduleLogicModule.class,
-		ConsensusLogicModule.class
+		ConsensusLogicModule.class,
+		UtilLogicModule.class
 })
 public interface TransactionsModule {
 	@Binds

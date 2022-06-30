@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
@@ -40,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -86,6 +88,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -383,6 +386,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
+						overridingAllOf(Map.of(
+								"staking.fees.nodeRewardPercentage", "10",
+								"staking.fees.stakingRewardPercentage", "10",
+								"staking.isEnabled", "true",
+								"staking.maxDailyStakeRewardThPerH", "100",
+								"staking.rewardRate", "100_000_000_000",
+								"staking.startThreshold", "100_000_000"
+						)),
 						newKeyNamed(adminKey),
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
@@ -390,7 +401,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
-								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
@@ -552,8 +562,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						contractCreate(ercContract).omitAdminKey(),
 						contractCreate(pc2User)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(pc2User, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -656,8 +665,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.omitAdminKey()
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -837,8 +845,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildDonor", salt)
 								.sending(1_000)
 								.payingWith(GENESIS)
@@ -890,8 +897,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 								.adminKey(adminKey)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -963,8 +969,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "buildCreator", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1033,8 +1038,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1094,8 +1098,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
-								.payingWith(GENESIS)
-								.proxy("0.0.3"),
+								.payingWith(GENESIS),
 						contractCall(contract, "createReturner", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
@@ -1886,17 +1889,27 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	public static HapiSpecOperation captureChildCreate2MetaFor(
-			final int numExpectedChildren,
-			final int childOfInterest,
+			final int givenNumExpectedChildren,
+			final int givenChildOfInterest,
 			final String desc,
 			final String creation2,
 			final AtomicReference<String> mirrorAddr,
 			final AtomicReference<String> create2Addr
 	) {
 		return withOpContext((spec, opLog) -> {
-			final var lookup = getTxnRecord(creation2).andAllChildRecords();
+			final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
 			allRunFor(spec, lookup);
 			final var response = lookup.getResponse().getTransactionGetRecord();
+			final var numRecords = response.getChildTransactionRecordsCount();
+			int numExpectedChildren = givenNumExpectedChildren;
+			int childOfInterest = givenChildOfInterest;
+			if (numRecords == numExpectedChildren + 1) {
+				// This transaction may have had a preceding record for the end-of-day staking calculations
+				if (TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
+					numExpectedChildren++;
+					childOfInterest++;
+				}
+			}
 			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
 			final var create2Record = response.getChildTransactionRecords(childOfInterest);
 			final var create2Address =

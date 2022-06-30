@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
@@ -33,6 +34,8 @@ import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.merkle.MerkleStakingInfoSerdeTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
@@ -124,9 +127,9 @@ public class SerializedForms {
 	}
 
 	private static void generateSerializedData() {
-		for (var entry : GENERATOR_MAPPING.entrySet()) {
-			entry.getValue().run();
-		}
+  		for (var entry : GENERATOR_MAPPING.entrySet()) {
+  			entry.getValue().run();
+  		}
 	}
 
 	private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
@@ -162,10 +165,10 @@ public class SerializedForms {
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(BytesElement.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState,
 							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
+					entry(MerkleNetworkContext.class, SeededPropertySource::next0270NetworkContext,
 							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
 					entry(MerkleScheduledTransactionsState.class, SeededPropertySource::nextScheduledTransactionsState,
 							MerkleScheduledTransactionsStateSerdeTest.NUM_TEST_CASES),
@@ -190,7 +193,11 @@ public class SerializedForms {
 					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
-							MIN_TEST_CASES_PER_VERSION)
+							MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleStakingInfo.class, SeededPropertySource::nextStakingInfo,
+							MerkleStakingInfoSerdeTest.NUM_TEST_CASES),
+					entry(SerializableSemVers.class, SeededPropertySource::nextSerializableSemVers,
+							2 * MIN_TEST_CASES_PER_VERSION)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

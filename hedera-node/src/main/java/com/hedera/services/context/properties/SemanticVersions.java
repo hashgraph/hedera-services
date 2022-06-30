@@ -25,20 +25,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-@Singleton
-public final class SemanticVersions {
-	private static final Logger log = LogManager.getLogger(SemanticVersions.class);
+public enum SemanticVersions {
+	SEMANTIC_VERSIONS;
 
-	@Inject
-	public SemanticVersions() {
-		/* No-op */
-	}
+	private static final Logger log = LogManager.getLogger(SemanticVersions.class);
 
 	/* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
 	private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(
@@ -47,28 +41,40 @@ public final class SemanticVersions {
 
 	private static final String HAPI_VERSION_KEY = "hapi.proto.version";
 	private static final String HEDERA_VERSION_KEY = "hedera.services.version";
+	private static final String VERSION_INFO_RESOURCE = "semantic-version.properties";
 
-	private String versionInfoResource = "semantic-version.properties";
-
-	private AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
+	private final AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
+	private final AtomicReference<SerializableSemVers> knownSerializable = new AtomicReference<>(null);
 
 	@Nonnull
 	public ActiveVersions getDeployed() {
-		if (null != knownActive.get()) {
-			return knownActive.get();
-		}
-		return fromResource(versionInfoResource, HAPI_VERSION_KEY, HEDERA_VERSION_KEY);
+		ensureLoaded();
+		return knownActive.get();
 	}
 
 	@Nonnull
-	ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
+	public SerializableSemVers deployedSoftwareVersion() {
+		ensureLoaded();
+		return knownSerializable.get();
+	}
+
+	private void ensureLoaded() {
+		if (knownActive.get() == null) {
+			final var deployed = fromResource(VERSION_INFO_RESOURCE, HAPI_VERSION_KEY, HEDERA_VERSION_KEY);
+			knownActive.set(deployed);
+			knownSerializable.set(new SerializableSemVers(deployed.protoSemVer(), deployed.hederaSemVer()));
+		}
+	}
+
+	@Nonnull
+	static ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
 		try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
 			final var props = new Properties();
 			props.load(in);
 			log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
 			final var protoSemVer = asSemVer((String) props.get(protoKey));
 			final var hederaSemVer = asSemVer((String) props.get(servicesKey));
-			knownActive.set(new ActiveVersions(protoSemVer, hederaSemVer));
+			return new ActiveVersions(protoSemVer, hederaSemVer);
 		} catch (Exception surprising) {
 			log.warn(
 					"Failed to parse resource '{}' (keys '{}' and '{}'). Version info will be unavailable!",
@@ -77,12 +83,11 @@ public final class SemanticVersions {
 					servicesKey,
 					surprising);
 			final var emptySemver = SemanticVersion.getDefaultInstance();
-			knownActive.set(new ActiveVersions(emptySemver, emptySemver));
+			return new ActiveVersions(emptySemver, emptySemver);
 		}
-		return knownActive.get();
 	}
 
-	SemanticVersion asSemVer(final String value) {
+	static SemanticVersion asSemVer(final String value) {
 		final var matcher = SEMVER_SPEC_REGEX.matcher(value);
 		if (matcher.matches()) {
 			final var builder = SemanticVersion.newBuilder()
@@ -99,9 +104,5 @@ public final class SemanticVersions {
 		} else {
 			throw new IllegalArgumentException("Argument value='" + value + "' is not a valid semver");
 		}
-	}
-
-	void setVersionInfoResource(final String versionInfoResource) {
-		this.versionInfoResource = versionInfoResource;
 	}
 }
