@@ -22,7 +22,6 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;

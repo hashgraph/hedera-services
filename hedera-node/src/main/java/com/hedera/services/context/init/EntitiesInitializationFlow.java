@@ -60,9 +60,7 @@ public class EntitiesInitializationFlow {
 
 		// Re-initialize the "observable" system files; that is, the files which have
 		// associated callbacks managed by the SysFilesCallback object. We explicitly
-		// re-mark the files are not loaded here, in case this is a reconnect. (During a
-		// reconnect the blob store might still be reloading, and we will finish loading
-		// the observable files in the ServicesMain.init method.)
+		// re-mark the files are not loaded here, in case this is a reconnect.
 		networkCtxManager.setObservableFilesNotLoaded();
 		networkCtxManager.loadObservableSysFilesIfNeeded();
 	}

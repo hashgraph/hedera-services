@@ -86,7 +86,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_025x_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
@@ -185,7 +185,7 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 
 	@Override
 	public int getMinimumChildCount() {
-		return NUM_025x_CHILDREN;
+		return NUM_025X_CHILDREN;
 	}
 
 	@Override
@@ -325,7 +325,6 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 			}
 		}
 	}
-
 
 	@Override
 	public AddressBook getAddressBookCopy() {

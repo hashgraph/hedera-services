@@ -25,11 +25,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
-import com.hedera.services.state.initialization.SystemAccountsCreator;
-import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -37,14 +34,12 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -63,7 +58,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -94,15 +88,7 @@ class ServicesMainTest {
 	@Mock
 	private NamedDigestFactory namedDigestFactory;
 	@Mock
-	private NetworkCtxManager networkCtxManager;
-	@Mock
 	private MutableStateChildren workingState;
-	@Mock
-	private AddressBook book;
-	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
-	@Mock
-	private SystemAccountsCreator systemAccountsCreator;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
@@ -181,8 +167,6 @@ class ServicesMainTest {
 		subject.init(platform, nodeId);
 
 		// then:
-		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
-		// and:
 		verify(ledgerValidator).validate(accounts);
 		verify(nodeInfo).validateSelfAccountIfStaked();
 		// and:
@@ -258,12 +242,12 @@ class ServicesMainTest {
 	}
 
 	@Test
-	void justLogsIfMaintenanceAndNotTimeToExport() throws NoSuchAlgorithmException {
+	void justLogsIfFreezeCompleteAndNotTimeToExport() throws NoSuchAlgorithmException {
 		withRunnableApp();
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
-		given(currentPlatformStatus.get()).willReturn(MAINTENANCE);
+		given(currentPlatformStatus.get()).willReturn(FREEZE_COMPLETE);
 		// and:
 		subject.init(platform, nodeId);
 
@@ -325,7 +309,6 @@ class ServicesMainTest {
 		given(namedDigestFactory.forName("SHA-384")).willReturn(null);
 		given(app.nativeCharset()).willReturn(nativeCharset);
 		given(app.digestFactory()).willReturn(namedDigestFactory);
-		given(app.networkCtxManager()).willReturn(networkCtxManager);
 		given(app.consoleOut()).willReturn(Optional.of(consoleOut));
 		given(app.workingState()).willReturn(workingState);
 		given(workingState.accounts()).willReturn(accounts);

@@ -40,7 +40,6 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -72,7 +71,6 @@ public class ServicesMain implements SwirldMain {
 			app = APPS.get(nodeId.getId());
 			initApp();
 		} catch (IllegalArgumentException iae) {
-			iae.printStackTrace();
 			log.error("No app present for {}", nodeId, iae);
 			throw new AssertionError("Cannot continue without an app");
 		}
@@ -96,7 +94,7 @@ public class ServicesMain implements SwirldMain {
 	public void newSignedState(SwirldState signedState, Instant consensusTime, long round) {
 		final var servicesState = (ServicesState) signedState;
 
-		if (app.platformStatus().get() == MAINTENANCE) {
+		if (app.platformStatus().get() == FREEZE_COMPLETE) {
 			servicesState.logSummary();
 		}
 
@@ -137,9 +135,6 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void doStagedInit() {
-		loadSystemFiles();
-		log.info("System files rationalized");
-
 		validateLedgerState();
 		log.info("Ledger state ok");
 
@@ -155,10 +150,6 @@ public class ServicesMain implements SwirldMain {
 
 	private void exportAccountsIfDesired() {
 		app.accountsExporter().toFile(app.workingState().accounts());
-	}
-
-	private void loadSystemFiles() {
-		app.networkCtxManager().loadObservableSysFilesIfNeeded();
 	}
 
 	private void startNettyIfAppropriate() {

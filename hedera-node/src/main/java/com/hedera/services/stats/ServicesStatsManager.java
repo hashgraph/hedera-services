@@ -38,9 +38,9 @@ import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 @Singleton
 public class ServicesStatsManager {
-	public static String STAT_CATEGORY = "app";
-	public static String SPEEDOMETER_FORMAT = "%,13.2f";
-	public static String RUNNING_AVG_FORMAT = "%,13.6f";
+	public static final String STAT_CATEGORY = "app";
+	public static final String SPEEDOMETER_FORMAT = "%,13.2f";
+	public static final String RUNNING_AVG_FORMAT = "%,13.6f";
 	static Pause pause = SLEEPING_PAUSE;
 	static Function<Runnable, Thread> loopFactory = loop -> new Thread(() -> {
 		while (true) {
@@ -82,8 +82,8 @@ public class ServicesStatsManager {
 		runningAvgs.registerWith(platform);
 		speedometers.registerWith(platform);
 		opSpeedometers.registerWith(platform);
-		storage.get().registerStatistics(platform::addAppStatEntry);
-		bytecode.get().registerStatistics(platform::addAppStatEntry);
+		storage.get().registerStatistics(platform::addAppMetrics);
+		bytecode.get().registerStatistics(platform::addAppMetrics);
 
 		platform.appStatInit();
 

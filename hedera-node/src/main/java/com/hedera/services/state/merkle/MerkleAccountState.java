@@ -34,7 +34,6 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import org.jetbrains.annotations.Nullable;
 

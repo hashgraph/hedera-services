@@ -541,7 +541,7 @@ class ServicesStateTest {
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		assertEquals(StateChildIndices.NUM_025x_CHILDREN, subject.getMinimumChildCount());
+		assertEquals(StateChildIndices.NUM_025X_CHILDREN, subject.getMinimumChildCount());
 	}
 
 	@Test
