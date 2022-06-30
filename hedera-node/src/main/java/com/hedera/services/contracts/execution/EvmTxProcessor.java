@@ -276,8 +276,9 @@ abstract class EvmTxProcessor {
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
+		HederaTracer hederaTracer = new HederaTracer();
 		while (!messageFrameStack.isEmpty()) {
-			process(messageFrameStack.peekFirst(), new HederaTracer());
+			process(messageFrameStack.peekFirst(), hederaTracer);
 		}
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);

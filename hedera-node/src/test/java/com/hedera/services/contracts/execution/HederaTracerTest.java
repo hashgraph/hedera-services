@@ -50,11 +50,11 @@ class HederaTracerTest {
         subject = new HederaTracer();
     }
 
-    @Test
-    void traceExecution() {
-        subject.traceExecution(mf, eo);
-        verify(eo).execute();
-    }
+//    @Test
+//    void traceExecution() {
+//        subject.traceExecution(mf, eo);
+//        verify(eo).execute();
+//    }
 
     @Test
     void traceAccountCreationResult() {
