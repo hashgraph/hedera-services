@@ -67,7 +67,6 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -146,6 +145,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -266,6 +266,7 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
         given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -827,7 +828,14 @@ class ERC20PrecompilesTest {
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(tokenAddress)
+                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                .forIndexedArgument(senderAddress)
+                .forIndexedArgument(recipientAddress)
+                .forDataItem(AMOUNT).build();
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -840,6 +848,7 @@ class ERC20PrecompilesTest {
         verify(transferLogic).doZeroSum(tokenTransferChanges);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame).addLog(log);
     }
 
     @Test
