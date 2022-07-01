@@ -1501,7 +1501,7 @@ jobs:
           name: mvn install
           # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
-            mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+            mvn --no-transfer-progress clean install \
               | tee /repo/test-clients/output/hapi-client.log
       - run:
           name: Save Unit Test Results
@@ -1519,12 +1519,12 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-      - run:
-          name: Upload codecov
-          command: |
-            apt update -y
-            apt install -y curl
-            bash <(wget -O - https://codecov.io/bash)
+#      - run:
+#          name: Upload codecov
+#          command: |
+#            apt update -y
+#            apt install -y curl
+#            bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
           paths:
