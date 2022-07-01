@@ -39,7 +39,7 @@ public final class ValidationUtils {
 
 	public static void validateTrueOrRevert(final boolean flag, final ResponseCodeEnum code) {
 		if (!flag) {
-			throw InvalidTransactionException.fromReverting(code, code.name());
+			throw new InvalidTransactionException(code, true);
 		}
 	}
 
