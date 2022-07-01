@@ -95,7 +95,7 @@ spotless {
         googleJavaFormat().aosp().reflowLongStrings()
         // remove the old license headers as the spotless licenseHeader formatter cannot find them if
         // they are located between the package and import statements
-        replaceRegex("removeOldLicenses", "(\\/\\*-.+Copyright \\(C\\).+\\*\\/)", "")
+        addStep(StripOldLicenseFormatterStep.create())
         // make sure every file has the following copyright header.
         // optionally, Spotless can set copyright years by digging
         // through git history (see "license" section below)
@@ -256,9 +256,10 @@ sonarqube {
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
         property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
 
-        property("sonar.coverage.exclusions", "**/SuiteRunner.java,**/EndToEndPackageRunner.java")
+        property("sonar.coverage.exclusions", "**/test-clients/**")
 
         // Ignored to match pom.xml setup
+        property("sonar.issue.ignore.multicriteria", "e1,e2")
         property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
         property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S125")
         property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
