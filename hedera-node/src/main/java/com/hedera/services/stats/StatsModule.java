@@ -46,8 +46,7 @@ public final class StatsModule {
 			final @HapiThrottle FunctionalityThrottling hapiThrottling,
 			final NodeLocalProperties nodeProperties
 	) {
-		return new ThrottleUtilizations(handleThrottling, hapiThrottling, nodeProperties, new RunningAvgFactory() {
-		}, nodeProperties.statsSpeedometerHalfLifeSecs());
+		return new ThrottleUtilizations(handleThrottling, hapiThrottling, nodeProperties);
 	}
 
 	@Provides

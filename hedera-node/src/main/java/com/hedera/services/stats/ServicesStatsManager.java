@@ -39,6 +39,7 @@ import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 @Singleton
 public class ServicesStatsManager {
 	public static final String STAT_CATEGORY = "app";
+	public static final String GAUGE_FORMAT = "%,13.2f";
 	public static final String SPEEDOMETER_FORMAT = "%,13.2f";
 	public static final String RUNNING_AVG_FORMAT = "%,13.6f";
 	static Pause pause = SLEEPING_PAUSE;

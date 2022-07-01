@@ -83,6 +83,7 @@ public class CharacterizationSuite extends HapiApiSuite {
 				).then(
 						scheduleDelete("twoSigXfer")
 								.payingWith("sender")
+								.signedBy("sender", "admin")
 								.hasKnownStatus(INVALID_SCHEDULE_ID),
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
