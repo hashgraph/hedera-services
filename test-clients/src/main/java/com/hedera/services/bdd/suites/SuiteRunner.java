@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 package com.hedera.services.bdd.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
@@ -218,6 +218,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SuiteRunner {
+    @SuppressWarnings("java:S2245")
     private static final Random RANDOM = new Random();
     private static final Logger log = LogManager.getLogger(SuiteRunner.class);
     private static final int SUITE_NAME_WIDTH = 32;
