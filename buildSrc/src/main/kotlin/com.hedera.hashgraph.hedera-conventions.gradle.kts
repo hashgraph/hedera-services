@@ -93,12 +93,14 @@ spotless {
 
         // apply a specific flavor of google-java-format
         googleJavaFormat().aosp().reflowLongStrings()
-        // remove the old license headers as the spotless licenseHeader formatter cannot find them if
-        // they are located between the package and import statements
+        // Remove the old license headers as the spotless licenseHeader formatter
+        // cannot find them if they are located between the package and import statements.
         addStep(StripOldLicenseFormatterStep.create())
         // make sure every file has the following copyright header.
         // optionally, Spotless can set copyright years by digging
-        // through git history (see "license" section below)
+        // through git history (see "license" section below).
+        // The delimiter override below is required to support some
+        // of our test classes which are in the default package.
         licenseHeader("""
            /*
             * Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC

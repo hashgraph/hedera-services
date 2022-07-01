@@ -1,7 +1,11 @@
 import com.diffplug.spotless.FormatterFunc
 import com.diffplug.spotless.FormatterStep
-import java.util.regex.Pattern
 
+/*
+ Removes the old copyright statements which were incorrectly located between the package and import statements.
+ These legacy copyright blocks also uses with an unexpected opening comment tag. This FormatterStep removes those
+ comment blocks using a very conservative approach to avoid mutilating actual code.
+ */
 class StripOldLicenseFormatterStep {
     companion object {
         private const val NAME = "StripOldLicense"
