@@ -132,7 +132,7 @@ jobs:
           require_tests: 'false'
 
       - name: E2E Testing
-        id: gradle-itest
+        id: gradle-eet
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
