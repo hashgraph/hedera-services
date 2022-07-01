@@ -1,3 +1,4 @@
+import org.sonarqube.gradle.SonarQubeTask
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -243,6 +244,10 @@ tasks.jacocoTestReport {
     executionData.from(testExtension.destinationFile, iTestExtension.destinationFile)
 }
 
+tasks.check {
+    dependsOn(tasks.jacocoTestReport)
+}
+
 // Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
 // have them in the gradle.properties defintions.
 sonarqube {
@@ -267,4 +272,8 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
         property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S1874")
     }
+}
+
+tasks.withType<SonarQubeTask>().configureEach {
+    dependsOn(tasks.jacocoTestReport)
 }
