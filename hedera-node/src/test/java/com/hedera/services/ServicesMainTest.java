@@ -23,6 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.exports.AccountsExporter;
@@ -38,7 +39,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -67,6 +68,7 @@ import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
@@ -139,6 +141,11 @@ class ServicesMainTest {
 	void throwsErrorOnMissingApp() {
 		// expect:
 		Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, edonId));
+	}
+
+	@Test
+	void returnsSerializableVersion() {
+		assertInstanceOf(SerializableSemVers.class, subject.getSoftwareVersion());
 	}
 
 	@Test

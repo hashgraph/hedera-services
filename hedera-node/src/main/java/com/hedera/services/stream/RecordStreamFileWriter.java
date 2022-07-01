@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -54,6 +55,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
@@ -71,7 +73,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private static final DigestType currentDigestType = DigestType.SHA_384;
 
 	/**
-<	 * the current record stream type;
+	 * <	 * the current record stream type;
 	 * used to obtain file extensions and versioning
 	 */
 	private final RecordStreamType streamType;
@@ -268,10 +270,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					dosMeta.writeLong(recordStreamFileBuilder.getBlockNumber());
 					LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: write block number {}",
 							recordStreamFileBuilder.getBlockNumber());
-				} catch (InterruptedException e) {
+				} catch (InterruptedException | ExecutionException e) {
 					Thread.currentThread().interrupt();
 					LOG.error(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: Got interrupted when getting endRunningHash for writing {}",
+							"closeCurrentAndSign :: failed when getting endRunningHash for writing {}",
 							recordFileNameShort, e);
 					return;
 				} catch (IOException e) {
@@ -376,11 +378,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 			LOG.error(
 					EXCEPTION.getMarker(),
 					"beginNew :: Got IOException when writing startRunningHash to metadata stream", e);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
 			LOG.error(
 					EXCEPTION.getMarker(),
-					"beginNew :: Got interrupted when getting startRunningHash for writing to metadata stream.", e);
+					"beginNew :: Exception when getting startRunningHash for writing to metadata stream", e);
 		}
 	}
 
@@ -388,7 +390,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	 * add given object to the current record stream file
 	 *
 	 * @param object
-	 * 	object to be added to the record stream file
+	 * 		object to be added to the record stream file
 	 */
 	private void consume(final RecordStreamObject object) {
 		recordStreamFileBuilder.addRecordStreamItems(
@@ -414,10 +416,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
 	/**
 	 * generate full fileName from given Instant object
+	 *
 	 * @param consensusTimestamp
-	 * 	the consensus timestamp of the first transaction in the record file
-	 * @return
-	 * 	the new record file name
+	 * 		the consensus timestamp of the first transaction in the record file
+	 * @return the new record file name
 	 */
 	String generateRecordFilePath(final Instant consensusTimestamp) {
 		return dirPath + File.separator + generateStreamFileNameFromInstant(consensusTimestamp, streamType);
@@ -574,5 +576,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 			case ACTIONS -> SidecarType.CONTRACT_ACTION;
 			case BYTECODES -> SidecarType.CONTRACT_BYTECODE;
 		};
+	}
+
+	@VisibleForTesting
+	void clearRunningHash() {
+		runningHash = new RunningHash();
 	}
 }

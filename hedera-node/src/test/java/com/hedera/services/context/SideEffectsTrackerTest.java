@@ -33,6 +33,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,6 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -382,6 +384,46 @@ class SideEffectsTrackerTest {
 		assertEquals(0, subject.getNumRewardedAccounts());
 	}
 
+	@Test
+	void tracksAndResetsPseudoRandomDataCorrectly() {
+		final var num = 100;
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
+
+		subject.trackRandomNumber(num);
+		subject.trackRandomBytes(bytes);
+
+		assertTrue(subject.hasTrackedRandomData());
+		assertEquals(100, subject.getPseudorandomNumber());
+		assertEquals(bytes, subject.getPseudorandomBytes());
+
+		subject.reset();
+		assertFalse(subject.hasTrackedRandomData());
+		assertEquals(-1, subject.getPseudorandomNumber());
+		assertEquals(null, subject.getPseudorandomBytes());
+	}
+
+	@Test
+	void checksPseudoRandomDataIsSetCorrectly() {
+		final var num = 100;
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
+
+		subject.trackRandomNumber(num);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(bytes);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(new byte[0]);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomNumber(-1);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;
@@ -395,7 +437,7 @@ class SideEffectsTrackerTest {
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
-	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
+
 	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
 	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =

@@ -196,7 +196,7 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.longTermEnabled", true),
+			entry("scheduling.longTermEnabled", false),
 			entry("scheduling.maxTxnPerSecond", 100L),
 			entry("scheduling.maxExpirationFutureSeconds", 5356800L),
 			entry("scheduling.whitelist", Set.of(
@@ -238,6 +238,7 @@ class BootstrapPropertiesTest {
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
+			entry("randomGeneration.isEnabled", true),
 			entry("contracts.sidecars", Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE))
 	);
 

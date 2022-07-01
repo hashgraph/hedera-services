@@ -79,9 +79,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class RecordStreamFileWriterTest {
-	RecordStreamFileWriterTest() {}
+	RecordStreamFileWriterTest() {
+	}
 
 	@BeforeEach
 	void setUp() throws NoSuchAlgorithmException {
@@ -127,8 +128,8 @@ class RecordStreamFileWriterTest {
 		final var thirdBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(1, 3,
 				firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000), true);
 		Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
-						.flatMap(Collection::stream)
-						.forEach(subject::addObject);
+				.flatMap(Collection::stream)
+				.forEach(subject::addObject);
 
 		// then
 		assertRecordStreamFiles(
@@ -262,6 +263,7 @@ class RecordStreamFileWriterTest {
 				firstBlockEntireFileSignature,
 				firstBlockMetadataSignature);
 	}
+
 
 	private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
 			final int numberOfRSOs,
@@ -652,33 +654,6 @@ class RecordStreamFileWriterTest {
 				.forEach(subject::addObject);
 	}
 
-//	@Disabled
-//	@Test
-//	void interruptThreadAndLogWhenFileOutputStreamCannotBeOpened() throws NoSuchAlgorithmException {
-//		final var invalidDirPath = "random/nonexistent/directory";
-//		subject = new RecordStreamFileWriter(
-//				invalidDirPath,
-//				logPeriodMs,
-//				signer,
-//				false,
-//				streamType
-//		);
-//		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-//		given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-//		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 1, 11, 2, 55).toInstant(ZoneOffset.UTC);
-//		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-//		final var startRunningHash = new Hash(messageDigest.digest());
-//		subject.setRunningHash(startRunningHash);
-//
-//		// when
-//		sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
-//
-//		// then
-//		assertTrue(Thread.currentThread().isInterrupted());
-//		assertTrue(logCaptor.errorLogs().get(0).startsWith
-//						("closeCurrentAndSign :: FileNotFound: " + invalidDirPath + File.separator +
-//								generateStreamFileNameFromInstant(firstTransactionInstant, streamType)));
-//	}
 
 	@Test
 	void interruptThreadAndLogWhenIOExceptionIsCaughtWhileWritingSidecarRecordFile() {
@@ -741,10 +716,11 @@ class RecordStreamFileWriterTest {
 	}
 
 	@Test
-	void waitingForStartRunningHashInterruptedExceptionIsCaughtAndLoggedProperly()  {
+	void waitingForStartRunningHashInterruptedExceptionIsCaughtAndLoggedProperly() {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 		final var firstTransactionInstant = LocalDateTime.of(2022, 4, 29, 11, 2, 55).toInstant(ZoneOffset.UTC);
+		subject.clearRunningHash();
 
 		// when
 		Thread.currentThread().interrupt();
@@ -752,12 +728,12 @@ class RecordStreamFileWriterTest {
 				.forEach(subject::addObject);
 
 		// then
-		assertTrue(logCaptor.errorLogs().get(0).startsWith("beginNew :: Got interrupted when getting " +
-				"startRunningHash for writing to metadata stream."));
+		assertTrue(logCaptor.errorLogs().get(0)
+				.startsWith("beginNew :: Exception when getting startRunningHash for writing to metadata stream"));
 	}
 
 	@Test
-	void waitingForEndRunningHashInterruptedExceptionIsCaughtAndLoggedProperly()  {
+	void waitingForEndRunningHashInterruptedExceptionIsCaughtAndLoggedProperly() {
 		// given
 		given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
 		final var firstTransactionInstant = LocalDateTime.of(2022, 4, 29, 11, 2, 55).toInstant(ZoneOffset.UTC);
@@ -769,8 +745,8 @@ class RecordStreamFileWriterTest {
 		subject.closeCurrentAndSign();
 
 		// then
-		assertTrue(logCaptor.errorLogs().get(0).startsWith("closeCurrentAndSign :: Got interrupted when getting " +
-				"endRunningHash for writing"));
+		assertTrue(
+				logCaptor.errorLogs().get(0).startsWith("closeCurrentAndSign :: failed when getting endRunningHash "));
 	}
 
 	@Test
@@ -817,7 +793,8 @@ class RecordStreamFileWriterTest {
 				SerializableDataOutputStream.class,
 				(mock, context) -> doThrow(IOException.class).when(mock).write(any()))
 		) {
-			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, true).forEach(subject::addObject);
+			generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, false).forEach(
+					subject::addObject);
 		}
 
 		// then

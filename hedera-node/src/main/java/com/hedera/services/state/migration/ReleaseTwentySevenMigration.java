@@ -23,7 +23,7 @@ package com.hedera.services.state.migration;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
 public final class ReleaseTwentySevenMigration {

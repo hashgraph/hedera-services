@@ -195,5 +195,8 @@
   },
   "SystemUndelete": {
 	"DEFAULT": 0
+  },
+  "RandomGenerate": {
+	"DEFAULT": 0.001
   }
 }
