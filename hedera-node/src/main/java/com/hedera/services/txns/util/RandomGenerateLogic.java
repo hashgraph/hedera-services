@@ -2,31 +2,22 @@ package com.hedera.services.txns.util;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class RandomGenerateLogic {
 	private static final Logger log = LogManager.getLogger(RandomGenerateLogic.class);
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
@@ -53,7 +44,6 @@ public class RandomGenerateLogic {
 		if (pseudoRandomBytes == null) {
 			return;
 		}
-
 		if (range > 0) {
 			// generate pseudorandom number in the given range
 			final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
