@@ -12,6 +12,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-e2e-tests:
+        description: "End to End Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
+      enable-integration-tests:
+        description: "Integration Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
       enable-sonar-analysis:
         description: "Sonar Analysis Enabled:"
         type: boolean
@@ -102,23 +112,38 @@ jobs:
           report_paths: "**/build/test-results/test/TEST-*.xml"
           require_tests: 'false'
 
-      - name: Build docker images # build the image for hedera-node
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+      - name: Build Docker Image # build the image for hedera-node
+        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         run: bash compose-build.sh
 
       - name: Integration Testing
         id: gradle-itest
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          arguments: itest --scan --stacktrace
+          arguments: itest
 
       - name: Publish Integration Test Report
         uses: mikepenz/action-junit-report@v3
-        if: ${{ inputs.enable-unit-tests && steps.gradle-test.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: E2E Testing
+        id: gradle-itest
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          arguments: eet
+
+      - name: Publish E2E Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: E2E Test Results
+          report_paths: "**/build/test-results/eet/TEST-*.xml"
           require_tests: 'false'
 
       - name: Jacoco Coverage Report
@@ -145,19 +170,19 @@ jobs:
           name: Test Reports
           path: "**/build/reports/tests/**"
 
-      - name: Show Integration Test Folder Structures
-        if: ${{ always() }}
-        run: |
-          if ! command -v tree >/dev/null 2>&1; then
-            echo "::group::Install Tree Command"
-            sudo apt update
-            sudo apt install -y tree
-            echo "::endgroup::"
-          fi
-          
-          echo "::group::Show Network Folder Contents"
-          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
-          echo "::endgroup::"
+#      - name: Show Integration Test Folder Structures
+#        if: ${{ always() }}
+#        run: |
+#          if ! command -v tree >/dev/null 2>&1; then
+#            echo "::group::Install Tree Command"
+#            sudo apt update
+#            sudo apt install -y tree
+#            echo "::endgroup::"
+#          fi
+#
+#          echo "::group::Show Network Folder Contents"
+#          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
+#          echo "::endgroup::"
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@v3
