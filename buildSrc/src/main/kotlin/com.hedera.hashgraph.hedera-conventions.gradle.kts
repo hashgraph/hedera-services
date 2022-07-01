@@ -93,6 +93,9 @@ spotless {
 
         // apply a specific flavor of google-java-format
         googleJavaFormat().aosp().reflowLongStrings()
+        // remove the old license headers as the spotless licenseHeader formatter cannot find them if
+        // they are located between the package and import statements
+        replaceRegex("removeOldLicenses", "(\\/\\*-.+Copyright \\(C\\).+\\*\\/)", "")
         // make sure every file has the following copyright header.
         // optionally, Spotless can set copyright years by digging
         // through git history (see "license" section below)
@@ -112,7 +115,7 @@ spotless {
             * See the License for the specific language governing permissions and
             * limitations under the License.
             */ 
-        """.trimIndent(), "import")
+        """.trimIndent(), "(package|import)")
     })
 }
 
