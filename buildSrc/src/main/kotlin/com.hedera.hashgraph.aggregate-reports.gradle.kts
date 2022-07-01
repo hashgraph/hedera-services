@@ -34,7 +34,3 @@ sonarqube {
     }
 }
 
-tasks.check {
-    dependsOn(tasks.named<SonarQubeTask>("sonarqube"))
-}
-
