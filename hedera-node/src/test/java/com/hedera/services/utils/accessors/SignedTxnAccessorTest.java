@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -635,6 +636,23 @@ class SignedTxnAccessorTest {
 		final var expandedMeta = spanMapAccessor.getEthTxDataMeta(accessor);
 
 		assertEquals(98304L, expandedMeta.gasLimit());
+	}
+
+	@Test
+	void setGenerateRandomMetaWorks() {
+		final var op = RandomGenerateTransactionBody.newBuilder().setRange(10).build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setRandomGenerate(op)
+				.build());
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getRandomGenerateMeta(accessor);
+
+		assertEquals(4, expandedMeta.getMsgBytesUsed());
 	}
 
 	@Test

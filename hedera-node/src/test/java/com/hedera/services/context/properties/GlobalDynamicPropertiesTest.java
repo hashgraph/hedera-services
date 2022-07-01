@@ -95,6 +95,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
 		assertTrue(subject.isStakingEnabled());
+		assertTrue(subject.isRandomGenerationEnabled());
 	}
 
 	@Test
@@ -232,6 +233,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
 		assertFalse(subject.isStakingEnabled());
+		assertFalse(subject.isRandomGenerationEnabled());
 	}
 
 	@Test
@@ -440,6 +442,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("tokens.maxNumber")).willReturn(i + 82L);
 		given(properties.getLongProperty("topics.maxNumber")).willReturn(i + 83L);
 		given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
+		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

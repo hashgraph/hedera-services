@@ -137,6 +137,7 @@ public class GlobalDynamicProperties {
 	private long maxNumTokens;
 	private long maxNumTopics;
 	private long maxNumSchedules;
+	private boolean randomGenerationEnabled;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -251,6 +252,7 @@ public class GlobalDynamicProperties {
 		maxNumSchedules = properties.getLongProperty("scheduling.maxNumber");
 		maxNumTokens = properties.getLongProperty("tokens.maxNumber");
 		maxNumTopics = properties.getLongProperty("topics.maxNumber");
+		randomGenerationEnabled = properties.getBooleanProperty("randomGeneration.isEnabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -631,5 +633,9 @@ public class GlobalDynamicProperties {
 
 	public long maxNumSchedules() {
 		return maxNumSchedules;
+        }
+
+	public boolean isRandomGenerationEnabled() {
+		return randomGenerationEnabled;
 	}
 }

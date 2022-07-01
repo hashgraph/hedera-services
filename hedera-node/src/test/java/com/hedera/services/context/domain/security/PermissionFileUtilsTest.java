@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -80,7 +81,14 @@ class PermissionFileUtilsTest {
 	void returnsEmptyKeyForBlankQuery() {
 		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
 	}
-
+	@Test
+	void worksForRandomGenerate() {
+		final var op = RandomGenerateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
+				.setRandomGenerate(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+	}
 	@Test
 	void worksForScheduleCreate() {
 		final var op = ScheduleCreateTransactionBody.getDefaultInstance();
@@ -580,6 +588,8 @@ class PermissionFileUtilsTest {
 			key = "submitMessage";
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
 			key = "tokenFeeScheduleUpdate";
+		} else if(txn.hasRandomGenerate()){
+			key = "randomGenerate";
 		}
 		return key;
 	}

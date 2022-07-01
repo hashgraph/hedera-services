@@ -44,10 +44,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
@@ -154,6 +154,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -281,6 +282,7 @@ public final class MiscUtils {
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
+	static final String RANDOM_GENERATE_METRIC = "randomGenerate";
 
 	private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -357,6 +359,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
 		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+		BASE_STAT_NAMES.put(RandomGenerate, RANDOM_GENERATE_METRIC);
 		/* Queries */
 		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
 		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -714,6 +717,9 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
+		if (txn.hasRandomGenerate()) {
+			return RandomGenerate;
+		}
 		throw new UnknownHederaFunctionality();
 	}
 
@@ -816,17 +822,20 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
+		} else if (scheduledTxn.hasRandomGenerate()) {
+			ordinary.setRandomGenerate(scheduledTxn.getRandomGenerate());
 		}
 		return ordinary.build();
 	}
 
 
 	/**
-	 * @param functionality any {@link HederaFunctionality}
+	 * @param functionality
+	 * 		any {@link HederaFunctionality}
 	 * @return true if the functionality could possibly be allowed to be scheduled.
-	 * Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
-	 * The scheduling.whitelist configuration property is separate from this and provides the final list
-	 * of functionality that can be scheduled.
+	 * 		Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
+	 * 		The scheduling.whitelist configuration property is separate from this and provides the final list
+	 * 		of functionality that can be scheduled.
 	 */
 	public static boolean isSchedulable(final HederaFunctionality functionality) {
 		if (functionality == null) {
