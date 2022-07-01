@@ -236,7 +236,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
 			entry("randomGeneration.isEnabled", true),
-			entry("contracts.precompile.randomGenerateGasCost", 10000L)
+			entry("contracts.precompile.randomGenerateGasCost", 100L)
 	);
 
 	@Test

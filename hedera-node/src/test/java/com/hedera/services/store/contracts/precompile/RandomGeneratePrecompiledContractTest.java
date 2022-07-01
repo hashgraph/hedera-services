@@ -21,13 +21,13 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.txns.util.RandomGenerateLogic;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.threading.futures.StandardFuture;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -40,17 +40,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 
 import static com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract.RANDOM_256_BIT_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract.RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGeneratePrecompiledContractTest {
@@ -63,27 +62,29 @@ class RandomGeneratePrecompiledContractTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	private RandomGenerateLogic logic;
 	private RandomGeneratePrecompiledContract subject;
 	private Random r = new Random();
 
 	@BeforeEach
 	void setUp() {
-		subject = new RandomGeneratePrecompiledContract(gasCalculator, dynamicProperties,
-				() -> runningHashLeaf);
+		logic = new RandomGenerateLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
+		subject = new RandomGeneratePrecompiledContract(gasCalculator, logic, dynamicProperties);
 	}
 
 	@Test
-	void generatesRandom256BitNumber() {
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
-				new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48))));
+	void generatesRandom256BitNumber() throws InterruptedException {
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+
 		final var result = subject.compute(random256BitGeneratorInput(), frame);
 		assertEquals(32, result.toArray().length);
 	}
 
 	@Test
-	void generatesRandomNumber() {
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
-				new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48))));
+	void generatesRandomNumber() throws InterruptedException {
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
 		final var range = r.nextInt(0, Integer.MAX_VALUE);
 		final var result = subject.compute(randomNumberGeneratorInput(range), frame);
@@ -99,9 +100,9 @@ class RandomGeneratePrecompiledContractTest {
 
 	@Test
 	void inputRangeCannotBeNegative() {
-		final var input = randomNumberGeneratorNegativeInput(-10);
-		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.compute(input, frame));
-		assertEquals(INVALID_RANDOM_GENERATE_RANGE, ex.getResponseCode());
+		final var input = randomNumberGeneratorInput(-10);
+		subject.compute(input, frame);
+		verify(frame).setRevertReason(EncodingFacade.resultFrom(INVALID_RANDOM_GENERATE_RANGE));
 	}
 
 	@Test
@@ -118,15 +119,15 @@ class RandomGeneratePrecompiledContractTest {
 	}
 
 	@Test
-	void invalidHashReturnsSentinelOutputs() {
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
-				new RunningHash(new Hash()));
+	void invalidHashReturnsSentinelOutputs() throws InterruptedException {
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+
 		var result = subject.compute(random256BitGeneratorInput(), frame);
 		assertEquals(32, result.toArray().length);
 
 		// hash is null
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(
-				new RunningHash(null));
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
+
 		result = subject.compute(random256BitGeneratorInput(), frame);
 		assertNull(result);
 
@@ -137,12 +138,9 @@ class RandomGeneratePrecompiledContractTest {
 	}
 
 	@Test
-	void interruptedExceptionReturnsNull() throws ExecutionException, InterruptedException {
-		final var runningHash = mock(RunningHash.class);
-		final var futureHash = mock(StandardFuture.class);
-		given(runningHashLeaf.getNMinus3RunningHash()).willReturn(runningHash);
-		given(runningHash.getFutureHash()).willReturn(futureHash);
-		given(futureHash.get()).willThrow(InterruptedException.class);
+	void interruptedExceptionReturnsNull() throws InterruptedException {
+		final var runningHash = mock(Hash.class);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(runningHash);
 
 		var result = subject.compute(random256BitGeneratorInput(), frame);
 		assertNull(result);
@@ -157,12 +155,8 @@ class RandomGeneratePrecompiledContractTest {
 	}
 
 	private static Bytes randomNumberGeneratorInput(final int range) {
-		return input(RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR, Bytes32.leftPad(Bytes.ofUnsignedInt(range)));
-	}
-
-	private static Bytes randomNumberGeneratorNegativeInput(final int range) {
-		return input(RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR, Bytes32.leftPad(
-				Bytes.wrap(ByteBuffer.allocate(4).putInt(range).array())));
+		return input(RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
+				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(4).putInt(range).array())));
 	}
 
 	private static Bytes input(final int selector, final Bytes wordInput) {

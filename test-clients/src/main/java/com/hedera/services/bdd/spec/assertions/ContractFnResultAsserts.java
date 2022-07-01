@@ -235,12 +235,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		};
 	}
 
-	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isComputedResult(
-			Function<HapiApiSpec, Object[]> resultProvider
-	) {
-		return spec -> actualObjs -> matchErrors(resultProvider.apply(spec), actualObjs);
-	}
-
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(Object[] objs) {
 		return ignore -> actualObjs -> matchErrors(objs, actualObjs);
 	}

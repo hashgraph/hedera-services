@@ -40,8 +40,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RandomGenerateTransitionLogicTest {
@@ -59,10 +65,12 @@ class RandomGenerateTransitionLogicTest {
 
 	private RandomGenerateTransitionLogic subject;
 	private TransactionBody randomGenerateTxn;
+	private RandomGenerateLogic logic;
 
 	@BeforeEach
 	private void setup() {
-		subject = new RandomGenerateTransitionLogic(txnCtx, tracker, () -> runningHashLeaf, properties);
+		logic = new RandomGenerateLogic(properties, () -> runningHashLeaf, tracker);
+		subject = new RandomGenerateTransitionLogic(txnCtx, logic);
 	}
 
 	@Test
@@ -80,9 +88,12 @@ class RandomGenerateTransitionLogicTest {
 	}
 
 	@Test
-	void returnsIfNotEnabled(){
+	void returnsIfNotEnabled() {
 		given(properties.isRandomGenerationEnabled()).willReturn(false);
 		givenValidTxnCtx(10000);
+		given(accessor.getTxn()).willReturn(randomGenerateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
 		subject.doStateTransition();
 
 		assertFalse(tracker.hasTrackedRandomData());
@@ -189,16 +200,21 @@ class RandomGenerateTransitionLogicTest {
 
 	@Test
 	void interruptedWhileGettingHash() throws InterruptedException {
+		final var sideEffectsTracker = mock(SideEffectsTracker.class);
+		logic = new RandomGenerateLogic(properties, () -> runningHashLeaf, sideEffectsTracker);
+		subject = new RandomGenerateTransitionLogic(txnCtx, logic);
+
 		givenValidTxnCtx(10);
 		given(properties.isRandomGenerationEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willThrow(InterruptedException.class);
 		given(accessor.getTxn()).willReturn(randomGenerateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
-		subject.doStateTransition();
+		final var msg = assertThrows(IllegalStateException.class, () -> subject.doStateTransition());
+		assertTrue(msg.getMessage().contains("Interrupted when computing n-3 running hash"));
 
-		assertNull(tracker.getPseudorandomBytes());
-		assertEquals(-1, tracker.getPseudorandomNumber());
+		verify(sideEffectsTracker, never()).trackRandomBytes(any());
+		verify(sideEffectsTracker, never()).trackRandomNumber(anyInt());
 	}
 
 	private void givenValidTxnCtx(int range) {

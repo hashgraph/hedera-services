@@ -46,57 +46,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class RandomGenerateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(RandomGenerateTransitionLogic.class);
-
 	private final TransactionContext txnCtx;
-	private final SideEffectsTracker sideEffectsTracker;
-	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
-
-	private final GlobalDynamicProperties properties;
+	private final RandomGenerateLogic randomGenerateLogic;
 
 	@Inject
 	public RandomGenerateTransitionLogic(final TransactionContext txnCtx,
-			final SideEffectsTracker sideEffectsTracker,
-			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier,
-			final GlobalDynamicProperties properties) {
+			final RandomGenerateLogic randomGenerateLogic) {
 		this.txnCtx = txnCtx;
-		this.sideEffectsTracker = sideEffectsTracker;
-		this.runningHashLeafSupplier = runningHashLeafSupplier;
-		this.properties = properties;
+		this.randomGenerateLogic = randomGenerateLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		if (!properties.isRandomGenerationEnabled()) {
-			return;
-		}
 		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
-
-		Hash nMinus3RunningHash;
-		try {
-			// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
-			nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
-		} catch (InterruptedException e) {
-			log.error("Interrupted when computing n-3 running hash", e);
-			Thread.currentThread().interrupt();
-			return;
-		}
-
-		if (nMinus3RunningHash == null) {
-			log.info("No n-3 record running hash available to generate random number");
-			return;
-		}
-
-		//generate binary string from the running hash of records
-		final var pseudoRandomBytes = nMinus3RunningHash.getValue();
 		final var range = op.getRange();
-		if (range > 0) {
-			// generate pseudorandom number in the given range
-			final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
-			sideEffectsTracker.trackRandomNumber(pseudoRandomNumber);
-		} else {
-			sideEffectsTracker.trackRandomBytes(pseudoRandomBytes);
-		}
+
+		randomGenerateLogic.generateRandom(range);
 	}
 
 	@Override
@@ -110,15 +75,6 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum validate(final TransactionBody randomGenerateTxn) {
-		final var range = randomGenerateTxn.getRandomGenerate().getRange();
-		if (range < 0) {
-			return INVALID_RANDOM_GENERATE_RANGE;
-		}
-		return OK;
-	}
-
-	public static final int randomNumFromBytes(final byte[] pseudoRandomBytes, final int range) {
-		final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
-		return (int) ((range * (long) initialBitsValue) >>> 32);
+		return randomGenerateLogic.validateSemantics(randomGenerateTxn);
 	}
 }
