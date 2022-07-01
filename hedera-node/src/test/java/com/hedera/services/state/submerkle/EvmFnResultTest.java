@@ -101,7 +101,7 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-//				stateChanges,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -118,8 +118,9 @@ class EvmFnResultTest {
 		assertEquals(gasUsed, subject.getGasUsed());
 		assertEquals(logs, subject.getLogs());
 		assertEquals(createdContractIds, subject.getCreatedContractIds());
+		assertEquals(stateChanges, subject.getStateChanges());
 		assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-		assertEquals(5, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0280_VERSION, subject.getVersion());
 		assertEquals(gas, subject.getGas());
 		assertEquals(amount, subject.getAmount());
 		assertEquals(functionParameters, subject.getFunctionParameters());
@@ -231,6 +232,7 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -244,6 +246,7 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters, 
@@ -257,6 +260,7 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				Address.ZERO.toArray(),
+				stateChanges,
 				gas,
 				amount,
 				functionParameters, 
@@ -270,6 +274,7 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -283,6 +288,7 @@ class EvmFnResultTest {
 				List.of(logFrom(1)),
 				createdContractIds,
 				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -296,6 +302,7 @@ class EvmFnResultTest {
 				logs,
 				List.of(new EntityId(1L, 1L, 42L)),
 				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -309,9 +316,10 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
+				Collections.emptyMap(),
 				gas,
 				amount,
-				"randomParameters".getBytes(),
+				functionParameters,
 				senderId);
 		final var nine = new EvmFnResult(
 				contractId,
@@ -322,6 +330,21 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				"randomParameters".getBytes(),
+				senderId);
+		final var ten = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
 				gas,
 				amount,
 				"randomParameters".getBytes(),
@@ -336,6 +359,7 @@ class EvmFnResultTest {
 		assertNotEquals(one, seven);
 		assertNotEquals(one, eight);
 		assertNotEquals(one, nine);
+		assertNotEquals(one, ten);
 		assertEquals(one, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
@@ -354,6 +378,7 @@ class EvmFnResultTest {
 						subject.getLogs(),
 						subject.getCreatedContractIds(),
 						subject.getEvmAddress(),
+						subject.getStateChanges(),
 						subject.getGas(),
 						subject.getAmount(),
 						subject.getFunctionParameters(),
@@ -373,6 +398,8 @@ class EvmFnResultTest {
 						"contractId=" + contractId + ", " +
 						"createdContractIds=" + createdContractIds + ", " +
 						"logs=" + logs +
+						", stateChanges={0x0000000000000000000000000000000000000006={0x07=(0x08,null)}, " +
+						"0x0000000000000000000000000000000000000009={0x0a=(0x0b,0x0c)}}" +
 						", evmAddress=0000000000000000000000000000000000000009, " +
 						"gas=" + gas + ", " +
 						"amount=" + amount + ", " +
@@ -473,7 +500,7 @@ class EvmFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(EvmFnResult.RELEASE_0260_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0280_VERSION, subject.getVersion());
 		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 	

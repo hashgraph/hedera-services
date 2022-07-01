@@ -78,6 +78,7 @@ public class EvmFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = Collections.emptyList();
 	private List<EvmLog> logs = Collections.emptyList();
+	// stateChanges are not really used anymore; left for now only for migration purposes
 	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
 	private long gas;
 	private long amount;
@@ -145,35 +146,35 @@ public class EvmFnResult implements SelfSerializable {
 		this.senderId = senderId;
 	}
 
-//	public EvmFnResult(
-//			final EntityId contractId,
-//			final byte[] result,
-//			final String error,
-//			final byte[] bloom,
-//			final long gasUsed,
-//			final List<EvmLog> logs,
-//			final List<EntityId> createdContractIds,
-//			final byte[] evmAddress,
-//			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-//			final long gas,
-//			final long amount,
-//			final byte[] functionParameters,
-//			final EntityId senderId
-//	) {
-//		this.contractId = contractId;
-//		this.result = result;
-//		this.error = error;
-//		this.bloom = bloom;
-//		this.gasUsed = gasUsed;
-//		this.logs = logs;
-//		this.createdContractIds = createdContractIds;
-//		this.evmAddress = evmAddress;
-//		this.stateChanges = stateChanges;
-//		this.gas = gas;
-//		this.amount = amount;
-//		this.functionParameters = functionParameters;
-//		this.senderId = senderId;
-//	}
+	public EvmFnResult(
+			final EntityId contractId,
+			final byte[] result,
+			final String error,
+			final byte[] bloom,
+			final long gasUsed,
+			final List<EvmLog> logs,
+			final List<EntityId> createdContractIds,
+			final byte[] evmAddress,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final long gas,
+			final long amount,
+			final byte[] functionParameters,
+			final EntityId senderId
+	) {
+		this.contractId = contractId;
+		this.result = result;
+		this.error = error;
+		this.bloom = bloom;
+		this.gasUsed = gasUsed;
+		this.logs = logs;
+		this.createdContractIds = createdContractIds;
+		this.evmAddress = evmAddress;
+		this.stateChanges = stateChanges;
+		this.gas = gas;
+		this.amount = amount;
+		this.functionParameters = functionParameters;
+		this.senderId = senderId;
+	}
 
 	/* --- SelfSerializable --- */
 	@Override
@@ -203,7 +204,7 @@ public class EvmFnResult implements SelfSerializable {
 		// Added in 0.23
 		evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
 		// Added in 0.24
-		if (version >= RELEASE_0240_VERSION && version < RELEASE_0280_VERSION) {
+		if (version < RELEASE_0280_VERSION) {
 			int numAffectedContracts = in.readInt();
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
 			while (numAffectedContracts-- > 0) {
@@ -407,12 +408,6 @@ public class EvmFnResult implements SelfSerializable {
 		if (evmAddress.length > 0) {
 			grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		}
-		//		stateChanges.forEach((address, slotAccesses) -> {
-//			final var builder = ContractStateChange.newBuilder()
-//					.setContractId(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
-//			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
-//			grpc.addStateChanges(builder);
-//		});
 		grpc.setGas(gas);
 		grpc.setAmount(amount);
 		grpc.setFunctionParameters(ByteString.copyFrom(functionParameters));
@@ -456,7 +451,6 @@ public class EvmFnResult implements SelfSerializable {
 				EvmLog.fromBesu(logs),
 				createdContractIds,
 				evmAddress,
-//				Collections.emptyMap(),
 				0L,
 				0L,
 				EMPTY,
@@ -477,7 +471,6 @@ public class EvmFnResult implements SelfSerializable {
 				Collections.emptyList(),
 				Collections.emptyList(),
 				EMPTY,
-//				Collections.emptyMap(),
 				0L,
 				0L,
 				EMPTY,

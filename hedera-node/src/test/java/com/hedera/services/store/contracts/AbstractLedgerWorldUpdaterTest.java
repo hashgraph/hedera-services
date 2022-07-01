@@ -68,6 +68,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -177,8 +179,9 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.manageInProgressRecord(recordsHistorian, secondRecord, secondSynthBuilder);
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord);
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord);
+		//TODO: look into this
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, Collections.emptyList());
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord, Collections.emptyList());
 	}
 
 	@Test
