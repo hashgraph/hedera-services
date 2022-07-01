@@ -399,6 +399,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT),
+						cryptoCreate("civilian"),
 						overriding("contracts.maxGasPerSec", "100")
 				).when().then(
 						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
