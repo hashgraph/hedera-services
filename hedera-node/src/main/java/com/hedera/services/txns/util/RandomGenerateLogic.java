@@ -20,6 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class RandomGenerateLogic {
 	private static final Logger log = LogManager.getLogger(RandomGenerateLogic.class);
+
+	public static final byte[] MISSING_BYTES = new byte[0];
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties properties;
@@ -41,7 +43,7 @@ public class RandomGenerateLogic {
 		}
 
 		final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes();
-		if (pseudoRandomBytes == null) {
+		if (pseudoRandomBytes.equals(MISSING_BYTES)) {
 			return;
 		}
 		if (range > 0) {
@@ -73,7 +75,7 @@ public class RandomGenerateLogic {
 			nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
 			if (nMinus3RunningHash == null) {
 				log.info("No n-3 record running hash available to generate random number");
-				return null;
+				return MISSING_BYTES;
 			}
 			//generate binary string from the running hash of records
 			return nMinus3RunningHash.getValue();

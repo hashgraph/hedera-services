@@ -34,12 +34,12 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 /**
  * System contract to generate random numbers. This will generate 256-bit pseudorandom number when no range is provided.
@@ -75,7 +75,6 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 		return properties.randomGenerateGasCost();
 	}
 
-	@NotNull
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
 		try {
@@ -89,6 +88,7 @@ public class RandomGeneratePrecompiledContract extends AbstractPrecompiledContra
 			frame.setRevertReason(EncodingFacade.resultFrom(e.getResponseCode()));
 		} catch (Exception e) {
 			frame.setRevertReason(EncodingFacade.resultFrom(ResponseCodeEnum.FAIL_INVALID));
+			frame.setState(REVERT);
 			log.warn("Internal precompile failure", e);
 		}
 		return null;
