@@ -394,7 +394,7 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 
 	/* --- MerkleNode --- */
 	@Override
-	public synchronized void release() {
+	public synchronized void destroyNode() {
 		if (metadata != null) {
 			metadata.release();
 		}

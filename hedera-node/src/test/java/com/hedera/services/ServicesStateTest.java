@@ -403,7 +403,7 @@ class ServicesStateTest {
 	void onReleaseAndArchiveNoopIfMetadataNull() {
 		setAllMmsTo(mock(MerkleMap.class));
 		Assertions.assertDoesNotThrow(subject::archive);
-		Assertions.assertDoesNotThrow(subject::release);
+		Assertions.assertDoesNotThrow(subject::destroyNode);
 	}
 
 	@Test
@@ -412,7 +412,7 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		// when:
-		subject.release();
+		subject.destroyNode();
 
 		// then:
 		verify(metadata).release();
