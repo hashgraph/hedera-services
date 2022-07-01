@@ -57,6 +57,16 @@ class RecordStreamingUtilsTest {
 	}
 
 	@Test
+	void parsingV6SidecarRecordFilesSucceeds() throws IOException {
+		final var sidecarFile = Files.walk(Path.of(PATH_TO_FILES))
+				.filter(path -> path.toString().contains("V5S"))
+				.findFirst()
+				.get();
+		final var signatureFileOptional = RecordStreamingUtils.readSidecarFile(sidecarFile.toString());
+		assertNotNull(signatureFileOptional.get());
+	}
+
+	@Test
 	void parsingUnknownRecordFilesReturnsEmptyPair() throws IOException {
 		final var allStreamFiles = Files.walk(Path.of(PATH_TO_FILES))
 				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd"))
@@ -77,6 +87,17 @@ class RecordStreamingUtilsTest {
 			final var pair = RecordStreamingUtils.readSignatureFile(file.toString());
 			assertEquals(-1, pair.getLeft());
 			assertFalse(pair.getRight().isPresent());
+		}
+	}
+
+	@Test
+	void parsingUnknownSidecarFileReturnsEmptyOptional() throws IOException {
+		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
+				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd_sig"))
+				.toList();
+		for (final var file : signatureFiles) {
+			final var sidecarOptional = RecordStreamingUtils.readSidecarFile(file.toString());
+			assertTrue(sidecarOptional.isEmpty());
 		}
 	}
 }

@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
@@ -89,7 +91,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -111,7 +113,7 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 
@@ -157,7 +159,7 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 

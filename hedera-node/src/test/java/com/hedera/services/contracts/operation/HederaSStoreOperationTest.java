@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -43,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
@@ -83,7 +85,7 @@ class HederaSStoreOperationTest {
 	@Test
 	void executesCorrectly() {
 		givenValidContext(keyBytesMock, valueBytesMock);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);

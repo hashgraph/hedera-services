@@ -20,11 +20,13 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -33,11 +35,15 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -45,6 +51,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -56,11 +63,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.verification.VerificationMode;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -77,7 +90,11 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractRecordingCreateOperationTest {
@@ -208,6 +225,17 @@ class AbstractRecordingCreateOperationTest {
 		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+		final var initCode = "initCode".getBytes();
+		given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+		final var newContractMock = mock(Account.class);
+		final var runtimeCode = "runtimeCode".getBytes();
+		given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
+		given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
+		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(lastAllocated, initCode, runtimeCode))
+				.thenReturn(sidecarRecord);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -220,7 +248,7 @@ class AbstractRecordingCreateOperationTest {
 		verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
 		verify(creator).createSuccessfulSyntheticRecord(
 				eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation);
+		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
 		// and:
 		final var tracker = trackerCaptor.getValue();
 		assertTrue(tracker.hasTrackedContractCreation());
@@ -228,6 +256,7 @@ class AbstractRecordingCreateOperationTest {
 		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
 		// and:
 		assertTrue(liveRecord.shouldNotBeExternalized());
+		sidecarUtilsMockedStatic.close();
 	}
 
 	@Test

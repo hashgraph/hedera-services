@@ -23,6 +23,7 @@ package com.hedera.services.context.properties;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -205,6 +206,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
 		assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
+		assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
 	}
 
 	@Test
@@ -331,6 +333,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
 		assertEquals(66L, subject.exchangeRateGasReq());
+		assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -405,8 +408,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.allowCreate2"))
 				.willReturn((i + 58) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.redirectTokenCalls")).willReturn((i + 59) % 2 == 0);
-		given(properties.getBooleanProperty("contracts.enableTraceability"))
-				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
 		given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
 		given(properties.getBooleanProperty("entities.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
@@ -431,6 +432,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 76) % 2 == 0);
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
+		given(properties.getSidecarsProperty("contracts.sidecars")).willReturn( (i + 79) % 2 == 0
+				? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
+				: Set.of(SidecarType.CONTRACT_BYTECODE));
 
 	}
 

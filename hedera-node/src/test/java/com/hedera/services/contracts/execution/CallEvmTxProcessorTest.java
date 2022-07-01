@@ -22,8 +22,6 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -31,8 +29,8 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
@@ -237,7 +236,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionPopulatesStorageChanges() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(globalDynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final var contractAddress = "0xffff";
@@ -270,7 +269,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionWithDisabledTraceabilityDoNotPopulatesStorageChanges() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
+		given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);

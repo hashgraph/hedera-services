@@ -37,6 +37,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -104,7 +107,6 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
-			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
 			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
@@ -139,6 +141,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
 			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
+			entry("hedera.recordStream.sidecarLogDir", ""),
 			entry("hedera.recordStream.logPeriod", 2L),
 			entry("hedera.recordStream.isEnabled", true),
 			entry("hedera.recordStream.queueCapacity", 5000),
@@ -234,7 +237,8 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.isEnabled", true),
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
-			entry("hedera.recordStream.signatureFileVersion", 5)
+			entry("hedera.recordStream.signatureFileVersion", 5),
+			entry("contracts.sidecars", Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE))
 	);
 
 	@Test
