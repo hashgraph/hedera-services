@@ -1440,24 +1440,24 @@ workflows:
                 ignore:
                   - NONE
             workflow-name: "Continuous-integration"
-        - sonar-check:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
+#        - sonar-check:
+#            context: SonarCloud
+#            requires:
+#              - artifact-build
+#            workflow-name: "Continuous-integration-GCP"
 
         - build-platform-and-services:
             context: SonarCloud
             requires:
               - artifact-build
             workflow-name: "Continuous-integration-GCP"
-        - javadoc-generation:
-            context: Slack
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - attach_workspace:
-                  at: /
+#        - javadoc-generation:
+#            context: Slack
+#            requires:
+#              - build-platform-and-services
+#            pre-steps:
+#              - attach_workspace:
+#                  at: /
         - jrs-regression:
             context: Slack
             regression_path: /swirlds-platform/regression/assets
@@ -1469,7 +1469,7 @@ workflows:
             slack_results_channel: "hedera-cicd"
             slack_summary_channel: "hedera-cicd"
             requires:
-              - javadoc-generation
+              - build-platform-and-services
             pre-steps:
               - install-tools
               - attach_workspace:
