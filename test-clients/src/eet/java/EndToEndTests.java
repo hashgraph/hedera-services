@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
@@ -67,10 +67,36 @@ import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class EndToEndTests extends E2ETestBase {
+
+    // These tests need to run first since they are hyper-sensitive to the tests in the contractPrecompile group.
+    // Running these after the the contractPrecompile group will cause the GasLimitOverMaxGasLimitFailsPrecheck &
+    // KvLimitsEnforced tests to fail.
+    @Order(0)
+    @Tag("file")
+    @TestFactory
+    Collection<DynamicContainer> file() {
+        return List.of(
+                //				extractSpecsFromSuite(DiverseStateCreation::new),
+                //				extractSpecsFromSuite(DiverseStateValidation::new),
+                extractSpecsFromSuite(ExchangeRateControlSuite::new),
+                extractSpecsFromSuite(FetchSystemFiles::new),
+                extractSpecsFromSuite(FileAppendSuite::new),
+                extractSpecsFromSuite(FileCreateSuite::new),
+                //				extractSpecsFromSuite(FileDeleteSuite::new),
+                extractSpecsFromSuite(FileUpdateSuite::new),
+                extractSpecsFromSuite(PermissionSemanticsSpec::new),
+                extractSpecsFromSuite(ProtectedFilesUpdateSuite::new)
+                //				extractSpecsFromSuite(ValidateNewAddressBook::new)
+        );
+    }
 
     @Tag("autorenew")
     @TestFactory
@@ -341,24 +367,6 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(QueryPaymentExploitsSuite::new),
                 extractSpecsFromSuite(SpecialAccountsAreExempted::new)
                 //				extractSpecsFromSuite(TransferListServiceFeesSuite::new)
-                );
-    }
-
-    @Tag("file")
-    @TestFactory
-    Collection<DynamicContainer> file() {
-        return List.of(
-                //				extractSpecsFromSuite(DiverseStateCreation::new),
-                //				extractSpecsFromSuite(DiverseStateValidation::new),
-                extractSpecsFromSuite(ExchangeRateControlSuite::new),
-                extractSpecsFromSuite(FetchSystemFiles::new),
-                extractSpecsFromSuite(FileAppendSuite::new),
-                extractSpecsFromSuite(FileCreateSuite::new),
-                //				extractSpecsFromSuite(FileDeleteSuite::new),
-                extractSpecsFromSuite(FileUpdateSuite::new),
-                extractSpecsFromSuite(PermissionSemanticsSpec::new),
-                extractSpecsFromSuite(ProtectedFilesUpdateSuite::new)
-                //				extractSpecsFromSuite(ValidateNewAddressBook::new)
                 );
     }
 

@@ -186,7 +186,7 @@ jobs:
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@v3
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && !cancelled() }}
         with:
           name: Test Network Logs
           path: |
