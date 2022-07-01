@@ -24,6 +24,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -115,7 +116,6 @@ public class GlobalDynamicProperties {
 	private boolean exportPrecompileResults;
 	private boolean create2Enabled;
 	private boolean redirectTokenCalls;
-	private boolean enableTraceability;
 	private boolean enableAllowances;
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
@@ -132,6 +132,7 @@ public class GlobalDynamicProperties {
 	private long maxDailyStakeRewardThPerH;
 	private int recordFileVersion;
 	private int recordSignatureFileVersion;
+	private Set<SidecarType> enabledSidecars;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -220,7 +221,6 @@ public class GlobalDynamicProperties {
 		exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
 		create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
-		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
 		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -241,6 +241,7 @@ public class GlobalDynamicProperties {
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
+		enabledSidecars = properties.getSidecarsProperty("contracts.sidecars");
 	}
 
 	public int maxTokensPerAccount() {
@@ -519,10 +520,6 @@ public class GlobalDynamicProperties {
 		return exportPrecompileResults;
 	}
 
-	public boolean shouldEnableTraceability() {
-		return enableTraceability;
-	}
-
 	public boolean isCreate2Enabled() {
 		return create2Enabled;
 	}
@@ -601,5 +598,9 @@ public class GlobalDynamicProperties {
 
 	public int recordSignatureFileVersion() {
 		return recordSignatureFileVersion;
+	}
+
+	public Set<SidecarType> enabledSidecars() {
+		return enabledSidecars;
 	}
 }

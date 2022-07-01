@@ -194,7 +194,8 @@ public class AutoCreationLogic {
 		sideEffects.trackAutoCreation(newId, alias);
 		final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
 		childRecord.setFee(fee);
-		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
+		final var inProgress =
+				new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
 		pendingCreations.add(inProgress);
 		// If the transaction fails, we will get an opportunity to unlink this alias in reclaimPendingAliases()
 		aliasManager.link(alias, EntityNum.fromAccountId(newId));

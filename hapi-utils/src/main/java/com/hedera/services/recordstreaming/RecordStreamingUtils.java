@@ -21,6 +21,7 @@ package com.hedera.services.recordstreaming;
  */
 
 import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SignatureFile;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -51,6 +52,15 @@ public class RecordStreamingUtils {
 			return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamSignatureFile));
 		} catch (Exception e) {
 			return Pair.of(-1, Optional.empty());
+		}
+	}
+
+	public static Optional<SidecarFile> readSidecarFile(final String fileLoc) {
+		try (final var fin = new FileInputStream(fileLoc)) {
+			final var recordStreamSidecarFile = SidecarFile.parseFrom(fin);
+			return Optional.ofNullable(recordStreamSidecarFile);
+		} catch (Exception e) {
+			return Optional.empty();
 		}
 	}
 }

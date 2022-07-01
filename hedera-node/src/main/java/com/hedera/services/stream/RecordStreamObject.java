@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -38,9 +39,11 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Contains a TransactionRecord, its related Transaction, and consensus Timestamp of the Transaction.
+ * Contains a TransactionRecord, its related Transaction, consensus Timestamp of the Transaction and sidecar records.
  * Is used for record streaming
  */
 public class RecordStreamObject
@@ -68,6 +71,8 @@ public class RecordStreamObject
 	/* The running hash of all objects streamed up to and including this consensus time. */
 	private RunningHash runningHash;
 
+	private List<TransactionSidecarRecord.Builder> sidecars;
+
 	public RecordStreamObject() {
 	}
 
@@ -76,9 +81,19 @@ public class RecordStreamObject
 			final Transaction transaction,
 			final Instant consensusTimestamp
 	) {
+		this(fcTransactionRecord, transaction, consensusTimestamp, Collections.emptyList());
+	}
+
+	public RecordStreamObject(
+			final ExpirableTxnRecord fcTransactionRecord,
+			final Transaction transaction,
+			final Instant consensusTimestamp,
+			final List<TransactionSidecarRecord.Builder> sidecars
+	) {
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
 		this.fcTransactionRecord = fcTransactionRecord;
+		this.sidecars = sidecars;
 
 		runningHash = new RunningHash();
 	}
@@ -197,6 +212,10 @@ public class RecordStreamObject
 	public TransactionRecord getTransactionRecord() {
 		ensureNonNullGrpcRecord();
 		return transactionRecord;
+	}
+
+	public List<TransactionSidecarRecord.Builder> getSidecars() {
+		return this.sidecars;
 	}
 
 	private void ensureNonNullGrpcRecord() {

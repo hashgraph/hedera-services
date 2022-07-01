@@ -555,7 +555,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 									  final HapiContractCreate contractB,
 									  final HapiContractCreate contractC) {
 		return new HapiSpecOperation[]{
-				UtilVerbs.overriding("contracts.enableTraceability", "true"),
+//				UtilVerbs.overriding("contracts.enableTraceability", "true"),
 				uploadInitCode(contract),
 				contractA,
 				contractB,
@@ -564,7 +564,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation tearDown() {
-		return UtilVerbs.resetToDefault("contracts.enableTraceability");
+		return null;
+//		return UtilVerbs.resetToDefault("contracts.enableTraceability");
 	}
 
 	private HapiContractCreate createContractWithSlotValues(final String contract,

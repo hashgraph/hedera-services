@@ -32,6 +32,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -245,11 +246,20 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			final ExpirableTxnRecord.Builder recordSoFar,
 			final TransactionBody.Builder syntheticBody
 	) {
+		this.manageInProgressRecord(recordsHistorian, recordSoFar, syntheticBody, Collections.emptyList());
+	}
+
+	public void manageInProgressRecord(
+			final RecordsHistorian recordsHistorian,
+			final ExpirableTxnRecord.Builder recordSoFar,
+			final TransactionBody.Builder syntheticBody,
+			final List<TransactionSidecarRecord.Builder> sidecarRecords
+	) {
 		ensureFamiliarityWith(recordsHistorian);
 		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
 			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
 		}
-		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
+		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {

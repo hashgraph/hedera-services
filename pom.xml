@@ -113,7 +113,7 @@
 			</snapshots>
 			<id>proto-staging</id>
 			<name>Protobufs staging</name>
-			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1502</url>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1531</url>
 		</repository>
 		<repository>
 			<snapshots>

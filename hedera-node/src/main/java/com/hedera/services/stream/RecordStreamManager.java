@@ -130,16 +130,20 @@ public class RecordStreamManager {
 			final GlobalDynamicProperties globalDynamicProperties
 	) throws NoSuchAlgorithmException, IOException {
 		final var nodeScopedRecordLogDir = effLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
+		final var nodeScopedSidecarRecordLogDir =
+				effSidecarLogDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarRecordLogDir());
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
+			Files.createDirectories(Paths.get(nodeScopedSidecarRecordLogDir));
 			if (globalDynamicProperties.recordFileVersion() >= 6) {
 				protobufStreamFileWriter = new RecordStreamFileWriter(
 						nodeScopedRecordLogDir,
 						nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 						platform,
 						startWriteAtCompleteWindow,
-						streamType
+						streamType,
+						nodeScopedSidecarRecordLogDir
 				);
 			} else {
 				v5StreamFileWriter = new TimestampStreamFileWriter<>(
@@ -186,9 +190,11 @@ public class RecordStreamManager {
 		}
 
 		log.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}, " +
-						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
+						"sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, " +
+						"initialHash: {}",
 				nodeLocalProperties::isRecordStreamEnabled,
 				() -> nodeScopedRecordLogDir,
+				() -> nodeScopedSidecarRecordLogDir,
 				nodeLocalProperties::recordLogPeriod,
 				nodeLocalProperties::recordStreamQueueCapacity,
 				() -> initialHash);
@@ -284,6 +290,13 @@ public class RecordStreamManager {
 			baseDir += File.separator;
 		}
 		return baseDir + "record" + accountMemo;
+	}
+
+	public static String effSidecarLogDir(String baseRecordFileDir, final String sidecarDir) {
+		if (!baseRecordFileDir.endsWith(File.separator)) {
+			baseRecordFileDir += File.separator;
+		}
+		return baseRecordFileDir + sidecarDir;
 	}
 
 	/**

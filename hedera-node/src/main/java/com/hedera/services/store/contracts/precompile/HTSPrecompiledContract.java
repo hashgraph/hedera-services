@@ -442,7 +442,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
-					Collections.emptyMap(),
+//					Collections.emptyMap(),
 					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
 					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
 					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,

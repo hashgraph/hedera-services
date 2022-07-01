@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -128,6 +129,10 @@ public interface TransactionContext {
 	 * @return the historical record of processing the current txn thus far.
 	 */
 	ExpirableTxnRecord.Builder recordSoFar();
+
+	void setSidecarRecords(List<TransactionSidecarRecord.Builder> sidecars);
+
+	List<TransactionSidecarRecord.Builder> sidecars();
 
 	/**
 	 * Gets an accessor to the defined type {@link SignedTxnAccessor}

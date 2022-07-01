@@ -21,10 +21,14 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.SidecarUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,6 +44,7 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -205,7 +210,10 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
 			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp);
+			final var contractBytecodeSidecar = SidecarUtils.createContractBytecode(updater.idOfLastNewAddress(),
+					childFrame.getCode().getBytes().toArrayUnsafe(),
+					updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
+			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
 			frame.pushStackItem(UInt256.ZERO);
