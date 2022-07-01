@@ -54,8 +54,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -85,11 +86,11 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0260_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
+import static com.hedera.services.state.migration.StateVersions.FIRST_028X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -99,7 +100,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 /**
  * The Merkle tree root of the Hedera Services world state.
  */
-public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
+public class ServicesState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -144,7 +145,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/**
 	 * Log out the sizes the state children.
 	 */
-	 private void logStateChildrenSizes() {
+	private void logStateChildrenSizes() {
 		log.info("  (@ {}) # NFTs               = {}",
 				StateChildIndices.UNIQUE_TOKENS,
 				uniqueTokens().size());
@@ -183,14 +184,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public int getMinimumChildCount(int version) {
-		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
-			return NUM_POST_0210_CHILDREN;
-		} else if (version == CURRENT_VERSION) {
-			return NUM_POST_0260_CHILDREN;
-		} else {
-			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
-		}
+	public int getMinimumChildCount() {
+		return NUM_025X_CHILDREN;
 	}
 
 	@Override
@@ -199,16 +194,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void initialize() {
-		// The new STAKING_INFO child is added in the migration step for consistency
-	}
-
-	@Override
 	public void addDeserializedChildren(List<MerkleNode> children, int version) {
 		super.addDeserializedChildren(children, version);
 		deserializedStateVersion = version;
 	}
-
 	@Override
 	public void init(
 			final Platform platform,
@@ -323,15 +312,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting
-			// for lazy-initialization to take place.
+			// for lazy-initialization to take place
 			app.prefetchProcessor();
 			log.info("Created prefetch processor");
 
 			logSummary();
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);
+
+			if (trigger == GENESIS) {
+				app.sysAccountsCreator().ensureSystemAccounts(app.backingAccounts(), app.workingState().addressBook());
+				app.sysFilesManager().createManagedFilesIfMissing();
+			}
 		}
 	}
-
 
 	@Override
 	public AddressBook getAddressBookCopy() {
@@ -371,11 +364,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
-	@Override
-	public void noMoreTransactions() {
-		// no-op
-	}
-
 	/* --- FastCopyable --- */
 	@Override
 	public synchronized ServicesState copy() {
@@ -393,7 +381,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public synchronized void archive() {
 		if (metadata != null) {
-			metadata.archive();
+			metadata.release();
 		}
 
 		topics().archive();
@@ -406,7 +394,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- MerkleNode --- */
 	@Override
-	protected synchronized void onRelease() {
+	public synchronized void destroyNode() {
 		if (metadata != null) {
 			metadata.release();
 		}
@@ -523,7 +511,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
-		setChild(StateChildIndices.STAKING_INFO, stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
+		setChild(StateChildIndices.STAKING_INFO,
+				stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
@@ -540,13 +529,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator = ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
+	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator =
+			ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
 	private static IterableStorageMigrator iterableStorageMigrator = ReleaseTwentySixMigration::makeStorageIterable;
 	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
 	private static StakingInfoBuilder stakingInfoBuilder = ReleaseTwentySevenMigration::buildStakingInfoMap;
 	private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory = VirtualMapFactory::new;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
-	private static Consumer<ServicesState> scheduledTxnsMigrator = LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
+	private static Consumer<ServicesState> scheduledTxnsMigrator =
+			LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
 	@VisibleForTesting
 	void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
@@ -568,10 +559,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					StateChildIndices.STAKING_INFO,
 					stakingInfoBuilder.buildStakingInfoMap(addressBook(), new BootstrapProperties()));
 		}
-		// we know for a fact that we need to migrate scheduled transactions if they are a MerkleMap, the version
-		// doesn't really matter.
+		// We know for a fact that we need to migrate scheduled transactions if they are a MerkleMap
 		if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
 			scheduledTxnsMigrator.accept(this);
+		}
+		if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
+			// These accounts were created with an (unnecessary) MerkleAccountTokens child; remove it
+			accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
+			accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
 		}
 
 		// Keep the MutableStateChildren up-to-date (no harm done if they are already are)
@@ -592,7 +587,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface StakingInfoBuilder {
-		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook, BootstrapProperties bootstrapProperties);
+		MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(AddressBook addressBook,
+				BootstrapProperties bootstrapProperties);
 	}
 
 	@FunctionalInterface

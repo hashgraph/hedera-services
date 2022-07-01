@@ -29,7 +29,8 @@ import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
+public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<EntityNumPair>, MerkleLeaf {
 	private static final int TREASURY_OWNER_CODE = 0;
 
 	static final int RELEASE_0180_VERSION = 2;

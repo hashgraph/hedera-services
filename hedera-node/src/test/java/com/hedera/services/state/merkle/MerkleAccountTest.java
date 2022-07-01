@@ -45,8 +45,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCod
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,7 +100,6 @@ class MerkleAccountTest {
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
-	private MerkleAccountTokens tokens;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
@@ -116,9 +113,6 @@ class MerkleAccountTest {
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
-
-		tokens = mock(MerkleAccountTokens.class);
-		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(TreeMap.class);
 		fungibleTokenAllowances = mock(TreeMap.class);
@@ -158,7 +152,7 @@ class MerkleAccountTest {
 				declinedReward,
 				balanceAtStartOfLastRewardedPeriod);
 
-		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
+		subject = new MerkleAccount(List.of(state, payerRecords));
 	}
 
 	@Test
@@ -170,20 +164,9 @@ class MerkleAccountTest {
 	void equalsIncorporatesRecords() {
 		final var otherRecords = mock(FCQueue.class);
 
-		final var otherSubject = new MerkleAccount(List.of(state, otherRecords, tokens));
+		final var otherSubject = new MerkleAccount(List.of(state, otherRecords));
 
 		assertNotEquals(otherSubject, subject);
-	}
-
-	@Test
-	void forgetsTokensChildAsExpected() {
-		assertNotNull(subject.tokens());
-
-		subject.forgetAssociatedTokens();
-
-		assertNull(subject.tokens());
-		assertEquals(2, subject.getNumberOfChildren());
-		assertEquals(2, subject.copy().getNumberOfChildren());
 	}
 
 	@Test
@@ -225,9 +208,7 @@ class MerkleAccountTest {
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(
-				MerkleAccount.ChildIndices.NUM_0240_CHILDREN,
-				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
+		assertEquals(MerkleAccount.ChildIndices.NUM_POST_0240_CHILDREN, subject.getMinimumChildCount());
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertFalse(subject.isLeaf());
@@ -236,7 +217,6 @@ class MerkleAccountTest {
 	@Test
 	void toStringWorks() {
 		given(payerRecords.size()).willReturn(3);
-		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
@@ -252,13 +232,12 @@ class MerkleAccountTest {
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
-		assertEquals(state.isReleased(), subject.isReleased());
+		assertEquals(state.isDestroyed(), subject.isDestroyed());
 		assertEquals(state.isSmartContract(), subject.isSmartContract());
 		assertEquals(state.isReceiverSigRequired(), subject.isReceiverSigRequired());
 		assertEquals(state.memo(), subject.getMemo());
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
-		assertSame(tokens, subject.tokens());
 		assertEquals(nftsOwned, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
@@ -284,7 +263,7 @@ class MerkleAccountTest {
 
 	@Test
 	void uncheckedSetterDelegates() {
-		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
+		subject = new MerkleAccount(List.of(delegate, new FCQueue<>()));
 		assertThrows(IllegalArgumentException.class, () -> subject.setBalanceUnchecked(-1L));
 
 		subject.setBalanceUnchecked(otherBalance);
@@ -294,7 +273,7 @@ class MerkleAccountTest {
 
 	@Test
 	void settersDelegate() throws NegativeAccountBalanceException {
-		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
+		subject = new MerkleAccount(List.of(delegate, new FCQueue<>()));
 		given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociations);
 
 		subject.setExpiry(otherExpiry);
@@ -366,11 +345,10 @@ class MerkleAccountTest {
 	@Test
 	void copyStillWorksWithPre0250() {
 		final var one = new MerkleAccount();
-		final var two = new MerkleAccount(List.of(state, payerRecords, tokens));
+		final var two = new MerkleAccount(List.of(state, payerRecords));
 		final var three = two.copy();
 
 		verify(payerRecords).copy();
-		verify(tokens).copy();
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
@@ -433,12 +411,29 @@ class MerkleAccountTest {
 	}
 
 	@Test
-	void delegatesDelete() {
+	void delegatesRelease() {
 		subject.release();
 
-		verify(payerRecords).decrementReferenceCount();
+		verify(payerRecords).release();
 	}
 
+	@Test
+	void canForgetMerkleAccountTokensPlaceholder() {
+		final var normalSubject = new MerkleAccount(
+				List.of(new MerkleAccountState(), new FCQueue<>()));
+		normalSubject.forgetThirdChildIfPlaceholder();
+		assertEquals(2, normalSubject.getNumberOfChildren());
+
+		final var forgettableSubject = new MerkleAccount(
+				List.of(new MerkleAccountState(), new FCQueue<>(), new MerkleAccountTokensPlaceholder()));
+		forgettableSubject.forgetThirdChildIfPlaceholder();
+		assertEquals(2, forgettableSubject.getNumberOfChildren());
+
+		final var strangelyMemorableSubject = new MerkleAccount(
+				List.of(new MerkleAccountState(), new FCQueue<>(), new MerkleAccountState()));
+		strangelyMemorableSubject.forgetThirdChildIfPlaceholder();
+		assertEquals(3, strangelyMemorableSubject.getNumberOfChildren());
+	}
 	@Test
 	void checksIfMayHavePendingReward() {
 		assertFalse(subject.mayHavePendingReward());

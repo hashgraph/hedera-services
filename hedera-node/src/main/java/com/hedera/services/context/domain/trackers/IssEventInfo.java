@@ -34,12 +34,12 @@ import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING
 public class IssEventInfo {
 	private final NodeLocalProperties nodeLocalProperties;
 
-	int remainingRoundsToDump = 0;
+	int remainingRoundsToLog = 0;
 	private IssEventStatus status = NO_KNOWN_ISS;
 	private Optional<Instant> consensusTimeOfRecentAlert = Optional.empty();
 
 	@Inject
-	public IssEventInfo(NodeLocalProperties nodeLocalProperties) {
+	public IssEventInfo(final NodeLocalProperties nodeLocalProperties) {
 		this.nodeLocalProperties = nodeLocalProperties;
 	}
 
@@ -51,18 +51,18 @@ public class IssEventInfo {
 		return consensusTimeOfRecentAlert;
 	}
 
-	public boolean shouldDumpThisRound() {
-		return remainingRoundsToDump > 0;
+	public boolean shouldLogThisRound() {
+		return remainingRoundsToLog > 0;
 	}
 
-	public void decrementRoundsToDump() {
-		remainingRoundsToDump--;
+	public void decrementRoundsToLog() {
+		remainingRoundsToLog--;
 	}
 
 	public synchronized void alert(Instant roundConsensusTime) {
 		consensusTimeOfRecentAlert = Optional.of(roundConsensusTime);
 		if (status == NO_KNOWN_ISS) {
-			remainingRoundsToDump = nodeLocalProperties.issRoundsToDump();
+			remainingRoundsToLog = nodeLocalProperties.issRoundsToLog();
 		}
 		status = ONGOING_ISS;
 	}
@@ -70,6 +70,6 @@ public class IssEventInfo {
 	public synchronized void relax() {
 		status = NO_KNOWN_ISS;
 		consensusTimeOfRecentAlert = Optional.empty();
-		remainingRoundsToDump = 0;
+		remainingRoundsToLog = 0;
 	}
 }

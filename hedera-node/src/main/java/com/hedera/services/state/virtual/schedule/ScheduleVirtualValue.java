@@ -56,7 +56,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
@@ -70,7 +71,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
  * It should be moved back to VirtualMap in 0.28.
  */
-public class ScheduleVirtualValue extends AbstractMerkleLeaf implements VirtualValue, Keyed<EntityNumVirtualKey> {
+public class ScheduleVirtualValue extends PartialMerkleLeaf
+		implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf {
 
 	static final int CURRENT_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;

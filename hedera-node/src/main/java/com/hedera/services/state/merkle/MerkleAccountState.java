@@ -33,7 +33,8 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -65,7 +66,7 @@ import static com.hedera.services.utils.SerializationUtils.serializeApproveForAl
 import static com.hedera.services.utils.SerializationUtils.serializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.serializeTokenAllowances;
 
-public class MerkleAccountState extends AbstractMerkleLeaf {
+public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 
 	static final int RELEASE_0230_VERSION = 10;

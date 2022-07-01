@@ -22,7 +22,6 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -47,15 +46,11 @@ public class IssListener implements InvalidSignedStateListener {
 			"In round %d, node %s received a signed state from node %s differing from its local "
 					+ "signed state; could not provide all details";
 
-	private final FcmDump fcmDump;
 	private final IssEventInfo issEventInfo;
-	private final NodeLocalProperties nodeLocalProperties;
 
 	@Inject
-	public IssListener(FcmDump fcmDump, IssEventInfo issEventInfo, NodeLocalProperties nodeLocalProperties) {
-		this.fcmDump = fcmDump;
+	public IssListener(final IssEventInfo issEventInfo) {
 		this.issEventInfo = issEventInfo;
-		this.nodeLocalProperties = nodeLocalProperties;
 	}
 
 	@Override
@@ -71,16 +66,13 @@ public class IssListener implements InvalidSignedStateListener {
 		try {
 			ServicesState issState = (ServicesState) swirldsState;
 			issEventInfo.alert(consensusTime);
-			if (issEventInfo.shouldDumpThisRound()) {
-				issEventInfo.decrementRoundsToDump();
+			if (issEventInfo.shouldLogThisRound()) {
+				issEventInfo.decrementRoundsToLog();
 				var msg = String.format(
 						ISS_ERROR_MSG_PATTERN,
 						round, self.getId(), other.getId(),
 						CommonUtils.hex(sig), CommonUtils.hex(hash));
 				log.error(msg);
-				if (nodeLocalProperties.shouldDumpFcmsOnIss()) {
-					fcmDump.dumpFrom(issState, self, round);
-				}
 				issState.logSummary();
 			}
 		} catch (Exception any) {

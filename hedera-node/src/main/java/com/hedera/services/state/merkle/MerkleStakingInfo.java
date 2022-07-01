@@ -30,7 +30,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +47,7 @@ import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
-public class MerkleStakingInfo extends AbstractMerkleLeaf implements Keyed<EntityNum> {
+public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
 	static final int RELEASE_0270_VERSION = 1;

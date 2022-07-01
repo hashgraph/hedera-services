@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesApp;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.merkle.Archivable;
 import com.swirlds.fchashmap.FCHashMap;
 
 import java.util.Map;
@@ -33,7 +32,7 @@ import java.util.Map;
  * Contains the part of the Hedera Services world state that does influence
  * handling of consensus transactions, but is not hashed or serialized.
  */
-public class StateMetadata implements FastCopyable, Archivable {
+public class StateMetadata implements FastCopyable {
 	private final ServicesApp app;
 	private final FCHashMap<ByteString, EntityNum> aliases;
 
@@ -48,11 +47,6 @@ public class StateMetadata implements FastCopyable, Archivable {
 	}
 
 	@Override
-	public void archive() {
-		release();
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
 	public StateMetadata copy() {
 		return new StateMetadata(this);
@@ -60,7 +54,7 @@ public class StateMetadata implements FastCopyable, Archivable {
 
 	@Override
 	public void release() {
-		if (!aliases.isReleased()) {
+		if (!aliases.isDestroyed()) {
 			aliases.release();
 		}
 	}

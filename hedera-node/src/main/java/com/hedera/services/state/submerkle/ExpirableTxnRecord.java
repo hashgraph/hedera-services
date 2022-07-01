@@ -29,11 +29,12 @@ import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -55,7 +56,7 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 
-public class ExpirableTxnRecord implements FCQueueElement {
+public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
 	public static final short NO_CHILD_TRANSACTIONS = 0;

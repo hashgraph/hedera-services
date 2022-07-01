@@ -29,8 +29,9 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +59,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * keeps its own map of file contents; and when a file's bytes change in the mutable copy, it
  * updates that map with a completely new {@code byte[]}.
  */
-public class MerkleSpecialFiles extends AbstractMerkleLeaf {
+public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleSpecialFiles.class);
 
 	private static final byte[] NO_CONTENTS = new byte[0];

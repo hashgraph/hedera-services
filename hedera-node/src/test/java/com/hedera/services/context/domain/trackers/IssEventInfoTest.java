@@ -62,7 +62,7 @@ class IssEventInfoTest {
 
 	@Test
 	void alertWorks() {
-		given(nodeLocalProperties.issRoundsToDump()).willReturn(roundsToDump);
+		given(nodeLocalProperties.issRoundsToLog()).willReturn(roundsToDump);
 
 		// when:
 		subject.alert(firstIssTime);
@@ -71,27 +71,27 @@ class IssEventInfoTest {
 		assertEquals(ONGOING_ISS, subject.status());
 		// and:
 		assertEquals(firstIssTime, subject.consensusTimeOfRecentAlert().get());
-		assertTrue(subject.shouldDumpThisRound());
+		assertTrue(subject.shouldLogThisRound());
 
 		// and when:
-		subject.decrementRoundsToDump();
+		subject.decrementRoundsToLog();
 		subject.alert(recentIssTime);
 		// then:
 		assertEquals(recentIssTime, subject.consensusTimeOfRecentAlert().get());
-		assertTrue(subject.shouldDumpThisRound());
-		subject.decrementRoundsToDump();
-		assertFalse(subject.shouldDumpThisRound());
+		assertTrue(subject.shouldLogThisRound());
+		subject.decrementRoundsToLog();
+		assertFalse(subject.shouldLogThisRound());
 	}
 
 	@Test
 	void relaxWorks() {
-		given(nodeLocalProperties.issRoundsToDump()).willReturn(roundsToDump);
+		given(nodeLocalProperties.issRoundsToLog()).willReturn(roundsToDump);
 		subject.alert(firstIssTime);
 
 		subject.relax();
 
 		assertEquals(NO_KNOWN_ISS, subject.status());
-		assertEquals(0, subject.remainingRoundsToDump);
+		assertEquals(0, subject.remainingRoundsToLog);
 		assertTrue(subject.consensusTimeOfRecentAlert().isEmpty());
 	}
 }

@@ -26,10 +26,11 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 
 
-public class MerkleScheduledTransactionsState extends AbstractMerkleLeaf {
+public class MerkleScheduledTransactionsState extends PartialMerkleLeaf implements MerkleLeaf {
 	public static final int RELEASE_0270_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 

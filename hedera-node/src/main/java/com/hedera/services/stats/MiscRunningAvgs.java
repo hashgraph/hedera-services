@@ -20,63 +20,68 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.statistics.StatsRunningAverage;
+
+import static com.hedera.services.stats.ServicesStatsManager.RUNNING_AVG_FORMAT;
+import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 
 public class MiscRunningAvgs {
-	private final RunningAvgFactory runningAvg;
+	private RunningAverageMetric gasPerConsSec;
+	private RunningAverageMetric accountRetryWaitMs;
+	private RunningAverageMetric accountLookupRetries;
+	private RunningAverageMetric handledSubmitMessageSize;
+	private RunningAverageMetric writeQueueSizeRecordStream;
+	private RunningAverageMetric hashQueueSizeRecordStream;
 
-	StatsRunningAverage gasPerConsSec;
-	StatsRunningAverage accountRetryWaitMs;
-	StatsRunningAverage accountLookupRetries;
-	StatsRunningAverage handledSubmitMessageSize;
-
-	StatsRunningAverage writeQueueSizeRecordStream;
-	StatsRunningAverage hashQueueSizeRecordStream;
-
-	public MiscRunningAvgs(final RunningAvgFactory runningAvg, final double halfLife) {
-		this.runningAvg = runningAvg;
-
-		gasPerConsSec = new StatsRunningAverage(halfLife);
-		accountRetryWaitMs = new StatsRunningAverage(halfLife);
-		accountLookupRetries = new StatsRunningAverage(halfLife);
-		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
-
-		writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
-		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
+	public MiscRunningAvgs(final double halfLife) {
+		gasPerConsSec = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.GAS_PER_CONSENSUS_SEC,
+				Descriptions.GAS_PER_CONSENSUS_SEC,
+				RUNNING_AVG_FORMAT,
+				halfLife);
+		accountRetryWaitMs = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.ACCOUNT_RETRY_WAIT_MS,
+				Descriptions.ACCOUNT_RETRY_WAIT_MS,
+				RUNNING_AVG_FORMAT,
+				halfLife);
+		accountLookupRetries = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.ACCOUNT_LOOKUP_RETRIES,
+				Descriptions.ACCOUNT_LOOKUP_RETRIES,
+				RUNNING_AVG_FORMAT,
+				halfLife);
+		handledSubmitMessageSize = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.HANDLED_SUBMIT_MESSAGE_SIZE,
+				Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
+				RUNNING_AVG_FORMAT,
+				halfLife);
+		writeQueueSizeRecordStream = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
+				Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
+				RUNNING_AVG_FORMAT,
+				halfLife);
+		hashQueueSizeRecordStream = new RunningAverageMetric(
+				STAT_CATEGORY,
+				Names.HASH_QUEUE_SIZE_RECORD_STREAM,
+				Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
+				RUNNING_AVG_FORMAT,
+				halfLife);
 	}
 
 	public void registerWith(final Platform platform) {
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.ACCOUNT_LOOKUP_RETRIES,
-						Descriptions.ACCOUNT_LOOKUP_RETRIES,
-						accountLookupRetries));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.ACCOUNT_RETRY_WAIT_MS,
-						Descriptions.ACCOUNT_RETRY_WAIT_MS,
-						accountRetryWaitMs));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-						handledSubmitMessageSize));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-						Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-						writeQueueSizeRecordStream));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.HASH_QUEUE_SIZE_RECORD_STREAM,
-						Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-						hashQueueSizeRecordStream));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.GAS_PER_CONSENSUS_SEC,
-						Descriptions.GAS_PER_CONSENSUS_SEC,
-						gasPerConsSec));
+		platform.addAppMetrics(
+				gasPerConsSec,
+				accountRetryWaitMs,
+				accountLookupRetries,
+				handledSubmitMessageSize,
+				writeQueueSizeRecordStream,
+				hashQueueSizeRecordStream);
 	}
 
 	public void recordAccountLookupRetries(final int num) {
@@ -135,5 +140,35 @@ public class MiscRunningAvgs {
 		private Descriptions() {
 			throw new UnsupportedOperationException("Utility Class");
 		}
+	}
+
+	@VisibleForTesting
+	void setGasPerConsSec(RunningAverageMetric gasPerConsSec) {
+		this.gasPerConsSec = gasPerConsSec;
+	}
+
+	@VisibleForTesting
+	void setAccountRetryWaitMs(RunningAverageMetric accountRetryWaitMs) {
+		this.accountRetryWaitMs = accountRetryWaitMs;
+	}
+
+	@VisibleForTesting
+	void setAccountLookupRetries(RunningAverageMetric accountLookupRetries) {
+		this.accountLookupRetries = accountLookupRetries;
+	}
+
+	@VisibleForTesting
+	void setHandledSubmitMessageSize(RunningAverageMetric handledSubmitMessageSize) {
+		this.handledSubmitMessageSize = handledSubmitMessageSize;
+	}
+
+	@VisibleForTesting
+	void setWriteQueueSizeRecordStream(RunningAverageMetric writeQueueSizeRecordStream) {
+		this.writeQueueSizeRecordStream = writeQueueSizeRecordStream;
+	}
+
+	@VisibleForTesting
+	void setHashQueueSizeRecordStream(RunningAverageMetric hashQueueSizeRecordStream) {
+		this.hashQueueSizeRecordStream = hashQueueSizeRecordStream;
 	}
 }

@@ -23,7 +23,8 @@ package com.hedera.services.state.virtual.schedule;
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 
@@ -41,8 +42,8 @@ import java.util.function.Supplier;
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
  * It should be moved back to VirtualMap in 0.28.
  */
-public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
-		implements VirtualValue, Keyed<ScheduleEqualityVirtualKey> {
+public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
+		implements VirtualValue, Keyed<ScheduleEqualityVirtualKey>, MerkleLeaf {
 
 	static final int CURRENT_VERSION = 1;
 

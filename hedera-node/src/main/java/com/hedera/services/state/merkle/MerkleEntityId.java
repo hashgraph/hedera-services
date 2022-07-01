@@ -24,11 +24,12 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 
 import java.io.IOException;
 
-public class MerkleEntityId extends AbstractMerkleLeaf {
+public class MerkleEntityId extends PartialMerkleLeaf implements MerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd5dd2ebaa0bde03L;
 

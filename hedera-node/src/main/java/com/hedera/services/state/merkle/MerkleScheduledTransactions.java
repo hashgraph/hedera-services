@@ -29,14 +29,15 @@ import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.merkle.map.MerkleMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
+public class MerkleScheduledTransactions extends PartialNaryMerkleInternal implements MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
 	private int pendingMigrationSize;
@@ -102,7 +103,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	}
 
 	@Override
-	public int getMinimumChildCount(final int version) {
+	public int getMinimumChildCount() {
 		return ChildIndices.NUM_0270_CHILDREN;
 	}
 

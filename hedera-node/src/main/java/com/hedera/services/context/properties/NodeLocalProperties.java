@@ -57,10 +57,9 @@ public class NodeLocalProperties {
 	private Profile nettyMode;
 	private int nettyStartRetries;
 	private long nettyStartRetryIntervalMs;
-	private boolean dumpFcmsOnIss;
 	private int numExecutionTimesToTrack;
 	private int issResetPeriod;
-	private int issRoundsToDump;
+	private int issRoundsToLog;
 	private int prefetchQueueCapacity;
 	private int prefetchThreadPoolSize;
 	private int prefetchCodeCacheTtlSecs;
@@ -102,10 +101,9 @@ public class NodeLocalProperties {
 		nettyMode = properties.getProfileProperty("netty.mode");
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
-		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
 		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
-		issRoundsToDump = properties.getIntProperty("iss.roundsToDump");
+		issRoundsToLog = properties.getIntProperty("iss.roundsToLog");
 		prefetchQueueCapacity = properties.getIntProperty("hedera.prefetch.queueCapacity");
 		prefetchThreadPoolSize = properties.getIntProperty("hedera.prefetch.threadPoolSize");
 		prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
@@ -221,10 +219,6 @@ public class NodeLocalProperties {
 		return nettyStartRetryIntervalMs;
 	}
 
-	public boolean shouldDumpFcmsOnIss() {
-		return dumpFcmsOnIss;
-	}
-
 	public int numExecutionTimesToTrack() {
 		return numExecutionTimesToTrack;
 	}
@@ -233,8 +227,8 @@ public class NodeLocalProperties {
 		return issResetPeriod;
 	}
 
-	public int issRoundsToDump() {
-		return issRoundsToDump;
+	public int issRoundsToLog() {
+		return issRoundsToLog;
 	}
 
 	public int prefetchQueueCapacity() { return prefetchQueueCapacity; }

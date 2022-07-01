@@ -34,7 +34,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
@@ -45,7 +44,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -1083,17 +1081,9 @@ public class SeededPropertySource {
 		seeded.setNext(nextUnsignedLong());
 		return seeded;
 	}
-
-	public MerkleAccountTokens nextMerkleAccountTokens() {
-		return new MerkleAccountTokens(
-				new CopyOnWriteIds(nextInRangeLongs(3 * nextNonZeroInt(10)))
-		);
-	}
-
 	public SerializableSemVers nextSerializableSemVers() {
 		return new SerializableSemVers(nextSemVer(), nextSemVer());
 	}
-
 	private SemanticVersion nextSemVer() {
 		final var ans = SemanticVersion.newBuilder();
 		ans.setMajor(nextUnsignedInt())

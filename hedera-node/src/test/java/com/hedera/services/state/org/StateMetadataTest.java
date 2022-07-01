@@ -70,7 +70,7 @@ class StateMetadataTest {
 
 	@Test
 	void doesntReleaseAlreadyReleasedAliasesOnRelease() {
-		given(aliases.isReleased()).willReturn(true);
+		given(aliases.isDestroyed()).willReturn(true);
 
 		subject.release();
 
@@ -79,7 +79,7 @@ class StateMetadataTest {
 
 	@Test
 	void releasesAliasesOnArchive() {
-		subject.archive();
+		subject.release();
 
 		verify(aliases).release();
 	}

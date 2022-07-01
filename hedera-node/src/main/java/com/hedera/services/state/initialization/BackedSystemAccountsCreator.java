@@ -30,7 +30,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -122,7 +121,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	public static void customizeAsStakingFund(final MerkleAccount account) {
 		account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
-		account.setTokens(new MerkleAccountTokens());
 		account.setAccountKey(EMPTY_KEY);
 		account.setSmartContract(false);
 		account.setReceiverSigRequired(false);

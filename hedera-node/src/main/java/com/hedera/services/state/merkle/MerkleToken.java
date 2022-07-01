@@ -36,7 +36,8 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
@@ -55,7 +56,7 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
-public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
+public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;
 	static final int RELEASE_0190_VERSION = 5;

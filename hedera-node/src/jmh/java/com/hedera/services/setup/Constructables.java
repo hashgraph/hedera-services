@@ -22,7 +22,6 @@ package com.hedera.services.setup;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractKeySerializer;
 import com.hedera.services.state.virtual.ContractKeySupplier;
@@ -56,8 +55,6 @@ public class Constructables {
 					new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 			ConstructableRegistry.registerConstructable(
 					new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-			ConstructableRegistry.registerConstructable(
-					new ClassConstructorPair(MerkleAccountTokens.class, MerkleAccountTokens::new));
 			ConstructableRegistry.registerConstructable(
 					new ClassConstructorPair(FCQueue .class, FCQueue::new));
 		} catch (ConstructableRegistryException e) {

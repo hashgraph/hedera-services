@@ -51,7 +51,7 @@ import java.util.Objects;
 /**
  * A {@link StateChildren} implementation for providing cheap repeated access to the children of a
  * {@link ServicesState}. (Experience shows that making repeated, indirect calls to
- * {@link com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal#getChild(int)} is
+ * {@link com.swirlds.common.merkle.impl.PartialNaryMerkleInternal#getChild(int)} is
  * much more expensive, since the compiler does not seem to ever inline those calls.)
  */
 public class MutableStateChildren implements StateChildren {

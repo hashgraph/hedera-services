@@ -25,7 +25,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
@@ -187,8 +186,6 @@ public class SerializedForms {
 							MIN_TEST_CASES_PER_VERSION),
 					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
 					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountTokens.class, SeededPropertySource::nextMerkleAccountTokens,
-							MIN_TEST_CASES_PER_VERSION),
 					entry(ContractKey.class, SeededPropertySource::nextContractKey, MIN_TEST_CASES_PER_VERSION),
 					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
 					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
