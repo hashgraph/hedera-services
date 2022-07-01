@@ -84,7 +84,7 @@ public class HederaTracer implements OperationTracer {
 					null,
 					null,
 					null,
-					1);
+					0);
 			actions.add(action);
 			actionStack.push(action);
 		}
