@@ -58,35 +58,35 @@ public final class AbiConstants {
 	//redirectForToken(address token, bytes memory data)
 	public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
 	//name()
-	public static final int ABI_ID_NAME = 0x06fdde03;
+	public static final int ABI_ID_ERC_NAME = 0x06fdde03;
 	//symbol()
-	public static final int ABI_ID_SYMBOL = 0x95d89b41;
+	public static final int ABI_ID_ERC_SYMBOL = 0x95d89b41;
 	//decimals()
-	public static final int ABI_ID_DECIMALS = 0x313ce567;
+	public static final int ABI_ID_ERC_DECIMALS = 0x313ce567;
 	//totalSupply()
-	public static final int ABI_ID_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
+	public static final int ABI_ID_ERC_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
 	//balanceOf(address account)
-	public static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
+	public static final int ABI_ID_ERC_BALANCE_OF_TOKEN = 0x70a08231;
 	//transfer(address recipient, uint256 amount)
 	public static final int ABI_ID_ERC_TRANSFER = 0xa9059cbb;
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
 	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
-	//allowance(address token, address owner, address spender)
-	public static final int ABI_ID_ALLOWANCE = 0xdd62ed3e;
-	//approve(address token, address spender, uint256 amount)
-	//approve(address token, address to, uint256 tokenId)
-	public static final int ABI_ID_APPROVE = 0x95ea7b3;
-	//setApprovalForAll(address token, address operator, bool approved)
-	public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0xa22cb465;
-	//getApproved(address token, uint256 tokenId)
-	public static final int ABI_ID_GET_APPROVED = 0x081812fc;
-	//isApprovedForAll(address token, address owner, address operator)
-	public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xe985e9c5;
+	//allowance(address owner, address spender)
+	public static final int ABI_ID_ERC_ALLOWANCE = 0xdd62ed3e;
+	//approve(address spender, uint256 amount)
+	//approve(address to, uint256 tokenId)
+	public static final int ABI_ID_ERC_APPROVE = 0x95ea7b3;
+	//setApprovalForAll(address operator, bool approved)
+	public static final int ABI_ID_ERC_SET_APPROVAL_FOR_ALL = 0xa22cb465;
+	//getApproved(uint256 tokenId)
+	public static final int ABI_ID_ERC_GET_APPROVED = 0x081812fc;
+	//isApprovedForAll(address owner, address operator)
+	public static final int ABI_ID_ERC_IS_APPROVED_FOR_ALL = 0xe985e9c5;
 	//ownerOf(uint256 tokenId)
-	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
+	public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
-	public static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
+	public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)
 	public static final Bytes TRANSFER_EVENT = Bytes.fromHexString(

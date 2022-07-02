@@ -92,7 +92,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
@@ -215,7 +215,7 @@ class HTSPrecompiledContractTest {
 	void computeCostedWorks() {
 		given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
 		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-		Bytes input = prerequisites(ABI_ID_NAME);
+		Bytes input = prerequisites(ABI_ID_ERC_NAME);
 		given(messageFrame.isStatic()).willReturn(true);
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.hasMutableLedgers()).willReturn(false);
