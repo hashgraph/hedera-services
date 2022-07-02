@@ -95,7 +95,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
 		assertTrue(subject.isStakingEnabled());
-		assertTrue(subject.isRandomGenerationEnabled());
+		assertTrue(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -234,7 +234,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
 		assertFalse(subject.isStakingEnabled());
-		assertFalse(subject.isRandomGenerationEnabled());
+		assertFalse(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -333,7 +333,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
 		assertEquals(66L, subject.exchangeRateGasReq());
-		assertEquals(82L, subject.randomGenerateGasCost());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -434,8 +433,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
-		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
-		given(properties.getLongProperty("contracts.precompile.randomGenerateGasCost")).willReturn(i + 80L);
+		given(properties.getBooleanProperty("prng.isEnabled")).willReturn((i + 79) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

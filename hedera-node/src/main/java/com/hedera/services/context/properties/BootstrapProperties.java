@@ -293,8 +293,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.allowances.maxAccountLimit",
 			"hedera.allowances.isEnabled",
 			"entities.limitTokenAssociations",
-			"randomGeneration.isEnabled",
-			"contracts.precompile.randomGenerateGasCost"
+			"prng.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -493,7 +492,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
 			entry("entities.limitTokenAssociations", AS_BOOLEAN),
-			entry("randomGeneration.isEnabled", AS_BOOLEAN),
-			entry("contracts.precompile.randomGenerateGasCost", AS_LONG)
+			entry("prng.isEnabled", AS_BOOLEAN)
 	);
 }

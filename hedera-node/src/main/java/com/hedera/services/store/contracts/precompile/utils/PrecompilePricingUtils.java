@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
@@ -195,7 +196,9 @@ public class PrecompilePricingUtils {
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
 		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
 		APPROVE(CryptoApproveAllowance, DEFAULT),
-		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT);
+		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
+
+		RANDOM_GENERATE(PRNG, DEFAULT);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;

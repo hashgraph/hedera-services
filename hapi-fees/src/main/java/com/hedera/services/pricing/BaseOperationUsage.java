@@ -42,7 +42,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.RandomGenerateMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -60,7 +60,7 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -273,8 +273,8 @@ public class BaseOperationUsage {
 				return tokenUnpause();
 			case ConsensusSubmitMessage:
 				return submitMessage();
-			case RandomGenerate:
-				return randomGenerate();
+			case PRNG:
+				return prng();
 			default:
 				break;
 		}
@@ -305,11 +305,11 @@ public class BaseOperationUsage {
 		return into;
 	}
 
-	UsageAccumulator randomGenerate() {
-		final var randomGenerateTxnBody = RandomGenerateTransactionBody.newBuilder().build();
-		final var randomGenerateMeta = new RandomGenerateMeta(randomGenerateTxnBody);
+	UsageAccumulator prng() {
+		final var prngTxnBody = PrngTransactionBody.newBuilder().build();
+		final var prngMeta = new PrngMeta(prngTxnBody);
 		final var into = new UsageAccumulator();
-		UTIL_OPS_USAGE.randomGenerateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, randomGenerateMeta, into);
+		UTIL_OPS_USAGE.prngUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, prngMeta, into);
 		return into;
 	}
 

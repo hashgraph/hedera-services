@@ -55,7 +55,7 @@ import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
@@ -81,7 +81,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.RandomGeneratePrecompiledContract.RANDOM_GENERATE_PRECOMPILE_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 @Module(includes = {
 		StoresModule.class
@@ -256,8 +256,8 @@ public interface ContractsModule {
 	@Binds
 	@Singleton
 	@IntoMap
-	@StringKey(RANDOM_GENERATE_PRECOMPILE_ADDRESS)
-	PrecompiledContract bindRandomGeneratePrecompile(RandomGeneratePrecompiledContract randomGenerateContract);
+	@StringKey(PRNG_PRECOMPILE_ADDRESS)
+	PrecompiledContract bindPrngPrecompile(PrngSystemPrecompiledContract prngSystemContract);
 
 	@Provides
 	@Singleton

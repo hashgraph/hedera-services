@@ -34,28 +34,27 @@ import java.util.function.Predicate;
  * Provides the state transition for generating a pseudorandom bytes or pseudorandom number.
  */
 @Singleton
-public class RandomGenerateTransitionLogic implements TransitionLogic {
+public class PrngTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
-	private final RandomGenerateLogic randomGenerateLogic;
+	private final PrngLogic prngLogic;
 
 	@Inject
-	public RandomGenerateTransitionLogic(final TransactionContext txnCtx,
-			final RandomGenerateLogic randomGenerateLogic) {
+	public PrngTransitionLogic(final TransactionContext txnCtx, final PrngLogic prngLogic) {
 		this.txnCtx = txnCtx;
-		this.randomGenerateLogic = randomGenerateLogic;
+		this.prngLogic = prngLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		final var op = txnCtx.accessor().getTxn().getRandomGenerate();
+		final var op = txnCtx.accessor().getTxn().getPrng();
 		final var range = op.getRange();
 
-		randomGenerateLogic.generateRandom(range);
+		prngLogic.generatePseudoRandom(range);
 	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasRandomGenerate;
+		return TransactionBody::hasPrng;
 	}
 
 	@Override
@@ -63,7 +62,7 @@ public class RandomGenerateTransitionLogic implements TransitionLogic {
 		return this::validate;
 	}
 
-	private ResponseCodeEnum validate(final TransactionBody randomGenerateTxn) {
-		return randomGenerateLogic.validateSemantics(randomGenerateTxn);
+	private ResponseCodeEnum validate(final TransactionBody prngTxn) {
+		return prngLogic.validateSemantics(prngTxn);
 	}
 }

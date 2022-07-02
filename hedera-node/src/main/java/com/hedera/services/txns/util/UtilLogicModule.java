@@ -28,15 +28,15 @@ import dagger.multibindings.IntoMap;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 
 @Module
 public final class UtilLogicModule {
 	@Provides
 	@IntoMap
-	@FunctionKey(RandomGenerate)
-	public static List<TransitionLogic> provideRandomGenerateLogic(final RandomGenerateTransitionLogic randomGenerateLogic) {
-		return List.of(randomGenerateLogic);
+	@FunctionKey(PRNG)
+	public static List<TransitionLogic> providePrngLogic(final PrngTransitionLogic prngLogic) {
+		return List.of(prngLogic);
 	}
 
 	private UtilLogicModule() {

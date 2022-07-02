@@ -132,8 +132,7 @@ public class GlobalDynamicProperties {
 	private long maxDailyStakeRewardThPerH;
 	private int recordFileVersion;
 	private int recordSignatureFileVersion;
-	private boolean randomGenerationEnabled;
-	private long randomGenerateGasCost;
+	private boolean prngEnabled;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -244,8 +243,7 @@ public class GlobalDynamicProperties {
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
-		randomGenerationEnabled = properties.getBooleanProperty("randomGeneration.isEnabled");
-		randomGenerateGasCost = properties.getLongProperty("contracts.precompile.randomGenerateGasCost");
+		prngEnabled = properties.getBooleanProperty("prng.isEnabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -608,11 +606,7 @@ public class GlobalDynamicProperties {
 		return recordSignatureFileVersion;
 	}
 
-	public boolean isRandomGenerationEnabled() {
-		return randomGenerationEnabled;
-	}
-
-	public long randomGenerateGasCost() {
-		return randomGenerateGasCost;
+	public boolean isPrngEnabled() {
+		return prngEnabled;
 	}
 }

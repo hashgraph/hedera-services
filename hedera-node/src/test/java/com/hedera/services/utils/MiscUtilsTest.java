@@ -87,7 +87,7 @@ import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -158,7 +158,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
-import static com.hedera.services.utils.MiscUtils.RANDOM_GENERATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.PRNG_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
@@ -235,7 +235,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -565,7 +565,7 @@ class MiscUtilsTest {
 			put("TokenUnpause", new BodySetter<>(TokenUnpauseTransactionBody.class));
 			put("TokenPause", new BodySetter<>(TokenPauseTransactionBody.class));
 			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
-			put("RandomGenerate", new BodySetter<>(RandomGenerateTransactionBody.class));
+			put("PRNG", new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((bodyType, setter) -> {
@@ -644,7 +644,7 @@ class MiscUtilsTest {
 			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
-			put(RANDOM_GENERATE_METRIC, new BodySetter<>(RandomGenerateTransactionBody.class));
+			put(PRNG_METRIC, new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((stat, setter) -> {
@@ -781,7 +781,7 @@ class MiscUtilsTest {
 			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
 			put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
-			put(RandomGenerate, new BodySetter<>(RandomGenerateTransactionBody.class));
+			put(PRNG, new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((function, setter) -> {

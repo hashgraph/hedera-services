@@ -12,14 +12,15 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class RandomGenerateLogic {
-	private static final Logger log = LogManager.getLogger(RandomGenerateLogic.class);
+public class PrngLogic {
+	private static final Logger log = LogManager.getLogger(PrngLogic.class);
 
 	public static final byte[] MISSING_BYTES = new byte[0];
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier;
@@ -27,7 +28,7 @@ public class RandomGenerateLogic {
 	private final GlobalDynamicProperties properties;
 
 	@Inject
-	public RandomGenerateLogic(
+	public PrngLogic(
 			final GlobalDynamicProperties properties,
 			final Supplier<RecordsRunningHashLeaf> runningHashLeafSupplier,
 			final SideEffectsTracker sideEffectsTracker
@@ -37,13 +38,13 @@ public class RandomGenerateLogic {
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
-	public void generateRandom(final int range) {
-		if (!properties.isRandomGenerationEnabled()) {
+	public void generatePseudoRandom(final int range) {
+		if (!properties.isPrngEnabled()) {
 			return;
 		}
 
 		final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes();
-		if (pseudoRandomBytes.equals(MISSING_BYTES)) {
+		if (Arrays.equals(pseudoRandomBytes, MISSING_BYTES)) {
 			return;
 		}
 		if (range > 0) {
@@ -55,10 +56,10 @@ public class RandomGenerateLogic {
 		}
 	}
 
-	public ResponseCodeEnum validateSemantics(final TransactionBody randomGenerateTxn) {
-		final var range = randomGenerateTxn.getRandomGenerate().getRange();
+	public ResponseCodeEnum validateSemantics(final TransactionBody prngTxn) {
+		final var range = prngTxn.getPrng().getRange();
 		if (range < 0) {
-			return INVALID_RANDOM_GENERATE_RANGE;
+			return INVALID_PRNG_RANGE;
 		}
 		return OK;
 	}

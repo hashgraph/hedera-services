@@ -194,7 +194,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				exchangeRatePrecompileWorks(),
 //				canMintAndTransferInSameContractOperation(),
 //				workingHoursDemo(),
-				randomGeneratePrecompileWorks()
+				prngPrecompileWorks()
 		});
 	}
 
@@ -630,37 +630,41 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec randomGeneratePrecompileWorks() {
+	private HapiApiSpec prngPrecompileWorks() {
 		final var range = 100;
-		final var randomGenerate = "RandomGeneratePrecompile";
-		return defaultHapiSpec("randomGeneratePrecompileWorks")
+		final var prng = "PrngFromPrev3RunningHash";
+		return defaultHapiSpec("prngPrecompileWorks")
 				.given(
 						cryptoCreate("bob"),
-						uploadInitCode(randomGenerate),
-						contractCreate(randomGenerate)
+						uploadInitCode(prng),
+						contractCreate(prng)
 				).when(
-						sourcing(() -> contractCall(randomGenerate, "random256BitGenerator")
+						sourcing(() -> contractCall(prng, "random256BitGenerator")
 								.payingWith("bob")
 								.via("randomBits")),
 						getTxnRecord("randomBits")
-								.hasPriority(recordWith()
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith()
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
 														"random256BitGenerator",
-														randomGenerate,
+														prng,
 														isRandomResult(new Object[] {
 																new byte[32] }))))
 								.logged()
 				).then(
-						sourcing(() -> contractCall(randomGenerate, "randomNumberGeneratorInRange", range)
+						sourcing(() -> contractCall(prng, "randomNumberGeneratorInRange", range)
 								.payingWith("bob")
 								.via("randomNumber")),
 						getTxnRecord("randomNumber")
-								.hasPriority(recordWith()
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasChildRecords(recordWith()
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
 														"randomNumberGeneratorInRange",
-														randomGenerate,
+														prng,
 														isRandomResult(new Object[] {
 																Integer.valueOf(range) }))))
 								.logged());

@@ -153,7 +153,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
-	public ContractFnResultAsserts stateChanges(StateChange... stateChanges) {
+	public ContractFnResultAsserts stateChanges(StateChange ...stateChanges) {
 		registerProvider((spec, o) -> {
 			ContractFunctionResult result = (ContractFunctionResult) o;
 			Assertions.assertEquals(

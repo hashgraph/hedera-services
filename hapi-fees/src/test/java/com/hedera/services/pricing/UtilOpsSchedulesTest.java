@@ -22,16 +22,16 @@ package com.hedera.services.pricing;
  */
 
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 class UtilOpsSchedulesTest extends FeeSchedulesTestHelper{
 	@Test
-	void computesExpectedPriceForRandomGenerate() throws IOException {
-		testCanonicalPriceFor(RandomGenerate, DEFAULT);
+	void computesExpectedPriceForPrng() throws IOException {
+		testCanonicalPriceFor(HederaFunctionality.PRNG, DEFAULT);
 	}
 }
