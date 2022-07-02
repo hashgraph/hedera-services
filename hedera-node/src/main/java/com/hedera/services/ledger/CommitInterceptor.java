@@ -65,4 +65,11 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	default void finish(final int i, final A mutableEntity) {
 		// No-op
 	}
+
+	/**
+	 * A hook the interceptor can use for any side effects that should only take effect after commit.
+	 */
+	default void postCommit() {
+		// No-op
+	}
 }

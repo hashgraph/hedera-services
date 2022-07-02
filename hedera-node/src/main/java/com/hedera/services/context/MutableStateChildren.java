@@ -191,6 +191,10 @@ public class MutableStateChildren implements StateChildren {
 		return Objects.requireNonNull(uniqueTokens.get());
 	}
 
+	public long numNfts() {
+		return uniqueTokens().size();
+	}
+
 	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
 		this.uniqueTokens = new WeakReference<>(uniqueTokens);
 	}

@@ -28,6 +28,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -57,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +73,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class FileCreateTransitionLogicTest {
+	private UsageLimits usageLimits;
 	enum ValidProperty {KEY, EXPIRY, CONTENTS, MEMO}
 
 	String memo = "Originally I thought";
@@ -109,13 +112,14 @@ class FileCreateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		hfs = mock(HederaFs.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		usageLimits = mock(UsageLimits.class);
 
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 
-		subject = new FileCreateTransitionLogic(hfs, validator, sigImpactHistorian, txnCtx);
+		subject = new FileCreateTransitionLogic(hfs, usageLimits, validator, sigImpactHistorian, txnCtx);
 	}
 
 	@Test
@@ -130,7 +134,8 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
+		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian, usageLimits);
+		given(usageLimits.areCreatableFiles(1)).willReturn(true);
 
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		// and:
@@ -151,6 +156,7 @@ class FileCreateTransitionLogicTest {
 		inOrder.verify(txnCtx).setCreated(created);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 		inOrder.verify(sigImpactHistorian).markEntityChanged(created.getFileNum());
+		inOrder.verify(usageLimits).refreshFiles();
 	}
 
 	@Test
@@ -195,6 +201,7 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void handleAllowsImmutable() {
 		givenTxnCtxCreating(EnumSet.of(CONTENTS, EXPIRY));
+		given(usageLimits.areCreatableFiles(1)).willReturn(true);
 
 		// when:
 		subject.doStateTransition();
@@ -210,9 +217,21 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
+	void handleRejectsUsageLimitsReached() {
+		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+
+		// when:
+		subject.doStateTransition();
+
+		// expect:
+		verify(txnCtx).setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+	}
+
+	@Test
 	void handleRejectsBadWacl() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		given(validator.hasGoodEncoding(wacl)).willReturn(false);
+		given(usageLimits.areCreatableFiles(1)).willReturn(true);
 
 		// when:
 		subject.doStateTransition();
@@ -224,6 +243,7 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void handleRejectsAlreadyExpired() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+		given(usageLimits.areCreatableFiles(1)).willReturn(true);
 		willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED.toString()))
 				.given(hfs).create(any(), any(), any());
 
@@ -237,6 +257,7 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void recoversFromUnknownException() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+		given(usageLimits.areCreatableFiles(1)).willReturn(true);
 		willThrow(new IllegalStateException("OOPS!")).given(hfs).create(any(), any(), any());
 
 		// when:

@@ -118,6 +118,7 @@ class MutableStateChildrenTest {
 		given(tokens.size()).willReturn(5);
 		given(tokenAssociations.size()).willReturn(6);
 		given(topics.size()).willReturn(7);
+		given(uniqueTokens.size()).willReturn(8);
 
 		assertEquals(1L, subject.numAccountAndContracts());
 		assertEquals(2L, subject.numBlobs());
@@ -126,6 +127,7 @@ class MutableStateChildrenTest {
 		assertEquals(5L, subject.numTokens());
 		assertEquals(6L, subject.numTokenRels());
 		assertEquals(7L, subject.numTopics());
+		assertEquals(8L, subject.numNfts());
 	}
 
 	private void givenStateWithMockChildren() {

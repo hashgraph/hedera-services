@@ -32,6 +32,7 @@ import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -71,6 +72,8 @@ class StakeChangesInterceptorTest {
 	private AccountNumbers accountNumbers;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private UsageLimits usageLimits;
 
 	private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> changes;
 	private StakingAccountsCommitInterceptor subject;
@@ -79,8 +82,8 @@ class StakeChangesInterceptorTest {
 	void setUp() {
 		changes = new EntityChangeSet<>();
 		subject = new StakingAccountsCommitInterceptor(
-				sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx);
+				sideEffectsTracker, () -> networkCtx, dynamicProperties, rewardCalculator,
+				stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 	}
 

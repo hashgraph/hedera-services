@@ -25,11 +25,14 @@ import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Map;
+
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed,
@@ -40,9 +43,19 @@ import java.util.Map;
  * new aliases.
  */
 public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
+	private int numNewAccounts;
+	private int numNewContracts;
+	@Nullable
+	private final UsageLimits usageLimits;
 	private final SideEffectsTracker sideEffectsTracker;
 
+	public AccountsCommitInterceptor(final UsageLimits usageLimits, final SideEffectsTracker sideEffectsTracker) {
+		this.usageLimits = usageLimits;
+		this.sideEffectsTracker = sideEffectsTracker;
+	}
+
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+		this.usageLimits = null;
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
@@ -54,16 +67,39 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		numNewAccounts = 0;
+		numNewContracts = 0;
 		if (pendingChanges.size() == 0) {
 			return;
 		}
+
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
-			trackBalanceChangeIfAny(
-					pendingChanges.id(i).getAccountNum(),
-					pendingChanges.entity(i),
-					pendingChanges.changes(i));
+			final var account = pendingChanges.entity(i);
+			final var changes = pendingChanges.changes(i);
+			// A null account means a new entity
+			if (account == null && usageLimits != null) {
+				if (Boolean.TRUE.equals(changes.get(IS_SMART_CONTRACT))) {
+					numNewContracts++;
+				} else {
+					numNewAccounts++;
+				}
+			}
+			trackBalanceChangeIfAny(pendingChanges.id(i).getAccountNum(), account, changes);
 		}
+
 		assertZeroSum();
+	}
+
+	@Override
+	public void postCommit() {
+		if (usageLimits != null) {
+			if (numNewContracts > 0) {
+				usageLimits.recordContracts(numNewContracts);
+			}
+			if (numNewAccounts > 0) {
+				usageLimits.refreshAccounts();
+			}
+		}
 	}
 
 	private void trackBalanceChangeIfAny(

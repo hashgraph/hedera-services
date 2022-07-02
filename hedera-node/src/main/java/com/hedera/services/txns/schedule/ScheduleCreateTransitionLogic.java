@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -49,6 +50,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -60,6 +62,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK,
 			NO_NEW_VALID_SIGNATURES);
 
+	private final UsageLimits usageLimits;
 	private final GlobalDynamicProperties properties;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -74,6 +77,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public ScheduleCreateTransitionLogic(
+			final UsageLimits usageLimits,
 			final GlobalDynamicProperties properties,
 			final ScheduleStore store,
 			final TransactionContext txnCtx,
@@ -83,6 +87,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final ScheduleProcessing scheduleProcessing
 	) {
+		this.usageLimits = usageLimits;
 		this.properties = properties;
 		this.store = store;
 		this.txnCtx = txnCtx;
@@ -112,6 +117,10 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		final var schedule = idSchedulePair.getRight();
 		if (null != existingScheduleId) {
 			completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
+			return;
+		}
+		if (!usageLimits.areCreatableSchedules(1)) {
+			abortWith(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 			return;
 		}
 
@@ -155,6 +164,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
 		sigImpactHistorian.markEntityChanged(scheduleId.getScheduleNum());
+		usageLimits.refreshSchedules();
 	}
 
 	private void completeContextWith(ScheduleID scheduleID, ScheduleVirtualValue schedule, ResponseCodeEnum finalOutcome) {

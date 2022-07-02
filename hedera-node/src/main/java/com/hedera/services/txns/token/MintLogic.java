@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -38,16 +39,15 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 
 @Singleton
 public class MintLogic {
+	private final UsageLimits usageLimits;
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
@@ -55,26 +55,30 @@ public class MintLogic {
 
 	@Inject
 	public MintLogic(
-			OptionValidator validator,
-			TypedTokenStore tokenStore,
-			AccountStore accountStore,
-			GlobalDynamicProperties dynamicProperties
+			final UsageLimits usageLimits,
+			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties
 	) {
+		this.usageLimits = usageLimits;
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void mint(final Id targetId,
-			int metaDataCount,
-			long amount,
-			List<ByteString> metaDataList,
-			Instant consensusTime) {
+	public void mint(
+			final Id targetId,
+			final int metaDataCount,
+			final long amount,
+			final List<ByteString> metaDataList,
+			final Instant consensusTime
+	) {
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetId);
-		validateMinting(validator, token, metaDataCount, tokenStore);
+		validateMinting(token, metaDataCount);
 		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 
 		/* --- Instantiate change trackers --- */
@@ -111,13 +115,9 @@ public class MintLogic {
 				validator::nftMetadataCheck);
 	}
 
-	private void validateMinting(OptionValidator validator,
-			Token token,
-			int metaDataCount,
-			TypedTokenStore tokenStore) {
+	private void validateMinting(final Token token, final int metaDataCount) {
 		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
-			final var proposedTotal = tokenStore.currentMintedNfts() + metaDataCount;
-			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+			usageLimits.assertMintableNfts(metaDataCount);
 		}
 	}
 }

@@ -35,6 +35,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -81,6 +82,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private MerkleNetworkContext networkCtx;
@@ -125,8 +128,9 @@ class StakingAccountsCommitInterceptorTest {
 	void setUp() throws NegativeAccountBalanceException {
 		stakingInfo = buildsStakingInfoMap();
 		stakeInfoManager = new StakeInfoManager(() -> stakingInfo);
-		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
-				rewardCalculator, stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx);
+		subject = new StakingAccountsCommitInterceptor(
+				sideEffectsTracker, () -> networkCtx, dynamicProperties, rewardCalculator,
+				stakeChangeManager, stakePeriodManager, stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 		reset();
 	}
 
@@ -617,7 +621,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers, txnCtx);
+				stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 
 		subject.preview(pendingChanges);
 		verify(rewardCalculator, times(2))
@@ -657,7 +661,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers, txnCtx);
+				stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 
 		subject.preview(pendingChanges);
 		verify(rewardCalculator, times(2))
@@ -692,7 +696,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers, txnCtx);
+				stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 
 		assertThrows(IllegalStateException.class, () -> subject.preview(pendingChanges));
 	}
@@ -714,7 +718,7 @@ class StakingAccountsCommitInterceptorTest {
 
 		subject = new StakingAccountsCommitInterceptor(sideEffectsTracker, () -> networkCtx, dynamicProperties,
 				rewardCalculator, new StakeChangeManager(stakeInfoManager, () -> accounts), stakePeriodManager,
-				stakeInfoManager, accountNumbers, txnCtx);
+				stakeInfoManager, accountNumbers, txnCtx, usageLimits);
 
 		subject.getRewardsEarned()[1] = 0;
 		subject.getRewardsEarned()[2] = 1;
@@ -760,7 +764,8 @@ class StakingAccountsCommitInterceptorTest {
 				stakePeriodManager,
 				stakeInfoManager,
 				accountNumbers,
-				txnCtx);
+				txnCtx,
+				usageLimits);
 
 		subject.getRewardsEarned()[0] = -1;
 		subject.getRewardsEarned()[1] = -1;

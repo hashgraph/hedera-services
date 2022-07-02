@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -147,7 +148,8 @@ public interface StoresModule {
 			final StakePeriodManager stakePeriodManager,
 			final StakeInfoManager stakeInfoManager,
 			final AccountNumbers accountNumbers,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			final UsageLimits usageLimits
 	) {
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -163,7 +165,8 @@ public interface StoresModule {
 				stakePeriodManager,
 				stakeInfoManager,
 				accountNumbers,
-				txnCtx);
+				txnCtx,
+				usageLimits);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}
