@@ -88,7 +88,7 @@ class SupplierMapPropertySourceTest {
 	void allPropertyNames() {
 		assertNotNull(subject.allPropertyNames());
 		var propSet = Set.of("a.double.prop", "a.string.prop", "a.profile.prop", "a.boolean.prop", "a.bad.account",
-				"a.long.prop", "a.good.account", "a.int.prop", "some.types");
+				"a.long.prop", "a.good.account", "a.int.prop", "some.types", "a.cs_strings.prop");
 		assertEquals(propSet, subject.allPropertyNames());
 	}
 
