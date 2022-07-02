@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -38,14 +39,13 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Singleton
 public class StoreInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
 
 	private final TokenStore tokenStore;
-	private final AtomicLong numContracts;
+	private final UsageLimits usageLimits;
 	private final AliasManager aliasManager;
 	private final ScheduleStore scheduleStore;
 	private final MutableStateChildren workingState;
@@ -57,7 +57,7 @@ public class StoreInitializationFlow {
 	@Inject
 	public StoreInitializationFlow(
 			final TokenStore tokenStore,
-			final AtomicLong numContracts,
+			final UsageLimits usageLimits,
 			final ScheduleStore scheduleStore,
 			final AliasManager aliasManager,
 			final MutableStateChildren workingState,
@@ -66,7 +66,7 @@ public class StoreInitializationFlow {
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
-		this.numContracts = numContracts;
+		this.usageLimits = usageLimits;
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
@@ -90,7 +90,7 @@ public class StoreInitializationFlow {
 
 		aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
 			if (account.isSmartContract()) {
-				numContracts.getAndIncrement();
+				usageLimits.recordContracts(1);
 			}
 		});
 		log.info("Account aliases map rebuilt");

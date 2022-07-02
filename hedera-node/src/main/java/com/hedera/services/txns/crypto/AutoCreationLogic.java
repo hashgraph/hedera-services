@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -40,6 +39,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -62,7 +62,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.services.utils.MiscUtils.SIZE_MASK;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -75,6 +74,7 @@ public class AutoCreationLogic {
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
 	private final StateView currentView;
+	private final UsageLimits usageLimits;
 	private final EntityIdSource ids;
 	private final EntityCreator creator;
 	private final TransactionContext txnCtx;
@@ -82,7 +82,6 @@ public class AutoCreationLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	private FeeCalculator feeCalculator;
@@ -92,6 +91,7 @@ public class AutoCreationLogic {
 
 	@Inject
 	public AutoCreationLogic(
+			final UsageLimits usageLimits,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final EntityCreator creator,
 			final EntityIdSource ids,
@@ -99,18 +99,17 @@ public class AutoCreationLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final StateView currentView,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.ids = ids;
 		this.txnCtx = txnCtx;
 		this.creator = creator;
 		this.accounts = accounts;
+		this.usageLimits = usageLimits;
 		this.currentView = currentView;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.aliasManager = aliasManager;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -176,7 +175,7 @@ public class AutoCreationLogic {
 			final BalanceChange change,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
-		if ((accounts.get().size() & SIZE_MASK) >= dynamicProperties.maxNumAccounts()) {
+		if (!usageLimits.areCreatableAccounts(1)) {
 			return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
 		}
 		final var alias = change.alias();

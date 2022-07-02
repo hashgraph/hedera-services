@@ -23,7 +23,6 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -37,6 +36,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -70,7 +70,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
-	private static final long maxNumAccounts = 10;
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private StateView currentView;
 	@Mock
@@ -93,25 +94,20 @@ class AutoCreationLogicTest {
 	private RecordsHistorian recordsHistorian;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 
 	private AutoCreationLogic subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new AutoCreationLogic(
-				syntheticTxnFactory, creator, ids, aliasManager,
-				sigImpactHistorian, currentView, txnCtx, dynamicProperties, () -> accounts);
+				usageLimits, syntheticTxnFactory, creator, ids, aliasManager,
+				sigImpactHistorian, currentView, txnCtx, () -> accounts);
 
 		subject.setFeeCalculator(feeCalculator);
 	}
 
 	@Test
 	void refusesToCreateBeyondMaxNumber() {
-		given(dynamicProperties.maxNumAccounts()).willReturn(maxNumAccounts);
-		given(accounts.size()).willReturn((int) maxNumAccounts);
-
 		final var input = wellKnownChange();
 
 		final var result = subject.create(input, accountsLedger);
@@ -150,8 +146,7 @@ class AutoCreationLogicTest {
 				.willReturn(fees);
 		given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
 				.willReturn(mockBuilder);
-		given(dynamicProperties.maxNumAccounts()).willReturn(maxNumAccounts);
-		given(accounts.size()).willReturn((int) maxNumAccounts - 1);
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 	}
 
 	private BalanceChange wellKnownChange() {

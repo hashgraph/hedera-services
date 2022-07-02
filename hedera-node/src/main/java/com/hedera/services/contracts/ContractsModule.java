@@ -71,7 +71,6 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -108,12 +107,6 @@ public interface ContractsModule {
 	@Singleton
 	static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
-	}
-
-	@Provides
-	@Singleton
-	static AtomicLong provideNumContracts() {
-		return new AtomicLong(0L);
 	}
 
 	@Provides

@@ -32,6 +32,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -116,10 +117,12 @@ class CryptoCreateTransitionLogicTest {
 	private CryptoCreateTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private NodeInfo nodeInfo;
+	private UsageLimits usageLimits;
 
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
+		usageLimits = mock(UsageLimits.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(SignedTxnAccessor.class);
@@ -131,8 +134,9 @@ class CryptoCreateTransitionLogicTest {
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
-				() -> accounts, nodeInfo);
+		subject = new CryptoCreateTransitionLogic(
+				usageLimits, ledger, validator, sigImpactHistorian,
+				txnCtx, dynamicProperties, () -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -244,7 +248,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -280,7 +284,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void translatesInsufficientPayerBalance() {
 		givenValidTxnCtx();
-		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 		given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
 
 		subject.doStateTransition();
@@ -291,7 +295,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void translatesUnknownException() {
 		givenValidTxnCtx();
-		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 		cryptoCreateTxn = cryptoCreateTxn.toBuilder()
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();

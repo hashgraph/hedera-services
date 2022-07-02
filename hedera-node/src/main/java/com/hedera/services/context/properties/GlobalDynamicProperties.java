@@ -135,6 +135,7 @@ public class GlobalDynamicProperties {
 	private long maxNumContracts;
 	private long maxNumFiles;
 	private long maxNumTokens;
+	private long maxNumTokenRels;
 	private long maxNumTopics;
 	private long maxNumSchedules;
 	private boolean randomGenerationEnabled;
@@ -251,6 +252,7 @@ public class GlobalDynamicProperties {
 		maxNumFiles = properties.getLongProperty("files.maxNumber");
 		maxNumSchedules = properties.getLongProperty("scheduling.maxNumber");
 		maxNumTokens = properties.getLongProperty("tokens.maxNumber");
+		maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
 		maxNumTopics = properties.getLongProperty("topics.maxNumber");
 		randomGenerationEnabled = properties.getBooleanProperty("randomGeneration.isEnabled");
 	}
@@ -637,5 +639,9 @@ public class GlobalDynamicProperties {
 
 	public boolean isRandomGenerationEnabled() {
 		return randomGenerationEnabled;
+	}
+
+	public long maxNumTokenRels() {
+		return maxNumTokenRels;
 	}
 }

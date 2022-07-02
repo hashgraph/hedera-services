@@ -167,6 +167,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxNumQueryableRecords());
 		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
 		assertEquals(64, subject.getMaxReturnedNftsPerTouch());
+		assertEquals(86, subject.maxNumTokenRels());
 	}
 
 	@Test
@@ -443,6 +444,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("topics.maxNumber")).willReturn(i + 83L);
 		given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
 		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
+		given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

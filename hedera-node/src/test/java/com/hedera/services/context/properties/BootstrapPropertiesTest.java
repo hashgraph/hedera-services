@@ -241,9 +241,10 @@ class BootstrapPropertiesTest {
 			entry("accounts.maxNumber", 5_000_000L),
 			entry("contracts.maxNumber", 5_000_000L),
 			entry("files.maxNumber", 1_000_000L),
-			entry("scheduling.maxNumber", 1_000_000L),
+			entry("scheduling.maxNumber", 10_000_000L),
 			entry("tokens.maxNumber", 1_000_000L),
 			entry("topics.maxNumber", 1_000_000L),
+			entry("tokens.maxAggregateRels", 10_000_000L),
 			entry("randomGeneration.isEnabled", true)
 	);
 

@@ -85,6 +85,10 @@ public class MutableStateChildren implements StateChildren {
 		return Objects.requireNonNull(accounts.get());
 	}
 
+	public long numAccountAndContracts() {
+		return accounts().size();
+	}
+
 	public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		this.accounts = new WeakReference<>(accounts);
 	}
@@ -92,6 +96,10 @@ public class MutableStateChildren implements StateChildren {
 	@Override
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return Objects.requireNonNull(topics.get());
+	}
+
+	public long numTopics() {
+		return topics().size();
 	}
 
 	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
@@ -103,6 +111,10 @@ public class MutableStateChildren implements StateChildren {
 		return Objects.requireNonNull(tokens.get());
 	}
 
+	public long numTokens() {
+		return tokens().size();
+	}
+
 	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
 		this.tokens = new WeakReference<>(tokens);
 	}
@@ -110,6 +122,10 @@ public class MutableStateChildren implements StateChildren {
 	@Override
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return Objects.requireNonNull(storage.get());
+	}
+
+	public long numBlobs() {
+		return storage().size();
 	}
 
 	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
@@ -121,6 +137,10 @@ public class MutableStateChildren implements StateChildren {
 		return Objects.requireNonNull(contractStorage.get());
 	}
 
+	public long numStorageSlots() {
+		return contractStorage().size();
+	}
+
 	public void setContractStorage(VirtualMap<ContractKey, IterableContractValue> contractStorage) {
 		this.contractStorage = new WeakReference<>(contractStorage);
 	}
@@ -130,9 +150,17 @@ public class MutableStateChildren implements StateChildren {
 		return Objects.requireNonNull(schedules.get());
 	}
 
+	public long numSchedules() {
+		return schedules().getNumSchedules();
+	}
+
 	@Override
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		return Objects.requireNonNull(tokenAssociations.get());
+	}
+
+	public long numTokenRels() {
+		return tokenAssociations().size();
 	}
 
 	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {

@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -61,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+	private final UsageLimits usageLimits;
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -73,6 +75,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Inject
 	public HederaWorldState(
+			final UsageLimits usageLimits,
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
 			final CodeCache codeCache,
@@ -80,6 +83,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ids = ids;
+		this.usageLimits = usageLimits;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -96,6 +100,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
+		this.usageLimits = null;
 		this.sigImpactHistorian = null;
 		this.dynamicProperties = dynamicProperties;
 	}
@@ -284,35 +289,49 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 			final var impactHistorian = wrapped.sigImpactHistorian;
+			final var updatedAccounts = getUpdatedAccounts();
 
-			commitSizeLimitedStorageTo(entityAccess);
-
-			final var deletedAddresses = getDeletedAccountAddresses();
-			deletedAddresses.forEach(address -> {
-				final var accountId = accountIdFromEvmAddress(address);
-				validateTrue(impactHistorian != null, FAIL_INVALID);
-				impactHistorian.markEntityChanged(accountId.getAccountNum());
-				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-			});
-			for (final var updatedAccount : getUpdatedAccounts()) {
-				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
-					continue;
-				}
-				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				if (updatedAccount.codeWasUpdated()) {
-					entityAccess.storeCode(accountId, updatedAccount.getCode());
-				}
+			trackNewlyCreatedAccounts(
+					entityAccess,
+					wrapped.provisionalContractCreations,
+					impactHistorian,
+					getDeletedAccountAddresses(),
+					updatedAccounts);
+			if (!wrapped.provisionalContractCreations.isEmpty()) {
+				wrapped.usageLimits.assertCreatableContracts(wrapped.provisionalContractCreations.size());
 			}
-
+			commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
 			entityAccess.recordNewKvUsageTo(trackingAccounts());
+
 			// Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			// this commit() persists all of that information without any additional use of the deletedAccounts
 			// or updatedAccounts collections.
 			trackingLedgers().commit(impactHistorian);
 		}
 
-		private void ensureExistence(
+		private void trackNewlyCreatedAccounts(
+				final EntityAccess entityAccess,
+				final List<ContractID> provisionalCreations,
+				final SigImpactHistorian impactHistorian,
+				final Collection<Address> deletedAddresses,
+				final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts
+		) {
+			deletedAddresses.forEach(address -> {
+				final var accountId = accountIdFromEvmAddress(address);
+				validateTrue(impactHistorian != null, FAIL_INVALID);
+				impactHistorian.markEntityChanged(accountId.getAccountNum());
+				trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+			});
+			for (final var updatedAccount : updatedAccounts) {
+				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
+					continue;
+				}
+				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+				trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+			}
+		}
+
+		private void trackIfNewlyCreated(
 				final AccountID accountId,
 				final EntityAccess entityAccess,
 				final List<ContractID> provisionalContractCreations
@@ -322,9 +341,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 			}
 		}
 
-		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
-			for (final var updatedAccount : getUpdatedAccounts()) {
-				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+		private void commitSizeLimitedStorageTo(
+				final EntityAccess entityAccess,
+				final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts
+		) {
+			for (final var updatedAccount : updatedAccounts) {
+				final var accountId = updatedAccount.getAccountId();
 				// Note that we don't have the equivalent of an account-scoped storage trie, so we can't
 				// do anything in particular when updated.getStorageWasCleared() is true. (We will address
 				// this in our global state expiration implementation.)
@@ -334,6 +356,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 				}
 			}
 			entityAccess.flushStorage();
+			for (final var updatedAccount : updatedAccounts) {
+				if (updatedAccount.codeWasUpdated()) {
+					entityAccess.storeCode(updatedAccount.getAccountId(), updatedAccount.getCode());
+				}
+			}
 		}
 
 		@Override

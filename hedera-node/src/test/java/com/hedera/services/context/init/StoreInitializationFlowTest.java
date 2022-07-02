@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -36,7 +37,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,11 +44,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +59,9 @@ class StoreInitializationFlowTest {
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MutableStateChildren workingState;
+
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
@@ -71,7 +74,6 @@ class StoreInitializationFlowTest {
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private AtomicLong numContracts = new AtomicLong();
 
 	private StoreInitializationFlow subject;
 
@@ -79,7 +81,7 @@ class StoreInitializationFlowTest {
 	void setUp() {
 		subject = new StoreInitializationFlow(
 				tokenStore,
-				numContracts,
+				usageLimits,
 				scheduleStore,
 				aliasManager,
 				workingState,
@@ -109,6 +111,6 @@ class StoreInitializationFlowTest {
 		observer.accept(EntityNum.fromInt(1), MerkleAccountFactory.newAccount().get());
 		observer.accept(EntityNum.fromInt(2), MerkleAccountFactory.newContract().get());
 		observer.accept(EntityNum.fromInt(3), MerkleAccountFactory.newContract().get());
-		Assertions.assertEquals(2L, numContracts.get());
+		verify(usageLimits, times(2)).recordContracts(1);
 	}
 }
