@@ -56,10 +56,19 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
 	}
 
+	public AllowancePrecompile(
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final WorldLedgers ledgers,
+			final EncodingFacade encoder,
+			final DecodingFacade decoder,
+			final PrecompilePricingUtils pricingUtils) {
+		this(null, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+	}
+
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final var nestedInput = input.slice(24);
-		allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, aliasResolver);
+		allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, tokenId, aliasResolver);
 
 		return super.body(input, aliasResolver);
 	}
@@ -71,7 +80,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 		validateTrueOrRevert(accountsLedger.contains(allowanceWrapper.owner()), INVALID_ALLOWANCE_OWNER_ID);
 		final var allowances = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(
 				allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
-		final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, allowanceWrapper.spender());
+		final var fcTokenAllowanceId = FcTokenAllowanceId.from(allowanceWrapper.tokenID(), allowanceWrapper.spender());
 		final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
 		return encoder.encodeAllowance(value);
 	}

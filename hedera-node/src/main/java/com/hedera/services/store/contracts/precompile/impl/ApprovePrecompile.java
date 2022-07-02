@@ -91,11 +91,24 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 		this.currentView = currentView;
 	}
 
+	public ApprovePrecompile(
+			final WorldLedgers ledgers,
+			final DecodingFacade decoder,
+			final EncodingFacade encoder,
+			final StateView currentView,
+			final SideEffectsTracker sideEffects,
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final InfrastructureFactory infrastructureFactory,
+			final PrecompilePricingUtils pricingUtils,
+			final Address senderAddress) {
+		this(null, false, ledgers, decoder, encoder, currentView, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, senderAddress);
+	}
+
 	@Override
 	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final var nestedInput = input.slice(24);
 		operatorId = EntityId.fromAddress(senderAddress);
-		approveOp = decoder.decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver);
+		approveOp = decoder.decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, ledgers);
 		if (isFungible) {
 			transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
 			return transactionBody;

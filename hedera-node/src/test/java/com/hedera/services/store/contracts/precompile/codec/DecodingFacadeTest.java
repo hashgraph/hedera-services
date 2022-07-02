@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile.codec;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,6 +39,7 @@ import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,6 +52,14 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class DecodingFacadeTest {
 	private final DecodingFacade subject = new DecodingFacade();
+	
+	private static final long ACCOUNT_NUM_ALLOWANCE_OWNER = 0x601;
+	private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER = 0x602;
+	private static final long ACCOUNT_NUM_SPENDER_NFT = 0x3ea;
+	private static final long ACCOUNT_NUM_SPENDER = 0x3f0;
+	private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
+	
+	private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
 
 	private static final Bytes POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT = Bytes.fromHexString(
 			"0x189a554c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004a4000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a1000000000000000000000000000000000000000000000000000000000000002b000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a100000000000000000000000000000000000000000000000000000000000004a10000000000000000000000000000000000000000000000000000000000000048");
@@ -124,15 +134,18 @@ class DecodingFacadeTest {
 
 	private static final Bytes GET_APPROVED_INPUT = Bytes.fromHexString("0x081812fc0000000000000000000000000000000000000000000000000000000000000001");
 
-	public static final Bytes ALLOWANCE_INPUT = Bytes.fromHexString("0xdd62ed3e00000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
+	public static final Bytes ALLOWANCE_INPUT_ERC = Bytes.fromHexString("0xdd62ed3e00000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
+	public static final Bytes ALLOWANCE_INPUT_HAPI = Bytes.fromHexString("0x927da105000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
 
 	public static final Bytes SET_APPROVAL_FOR_ALL_INPUT = Bytes.fromHexString("0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
 
 	public static final Bytes IS_APPROVED_FOR_ALL_INPUT = Bytes.fromHexString("0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
 
-	private static final Bytes APPROVE_NFT_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+	private static final Bytes APPROVE_NFT_INPUT_ERC = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+	private static final Bytes APPROVE_NFT_INPUT_HAPI = Bytes.fromHexString("0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
 
-	public static final Bytes APPROVE_TOKEN_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
+	public static final Bytes APPROVE_TOKEN_INPUT_ERC = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
+	public static final Bytes APPROVE_TOKEN_INPUT_HAPI = Bytes.fromHexString("0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
 	@Mock
 	private WorldLedgers ledgers;
@@ -140,7 +153,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
-				subject.decodeCryptoTransfer(POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT, a -> a);
+				subject.decodeCryptoTransfer(POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT, identity());
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 		final var nftExchanges = decodedInput.get(0).nftExchanges();
 
@@ -159,7 +172,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeCryptoTransferNegativeFungibleAmount() {
-		final var decodedInput = subject.decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, a -> a);
+		final var decodedInput = subject.decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, identity());
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertNotNull(fungibleTransfers);
@@ -200,16 +213,24 @@ class DecodingFacadeTest {
 	}
 
 	@Test
-	void decodeAllowanceInput() {
-		final var decodedInput = subject.decodeTokenAllowance(ALLOWANCE_INPUT, a -> a);
+	void decodeAllowanceInputERC() {
+		final var decodedInput = subject.decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity());
 
-		assertTrue(decodedInput.owner().getAccountNum() > 0);
-		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(ACCOUNT_NUM_ALLOWANCE_OWNER, decodedInput.owner().getAccountNum());
+		assertEquals(ACCOUNT_NUM_ALLOWANCE_SPENDER, decodedInput.spender().getAccountNum());
+	}
+
+	@Test
+	void decodeAllowanceInputHAPI() {
+		final var decodedInput = subject.decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity());
+
+		assertEquals(ACCOUNT_NUM_ALLOWANCE_OWNER, decodedInput.owner().getAccountNum());
+		assertEquals(ACCOUNT_NUM_ALLOWANCE_SPENDER, decodedInput.spender().getAccountNum());
 	}
 
 	@Test
 	void decodeSetApprovalForAll() {
-		final var decodedInput = subject.decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT, a -> a);
+		final var decodedInput = subject.decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT, identity());
 
 		assertTrue(decodedInput.to().getAccountNum() > 0);
 		assertTrue(decodedInput.approved());
@@ -217,39 +238,73 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeIsApprovedForAll() {
-		final var decodedInput = subject.decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT, a -> a);
+		final var decodedInput = subject.decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT, identity());
 
 		assertTrue(decodedInput.owner().getAccountNum() > 0);
 		assertTrue(decodedInput.operator().getAccountNum() > 0);
 	}
 
 	@Test
-	void decodeApproveForNFT() {
-		final var decodedInput = subject.decodeTokenApprove(APPROVE_NFT_INPUT, TokenID.getDefaultInstance(),false, a -> a);
+	void decodeApproveForNFTERC() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_NFT_INPUT_ERC, TOKEN_ID,false, identity(), ledgers);
 
-		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
+		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
 		assertEquals(BigInteger.ONE, decodedInput.serialNumber());
 	}
 
 	@Test
-	void decodeApproveForToken() {
-		final var decodedInput = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+	void decodeApproveForTokenERC() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT_ERC, TOKEN_ID,true, identity(), ledgers);
 
 		assertTrue(decodedInput.spender().getAccountNum() > 0);
 		assertEquals(BigInteger.TEN, decodedInput.amount());
 	}
 
+	@Test
+	void decodeApproveForNFTHAPI() {
+		given(ledgers.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, false, identity(), ledgers);
+
+		assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
+		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
+		assertEquals(BigInteger.ONE, decodedInput.serialNumber());
+
+		final var decodedInput2 = subject.decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, true, identity(), ledgers);
+
+		assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput2.spender().getAccountNum());
+		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput2.token().getTokenNum());
+		assertEquals(BigInteger.ONE, decodedInput2.serialNumber());
+	}
+
+	@Test
+	void decodeApproveForTokenAHPI() {
+		given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, null, true, identity(), ledgers);
+
+		assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
+		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
+		assertEquals(BigInteger.TEN, decodedInput.amount());
+
+		final var decodedInput2 = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, null, false, identity(), ledgers);
+
+		assertEquals(ACCOUNT_NUM_SPENDER, decodedInput2.spender().getAccountNum());
+		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput2.token().getTokenNum());
+		assertEquals(BigInteger.TEN, decodedInput2.amount());
+	}
+
 
 	@Test
 	void decodeBalanceInput() {
-		final var decodedInput = subject.decodeBalanceOf(BALANCE_INPUT, a -> a);
+		final var decodedInput = subject.decodeBalanceOf(BALANCE_INPUT, identity());
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 	}
 
 	@Test
 	void decodeTransferInput() {
-		final var decodedInput = subject.decodeERCTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
+		final var decodedInput = subject.decodeERCTransfer(TRANSFER_INPUT, TOKEN_ID, AccountID.getDefaultInstance(), identity());
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.receiver().getAccountNum() > 0);
@@ -260,7 +315,7 @@ class DecodingFacadeTest {
 	void decodeTransferFromFungibleInputUsingApprovalIfNotOwner() {
 		final var notOwner = new EntityId(0, 0, 1002);
 		final var decodedInput = subject.decodeERCTransferFrom(
-				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, notOwner);
+				TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID,true, identity(), ledgers, notOwner);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
 		assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
@@ -273,7 +328,7 @@ class DecodingFacadeTest {
 	void decodeTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
 		final var fromOp = new EntityId(0, 0, 1450);
 		final var decodedInput = subject.decodeERCTransferFrom(
-				TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a, ledgers, fromOp);
+				TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID,true, identity(), ledgers, fromOp);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
 		assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
@@ -286,7 +341,7 @@ class DecodingFacadeTest {
 	void decodeTransferFromNonFungibleInputUsingApprovalIfNotOwner() {
 		final var notOwner = new EntityId(0, 0, 1002);
 		final var decodedInput = subject.decodeERCTransferFrom(
-				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),false, a -> a, ledgers, notOwner);
+				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TOKEN_ID,false, identity(), ledgers, notOwner);
 		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
 
 		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
@@ -301,7 +356,7 @@ class DecodingFacadeTest {
 		given(ledgers.ownerIfPresent(any())).willReturn(callerId);
 
 		final var decodedInput = subject.decodeERCTransferFrom(
-				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),false, a -> a, ledgers, callerId);
+				TRANSFER_FROM_NON_FUNGIBLE_INPUT, TOKEN_ID,false, identity(), ledgers, callerId);
 		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
 
 		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
@@ -342,7 +397,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferToken() {
-		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT, a -> a);
+		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT, identity());
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.sender().getAccountNum() > 0);
@@ -353,7 +408,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferTokensPositiveAmounts() {
-		final var decodedInput = subject.decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, a -> a);
+		final var decodedInput = subject.decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity());
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
@@ -369,7 +424,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferTokensPositiveNegativeAmount() {
-		final var decodedInput = subject.decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT, a -> a);
+		final var decodedInput = subject.decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT, identity());
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
@@ -385,7 +440,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferNFT() {
-		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT, a -> a);
+		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT, identity());
 		final var nonFungibleTransfer = decodedInput.get(0).nftExchanges().get(0);
 
 		assertTrue(nonFungibleTransfer.asGrpc().getSenderAccountID().getAccountNum() > 0);
@@ -396,7 +451,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferNFTs() {
-		final var decodedInput = subject.decodeTransferNFTs(TRANSFER_NFTS_INPUT, a -> a);
+		final var decodedInput = subject.decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity());
 		final var nonFungibleTransfers = decodedInput.get(0).nftExchanges();
 
 		assertEquals(2, nonFungibleTransfers.size());
@@ -412,7 +467,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeAssociateToken() {
-		final var decodedInput = subject.decodeAssociation(ASSOCIATE_INPUT, a -> a);
+		final var decodedInput = subject.decodeAssociation(ASSOCIATE_INPUT, identity());
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
@@ -420,7 +475,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeMultipleAssociateToken() {
-		final var decodedInput = subject.decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT, a -> a);
+		final var decodedInput = subject.decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT, identity());
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.tokenIds().size());
@@ -430,7 +485,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeDissociateToken() {
-		final var decodedInput = subject.decodeDissociate(DISSOCIATE_INPUT, a -> a);
+		final var decodedInput = subject.decodeDissociate(DISSOCIATE_INPUT, identity());
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
@@ -438,7 +493,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeMultipleDissociateToken() {
-		final var decodedInput = subject.decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT, a -> a);
+		final var decodedInput = subject.decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT, identity());
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.tokenIds().size());
@@ -449,12 +504,12 @@ class DecodingFacadeTest {
 	@Test
 	void decodeMultipleDissociateTokenInvalidInput() {
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.decodeMultipleDissociations(INVALID_INPUT, a -> a));
+				() -> subject.decodeMultipleDissociations(INVALID_INPUT, identity()));
 	}
 
 	@Test
 	void decodeFungibleCreateNoFeesInput() {
-		final var decodedInput = subject.decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_INPUT, a -> a);
+		final var decodedInput = subject.decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_INPUT, identity());
 
 		assertExpectedFungibleTokenCreateStruct(decodedInput);
 		assertEquals(BigInteger.valueOf(200), decodedInput.getInitSupply());
@@ -464,7 +519,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeFungibleCreateWithFeesInput() {
-		final var decodedInput = subject.decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT, a -> a);
+		final var decodedInput = subject.decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT, identity());
 
 		assertExpectedFungibleTokenCreateStruct(decodedInput);
 		assertEquals(decodedInput.getInitSupply(), BigInteger.valueOf(200));
@@ -494,7 +549,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeNonFungibleCreateNoFeesInput() {
-		final var decodedInput = subject.decodeNonFungibleCreate(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
+		final var decodedInput = subject.decodeNonFungibleCreate(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, identity());
 
 		assertExpectedNonFungibleTokenCreateStruct(decodedInput);
 		assertEquals(BigInteger.valueOf(0), decodedInput.getInitSupply());
@@ -504,7 +559,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeNonFungibleCreateWithFeesInput() {
-		final var decodedInput = subject.decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, a -> a);
+		final var decodedInput = subject.decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, identity());
 
 		assertExpectedNonFungibleTokenCreateStruct(decodedInput);
 		assertEquals(BigInteger.valueOf(0), decodedInput.getInitSupply());
@@ -541,7 +596,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTokenCreateWithEmptyAddressesAsExpected() {
 		final var decodedInput =
-				subject.decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, a -> a);
+				subject.decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, identity());
 
 		assertNull(decodedInput.getTreasury());
 		assertNull(decodedInput.getTokenKeys().get(0).key().getContractID());
@@ -553,7 +608,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodesTokenCreateWithRoyaltyFeeWithEmptyAddressesAsExpected() {
 		final var decodedInput =
-				subject.decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, a -> a);
+				subject.decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, identity());
 
 		final var royaltyFee = decodedInput.getRoyaltyFees().get(0).asGrpc();
 		assertFalse(royaltyFee.hasFeeCollectorAccountId());
@@ -563,7 +618,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeCreateTokenWithInvalidInput() {
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT, a -> a));
+				() -> subject.decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT, identity()));
 	}
 
 	private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {

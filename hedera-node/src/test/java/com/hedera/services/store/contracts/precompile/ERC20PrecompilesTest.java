@@ -621,7 +621,7 @@ class ERC20PrecompilesTest {
 
 
         given(accounts.contains(any())).willReturn(true);
-        given(decoder.decodeTokenAllowance(eq(nestedPretendArguments), any())).willReturn(
+        given(decoder.decodeTokenAllowance(eq(nestedPretendArguments), any(), any())).willReturn(
                 ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(alowances);
         given(encoder.encodeAllowance(10L)).willReturn(successResult);
@@ -705,7 +705,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 
-        given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
+        given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any(), any())).willReturn(
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -765,7 +765,7 @@ class ERC20PrecompilesTest {
         given(allowanceChecks.allowancesValidation(
                 cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView)).willReturn(OK);
 
-        given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
+        given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any(), any())).willReturn(
                 APPROVE_WRAPPER);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -1014,7 +1014,7 @@ class ERC20PrecompilesTest {
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
 
-    public static final TokenAllowanceWrapper ALLOWANCE_WRAPPER = new TokenAllowanceWrapper(sender, receiver);
+    public static final TokenAllowanceWrapper ALLOWANCE_WRAPPER = new TokenAllowanceWrapper(token, sender, receiver);
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
             new ArrayList<>() {},

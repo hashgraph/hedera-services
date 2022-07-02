@@ -464,7 +464,7 @@ class ERC721PrecompilesTest {
 				new Account(accountId), stateView))
 				.willReturn(OK);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER);
 		given(encoder.encodeApprove(true)).willReturn(successResult);
 
@@ -518,7 +518,7 @@ class ERC721PrecompilesTest {
 		given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
 		given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER);
 		given(infrastructureFactory.newApproveAllowanceLogic(any(), any()))
 				.willReturn(approveAllowanceLogic);
@@ -579,7 +579,7 @@ class ERC721PrecompilesTest {
 		given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
 				.willReturn(OK);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER_0);
 		given(encoder.encodeApprove(true)).willReturn(successResult);
 		given(infrastructureFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
@@ -641,7 +641,7 @@ class ERC721PrecompilesTest {
 		given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
 				.willReturn(OK);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER_0);
 		given(encoder.encodeApprove(true)).willReturn(successResult);
 		given(infrastructureFactory.newDeleteAllowanceLogic(any(), any())).willReturn(deleteAllowanceLogic);
@@ -684,7 +684,7 @@ class ERC721PrecompilesTest {
 		given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER_0);
 
 		// when:
@@ -735,7 +735,7 @@ class ERC721PrecompilesTest {
 		given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
 		given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER_0);
 		given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
 				.willReturn(INVALID_ALLOWANCE_OWNER_ID);
@@ -792,7 +792,7 @@ class ERC721PrecompilesTest {
 				new Account(accountId), stateView))
 				.willReturn(FAIL_INVALID);
 
-		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any())).willReturn(
+		given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(false), any(), any())).willReturn(
 				APPROVE_WRAPPER);
 
 		// when:

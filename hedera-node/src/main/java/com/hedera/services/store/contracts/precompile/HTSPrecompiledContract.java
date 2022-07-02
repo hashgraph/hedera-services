@@ -260,6 +260,34 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							ledgers, decoder, updater.aliases(), sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
+					case AbiConstants.ABI_ID_ERC_ALLOWANCE ->
+							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+									() -> new AllowancePrecompile(
+											syntheticTxnFactory, ledgers, encoder, decoder,
+											precompilePricingUtils));
+					case AbiConstants.ABI_ID_ERC_APPROVE ->
+							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+									() -> new ApprovePrecompile(
+											ledgers, decoder, encoder, currentView,
+											sideEffectsTracker,
+											syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+											senderAddress));
+//					case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL ->
+//							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+//									() -> new SetApprovalForAllPrecompile(
+//											ledgers, decoder, currentView, sideEffectsTracker,
+//											syntheticTxnFactory,
+//											infrastructureFactory, precompilePricingUtils, senderAddress));
+//					case AbiConstants.ABI_ID_ERC_GET_APPROVED ->
+//							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+//									() -> new GetApprovedPrecompile(
+//											syntheticTxnFactory, ledgers, encoder, decoder,
+//											precompilePricingUtils));
+//					case AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL ->
+//							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+//									() -> new IsApprovedForAllPrecompile(
+//											tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+//											precompilePricingUtils));
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
 						final var target = DescriptorUtils.getRedirectTarget(input);
 						final var tokenId = target.tokenId();
