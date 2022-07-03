@@ -233,7 +233,7 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
-	void assertSuccessExecutionPopulatesStorageChanges() {
+	void assertSuccessExecutionPopulatesStateChanges() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(globalDynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
@@ -253,16 +253,11 @@ class CallEvmTxProcessorTest {
 
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//		assertEquals(1, result.toGrpc().getStateChangesCount());
-//		final var contractStateChange = result.toGrpc().getStateChanges(0);
-//		assertEquals(EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(contractAddress)),
-//				contractStateChange.getContractID());
-//		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(slot)).trimLeadingZeros().toArrayUnsafe()),
-//				contractStateChange.getStorageChanges(0).getSlot());
-//		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(oldSlotValue)).trimLeadingZeros().toArrayUnsafe()),
-//				contractStateChange.getStorageChanges(0).getValueRead());
-//		assertEquals(BytesValue.of(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(newSlotValue)).trimLeadingZeros().toArrayUnsafe())),
-//				contractStateChange.getStorageChanges(0).getValueWritten());
+		assertEquals(1, result.getStateChanges().size());
+		final var contractStateChange =
+				result.getStateChanges().get(Address.fromHexString(contractAddress)).get(UInt256.valueOf(slot));
+		assertEquals(UInt256.valueOf(oldSlotValue), contractStateChange.getLeft());
+		assertEquals(UInt256.valueOf(newSlotValue), contractStateChange.getRight());
 	}
 
 	@Test
@@ -279,7 +274,7 @@ class CallEvmTxProcessorTest {
 
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//		assertEquals(0, result.toGrpc().getStateChangesCount());
+		assertEquals(0, result.getStateChanges().size());
 
 		verify(updater, never()).getFinalStateChanges();
 	}

@@ -78,7 +78,7 @@ public class EvmFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = Collections.emptyList();
 	private List<EvmLog> logs = Collections.emptyList();
-	// stateChanges are not really used anymore; left for now only for migration purposes
+	// stateChanges are only kept for migration purposes, they are not saved with the txn record anymore
 	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
 	private long gas;
 	private long amount;

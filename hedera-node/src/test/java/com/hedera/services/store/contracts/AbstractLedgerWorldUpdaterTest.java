@@ -52,6 +52,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -69,6 +70,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -77,6 +79,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
+import static com.hedera.test.utils.IdUtils.asContract;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -179,9 +182,27 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.manageInProgressRecord(recordsHistorian, secondRecord, secondSynthBuilder);
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		//TODO: look into this
 		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, Collections.emptyList());
 		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord, Collections.emptyList());
+	}
+
+	@Test
+	void sidecarRecordsAreProperlyPassedToRecordHistorian() {
+		// given
+		final var sourceId = 123;
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+		final var firstRecord = ExpirableTxnRecord.newBuilder();
+		final var firstSynthBuilder = TransactionBody.newBuilder();
+		final var contractBytecode =
+				SidecarUtils.createContractBytecode(asContract("0.0.666"), "bytes".getBytes(), "moreBytes".getBytes());
+		final var sidecars = List.of(contractBytecode);
+
+		// when
+		subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder, sidecars);
+
+		// then
+		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, sidecars);
 	}
 
 	@Test

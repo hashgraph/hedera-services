@@ -59,11 +59,6 @@ class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
 	private static final long gas = 5_000;
 	private static final long amount = 1_000_000;
-	private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
-	private static final Address realContract = cNum.toEvmAddress();
-	private static final byte[] slot = "slot".getBytes();
-	private static final byte[] left = "left".getBytes();
-	private static final byte[] right = "right".getBytes();
 	private static final byte[] result = "abcdefgh".getBytes();
 	private static final byte[] otherResult = "hgfedcba".getBytes();
 	private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
@@ -84,9 +79,6 @@ class EvmFnResultTest {
 					Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
 					Address.fromHexString("0x9"),
 					Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
-	private static Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> specialStateChanges =
-			Map.of(realContract,
-					Map.of(Bytes.of(slot), Pair.of(Bytes.of(left), Bytes.of(right))));
 
 	private EvmFnResult subject;
 
@@ -146,7 +138,8 @@ class EvmFnResultTest {
 		final var input = TransactionProcessingResult.failed(
 				gasUsed, 0, 0,
 				Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
-				Optional.empty(), Collections.emptyMap());
+				Optional.empty(),
+				Collections.emptyMap());
 
 		final var actual = EvmFnResult.fromCall(input);
 
