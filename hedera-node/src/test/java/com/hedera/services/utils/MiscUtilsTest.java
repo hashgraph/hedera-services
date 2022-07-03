@@ -565,7 +565,7 @@ class MiscUtilsTest {
 			put("TokenUnpause", new BodySetter<>(TokenUnpauseTransactionBody.class));
 			put("TokenPause", new BodySetter<>(TokenPauseTransactionBody.class));
 			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
-			put("PRNG", new BodySetter<>(PrngTransactionBody.class));
+			put("Prng", new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((bodyType, setter) -> {
