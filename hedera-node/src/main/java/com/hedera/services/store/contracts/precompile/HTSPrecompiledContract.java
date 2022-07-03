@@ -85,6 +85,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -207,7 +208,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		gasRequirement = precompile.getGasRequirement(now);
 		Bytes result = computeInternal(frame);
 
-		return result == null ? PrecompiledContract.PrecompileContractResult.halt((Bytes) null,
+		return result == null ? PrecompiledContract.PrecompileContractResult.halt(null,
 				Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
@@ -263,95 +264,72 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						final var target = DescriptorUtils.getRedirectTarget(input);
 						final var tokenId = target.tokenId();
 						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-						Precompile nestedPrecompile;
 						final var nestedFunctionSelector = target.descriptor();
-						if (AbiConstants.ABI_ID_NAME == nestedFunctionSelector) {
-							nestedPrecompile = new NamePrecompile(
+						yield switch (nestedFunctionSelector) {
+							case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(
 									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_SYMBOL == nestedFunctionSelector) {
-							nestedPrecompile = new SymbolPrecompile(
+							case AbiConstants.ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(
 									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_DECIMALS == nestedFunctionSelector) {
-							if (!isFungibleToken) {
-								throw new InvalidTransactionException(
-										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
-							}
-							nestedPrecompile = new DecimalsPrecompile(
+							case AbiConstants.ABI_ID_ERC_DECIMALS ->
+									checkFungible(isFungibleToken, () -> new DecimalsPrecompile(
+											tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+											precompilePricingUtils));
+							case AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN -> new TotalSupplyPrecompile(
 									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
-							nestedPrecompile = new TotalSupplyPrecompile(
+							case AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN -> new BalanceOfPrecompile(
 									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
-							nestedPrecompile = new BalanceOfPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
-							if (isFungibleToken) {
-								throw new InvalidTransactionException(
-										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
-							}
-							nestedPrecompile = new OwnerOfPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
-							if (isFungibleToken) {
-								throw new InvalidTransactionException(
-										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
-							}
-							nestedPrecompile = new TokenURIPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_ERC_TRANSFER == nestedFunctionSelector) {
-							if (!isFungibleToken) {
-								throw new InvalidTransactionException(
-										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
-							}
-							nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
-									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
-									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
-									impliedTransfersMarshal);
-						} else if (AbiConstants.ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
-									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
-									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
-									impliedTransfersMarshal);
-						} else if (AbiConstants.ABI_ID_ALLOWANCE == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new AllowancePrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_APPROVE == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new ApprovePrecompile(
-									tokenId, isFungibleToken, ledgers, decoder, encoder, currentView,
-									sideEffectsTracker,
-									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress);
-						} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new SetApprovalForAllPrecompile(
-									tokenId, ledgers, decoder, currentView, sideEffectsTracker, syntheticTxnFactory,
-									infrastructureFactory, precompilePricingUtils, senderAddress);
-						} else if (AbiConstants.ABI_ID_GET_APPROVED == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new GetApprovedPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else if (AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
-							if (!dynamicProperties.areAllowancesEnabled()) {
-								throw new InvalidTransactionException(NOT_SUPPORTED);
-							}
-							nestedPrecompile = new IsApprovedForAllPrecompile(
-									tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
-						} else {
-							nestedPrecompile = null;
-						}
-						yield nestedPrecompile;
+							case AbiConstants.ABI_ID_ERC_OWNER_OF_NFT ->
+									checkNFT(isFungibleToken, () -> new OwnerOfPrecompile(
+											tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+											precompilePricingUtils));
+							case AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT ->
+									checkNFT(isFungibleToken, () -> new TokenURIPrecompile(
+											tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+											precompilePricingUtils));
+							case AbiConstants.ABI_ID_ERC_TRANSFER -> checkFungible(isFungibleToken,
+									() -> new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+											ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
+											syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+											functionId,
+											impliedTransfersMarshal));
+							case AbiConstants.ABI_ID_ERC_TRANSFER_FROM ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
+													ledgers, decoder, encoder, updater, sigsVerifier,
+													sideEffectsTracker,
+													syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+													functionId,
+													impliedTransfersMarshal));
+							case AbiConstants.ABI_ID_ERC_ALLOWANCE ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new AllowancePrecompile(
+													tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+													precompilePricingUtils));
+							case AbiConstants.ABI_ID_ERC_APPROVE ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new ApprovePrecompile(
+													tokenId, isFungibleToken, ledgers, decoder, encoder, currentView,
+													sideEffectsTracker,
+													syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
+													senderAddress));
+							case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new SetApprovalForAllPrecompile(
+													tokenId, ledgers, decoder, currentView, sideEffectsTracker,
+													syntheticTxnFactory,
+													infrastructureFactory, precompilePricingUtils, senderAddress));
+							case AbiConstants.ABI_ID_ERC_GET_APPROVED ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new GetApprovedPrecompile(
+													tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+													precompilePricingUtils));
+							case AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL ->
+									checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
+											() -> new IsApprovedForAllPrecompile(
+													tokenId, syntheticTxnFactory, ledgers, encoder, decoder,
+													precompilePricingUtils));
+							default -> null;
+						};
 					}
 					case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
@@ -379,6 +357,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			transactionBody = null;
+		}
+	}
+
+	private Precompile checkNFT(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+		if (isFungible) {
+			throw new InvalidTransactionException(
+					NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
+		} else {
+			return precompileSupplier.get();
+		}
+	}
+
+	private Precompile checkFungible(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+		if (!isFungible) {
+			throw new InvalidTransactionException(
+					NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
+		} else {
+			return precompileSupplier.get();
+		}
+	}
+
+	private Precompile checkFeatureFlag(boolean featureFlag, Supplier<Precompile> precompileSupplier) {
+		if (!featureFlag) {
+			throw new InvalidTransactionException(NOT_SUPPORTED);
+		} else {
+			return precompileSupplier.get();
 		}
 	}
 
