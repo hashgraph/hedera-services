@@ -29,7 +29,7 @@ import java.util.Set;
  * underlying collection is returned).
  *
  * @param <K> the type of id used to index the collection.
- * @param <A> the type of account stored in the collection.
+ * @param <A> the type of entity stored in the collection.
  */
 public interface BackingStore<K, A> {
 	/**
@@ -61,9 +61,9 @@ public interface BackingStore<K, A> {
 	 * to the accompanying account.
 	 *
 	 * @param id the id of the relevant account
-	 * @param account the account that should have this id
+	 * @param entity the account that should have this id
 	 */
-	void put(K id, A account);
+	void put(K id, A entity);
 
 	/**
 	 * Frees the account with the given id for reclamation.

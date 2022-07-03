@@ -335,6 +335,7 @@ class HederaTokenStoreTest {
 
 		inOrder.verify(backingTokens).getRef(misc);
 		inOrder.verify(change).accept(token);
+		inOrder.verify(backingTokens).put(misc, token);
 	}
 
 	@Test

@@ -26,12 +26,12 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -88,6 +88,8 @@ class TopicCreateTransitionLogicTest {
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private TransactionContext transactionContext;
 	@Mock
 	private SignedTxnAccessor accessor;
@@ -112,7 +114,8 @@ class TopicCreateTransitionLogicTest {
 		topics.clear();
 
 		subject = new TopicCreateTransitionLogic(
-				topicStore, entityIdSource, validator, sigImpactHistorian, transactionContext, accountStore);
+				usageLimits, topicStore, entityIdSource,
+				validator, sigImpactHistorian, transactionContext, accountStore);
 	}
 
 	@Test
@@ -155,7 +158,9 @@ class TopicCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(topicStore).persistNew(any());
+		verify(usageLimits).assertCreatableTopics(1);
 		verify(sigImpactHistorian).markEntityChanged(NEW_TOPIC_ID.getTopicNum());
+		verify(usageLimits).refreshTopics();
 	}
 
 	@Test

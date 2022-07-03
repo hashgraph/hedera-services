@@ -56,10 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.function.Supplier;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -144,58 +141,16 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void commitsIfContractOpActive() {
-		givenActive(ContractCall);
-		subject.commit();
-		verify(tokensLedger).commit();
-	}
-
-	@Test
-	void commitsIfEthOpActive() {
-		givenActive(EthereumTransaction);
-		subject.commit();
-		verify(tokensLedger).commit();
-	}
-
-	@Test
-	void doesntCommitIfNonContractOpActive() {
-		givenActive(TokenMint);
-		subject.commit();
-		verify(tokensLedger, never()).commit();
-	}
-
-	@Test
-	void rollbackIfNonContractOpActive() {
-		givenActive(TokenMint);
-		subject.rollback();
-		verify(tokensLedger, never()).rollback();
-	}
-
-	@Test
-	void doesntRollbackIfNonContractOpActive() {
-		givenActive(TokenMint);
-		subject.rollback();
-		verify(tokensLedger, never()).rollback();
-	}
-
-	@Test
 	void beginsLedgerTxnIfContractCreateIsActive() {
 		givenActive(ContractCreate);
-		subject.begin();
-		verify(tokensLedger).begin();
-	}
-
-	@Test
-	void beginsLedgerTxnIfContractCallIsActive() {
-		givenActive(ContractCall);
-		subject.begin();
-		verify(tokensLedger).begin();
+		subject.startAccess();
+		verify(storage).beginSession();
 	}
 
 	@Test
 	void doesntBeginLedgerTxnIfNonContractOpIsActive() {
 		givenActive(HederaFunctionality.TokenMint);
-		subject.begin();
+		subject.startAccess();
 		verify(tokensLedger, never()).begin();
 	}
 

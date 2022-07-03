@@ -251,8 +251,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var token = backingTokens.getRef(key.toGrpcTokenId());
 		try {
 			change.accept(token);
+			backingTokens.put(id, token);
 		} catch (Exception internal) {
-			throw new IllegalArgumentException("Token change failed unexpectedly!", internal);
+			throw new IllegalArgumentException("Token change failed unexpectedly", internal);
 		}
 	}
 

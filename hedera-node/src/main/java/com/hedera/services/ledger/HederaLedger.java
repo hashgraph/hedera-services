@@ -29,11 +29,13 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -113,6 +115,7 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final RecordsHistorian historian;
+	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private MutableEntityAccess mutableEntityAccess;
@@ -131,6 +134,7 @@ public class HederaLedger {
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final RecordsHistorian historian,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic,
 			final AutoCreationLogic autoCreationLogic
@@ -139,6 +143,7 @@ public class HederaLedger {
 		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
+		this.tokensLedger = tokensLedger;
 		this.accountsLedger = accountsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.transferLogic = transferLogic;
@@ -180,18 +185,21 @@ public class HederaLedger {
 	public void begin() {
 		autoCreationLogic.reset();
 		accountsLedger.begin();
-		mutableEntityAccess.begin();
+		tokensLedger.begin();
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
 		if (nftsLedger != null) {
 			nftsLedger.begin();
 		}
+		mutableEntityAccess.startAccess();
 	}
 
 	public void rollback() {
 		accountsLedger.rollback();
-		mutableEntityAccess.rollback();
+		if (tokensLedger.isInTransaction()) {
+			tokensLedger.rollback();
+		}
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
@@ -201,18 +209,14 @@ public class HederaLedger {
 	}
 
 	/**
-	 * Commits the pending change sets in the four {@link TransactionalLedger} implementations.
-	 *
-	 * <p><b>Important: </b> The <i>order</i> of these {@code commit()} calls matters, because the
-	 * {@code tokenRelsLedger} and {@code nftsLedger} both have interceptors that update properties in the
-	 * accounts {@code MerkleMap}. If either of them were committed before the {@code accountsLedger} at
-	 * the end of a contract operation, their changes would be overwritten, since in a contract operation,
-	 * <i>all</i> {@link AccountProperty} values appear in an account's change set.
+	 * Commits the pending change sets in the {@link TransactionalLedger} implementations.
 	 */
 	public void commit() {
 		// The ledger interceptors track side effects, hence must be committed before saving a record
 		accountsLedger.commit();
-		mutableEntityAccess.commit();
+		if (tokensLedger.isInTransaction()) {
+			tokensLedger.commit();
+		}
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}

@@ -134,7 +134,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
-		final var inOrder = inOrder(tokenRelsLedger, nftsLedger);
+		final var inOrder = inOrder(tokensLedger, tokenRelsLedger, nftsLedger);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 		given(tokensLedger.isInTransaction()).willReturn(true);
 		given(nftsLedger.isInTransaction()).willReturn(true);
@@ -145,15 +145,21 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		subject.begin();
 		subject.rollback();
 
+		inOrder.verify(tokensLedger).begin();
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
+		inOrder.verify(tokensLedger).isInTransaction();
+		inOrder.verify(tokensLedger).commit();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
 		inOrder.verify(nftsLedger).isInTransaction();
 		inOrder.verify(nftsLedger).commit();
 
+		inOrder.verify(tokensLedger).begin();
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
+		inOrder.verify(tokensLedger).isInTransaction();
+		inOrder.verify(tokensLedger).rollback();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
 		inOrder.verify(nftsLedger).isInTransaction();

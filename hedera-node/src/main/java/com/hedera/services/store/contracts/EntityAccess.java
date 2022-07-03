@@ -42,12 +42,7 @@ public interface EntityAccess {
 	 */
 	WorldLedgers worldLedgers();
 
-	/* --- Transactional semantics for mutable entity access --- */
-	void begin();
-
-	void commit();
-
-	void rollback();
+	void startAccess();
 
 	String currentManagedChangeSet();
 

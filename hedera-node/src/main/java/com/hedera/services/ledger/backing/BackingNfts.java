@@ -25,26 +25,17 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityNumPair.fromNftId;
 
-@Singleton
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate;
 
-	@Inject
 	public BackingNfts(Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate) {
 		this.delegate = delegate;
-	}
-
-	@Override
-	public void rebuildFromSources() {
-		/* No-op */
 	}
 
 	@Override

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -149,7 +149,9 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public ScheduleID newScheduleId(AccountID sponsor) { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
+			public ScheduleID newScheduleId(AccountID sponsor) {
+				return ScheduleID.newBuilder().setScheduleNum(nextId++).build();
+			}
 
 			@Override
 			public void reclaimLastId() {
@@ -157,10 +159,12 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public void reclaimProvisionalIds() { }
+			public void reclaimProvisionalIds() {
+			}
 
 			@Override
-			public void resetProvisionalIds() { }
+			public void resetProvisionalIds() {
+			}
 		};
 	}
 
@@ -251,8 +255,8 @@ public class BaseHederaLedgerTestHelper {
 		mutableEntityAccess = mock(MutableEntityAccess.class);
 		final var autoCreationLogic = mock(AutoCreationLogic.class);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
-                                accountsLedger, transferLogic, autoCreationLogic);
+				tokenStore, ids, creator, validator, sideEffectsTracker,
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);

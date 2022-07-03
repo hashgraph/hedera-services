@@ -92,27 +92,11 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void begin() {
+	public void startAccess() {
 		if (isActiveContractOp()) {
 			sizeLimitedStorage.beginSession();
-			tokensLedger.begin();
 		}
 	}
-
-	@Override
-	public void commit() {
-		if (isActiveContractOp()) {
-			tokensLedger.commit();
-		}
-	}
-
-	@Override
-	public void rollback() {
-		if (isActiveContractOp()) {
-			tokensLedger.rollback();
-		}
-	}
-
 	@Override
 	public String currentManagedChangeSet() {
 		return tokensLedger.changeSetSoFar();

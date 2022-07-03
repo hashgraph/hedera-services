@@ -34,10 +34,12 @@ import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
+import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -56,6 +58,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -95,23 +98,31 @@ public interface StoresModule {
 				MerkleUniqueToken::new,
 				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
-		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(
-				usageLimits, uniqueTokensLinkManager);
-		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		final var interceptor = new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
+		uniqueTokensLedger.setCommitInterceptor(interceptor);
 		return uniqueTokensLedger;
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-			final BackingStore<TokenID, MerkleToken> backingTokens
+			final UsageLimits usageLimits,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens
 	) {
-		return new TransactionalLedger<>(
+		final var interceptor = new TokensCommitInterceptor(usageLimits);
+		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
-				backingTokens,
+				new BackingTokens(tokens),
 				new ChangeSummaryManager<>());
+		tokensLedger.setCommitInterceptor(interceptor);
+		return tokensLedger;
 	}
+
+	@Binds
+	@Singleton
+	BackingStore<TokenID, MerkleToken> bindBackingTokens(
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger);
 
 	@Binds
 	@Singleton

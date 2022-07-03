@@ -20,20 +20,59 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+
+@ExtendWith(MockitoExtension.class)
 class TokensCommitInterceptorTest {
-	@Test
-	void everythingNoopForNow() {
-		final var subject = new TokensCommitInterceptor(new SideEffectsTracker());
+	@Mock
+	private UsageLimits usageLimits;
 
-		assertDoesNotThrow(() -> subject.preview(null));
+	private TokensCommitInterceptor subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new TokensCommitInterceptor(usageLimits);
+	}
+
+	@Test
+	void noCreationsMeansNoRefresh() {
+		final var subject = new TokensCommitInterceptor(usageLimits);
+
+		subject.preview(pendingChanges(false));
+		subject.postCommit();
+
+		verifyNoInteractions(usageLimits);
+	}
+	@Test
+	void refreshesOnCreation() {
+		final var subject = new TokensCommitInterceptor(usageLimits);
+
+		subject.preview(pendingChanges(true));
+		subject.postCommit();
+		subject.preview(new EntityChangeSet<>());
+		subject.postCommit();
+
+		verify(usageLimits, times(1)).refreshTokens();
 	}
 
 	@Test
@@ -47,5 +86,22 @@ class TokensCommitInterceptorTest {
 
 		assertDoesNotThrow(() -> subject.finish(0, entity));
 		assertDoesNotThrow(subject::postCommit);
+	}
+
+	private EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges(
+			final boolean includeCreation
+	) {
+		final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges = new EntityChangeSet<>();
+		if (includeCreation) {
+			pendingChanges.include(
+					TokenID.newBuilder().setTokenNum(1234).build(),
+					null,
+					Map.of());
+		}
+		pendingChanges.include(
+				TokenID.newBuilder().setTokenNum(1235).build(),
+				new MerkleToken(),
+				Map.of());
+		return pendingChanges;
 	}
 }

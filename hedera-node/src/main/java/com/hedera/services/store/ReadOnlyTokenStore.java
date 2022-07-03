@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 
@@ -77,7 +76,6 @@ public class ReadOnlyTokenStore {
 	protected final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	protected final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
-	@Inject
 	public ReadOnlyTokenStore(
 			final AccountStore accountStore,
 			final BackingStore<TokenID, MerkleToken> tokens,

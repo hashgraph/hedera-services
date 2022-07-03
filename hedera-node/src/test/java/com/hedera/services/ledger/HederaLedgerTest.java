@@ -209,8 +209,9 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, accountsLedger, transferLogic, autoCreationLogic);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, new SideEffectsTracker(),
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -221,8 +222,9 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, accountsLedger, transferLogic, autoCreationLogic);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, new SideEffectsTracker(),
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -406,12 +408,10 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.rollback();
 
 		inOrder.verify(accountsLedger).begin();
-		inOrder.verify(mutableEntityAccess).begin();
+		inOrder.verify(mutableEntityAccess).startAccess();
 		inOrder.verify(accountsLedger).commit();
-		inOrder.verify(mutableEntityAccess).commit();
 		inOrder.verify(accountsLedger).begin();
-		inOrder.verify(mutableEntityAccess).begin();
+		inOrder.verify(mutableEntityAccess).startAccess();
 		inOrder.verify(accountsLedger).rollback();
-		inOrder.verify(mutableEntityAccess).rollback();
 	}
 }

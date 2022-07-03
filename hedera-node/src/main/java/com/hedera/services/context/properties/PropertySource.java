@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -53,8 +52,7 @@ public interface PropertySource {
 	Function<String, Object> AS_STRING = s -> s;
 	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
 	Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
-	Function<String, Object> AS_CS_STRINGS = s -> Arrays.stream(s.split(","))
-			.collect(toList());
+	Function<String, Object> AS_CS_STRINGS = s -> Arrays.stream(s.split(",")).toList();
 	Function<String, Object> AS_FUNCTIONS = s -> Arrays.stream(s.split(","))
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());

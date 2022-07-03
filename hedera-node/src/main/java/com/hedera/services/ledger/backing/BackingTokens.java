@@ -25,19 +25,15 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 
-@Singleton
 public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> delegate;
 
-    @Inject
     public BackingTokens(Supplier<MerkleMap<EntityNum, MerkleToken>> delegate) {
         this.delegate = delegate;
     }

@@ -23,9 +23,9 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -48,10 +48,6 @@ public interface LedgerModule {
 	@Singleton
 	BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
-	@Binds
-	@Singleton
-	public abstract BackingStore<TokenID, MerkleToken> bindBackingTokens(BackingTokens backingTokens);
-
 	@Provides
 	@Singleton
 	static HederaLedger provideHederaLedger(
@@ -62,6 +58,7 @@ public interface LedgerModule {
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final RecordsHistorian recordsHistorian,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final AutoCreationLogic autoCreationLogic,
 			final TransferLogic transferLogic
@@ -73,6 +70,7 @@ public interface LedgerModule {
 				validator,
 				sideEffectsTracker,
 				recordsHistorian,
+				tokensLedger,
 				accountsLedger,
 				transferLogic,
 				autoCreationLogic);

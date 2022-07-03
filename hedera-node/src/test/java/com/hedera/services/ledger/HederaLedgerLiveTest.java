@@ -34,8 +34,10 @@ import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterc
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
@@ -96,6 +98,11 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				new HashMapBackingTokens(),
+				new ChangeSummaryManager<>());
 		tokenStore = new HederaTokenStore(
 				ids,
 				usageLimits,
@@ -106,8 +113,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				nftsLedger,
 				new HashMapBackingTokens());
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, liveSideEffects, historian, accountsLedger,
-				transferLogic, autoCreationLogic);
+				tokenStore, ids, creator, validator, liveSideEffects,
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
 	}
 
