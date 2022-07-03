@@ -22,15 +22,7 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.ContractStateChanges;
-import com.hedera.services.stream.proto.StorageChange;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,7 +31,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

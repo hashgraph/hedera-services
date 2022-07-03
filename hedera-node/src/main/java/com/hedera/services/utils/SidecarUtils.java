@@ -17,6 +17,10 @@ import java.util.Map;
 
 public class SidecarUtils {
 
+	private SidecarUtils() {
+
+	}
+
 	public static TransactionSidecarRecord.Builder createContractBytecode(
 			ContractID contractID,
 			byte[] initCode,

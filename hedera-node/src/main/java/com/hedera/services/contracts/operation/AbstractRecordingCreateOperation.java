@@ -21,13 +21,10 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.SidecarUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -210,9 +207,11 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
 			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-			final var contractBytecodeSidecar = SidecarUtils.createContractBytecode(updater.idOfLastNewAddress(),
+			final var contractBytecodeSidecar = SidecarUtils.createContractBytecode(
+					updater.idOfLastNewAddress(),
 					childFrame.getCode().getBytes().toArrayUnsafe(),
-					updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
+					updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe()
+			);
 			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
