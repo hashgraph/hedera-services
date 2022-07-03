@@ -45,7 +45,7 @@ public class PrngLogic {
 		}
 
 		final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes();
-		if (Arrays.equals(pseudoRandomBytes, MISSING_BYTES)) {
+		if (pseudoRandomBytes == null || pseudoRandomBytes.length == 0) {
 			return;
 		}
 		if (range > 0) {

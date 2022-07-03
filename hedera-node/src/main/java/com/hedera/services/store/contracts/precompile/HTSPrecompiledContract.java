@@ -36,7 +36,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -66,6 +65,7 @@ import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -84,7 +84,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
@@ -108,7 +107,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final PrecompileContractResult NO_RESULT = new PrecompileContractResult(
-					null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+			null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
@@ -208,7 +207,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		gasRequirement = precompile.getGasRequirement(now);
 		Bytes result = computeInternal(frame);
 
-		return result == null ? PrecompiledContract.PrecompileContractResult.halt((Bytes)null, Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
+		return result == null ? PrecompiledContract.PrecompileContractResult.halt((Bytes) null,
+				Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
 	void prepareFields(final MessageFrame frame) {
@@ -234,8 +234,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_TOKEN,
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile(
-									ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
-							infrastructureFactory, precompilePricingUtils, functionId, senderAddress, impliedTransfersMarshal);
+							ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+							infrastructureFactory, precompilePricingUtils, functionId, senderAddress,
+							impliedTransfersMarshal);
 					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
@@ -302,7 +303,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								throw new InvalidTransactionException(
 										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
-							nestedPrecompile = new ERCTransferPrecompile( tokenId, senderAddress, isFungibleToken,
+							nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 									impliedTransfersMarshal);
@@ -310,7 +311,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							if (!dynamicProperties.areAllowancesEnabled()) {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
-							nestedPrecompile = new ERCTransferPrecompile( tokenId, senderAddress, isFungibleToken,
+							nestedPrecompile = new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
 									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, functionId,
 									impliedTransfersMarshal);
@@ -325,7 +326,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								throw new InvalidTransactionException(NOT_SUPPORTED);
 							}
 							nestedPrecompile = new ApprovePrecompile(
-									tokenId, isFungibleToken, ledgers, decoder, encoder, currentView, sideEffectsTracker,
+									tokenId, isFungibleToken, ledgers, decoder, encoder, currentView,
+									sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils, senderAddress);
 						} else if (AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
 							if (!dynamicProperties.areAllowancesEnabled()) {
@@ -354,12 +356,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
-							AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> (dynamicProperties.isHTSPrecompileCreateEnabled())
-							? new TokenCreatePrecompile(
+							AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
+							(dynamicProperties.isHTSPrecompileCreateEnabled())
+									? new TokenCreatePrecompile(
 									ledgers, decoder, encoder, updater, sigsVerifier, recordsHistorian,
-							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, functionId, senderAddress,
-							dynamicProperties.fundingAccount(), feeCalculator, precompilePricingUtils)
-							: null;
+									sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, functionId,
+									senderAddress,
+									dynamicProperties.fundingAccount(), feeCalculator, precompilePricingUtils)
+									: null;
 					default -> null;
 				};
 		if (precompile != null) {
@@ -424,7 +428,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		return result;
 	}
-
 	private void addContractCallResultToRecord(
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
@@ -432,22 +435,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final MessageFrame messageFrame
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
-			final var traceabilityOn = precompile.shouldAddTraceabilityFieldsToRecord();
-			final var evmFnResult = new EvmFnResult(
-					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
-					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
-					errorStatus.map(ResponseCodeEnum::name).orElse(null),
-					EvmFnResult.EMPTY,
+			PrecompileUtils.addContractCallResultToRecord(
 					this.gasRequirement,
-					Collections.emptyList(),
-					Collections.emptyList(),
-					EvmFnResult.EMPTY,
-					Collections.emptyMap(),
-					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
-					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
-					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
-					EntityId.fromAddress(senderAddress));
-			childRecord.setContractCallResult(evmFnResult);
+					childRecord,
+					result,
+					errorStatus,
+					messageFrame,
+					dynamicProperties.shouldExportPrecompileResults(),
+					precompile.shouldAddTraceabilityFieldsToRecord(),
+					senderAddress);
 		}
 	}
 
