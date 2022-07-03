@@ -20,20 +20,20 @@ package com.hedera.services.usage.util;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RandomGenerateMetaTest {
+class PrngMetaTest {
 	private final long msgBytes = 1_234;
 
 	@Test
 	void allGettersAndToStringWork() {
-		var expected = "RandomGenerateMeta{msgBytesUsed=1234}";
+		var expected = "PrngMeta{msgBytesUsed=1234}";
 
-		final var subject = RandomGenerateMeta.newBuilder()
+		final var subject = PrngMeta.newBuilder()
 				.msgBytesUsed(msgBytes)
 				.build();
 		assertEquals(msgBytes, subject.getMsgBytesUsed());
@@ -42,11 +42,11 @@ class RandomGenerateMetaTest {
 
 	@Test
 	void hashCodeAndEqualsWork() {
-		final var subject1 = RandomGenerateMeta.newBuilder()
+		final var subject1 = PrngMeta.newBuilder()
 				.msgBytesUsed(msgBytes)
 				.build();
 
-		final var subject2 = RandomGenerateMeta.newBuilder()
+		final var subject2 = PrngMeta.newBuilder()
 				.msgBytesUsed(msgBytes)
 				.build();
 
@@ -57,21 +57,21 @@ class RandomGenerateMetaTest {
 	@Test
 	void calculatesSizesAsExpected() {
 		var canonicalTxn = TransactionBody.newBuilder()
-				.setRandomGenerate(
-						RandomGenerateTransactionBody.newBuilder()
+				.setPrng(
+						PrngTransactionBody.newBuilder()
 								.setRange(10)
 				).build();
 
-		var subject = new RandomGenerateMeta(canonicalTxn.getRandomGenerate());
+		var subject = new PrngMeta(canonicalTxn.getPrng());
 		assertEquals(4, subject.getMsgBytesUsed());
 
 		// without range
 		canonicalTxn = TransactionBody.newBuilder()
-				.setRandomGenerate(
-						RandomGenerateTransactionBody.newBuilder()
+				.setPrng(
+						PrngTransactionBody.newBuilder()
 				).build();
 
-		subject = new RandomGenerateMeta(canonicalTxn.getRandomGenerate());
+		subject = new PrngMeta(canonicalTxn.getPrng());
 		assertEquals(0, subject.getMsgBytesUsed());
 	}
 }

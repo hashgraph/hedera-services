@@ -196,7 +196,7 @@
   "SystemUndelete": {
 	"DEFAULT": 0
   },
-  "RandomGenerate": {
+  "PRNG": {
 	"DEFAULT": 0.001
   }
 }
