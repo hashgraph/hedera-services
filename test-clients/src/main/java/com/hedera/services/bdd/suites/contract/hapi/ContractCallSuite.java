@@ -632,42 +632,50 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	private HapiApiSpec prngPrecompileWorks() {
 		final var range = 100;
-		final var prng = "PrngFromPrev3RunningHash";
+		final var seed = 10000;
+		final var prng = "PrngSystemContract";
+		final var gasToOffer = 400_000;
 		return defaultHapiSpec("prngPrecompileWorks")
 				.given(
 						cryptoCreate("bob"),
 						uploadInitCode(prng),
 						contractCreate(prng)
 				).when(
-						sourcing(() -> contractCall(prng, "random256BitGenerator")
+						sourcing(() -> contractCall(prng, "getPseudorandomSeed")
+								.gas(gasToOffer)
 								.payingWith("bob")
-								.via("randomBits")),
+								.via("randomBits")
+								.logged()),
 						getTxnRecord("randomBits")
 								.andAllChildRecords()
 								.hasChildRecordCount(1)
 								.hasChildRecords(recordWith()
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
-														"random256BitGenerator",
+														"getPseudorandomSeed",
 														prng,
 														isRandomResult(new Object[] {
 																new byte[32] }))))
 								.logged()
 				).then(
-						sourcing(() -> contractCall(prng, "randomNumberGeneratorInRange", range)
+						sourcing(() -> contractCall(prng, "getPseudorandomNumber", range, seed)
+								.gas(gasToOffer)
 								.payingWith("bob")
-								.via("randomNumber")),
+								.via("randomNumber")
+								.logged()),
 						getTxnRecord("randomNumber")
 								.andAllChildRecords()
 								.hasChildRecordCount(1)
 								.hasChildRecords(recordWith()
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
-														"randomNumberGeneratorInRange",
+														"getPseudorandomNumber",
 														prng,
 														isRandomResult(new Object[] {
-																Integer.valueOf(range) }))))
-								.logged());
+																Integer.valueOf(range) })))
+								)
+								.logged()
+				);
 	}
 
 	private HapiApiSpec imapUserExercise() {

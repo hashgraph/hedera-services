@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.esaulpaugh.headlong.abi.LongType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -32,12 +33,11 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.util.PrngLogic;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +62,7 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.resultFrom;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.RANDOM_GENERATE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -78,9 +78,9 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String PRECOMPILE_NAME = "PRNG";
 	private static final LongType WORD_DECODER = TypeFactory.create("uint32");
 	//random256BitGenerator(uint256)
-	static final int RANDOM_256_BIT_GENERATOR_SELECTOR = 0x267dc6a3;
+	static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
 	//randomNumberGeneratorInRange(uint32)
-	static final int RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x85b4610c;
+	static final int PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x3fc4d78a;
 	public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
 	private final PrngLogic prngLogic;
 	private final SideEffectsTracker tracker;
@@ -89,7 +89,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	private final RecordsHistorian recordsHistorian;
 	private final PrecompilePricingUtils pricingUtils;
 	private final Supplier<Instant> consensusNow;
-	private DecodingFacade decodingFacade;
+
+	private final LivePricesSource livePricesSource;
 
 	private long gasRequirement;
 	private TransactionBody.Builder transactionBody;
@@ -103,7 +104,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			final RecordsHistorian recordsHistorian,
 			final PrecompilePricingUtils pricingUtils,
 			final Supplier<Instant> consensusNow,
-			final DecodingFacade decodingFacade) {
+			final LivePricesSource livePricesSource) {
 		super(PRECOMPILE_NAME, gasCalculator);
 		this.prngLogic = prngLogic;
 		this.creator = creator;
@@ -111,7 +112,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		this.recordsHistorian = recordsHistorian;
 		this.pricingUtils = pricingUtils;
 		this.consensusNow = consensusNow;
-		this.decodingFacade = decodingFacade;
+		this.livePricesSource = livePricesSource;
 	}
 
 	@Override
@@ -125,21 +126,16 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 
 		try {
-			gasRequirement = pricingUtils.getMinimumPriceInTinybars(RANDOM_GENERATE,
-					Timestamp.newBuilder().setSeconds(consensusNow.get().getEpochSecond()).build());
+			gasRequirement = calculateGas();
 			validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
 			final var selector = input.getInt(0);
-			final var randomNum = switch (selector) {
-				case RANDOM_256_BIT_GENERATOR_SELECTOR -> random256BitGenerator();
-				case RANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> randomNumberGeneratorInRange(input);
-				default -> null;
-			};
+			final var randomNum = generatePseudoRandomData(selector, input);
 
-			childRecord = createSuccessfulChildRecord(randomNum, frame);
+			childRecord = createSuccessfulChildRecord(randomNum, frame, input);
 			result = SUCCESS_RESULT;
 
-			transactionBody = body(randomNum);
+			transactionBody = body(randomNum, input);
 		} catch (InvalidTransactionException e) {
 			childRecord = createUnsuccessfulChildRecord(e.getResponseCode(), frame, e.isReverting(),
 					e.getRevertReason());
@@ -163,6 +159,21 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 				: PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
+	private long calculateGas() {
+		final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
+		final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(consensusNow.get(),
+				HederaFunctionality.ContractCall);
+		return feesInTinyCents / currentGasPriceInTinyCents;
+	}
+
+	private Bytes generatePseudoRandomData(final int selector, final Bytes input) {
+		return switch (selector) {
+			case PSEUDORANDOM_SEED_GENERATOR_SELECTOR -> random256BitGenerator();
+			case PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> randomNumberGeneratorInRange(input);
+			default -> null;
+		};
+	}
+
 	private ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(
 			final ResponseCodeEnum status,
 			final MessageFrame frame,
@@ -177,28 +188,45 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		return childRecord;
 	}
 
-	private ExpirableTxnRecord.Builder createSuccessfulChildRecord(final Bytes randomNum, final MessageFrame frame) {
+	private ExpirableTxnRecord.Builder createSuccessfulChildRecord(
+			final Bytes randomNum,
+			final MessageFrame frame,
+			final Bytes input) {
 		final var childRecord = creator.createSuccessfulSyntheticRecord(
 				Collections.emptyList(), tracker, EMPTY_MEMO);
+
+		setPseudorandomData(childRecord, input, randomNum);
 		addContractCallResultToRecord(childRecord, randomNum, Optional.empty(), frame);
 		return childRecord;
 	}
 
-	public TransactionBody.Builder body(final Bytes randomNum) {
+	private void setPseudorandomData(final ExpirableTxnRecord.Builder childRecord, final Bytes input,
+			final Bytes randomNum) {
+		final var selector = input.getInt(0);
+		if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
+			childRecord.setPseudoRandomNumber(randomNum.toBigInteger().intValue());
+		} else if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
+			childRecord.setPseudoRandomBytes(randomNum.toArray());
+		}
+	}
+
+	public TransactionBody.Builder body(final Bytes randomNum, final Bytes input) {
 		this.transactionBody = TransactionBody.newBuilder();
 		if (randomNum == null) {
-			log.warn("Internal precompile failure");
-			transactionBody = null;
+			return transactionBody;
 		}
 		final var body = PrngTransactionBody.newBuilder();
-		if (randomNum.toArray().length == 32) {
-			body.setRange(randomNum.toInt());
+		final var selector = input.getInt(0);
+		if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
+			body.setRange(randomNum.toBigInteger().intValue());
 		}
-		return TransactionBody.newBuilder().setPrng(body);
+		return transactionBody.setPrng(body.build());
 	}
 
 	private Bytes randomNumberGeneratorInRange(final Bytes input) {
 		final var range = rangeValueFrom(input);
+		final var seed = seedValueFrom(input);
+
 		validateTrue(range >= 0, INVALID_PRNG_RANGE);
 
 		final var hashBytes = prngLogic.getNMinus3RunningHashBytes();
@@ -207,6 +235,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		final var randomNum = prngLogic.randomNumFromBytes(hashBytes, range);
+		// should we use seed instead of hashBytes ?
 		return padded(randomNum);
 	}
 
@@ -223,7 +252,11 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	private int rangeValueFrom(final Bytes input) {
-		return WORD_DECODER.decode(input.slice(4).toArrayUnsafe()).intValue();
+		return WORD_DECODER.decode(input.slice(4, 32).toArrayUnsafe()).intValue();
+	}
+
+	private int seedValueFrom(final Bytes input) {
+		return WORD_DECODER.decode(input.slice(36).toArrayUnsafe()).intValue();
 	}
 
 	private void addContractCallResultToRecord(

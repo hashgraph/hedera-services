@@ -1,5 +1,6 @@
 package com.hedera.services.txns.util;
 
+import com.google.common.math.LongMath;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -65,8 +66,8 @@ public class PrngLogic {
 	}
 
 	public final int randomNumFromBytes(final byte[] pseudoRandomBytes, final int range) {
-		final var initialBitsValue = Math.abs(ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt());
-		return (int) ((range * (long) initialBitsValue) >>> 32);
+		final var initialBitsValue = ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt();
+		return LongMath.mod(initialBitsValue, range);
 	}
 
 	public final byte[] getNMinus3RunningHashBytes() {

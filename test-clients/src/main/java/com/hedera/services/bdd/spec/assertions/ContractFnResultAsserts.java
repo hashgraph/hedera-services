@@ -50,9 +50,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
 	static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
-	Optional<String> resultAbi = Optional.empty();
-	Optional<Function<HapiApiSpec, Function<Object[], Optional<Throwable>>>> objArrayAssert = Optional.empty();
-
 	public static ContractFnResultAsserts resultWith() {
 		return new ContractFnResultAsserts();
 	}
