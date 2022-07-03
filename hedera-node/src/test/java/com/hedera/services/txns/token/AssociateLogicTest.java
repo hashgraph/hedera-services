@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -48,20 +49,30 @@ class AssociateLogicTest {
 	private final Id firstTokenId = new Id(1, 2, 3);
 	private final Id secondTokenId = new Id(2, 3, 4);
 
-	@Mock private AccountStore accountStore;
-	@Mock private TypedTokenStore tokenStore;
-	@Mock private Account modelAccount;
-	@Mock private Token firstModelToken;
-	@Mock private Token secondModelToken;
-	@Mock private TokenRelationship firstModelTokenRel;
-	@Mock private TokenRelationship secondModelTokenRel;
-	@Mock private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private UsageLimits usageLimits;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private Account modelAccount;
+	@Mock
+	private Token firstModelToken;
+	@Mock
+	private Token secondModelToken;
+	@Mock
+	private TokenRelationship firstModelTokenRel;
+	@Mock
+	private TokenRelationship secondModelTokenRel;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private AssociateLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		subject = new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
 	}
 
 	@Test
@@ -77,6 +88,7 @@ class AssociateLogicTest {
 
 		subject.associate(accountId, tokenIds);
 
+		verify(usageLimits).assertCreatableTokenRels(2);
 		verify(modelAccount).associateWith(tokens, tokenStore, false, false, dynamicProperties);
 		verify(accountStore).commitAccount(modelAccount);
 		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel, secondModelTokenRel));

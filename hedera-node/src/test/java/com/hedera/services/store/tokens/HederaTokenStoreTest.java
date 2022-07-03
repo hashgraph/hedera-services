@@ -30,7 +30,6 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -40,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
@@ -101,6 +101,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -161,7 +162,6 @@ class HederaTokenStoreTest {
 	private static final long sponsorBalance = 1_000L;
 	private static final TokenID misc = IdUtils.asToken("0.0.1");
 	private static final TokenID nonfungible = IdUtils.asToken("0.0.2");
-	private static final TokenID anotherMisc = IdUtils.asToken("0.0.2");
 	private static final int maxAutoAssociations = 1234;
 	private static final int alreadyUsedAutoAssocitaions = 123;
 	private static final boolean freezeDefault = true;
@@ -189,23 +189,15 @@ class HederaTokenStoreTest {
 	private static final NftId aNft = new NftId(0, 0, 2, 1234);
 	private static final NftId tNft = new NftId(0, 0, 2, 12345);
 	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
-	private static final EntityNumPair sponsorRelMiscKey = EntityNumPair.fromLongs(sponsor.getAccountNum(),
-			misc.getTokenNum());
-	private static final EntityNumPair sponsorRelNftKey = EntityNumPair.fromLongs(sponsor.getAccountNum(),
-			nonfungible.getTokenNum());
-	private static final EntityNumPair anotherFeeCollectorMiscKey = EntityNumPair.fromLongs(
-			anotherFeeCollector.getAccountNum(), misc.getTokenNum());
-
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private BackingTokens backingTokens;
 	private HederaLedger hederaLedger;
-
+	private UsageLimits usageLimits;
 	private MerkleToken token;
 	private MerkleToken nonfungibleToken;
 
@@ -299,10 +291,12 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
+		usageLimits = mock(UsageLimits.class);
+
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, sideEffectsTracker, properties,
-				tokenRelsLedger, nftsLedger, backingTokens);
+				ids, usageLimits, TEST_VALIDATOR, sideEffectsTracker,
+				properties, tokenRelsLedger, nftsLedger, backingTokens);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 	}
@@ -475,11 +469,20 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
 		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount);
-
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+	}
+
+	@Test
+	void cannotAutoAssociateIfUsageLimitsReached() {
+		given(tokenRelsLedger.contains(Pair.of(sponsor, misc))).willReturn(false);
+
+		final var status = subject.autoAssociate(sponsor, misc);
+
+		assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, status);
 	}
 
 	@Test
@@ -489,6 +492,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
@@ -519,6 +523,7 @@ class HederaTokenStoreTest {
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		final var status = subject.autoAssociate(sponsor, misc);
 
@@ -536,7 +541,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		// auto associate a fungible token
 		var status = subject.autoAssociate(sponsor, misc);
@@ -650,6 +655,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
 		given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -1340,6 +1346,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
 		given(accountsLedger.get(anotherFeeCollector, NUM_ASSOCIATIONS)).willReturn(1);
 		given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
@@ -1358,6 +1365,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
 		given(accountsLedger.get(anotherFeeCollector, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(anotherFeeCollector, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
+		given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 

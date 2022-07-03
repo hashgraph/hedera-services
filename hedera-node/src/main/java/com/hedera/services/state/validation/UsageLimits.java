@@ -136,6 +136,10 @@ public class UsageLimits {
 		ensure( candidateNum <= dynamicProperties.maxNumTokenRels());
 	}
 
+	public boolean areCreatableTokenRels(final int n) {
+		return (updatedNumTokenRels() + n) <= dynamicProperties.maxNumTokenRels();
+	}
+
 	public void assertCreatableTopics(final int n) {
 		final var candidateNum = updatedNumTopics() + n;
 		ensure( candidateNum <= dynamicProperties.maxNumTopics());

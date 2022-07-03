@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,7 +41,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AutoAssocTokenRelsCommitInterceptorTest {
 	@Mock
-	protected SideEffectsTracker sideEffectsTracker;
+	private UsageLimits usageLimits;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private AutoAssocTokenRelsCommitInterceptor subject;
 

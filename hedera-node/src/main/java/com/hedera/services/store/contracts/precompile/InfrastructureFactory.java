@@ -127,7 +127,8 @@ public class InfrastructureFactory {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		return new HederaTokenStore(
-				NOOP_ID_SOURCE, validator, sideEffects, dynamicProperties, tokenRelsLedger, nftsLedger, backingTokens);
+				NOOP_ID_SOURCE, usageLimits, validator, sideEffects,
+				dynamicProperties, tokenRelsLedger, nftsLedger, backingTokens);
 	}
 
 	public BurnLogic newBurnLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
@@ -139,7 +140,7 @@ public class InfrastructureFactory {
 	}
 
 	public AssociateLogic newAssociateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
-		return new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		return new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
 	}
 
 	public DissociateLogic newDissociateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {

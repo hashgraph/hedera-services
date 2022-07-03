@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -60,6 +61,8 @@ class TokenAssociateTransitionLogicTest {
 	private TokenAssociateTransitionLogic subject;
 
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
 	private AccountStore accountStore;
@@ -72,7 +75,7 @@ class TokenAssociateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		associateLogic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		associateLogic = new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
 		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
 	}
 

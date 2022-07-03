@@ -167,9 +167,11 @@ class UsageLimitsTest {
 		given(dynamicProperties.maxNumTokenRels()).willReturn(6L);
 		given(stateChildren.numTokenRels()).willReturn(3L);
 
+		assertTrue(subject.areCreatableTokenRels(3));
 		assertDoesNotThrow(() -> subject.assertCreatableTokenRels(3));
 		assertEquals(3L, subject.getNumTokenRels());
 		assertFailsWith(() -> subject.assertCreatableTokenRels(4), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+		assertFalse(subject.areCreatableTokenRels(4));
 	}
 
 	@Test

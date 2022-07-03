@@ -38,6 +38,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -58,6 +59,8 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
@@ -95,6 +98,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
 		tokenStore = new HederaTokenStore(
 				ids,
+				usageLimits,
 				TestContextValidator.TEST_VALIDATOR,
 				liveSideEffects,
 				new MockGlobalDynamicProps(),

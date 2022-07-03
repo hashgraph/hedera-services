@@ -86,6 +86,7 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
+			final UsageLimits usageLimits,
 			final UniqueTokensLinkManager uniqueTokensLinkManager,
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
 	) {
@@ -94,7 +95,8 @@ public interface StoresModule {
 				MerkleUniqueToken::new,
 				new BackingNfts(uniqueTokens),
 				new ChangeSummaryManager<>());
-		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
+		final var uniqueTokensCommitInterceptor = new LinkAwareUniqueTokensCommitInterceptor(
+				usageLimits, uniqueTokensLinkManager);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		return uniqueTokensLedger;
 	}
@@ -102,8 +104,7 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-			final BackingStore<TokenID, MerkleToken> backingTokens,
-			final SideEffectsTracker sideEffectsTracker
+			final BackingStore<TokenID, MerkleToken> backingTokens
 	) {
 		return new TransactionalLedger<>(
 				TokenProperty.class,
@@ -120,6 +121,7 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
+			final UsageLimits usageLimits,
 			final TransactionContext txnCtx,
 			final SideEffectsTracker sideEffectsTracker,
 			final TokenRelsLinkManager relsLinkManager,
@@ -131,7 +133,8 @@ public interface StoresModule {
 				new BackingTokenRels(tokenAssociations),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var interceptor = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);
+		final var interceptor = new LinkAwareTokenRelsCommitInterceptor(
+				usageLimits, txnCtx, sideEffectsTracker, relsLinkManager);
 		tokenRelsLedger.setCommitInterceptor(interceptor);
 		return tokenRelsLedger;
 	}

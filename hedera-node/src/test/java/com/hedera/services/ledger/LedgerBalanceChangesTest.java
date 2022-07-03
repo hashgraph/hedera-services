@@ -45,6 +45,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -107,6 +108,8 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private EntityIdSource ids;
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private EntityCreator creator;
 	@Mock
 	private OptionValidator validator;
@@ -151,6 +154,7 @@ class LedgerBalanceChangesTest {
 		final var sideEffectsTracker = new SideEffectsTracker();
 		tokenStore = new HederaTokenStore(
 				ids,
+				usageLimits,
 				validator,
 				sideEffectsTracker,
 				dynamicProperties,
@@ -250,6 +254,7 @@ class LedgerBalanceChangesTest {
 		final var sideEffectsTracker = new SideEffectsTracker();
 		tokenStore = new HederaTokenStore(
 				ids,
+				usageLimits,
 				validator,
 				sideEffectsTracker,
 				dynamicProperties,

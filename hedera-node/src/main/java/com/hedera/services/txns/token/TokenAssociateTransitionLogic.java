@@ -40,7 +40,10 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final AssociateLogic associateLogic;
 
 	@Inject
-	public TokenAssociateTransitionLogic(final TransactionContext txnCtx, final AssociateLogic associateLogic) {
+	public TokenAssociateTransitionLogic(
+			final TransactionContext txnCtx,
+			final AssociateLogic associateLogic
+	) {
 		this.txnCtx = txnCtx;
 		this.associateLogic = associateLogic;
 	}

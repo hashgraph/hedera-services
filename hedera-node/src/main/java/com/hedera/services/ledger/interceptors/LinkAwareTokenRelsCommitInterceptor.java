@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -48,6 +49,7 @@ import java.util.TreeSet;
  * cost of an EVM transaction, this overhead will still be negligible.
  */
 public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommitInterceptor {
+	private boolean addsOrRemoves;
 	// The entity numbers of all the accounts whose relationships were touched in this transaction
 	private final Set<EntityNum> touched = new TreeSet<>();
 	// Map from touched account number to all dissociated token numbers in this transaction
@@ -55,14 +57,17 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 	// Map from touched account number to all new relationships created in this transaction
 	private final Map<EntityNum, List<MerkleTokenRelStatus>> addedRels = new TreeMap<>();
 
+	private final UsageLimits usageLimits;
 	private final TokenRelsLinkManager relsLinkManager;
 
 	public LinkAwareTokenRelsCommitInterceptor(
+			final UsageLimits usageLimits,
 			final TransactionContext txnCtx,
 			final SideEffectsTracker sideEffectsTracker,
 			final TokenRelsLinkManager relsLinkManager
 	) {
 		super(txnCtx, sideEffectsTracker);
+		this.usageLimits = usageLimits;
 		this.relsLinkManager = relsLinkManager;
 	}
 
@@ -75,6 +80,7 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 	public void preview(
 			final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> pendingChanges
 	) {
+		addsOrRemoves = false;
 		final var n = pendingChanges.size();
 		if (n == 0) {
 			return;
@@ -89,6 +95,7 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 				// Simply changing the properties of an existing relationship doesn't affect links
 				continue;
 			}
+			addsOrRemoves = true;
 			final var id = pendingChanges.id(i);
 			final var accountNum = EntityNum.fromLong(id.getLeft().getAccountNum());
 			touched.add(accountNum);
@@ -106,5 +113,12 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 		}
 		touched.forEach(accountNum ->
 				relsLinkManager.updateLinks(accountNum, removedNums.get(accountNum), addedRels.get(accountNum)));
+	}
+
+	@Override
+	public void postCommit() {
+		if (addsOrRemoves) {
+			usageLimits.refreshTokenRels();
+		}
 	}
 }
