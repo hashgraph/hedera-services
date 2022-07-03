@@ -196,9 +196,7 @@ public class PrecompilePricingUtils {
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
 		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
 		APPROVE(CryptoApproveAllowance, DEFAULT),
-		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
-
-		RANDOM_GENERATE(PRNG, DEFAULT);
+		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;
