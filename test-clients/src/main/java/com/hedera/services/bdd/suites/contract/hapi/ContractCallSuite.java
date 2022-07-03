@@ -632,7 +632,6 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	private HapiApiSpec prngPrecompileWorks() {
 		final var range = 100;
-		final var seed = 10000;
 		final var prng = "PrngSystemContract";
 		final var gasToOffer = 400_000;
 		return defaultHapiSpec("prngPrecompileWorks")
@@ -650,6 +649,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.andAllChildRecords()
 								.hasChildRecordCount(1)
 								.hasChildRecords(recordWith()
+										.pseudoRandomBytes()
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
 														"getPseudorandomSeed",
@@ -658,7 +658,7 @@ public class ContractCallSuite extends HapiApiSuite {
 																new byte[32] }))))
 								.logged()
 				).then(
-						sourcing(() -> contractCall(prng, "getPseudorandomNumber", range, seed)
+						sourcing(() -> contractCall(prng, "getPseudorandomNumber", range)
 								.gas(gasToOffer)
 								.payingWith("bob")
 								.via("randomNumber")
@@ -667,6 +667,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.andAllChildRecords()
 								.hasChildRecordCount(1)
 								.hasChildRecords(recordWith()
+										.pseudoRandomNumber(range)
 										.contractCallResult(resultWith()
 												.resultViaFunctionName(
 														"getPseudorandomNumber",

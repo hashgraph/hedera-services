@@ -12,9 +12,9 @@ contract PrngSystemContract {
         randomBytes = abi.decode(result, (bytes32));
     }
 
-    function getPseudorandomNumber(uint32 range, uint256 seed) external returns (uint32 randomNum) {
+    function getPseudorandomNumber(uint32 range) external returns (uint32 randomNum) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
-            abi.encodeWithSelector(IPrngSystemContract.getPseudorandomNumber.selector, range, seed));
+            abi.encodeWithSelector(IPrngSystemContract.getPseudorandomNumber.selector, range));
         require(success);
         randomNum = abi.decode(result, (uint32));
     }

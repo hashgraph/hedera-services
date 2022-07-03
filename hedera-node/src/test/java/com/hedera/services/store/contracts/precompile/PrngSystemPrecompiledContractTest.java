@@ -96,8 +96,6 @@ class PrngSystemPrecompiledContractTest {
 	@Mock
 	private LivePricesSource livePricesSource;
 	@Mock
-	private GlobalDynamicProperties properties;
-	@Mock
 	private HederaStackedWorldStateUpdater updater;
 
 	private PrngLogic logic;
@@ -191,6 +189,30 @@ class PrngSystemPrecompiledContractTest {
 	}
 
 	@Test
+	void happyPathWithRandomSeedGeneratedWorks() throws InterruptedException {
+		final var input = random256BitGeneratorInput();
+		initialSetUp();
+		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+
+		final var result = subject.computePrecompile(input, frame);
+
+		assertEquals(SUCCESS.getNumber(), result.getOutput().toInt());
+	}
+
+	@Test
+	void unknownExceptionFailsTheCall() throws InterruptedException {
+		final var input = random256BitGeneratorInput();
+		initialSetUp();
+		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willThrow(IndexOutOfBoundsException.class);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+
+		final var result = subject.computePrecompile(input, frame);
+
+		assertEquals(FAIL_INVALID.getNumber(), result.getOutput().toInt());
+	}
+
+	@Test
 	void selectorMustBeFullyPresent() {
 		final var fragmentSelector = Bytes.of(0xab);
 		assertNull(subject.generatePseudoRandomData(fragmentSelector.toInt(), null));
@@ -257,6 +279,22 @@ class PrngSystemPrecompiledContractTest {
 	}
 
 	@Test
+	void childRecordHasExpectationsForRandomSeed() {
+		final var randomBytes = Bytes.wrap(TxnUtils.randomUtf8Bytes(32));
+		setUpForChildRecord();
+		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
+		final var childRecord = subject.createSuccessfulChildRecord(randomBytes,
+				frame, random256BitGeneratorInput());
+
+		assertNotNull(childRecord);
+		assertEquals(32, childRecord.getPseudoRandomBytes().length);
+		assertEquals(-1, childRecord.getPseudoRandomNumber());
+		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
+		assertArrayEquals(randomBytes.toArray(), Bytes.wrap(childRecord.getContractCallResult().getResult()).toArray());
+		assertEquals(null, childRecord.getContractCallResult().getError());
+	}
+
+	@Test
 	void failedChildRecordHasExpectations() {
 		setUpForChildRecord();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
@@ -279,7 +317,7 @@ class PrngSystemPrecompiledContractTest {
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-		final var msg = assertThrows(InvalidTransactionException.class,() -> subject.computePrecompile(input, frame));
+		final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
 
 		assertTrue(msg.getMessage().contains("PRNG precompile frame had no parent updater"));
 	}

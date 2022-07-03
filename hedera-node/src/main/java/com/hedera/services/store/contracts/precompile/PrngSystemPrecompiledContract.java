@@ -81,7 +81,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	//random256BitGenerator(uint256)
 	static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
 	//randomNumberGeneratorInRange(uint32)
-	static final int PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0x3fc4d78a;
+	static final int PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0xb781b004;
 	public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
 	private final PrngLogic prngLogic;
 	private final SideEffectsTracker tracker;
@@ -178,7 +178,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
 	private Bytes randomNumberGeneratorInRange(final Bytes input) {
 		final var range = rangeValueFrom(input);
-//		final var seed = seedValueFrom(input);
 
 		validateTrue(range >= 0, INVALID_PRNG_RANGE);
 
@@ -188,7 +187,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		final var randomNum = prngLogic.randomNumFromBytes(hashBytes, range);
-		// should we use seed instead of hashBytes ?
 		return padded(randomNum);
 	}
 
@@ -238,7 +236,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	public TransactionBody.Builder body(final Bytes randomNum, final Bytes input) {
+	TransactionBody.Builder body(final Bytes randomNum, final Bytes input) {
 		final var txnBody = TransactionBody.newBuilder();
 		if (randomNum == null) {
 			return txnBody;
@@ -257,10 +255,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
 	private int rangeValueFrom(final Bytes input) {
 		return WORD_DECODER.decode(input.slice(4, 32).toArrayUnsafe()).intValue();
-	}
-
-	private int seedValueFrom(final Bytes input) {
-		return WORD_DECODER.decode(input.slice(36).toArrayUnsafe()).intValue();
 	}
 
 	private void addContractCallResultToRecord(

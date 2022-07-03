@@ -81,6 +81,31 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts pseudoRandomBytes() {
+		this.<byte[]>registerTypedProvider("pseudoRandomBytes", spec -> prngBytes -> {
+			try {
+				Assertions.assertNotNull(prngBytes, "Null pseudoRandomBytes!");
+				Assertions.assertEquals(256, prngBytes.length, "Wrong pseudoRandomBytes!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts pseudoRandomNumber(final int range) {
+		this.<Integer>registerTypedProvider("pseudoRandomNumber", spec -> prngNumber -> {
+			try {
+				Assertions.assertTrue(prngNumber >= 0 && prngNumber < range, "Wrong pseudoRandomNumber!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {
