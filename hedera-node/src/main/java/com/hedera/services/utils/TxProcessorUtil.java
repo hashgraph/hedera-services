@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -119,7 +118,7 @@ public class TxProcessorUtil {
 				usedGas, txGasLimit - txGasLimit * maxRefundPercent / 100);
 	}
 
-	public static void senderCanAffordGas(Wei gasCost, Wei upfrontCost, MutableAccount mutableSender) {
+	public static void chargeGas(Wei gasCost, Wei upfrontCost, MutableAccount mutableSender) {
 		final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
 		validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 		mutableSender.decrementBalance(gasCost);
@@ -133,21 +132,6 @@ public class TxProcessorUtil {
 	public static MutableAccount getMutableRelayer(HederaWorldState.Updater updater, Account relayer) {
 		final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
 		return relayerAccount.getMutable();
-	}
-
-	public static PrecompileMessage constructPrecompileMessage(Account sender, Instant consensusTime,
-															   WorldLedgers ledgers,
-															   Bytes payload, long gasLimit, long value,
-															   Id token, long intrinsicGas) {
-		return PrecompileMessage.builder()
-				.setLedgers(ledgers)
-				.setSenderAddress(sender.canonicalAddress())
-				.setValue(Wei.of(value))
-				.setConsensusTime(consensusTime)
-				.setGasRemaining(gasLimit - intrinsicGas)
-				.setInputData(payload)
-				.setTokenID(token.asGrpcToken())
-				.build();
 	}
 
 	public static long calculateRefund(long gasLimit, long gasPrice, long gasUsedByTransaction,
@@ -217,10 +201,4 @@ public class TxProcessorUtil {
 					stateChanges);
 		}
 	}
-
-
-	private TxProcessorUtil() {
-		throw new UnsupportedOperationException("Utility Class");
-	}
 }
-

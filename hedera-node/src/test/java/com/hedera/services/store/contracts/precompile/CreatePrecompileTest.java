@@ -135,7 +135,7 @@ class CreatePrecompileTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
@@ -289,7 +289,7 @@ class CreatePrecompileTest {
 		subject.prepareComputation(pretendArguments, a -> a);
 
 		final var precompile = subject.getPrecompile();
-		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(infoProvider));
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(precompileInfoProvider));
 
 		// then
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
@@ -819,7 +819,7 @@ class CreatePrecompileTest {
 	}
 
 	private void givenInfoProvider(){
-		infoProvider = new EVMInfoProvider(frame);
+		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 	}
 
 	private void givenValidGasCalculation() {

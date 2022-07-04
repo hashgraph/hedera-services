@@ -145,28 +145,17 @@ abstract class EvmTxProcessor {
 	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
 	 * TransactionProcessingResult}
 	 *
-	 * @param sender
-	 * 		The origin {@link Account} that initiates the transaction
-	 * @param receiver
-	 * 		the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the newly created address
-	 * @param gasPrice
-	 * 		GasPrice to use for gas calculations
-	 * @param gasLimit
-	 * 		Externally provided gas limit
-	 * @param value
-	 * 		Evm transaction value (HBars)
-	 * @param payload
-	 * 		Transaction payload. For Create transactions, the bytecode + constructor arguments
-	 * @param contractCreation
-	 * 		Whether or not this is a contract creation transaction
-	 * @param consensusTime
-	 * 		Current consensus time
-	 * @param isStatic
-	 * 		Whether the execution is static
-	 * @param expiryOracle
-	 * 		the oracle to use when determining the expiry of newly allocated storage
-	 * @param mirrorReceiver
-	 * 		the mirror form of the receiving {@link Address}; or the newly created address
+	 * @param sender           The origin {@link Account} that initiates the transaction
+	 * @param receiver         the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the newly created address
+	 * @param gasPrice         GasPrice to use for gas calculations
+	 * @param gasLimit         Externally provided gas limit
+	 * @param value            Evm transaction value (HBars)
+	 * @param payload          Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation Whether or not this is a contract creation transaction
+	 * @param consensusTime    Current consensus time
+	 * @param isStatic         Whether the execution is static
+	 * @param expiryOracle     the oracle to use when determining the expiry of newly allocated storage
+	 * @param mirrorReceiver   the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(
@@ -190,19 +179,19 @@ abstract class EvmTxProcessor {
 		final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		final MutableAccount mutableSender = TxProcessorUtil.getMutableSender(updater,sender);
+		final MutableAccount mutableSender = TxProcessorUtil.getMutableSender(updater, sender);
 
 		var allowanceCharged = Wei.ZERO;
 		MutableAccount mutableRelayer = null;
 		if (relayer != null) {
-			mutableRelayer = TxProcessorUtil.getMutableRelayer(updater,relayer);
+			mutableRelayer = TxProcessorUtil.getMutableRelayer(updater, relayer);
 		}
 		if (!isStatic) {
 			if (intrinsicGas > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 			if (relayer == null) {
-				TxProcessorUtil.senderCanAffordGas(gasCost, upfrontCost, mutableSender);
+				TxProcessorUtil.chargeGas(gasCost, upfrontCost, mutableSender);
 			} else {
 				allowanceCharged = TxProcessorUtil.chargeForEth(
 						userOfferedGasPrice, gasCost, maxGasAllowanceInTinybars, mutableSender,
@@ -248,8 +237,8 @@ abstract class EvmTxProcessor {
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 
-		var gasUsedByTransaction = TxProcessorUtil.calculateGasUsedByTX(gasCalculator,gasLimit,
-				                           initialFrame, dynamicProperties.maxGasRefundPercentage());
+		var gasUsedByTransaction = TxProcessorUtil.calculateGasUsedByTX(gasCalculator, gasLimit,
+				initialFrame, dynamicProperties.maxGasRefundPercentage());
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 		if (isStatic) {

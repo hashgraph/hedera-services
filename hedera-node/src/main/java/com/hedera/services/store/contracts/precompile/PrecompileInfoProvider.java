@@ -26,7 +26,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-public interface InfoProvider {
+public interface PrecompileInfoProvider {
 
 	Wei getValue();
 

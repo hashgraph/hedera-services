@@ -24,7 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -80,7 +80,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(InfoProvider provider) {
+	public void run(PrecompileInfoProvider provider) {
 		Objects.requireNonNull(setApprovalForAllWrapper);
 		/* --- Build the necessary infrastructure to execute the transaction --- */
 		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

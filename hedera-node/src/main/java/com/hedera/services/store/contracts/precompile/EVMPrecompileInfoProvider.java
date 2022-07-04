@@ -28,7 +28,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-public record EVMInfoProvider(MessageFrame messageFrame) implements InfoProvider {
+public record EVMPrecompileInfoProvider(MessageFrame messageFrame) implements PrecompileInfoProvider {
 
 	@Override
 	public Wei getValue() {

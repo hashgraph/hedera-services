@@ -36,7 +36,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -199,7 +199,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final InfoProvider provider) {
+	public void run(final PrecompileInfoProvider provider) {
 		Objects.requireNonNull(tokenCreateOp);
 
 		/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
@@ -239,7 +239,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void handleSentHbars(final InfoProvider provider) {
+	public void handleSentHbars(final PrecompileInfoProvider provider) {
 		final var timestampSeconds = provider.getTimestamp();
 		final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 		final var gasPriceInTinybars = feeCalculator.get()
@@ -338,7 +338,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 	}
 
 	private boolean validateAdminKey(
-			final InfoProvider provider,
+			final PrecompileInfoProvider provider,
 			final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 	) {
 		final var key = tokenKeyWrapper.key();

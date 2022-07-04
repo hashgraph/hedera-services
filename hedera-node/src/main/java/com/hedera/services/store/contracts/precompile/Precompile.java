@@ -64,7 +64,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
  *     {@link Precompile#getMinimumFeeInTinybars(Timestamp)} for the minimum fee that should
  *     be charged; and {@link Precompile#addImplicitCostsIn(TxnAccessor)} to incorporate any
  *     hidden costs implied by the {@link TxnAccessor} created from the synthetic transaction.</li>
- *     <li>Third, the executor invokes {@link Precompile#run(InfoProvider)}, which is expected
+ *     <li>Third, the executor invokes {@link Precompile#run(PrecompileInfoProvider)}, which is expected
  *     to have side-effects on the {@link com.hedera.services.store.contracts.WorldLedgers} in
  *     the provided message frame.</li>
  *     <li>Finally, if {@code run()} completes without an exception, the executor calls
@@ -88,7 +88,7 @@ public interface Precompile {
 	}
 
 	// Change the world state through the given frame
-	void run(InfoProvider infoProvider);
+	void run(PrecompileInfoProvider precompileInfoProvider);
 
 	long getGasRequirement(long blockTimestamp);
 
@@ -96,7 +96,7 @@ public interface Precompile {
 		// No-op
 	}
 
-	default void handleSentHbars(InfoProvider provider) {
+	default void handleSentHbars(PrecompileInfoProvider provider) {
 		if (!Objects.equals(Wei.ZERO, provider.getValue())) {
 			provider.setRevertReason(INVALID_TRANSFER);
 			provider.setState(REVERT);

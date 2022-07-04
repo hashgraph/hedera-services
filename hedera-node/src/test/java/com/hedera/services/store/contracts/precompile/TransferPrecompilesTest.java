@@ -143,7 +143,7 @@ class TransferPrecompilesTest {
 	@Mock
 	private PrecompileMessage precompileMessage;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private MessageFrame parentFrame;
 	@Mock
@@ -272,7 +272,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
@@ -331,7 +331,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -385,7 +385,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
 		assertEquals(statusResult, result);
 	}
@@ -437,7 +437,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -494,7 +494,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -552,7 +552,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -615,7 +615,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -682,7 +682,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -743,7 +743,7 @@ class TransferPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertNotEquals(successResult, result);
@@ -927,9 +927,9 @@ class TransferPrecompilesTest {
 	}
 
 	private void givenInfoProvider() {
-		infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
-				new DirectCallsInfoProvider(precompileMessage) :
-				new EVMInfoProvider(frame);
+		precompileInfoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
+				new DirectCallsPrecompileInfoProvider(precompileMessage) :
+				new EVMPrecompileInfoProvider(frame);
 	}
 
 	private void givenLedgers() {

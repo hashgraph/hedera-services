@@ -143,7 +143,7 @@ class AssociatePrecompileTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private MessageFrame parentFrame;
 	@Mock
@@ -207,7 +207,7 @@ class AssociatePrecompileTest {
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
 				infrastructureFactory);
-		infoProvider = new EVMInfoProvider(frame);
+		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -240,7 +240,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -275,7 +275,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(failInvalidResult, result);
@@ -329,7 +329,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -384,7 +384,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(infoProvider);
+		subject.computeInternal(precompileInfoProvider);
 
 		verify(wrappedLedgers, never()).commit();
 	}
@@ -419,7 +419,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -463,7 +463,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -507,7 +507,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -551,7 +551,7 @@ class AssociatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);

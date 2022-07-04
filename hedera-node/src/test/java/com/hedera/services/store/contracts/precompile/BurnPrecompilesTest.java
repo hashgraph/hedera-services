@@ -136,7 +136,7 @@ class BurnPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
@@ -210,7 +210,7 @@ class BurnPrecompilesTest {
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
 				infrastructureFactory);
-		infoProvider = new EVMInfoProvider(frame);
+		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -242,7 +242,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(invalidSigResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -275,7 +275,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(failInvalidResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -309,7 +309,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(successResult, result);
 		verify(burnLogic).burn(nonFungibleId, 0, targetSerialNos);
@@ -341,7 +341,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(infoProvider);
+		subject.computeInternal(precompileInfoProvider);
 
 		verify(wrappedLedgers, never()).commit();
 	}
@@ -371,7 +371,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(burnSuccessResultWith49Supply, result);
 		verify(burnLogic).burn(fungibleId, AMOUNT, List.of());
@@ -422,7 +422,7 @@ class BurnPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(burnSuccessResultWithLongMaxValueSupply, result);
 		verify(burnLogic).burn(fungibleId, Long.MAX_VALUE, List.of());

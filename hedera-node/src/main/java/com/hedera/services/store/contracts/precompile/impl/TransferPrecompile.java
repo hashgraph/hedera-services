@@ -31,7 +31,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -131,7 +131,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final InfoProvider provider) {
+	public void run(final PrecompileInfoProvider provider) {
 		final Optional<ContractAliases> aliases = !provider.isDirectTokenCall() ?
 				Optional.of(updater.aliases()) :
 				Optional.empty();

@@ -23,9 +23,9 @@ package com.hedera.services.store.contracts.precompile.utils;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.DirectCallsInfoProvider;
-import com.hedera.services.store.contracts.precompile.EVMInfoProvider;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.DirectCallsPrecompileInfoProvider;
+import com.hedera.services.store.contracts.precompile.EVMPrecompileInfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -69,21 +69,21 @@ public final class KeyActivationUtils {
 	 * @return whether the implied key is active
 	 */
 	public static boolean validateKey(
-			final InfoProvider provider,
+			final PrecompileInfoProvider provider,
 			final Address target,
 			final KeyActivationTest activationTest,
 			final WorldLedgers ledgers,
 			final Optional<ContractAliases> aliases
 	) {
 		//logic for direct token account calls
-		if (provider instanceof DirectCallsInfoProvider directProvider) {
+		if (provider instanceof DirectCallsPrecompileInfoProvider directProvider) {
 			final var message = directProvider.precompileMessage();
 			return activationTest.apply(false, target, message.getSenderAddress(), ledgers);
 		}
 		if (aliases.isEmpty()) {
 			return false;
 		}
-		final var frame = ((EVMInfoProvider) provider).messageFrame();
+		final var frame = ((EVMPrecompileInfoProvider) provider).messageFrame();
 		final var recipient = aliases.get().resolveForEvm(frame.getRecipientAddress());
 		final var sender = aliases.get().resolveForEvm(frame.getSenderAddress());
 

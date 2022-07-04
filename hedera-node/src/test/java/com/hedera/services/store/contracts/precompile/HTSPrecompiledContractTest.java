@@ -110,6 +110,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,7 +138,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private PrecompileMessage precompileMessage;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
@@ -199,7 +200,7 @@ class HTSPrecompiledContractTest {
 
 	@Test
 	void gasRequirementReturnsCorrectValueForInvalidInput() {
-		Bytes input = Bytes.of(4,3,2,1);
+		Bytes input = Bytes.of(4, 3, 2, 1);
 		// when
 		var gas = subject.gasRequirement(input);
 
@@ -211,7 +212,7 @@ class HTSPrecompiledContractTest {
 	void computeCostedRevertsTheFrameIfTheFrameIsStatic() {
 		given(messageFrame.isStatic()).willReturn(true);
 
-		final var result = subject.computeCosted(Bytes.of(1,2,3,4), messageFrame);
+		final var result = subject.computeCosted(Bytes.of(1, 2, 3, 4), messageFrame);
 
 		verify(messageFrame).setRevertReason(Bytes.of("HTS precompiles are not static".getBytes()));
 		assertNull(result.getValue());
@@ -538,7 +539,7 @@ class HTSPrecompiledContractTest {
 	void computeReturnsNullForWrongInput() {
 		// given
 		givenFrameContext();
-		Bytes input = Bytes.of(0,0,0,0);
+		Bytes input = Bytes.of(0, 0, 0, 0);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when
@@ -566,6 +567,7 @@ class HTSPrecompiledContractTest {
 		var result = subject.computePrecompile(input, messageFrame);
 		assertNull(result.getOutput());
 	}
+
 	@Test
 	void computeReturnsNullForTokenCreateWhenNotEnabled() {
 		// given
@@ -586,7 +588,7 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
-	void callHtsDirectlyCorrectImplementationForDirectTokenERC20NameCall(){
+	void callHtsDirectlyCorrectImplementationForDirectTokenERC20NameCall() {
 		//given
 		givenPrecompileMessageContext();
 		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -610,7 +612,7 @@ class HTSPrecompiledContractTest {
 		//when
 		subject.callHtsPrecompileDirectly(precompileMessage);
 		//then
-		verify(precompileMessage,times(1)).setHtsOutputResult(Bytes.of(1));
+		verify(precompileMessage, times(1)).setHtsOutputResult(Bytes.of(1));
 	}
 
 	@Test
@@ -630,7 +632,7 @@ class HTSPrecompiledContractTest {
 		givenPricingUtilsContext();
 		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
-		given(infoProvider.getRemainingGas()).willReturn(0L);
+		given(precompileInfoProvider.getRemainingGas()).willReturn(0L);
 		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
@@ -645,7 +647,7 @@ class HTSPrecompiledContractTest {
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
-		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(infoProvider));
+		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(precompileInfoProvider));
 	}
 
 	@Test
@@ -653,7 +655,7 @@ class HTSPrecompiledContractTest {
 		// given
 		givenFrameContext();
 		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
-		given(infoProvider.getValue()).willReturn(Wei.of(1));
+		given(precompileInfoProvider.getValue()).willReturn(Wei.of(1));
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -664,10 +666,23 @@ class HTSPrecompiledContractTest {
 
 		// then
 		final var precompile = subject.getPrecompile();
-		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(infoProvider));
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(precompileInfoProvider));
 
-		verify(infoProvider).setRevertReason(INVALID_TRANSFER);
-		verify(infoProvider).setState(REVERT);
+		verify(precompileInfoProvider).setRevertReason(INVALID_TRANSFER);
+		verify(precompileInfoProvider).setState(REVERT);
+	}
+
+	@Test
+	void directPrecompileInfoProviderFields() {
+		given(precompileMessage.getConsensusTime()).willReturn(1L);
+		given(precompileMessage.getSenderAddress()).willReturn(contractAddress);
+		given(precompileMessage.getInputData()).willReturn(successResult);
+
+		precompileInfoProvider = new DirectCallsPrecompileInfoProvider(precompileMessage);
+
+		assertEquals(precompileInfoProvider.getTimestamp(), 1L);
+		assertEquals(precompileInfoProvider.getSenderAddress(), contractAddress);
+		assertEquals(precompileInfoProvider.getInputData(), successResult);
 	}
 
 	private void givenFrameContext() {
@@ -676,7 +691,7 @@ class HTSPrecompiledContractTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 
-	private void givenPrecompileMessageContext(){
+	private void givenPrecompileMessageContext() {
 		given(precompileMessage.getSenderAddress()).willReturn(contractAddress);
 		given(precompileMessage.getLedgers()).willReturn(wrappedLedgers);
 		given(precompileMessage.getConsensusTime()).willReturn(TEST_CONSENSUS_TIME);

@@ -136,7 +136,7 @@ class MintPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
@@ -209,7 +209,7 @@ class MintPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory);
-		infoProvider = new EVMInfoProvider(frame);
+		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
@@ -240,7 +240,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -274,7 +274,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(failInvalidResult, result);
@@ -316,7 +316,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -357,7 +357,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(infoProvider);
+		subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		verify(wrappedLedgers, never()).commit();
@@ -388,7 +388,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWith10Supply, result);
 		// and:
@@ -422,7 +422,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		assertFailsWith(() -> subject.computeInternal(infoProvider), FAIL_INVALID);
+		assertFailsWith(() -> subject.computeInternal(precompileInfoProvider), FAIL_INVALID);
 	}
 
 	@Test
@@ -470,7 +470,7 @@ class MintPrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		// then:
 		assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
 		// and:

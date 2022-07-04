@@ -22,7 +22,7 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldStateAccount;
-import com.hedera.services.store.contracts.precompile.EVMInfoProvider;
+import com.hedera.services.store.contracts.precompile.EVMPrecompileInfoProvider;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +47,7 @@ class KeyActivationUtilsTest {
 	@Mock
 	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
-	EVMInfoProvider evmInfoProvider;
+	EVMPrecompileInfoProvider evmInfoProvider;
 
 	@Test
 	void testsAccountIsToken() {

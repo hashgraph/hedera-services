@@ -139,7 +139,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private WorldLedgers ledgers;
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
 	private boolean hasRedirectBytes;
 
 	@Inject
@@ -200,7 +200,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public PrecompileContractResult computePrecompile(final Bytes input, @NotNull final MessageFrame frame) {
 		prepareFields(frame);
-		infoProvider = new EVMInfoProvider(frame);
+		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 		prepareComputation(input, updater::unaliased);
 
 		gasRequirement = defaultGas();
@@ -211,7 +211,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		final var now = frame.getBlockValues().getTimestamp();
 		gasRequirement = precompile.getGasRequirement(now);
-		Bytes result = computeInternal(infoProvider);
+		Bytes result = computeInternal(precompileInfoProvider);
 
 		return result == null ? PrecompiledContract.PrecompileContractResult.halt(null,
 				Optional.of(ExceptionalHaltReason.NONE)) : PrecompiledContract.PrecompileContractResult.success(result);
@@ -223,7 +223,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		sideEffectsTracker = infrastructureFactory.newSideEffects();
 		ledgers = message.getLedgers().wrapped(sideEffectsTracker);
 		senderAddress = message.getSenderAddress();
-		infoProvider = new DirectCallsInfoProvider(message);
+		precompileInfoProvider = new DirectCallsPrecompileInfoProvider(message);
 		resetPrecompileFields();
 
 		precompile = constructRedirectPrecompile(inputData.getInt(0), message.getTokenID());
@@ -232,7 +232,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		if (precompile != null) {
 			decodeInput(inputData, message::unaliased);
 			gasRequirement = precompile.getGasRequirement(now);
-			message.setHtsOutputResult(computeInternal(infoProvider));
+			message.setHtsOutputResult(computeInternal(precompileInfoProvider));
 		} else if (transactionBody == null) {
 			message.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 		}
@@ -426,7 +426,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected Bytes computeInternal(final InfoProvider provider) {
+	protected Bytes computeInternal(final PrecompileInfoProvider provider) {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
@@ -457,7 +457,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
-			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), infoProvider);
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), precompileInfoProvider);
 		}
 
 		if (provider.isDirectTokenCall()) {
@@ -480,7 +480,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
 			final Optional<ResponseCodeEnum> errorStatus,
-			final InfoProvider provider
+			final PrecompileInfoProvider provider
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var traceabilityOn = precompile.shouldAddTraceabilityFieldsToRecord();

@@ -171,7 +171,7 @@ class ERC20PrecompilesTest {
     @Mock
     private PrecompileMessage precompileMessage;
     @Mock
-    private InfoProvider infoProvider;
+    private PrecompileInfoProvider precompileInfoProvider;
     @Mock
     private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
@@ -275,9 +275,9 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
-        infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
-                new DirectCallsInfoProvider(precompileMessage) :
-                new EVMInfoProvider(frame);
+        precompileInfoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
+                new DirectCallsPrecompileInfoProvider(precompileMessage) :
+                new EVMPrecompileInfoProvider(frame);
     }
 
     @AfterEach
@@ -493,7 +493,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -533,7 +533,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -570,7 +570,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -606,7 +606,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -651,7 +651,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -693,7 +693,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -737,7 +737,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(failResult, result);
@@ -799,7 +799,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -863,7 +863,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -925,7 +925,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(successResult, result);
@@ -1029,7 +1029,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(infoProvider);
+        final var result = subject.computeInternal(precompileInfoProvider);
 
         // then:
         assertEquals(invalidSigResult, result);

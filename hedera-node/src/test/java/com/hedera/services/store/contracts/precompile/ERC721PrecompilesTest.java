@@ -175,7 +175,7 @@ class ERC721PrecompilesTest {
 	@Mock
 	private PrecompileMessage precompileMessage;
 	@Mock
-	private InfoProvider infoProvider;
+	private PrecompileInfoProvider precompileInfoProvider;
     @Mock
     private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
@@ -308,7 +308,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -339,7 +339,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -384,7 +384,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -422,7 +422,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -485,7 +485,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -546,7 +546,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
 		verify(frame).setRevertReason(Bytes.of(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.name().getBytes()));
@@ -607,7 +607,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -668,7 +668,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -708,7 +708,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		final var expectedFailure = EncodingFacade.resultFrom(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
 		verify(frame).setRevertReason(Bytes.of(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.name().getBytes()));
@@ -762,7 +762,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 		final var expectedFailure = EncodingFacade.resultFrom(INVALID_ALLOWANCE_OWNER_ID);
 
 		verify(frame).setRevertReason(Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes()));
@@ -818,7 +818,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(failResult, result);
@@ -876,7 +876,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -917,7 +917,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -948,7 +948,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(successResult, result);
 		verify(wrappedLedgers).commit();
@@ -984,7 +984,7 @@ class ERC721PrecompilesTest {
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then:
-		assertEquals(successResult, subject.computeInternal(infoProvider));
+		assertEquals(successResult, subject.computeInternal(precompileInfoProvider));
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -1018,7 +1018,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -1049,7 +1049,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(missingNftResult, result);
 	}
@@ -1113,7 +1113,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(Bytes.EMPTY, result);
@@ -1170,7 +1170,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -1200,7 +1200,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		assertEquals(failResult, result);
 	}
@@ -1231,7 +1231,7 @@ class ERC721PrecompilesTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(infoProvider);
+		final var result = subject.computeInternal(precompileInfoProvider);
 
 		// then:
 		assertEquals(successResult, result);
@@ -1285,9 +1285,9 @@ class ERC721PrecompilesTest {
 	}
 
 	private void givenInfoProvider() {
-		infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
-				new DirectCallsInfoProvider(precompileMessage) :
-				new EVMInfoProvider(frame);
+		precompileInfoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
+				new DirectCallsPrecompileInfoProvider(precompileMessage) :
+				new EVMPrecompileInfoProvider(frame);
 	}
 
 	public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);

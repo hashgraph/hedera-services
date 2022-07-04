@@ -31,7 +31,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.TxProcessorUtil;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -48,7 +47,6 @@ import java.util.Optional;
 import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.COMPLETED_SUCCESS;
 import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.EXCEPTIONAL_HALT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-
 
 @Singleton
 public class DirectCallsTxProcessor {
@@ -85,8 +83,6 @@ public class DirectCallsTxProcessor {
 
 		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
-		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = dynamicProperties.shouldEnableTraceability() ?
-				updater.getFinalStateChanges() : Map.of();
 		final MutableAccount mutableSender = TxProcessorUtil.getMutableSender(updater, sender);
 		final var isEthTx = relayer != null;
 		final long gasPrice = TxProcessorUtil.gasPriceTinyBarsGiven(
@@ -104,16 +100,22 @@ public class DirectCallsTxProcessor {
 			throw new InvalidTransactionException(INSUFFICIENT_GAS);
 		}
 		if (!isEthTx) {
-			TxProcessorUtil.senderCanAffordGas(gasCost, upfrontCost, mutableSender);
+			TxProcessorUtil.chargeGas(gasCost, upfrontCost, mutableSender);
 		} else {
 			allowanceCharged = TxProcessorUtil.chargeForEth(
 					userOfferedGasPrice, gasCost, maxGasAllowanceInTinybars, mutableSender,
 					mutableRelayer, Wei.ZERO, gasPrice, gasLimit, value);
 		}
 
-		PrecompileMessage message = TxProcessorUtil.constructPrecompileMessage(
-				sender, consensusTime, ledgers,
-				payload, gasLimit, value, tokenId, intrinsicGas);
+		PrecompileMessage message = PrecompileMessage.builder()
+				.setLedgers(ledgers)
+				.setSenderAddress(sender.canonicalAddress())
+				.setValue(Wei.of(value))
+				.setConsensusTime(consensusTime)
+				.setGasRemaining(gasLimit - intrinsicGas)
+				.setInputData(payload)
+				.setTokenID(tokenId.asGrpcToken())
+				.build();
 
 		callHtsPrecompile(message);
 		long gasUsedByTransaction = TxProcessorUtil.calculateGasUsedByTX(gasLimit, message,
@@ -135,9 +137,8 @@ public class DirectCallsTxProcessor {
 				updater.getSbhRefund(), gasUsedByTransaction,
 				gasPrice, mirrorReceiver, message.getHtsOutputResult(),
 				message.getRevertReason(), message.getExceptionalHaltReason(),
-				stateChanges);
+				Map.of());
 	}
-
 
 	private void callHtsPrecompile(PrecompileMessage message) {
 		htsPrecompiledContract.callHtsPrecompileDirectly(message);

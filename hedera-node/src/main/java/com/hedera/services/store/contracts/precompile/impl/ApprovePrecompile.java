@@ -27,7 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -114,7 +114,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 	}
 
 	@Override
-	public void run(final InfoProvider provider) {
+	public void run(final PrecompileInfoProvider provider) {
 		Objects.requireNonNull(approveOp);
 
 		validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);

@@ -26,7 +26,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.InfoProvider;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -87,7 +87,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 
 	@Override
 	public void run(
-			final InfoProvider provider
+			final PrecompileInfoProvider provider
 	) {
 		Objects.requireNonNull(dissociateOp);
 
