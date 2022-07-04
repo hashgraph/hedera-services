@@ -234,7 +234,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final var newContractId = contractIdFromEvmAddress(newEvmAddress);
 			final var contractBytecodeSidecar = SidecarUtils.createContractBytecode(
 					newContractId,
-					(op.getInitcodeSourceCase() == INITCODE ? new byte[0] : codeWithConstructorArgs.toArrayUnsafe()),
+					(op.getInitcodeSourceCase() != INITCODE ? codeWithConstructorArgs.toArrayUnsafe() : new byte[0]),
 					result.getOutput().toArrayUnsafe()
 			);
 			if (createSyntheticRecord) {

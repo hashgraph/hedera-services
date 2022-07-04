@@ -22,6 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
@@ -35,13 +36,17 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,6 +74,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
@@ -92,9 +98,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -630,6 +638,79 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void followsHappyPathWithOverridesWithSidecar() {
+		// setup:
+		givenValidTxnCtxWithMaxAssociations();
+		final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
+		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
+				INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				autoRenewModel);
+		given(autoRenewModel.isSmartContract()).willReturn(false);
+		final var output = Bytes.of(123);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				output,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		final var newEvmAddress = contractAccount.getId().asEvmAddress();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
+		final Bytes initCode = Bytes.fromHexString(new String(bytecode));
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				initCode,
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+						contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
+				.thenReturn(sidecarRecord);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).setHapiSenderCustomizer(captor.capture());
+		verify(worldState).getCreatedContractIds();
+		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe(), sidecarRecord);
+		verify(worldState, never()).reclaimContractId();
+		verify(worldState).resetHapiSenderCustomizer();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(accountStore).loadAccount(senderAccount.getId());
+		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+		// and:
+		final var customizerUsed = captor.getValue();
+		final var changes = customizerUsed.accountCustomizer().getChanges();
+		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+		sidecarUtilsMockedStatic.close();
+	}
+
+	@Test
 	void followsHappyPathWithCounterAndRecord() {
 		// setup:
 		givenValidTxnCtxWithMaxAssociations();
@@ -694,6 +775,93 @@ class ContractCreateTransitionLogicTest {
 		final var changes = customizerUsed.accountCustomizer().getChanges();
 		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
 		assertEquals(10, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+	}
+
+	@Test
+	void followsHappyPathWithCounterAndRecordAndSidecars() {
+		// setup:
+		givenValidTxnCtxWithMaxAssociations();
+		final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
+		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
+				INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				autoRenewModel);
+		given(autoRenewModel.isSmartContract()).willReturn(false);
+		final var output = Bytes.of(123);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				output,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		final var newEvmAddress = contractAccount.getId().asEvmAddress();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
+		final var initCode = Bytes.fromHexString(new String(bytecode));
+		given(evmTxProcessor.executeEth(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				initCode,
+				txnCtx.consensusTime(),
+				expiry,
+				relayerAccount,
+				biOfferedGasPrice,
+				maxGas)
+		).willReturn(result);
+		given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
+		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+						contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
+				.thenReturn(sidecarRecord);
+		final var nextChildRecordSourceId = 1234;
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(nextChildRecordSourceId);
+		final var opBuilder = TransactionBody.newBuilder();
+		given(syntheticTxnFactory.contractCreation(any(ContractCustomizer.class))).willReturn(opBuilder);
+		final var recordBuilder = ExpirableTxnRecord.newBuilder();
+		given(entityCreator.createSuccessfulSyntheticRecord(anyList(), any(SideEffectsTracker.class),
+				any(String.class))).willReturn(recordBuilder);
+
+		// when:
+		subject.doStateTransitionOperation(
+				contractCreateTxn, senderAccount.getId(),
+				true, relayerAccount.getId(), maxGas, biOfferedGasPrice);
+
+		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).setHapiSenderCustomizer(captor.capture());
+		verify(worldState).getCreatedContractIds();
+		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
+		verify(worldState, never()).reclaimContractId();
+		verify(worldState).resetHapiSenderCustomizer();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(accountStore).loadAccount(senderAccount.getId());
+		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+		verify(recordsHistorian).trackFollowingChildRecord(nextChildRecordSourceId, opBuilder, recordBuilder,
+				List.of(sidecarRecord));
+
+		// and:
+		final var customizerUsed = captor.getValue();
+		final var changes = customizerUsed.accountCustomizer().getChanges();
+		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(10, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+		sidecarUtilsMockedStatic.close();
 	}
 
 	@Test
