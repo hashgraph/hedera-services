@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class PrecompileUtilsTest {
+class PrecompileUtilsTest {
 
 	@Test
 	void addsContractCallResultToRecord() {
