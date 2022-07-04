@@ -92,8 +92,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
@@ -592,7 +592,7 @@ class HTSPrecompiledContractTest {
 		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(infrastructureFactory.newSideEffects()).willReturn(new SideEffectsTracker());
 		given(wrappedLedgers.wrapped(any())).willReturn(wrappedLedgers);
-		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
 		given(precompileMessage.getInputData()).willReturn(input);
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall,

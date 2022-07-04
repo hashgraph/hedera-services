@@ -64,7 +64,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -127,7 +127,7 @@ class DirectCallsTxProcessorTest {
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
 	private final Account relayer = new Account(new Id(0, 0, 1007));
-	private final Bytes precompileCallData = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+	private final Bytes precompileCallData = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
 	private final Address receiverAddress = receiver.getId().asEvmAddress();
 	private final Instant consensusTime = Instant.ofEpochSecond(TEST_CONSENSUS_TIME);
 	private final int MAX_GAS_LIMIT = 10_000_000;
