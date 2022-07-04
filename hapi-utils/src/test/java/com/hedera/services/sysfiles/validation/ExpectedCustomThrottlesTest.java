@@ -52,7 +52,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -141,6 +141,6 @@ class ExpectedCustomThrottlesTest {
 		assertTrue(ACTIVE_OPS.contains(TokenGetInfo), "Missing TokenGetInfo!");
 		assertTrue(ACTIVE_OPS.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
 		assertTrue(ACTIVE_OPS.contains(EthereumTransaction), "Missing EthereumTransaction!");
-		assertTrue(ACTIVE_OPS.contains(RandomGenerate), "Missing RandomGenerate!");
+		assertTrue(ACTIVE_OPS.contains(PRNG), "Missing PRNG!");
 	}
 }

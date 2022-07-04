@@ -82,7 +82,7 @@ class ExpirableTxnRecordBuilderTest {
 				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 				.setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
-				.setPseudorandomNumber(10)
+				.setPrngNumber(10)
 				.build();
 
 		final var subject = ExpirableTxnRecordTestHelper.fromGprc(grpcRecord);

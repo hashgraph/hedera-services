@@ -46,7 +46,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	 */
 	private RunningHash runningHash;
 	/**
-	 * runningHash of the previous RecordStreamObjects. They are needed for the RandomGenerate transaction
+	 * runningHash of the previous RecordStreamObjects. They are needed for the Prng transaction
 	 */
 	private RunningHash nMinus1RunningHash;
 	private RunningHash nMinus2RunningHash;
