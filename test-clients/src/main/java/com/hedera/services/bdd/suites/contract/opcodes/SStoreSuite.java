@@ -138,7 +138,6 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int i = 0; i < numberOfIterations; i++) {
 								final var subOp1 = contractCall(contract, "changeArray",
-										//TODO : Integer -> BigInteger
 										BigInteger.valueOf(ThreadLocalRandom.current().nextInt(1000)))
 										.logged();
 								subOps.add(subOp1);
