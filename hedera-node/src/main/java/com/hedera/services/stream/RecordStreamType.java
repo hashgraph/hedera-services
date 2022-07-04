@@ -39,14 +39,14 @@ public interface RecordStreamType extends StreamType {
 		ACTIONS(2),
 		BYTECODES(3);
 
-		private final int fileId;
+		private final int sidecarId;
 
-		SidecarType(final int fileId) {
-			this.fileId = fileId;
+		SidecarType(final int sidecarId) {
+			this.sidecarId = sidecarId;
 		}
 
-		public int getFileId() {
-			return fileId;
+		public int getSidecarId() {
+			return sidecarId;
 		}
 	}
 	/**

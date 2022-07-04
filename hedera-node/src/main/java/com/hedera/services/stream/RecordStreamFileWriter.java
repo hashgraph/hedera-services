@@ -334,7 +334,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				}
 
 				// if this line is reached, record file has been created successfully, so create its signature
-				createSignatureFile(recordFile);
+				createSignatureFileFor(recordFile);
 			}
 		}
 	}
@@ -500,7 +500,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				.build();
 	}
 
-	private void createSignatureFile(final File relatedRecordStreamFile) {
+	private void createSignatureFileFor(final File relatedRecordStreamFile) {
 		// create proto messages for signature file
 		final var fileSignature = generateSignatureObject(streamDigest.digest());
 		final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
@@ -541,7 +541,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	) throws IOException, NoSuchAlgorithmException {
 		// create a file only if there are any sidecar records of this type for the current period
 		if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
-			final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, sidecarType.getFileId()));
+			final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, sidecarType.getSidecarId()));
 			try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
 				 SerializableDataOutputStream dos = new SerializableDataOutputStream(new BufferedOutputStream(stream))
 			) {
@@ -554,7 +554,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				stream.flush();
 				stream.getChannel().force(true);
 				stream.getFD().sync();
-				LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Sidecar sidecarFilePath written successfully {}", sidecarFile.getName());
+
+				LOG.debug(OBJECT_STREAM_FILE.getMarker(),
+						"Sidecar sidecarFilePath written successfully {}", sidecarFile.getName());
 				recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFile, sidecarType));
 			}
 		}
@@ -566,7 +568,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	) throws IOException, NoSuchAlgorithmException, IllegalStateException {
 		return SidecarMetadata.newBuilder()
 				.setHash(toProto(LinkedObjectStreamUtilities.computeEntireHash(sidecarFile).getValue()))
-				.setId(sidecarType.getFileId())
+				.setId(sidecarType.getSidecarId())
 				.addTypes(toProto(sidecarType));
 	}
 

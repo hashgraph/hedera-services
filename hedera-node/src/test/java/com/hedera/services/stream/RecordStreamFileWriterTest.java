@@ -411,13 +411,13 @@ class RecordStreamFileWriterTest {
 					Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
 			if (sidecarType.equals(SidecarType.CONTRACT_STATE_CHANGE)) {
 				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.STATE_CHANGES.getFileId());
+						RecordStreamType.SidecarType.STATE_CHANGES.getSidecarId());
 			} else if (sidecarType.equals(SidecarType.CONTRACT_ACTION)) {
 				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.ACTIONS.getFileId());
+						RecordStreamType.SidecarType.ACTIONS.getSidecarId());
 			} else if (sidecarType.equals(SidecarType.CONTRACT_BYTECODE)) {
 				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.BYTECODES.getFileId());
+						RecordStreamType.SidecarType.BYTECODES.getSidecarId());
 			}
 			assertNotNull(pathToSidecarFile);
 			final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
