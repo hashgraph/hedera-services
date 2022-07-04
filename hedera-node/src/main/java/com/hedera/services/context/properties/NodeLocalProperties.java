@@ -32,7 +32,9 @@ public class NodeLocalProperties {
 
 	private int port;
 	private int tlsPort;
-	private long statsHapiOpsSpeedometerUpdateIntervalMs;
+	private long hapiOpStatsUpdateIntervalMs;
+	private long entityUtilStatsUpdateIntervalMs;
+	private long throttleUtilStatsUpdateIntervalMs;
 	private Profile activeProfile;
 	private double statsSpeedometerHalfLifeSecs;
 	private double statsRunningAvgHalfLifeSecs;
@@ -77,7 +79,7 @@ public class NodeLocalProperties {
 		port = properties.getIntProperty("grpc.port");
 		tlsPort = properties.getIntProperty("grpc.tlsPort");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
-		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
+		hapiOpStatsUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
 		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
 		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
@@ -109,6 +111,8 @@ public class NodeLocalProperties {
 		prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
 		consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
 		hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
+		entityUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
+		throttleUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
 	}
 
 	public int port() {
@@ -123,8 +127,8 @@ public class NodeLocalProperties {
 		return activeProfile;
 	}
 
-	public long statsHapiOpsSpeedometerUpdateIntervalMs() {
-		return statsHapiOpsSpeedometerUpdateIntervalMs;
+	public long hapiOpsStatsUpdateIntervalMs() {
+		return hapiOpStatsUpdateIntervalMs;
 	}
 
 	public double statsSpeedometerHalfLifeSecs() {
@@ -243,5 +247,13 @@ public class NodeLocalProperties {
 
 	public List<String> hapiThrottlesToSample() {
 		return hapiThrottlesToSample;
+	}
+
+	public long entityUtilStatsUpdateIntervalMs() {
+		return entityUtilStatsUpdateIntervalMs;
+	}
+
+	public long throttleUtilStatsUpdateIntervalMs() {
+		return throttleUtilStatsUpdateIntervalMs;
 	}
 }

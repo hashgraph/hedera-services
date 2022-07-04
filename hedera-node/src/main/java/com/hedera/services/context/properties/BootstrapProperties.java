@@ -335,7 +335,9 @@ public final class BootstrapProperties implements PropertySource {
 			"stats.consThrottlesToSample",
 			"stats.hapiThrottlesToSample",
 			"stats.executionTimesToTrack",
+			"stats.entityUtils.gaugeUpdateIntervalMs",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
+			"stats.throttleUtils.gaugeUpdateIntervalMs",
 			"stats.runningAvgHalfLifeSecs",
 			"stats.speedometerHalfLifeSecs"
 	);
@@ -492,7 +494,9 @@ public final class BootstrapProperties implements PropertySource {
 			entry("scheduling.whitelist", AS_FUNCTIONS),
 			entry("staking.isEnabled", AS_BOOLEAN),
 			entry("staking.maxDailyStakeRewardThPerH", AS_LONG),
+			entry("stats.entityUtils.gaugeUpdateIntervalMs", AS_LONG),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
+			entry("stats.throttleUtils.gaugeUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),

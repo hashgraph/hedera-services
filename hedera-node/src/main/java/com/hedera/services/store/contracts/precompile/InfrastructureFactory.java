@@ -152,7 +152,7 @@ public class InfrastructureFactory {
 			final TypedTokenStore tokenStore
 	) {
 		return new CreateLogic(
-				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
+				usageLimits, accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
 	}
 
 	public TransferLogic newTransferLogic(

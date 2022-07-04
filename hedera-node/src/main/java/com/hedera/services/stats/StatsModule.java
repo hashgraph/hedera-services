@@ -41,12 +41,12 @@ public final class StatsModule {
 
 	@Provides
 	@Singleton
-	public static ThrottleUtilizations provideThrottleUtilizations(
+	public static ThrottleGauges provideThrottleUtilizations(
 			final @HandleThrottle FunctionalityThrottling handleThrottling,
 			final @HapiThrottle FunctionalityThrottling hapiThrottling,
 			final NodeLocalProperties nodeProperties
 	) {
-		return new ThrottleUtilizations(handleThrottling, hapiThrottling, nodeProperties);
+		return new ThrottleGauges(handleThrottling, hapiThrottling, nodeProperties);
 	}
 
 	@Provides

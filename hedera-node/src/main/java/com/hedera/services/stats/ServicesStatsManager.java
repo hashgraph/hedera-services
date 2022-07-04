@@ -31,6 +31,7 @@ import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -38,6 +39,7 @@ import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 @Singleton
 public class ServicesStatsManager {
+	private static final long MIN_STAT_INTERVAL_UPDATE_MS = 100L;
 	public static final String STAT_CATEGORY = "app";
 	public static final String GAUGE_FORMAT = "%,13.2f";
 	public static final String SPEEDOMETER_FORMAT = "%,13.2f";
@@ -55,45 +57,82 @@ public class ServicesStatsManager {
 	private final MiscRunningAvgs runningAvgs;
 	private final MiscSpeedometers speedometers;
 	private final HapiOpSpeedometers opSpeedometers;
-	private final NodeLocalProperties properties;
+	private final NodeLocalProperties localProperties;
+	private final ThrottleGauges throttleGauges;
+	private final EntityUtilGauges entityUtilGauges;
 	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
 	@Inject
 	public ServicesStatsManager(
 			final HapiOpCounters opCounters,
+			final ThrottleGauges throttleGauges,
 			final MiscRunningAvgs runningAvgs,
+			final EntityUtilGauges entityUtilGauges,
 			final MiscSpeedometers speedometers,
 			final HapiOpSpeedometers opSpeedometers,
-			final NodeLocalProperties properties,
-			final ThrottleUtilizations throttleUtilizations,
+			final NodeLocalProperties localProperties,
 			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		this.storage = storage;
 		this.bytecode = bytecode;
-		this.properties = properties;
+		this.localProperties = localProperties;
 		this.opCounters = opCounters;
 		this.runningAvgs = runningAvgs;
 		this.speedometers = speedometers;
 		this.opSpeedometers = opSpeedometers;
+		this.throttleGauges = throttleGauges;
+		this.entityUtilGauges = entityUtilGauges;
 	}
 
 	public void initializeFor(final Platform platform) {
 		opCounters.registerWith(platform);
 		runningAvgs.registerWith(platform);
 		speedometers.registerWith(platform);
+		throttleGauges.registerWith(platform);
 		opSpeedometers.registerWith(platform);
+		entityUtilGauges.registerWith(platform);
 		storage.get().registerStatistics(platform::addAppMetrics);
 		bytecode.get().registerStatistics(platform::addAppMetrics);
 
 		platform.appStatInit();
 
-		var updateThread = loopFactory.apply(() -> {
-			pause.forMs(properties.statsHapiOpsSpeedometerUpdateIntervalMs());
-			opSpeedometers.updateAll();
+		final var hapiOpsUpdateIntervalMs = Math.max(
+				MIN_STAT_INTERVAL_UPDATE_MS, localProperties.hapiOpsStatsUpdateIntervalMs());
+		final var entityUtilUpdateIntervalMs = Math.max(
+				MIN_STAT_INTERVAL_UPDATE_MS, localProperties.entityUtilStatsUpdateIntervalMs());
+		final var throttleUtilUpdateIntervalMs = Math.max(
+				MIN_STAT_INTERVAL_UPDATE_MS, localProperties.throttleUtilStatsUpdateIntervalMs());
+		final var pauseTimeMs = gcd(hapiOpsUpdateIntervalMs, entityUtilUpdateIntervalMs, throttleUtilUpdateIntervalMs);
+		final var pausesBetweenHapiOpsUpdate = hapiOpsUpdateIntervalMs / pauseTimeMs;
+		final var pausesBetweenEntityUtilUpdate = entityUtilUpdateIntervalMs / pauseTimeMs;
+		final var pausesBetweenThrottleUtilUpdate = throttleUtilUpdateIntervalMs / pauseTimeMs;
+		final var numPauses = new AtomicLong(0);
+		final var updateThread = loopFactory.apply(() -> {
+			pause.forMs(pauseTimeMs);
+			final var n = numPauses.incrementAndGet();
+			if (n % pausesBetweenHapiOpsUpdate == 0) {
+				opSpeedometers.updateAll();
+			}
+			if (n % pausesBetweenThrottleUtilUpdate == 0) {
+				throttleGauges.updateAll();
+			}
+			if (n % pausesBetweenEntityUtilUpdate == 0) {
+				entityUtilGauges.updateAll();
+			}
 		});
+
 		updateThread.setName(String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
 		updateThread.start();
+	}
+
+	private long gcd(final long a, final long b, final long c) {
+		final var abGcd = gcd(Math.min(a, b), Math.max(a, b));
+		return gcd(Math.min(abGcd, c), Math.max(abGcd, c));
+	}
+
+	private long gcd(final long a, final long b) {
+		return (a == 0) ? b : gcd(b % a, a);
 	}
 }

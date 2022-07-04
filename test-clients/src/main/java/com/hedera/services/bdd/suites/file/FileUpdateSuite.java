@@ -48,22 +48,26 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -77,7 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -143,6 +147,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				autoCreationIsDynamic(),
 				kvLimitsEnforced(),
 				serviceFeeRefundedIfConsGasExhausted(),
+				entitiesNotCreatableAfterUsageLimitsReached()
 		});
 	}
 
@@ -520,6 +525,46 @@ public class FileUpdateSuite extends HapiApiSuite {
 												+ feeSansRefund + " was not less than " + origFee);
 							}
 						})
+				);
+	}
+
+	private HapiApiSpec entitiesNotCreatableAfterUsageLimitsReached() {
+		final var notToBe = "ne'erToBe";
+		return defaultHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
+				.given(
+						uploadInitCode("Multipurpose"),
+						overridingAllOf(Map.of(
+								"accounts.maxNumber", "0",
+								"contracts.maxNumber", "0",
+								"files.maxNumber", "0",
+								"scheduling.maxNumber", "0",
+								"tokens.maxNumber", "0",
+								"topics.maxNumber", "0"
+						))
+				).when(
+						cryptoCreate(notToBe)
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+						contractCreate("Multipurpose")
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+						fileCreate(notToBe)
+								.contents("NOPE")
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+						scheduleCreate(notToBe,
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
+						)
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+						tokenCreate(notToBe)
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+						createTopic(notToBe)
+								.hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED)
+				).then(
+						resetToDefault(
+								"accounts.maxNumber",
+								"contracts.maxNumber",
+								"files.maxNumber",
+								"scheduling.maxNumber",
+								"tokens.maxNumber",
+								"topics.maxNumber")
 				);
 	}
 
