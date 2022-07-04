@@ -136,7 +136,6 @@ class DirectCallsTxProcessorTest {
 	private final long GAS_LIMIT = 300_000L;
 
 	private DirectCallsTxProcessor directCallsTxProcessor;
-	private PrecompileMessage precompileMessage;
 
 	@BeforeEach
 	private void setup() {
@@ -157,7 +156,6 @@ class DirectCallsTxProcessorTest {
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -191,7 +189,6 @@ class DirectCallsTxProcessorTest {
 	void assertSuccessExecutionEth() {
 		givenValidMockEth();
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
 		var evmAccount = mock(EvmAccount.class);
@@ -544,7 +541,7 @@ class DirectCallsTxProcessorTest {
 		final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 		final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
 		given(worldLedgers.canonicalAddress(alias)).willReturn(alias2);
-		precompileMessage = PrecompileMessage.builder().setLedgers(worldLedgers).setGasRemaining(2L).build();
+		var precompileMessage = PrecompileMessage.builder().setLedgers(worldLedgers).setGasRemaining(2L).build();
 
 		assertArrayEquals(new byte[20], precompileMessage.unaliased(alias.toArrayUnsafe()));
 	}
