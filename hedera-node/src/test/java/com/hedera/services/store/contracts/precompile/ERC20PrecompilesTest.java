@@ -135,6 +135,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accoun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -156,6 +157,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -273,7 +275,9 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
-        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
+                new DirectCallsInfoProvider(precompileMessage) :
+                new EVMInfoProvider(frame);
     }
 
     @AfterEach
@@ -286,6 +290,7 @@ class ERC20PrecompilesTest {
     void allowanceDisabled() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         Bytes pretendArgumentsApprove = Bytes.concatenate(
@@ -357,6 +362,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -368,6 +374,7 @@ class ERC20PrecompilesTest {
     void gasCalculationForReadOnlyMethod() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -404,6 +411,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
@@ -462,7 +470,8 @@ class ERC20PrecompilesTest {
     void name() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        givenInfoProvider();
+
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -502,7 +511,7 @@ class ERC20PrecompilesTest {
     void symbol() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -537,7 +546,7 @@ class ERC20PrecompilesTest {
     void decimals() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -574,7 +583,7 @@ class ERC20PrecompilesTest {
     void totalSupply() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
@@ -610,7 +619,7 @@ class ERC20PrecompilesTest {
     void allowance() {
         TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
         alowances.put(FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()), EntityNum.fromLong(receiver.getAccountNum())), 10L);
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -656,7 +665,7 @@ class ERC20PrecompilesTest {
     void balanceOf() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createTransactionCall(1L, nestedPretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -700,7 +709,8 @@ class ERC20PrecompilesTest {
         List<NftAllowance> nftAllowances = new ArrayList<>();
         Map<FcTokenAllowanceId, Long> allowances = Map.of(fungibleAllowanceId, 0L);
         givenPricingUtilsContext();
-        givenInfoProvider();
+
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -745,7 +755,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -803,7 +813,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
@@ -870,7 +880,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
@@ -926,12 +936,63 @@ class ERC20PrecompilesTest {
     }
 
     @Test
+    void transferFromForDirectTokenCalls() {
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
+        givenPrecompileMessageContext();
+        given(precompileMessage.getInputData()).willReturn(nestedPretendArguments);
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(wrappedLedgers.wrapped(any())).willReturn(wrappedLedgers);
+        given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
+
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
+
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(infrastructureFactory.newTransferLogic(
+                hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().setCryptoTransfer(cryptoTransferTransactionBody).build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+
+        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any(), any(), any()))
+                .willReturn(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        // when:
+        subject.callHtsPrecompileDirectly(precompileMessage);
+        // and:
+        verify(precompileMessage,times(1)).setHtsOutputResult(any());
+    }
+
+    @Test
     void transferFails() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
-        givenInfoProvider();
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
@@ -978,6 +1039,7 @@ class ERC20PrecompilesTest {
     void ownerOfNotSupported() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         subject.prepareFields(frame);
@@ -991,6 +1053,7 @@ class ERC20PrecompilesTest {
     void tokenURINotSupported() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
         Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         subject.prepareFields(frame);
@@ -1031,10 +1094,13 @@ class ERC20PrecompilesTest {
         given(wrappedLedgers.tokens()).willReturn(tokens);
     }
 
-    private void givenInfoProvider() {
-        infoProvider = dynamicProperties.enableDirectHTSTokenCalls() ?
-                new DirectCallsInfoProvider(precompileMessage) :
-                new EVMInfoProvider(frame);
+    private void givenPrecompileMessageContext(){
+        given(precompileMessage.getSenderAddress()).willReturn(contractAddress);
+        given(precompileMessage.getLedgers()).willReturn(wrappedLedgers);
+        given(precompileMessage.getConsensusTime()).willReturn(TEST_CONSENSUS_TIME);
+        given(precompileMessage.getTokenID()).willReturn(fungible);
+        given(precompileMessage.getGasRemaining()).willReturn(AMOUNT);
+        given(precompileMessage.getValue()).willReturn(Wei.ZERO);
     }
 
 	private void givenPricingUtilsContext() {

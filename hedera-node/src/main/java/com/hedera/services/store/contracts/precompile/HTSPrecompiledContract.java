@@ -312,8 +312,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Precompile constructRedirectPrecompile(int functionSelector, TokenID tokenId) {
 		final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
 		final var functionId = AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-		Precompile nestedPrecompile =
-				switch (functionSelector) {
+
+		return switch (functionSelector) {
 					case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(
 							tokenId, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
 					case AbiConstants.ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(
@@ -378,7 +378,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 											precompilePricingUtils));
 					default -> null;
 				};
-		return nestedPrecompile;
 	}
 
 	/* --- Helpers --- */

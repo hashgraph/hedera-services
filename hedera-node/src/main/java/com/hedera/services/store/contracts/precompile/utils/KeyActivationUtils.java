@@ -36,7 +36,7 @@ import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_P
 
 public final class KeyActivationUtils {
 
-	private KeyActivationUtils() {
+	KeyActivationUtils() {
 		throw new IllegalStateException("Utility class");
 	}
 

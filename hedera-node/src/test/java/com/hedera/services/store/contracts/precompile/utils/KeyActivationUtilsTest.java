@@ -22,14 +22,18 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldStateAccount;
+import com.hedera.services.store.contracts.precompile.EVMInfoProvider;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -42,6 +46,8 @@ class KeyActivationUtilsTest {
 	private WorldStateAccount worldStateAccount;
 	@Mock
 	private HederaStackedWorldStateUpdater worldUpdater;
+	@Mock
+	EVMInfoProvider evmInfoProvider;
 
 	@Test
 	void testsAccountIsToken() {
@@ -63,5 +69,16 @@ class KeyActivationUtilsTest {
 		var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
 
 		assertFalse(result);
+	}
+
+	@Test
+	void validateKeysIsFalseWithEmptyAlias() {
+		assertFalse(KeyActivationUtils.validateKey(evmInfoProvider, null,
+				null, null, Optional.empty()));
+	}
+
+	@Test
+	void cannotBeConstructed() {
+		assertThrows(IllegalStateException.class, KeyActivationUtils::new);
 	}
 }

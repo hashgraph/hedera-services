@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileMessage;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -69,6 +70,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -134,6 +136,7 @@ class DirectCallsTxProcessorTest {
 	private final long GAS_LIMIT = 300_000L;
 
 	private DirectCallsTxProcessor directCallsTxProcessor;
+	private PrecompileMessage precompileMessage;
 
 	@BeforeEach
 	private void setup() {
@@ -534,6 +537,16 @@ class DirectCallsTxProcessorTest {
 		assertEquals(result.getGasUsed(), gasLimit);
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(mutableRelayerAccount).decrementBalance(Wei.of(gasPrice * gasLimit));
+	}
+
+	@Test
+	void unaliasedForNotExistingAddress() {
+		final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+		final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
+		given(worldLedgers.canonicalAddress(alias)).willReturn(alias2);
+		precompileMessage = PrecompileMessage.builder().setLedgers(worldLedgers).setGasRemaining(2L).build();
+
+		assertArrayEquals(new byte[20], precompileMessage.unaliased(alias.toArrayUnsafe()));
 	}
 
 	//Helpers
