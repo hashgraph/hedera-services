@@ -22,15 +22,73 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.test.utils.IdUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SidecarUtilsTest {
+
+	@Test
+	void contractBytecodesAreCreatedAsExpected() {
+		// given
+		final var contract = IdUtils.asContract("0.0.6");
+		final var initCode = "initCode".getBytes();
+		final var runtimeCode = "runtimeCode".getBytes();
+
+		// when
+		final var bytecodeSidecar = SidecarUtils.createContractBytecode(contract, initCode, runtimeCode).build();
+
+		// then
+		final var expectedBytecodes = ContractBytecode.newBuilder()
+				.setContractId(contract)
+				.setInitcode(ByteString.copyFrom(initCode))
+				.setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
+				.build();
+		final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setBytecode(expectedBytecodes)
+				.build();
+		assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
+	}
+
+	@Test
+	void stateChangesAreCreatedAsExpected() {
+		// given
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
+		final var address = Address.fromHexString("0x4321");
+		final var slot = Bytes.of(1);
+		final var valueRead = Bytes.of(2);
+		stateChanges.put(address, Map.of(slot, Pair.of(valueRead, null)));
+
+		// when
+		final var stateChangesSidecar = SidecarUtils.createStateChangesSidecar(stateChanges).build();
+
+		// then
+		final var expectedStorageChange = StorageChange.newBuilder()
+				.setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
+				.setValueRead(ByteString.copyFrom(valueRead.toArrayUnsafe()))
+				.build();
+		final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setStateChanges(ContractStateChanges.newBuilder()
+						.addContractStateChanges(ContractStateChange.newBuilder()
+								.setContractId(EntityIdUtils.contractIdFromEvmAddress(address))
+								.addStorageChanges(expectedStorageChange)
+								.build()
+						)
+						.build()).build();
+		assertEquals(expectedTransactionSidecarRecord, stateChangesSidecar);
+	}
 
 	@Test
 	void stripsLeadingZerosInChangeRepresentation() {
