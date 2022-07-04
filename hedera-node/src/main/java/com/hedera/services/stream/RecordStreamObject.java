@@ -57,9 +57,10 @@ public class RecordStreamObject
 
 	// The number of the ETH JSON-RPC bridge block containing this record
 	private long blockNumber = StreamAligned.NO_ALIGNMENT;
-	/* The gRPC transaction for the record stream file */
+	/* The gRPC transaction and records for the record stream file */
 	private Transaction transaction;
 	private TransactionRecord transactionRecord;
+	private List<TransactionSidecarRecord> sidecars;
 	/* The fast-copyable equivalent of the gRPC transaction record for the record stream file */
 	private ExpirableTxnRecord fcTransactionRecord;
 
@@ -70,8 +71,6 @@ public class RecordStreamObject
 
 	/* The running hash of all objects streamed up to and including this consensus time. */
 	private RunningHash runningHash;
-
-	private List<TransactionSidecarRecord.Builder> sidecars;
 
 	public RecordStreamObject() {
 	}
@@ -88,7 +87,7 @@ public class RecordStreamObject
 			final ExpirableTxnRecord fcTransactionRecord,
 			final Transaction transaction,
 			final Instant consensusTimestamp,
-			final List<TransactionSidecarRecord.Builder> sidecars
+			final List<TransactionSidecarRecord> sidecars
 	) {
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
@@ -214,7 +213,7 @@ public class RecordStreamObject
 		return transactionRecord;
 	}
 
-	public List<TransactionSidecarRecord.Builder> getSidecars() {
+	public List<TransactionSidecarRecord> getSidecars() {
 		return this.sidecars;
 	}
 

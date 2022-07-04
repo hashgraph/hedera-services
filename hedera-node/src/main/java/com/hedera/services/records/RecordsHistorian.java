@@ -117,18 +117,13 @@ public interface RecordsHistorian {
 	 * @param sourceId the id of the child record source
 	 * @param recordSoFar the in-progress child record
 	 * @param syntheticBody the synthetic body for the child record
+	 * @param sidecars the sidecar records associated with this child transaction
 	 */
 	void trackFollowingChildRecord(
 			int sourceId,
 			TransactionBody.Builder syntheticBody,
 			ExpirableTxnRecord.Builder recordSoFar,
 			List<TransactionSidecarRecord.Builder> sidecars);
-
-	void trackFollowingChildRecord(
-			int sourceId,
-			TransactionBody.Builder syntheticBody,
-			ExpirableTxnRecord.Builder recordSoFar
-	);
 
 	/**
 	 * Adds the given in-progress child record to the active transaction, where its synthetic consensus

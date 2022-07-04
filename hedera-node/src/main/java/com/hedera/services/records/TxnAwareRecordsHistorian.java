@@ -85,7 +85,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
-
 		if (!consensusTimeTracker.isAllowableFollowingOffset(1L + followingChildRecords.size())) {
 			log.error("Cannot create more following child consensus times! currentCount={} consensusTimeTracker={}",
 					followingChildRecords.size(), consensusTimeTracker);
@@ -110,13 +109,13 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		final var consensusNow = txnCtx.consensusTime();
 		final var topLevel = txnCtx.recordSoFar();
 		final var accessor = txnCtx.accessor();
-		final var sidecars = txnCtx.sidecars();
-		addTimestampToSidecars(consensusNow, sidecars);
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
 		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
-		topLevelStreamObj = new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow, sidecars);
+		topLevelStreamObj =
+				new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow,
+						getTimestampedSidecars(txnCtx.sidecars(), consensusNow));
 
 		final var effPayer = txnCtx.effectivePayer();
 		final var submittingMember = txnCtx.submittingSwirldsMember();
@@ -176,22 +175,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		}
 
 		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar, sidecars);
-		followingChildRecords.add(inProgress);
-	}
-
-	@Override
-	public void trackFollowingChildRecord(
-			final int sourceId,
-			final TransactionBody.Builder syntheticBody,
-			final ExpirableTxnRecord.Builder recordSoFar
-	) {
-		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L)) {
-			log.error("Cannot create more following records! currentCount={} consensusTimeTracker={}",
-					followingChildRecords.size(), consensusTimeTracker);
-			throw new IllegalStateException("Cannot create more following records!");
-		}
-
-		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar, Collections.emptyList());
 		followingChildRecords.add(inProgress);
 	}
 
@@ -279,16 +262,17 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 				child.setParentConsensusTime(consensusNow);
 			}
 
-			addTimestampToSidecars(childConsTime, inProgress.sidecars());
 			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
 			if (sigNum > 0) {
-				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime, inProgress.sidecars()));
+				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime,
+						getTimestampedSidecars(inProgress.sidecars(), childConsTime)));
 			} else {
 				// With multiple preceding child records, we add them to the stream in reverse order of
 				// creation so that their consensus timestamps will appear in chronological order
-				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime, inProgress.sidecars()));
+				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime,
+						getTimestampedSidecars(inProgress.sidecars(), childConsTime)));
 			}
 		}
 	}
@@ -326,13 +310,15 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	}
 
 
-	private void addTimestampToSidecars(
-			final Instant consensusTimestamp,
-			final List<TransactionSidecarRecord.Builder> sidecars
+	private List<TransactionSidecarRecord> getTimestampedSidecars(
+			final List<TransactionSidecarRecord.Builder> sidecars,
+			final Instant txnTimestamp
 	) {
-		//TODO: return immutable list of TSR, not builder
 		if (isNotEmpty(sidecars)) {
-			sidecars.forEach(sidecar -> sidecar.setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp)));
+			return sidecars.stream()
+					.map(sidecar -> sidecar.setConsensusTimestamp(MiscUtils.asTimestamp(txnTimestamp)).build())
+					.toList();
 		}
+		return Collections.emptyList();
 	}
 }

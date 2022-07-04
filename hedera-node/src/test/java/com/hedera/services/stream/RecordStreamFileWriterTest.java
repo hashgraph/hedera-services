@@ -279,14 +279,12 @@ class RecordStreamFileWriterTest {
 							.setNanos(1000 * i);
 			final ExpirableTxnRecord.Builder expirableBuilder = ExpirableTxnRecord.newBuilder()
 					.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos())));
-			final var transactionRecord =
-					TransactionRecord.newBuilder().setConsensusTimestamp(timestamp);
 			final var transaction =
 					Transaction.newBuilder()
 							.setSignedTransactionBytes(ByteString.copyFrom(
 									("block #" + blockNumber + ", transaction #" + i).getBytes(StandardCharsets.UTF_8)));
 
-			List<TransactionSidecarRecord.Builder> sidecars;
+			List<TransactionSidecarRecord> sidecars;
 			if (addSidecars) {
 				final var stateChangeSidecar = TransactionSidecarRecord.newBuilder()
 						.setStateChanges(ContractStateChanges.newBuilder().addContractStateChanges(ContractStateChange.newBuilder()
@@ -295,15 +293,17 @@ class RecordStreamFileWriterTest {
 										.setSlot(ByteString.copyFrom(new byte[]{(byte) i}))
 										.setValueRead(ByteString.copyFrom(new byte[]{(byte) i}))
 										.build())
-								.build()));
+								.build())).build();
 				final var contractActionSidecar =
 						TransactionSidecarRecord.newBuilder().setActions(ContractActions.newBuilder().addContractActions(ContractAction.newBuilder()
-								.setInput(ByteString.copyFrom("randomText" + blockNumber, StandardCharsets.UTF_8)).build()));
+								.setInput(ByteString.copyFrom("randomText" + blockNumber, StandardCharsets.UTF_8)).build()))
+								.build();
 				final var bytecodeSidecar = TransactionSidecarRecord.newBuilder().setBytecode(
 						ContractBytecode.newBuilder()
 								.setContractId(IdUtils.asContract("0.0." + blockNumber))
 								.setInitcode(ByteString.copyFrom("thatsTheInitCode", StandardCharsets.UTF_8))
-								.build());
+								.build())
+						.build();
 				sidecars = List.of(stateChangeSidecar, contractActionSidecar, bytecodeSidecar);
 			} else {
 				sidecars = List.of();
@@ -445,11 +445,11 @@ class RecordStreamFileWriterTest {
 			if (isNotEmpty(rso.getSidecars())) {
 				for (final var tsr : rso.getSidecars()) {
 					if (tsr.hasActions() && sidecarType.equals(SidecarType.CONTRACT_ACTION)) {
-						expectedSidecarRecordsList.add(tsr.build());
+						expectedSidecarRecordsList.add(tsr);
 					} else if (tsr.hasStateChanges() && sidecarType.equals(SidecarType.CONTRACT_STATE_CHANGE)) {
-						expectedSidecarRecordsList.add(tsr.build());
+						expectedSidecarRecordsList.add(tsr);
 					} else if (tsr.hasBytecode() && sidecarType.equals(SidecarType.CONTRACT_BYTECODE)) {
-						expectedSidecarRecordsList.add(tsr.build());
+						expectedSidecarRecordsList.add(tsr);
 					}
 				}
 			}
@@ -819,7 +819,7 @@ class RecordStreamFileWriterTest {
 				ExpirableTxnRecord.newBuilder().build(),
 				Transaction.getDefaultInstance(),
 				firstTransactionInstant,
-				List.of(TransactionSidecarRecord.newBuilder())
+				List.of(TransactionSidecarRecord.newBuilder().build())
 		);
 		subject.addObject(faultyRSO);
 
