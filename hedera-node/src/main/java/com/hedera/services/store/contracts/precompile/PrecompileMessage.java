@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 
 import java.time.Instant;
@@ -48,6 +49,7 @@ public class PrecompileMessage {
 	private long gasRemaining;
 	private final Bytes inputData;
 	private final TokenID tokenID;
+	private Optional<ExceptionalHaltReason> exceptionalHaltReason;
 
 
 	public static PrecompileMessage.Builder builder() {
@@ -66,6 +68,7 @@ public class PrecompileMessage {
 		this.gasRemaining = gasRemaining;
 		this.inputData = inputData;
 		this.tokenID = tokenID;
+		exceptionalHaltReason = Optional.empty();
 	}
 
 	public Wei getValue() {
@@ -116,6 +119,10 @@ public class PrecompileMessage {
 		return this.logs;
 	}
 
+	public Optional<ExceptionalHaltReason> getExceptionalHaltReason() {
+		return exceptionalHaltReason;
+	}
+
 	public void setRevertReason(Bytes revertReason) {
 		this.revertReason = Optional.ofNullable(revertReason);
 	}
@@ -130,6 +137,10 @@ public class PrecompileMessage {
 
 	public void setHtsOutputResult(Bytes htsOutputResult) {
 		this.htsOutputResult = htsOutputResult;
+	}
+
+	public void setExceptionalHaltReason(Optional<ExceptionalHaltReason> exceptionalHaltReason) {
+		this.exceptionalHaltReason = exceptionalHaltReason;
 	}
 
 	public void addLog(Log log) {

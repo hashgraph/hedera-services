@@ -261,99 +261,102 @@ class ContractCallTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
-//	@Test
-//	void verifyProcessorCallingWithCorrectCallDataForTokenAccountDirectCall() {
-//		// setup:
-//		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
-//		var op = TransactionBody.newBuilder()
-//				.setContractCall(
-//						ContractCallTransactionBody.newBuilder()
-//								.setGas(gas)
-//								.setAmount(sent)
-//								.setFunctionParameters(functionParams)
-//								.setContractID(target));
-//		contractCallTxn = op.build();
-//		// and:
-//		given(accessor.getTxn()).willReturn(contractCallTxn);
-//		given(txnCtx.accessor()).willReturn(accessor);
-//		given(txnCtx.activePayer()).willReturn(ourAccount());
-//		// and:
-//		given(entityAccess.isTokenAccount(any())).willReturn(true);
-//		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-//		given(properties.enableDirectHTSTokenCalls()).willReturn(true);
-//		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
-//		// and:
-//		var receiverId = new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum());
-//		var results = TransactionProcessingResult.successful(
-//				null, 1234L, 0L, 124L, Bytes.EMPTY,
-//				receiverId.asEvmAddress(), Map.of());
-//		given(directCallsTxProcessor.execute(senderAccount, gas, sent,
-//				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
-//				txnCtx.consensusTime(),
-//				null,
-//				receiverId,
-//				worldLedgers))
-//				.willReturn(results);
-//		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
-//		// when:
-//		subject.doStateTransition();
-//
-//		// then:
-//		verifyNoMoreInteractions(accountStore);
-//
-//		verify(recordService).externaliseEvmCallTransaction(any());
-//		verify(worldState).getCreatedContractIds();
-//		verify(txnCtx).setTargetedContract(target);
-//	}
+	@Test
+	void verifyProcessorCallingWithCorrectCallDataForTokenAccountDirectCall() {
+		// setup:
+		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
+		var op = TransactionBody.newBuilder()
+				.setContractCall(
+						ContractCallTransactionBody.newBuilder()
+								.setGas(gas)
+								.setAmount(sent)
+								.setFunctionParameters(functionParams)
+								.setContractID(target));
+		contractCallTxn = op.build();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
+		// and:
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(properties.enableDirectHTSTokenCalls()).willReturn(true);
+		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
+		// and:
+		var receiverId = new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum());
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				receiverId.asEvmAddress(), Map.of());
+		given(directCallsTxProcessor.execute(senderAccount, gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
+				txnCtx.consensusTime(),
+				null,
+				null,
+				0,
+				null,
+				receiverId,
+				worldLedgers))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+		// when:
+		subject.doStateTransition();
 
-//	@Test
-//	void verifyProcessorCallingWithCorrectCallDataForTokenAccountDirectEthCall() {
-//		// setup:
-//		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
-//		var op = TransactionBody.newBuilder()
-//				.setContractCall(
-//						ContractCallTransactionBody.newBuilder()
-//								.setGas(gas)
-//								.setAmount(sent)
-//								.setFunctionParameters(functionParams)
-//								.setContractID(target)
-//								);
-//		contractCallTxn = op.build();
-//		// and:
-//		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-//		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
-//		given(accessor.getTxn()).willReturn(contractCallTxn);
-//		// and:
-//		given(entityAccess.isTokenAccount(any())).willReturn(true);
-//		given(properties.enableDirectHTSTokenCalls()).willReturn(true);
-//		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
-//		// and:
-//		var receiverId = new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum());
-//		var results = TransactionProcessingResult.successful(
-//				null, 1234L, 0L, 124L, Bytes.EMPTY,
-//				contractAccount.getId().asEvmAddress(), Map.of());
-//		given(directCallsTxProcessor.executeEth(senderAccount, gas, sent,
-//				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
-//				txnCtx.consensusTime(),
-//				null,
-//				biOfferedGasPrice,
-//				maxGas,
-//				relayerAccount,
-//				receiverId,
-//				worldLedgers))
-//				.willReturn(results);
-//		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
-//		subject.doStateTransitionOperation(
-//				accessor.getTxn(),
-//				senderAccount.getId(),
-//				relayerAccount.getId(),
-//				maxGas, biOfferedGasPrice);
-//
-//		// then:
-//		verify(recordService).externaliseEvmCallTransaction(any());
-//		verify(worldState).getCreatedContractIds();
-//		verify(txnCtx).setTargetedContract(target);
-//	}
+		// then:
+		verifyNoMoreInteractions(accountStore);
+
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
+
+	@Test
+	void verifyProcessorCallingWithCorrectCallDataForTokenAccountDirectEthCall() {
+		// setup:
+		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
+		var op = TransactionBody.newBuilder()
+				.setContractCall(
+						ContractCallTransactionBody.newBuilder()
+								.setGas(gas)
+								.setAmount(sent)
+								.setFunctionParameters(functionParams)
+								.setContractID(target)
+								);
+		contractCallTxn = op.build();
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		// and:
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+		given(properties.enableDirectHTSTokenCalls()).willReturn(true);
+		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
+		// and:
+		var receiverId = new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum());
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(directCallsTxProcessor.execute(senderAccount, gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
+				txnCtx.consensusTime(),
+				null,
+				biOfferedGasPrice,
+				maxGas,
+				relayerAccount,
+				receiverId,
+				worldLedgers))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+		subject.doStateTransitionOperation(
+				accessor.getTxn(),
+				senderAccount.getId(),
+				relayerAccount.getId(),
+				maxGas, biOfferedGasPrice);
+
+		// then:
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
 
 	@Test
 	void successfulPreFetch() {

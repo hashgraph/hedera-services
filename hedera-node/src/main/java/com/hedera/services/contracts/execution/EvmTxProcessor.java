@@ -288,8 +288,7 @@ abstract class EvmTxProcessor {
 	}
 
 	protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-		return livePricesSource.currentGasPrice(consensusTime,
-				isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+		return TxProcessorUtil.gasPriceTinyBarsGiven(livePricesSource, consensusTime, isEthTxn, getFunctionType());
 	}
 
 	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {

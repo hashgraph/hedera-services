@@ -36,7 +36,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.MutableAccount;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
@@ -58,11 +57,7 @@ public class DirectCallsTxProcessor {
 	private final LivePricesSource livePricesSource;
 	protected final GlobalDynamicProperties dynamicProperties;
 	private final HTSPrecompiledContract htsPrecompiledContract;
-	private Optional<ExceptionalHaltReason> exceptionalHaltReason;
 	private final HederaMutableWorldState worldState;
-	private long intrinsicGas;
-	private HederaWorldState.Updater updater;
-	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 
 	@Inject
@@ -88,7 +83,10 @@ public class DirectCallsTxProcessor {
 			final Id tokenId,
 			final WorldLedgers ledgers) {
 
-		populateCommonFields();
+		HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
+		long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
+		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = dynamicProperties.shouldEnableTraceability() ?
+				updater.getFinalStateChanges() : Map.of();
 		final MutableAccount mutableSender = TxProcessorUtil.getMutableSender(updater, sender);
 		final var isEthTx = relayer != null;
 		final long gasPrice = TxProcessorUtil.gasPriceTinyBarsGiven(
@@ -113,12 +111,10 @@ public class DirectCallsTxProcessor {
 					mutableRelayer, Wei.ZERO, gasPrice, gasLimit, value);
 		}
 
-		//construct PrecompileMessage
 		PrecompileMessage message = TxProcessorUtil.constructPrecompileMessage(
 				sender, consensusTime, ledgers,
 				payload, gasLimit, value, tokenId, intrinsicGas);
 
-		//call the hts
 		callHtsPrecompile(message);
 		long gasUsedByTransaction = TxProcessorUtil.calculateGasUsedByTX(gasLimit, message,
 				dynamicProperties.maxGasRefundPercentage());
@@ -138,17 +134,10 @@ public class DirectCallsTxProcessor {
 				isCompletedSuccess, message.getLogs(),
 				updater.getSbhRefund(), gasUsedByTransaction,
 				gasPrice, mirrorReceiver, message.getHtsOutputResult(),
-				message.getRevertReason(), exceptionalHaltReason,
+				message.getRevertReason(), message.getExceptionalHaltReason(),
 				stateChanges);
 	}
 
-	private void populateCommonFields() {
-		updater = (HederaWorldState.Updater) worldState.updater();
-		exceptionalHaltReason = Optional.empty();
-		intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false);
-		stateChanges = dynamicProperties.shouldEnableTraceability() ?
-				updater.getFinalStateChanges() : Map.of();
-	}
 
 	private void callHtsPrecompile(PrecompileMessage message) {
 		htsPrecompiledContract.callHtsPrecompileDirectly(message);
@@ -156,8 +145,8 @@ public class DirectCallsTxProcessor {
 
 		if (message.getGasRemaining() < gasRequirement) {
 			message.decrementRemainingGas(message.getGasRemaining());
-			exceptionalHaltReason = Optional.of(
-					org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS);
+			message.setExceptionalHaltReason(Optional.of(
+					org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS));
 			message.setState(EXCEPTIONAL_HALT);
 		} else if (message.getHtsOutputResult() != null) {
 			message.decrementRemainingGas(gasRequirement);
