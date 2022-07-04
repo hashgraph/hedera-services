@@ -149,12 +149,12 @@ public class SerializedForms {
 	 */
 	private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
 			Map.ofEntries(
-//					entry(CurrencyAdjustments.class, SeededPropertySource::nextCurrencyAdjustments,
-//							MIN_TEST_CASES_PER_VERSION),
-//					entry(EntityId.class, SeededPropertySource::nextEntityId, MIN_TEST_CASES_PER_VERSION),
+					entry(CurrencyAdjustments.class, SeededPropertySource::nextCurrencyAdjustments,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(EntityId.class, SeededPropertySource::nextEntityId, MIN_TEST_CASES_PER_VERSION),
 					entry(EvmFnResult.class, SeededPropertySource::nextEvmResult, EvmFnResultSerdeTest.NUM_TEST_CASES),
-//					entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTest.NUM_TEST_CASES),
-//					entry(ExchangeRates.class, SeededPropertySource::nextExchangeRates, MIN_TEST_CASES_PER_VERSION),
+					entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTest.NUM_TEST_CASES),
+					entry(ExchangeRates.class, SeededPropertySource::nextExchangeRates, MIN_TEST_CASES_PER_VERSION),
 					entry(ExpirableTxnRecord.class, SeededPropertySource::nextRecord,
 							ExpirableTxnRecordSerdeTest.NUM_TEST_CASES),
 					entry(FcAssessedCustomFee.class, SeededPropertySource::nextAssessedFee, MIN_TEST_CASES_PER_VERSION),

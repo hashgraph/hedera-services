@@ -25,7 +25,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
-import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -33,9 +32,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,11 +39,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.TreeMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerdeUtils {
@@ -97,7 +90,6 @@ public class SerdeUtils {
 				that.getLogInfoList().stream().map(SerdeUtils::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
 				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : EvmFnResult.EMPTY,
-//		new TreeMap<>(), // TODO: fix this
 				that.getGas(),
 				that.getAmount(),
 				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray(),
