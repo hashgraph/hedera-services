@@ -586,21 +586,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			assertNoStakingAccountFees(transferList);
 		}
 		if (noPseudoRandomData) {
-			final var actualByteString = actualRecord.getPseudorandomBytes();
-			final var actualRandomNum = actualRecord.getPseudorandomNumber();
+			final var actualByteString = actualRecord.getPrngBytes();
+			final var actualRandomNum = actualRecord.getPrngNumber();
 			assertEquals(0, actualByteString.size());
 			assertEquals(0, actualRandomNum);
 		}
 		if (pseudorandomBytesExpected) {
-			final var actualByteString = actualRecord.getPseudorandomBytes();
-			final var actualRandomNum = actualRecord.getPseudorandomNumber();
+			final var actualByteString = actualRecord.getPrngBytes();
+			final var actualRandomNum = actualRecord.getPrngNumber();
 			assertEquals(MAX_PSEUDORANDOM_BYTES_LENGTH, actualByteString.size());
 			assertEquals(0, actualRandomNum);
 		}
 
 		if (pseudorandomNumberRange.isPresent()) {
-			final var actualByteString = actualRecord.getPseudorandomBytes();
-			final var actualRandomNum = actualRecord.getPseudorandomNumber();
+			final var actualByteString = actualRecord.getPrngBytes();
+			final var actualRandomNum = actualRecord.getPrngNumber();
 			assertTrue(actualByteString.isEmpty());
 			assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
 		}

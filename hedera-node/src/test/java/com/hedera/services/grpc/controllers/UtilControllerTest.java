@@ -27,7 +27,7 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
@@ -46,11 +46,11 @@ class UtilControllerTest {
 	}
 
 	@Test
-	void forwardsRandomGenerateAsExpected() {
+	void forwardsPrngAsExpected() {
 		// when:
-		subject.randomGenerate(txn, txnObserver);
+		subject.prng(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, RandomGenerate);
+		verify(txnResponseHelper).submit(txn, txnObserver, PRNG);
 	}
 }

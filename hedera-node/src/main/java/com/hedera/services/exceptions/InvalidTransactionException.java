@@ -34,27 +34,27 @@ import org.apache.tuweni.bytes.Bytes;
  * detail message in the constructor.
  */
 public class InvalidTransactionException extends RuntimeException {
-	private static final String REVERT_REASON_TAG_START = "{{";
-	private static final String REVERT_REASON_TAG_END = "}}";
 
 	private final ResponseCodeEnum responseCode;
+	private final boolean reverting;
 
 	public InvalidTransactionException(final ResponseCodeEnum responseCode) {
-		super(responseCode.name());
-		this.responseCode = responseCode;
+		this(responseCode.name(), responseCode, false);
+	}
+	
+	public InvalidTransactionException(final ResponseCodeEnum responseCode, boolean reverting) {
+		this(responseCode.name(), responseCode, reverting);
 	}
 
 	public InvalidTransactionException(final String detailMessage, final ResponseCodeEnum responseCode) {
+		this(detailMessage, responseCode, false);
+	}
+
+	public InvalidTransactionException(final String detailMessage, final ResponseCodeEnum responseCode,
+			boolean reverting) {
 		super(detailMessage);
 		this.responseCode = responseCode;
-	}
-
-	public static InvalidTransactionException fromReverting(final ResponseCodeEnum code) {
-		return new InvalidTransactionException(revertingDetail(code.name()), code);
-	}
-
-	public static InvalidTransactionException fromReverting(final ResponseCodeEnum code, final String reason) {
-		return new InvalidTransactionException(revertingDetail(reason), code);
+		this.reverting = reverting;
 	}
 
 	public ResponseCodeEnum getResponseCode() {
@@ -62,7 +62,7 @@ public class InvalidTransactionException extends RuntimeException {
 	}
 
 	public boolean isReverting() {
-		return getMessage().startsWith(REVERT_REASON_TAG_START);
+		return reverting;
 	}
 
 	public Bytes getRevertReason() {
@@ -70,11 +70,6 @@ public class InvalidTransactionException extends RuntimeException {
 			throw new IllegalStateException();
 		}
 		final var detail = getMessage();
-		return Bytes.of(
-				detail.substring(REVERT_REASON_TAG_START.length(), detail.indexOf(REVERT_REASON_TAG_END)).getBytes());
-	}
-
-	private static String revertingDetail(final String revertReason) {
-		return REVERT_REASON_TAG_START + revertReason + REVERT_REASON_TAG_END;
+		return Bytes.of(detail.getBytes());
 	}
 }
