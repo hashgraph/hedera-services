@@ -87,9 +87,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	}
 
 	public static Object[] viaAbi(String abi, byte[] bytes) {
-//		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
 		com.esaulpaugh.headlong.abi.Function function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
-//		return function.decodeResult(bytes);
 		return function.decodeReturn(bytes).toList().toArray();
 	}
 

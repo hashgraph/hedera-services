@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -31,7 +32,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -44,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
@@ -72,15 +74,15 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
 				).when(
 				)
 				.then(
-						contractCall(contract, "sizeOf", INVALID_ADDRESS)
+						contractCall(contract, "sizeOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(contract, "sizeOf", INVALID_ADDRESS)
+						contractCallLocal(contract, "sizeOf", Address.wrap(Address.toChecksumAddress(INVALID_ADDRESS)))
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
 							final var contractID = spec.registry().getContractId(contract);
-							final var accountSolidityAddress = asHexedSolidityAddress(accountID);
-							final var contractAddress = asHexedSolidityAddress(contractID);
+							final var accountSolidityAddress = asHeadlongAddress(asSolidityAddress(accountID));
+							final var contractAddress = asHeadlongAddress(asSolidityAddress(contractID));
 
 							final var call = contractCall(contract, "sizeOf",
 									accountSolidityAddress)

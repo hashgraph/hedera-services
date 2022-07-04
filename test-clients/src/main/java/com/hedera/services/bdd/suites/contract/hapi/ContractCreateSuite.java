@@ -580,7 +580,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
 
 		final var beneficiary = "civilian";
-		final var totalToSend = 1_000L;
+		final var totalToSend = BigInteger.valueOf(1_000);
 		final var origKey = KeyShape.threshOf(1, SIMPLE, CONTRACT);
 		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 		final var newKey = "delegateContractKey";
@@ -596,7 +596,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.exposingNumTo(justSendContractNum::set),
 						contractCreate(sendInternalAndDelegateContract)
 								.gas(300_000L)
-								.balance(2 * totalToSend)
+								.balance(2 * totalToSend.longValueExact())
 				).when(
 						cryptoCreate(beneficiary)
 								.balance(0L)
@@ -609,16 +609,16 @@ public class ContractCreateSuite extends HapiApiSuite {
 						 * call doesn't fail because exceptional halts in "raw calls" don't automatically
 						 * propagate up the stack like a Solidity revert does.) */
 						sourcing(() -> contractCall(sendInternalAndDelegateContract, "sendRepeatedlyTo",
-								justSendContractNum.get(), beneficiaryAccountNum.get(), totalToSend / 2)
+								BigInteger.valueOf(justSendContractNum.get()), BigInteger.valueOf(beneficiaryAccountNum.get()), totalToSend.divide(BigInteger.valueOf(2)))
 						),
-						getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
+						getAccountBalance(beneficiary).hasTinyBars(totalToSend.longValueExact() / 2),
 						/* But now we update the beneficiary to have a delegateContractId */
 						newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, sendInternalAndDelegateContract))),
 						cryptoUpdate(beneficiary).key(newKey),
 						sourcing(() -> contractCall(sendInternalAndDelegateContract, "sendRepeatedlyTo",
-								justSendContractNum.get(), beneficiaryAccountNum.get(), totalToSend / 2)
+								BigInteger.valueOf(justSendContractNum.get()), BigInteger.valueOf(beneficiaryAccountNum.get()), totalToSend.divide(BigInteger.valueOf(2)))
 						),
-						getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2))
+						getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend.longValueExact() / 2))
 				);
 	}
 

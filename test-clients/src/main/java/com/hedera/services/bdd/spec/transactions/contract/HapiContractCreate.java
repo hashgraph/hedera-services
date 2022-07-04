@@ -20,15 +20,14 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,7 +41,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
-//import org.ethereum.core.CallTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -280,7 +278,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 			params = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex);
 		} else {
 			params = abi.isPresent()
-					? Optional.of(com.esaulpaugh.headlong.abi.Function.fromJson(abi.get()).encodeCallWithArgs(args.get()).array())
+					? Optional.of(com.esaulpaugh.headlong.abi.Function.fromJson(abi.get()).encodeCall(Tuple.of(args.get())).array())
 //					? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
 					: Optional.empty();
 		}

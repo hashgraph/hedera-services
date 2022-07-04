@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-//import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -351,8 +350,6 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 							var resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
 							Function function = Function.fromJson(getABIFor(FUNCTION, "getIndirect", contract));
-//							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
-//									getABIFor(FUNCTION, "getIndirect", contract));
 
 							var contractCallReturnVal = 0;
 							if (resultBytes != null && resultBytes.length > 0) {
@@ -376,14 +373,13 @@ public class CreateOperationSuite extends HapiApiSuite {
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");
 
 							function = Function.fromJson(getABIFor(FUNCTION, "getAddress", contract));
-//							function = CallTransaction.Function.fromJsonInterface(
-//									getABIFor(FUNCTION, "getAddress", contract));
 
 							final var retResults = function.decodeReturn(resultBytes);
 							String contractIDString = null;
 							if (retResults != null && retResults.size() > 0) {
 								final var retVal = (byte[]) retResults.get(0);
 
+								// TODO : Convert Headlong Address to Ethereum Address or change logic for valid case
 								final var realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
 								final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));
 								contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
