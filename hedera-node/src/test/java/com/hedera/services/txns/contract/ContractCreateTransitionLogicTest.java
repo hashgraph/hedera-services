@@ -183,7 +183,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void acceptsOkSyntax() {
-		givenValidTxnCtx(true, false, false, false, true);
+		givenValidTxnCtx(true, false, false, false, true, false);
 		given(properties.isStakingEnabled()).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
@@ -195,7 +195,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void failsStakingIdIfStakingNotEnabled() {
-		givenValidTxnCtx(true, false, false, true, false);
+		givenValidTxnCtx(true, false, false, true, false, false);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
@@ -203,7 +203,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void failsDeclineRewardIfStakingNotEnabled() {
-		givenValidTxnCtx(true, false, false, false, true);
+		givenValidTxnCtx(true, false, false, false, true, false);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(properties.maxGasPerSec()).willReturn(gas + 1);
 		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(contractCreateTxn));
@@ -266,7 +266,7 @@ class ContractCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false, false, false, false, false);
+		givenValidTxnCtx(false, false, false, false, false, false);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -711,6 +711,82 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void followsHappyPathWithOverridesAndInlineInitCodeAndWithSidecar() {
+		// setup:
+		givenValidTxnCtxWithInlineInitCode();
+		final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
+		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.activePayer()).willReturn(ourAccount());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount),
+				INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				autoRenewModel);
+		given(autoRenewModel.isSmartContract()).willReturn(false);
+		final var output = Bytes.of(123);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				output,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		final var newEvmAddress = contractAccount.getId().asEvmAddress();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
+		final Bytes initCode = Bytes.of("initCode".getBytes());
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				initCode,
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+						contractAccount.getId().asGrpcContract(), new byte[0], output.toArrayUnsafe()))
+				.thenReturn(sidecarRecord);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).setHapiSenderCustomizer(captor.capture());
+		verify(worldState).getCreatedContractIds();
+		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe(), sidecarRecord);
+		verify(worldState, never()).reclaimContractId();
+		verify(worldState).resetHapiSenderCustomizer();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(accountStore).loadAccount(senderAccount.getId());
+		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+		sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecode(
+				contractAccount.getId().asGrpcContract(),
+				new byte[0],
+				output.toArrayUnsafe()
+		));
+		// and:
+		final var customizerUsed = captor.getValue();
+		final var changes = customizerUsed.accountCustomizer().getChanges();
+		assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+		sidecarUtilsMockedStatic.close();
+	}
+
+	@Test
 	void followsHappyPathWithCounterAndRecord() {
 		// setup:
 		givenValidTxnCtxWithMaxAssociations();
@@ -945,11 +1021,11 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true, false, false, false, false);
+		givenValidTxnCtx(true, false, false, false, false, false);
 	}
 
 	private void givenValidTxnCtxWithStakingId() {
-		givenValidTxnCtx(true, true, false, true, false);
+		givenValidTxnCtx(true, true, false, true, false, false);
 	}
 
 
@@ -958,7 +1034,8 @@ class ContractCreateTransitionLogicTest {
 			boolean useAutoRenewAccount,
 			boolean useMaxAutoAssociations,
 			boolean setStakingId,
-			boolean declineReward
+			boolean declineReward,
+			boolean inlineInitCode
 	) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
@@ -976,6 +1053,9 @@ class ContractCreateTransitionLogicTest {
 		if (setStakingId) {
 			op.setStakedNodeId(10L);
 		}
+		if (inlineInitCode) {
+			op.setInitcode(ByteString.copyFrom("initCode".getBytes()));
+		}
 		op.setDeclineReward(declineReward);
 		var txn = TransactionBody.newBuilder()
 				.setContractCreateInstance(op);
@@ -983,7 +1063,11 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtxWithMaxAssociations() {
-		givenValidTxnCtx(true, true, true, false, false);
+		givenValidTxnCtx(true, true, true, false, false, false);
+	}
+
+	private void givenValidTxnCtxWithInlineInitCode() {
+		givenValidTxnCtx(true, true, true, false, false, true);
 	}
 
 	private AccountID ourAccount() {
