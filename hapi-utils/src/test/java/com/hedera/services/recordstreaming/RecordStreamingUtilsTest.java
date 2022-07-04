@@ -25,79 +25,75 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class RecordStreamingUtilsTest {
 
-	public static final String PATH_TO_FILES = "src/test/resources/recordstream";
+	private static final String PATH_TO_FILES = "src/test/resources/recordstream";
+
+	private static final String V6_RECORD_FILE = "2022-06-14T14_49_22.456975294Z.rcd";
+	private static final String V6_RECORD_SIGNATURE_FILE = "2022-06-14T14_49_22.456975294Z.rcd_sig";
+	private static final String V6_SIDECAR_FILE = "2022-06-30T09_07_20.147156221Z_03.rcd";
+	private static final String V5_RECORD_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd";
+	private static final String V5_RECORD_SIGNATURE_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd_sig";
 
 	@Test
-	void parsingV6RecordFilesSucceeds() throws IOException {
-		final var allStreamFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> !path.toString().contains("V5") && path.toString().endsWith(".rcd"))
-				.toList();
-		for (var file : allStreamFiles) {
-			final var pair = RecordStreamingUtils.readRecordStreamFile(file.toString());
-			assertEquals(6, pair.getLeft());
-			assertNotNull(pair.getRight());
-		}
+	void parsingV6RecordFilesSucceeds() {
+		final var recordFilePath = Path.of(PATH_TO_FILES, V6_RECORD_FILE);
+
+		final var recordFilePair = RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString());
+
+		assertEquals(6, recordFilePair.getLeft());
+		assertTrue(recordFilePair.getRight().isPresent());
 	}
 
 	@Test
-	void parsingV6SignatureRecordFilesSucceeds() throws IOException {
-		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> !path.toString().contains("V5") && path.toString().contains(".rcd_sig"))
-				.toList();
-		for (final var file : signatureFiles) {
-			final var signatureFilePair = RecordStreamingUtils.readSignatureFile(file.toString());
-			assertEquals(6, signatureFilePair.getLeft());
-			assertNotNull(signatureFilePair.getRight());
-		}
+	void parsingV6SignatureRecordFilesSucceeds()  {
+		final var signatureFilePath = Path.of(PATH_TO_FILES, V6_RECORD_SIGNATURE_FILE);
+
+		final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath.toString());
+
+		assertEquals(6, signatureFilePair.getLeft());
+		assertTrue(signatureFilePair.getRight().isPresent());
 	}
 
 	@Test
-	void parsingV6SidecarRecordFilesSucceeds() throws IOException {
-		final var sidecarFile = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> path.toString().contains("V5S"))
-				.findFirst()
-				.get();
-		final var signatureFileOptional = RecordStreamingUtils.readSidecarFile(sidecarFile.toString());
-		assertNotNull(signatureFileOptional.get());
+	void parsingV6SidecarRecordFilesSucceeds() {
+		final var sidecarFilePath = Path.of(PATH_TO_FILES, V6_SIDECAR_FILE);
+
+		final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(sidecarFilePath.toString());
+
+		assertTrue(sidecarFileOptional.isPresent());
 	}
 
 	@Test
-	void parsingUnknownRecordFilesReturnsEmptyPair() throws IOException {
-		final var allStreamFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd"))
-				.toList();
-		for (var file : allStreamFiles) {
-			final var pair = RecordStreamingUtils.readRecordStreamFile(file.toString());
-			assertEquals(-1, pair.getLeft());
-			assertFalse(pair.getRight().isPresent());
-		}
+	void parsingUnknownRecordFilesReturnsEmptyPair()  {
+		final var recordFilePath = Path.of(PATH_TO_FILES, V5_RECORD_FILE);
+
+		final var recordFilePair = RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString());
+
+		assertEquals(-1, recordFilePair.getLeft());
+		assertFalse(recordFilePair.getRight().isPresent());
 	}
 
 	@Test
-	void parsingUnknownSignatureRecordFilesReturnsEmptyPair() throws IOException {
-		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd_sig"))
-				.toList();
-		for (final var file : signatureFiles) {
-			final var pair = RecordStreamingUtils.readSignatureFile(file.toString());
-			assertEquals(-1, pair.getLeft());
-			assertFalse(pair.getRight().isPresent());
-		}
+	void parsingUnknownSignatureRecordFilesReturnsEmptyPair()  {
+		final var signatureFilePath = Path.of(PATH_TO_FILES, V5_RECORD_SIGNATURE_FILE);
+
+		final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath.toString());
+
+		assertEquals(-1, signatureFilePair.getLeft());
+		assertFalse(signatureFilePair.getRight().isPresent());
 	}
 
 	@Test
-	void parsingUnknownSidecarFileReturnsEmptyOptional() throws IOException {
-		final var signatureFiles = Files.walk(Path.of(PATH_TO_FILES))
-				.filter(path -> path.toString().contains("V5") && path.toString().endsWith(".rcd_sig"))
-				.toList();
-		for (final var file : signatureFiles) {
-			final var sidecarOptional = RecordStreamingUtils.readSidecarFile(file.toString());
-			assertTrue(sidecarOptional.isEmpty());
-		}
+	void parsingUnknownSidecarFileReturnsEmptyOptional()  {
+		final var notSidecarFilePath = Path.of(PATH_TO_FILES, V5_RECORD_SIGNATURE_FILE);
+
+		final var sidecarOptional = RecordStreamingUtils.readSidecarFile(notSidecarFilePath.toString());
+
+		assertTrue(sidecarOptional.isEmpty());
 	}
 }
