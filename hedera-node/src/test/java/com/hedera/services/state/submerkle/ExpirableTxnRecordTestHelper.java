@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -87,6 +88,12 @@ public class ExpirableTxnRecordTestHelper {
 				.setNewTokenAssociations(newTokenAssociations)
 				.setAlias(record.getAlias())
 				.setEthereumHash(record.getEthereumHash().toByteArray());
+		if (!record.getPrngBytes().isEmpty()) {
+			builder.setPseudoRandomBytes(record.getPrngBytes().toByteArray());
+		}
+		if (record.getPrngNumber() > 0) {
+			builder.setPseudoRandomNumber(record.getPrngNumber());
+		}
 		if (record.hasParentConsensusTimestamp()) {
 			builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
 		}

@@ -26,6 +26,7 @@ import com.hedera.test.utils.SeededPropertySource;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -61,6 +62,9 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		}
 		if (version < RELEASE_0270_VERSION) {
 			seeded.clearStakingRewardsPaid();
+		}
+		if (version < RELEASE_0280_VERSION) {
+			seeded.clearPrngData();
 		}
 		return seeded;
 	}

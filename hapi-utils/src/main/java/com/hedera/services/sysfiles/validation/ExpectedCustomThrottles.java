@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -82,7 +83,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public final class ExpectedCustomThrottles {
-	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY_SIX = EnumSet.of(
+	public static final Set<HederaFunctionality> ACTIVE_OPS = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,
@@ -137,7 +138,8 @@ public final class ExpectedCustomThrottles {
 			ScheduleGetInfo,
 			TokenFeeScheduleUpdate,
 			TokenPause,
-			TokenUnpause
+			TokenUnpause,
+			PRNG
 	);
 
 	private ExpectedCustomThrottles() {

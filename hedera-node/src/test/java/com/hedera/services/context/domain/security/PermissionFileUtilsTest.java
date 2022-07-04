@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -80,7 +81,14 @@ class PermissionFileUtilsTest {
 	void returnsEmptyKeyForBlankQuery() {
 		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
 	}
-
+	@Test
+	void worksForPrng() {
+		final var op = PrngTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
+				.setPrng(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+	}
 	@Test
 	void worksForScheduleCreate() {
 		final var op = ScheduleCreateTransactionBody.getDefaultInstance();
@@ -580,6 +588,8 @@ class PermissionFileUtilsTest {
 			key = "submitMessage";
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
 			key = "tokenFeeScheduleUpdate";
+		} else if(txn.hasPrng()){
+			key = "prng";
 		}
 		return key;
 	}

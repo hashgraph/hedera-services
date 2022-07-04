@@ -96,6 +96,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
 		assertTrue(subject.isStakingEnabled());
+		assertTrue(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -136,6 +137,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(30, subject.feesMinCongestionPeriod());
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(78, subject.recordFileVersion());
+		assertEquals(79, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -231,6 +234,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
+		assertFalse(subject.isStakingEnabled());
+		assertFalse(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -282,6 +287,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(58, subject.maxAllowanceLimitPerAccount());
 		assertEquals(73, subject.getNodeRewardPercent());
 		assertEquals(74, subject.getStakingRewardPercent());
+		assertEquals(79, subject.recordFileVersion());
+		assertEquals(80, subject.recordSignatureFileVersion());
 	}
 
 	@Test
@@ -307,6 +314,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(76L, subject.getStakingRewardRate());
 		assertEquals(70L, subject.maxPrecedingRecords());
 		assertEquals(71L, subject.maxFollowingRecords());
+		assertEquals(76L, subject.getStakingRewardRate());
+		assertEquals(77L, subject.maxDailyStakeRewardThPerH());
 	}
 
 	@Test
@@ -424,6 +433,9 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 65) % 2 == 0);
 		given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 75L);
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
+		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
+		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
+		given(properties.getBooleanProperty("prng.isEnabled")).willReturn((i + 79) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

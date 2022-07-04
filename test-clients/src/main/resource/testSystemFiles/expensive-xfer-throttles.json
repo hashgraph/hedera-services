@@ -21,6 +21,7 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
+			"PRNG",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",

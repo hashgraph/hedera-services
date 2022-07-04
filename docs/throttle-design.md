@@ -20,7 +20,7 @@ The throttling is based on a set of _buckets_. A bucket might be defined as some
                         "FileGetContents", "FileGetInfo",
                         "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 
                         "TransactionGetRecord",
-                        "GetVersionInfo"
+                        "GetVersionInfo", "PRNG"
                     ]
                 },
                 {

@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -638,6 +639,23 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void setPrngMetaWorks() {
+		final var op = PrngTransactionBody.newBuilder().setRange(10).build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setPrng(op)
+				.build());
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getPrngMeta(accessor);
+
+		assertEquals(4, expandedMeta.getMsgBytesUsed());
+	}
+
+	@Test
 	void getGasLimitWorksForCreate() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setGas(123456789L)
@@ -812,7 +830,7 @@ class SignedTxnAccessorTest {
 		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
 				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +
