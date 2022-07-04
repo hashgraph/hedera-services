@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -69,6 +69,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -138,13 +139,13 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return defaultHapiSpec("MultiAssociationWithSameRepeatedTokenAsExpected")
 				.given(
 						cryptoCreate(civilian).exposingCreatedIdTo(id ->
-								civilianMirrorAddr.set(asHexedSolidityAddress(id))),
+								civilianMirrorAddr.set(asHeadlongAddress(asSolidityAddress(id)).toString())),
 						tokenCreate(nfToken)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
 								.exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(
-										asHexedSolidityAddress(
-												HapiPropertySource.asToken(idLit)))),
+										asHeadlongAddress(asSolidityAddress(
+												HapiPropertySource.asToken(idLit))).toString())),
 						uploadInitCode(theContract),
 						contractCreate(theContract)
 				).when(
