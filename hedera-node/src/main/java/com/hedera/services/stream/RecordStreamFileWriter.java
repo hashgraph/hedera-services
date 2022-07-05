@@ -57,6 +57,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
+import static com.hedera.services.stream.RecordStreamType.SidecarType.*;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
@@ -286,9 +287,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
 				// create sidecar files (only the ones needed) and add the SidecarMetadata to RecordStreamFile
 				try {
-					createSidecarFile(stateChangesSidecarBuilder, firstTxnInstant, RecordStreamType.SidecarType.STATE_CHANGES);
-					createSidecarFile(actionsSidecarBuilder, firstTxnInstant, RecordStreamType.SidecarType.ACTIONS);
-					createSidecarFile(bytecodesSidecarBuilder, firstTxnInstant, RecordStreamType.SidecarType.BYTECODES);
+					createSidecarFile(stateChangesSidecarBuilder, firstTxnInstant, STATE_CHANGES);
+					createSidecarFile(actionsSidecarBuilder, firstTxnInstant, ACTIONS);
+					createSidecarFile(bytecodesSidecarBuilder, firstTxnInstant, BYTECODES);
 				} catch (IOException e) {
 					Thread.currentThread().interrupt();
 					LOG.warn(EXCEPTION.getMarker(),

@@ -157,7 +157,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		registerProvider((spec, o) -> {
 			ContractFunctionResult result = (ContractFunctionResult) o;
 			Assertions.assertEquals(
-					UtilStateChange.stateChangesToGrpc(List.of(stateChanges), spec), new ArrayList<>(), // TODO: fix this
+					// TODO: fix this when redoing E2Es
+					UtilStateChange.stateChangesToGrpc(List.of(stateChanges), spec), new ArrayList<>(),
 					"Wrong state changes!");
 		});
 		return this;

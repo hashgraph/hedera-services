@@ -94,8 +94,8 @@ class SidecarUtilsTest {
 	void stripsLeadingZerosInChangeRepresentation() {
 		final var slot = Bytes.wrap(Address.BLS12_G1MULTIEXP.toArray());
 		final var access = Pair.of(
-								Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()),
-								Bytes.of(Address.BLS12_G1MUL.toArray()));
+				Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()),
+				Bytes.of(Address.BLS12_G1MUL.toArray()));
 		final var expected = StorageChange.newBuilder()
 				.setSlot(ByteString.copyFrom(Address.BLS12_G1MULTIEXP.trimLeadingZeros().toArray()))
 				.setValueRead(ByteString.copyFrom(Address.BLS12_MAP_FP2_TO_G2.trimLeadingZeros().toArray()))

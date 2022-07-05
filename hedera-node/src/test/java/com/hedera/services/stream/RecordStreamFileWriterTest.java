@@ -277,31 +277,36 @@ class RecordStreamFileWriterTest {
 					Timestamp.newBuilder()
 							.setSeconds(firstBlockTransactionInstant.getEpochSecond())
 							.setNanos(1000 * i);
-			final ExpirableTxnRecord.Builder expirableBuilder = ExpirableTxnRecord.newBuilder()
+			final var expirableBuilder = ExpirableTxnRecord.newBuilder()
 					.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos())));
 			final var transaction =
 					Transaction.newBuilder()
 							.setSignedTransactionBytes(ByteString.copyFrom(
 									("block #" + blockNumber + ", transaction #" + i).getBytes(StandardCharsets.UTF_8)));
-
 			List<TransactionSidecarRecord> sidecars;
 			if (addSidecars) {
 				final var stateChangeSidecar = TransactionSidecarRecord.newBuilder()
-						.setStateChanges(ContractStateChanges.newBuilder().addContractStateChanges(ContractStateChange.newBuilder()
-								.setContractId(IdUtils.asContract("0.0." + blockNumber))
-								.addStorageChanges(StorageChange.newBuilder()
+						.setStateChanges(ContractStateChanges.newBuilder()
+								.addContractStateChanges(ContractStateChange.newBuilder()
+									.setContractId(IdUtils.asContract("0.0." + blockNumber))
+									.addStorageChanges(StorageChange.newBuilder()
 										.setSlot(ByteString.copyFrom(new byte[]{(byte) i}))
 										.setValueRead(ByteString.copyFrom(new byte[]{(byte) i}))
 										.build())
-								.build())).build();
+								.build())
+						).build();
 				final var contractActionSidecar =
-						TransactionSidecarRecord.newBuilder().setActions(ContractActions.newBuilder().addContractActions(ContractAction.newBuilder()
-								.setInput(ByteString.copyFrom("randomText" + blockNumber, StandardCharsets.UTF_8)).build()))
+						TransactionSidecarRecord.newBuilder()
+								.setActions(ContractActions.newBuilder()
+										.addContractActions(ContractAction.newBuilder()
+											.setInput(ByteString.copyFrom("input" + (blockNumber + i),
+													StandardCharsets.UTF_8))
+											.build()))
 								.build();
 				final var bytecodeSidecar = TransactionSidecarRecord.newBuilder().setBytecode(
 						ContractBytecode.newBuilder()
-								.setContractId(IdUtils.asContract("0.0." + blockNumber))
-								.setInitcode(ByteString.copyFrom("thatsTheInitCode", StandardCharsets.UTF_8))
+								.setContractId(IdUtils.asContract("0.0." + (blockNumber + i)))
+								.setInitcode(ByteString.copyFrom("initCode", StandardCharsets.UTF_8))
 								.build())
 						.build();
 				sidecars = List.of(stateChangeSidecar, contractActionSidecar, bytecodeSidecar);
