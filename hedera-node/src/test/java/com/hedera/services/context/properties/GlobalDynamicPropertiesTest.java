@@ -27,6 +27,8 @@ import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -125,8 +127,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(20, subject.minValidityBuffer());
-		assertEquals(22, subject.chainId());
-		assertArrayEquals(Integers.toBytes(22), subject.chainIdBytes());
+		final var chainIdBytes = Integers.toBytes(22);
+		assertArrayEquals(chainIdBytes, subject.chainIdBytes());
+		assertEquals(Bytes32.leftPad(Bytes.of(chainIdBytes)), subject.chainIdBytes32());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.minAutoRenewDuration());
 		assertEquals(26, subject.typedMinAutoRenewDuration().getSeconds());

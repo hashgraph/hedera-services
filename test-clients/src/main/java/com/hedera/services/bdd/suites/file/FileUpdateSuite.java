@@ -37,6 +37,7 @@ import java.util.Set;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -48,11 +49,11 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -70,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
@@ -77,7 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -111,7 +112,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
 	private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
 	private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.maxGasPerSec";
+	private static final String CHAINID_PROP = "contracts.chainId";
 
+	private static final long defaultChainId =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAINID_PROP));
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 	private static final String defaultMaxCustomFees =
@@ -143,6 +147,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				autoCreationIsDynamic(),
 				kvLimitsEnforced(),
 				serviceFeeRefundedIfConsGasExhausted(),
+				chainIdChangesDynamically(),
 		});
 	}
 
@@ -520,6 +525,38 @@ public class FileUpdateSuite extends HapiApiSuite {
 												+ feeSansRefund + " was not less than " + origFee);
 							}
 						})
+				);
+	}
+
+	private HapiApiSpec chainIdChangesDynamically() {
+		final var chainIdUser = "ChainIdUser";
+		final var otherChainId = 0xABCDL;
+		final var firstCallTxn = "firstCallTxn";
+		final var secondCallTxn = "secondCallTxn";
+		return defaultHapiSpec("ChainIdChangesDynamically")
+				.given(
+						resetToDefault(CHAINID_PROP),
+						uploadInitCode(chainIdUser),
+						contractCreate(chainIdUser),
+						contractCall(chainIdUser, "getChainID").via(firstCallTxn),
+						contractCallLocal(chainIdUser, "getChainID")
+								.has(resultWith().contractCallResult(bigIntResult(defaultChainId))),
+						getTxnRecord(firstCallTxn).hasPriority(recordWith()
+								.contractCallResult(resultWith().contractCallResult(bigIntResult(defaultChainId)))),
+						contractCallLocal(chainIdUser, "getSavedChainID")
+								.has(resultWith().contractCallResult(bigIntResult(defaultChainId)))
+				).when(
+						overriding(CHAINID_PROP, "" + otherChainId),
+						contractCreate(chainIdUser),
+						contractCall(chainIdUser, "getChainID").via(secondCallTxn),
+						contractCallLocal(chainIdUser, "getChainID")
+								.has(resultWith().contractCallResult(bigIntResult(otherChainId))),
+						getTxnRecord(secondCallTxn).hasPriority(recordWith()
+								.contractCallResult(resultWith().contractCallResult(bigIntResult(otherChainId)))),
+						contractCallLocal(chainIdUser, "getSavedChainID")
+								.has(resultWith().contractCallResult(bigIntResult(otherChainId)))
+				).then(
+						resetToDefault(CHAINID_PROP)
 				);
 	}
 

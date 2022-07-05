@@ -29,6 +29,8 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,8 +72,8 @@ public class GlobalDynamicProperties {
 	private long minTxnDuration;
 	private int minValidityBuffer;
 	private long maxGasPerSec;
-	private int chainId;
 	private byte[] chainIdBytes;
+	private Bytes32 chainIdBytes32;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean atLeastOneAutoRenewTargetType;
@@ -177,8 +179,9 @@ public class GlobalDynamicProperties {
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGasPerSec = properties.getLongProperty("contracts.maxGasPerSec");
-		chainId = properties.getIntProperty("contracts.chainId");
+		final var chainId = properties.getIntProperty("contracts.chainId");
 		chainIdBytes = Integers.toBytes(chainId);
+		chainIdBytes32 = Bytes32.leftPad(Bytes.of(chainIdBytes));
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
@@ -357,14 +360,13 @@ public class GlobalDynamicProperties {
 		return maxGasPerSec;
 	}
 
-	public int chainId() {
-		return chainId;
-	}
-
 	public byte[] chainIdBytes() {
 		return chainIdBytes;
 	}
 
+	public Bytes32 chainIdBytes32() {
+		return chainIdBytes32;
+	}
 	public long defaultContractLifetime() {
 		return defaultContractLifetime;
 	}

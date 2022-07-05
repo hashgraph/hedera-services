@@ -31,6 +31,7 @@ import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -124,6 +125,7 @@ class CreateEvmTxProcessorTest {
 		givenValidMock(true);
 		givenSenderWithBalance(350_000L);
 		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
 				consensusTime, expiry);
 		assertTrue(result.isSuccessful());
@@ -141,7 +143,7 @@ class CreateEvmTxProcessorTest {
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 		given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
-
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		var result = createEvmTxProcessor.executeEth(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
 				consensusTime, expiry,  relayer, BigInteger.valueOf(10_000L) , 55_555L);
@@ -155,6 +157,7 @@ class CreateEvmTxProcessorTest {
 		givenValidMock(true);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		givenSenderWithBalance(350_000L);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
 				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
@@ -170,6 +173,7 @@ class CreateEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(INTRINSIC_GAS_COST);
 		givenSenderWithBalance(350_000L);
 		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
 				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
 		assertTrue(result.isSuccessful());
@@ -186,6 +190,7 @@ class CreateEvmTxProcessorTest {
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
 		givenSenderWithBalance(350_000L);
 		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		// when:
 		var result = createEvmTxProcessor.execute(
@@ -252,6 +257,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenSenderCannotCoverUpfrontCost() {
 		givenInvalidMock();
 		givenSenderWithBalance(123);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertFailsWith(
@@ -264,6 +270,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
 		givenInvalidMock();
 		givenExtantSender();
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertFailsWith(
@@ -277,6 +284,7 @@ class CreateEvmTxProcessorTest {
 		givenInvalidMock();
 		givenExtantSender();
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(MAX_GAS_LIMIT + 1L);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertFailsWith(
