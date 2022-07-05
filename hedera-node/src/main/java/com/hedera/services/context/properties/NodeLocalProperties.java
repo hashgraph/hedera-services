@@ -112,7 +112,7 @@ public class NodeLocalProperties {
 		consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
 		hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
 		entityUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
-		throttleUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
+		throttleUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs");
 	}
 
 	public int port() {
