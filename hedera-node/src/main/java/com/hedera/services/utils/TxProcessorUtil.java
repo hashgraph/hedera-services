@@ -201,4 +201,8 @@ public class TxProcessorUtil {
 					stateChanges);
 		}
 	}
+
+	private TxProcessorUtil() {
+		throw new IllegalStateException("Utility class");
+	}
 }

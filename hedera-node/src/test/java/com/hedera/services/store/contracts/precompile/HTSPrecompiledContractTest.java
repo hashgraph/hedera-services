@@ -616,6 +616,21 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
+	void callHtsDirectlyWithInCorrectInput() {
+		//given
+		givenMinimalPrecompileMessageContext();
+		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(infrastructureFactory.newSideEffects()).willReturn(new SideEffectsTracker());
+		given(wrappedLedgers.wrapped(any())).willReturn(wrappedLedgers);
+		Bytes input = Bytes.of(Integers.toBytes(0x06fdde33));
+		given(precompileMessage.getInputData()).willReturn(input);
+		//when
+		subject.callHtsPrecompileDirectly(precompileMessage);
+		//then
+		verify(precompileMessage, times(1)).setRevertReason(any());
+	}
+
+	@Test
 	void prepareFieldsWithAliasedMessageSender() {
 		givenFrameContext();
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -680,9 +695,9 @@ class HTSPrecompiledContractTest {
 
 		precompileInfoProvider = new DirectCallsPrecompileInfoProvider(precompileMessage);
 
-		assertEquals(precompileInfoProvider.getTimestamp(), 1L);
-		assertEquals(precompileInfoProvider.getSenderAddress(), contractAddress);
-		assertEquals(precompileInfoProvider.getInputData(), successResult);
+		assertEquals(1L, precompileInfoProvider.getTimestamp());
+		assertEquals(contractAddress, precompileInfoProvider.getSenderAddress());
+		assertEquals(successResult, precompileInfoProvider.getInputData());
 	}
 
 	private void givenFrameContext() {
@@ -692,12 +707,16 @@ class HTSPrecompiledContractTest {
 	}
 
 	private void givenPrecompileMessageContext() {
+		givenMinimalPrecompileMessageContext();
+		given(precompileMessage.getGasRemaining()).willReturn(AMOUNT);
+		given(precompileMessage.getValue()).willReturn(Wei.ZERO);
+	}
+
+	private void givenMinimalPrecompileMessageContext() {
 		given(precompileMessage.getSenderAddress()).willReturn(contractAddress);
 		given(precompileMessage.getLedgers()).willReturn(wrappedLedgers);
 		given(precompileMessage.getConsensusTime()).willReturn(TEST_CONSENSUS_TIME);
 		given(precompileMessage.getTokenID()).willReturn(fungible);
-		given(precompileMessage.getGasRemaining()).willReturn(AMOUNT);
-		given(precompileMessage.getValue()).willReturn(Wei.ZERO);
 	}
 
 	private void givenPricingUtilsContext() {

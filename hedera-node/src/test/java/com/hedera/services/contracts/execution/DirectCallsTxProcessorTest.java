@@ -31,6 +31,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -124,6 +125,8 @@ class DirectCallsTxProcessorTest {
 	private AssetsLoader assetLoader;
 	@Mock
 	private HbarCentExchange exchange;
+	@Mock
+	private ContractAliases aliases;
 
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -134,8 +137,10 @@ class DirectCallsTxProcessorTest {
 	private final Instant consensusTime = Instant.ofEpochSecond(TEST_CONSENSUS_TIME);
 	private final int MAX_GAS_LIMIT = 10_000_000;
 	private final long GAS_LIMIT = 300_000L;
+	private final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 
 	private DirectCallsTxProcessor directCallsTxProcessor;
+	private PrecompileMessage precompileMessage;
 
 	@BeforeEach
 	private void setup() {
@@ -537,13 +542,23 @@ class DirectCallsTxProcessorTest {
 	}
 
 	@Test
-	void unaliasedForNotExistingAddress() {
-		final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	void unaliasedForNoneExistingAddress() {
+		givenPrecompileMessage();
 		final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
 		given(worldLedgers.canonicalAddress(alias)).willReturn(alias2);
-		var precompileMessage = PrecompileMessage.builder().setLedgers(worldLedgers).setGasRemaining(2L).build();
 
 		assertArrayEquals(new byte[20], precompileMessage.unaliased(alias.toArrayUnsafe()));
+	}
+
+	@Test
+	void unaliasedForExistingAddress() {
+		given(aliases.resolveForEvm(alias)).willReturn(receiverAddress);
+		given(worldLedgers.canonicalAddress(alias)).willReturn(alias);
+		given(worldLedgers.aliases()).willReturn(aliases);
+		givenPrecompileMessage();
+
+		final var resolved = precompileMessage.unaliased(alias.toArrayUnsafe());
+		assertArrayEquals(receiverAddress.toArrayUnsafe(), resolved);
 	}
 
 	//Helpers
@@ -585,6 +600,13 @@ class DirectCallsTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(0L);
+	}
+
+	void givenPrecompileMessage() {
+		precompileMessage = PrecompileMessage.builder()
+				.setLedgers(worldLedgers)
+				.setGasRemaining(2L)
+				.build();
 	}
 
 	private void givenSenderWithBalance(final long amount) {
