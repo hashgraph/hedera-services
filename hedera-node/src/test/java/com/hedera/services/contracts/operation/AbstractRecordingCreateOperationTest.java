@@ -20,13 +20,11 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -35,9 +33,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -63,14 +59,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.verification.VerificationMode;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
@@ -92,9 +83,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractRecordingCreateOperationTest {
@@ -234,7 +223,7 @@ class AbstractRecordingCreateOperationTest {
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
-		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(lastAllocated, initCode, runtimeCode))
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(lastAllocated, initCode, runtimeCode))
 				.thenReturn(sidecarRecord);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));

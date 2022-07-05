@@ -112,7 +112,7 @@ public class TransactionRecordService {
 	private List<TransactionSidecarRecord.Builder> extractSidecarsFrom(final TransactionProcessingResult result) {
 		final List<TransactionSidecarRecord.Builder> sidecars = new ArrayList<>();
 		if (!result.getStateChanges().isEmpty()) {
-			sidecars.add(SidecarUtils.createStateChangesSidecar(result.getStateChanges()));
+			sidecars.add(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
 		}
 		// FUTURE WORK - we should put the actions in the list here as well when they are added
 		return sidecars;

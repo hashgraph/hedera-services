@@ -271,8 +271,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			} else {
 				// With multiple preceding child records, we add them to the stream in reverse order of
 				// creation so that their consensus timestamps will appear in chronological order
-				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime,
-						getTimestampedSidecars(inProgress.sidecars(), childConsTime)));
+				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime));
 			}
 		}
 	}

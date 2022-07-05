@@ -207,7 +207,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
 			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-			final var contractBytecodeSidecar = SidecarUtils.createContractBytecode(
+			final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
 					updater.idOfLastNewAddress(),
 					childFrame.getCode().getBytes().toArrayUnsafe(),
 					updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe()

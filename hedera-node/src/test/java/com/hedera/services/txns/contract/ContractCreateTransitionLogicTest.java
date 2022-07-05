@@ -683,7 +683,7 @@ class ContractCreateTransitionLogicTest {
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
-		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
 						contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
 				.thenReturn(sidecarRecord);
 
@@ -754,7 +754,7 @@ class ContractCreateTransitionLogicTest {
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
-		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
 						contractAccount.getId().asGrpcContract(), new byte[0], output.toArrayUnsafe()))
 				.thenReturn(sidecarRecord);
 
@@ -773,7 +773,7 @@ class ContractCreateTransitionLogicTest {
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 		verify(accountStore).loadAccount(senderAccount.getId());
 		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
-		sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecode(
+		sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecodeSidecarFrom(
 				contractAccount.getId().asGrpcContract(),
 				new byte[0],
 				output.toArrayUnsafe()
@@ -901,7 +901,7 @@ class ContractCreateTransitionLogicTest {
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
-		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecode(
+		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
 						contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
 				.thenReturn(sidecarRecord);
 		final var nextChildRecordSourceId = 1234;

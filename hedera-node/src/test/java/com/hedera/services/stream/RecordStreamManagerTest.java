@@ -319,7 +319,6 @@ public class RecordStreamManagerTest {
 		expected = withSeparatorSuffix + sidecarFolder;
 		actual = RecordStreamManager.effSidecarLogDir(withSeparatorSuffix, sidecarFolder);
 		assertEquals(expected, actual);
-
 	}
 
 	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.

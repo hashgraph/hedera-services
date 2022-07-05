@@ -301,7 +301,7 @@ class TxnAwareRecordsHistorianTest {
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		final var bytecodeSidecar =
-				SidecarUtils.createContractBytecode(asContract("0.0.1024"), "byte".getBytes(), "secondByte".getBytes());
+				SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.1024"), "byte".getBytes(), "secondByte".getBytes());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder, List.of(bytecodeSidecar));
 		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
 		subject.trackPrecedingChildRecord(1, precedeSynthBody, precedingBuilder);

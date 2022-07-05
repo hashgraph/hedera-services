@@ -194,7 +194,7 @@ class AbstractLedgerWorldUpdaterTest {
 		final var firstRecord = ExpirableTxnRecord.newBuilder();
 		final var firstSynthBuilder = TransactionBody.newBuilder();
 		final var contractBytecode =
-				SidecarUtils.createContractBytecode(asContract("0.0.666"), "bytes".getBytes(), "moreBytes".getBytes());
+				SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.666"), "bytes".getBytes(), "moreBytes".getBytes());
 		final var sidecars = List.of(contractBytecode);
 
 		// when

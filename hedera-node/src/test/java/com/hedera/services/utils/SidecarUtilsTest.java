@@ -48,7 +48,7 @@ class SidecarUtilsTest {
 		final var runtimeCode = "runtimeCode".getBytes();
 
 		// when
-		final var bytecodeSidecar = SidecarUtils.createContractBytecode(contract, initCode, runtimeCode).build();
+		final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(contract, initCode, runtimeCode).build();
 
 		// then
 		final var expectedBytecodes = ContractBytecode.newBuilder()
@@ -72,7 +72,7 @@ class SidecarUtilsTest {
 		stateChanges.put(address, Map.of(slot, Pair.of(valueRead, null)));
 
 		// when
-		final var stateChangesSidecar = SidecarUtils.createStateChangesSidecar(stateChanges).build();
+		final var stateChangesSidecar = SidecarUtils.createStateChangesSidecarFrom(stateChanges).build();
 
 		// then
 		final var expectedStorageChange = StorageChange.newBuilder()

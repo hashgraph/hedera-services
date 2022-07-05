@@ -127,7 +127,7 @@ class TransactionRecordServiceTest {
 		doCallRealMethod().when(txnCtx).setSidecarRecords(any(List.class));
 		doCallRealMethod().when(txnCtx).sidecars();
 		final var contractBytecodeSidecar =
-				SidecarUtils.createContractBytecode(IdUtils.asContract("0.0.5"),
+				SidecarUtils.createContractBytecodeSidecarFrom(IdUtils.asContract("0.0.5"),
 				"initCode".getBytes(), "runtimeCode".getBytes());
 
 		// when:
@@ -140,7 +140,7 @@ class TransactionRecordServiceTest {
 		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
 		final var sidecars = txnCtx.sidecars();
 		assertEquals(2, sidecars.size());
-		assertEquals(SidecarUtils.createStateChangesSidecar(stateChanges).build(), sidecars.get(0).build());
+		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
 		assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
 	}
 
@@ -163,7 +163,7 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 		final var sidecars = txnCtx.sidecars();
 		assertEquals(1, sidecars.size());
-		assertEquals(SidecarUtils.createStateChangesSidecar(stateChanges).build(), sidecars.get(0).build());
+		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
 	}
 
 	@Test

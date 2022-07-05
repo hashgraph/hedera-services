@@ -191,7 +191,6 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
 		given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
 		given(properties.getStringProperty("hedera.recordStream.sidecarLogDir")).willReturn(logDir(i + 30));
-
 	}
 
 	static String logDir(int num) {

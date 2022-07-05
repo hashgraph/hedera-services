@@ -302,7 +302,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					return;
 				}
 
-				// create record recordFile
+				// create record file
 				try (FileOutputStream stream = new FileOutputStream(recordFile, false);
 					SerializableDataOutputStream dos = new SerializableDataOutputStream(
 							new BufferedOutputStream(new HashingOutputStream(streamDigest, stream)))

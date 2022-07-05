@@ -41,7 +41,7 @@ public class SidecarUtils {
 
 	}
 
-	public static TransactionSidecarRecord.Builder createContractBytecode(
+	public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
 			ContractID contractID,
 			byte[] initCode,
 			byte[] runtimeCode
@@ -53,7 +53,7 @@ public class SidecarUtils {
 				.build());
 	}
 
-	public static TransactionSidecarRecord.Builder createStateChangesSidecar(
+	public static TransactionSidecarRecord.Builder createStateChangesSidecarFrom(
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
 	) {
 		final var grpc = ContractStateChanges.newBuilder();

@@ -835,12 +835,14 @@ class RecordStreamFileWriterTest {
 
 	@Test
 	void sidecarFileNameIsCorrectWithIdOf1Digit() {
+		// given
 		given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
 		final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
-
+		// when
 		final var actualSidecarFileName = subject.generateSidecarFilePath(instant, 5);
 
+		// then
 		final var expected =
 				expectedExportDir() + File.separator + "2022-05-26T11_02_55.000000000Z_05." + streamType.getSidecarExtension();
 		assertEquals(expected, actualSidecarFileName);
@@ -848,11 +850,14 @@ class RecordStreamFileWriterTest {
 
 	@Test
 	void sidecarFileNameIsCorrectWithIdOf2Digits() {
+		// given
 		given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
 		final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
+		// when
 		final var actualSidecarFileName = subject.generateSidecarFilePath(instant, 10);
 
+		// then
 		final var expected =
 				expectedExportDir() + File.separator + "2022-05-26T11_02_55.000000000Z_10." + streamType.getSidecarExtension();
 		assertEquals(expected, actualSidecarFileName);

@@ -65,7 +65,6 @@ public class NodeLocalProperties {
 	private int prefetchCodeCacheTtlSecs;
 	private String sidecarRecordLogDir;
 
-
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
 		this.properties = properties;
