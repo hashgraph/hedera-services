@@ -34,9 +34,6 @@ import com.hedera.services.throttling.TimedFunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +47,6 @@ import java.time.Instant;
 import java.util.TreeMap;
 
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
@@ -157,7 +153,7 @@ class ScheduleProcessingTest {
 		subject.expire(consensusTime);
 
 		// then:
-		verify(store, times(10)).expire(scheduleId1);
+		verify(store, times(50)).expire(scheduleId1);
 	}
 
 	@Test
@@ -197,7 +193,7 @@ class ScheduleProcessingTest {
 
 	@Test
 	void triggerNextTransactionExpiringAsNeededLimitedToMaxLoopIterations() {
-		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(1L);
 		given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
@@ -644,7 +640,7 @@ class ScheduleProcessingTest {
 	@Test
 	void getMaxProcessingLoopIterationsWorksAsExpected() {
 		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
-		assertEquals(10L, subject.getMaxProcessingLoopIterations());
+		assertEquals(50L, subject.getMaxProcessingLoopIterations());
 	}
 
 }

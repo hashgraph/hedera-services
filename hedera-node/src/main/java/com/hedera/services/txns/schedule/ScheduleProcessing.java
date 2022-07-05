@@ -106,7 +106,8 @@ public class ScheduleProcessing {
 			}
 		}
 
-		log.error("maxProcessingLoopIterations reached in expire, we should never get here!");
+		log.warn("maxProcessingLoopIterations reached in expire. " +
+				"Waiting for next call to continue. Scheduled Transaction expiration may be delayed.");
 	}
 
 	/**
@@ -201,7 +202,8 @@ public class ScheduleProcessing {
 
 		}
 
-		log.error("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded, we should never get here!");
+		log.warn("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded. " +
+				"Waiting for next call to continue. Scheduled Transaction expiration may be delayed.");
 
 		return null;
 	}
@@ -280,7 +282,7 @@ public class ScheduleProcessing {
 	 * @return the max number of iterations of any loop calling triggerNextTransactionExpiringAsNeeded.
 	 */
 	public long getMaxProcessingLoopIterations() {
-		return dynamicProperties.schedulingMaxTxnPerSecond() * 2;
+		return dynamicProperties.schedulingMaxTxnPerSecond() * 10;
 	}
 
 	private TxnAccessor getTxnAccessorForThrottleCheck(final ScheduleID scheduleId,
