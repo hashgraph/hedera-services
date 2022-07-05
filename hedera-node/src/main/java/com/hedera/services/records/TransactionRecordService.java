@@ -83,7 +83,9 @@ public class TransactionRecordService {
 	) {
 		txnCtx.setCreateResult(EvmFnResult.fromCreate(result, evmAddress));
 		final var sidecars = extractSidecarsFrom(result);
-		sidecars.add(contractBytecodeSidecarRecord);
+		if (contractBytecodeSidecarRecord != null) {
+			sidecars.add(contractBytecodeSidecarRecord);
+		}
 		txnCtx.setSidecarRecords(sidecars);
 		externalizeGenericEvmCreate(result);
 	}

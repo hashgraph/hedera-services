@@ -28,7 +28,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SidecarUtils;
@@ -101,6 +100,8 @@ class TransactionRecordServiceTest {
 		given(processingResult.getGasUsed()).willReturn(GAS_USED);
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+		doCallRealMethod().when(txnCtx).setSidecarRecords(any(List.class));
+		doCallRealMethod().when(txnCtx).sidecars();
 		// when:
 		subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr);
 		// then:
@@ -108,6 +109,7 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setCreateResult(captor.capture());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
+		assertEquals(0, txnCtx.sidecars().size());
 	}
 
 	@Test
