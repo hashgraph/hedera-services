@@ -157,6 +157,14 @@ public class WorldLedgers {
 		}
 	}
 
+	public long staticAllowanceOf(final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticAllowanceOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.allowanceOf(ownerId, spenderId, tokenId);
+		}
+	}
+
 	@Nullable
 	public EntityId ownerIfPresent(final NftId nftId) {
 		if (!areMutable()) {
