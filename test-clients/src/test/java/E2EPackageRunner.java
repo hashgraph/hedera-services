@@ -331,8 +331,8 @@ class E2EPackageRunner {
 				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new),
 				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
-				extractSpecsFromSuiteForEth(ERCPrecompileSuite::new),
-				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
+//				extractSpecsFromSuiteForEth(ERCPrecompileSuite::new),
+//				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
 		});
 	}
 
@@ -406,7 +406,7 @@ class E2EPackageRunner {
 		return List.of(extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
 				extractSpecsFromSuiteForEth(CallOperationSuite::new),
-				extractSpecsFromSuiteForEth(Create2OperationSuite::new),
+//				extractSpecsFromSuiteForEth(Create2OperationSuite::new),
 				extractSpecsFromSuiteForEth(CreateOperationSuite::new),
 				extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
 				extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
