@@ -88,11 +88,11 @@ public class ExpirableTxnRecordTestHelper {
 				.setNewTokenAssociations(newTokenAssociations)
 				.setAlias(record.getAlias())
 				.setEthereumHash(record.getEthereumHash().toByteArray());
-		if (!record.getPseudorandomBytes().isEmpty()) {
-			builder.setPseudoRandomBytes(record.getPseudorandomBytes().toByteArray());
+		if (!record.getPrngBytes().isEmpty()) {
+			builder.setPseudoRandomBytes(record.getPrngBytes().toByteArray());
 		}
-		if (record.getPseudorandomNumber() > 0) {
-			builder.setPseudoRandomNumber(record.getPseudorandomNumber());
+		if (record.getPrngNumber() > 0) {
+			builder.setPseudoRandomNumber(record.getPrngNumber());
 		}
 		if (record.hasParentConsensusTimestamp()) {
 			builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));

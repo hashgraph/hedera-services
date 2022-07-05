@@ -96,7 +96,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
 		assertTrue(subject.isStakingEnabled());
-		assertTrue(subject.isRandomGenerationEnabled());
+		assertTrue(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -236,7 +236,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
 		assertFalse(subject.isStakingEnabled());
-		assertFalse(subject.isRandomGenerationEnabled());
+		assertFalse(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -434,7 +434,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
-		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
+		given(properties.getBooleanProperty("prng.isEnabled")).willReturn((i + 79) % 2 == 0);
 		given(properties.getSidecarsProperty("contracts.sidecars")).willReturn( (i + 80) % 2 == 0
 				? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
 				: Set.of(SidecarType.CONTRACT_BYTECODE));

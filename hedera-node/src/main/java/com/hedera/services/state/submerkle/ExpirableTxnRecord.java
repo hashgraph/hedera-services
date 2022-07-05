@@ -630,9 +630,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
 		if (pseudoRandomNumber >= 0) {
-			grpc.setPseudorandomNumber(pseudoRandomNumber);
+			grpc.setPrngNumber(pseudoRandomNumber);
 		} else if (pseudoRandomBytes.length != 0) {
-			grpc.setPseudorandomBytes(wrapUnsafely(pseudoRandomBytes));
+			grpc.setPrngBytes(wrapUnsafely(pseudoRandomBytes));
 		}
 
 		return grpc.build();
@@ -981,7 +981,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	@VisibleForTesting
-	public void clearRandomGenerateData() {
+	public void clearPrngData() {
 		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		pseudoRandomNumber = MISSING_NUMBER;
 	}

@@ -238,7 +238,7 @@ class BootstrapPropertiesTest {
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
-			entry("randomGeneration.isEnabled", true),
+			entry("prng.isEnabled", true),
 			entry("contracts.sidecars", Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE))
 	);
 
