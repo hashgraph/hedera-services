@@ -162,7 +162,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 						transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 						grpcOperatorId);
 			} catch (InvalidTransactionException e) {
-				throw InvalidTransactionException.fromReverting(e.getResponseCode());
+				throw new InvalidTransactionException(e.getResponseCode(), true);
 			}
 		}
 		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);

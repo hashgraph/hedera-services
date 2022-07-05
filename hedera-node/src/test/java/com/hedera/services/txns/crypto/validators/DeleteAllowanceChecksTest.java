@@ -183,7 +183,7 @@ class DeleteAllowanceChecksTest {
 	@Test
 	void rejectsMissingToken() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken)))
-				.willThrow(InvalidTransactionException.fromReverting(INVALID_TOKEN_ID));
+				.willThrow(new InvalidTransactionException(INVALID_TOKEN_ID, true));
 		nftAllowances.add(nftAllowance2);
 		assertEquals(INVALID_TOKEN_ID,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));

@@ -152,8 +152,8 @@ class ExpirableTxnRecordTest {
 				.addAllPaidStakingRewards(List.of(reward1, reward2))
 				.setAlias(ByteString.copyFromUtf8("test"))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
-				.setPseudorandomNumber(10)
+				.setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.setPrngNumber(10)
 				.build();
 	}
 
@@ -168,8 +168,8 @@ class ExpirableTxnRecordTest {
 						.addAllPaidStakingRewards(List.of(reward1, reward2))
 						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.setEthereumHash(ByteString.copyFrom(pretendHash))
-						.setPseudorandomNumber(10)
-						.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+						.setPrngNumber(10)
+						.setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 						.build());
 		setNonGrpcDefaultsOn(s);
 		return s;
@@ -239,8 +239,8 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
-				.setPseudorandomNumber(10)
+				.setPrngBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
+				.setPrngNumber(10)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
@@ -263,8 +263,8 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.setEthereumHash(ByteString.copyFrom(pretendHash))
-				.setPseudorandomNumber(-1)
-				.setPseudorandomBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+				.setPrngNumber(-1)
+				.setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();

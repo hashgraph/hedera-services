@@ -613,14 +613,15 @@ public class ContractCallSuite extends HapiApiSuite {
 								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
 								.via(valueToTinycentCall)),
 						getTxnRecord(valueToTinycentCall).hasPriority(recordWith()
-								.contractCallResult(resultWith()
-										.resultViaFunctionName(
-												"approxUsdValue",
-												rateAware,
-												isLiteralResult(new Object[] {
-														BigInteger.valueOf(
-																minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
-												})))),
+										.contractCallResult(resultWith()
+												.resultViaFunctionName(
+														"approxUsdValue",
+														rateAware,
+														isLiteralResult(new Object[] {
+																BigInteger.valueOf(
+																		minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
+														}))))
+								.logged(),
 						sourcing(() -> contractCall(rateAware, "invalidCall")
 								.sending(minValueToAccessGatedMethodAtCurrentRate.get())
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
