@@ -21,6 +21,7 @@ package com.hedera.services.stats;
  */
 
 import com.hedera.services.state.validation.UsageLimits;
+import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class EntityUtilGaugesTest {
@@ -46,12 +50,21 @@ class EntityUtilGaugesTest {
 	}
 
 	@Test
-	void registersExpectedGauges() {
-		assertDoesNotThrow(() -> subject.registerWith(platform));
+	void registersAndUpdatesExpectedGauges() {
+		given(usageLimits.percentAccountsUsed()).willReturn(2.0);
+		given(usageLimits.percentContractsUsed()).willReturn(3.0);
+		given(usageLimits.percentFilesUsed()).willReturn(4.0);
+		given(usageLimits.percentNftsUsed()).willReturn(5.0);
+		given(usageLimits.percentTokensUsed()).willReturn(6.0);
+		given(usageLimits.percentTopicsUsed()).willReturn(7.0);
+		given(usageLimits.percentStorageSlotsUsed()).willReturn(8.0);
+		given(usageLimits.percentTokenRelsUsed()).willReturn(9.0);
+		given(usageLimits.percentSchedulesUsed()).willReturn(10.0);
+
+		subject.registerWith(platform);
+		subject.updateAll();
+
+		verify(platform, times(9)).addAppMetrics(any(DoubleGauge.class));
 	}
 
-	@Test
-	void updatesAsExpected() {
-		assertDoesNotThrow(subject::updateAll);
-	}
 }

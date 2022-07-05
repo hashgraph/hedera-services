@@ -127,7 +127,7 @@ public class ThrottleGauges {
 			final Map<String, DoubleGauge> utilizationMetrics
 	) {
 		final var name = type.toLowerCase() + String.format(THROTTLE_NAME_TPL, throttleName);
-		final var desc = type + String.format(THROTTLE_DESCRIPTION_TPL, throttleName);
+		final var desc = String.format(THROTTLE_DESCRIPTION_TPL, type, throttleName);
 		final var gauge = new DoubleGauge(STAT_CATEGORY, name, desc, GAUGE_FORMAT);
 		utilizationMetrics.put(throttleName, gauge);
 		platform.addAppMetrics(gauge);
@@ -135,5 +135,5 @@ public class ThrottleGauges {
 	}
 
 	private static final String THROTTLE_NAME_TPL = "%sPercentUsed";
-	private static final String THROTTLE_DESCRIPTION_TPL = " average %% used in %s throttle bucket";
+	private static final String THROTTLE_DESCRIPTION_TPL = "instantaneous %% used in %s %s throttle bucket";
 }

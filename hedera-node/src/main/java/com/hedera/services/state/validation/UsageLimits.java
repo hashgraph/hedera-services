@@ -164,6 +164,42 @@ public class UsageLimits {
 				MAX_CONTRACT_STORAGE_EXCEEDED);
 	}
 
+	public double percentAccountsUsed() {
+		return 100.0 * numAccounts / dynamicProperties.maxNumAccounts();
+	}
+
+	public double percentContractsUsed() {
+		return 100.0 * numContracts / dynamicProperties.maxNumContracts();
+	}
+
+	public double percentFilesUsed() {
+		return 100.0 * numFiles / dynamicProperties.maxNumFiles();
+	}
+
+	public double percentNftsUsed() {
+		return 100.0 * numNfts / dynamicProperties.maxNftMints();
+	}
+
+	public double percentTokensUsed() {
+		return 100.0 * numTokens / dynamicProperties.maxNumTokens();
+	}
+
+	public double percentTopicsUsed() {
+		return 100.0 * numTopics / dynamicProperties.maxNumTopics();
+	}
+
+	public double percentStorageSlotsUsed() {
+		return 100.0 * numStorageSlots / dynamicProperties.maxAggregateContractKvPairs();
+	}
+
+	public double percentTokenRelsUsed() {
+		return 100.0 * numTokenRels / dynamicProperties.maxNumTokenRels();
+	}
+
+	public double percentSchedulesUsed() {
+		return 100.0 * numSchedules / dynamicProperties.maxNumSchedules();
+	}
+
 	public long getNumAccounts() {
 		return numAccounts;
 	}

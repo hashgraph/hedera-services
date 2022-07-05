@@ -111,6 +111,40 @@ class UsageLimitsTest {
 	}
 
 	@Test
+	void getsPercentsUsed() {
+		given(dynamicProperties.maxNumAccounts()).willReturn(5L);
+		given(dynamicProperties.maxNumContracts()).willReturn(5L);
+		given(dynamicProperties.maxNumFiles()).willReturn(5L);
+		given(dynamicProperties.maxNumSchedules()).willReturn(5L);
+		given(dynamicProperties.maxNumTokens()).willReturn(5L);
+		given(dynamicProperties.maxNumTokenRels()).willReturn(5L);
+		given(dynamicProperties.maxNumTopics()).willReturn(5L);
+		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(5L);
+		given(dynamicProperties.maxNftMints()).willReturn(5L);
+
+		subject.recordContracts(2);
+		given(stateChildren.numAccountAndContracts()).willReturn(4L);
+		given(stateChildren.numBlobs()).willReturn(6L);
+		given(stateChildren.numSchedules()).willReturn(2L);
+		given(stateChildren.numTokens()).willReturn(2L);
+		given(stateChildren.numTokenRels()).willReturn(2L);
+		given(stateChildren.numTopics()).willReturn(2L);
+		given(stateChildren.numStorageSlots()).willReturn(2L);
+		given(stateChildren.numNfts()).willReturn(2L);
+		subject.updateCounts();
+
+		assertEquals(40.0, subject.percentAccountsUsed());
+		assertEquals(40.0, subject.percentContractsUsed());
+		assertEquals(40.0, subject.percentFilesUsed());
+		assertEquals(40.0, subject.percentSchedulesUsed());
+		assertEquals(40.0, subject.percentTokensUsed());
+		assertEquals(40.0, subject.percentTokenRelsUsed());
+		assertEquals(40.0, subject.percentTopicsUsed());
+		assertEquals(40.0, subject.percentStorageSlotsUsed());
+		assertEquals(40.0, subject.percentNftsUsed());
+	}
+
+	@Test
 	void limitsNumAccounts() {
 		given(dynamicProperties.maxNumAccounts()).willReturn(5L);
 		subject.recordContracts(2);

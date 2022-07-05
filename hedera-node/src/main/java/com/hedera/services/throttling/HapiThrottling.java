@@ -57,12 +57,12 @@ public class HapiThrottling implements FunctionalityThrottling {
 
 	@Override
 	public List<DeterministicThrottle> allActiveThrottles() {
-		throw new UnsupportedOperationException(STABLE_SOURCE_OF_THROTTLES_ERROR);
+		return delegate.allActiveThrottles();
 	}
 
 	@Override
 	public GasLimitDeterministicThrottle gasLimitThrottle() {
-		throw new UnsupportedOperationException(STABLE_SOURCE_OF_THROTTLES_ERROR);
+		return delegate.gasLimitThrottle();
 	}
 
 	@Override
