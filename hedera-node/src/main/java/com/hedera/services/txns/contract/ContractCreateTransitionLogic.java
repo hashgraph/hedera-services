@@ -239,7 +239,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			);
 			if (createSyntheticRecord) {
 				recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer, contractBytecodeSidecar);
-				// bytecode sidecar is already externalized in child record
+				// bytecode sidecar is already externalized if needed in {@link #recordSyntheticOperation}
+				// so call {@link #externalizeSuccessfulEvmCreate} without contract bytecode sidecar argument
 				recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
 			} else {
 				if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {

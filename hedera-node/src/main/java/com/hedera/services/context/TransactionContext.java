@@ -130,10 +130,6 @@ public interface TransactionContext {
 	 */
 	ExpirableTxnRecord.Builder recordSoFar();
 
-	void setSidecarRecords(List<TransactionSidecarRecord.Builder> sidecars);
-
-	List<TransactionSidecarRecord.Builder> sidecars();
-
 	/**
 	 * Gets an accessor to the defined type {@link SignedTxnAccessor}
 	 * currently being processed.
@@ -149,6 +145,13 @@ public interface TransactionContext {
 	 * @return accessor for the current txn.
 	 */
 	SwirldsTxnAccessor swirldsTxnAccessor();
+
+	/**
+	 * Gets the list of sidecars that the current top-level txn produced.
+	 *
+	 * @return list of all the sidecar record for the current txn.
+	 */
+	List<TransactionSidecarRecord.Builder> sidecars();
 
 	/**
 	 * Set a new status for the current txn's processing.
@@ -214,6 +217,16 @@ public interface TransactionContext {
 	 * 		the result of the contract call
 	 */
 	void setCallResult(EvmFnResult result);
+
+	/**
+	 * Record that the current transaction produced sidecar records which will
+	 * be externalized in sidecar files in the record stream.
+	 *
+	 * @param sidecars
+	 * 		the list of all sidecar records for the current top-level txn
+	 */
+	void setSidecarRecords(List<TransactionSidecarRecord.Builder> sidecars);
+
 
 	/**
 	 * Add call context information to an already set call result

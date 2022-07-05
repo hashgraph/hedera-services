@@ -416,22 +416,31 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	}
 
 	/**
-	 * generate full fileName from given Instant object
+	 * generate full record file path from given Instant object
 	 *
 	 * @param consensusTimestamp
 	 * 		the consensus timestamp of the first transaction in the record file
-	 * @return the new record file name
+	 * @return the new record file path
 	 */
 	String generateRecordFilePath(final Instant consensusTimestamp) {
 		return dirPath + File.separator + generateStreamFileNameFromInstant(consensusTimestamp, streamType);
 	}
 
-	String generateSidecarFilePath(final Instant consensusTimestamp, final int id) {
+	/**
+	 * generate full sidecar file path from given Instant object
+	 *
+	 * @param consensusTimestamp
+	 * 		the consensus timestamp of the first transaction in the record file this sidecar file is associated with
+	 * @param sidecarId
+	 * 		the sidecar id of this sidecar file
+	 * @return the new sidecar file path
+	 */
+	String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {
 		return sidecarDirPath +
 				File.separator +
 				convertInstantToStringWithPadding(consensusTimestamp) +
 				"_" +
-				String.format("%02d", id) +
+				String.format("%02d", sidecarId) +
 				"." +
 				streamType.getSidecarExtension();
 	}
