@@ -177,7 +177,7 @@ public class EthereumSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> feePaymentMatrix() {
-		final long gasPrice = 47;
+		final long gasPrice = 71;
 		final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 
 		final long noPayment = 0L;
@@ -189,30 +189,29 @@ public class EthereumSuite extends HapiApiSuite {
 		final long ninteyPercentFee = gasPrice * 9 / 10;
 
 		return Stream.of(
-				new Object[] { false, noPayment, noPayment, noPayment, noPayment },
-				new Object[] { false, noPayment, thirdOfPayment, noPayment, noPayment },
-				new Object[] { true, noPayment, fullAllowance, noPayment, fullPayment },
-				new Object[] { false, thirdOfFee, noPayment, noPayment, noPayment },
-				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment, noPayment },
-				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit, fullPayment - thirdOfLimit },
-				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit, fullPayment - thirdOfLimit },
-				new Object[] { false, ninteyPercentFee, noPayment, noPayment, noPayment },
-				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, noPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, thirdOfPayment, fullPayment, noPayment },
-				new Object[] { true, gasPrice, fullAllowance, fullPayment, noPayment }
+				new Object[] { false, noPayment, noPayment, noPayment },
+				new Object[] { false, noPayment, thirdOfPayment, noPayment },
+				new Object[] { true, noPayment, fullAllowance, noPayment },
+				new Object[] { false, thirdOfFee, noPayment, noPayment },
+				new Object[] { false, thirdOfFee, thirdOfPayment, noPayment },
+				new Object[] { true, thirdOfFee, fullAllowance, thirdOfLimit },
+				new Object[] { true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit },
+				new Object[] { false, ninteyPercentFee, noPayment, noPayment },
+				new Object[] { true, ninteyPercentFee, thirdOfPayment, fullPayment },
+				new Object[] { true, gasPrice, noPayment, fullPayment },
+				new Object[] { true, gasPrice, thirdOfPayment, fullPayment },
+				new Object[] { true, gasPrice, fullAllowance, fullPayment }
 		).map(params ->
 				// [0] - success
 				// [1] - sender gas price
 				// [2] - relayer offered
 				// [3] - sender charged amount
-				// [4] - relayer charged amount 
+				// relayer charged amount can easily be calculated via wholeTransactionFee - senderChargedAmount
 				matrixedPayerRelayerTest(
 						(boolean) params[0],
 						(long) params[1],
 						(long) params[2],
-						(long) params[3],
-						(long) params[4])
+						(long) params[3])
 		).toList();
 	}
 
@@ -220,8 +219,7 @@ public class EthereumSuite extends HapiApiSuite {
 			final boolean success,
 			final long senderGasPrice,
 			final long relayerOffered,
-			final long senderCharged,
-			final long relayerCharged
+			final long senderCharged
 	) {
 		return defaultHapiSpec(
 				"feePaymentMatrix " + (success ? "Success/" : "Failure/") + senderGasPrice + "/" + relayerOffered)
@@ -235,9 +233,6 @@ public class EthereumSuite extends HapiApiSuite {
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
 						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				).when(
-						// Network and Node fees in the schedule for Ethereum transactions are 0,
-						// so everything charged will be from the gas consumed in the EVM execution
-						uploadDefaultFeeSchedules(GENESIS)
 				).then(
 						withOpContext((spec, ignore) -> {
 							final String senderBalance = "senderBalance";
@@ -262,10 +257,13 @@ public class EthereumSuite extends HapiApiSuite {
 							final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord("payTxn").logged();
 							allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
+							final long wholeTransactionFee = hapiGetTxnRecord.getResponseRecord().getTransactionFee();
 							final var subop4 = getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(
 									changeFromSnapshot(senderBalance, success ? (-depositAmount - senderCharged) : 0));
 							final var subop5 = getAccountBalance(RELAYER).hasTinyBars(
-									changeFromSnapshot(payerBalance, success ? -relayerCharged : 0));
+									changeFromSnapshot(payerBalance,
+											success ? -(wholeTransactionFee - senderCharged)
+													: -wholeTransactionFee));
 							allRunFor(spec, subop4, subop5);
 						})
 				);
@@ -315,7 +313,6 @@ public class EthereumSuite extends HapiApiSuite {
 						cryptoUpdateAliased(SECP_256K1_SOURCE_KEY)
 								.autoRenewPeriod(AUTO_RENEW_PERIOD)
 								.entityMemo(MEMO)
-								.newProxy(PROXY)
 								.payingWith(GENESIS)
 								.signedBy(SECP_256K1_SOURCE_KEY, GENESIS),
 						ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -405,6 +402,7 @@ public class EthereumSuite extends HapiApiSuite {
 								.type(EthTxData.EthTransactionType.EIP1559)
 								.signingWith(SECP_256K1_SOURCE_KEY)
 								.payingWith(ACCOUNT)
+								.maxGasAllowance(FIVE_HBARS)
 								.nonce(0)
 								.gasLimit(GAS_LIMIT)
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
