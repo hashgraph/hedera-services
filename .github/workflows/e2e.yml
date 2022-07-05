@@ -17,7 +17,7 @@ jobs:
         packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
                    'contract.precompile.part1',
                    'contract.precompile.part2',
-                   'ethereum,contract.hapi,contract.records'
+                   'ethereum,contract.hapi,contract.records',
                    'contract.opcodes.eth,contract.openzeppelin.eth,contract.traceability.eth',
                    'contract.precompile.part1.eth,contract.records.eth',
                    'contract.precompile.part2.eth,contract.hapi.eth']
