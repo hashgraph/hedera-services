@@ -38,6 +38,7 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -69,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -450,6 +452,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoDeleteAllowanceUsageMeta();
 		} else if (function == EthereumTransaction) {
 			setEthTxDataMeta();
+		} else if (function == PRNG) {
+			setPrngUsageMeta();
 		}
 	}
 
@@ -537,12 +541,17 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
 	}
 
+	private void setPrngUsageMeta() {
+		final var prngUsageMeta = new PrngMeta(txn.getPrng());
+		SPAN_MAP_ACCESSOR.setPrngMeta(this, prngUsageMeta);
+	}
+
 	private void setEthTxDataMeta() {
 		var hapiTx = txn.getEthereumTransaction();
 		final var ethTxData = EthTxData.populateEthTxData(hapiTx.getEthereumData().toByteArray());
 		SPAN_MAP_ACCESSOR.setEthTxDataMeta(this, ethTxData);
 	}
-	
+
 	@Override
 	public SubType getSubType() {
 		if (function == CryptoTransfer) {

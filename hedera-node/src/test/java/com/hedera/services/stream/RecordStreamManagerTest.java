@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
@@ -33,8 +34,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -77,13 +76,16 @@ public class RecordStreamManagerTest {
 	private static final String UNEXPECTED_VALUE = "unexpected value";
 
 	private static RecordStreamManager disableStreamingInstance;
-	private static RecordStreamManager enableStreamingInstance;
+	private static RecordStreamManager enableV5StreamingInstance;
+	private static RecordStreamManager enableV6StreamingInstance;
 
 	public static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
 	private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
 	private static final QueueThreadObjectStream<RecordStreamObject> writeQueueThreadMock =
 			mock(QueueThreadObjectStream.class);
+	private static final GlobalDynamicProperties globalDynamicProperties =
+			mock(GlobalDynamicProperties.class);
 	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
@@ -109,14 +111,28 @@ public class RecordStreamManagerTest {
 				disabledProps,
 				recordMemo,
 				INITIAL_RANDOM_HASH,
-				streamType);
-		enableStreamingInstance = new RecordStreamManager(
+				streamType,
+				globalDynamicProperties);
+
+		given(globalDynamicProperties.recordFileVersion()).willReturn(5);
+		enableV5StreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,
 				enabledProps,
 				recordMemo,
 				INITIAL_RANDOM_HASH,
-				streamType);
+				streamType,
+				globalDynamicProperties);
+
+		given(globalDynamicProperties.recordFileVersion()).willReturn(6);
+		enableV6StreamingInstance = new RecordStreamManager(
+				platform,
+				runningAvgsMock,
+				enabledProps,
+				recordMemo,
+				INITIAL_RANDOM_HASH,
+				streamType,
+				globalDynamicProperties);
 	}
 
 	private static void configProps(NodeLocalProperties props) {
@@ -127,19 +143,32 @@ public class RecordStreamManagerTest {
 
 	@Test
 	void initializeTest() {
-		assertNull(disableStreamingInstance.getStreamFileWriter(),
-				"When recordStreaming is disabled, streamFileWriter instance should be null");
+		assertNull(disableStreamingInstance.getV5StreamFileWriter(),
+				"When recordStreaming is disabled, V5streamFileWriter instance should be null");
+		assertNull(disableStreamingInstance.getProtobufStreamFileWriter(),
+				"When recordStreaming is disabled, V6streamFileWriter instance should be null");
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(disableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
 		assertEquals(0, disableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
 		assertEquals(0, disableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 
-		assertNotNull(enableStreamingInstance.getStreamFileWriter(),
-				"When recordStreaming is enabled, streamFileWriter instance should not be null");
-		assertNotNull(enableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
-		assertNotNull(enableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
-		assertEquals(0, enableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
-		assertEquals(0, enableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertNotNull(enableV5StreamingInstance.getV5StreamFileWriter(),
+				"When V5 recordStreaming is enabled, V5streamFileWriter instance should not be null");
+		assertNull(enableV5StreamingInstance.getProtobufStreamFileWriter(),
+				"When V5 recordStreaming is enabled, V6streamFileWriter instance should be null");
+		assertNotNull(enableV5StreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
+		assertNotNull(enableV5StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
+		assertEquals(0, enableV5StreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, enableV5StreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
+
+		assertNull(enableV6StreamingInstance.getV5StreamFileWriter(),
+				"When V6 recordStreaming is enabled, V5streamFileWriter instance should be null");
+		assertNotNull(enableV6StreamingInstance.getProtobufStreamFileWriter(),
+				"When V6 recordStreaming is enabled, V6streamFileWriter instance should not be null");
+		assertNotNull(enableV6StreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
+		assertNotNull(enableV6StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
+		assertEquals(0, enableV6StreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, enableV6StreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 	}
 
 	@Test
@@ -201,9 +230,39 @@ public class RecordStreamManagerTest {
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
 	void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
-		enableStreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+		// when
+		enableV5StreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
 		assertEquals(startWriteAtCompleteWindow,
-				enableStreamingInstance.getStreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+				enableV5StreamingInstance.getV5StreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+		assertThat(logCaptor.infoLogs(),
+				contains(Matchers.startsWith("RecordStreamManager::setStartWriteAtCompleteWindow")));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void setStartWriteAtCompleteWindowTestV6(boolean startWriteAtCompleteWindow) {
+		// when
+		enableV6StreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
+		assertEquals(startWriteAtCompleteWindow,
+				enableV6StreamingInstance.getProtobufStreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+		assertThat(logCaptor.infoLogs(),
+				contains(Matchers.startsWith("RecordStreamManager::setStartWriteAtCompleteWindow")));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void setStartWriteAtCompleteWindowTestWhenRecordStreamingIsDisabledDoesNothingSilently(
+			boolean startWriteAtCompleteWindow
+	) {
+		// when
+		disableStreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+
+		// then
+		assertTrue(logCaptor.infoLogs().isEmpty());
 	}
 
 	@Test
@@ -238,8 +297,12 @@ public class RecordStreamManagerTest {
 
 	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.
 	// In the real world scenario, a block/record file will contain >=1 RecordStreamObjects.
-	private void addRecordStreamObject(final MiscRunningAvgs runningAvgsMock,
-													 final Queue mockQueue, final int queueSize, final Hash hash) {
+	private void addRecordStreamObject(
+			final MiscRunningAvgs runningAvgsMock,
+			final Queue mockQueue,
+			final int queueSize,
+			final Hash hash
+	) {
 		final RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
 		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
 		given(mockQueue.size()).willReturn(queueSize);

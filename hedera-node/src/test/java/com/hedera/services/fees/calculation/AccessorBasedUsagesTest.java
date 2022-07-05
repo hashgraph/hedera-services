@@ -51,6 +51,8 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.usage.util.PrngMeta;
+import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
@@ -83,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -120,6 +123,8 @@ class AccessorBasedUsagesTest {
 	@Mock
 	private ConsensusOpsUsage consensusOpsUsage;
 	@Mock
+	private UtilOpsUsage utilOpsUsage;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
 	private AccessorBasedUsages subject;
@@ -127,7 +132,8 @@ class AccessorBasedUsagesTest {
 	@BeforeEach
 	void setUp() {
 		subject = new AccessorBasedUsages(
-				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, dynamicProperties);
+				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, utilOpsUsage,
+				dynamicProperties);
 	}
 
 	@Test
@@ -442,7 +448,26 @@ class AccessorBasedUsagesTest {
 		assertTrue(subject.supports(ConsensusSubmitMessage));
 		assertTrue(subject.supports(CryptoCreate));
 		assertTrue(subject.supports(CryptoUpdate));
+		assertTrue(subject.supports(PRNG));
 		assertFalse(subject.supports(ContractCreate));
+	}
+
+	@Test
+	void worksAsExpectedForPrng() {
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var opMeta = PrngMeta.newBuilder()
+				.msgBytesUsed(32)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(PRNG);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getPrngMeta(any())).willReturn(opMeta);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(utilOpsUsage).prngUsage(sigUsage, baseMeta, opMeta, accumulator);
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

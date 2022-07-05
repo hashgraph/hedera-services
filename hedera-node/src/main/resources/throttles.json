@@ -16,6 +16,7 @@
 			"CryptoDelete",
 			"CryptoGetInfo",
 			"CryptoGetAccountRecords",
+			"PRNG",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",

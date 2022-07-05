@@ -38,8 +38,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -281,6 +281,24 @@ class StakingAccountsCommitInterceptorTest {
 		subject.preview(changes);
 
 		assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
+	void aNewAccountShouldNotHaveStakeStartUpdated() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final Map<AccountProperty, Object> keyOnlyChanges = Map.of(BALANCE, 2 * counterpartyBalance);
+		changes.include(counterpartyId, null, keyOnlyChanges);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance - 1);
+
+		given(networkCtx.areRewardsActivated()).willReturn(true);
+
+		subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0] = NA;
+
+		subject.preview(changes);
+
+		assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
 	}
 
 	@Test

@@ -27,6 +27,7 @@ import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
@@ -90,6 +91,11 @@ class ExpandHandleSpanMapAccessorTest {
 	@Test
 	void testsForTokenWipeMetaAsExpected() {
 		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+	}
+
+	@Test
+	void testsForPrngMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getPrngMeta(accessor));
 	}
 
 	@Test
@@ -215,5 +221,15 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setEthTxBodyMeta(accessor, txBody);
 		assertEquals(txBody, subject.getEthTxBodyMeta(accessor));
+	}
+
+	@Test
+	void testsForPrngMetaBody() {
+		final var opMeta = PrngMeta.newBuilder()
+				.msgBytesUsed(112)
+				.build();
+
+		subject.setPrngMeta(accessor, opMeta);
+		assertEquals(112, subject.getPrngMeta(accessor).getMsgBytesUsed());
 	}
 }

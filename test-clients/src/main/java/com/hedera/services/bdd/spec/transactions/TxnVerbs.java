@@ -67,6 +67,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.util.HapiPrng;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -357,7 +358,8 @@ public class TxnVerbs {
 		return new HapiEthereumCall(abi, contract, params);
 	}
 
-	public static HapiEthereumCall ethereumCallWithFunctionAbi(boolean isTokenFlow, String contract, String abi, Object... params) {
+	public static HapiEthereumCall ethereumCallWithFunctionAbi(boolean isTokenFlow, String contract, String abi,
+			Object... params) {
 		return new HapiEthereumCall(isTokenFlow, abi, contract, params);
 	}
 
@@ -477,11 +479,13 @@ public class TxnVerbs {
 		});
 	}
 
-	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final long expiry,
+			final String payingWith, final LongConsumer exposingTo) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			final var path = getResourcePath(contractName, ".bin");
-			final var file = new HapiFileCreate(contractName).payingWith(payingWith).exposingNumTo(exposingTo).expiry(expiry);
+			final var file = new HapiFileCreate(contractName).payingWith(payingWith).exposingNumTo(exposingTo).expiry(
+					expiry);
 			final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
 			ops.add(file);
 			ops.add(updatedFile);
@@ -489,7 +493,8 @@ public class TxnVerbs {
 		});
 	}
 
-	public static HapiSpecOperation uploadSingleInitCode(final String contractName, final ResponseCodeEnum... statuses) {
+	public static HapiSpecOperation uploadSingleInitCode(final String contractName,
+			final ResponseCodeEnum... statuses) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			final var path = getResourcePath(contractName, ".bin");
@@ -534,5 +539,14 @@ public class TxnVerbs {
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
+	}
+
+	/* UTIL */
+	public static HapiPrng hapiPrng() {
+		return new HapiPrng();
+	}
+
+	public static HapiPrng hapiPrng(int range) {
+		return new HapiPrng(range);
 	}
 }

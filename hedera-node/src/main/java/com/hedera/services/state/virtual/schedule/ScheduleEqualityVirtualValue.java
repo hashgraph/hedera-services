@@ -23,9 +23,10 @@ package com.hedera.services.state.virtual.schedule;
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 
-import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -36,29 +37,39 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-public class ScheduleEqualityVirtualValue implements VirtualValue {
+/**
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
+ * It should be moved back to VirtualMap in 0.28.
+ */
+public class ScheduleEqualityVirtualValue extends AbstractMerkleLeaf
+		implements VirtualValue, Keyed<ScheduleEqualityVirtualKey> {
 
 	static final int CURRENT_VERSION = 1;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
+	private long number;
+
 	/** Although extremely unlikely, we must handle the case where more than one schedule has the
 	 * same long equality hash. So this is a Map of string equality hash to schedule ID. */
 	private final SortedMap<String, Long> ids;
 
-	private boolean immutable;
-
 
 	public ScheduleEqualityVirtualValue() {
-		this(TreeMap::new);
+		this(TreeMap::new, null);
 	}
 
 	public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
-		this(() -> new TreeMap<>(ids));
+		this(ids, null);
 	}
 
-	private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids) {
+	public ScheduleEqualityVirtualValue(Map<String, Long> ids, ScheduleEqualityVirtualKey key) {
+		this(() -> new TreeMap<>(ids), key);
+	}
+
+	private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids, ScheduleEqualityVirtualKey key) {
 		this.ids = ids.get();
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 
 
@@ -83,7 +94,8 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
-				.add("ids", ids);
+				.add("ids", ids)
+				.add("number", number);
 		return helper.toString();
 	}
 
@@ -94,9 +106,10 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 		for (int x = 0; x <	s; ++x) {
 			byte[] keyBytes = new byte[in.readInt()];
 			in.readFully(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.readLong());
+			var k = new String(keyBytes, StandardCharsets.UTF_8);
+			ids.put(k, in.readLong());
 		}
+		number = in.readLong();
 	}
 
 	@Override
@@ -106,9 +119,10 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 		for (int x = 0; x <	s; ++x) {
 			byte[] keyBytes = new byte[in.getInt()];
 			in.get(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.getLong());
+			var k = new String(keyBytes, StandardCharsets.UTF_8);
+			ids.put(k, in.getLong());
 		}
+		number = in.getLong();
 	}
 
 	@Override
@@ -120,6 +134,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 			out.write(keyBytes);
 			out.writeLong(e.getValue());
 		}
+		out.writeLong(number);
 	}
 
 	@Override
@@ -131,11 +146,7 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 			out.put(keyBytes);
 			out.putLong(e.getValue());
 		}
-	}
-
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
+		out.putLong(number);
 	}
 
 	@Override
@@ -145,11 +156,16 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	@Override
 	public ScheduleEqualityVirtualValue copy() {
-		var fc = new ScheduleEqualityVirtualValue(ids);
+		var fc = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(number));
 
 		this.setImmutable(true);
 
 		return fc;
+	}
+
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	public void add(String hash, long id) {
@@ -184,29 +200,8 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final boolean isImmutable() {
-		return immutable;
-	}
-
-	@Transient
-	protected final void setImmutable(final boolean immutable) {
-		this.immutable = immutable;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void release() {
-		// nothing to release
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public ScheduleEqualityVirtualValue asReadOnly() {
-		var c = new ScheduleEqualityVirtualValue(this::getIds);
+		var c = new ScheduleEqualityVirtualValue(this::getIds, new ScheduleEqualityVirtualKey(number));
 		c.setImmutable(true);
 		return c;
 	}
@@ -216,6 +211,16 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	 * @return a copy of this without marking this as immutable
 	 */
 	public ScheduleEqualityVirtualValue asWritable() {
-		return new ScheduleEqualityVirtualValue(this.ids);
+		return new ScheduleEqualityVirtualValue(this.ids, new ScheduleEqualityVirtualKey(number));
+	}
+
+	@Override
+	public ScheduleEqualityVirtualKey getKey() {
+		return new ScheduleEqualityVirtualKey(number);
+	}
+
+	@Override
+	public void setKey(final ScheduleEqualityVirtualKey key) {
+		this.number = key == null ? -1 : key.getKeyAsLong();
 	}
 }

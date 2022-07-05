@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -29,6 +30,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a running
@@ -37,10 +39,18 @@ import java.util.Objects;
 public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	static final long CLASS_ID = 0xe370929ba5429d9bL;
 	static final int CLASS_VERSION = 1;
+
+	static final int RELEASE_0280_VERSION = 2;
 	/**
 	 * a runningHash of all RecordStreamObject
 	 */
 	private RunningHash runningHash;
+	/**
+	 * runningHash of the previous RecordStreamObjects. They are needed for the Prng transaction
+	 */
+	private RunningHash nMinus1RunningHash;
+	private RunningHash nMinus2RunningHash;
+	private RunningHash nMinus3RunningHash;
 
 	/**
 	 * no-args constructor required by ConstructableRegistry
@@ -50,10 +60,17 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 
 	public RecordsRunningHashLeaf(final RunningHash runningHash) {
 		this.runningHash = runningHash;
+		this.nMinus1RunningHash = new RunningHash();
+		this.nMinus2RunningHash = new RunningHash();
+		this.nMinus3RunningHash = new RunningHash();
 	}
 
 	private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
 		this.runningHash = runningHashLeaf.runningHash;
+		this.nMinus1RunningHash = runningHashLeaf.nMinus1RunningHash;
+		this.nMinus2RunningHash = runningHashLeaf.nMinus2RunningHash;
+		this.nMinus3RunningHash = runningHashLeaf.nMinus3RunningHash;
+
 		setImmutable(false);
 		runningHashLeaf.setImmutable(true);
 		setHash(runningHashLeaf.getHash());
@@ -63,11 +80,15 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		try {
 			// should wait until runningHash has been calculated and set
-			out.writeSerializable(runningHash.getFutureHash().get(), true);
-		} catch (InterruptedException ex) {
+			out.writeSerializable(currentRunningHash(), true);
+			// It is guaranteed that the futureHash's of the preceding hashes will
+			// always be set once the current runningHash's future is set
+			out.writeSerializable(nMinus1RunningHash.getHash(), true);
+			out.writeSerializable(nMinus2RunningHash.getHash(), true);
+			out.writeSerializable(nMinus3RunningHash.getHash(), true);
+		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
-					ex);
+			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf", e);
 		}
 	}
 
@@ -75,6 +96,15 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		runningHash = new RunningHash();
 		runningHash.setHash(in.readSerializable());
+
+		nMinus1RunningHash = new RunningHash();
+		nMinus2RunningHash = new RunningHash();
+		nMinus3RunningHash = new RunningHash();
+		if (version >= RELEASE_0280_VERSION) {
+			nMinus1RunningHash.setHash(in.readSerializable());
+			nMinus2RunningHash.setHash(in.readSerializable());
+			nMinus3RunningHash.setHash(in.readSerializable());
+		}
 	}
 
 	/**
@@ -89,10 +119,15 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 			return false;
 		}
 		final var that = (RecordsRunningHashLeaf) o;
-		if (this.runningHash.getHash() != null && that.runningHash.getHash() != null) {
-			return this.runningHash.getHash().equals(that.runningHash.getHash());
+		if (areHashesPresent(that)) {
+			return areHashesEqual(that);
 		}
-		return new EqualsBuilder().append(this.runningHash, that.runningHash).isEquals();
+		return new EqualsBuilder()
+				.append(this.runningHash, that.runningHash)
+				.append(this.nMinus1RunningHash, that.nMinus1RunningHash)
+				.append(this.nMinus2RunningHash, that.nMinus2RunningHash)
+				.append(this.nMinus3RunningHash, that.nMinus3RunningHash)
+				.isEquals();
 	}
 
 	/**
@@ -100,7 +135,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	 */
 	@Override
 	public int hashCode() {
-		return Objects.hash(runningHash);
+		return Objects.hash(runningHash, nMinus1RunningHash, nMinus2RunningHash, nMinus3RunningHash);
 	}
 
 	public RecordsRunningHashLeaf copy() {
@@ -120,21 +155,33 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	 */
 	@Override
 	public int getVersion() {
-		return CLASS_VERSION;
+		return RELEASE_0280_VERSION;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+		return String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s, " +
+						"nMinus1RunningHash: %s, nMinus2RunningHash: %s, nMinus3RunningHash: %s",
 				getHash(),
-				runningHash.getHash());
+				runningHash.getHash(),
+				nMinus1RunningHash.getHash(),
+				nMinus2RunningHash.getHash(),
+				nMinus3RunningHash.getHash());
 	}
 
 	public RunningHash getRunningHash() {
 		return runningHash;
 	}
 
+	public RunningHash getNMinus3RunningHash() {
+		return nMinus3RunningHash;
+	}
+
 	public void setRunningHash(final RunningHash runningHash) {
+		// update the previous running hashes
+		nMinus3RunningHash = nMinus2RunningHash;
+		nMinus2RunningHash = nMinus1RunningHash;
+		nMinus1RunningHash = this.runningHash;
 		this.runningHash = runningHash;
 		// should invalidate current Hash when updating the runningHash object
 		// because its Hash should be calculated based on the runningHash object
@@ -142,6 +189,42 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	}
 
 	public Hash currentRunningHash() throws InterruptedException {
-		return runningHash.getFutureHash().get();
+		try {
+			return runningHash.getFutureHash().get();
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("Unable to get current running hash", e);
+		}
+	}
+
+	public Hash nMinusThreeRunningHash() throws InterruptedException {
+		try {
+			return nMinus3RunningHash.getFutureHash().get();
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("Unable to get n-3 running hash", e);
+		}
+	}
+
+	private boolean areHashesPresent(final RecordsRunningHashLeaf that) {
+		return this.runningHash.getHash() != null && that.runningHash.getHash() != null &&
+				this.nMinus1RunningHash.getHash() != null && that.nMinus1RunningHash.getHash() != null &&
+				this.nMinus2RunningHash.getHash() != null && that.nMinus2RunningHash.getHash() != null &&
+				this.nMinus3RunningHash.getHash() != null && that.nMinus3RunningHash.getHash() != null;
+	}
+
+	private boolean areHashesEqual(final RecordsRunningHashLeaf that) {
+		return this.runningHash.getHash().equals(that.runningHash.getHash()) &&
+				this.nMinus1RunningHash.getHash().equals(that.nMinus1RunningHash.getHash()) &&
+				this.nMinus2RunningHash.getHash().equals(that.nMinus2RunningHash.getHash()) &&
+				this.nMinus3RunningHash.getHash().equals(that.nMinus3RunningHash.getHash());
+	}
+
+	@VisibleForTesting
+	public RunningHash getNMinus2RunningHash() {
+		return nMinus2RunningHash;
+	}
+
+	@VisibleForTesting
+	public RunningHash getNMinus1RunningHash() {
+		return nMinus1RunningHash;
 	}
 }

@@ -238,6 +238,8 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.transaction.maxValidDuration",
 			"hedera.transaction.minValidDuration",
 			"hedera.transaction.minValidityBufferSecs",
+			"hedera.recordStream.recordFileVersion",
+			"hedera.recordStream.signatureFileVersion",
 			"autoRemove.maxPurgedKvPairsPerTouch",
 			"autoRemove.maxReturnedNftsPerTouch",
 			"autoRenew.targetTypes",
@@ -290,7 +292,8 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.allowances.maxTransactionLimit",
 			"hedera.allowances.maxAccountLimit",
 			"hedera.allowances.isEnabled",
-			"entities.limitTokenAssociations"
+			"entities.limitTokenAssociations",
+			"prng.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -377,6 +380,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.recordStream.logPeriod", AS_LONG),
 			entry("hedera.recordStream.isEnabled", AS_BOOLEAN),
+			entry("hedera.recordStream.recordFileVersion", AS_INT),
+			entry("hedera.recordStream.signatureFileVersion", AS_INT),
 			entry("hedera.recordStream.queueCapacity", AS_INT),
 			entry("hedera.shard", AS_LONG),
 			entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
@@ -486,6 +491,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
-			entry("entities.limitTokenAssociations", AS_BOOLEAN)
+			entry("entities.limitTokenAssociations", AS_BOOLEAN),
+			entry("prng.isEnabled", AS_BOOLEAN)
 	);
 }

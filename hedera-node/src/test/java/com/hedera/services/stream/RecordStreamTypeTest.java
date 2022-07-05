@@ -34,7 +34,6 @@ class RecordStreamTypeTest {
 	private static final String expectedRecordDescription = "records";
 	private static final String expectedRecordExtension = "rcd";
 	private static final String expectedRecordSigExtension = "rcd_sig";
-	private static final byte[] expectedRecordSigFileHeader = new byte[] { 5 };
 
 	@Mock
 	private RecordStreamType subject;
@@ -44,11 +43,9 @@ class RecordStreamTypeTest {
 		doCallRealMethod().when(subject).getDescription();
 		doCallRealMethod().when(subject).getExtension();
 		doCallRealMethod().when(subject).getSigExtension();
-		doCallRealMethod().when(subject).getSigFileHeader();
 
 		assertEquals(expectedRecordDescription, subject.getDescription());
 		assertEquals(expectedRecordExtension, subject.getExtension());
 		assertEquals(expectedRecordSigExtension, subject.getSigExtension());
-		assertArrayEquals(expectedRecordSigFileHeader, subject.getSigFileHeader());
 	}
 }

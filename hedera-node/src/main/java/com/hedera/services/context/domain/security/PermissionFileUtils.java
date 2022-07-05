@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountD
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -190,6 +191,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
 		permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
 		permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
+		permissionKeys.put(PRNG, "prng");
 
 		legacyKeys = permissionKeys.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));

@@ -67,7 +67,6 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -113,21 +112,21 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ALLOWANCE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER_FROM;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
@@ -146,6 +145,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -266,6 +266,7 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
         given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -286,7 +287,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArgumentsApprove = Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
-                Bytes.of(Integers.toBytes(ABI_ID_APPROVE)));
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE)));
 
         // when:
         subject.prepareFields(frame);
@@ -306,7 +307,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArgumentsAllowance = Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
-                Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE)));
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE)));
 
 
         // when:
@@ -317,7 +318,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArgumentsApproveForAll = Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
-                Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL)));
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_SET_APPROVAL_FOR_ALL)));
 
         // when:
         subject.prepareFields(frame);
@@ -327,7 +328,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArgumentsGetApproved = Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
-                Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED)));
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_GET_APPROVED)));
 
         // when:
         subject.prepareFields(frame);
@@ -337,7 +338,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArgumentsApprovedForAll = Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
-                Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL)));
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_IS_APPROVED_FOR_ALL)));
 
 
         // when:
@@ -361,7 +362,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void gasCalculationForReadOnlyMethod() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -455,7 +456,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void name() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_NAME));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -494,7 +495,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void symbol() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SYMBOL));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -528,7 +529,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void decimals() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_DECIMALS));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -564,7 +565,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void totalSupply() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOTAL_SUPPLY_TOKEN));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -602,7 +603,7 @@ class ERC20PrecompilesTest {
         TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
         alowances.put(FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()), EntityNum.fromLong(receiver.getAccountNum())), 10L);
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -644,7 +645,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void balanceOf() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_BALANCE_OF_TOKEN));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
@@ -690,7 +691,7 @@ class ERC20PrecompilesTest {
         Map<FcTokenAllowanceId, Long> allowances = Map.of(fungibleAllowanceId, 0L);
         givenPricingUtilsContext();
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -729,7 +730,7 @@ class ERC20PrecompilesTest {
         List<NftAllowance> nftAllowances = new ArrayList<>();
         Map<FcTokenAllowanceId, Long> allowances = Map.of(fungibleAllowanceId, 0L);
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -827,7 +828,14 @@ class ERC20PrecompilesTest {
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(tokenAddress)
+                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                .forIndexedArgument(senderAddress)
+                .forIndexedArgument(recipientAddress)
+                .forDataItem(AMOUNT).build();
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -840,6 +848,7 @@ class ERC20PrecompilesTest {
         verify(transferLogic).doZeroSum(tokenTransferChanges);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame).addLog(log);
     }
 
     @Test
@@ -952,7 +961,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void ownerOfNotSupported() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_OWNER_OF_NFT));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -965,7 +974,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void tokenURINotSupported() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TOKEN_URI_NFT));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
         Bytes pretendArguments = givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);

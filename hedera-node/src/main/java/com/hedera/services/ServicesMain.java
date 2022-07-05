@@ -25,6 +25,7 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.Browser;
@@ -36,6 +37,7 @@ import java.time.Instant;
 import java.util.Locale;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -56,6 +58,11 @@ public class ServicesMain implements SwirldMain {
 	 */
 	public static void main(String... args) {
 		Browser.main(null);
+	}
+
+	@Override
+	public SoftwareVersion getSoftwareVersion() {
+		return SEMANTIC_VERSIONS.deployedSoftwareVersion();
 	}
 
 	@Override

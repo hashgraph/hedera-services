@@ -460,11 +460,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				reprOf(firstConsTimeOfCurrentBlock) +
 				"\n  Trailing block hashes are                  :: " +
 				stringifiedBlockHashes() +
-				"\n  Staking Rewards Activated                  :: " +
+				"\n  Staking rewards activated                  :: " +
 				stakingRewardsActivated +
-				"\n  Total StakedRewardStart is                 :: " +
+				"\n  Total stake reward start this period       :: " +
 				totalStakedRewardStart +
-				"\n  Total StakedStart is                       :: " +
+				"\n  Total stake start this period              :: " +
 				totalStakedStart;
 	}
 

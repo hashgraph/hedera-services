@@ -31,6 +31,9 @@ import com.swirlds.virtualmap.VirtualLongKey;
 
 /**
  * A {@link com.swirlds.virtualmap.VirtualKey} for an {@link EntityNum}.
+ *
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
+ * It should be moved back to VirtualMap in 0.28.
  */
 public final class EntityNumVirtualKey implements VirtualLongKey {
 	static final long CLASS_ID = 0xec76f9ebae262595L;
