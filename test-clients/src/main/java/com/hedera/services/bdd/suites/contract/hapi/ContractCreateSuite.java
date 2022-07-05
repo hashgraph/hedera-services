@@ -319,13 +319,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	HapiApiSpec cannotSendToNonExistentAccount() {
 		final var contract = "Multipurpose";
-		Object[] donationArgs = new Object[] { 666666, "Hey, Ma!" };
+		Object[] donationArgs = new Object[] { 666666L, "Hey, Ma!" };
 
 		return defaultHapiSpec("CannotSendToNonExistentAccount").given(
 				uploadInitCode(contract)
 		).when(
 				contractCreate(contract)
-						.balance(666)
+						.balance(666L)
 		).then(
 				contractCall(contract, "donate", donationArgs)
 						.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
@@ -464,7 +464,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec revertedTryExtCallHasNoSideEffects() {
 		final var balance = 3_000;
-		final int sendAmount = balance / 3;
+		final long sendAmount = balance / 3;
 		final var contract = "RevertingSendTry";
 		final var aBeneficiary = "aBeneficiary";
 		final var bBeneficiary = "bBeneficiary";
@@ -479,8 +479,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when(
 						withOpContext((spec, opLog) -> {
 							final var registry = spec.registry();
-							final var aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
-							final var bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
+							final var aNum = registry.getAccountID(aBeneficiary).getAccountNum();
+							final var bNum = registry.getAccountID(bBeneficiary).getAccountNum();
 							final var sendArgs = new Object[] { sendAmount, aNum, bNum };
 
 							final var op = contractCall(contract, "sendTo", sendArgs
@@ -648,13 +648,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).then(
 						/* Sending requires receiver signature */
 						sourcing(() -> contractCall(sendInternalAndDelegateContract, "sendRepeatedlyTo",
-										justSendContractNum.get(), beneficiaryAccountNum.get(), balanceToDistribute / 2
+										BigInteger.valueOf(justSendContractNum.get()), BigInteger.valueOf(beneficiaryAccountNum.get()), BigInteger.valueOf(balanceToDistribute / 2)
 								)
 										.hasKnownStatus(INVALID_SIGNATURE)
 						),
 						/* But it's not enough to just sign using an incomplete prefix */
 						sourcing(() -> contractCall(sendInternalAndDelegateContract, "sendRepeatedlyTo",
-										justSendContractNum.get(), beneficiaryAccountNum.get(), balanceToDistribute / 2
+										BigInteger.valueOf(justSendContractNum.get()), BigInteger.valueOf(beneficiaryAccountNum.get()), BigInteger.valueOf(balanceToDistribute / 2)
 								)
 										.signedBy(DEFAULT_PAYER, beneficiary)
 										.hasKnownStatus(INVALID_SIGNATURE)
@@ -662,7 +662,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						/* We have to specify the full prefix so the sig can be verified async */
 						getAccountInfo(beneficiary).logged(),
 						sourcing(() -> contractCall(sendInternalAndDelegateContract, "sendRepeatedlyTo",
-										justSendContractNum.get(), beneficiaryAccountNum.get(), balanceToDistribute / 2
+										BigInteger.valueOf(justSendContractNum.get()), BigInteger.valueOf(beneficiaryAccountNum.get()), BigInteger.valueOf(balanceToDistribute / 2)
 								)
 										.alsoSigningWithFullPrefix(beneficiary)
 						),
