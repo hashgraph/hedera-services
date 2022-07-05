@@ -1967,7 +1967,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("SomeERC721NegativeTransferFromScenariosPass")
 				.given(
@@ -2061,7 +2061,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("SomeERC721ApproveAndRemoveScenariosPass")
 				.given(
@@ -2226,7 +2226,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC20Scenarios = "someERC20Scenarios";
+		final var someERC20Scenarios = "SomeERC20Scenarios";
 
 		return defaultHapiSpec("someERC20ApproveAllowanceScenariosPass")
 				.given(
@@ -2346,7 +2346,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC20Scenarios = "someERC20Scenarios";
+		final var someERC20Scenarios = "SomeERC20Scenarios";
 
 		return defaultHapiSpec("someERC20NegativeTransferFromScenariosPass")
 				.given(
@@ -2453,7 +2453,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC20Scenarios = "someERC20Scenarios";
+		final var someERC20Scenarios = "SomeERC20Scenarios";
 
 		return defaultHapiSpec("someERC20ApproveAllowanceScenarioInOneCall")
 				.given(
@@ -2662,7 +2662,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var nfToken = "nfToken";
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("someERC721GetApprovedScenariosPass")
 				.given(
@@ -2773,7 +2773,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
 		final var bCivilian = "bCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("someERC721BalanceOfScenariosPass")
 				.given(
@@ -2855,7 +2855,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var nfToken = "nfToken";
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("someERC721OwnerOfScenariosPass")
 				.given(
@@ -2957,7 +2957,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var nfToken = "nfToken";
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("someERC721IsApprovedForAllScenariosPass")
 				.given(
@@ -3081,7 +3081,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var nfToken = "nfToken";
 		final var multiKey = "multiKey";
 		final var aCivilian = "aCivilian";
-		final var someERC721Scenarios = "someERC721Scenarios";
+		final var someERC721Scenarios = "SomeERC721Scenarios";
 
 		return defaultHapiSpec("someERC721SetApprovedForAllScenariosPass")
 				.given(
