@@ -1,6 +1,10 @@
 import com.diffplug.spotless.FormatterFunc
 import com.diffplug.spotless.FormatterStep
 
+/**
+ * Adds self-correcting behavior as spotless step which properly removes the comments which causes the
+ * google-java-formatter plugin to rupture (eg: \/\*-).  
+ */
 class RepairDashedCommentsFormatterStep {
     companion object {
         private const val NAME = "RepairDashedComments"
