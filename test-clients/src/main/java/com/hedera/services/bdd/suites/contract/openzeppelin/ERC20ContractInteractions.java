@@ -123,6 +123,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 									final var notEnoughBalanceTransfer = contractCall(CONTRACT, "transfer", notEnoughBalanceTransferParams
 									)
 											.payingWith(DEFAULT_CONTRACT_SENDER)
+											// Should return different status - Returns "SUCCESS" insted of "CONTRACT_REVERT_EXECUTED"
 //											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 											.via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
 											.scrambleTxnBody(tx -> {
@@ -165,8 +166,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 													resultWith().logs(
 															inOrder(
 																	logWith()
-																			//TODO: Fix method to return correct values
-																			.bigIntegerValue(BigInteger.valueOf(INITIAL_AMOUNT))
+																			.longValue(0)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
@@ -184,7 +184,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 													resultWith().logs(
 															inOrder(
 																	logWith()
-																			.bigIntegerValue(BigInteger.valueOf(AMOUNT))
+																			.longValue(AMOUNT)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
@@ -202,7 +202,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 													resultWith().logs(
 															inOrder(
 																	logWith()
-																			.bigIntegerValue(BigInteger.valueOf(AMOUNT))
+																			.longValue(AMOUNT)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Approval(address,address,uint256)"),
@@ -220,7 +220,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 													resultWith().logs(
 															inOrder(
 																	logWith()
-																			.bigIntegerValue(BigInteger.valueOf(AMOUNT))
+																			.longValue(AMOUNT)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),
@@ -229,7 +229,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 																					)
 																			),
 																	logWith()
-																			.bigIntegerValue(BigInteger.valueOf(0))
+																			.longValue(0)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Approval(address,address,uint256)"),
