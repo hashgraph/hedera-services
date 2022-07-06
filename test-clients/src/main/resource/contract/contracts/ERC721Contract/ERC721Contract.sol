@@ -58,7 +58,7 @@ contract ERC721Contract {
 
     function safeTransferFromWithData(address token, address from, address to,
         uint256 tokenId, bytes calldata data) public {
-        IERC721(token).safeTransferFrom(from, to, tokenId, data);
+        IERC721(token).safeTransferFrom(from, to, tokenId, data);test
     }
 
 
