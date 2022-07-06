@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 import com.hedera.services.bdd.junit.HederaContainer;
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiApiSpec;
