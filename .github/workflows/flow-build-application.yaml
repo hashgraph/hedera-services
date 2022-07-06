@@ -11,12 +11,12 @@ on:
         description: "Unit Testing Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       enable-sonar-analysis:
         description: "Sonar Analysis Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       enable-integration-tests:
         description: "Integration Testing Enabled"
         type: boolean
