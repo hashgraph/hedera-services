@@ -1,11 +1,6 @@
-package com.hedera.services.context.properties;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,8 @@ package com.hedera.services.context.properties;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
-import java.util.Map;
-import java.util.Set;
+package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.ScreenedSysFileProps.DEPRECATED_PROP_TPL;
 import static com.hedera.services.context.properties.ScreenedSysFileProps.MISPLACED_PROP_TPL;
@@ -48,130 +27,155 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
 @ExtendWith(LogCaptureExtension.class)
 class ScreenedSysFilePropsTest {
-	@LoggingTarget
-	private LogCaptor logCaptor;
+    @LoggingTarget private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private ScreenedSysFileProps subject;
+    @LoggingSubject private ScreenedSysFileProps subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new ScreenedSysFileProps();
-	}
+    @BeforeEach
+    void setup() {
+        subject = new ScreenedSysFileProps();
+    }
 
-	@Test
-	void delegationWorks() {
-		subject.from121 = Map.of("tokens.maxRelsPerInfoQuery", 42);
+    @Test
+    void delegationWorks() {
+        subject.from121 = Map.of("tokens.maxRelsPerInfoQuery", 42);
 
-		assertEquals(Set.of("tokens.maxRelsPerInfoQuery"), subject.allPropertyNames());
-		assertEquals(42, subject.getProperty("tokens.maxRelsPerInfoQuery"));
-		assertTrue(subject.containsProperty("tokens.maxRelsPerInfoQuery"));
-		assertFalse(subject.containsProperty("nonsense"));
-	}
+        assertEquals(Set.of("tokens.maxRelsPerInfoQuery"), subject.allPropertyNames());
+        assertEquals(42, subject.getProperty("tokens.maxRelsPerInfoQuery"));
+        assertTrue(subject.containsProperty("tokens.maxRelsPerInfoQuery"));
+        assertFalse(subject.containsProperty("nonsense"));
+    }
 
-	@Test
-	void ignoresNonGlobalDynamic() {
-		subject.screenNew(withJust("notGlobalDynamic", "42"));
+    @Test
+    void ignoresNonGlobalDynamic() {
+        subject.screenNew(withJust("notGlobalDynamic", "42"));
 
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
-	}
+        assertTrue(subject.from121.isEmpty());
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
+    }
 
-	@Test
-	void incorporatesStandardGlobalDynamic() {
-		final var oldMap = subject.from121;
+    @Test
+    void incorporatesStandardGlobalDynamic() {
+        final var oldMap = subject.from121;
 
-		subject.screenNew(withAllOf(Map.of(
-				"tokens.maxRelsPerInfoQuery", "42",
-				"ledger.transfers.maxLen", "42",
-				"contracts.maxRefundPercentOfGasLimit", "42"
-		)));
+        subject.screenNew(
+                withAllOf(
+                        Map.of(
+                                "tokens.maxRelsPerInfoQuery", "42",
+                                "ledger.transfers.maxLen", "42",
+                                "contracts.maxRefundPercentOfGasLimit", "42")));
 
-		assertEquals(42, subject.from121.get("tokens.maxRelsPerInfoQuery"));
-		assertEquals(42, subject.from121.get("ledger.transfers.maxLen"));
-		assertEquals(42, subject.from121.get("contracts.maxRefundPercentOfGasLimit"));
-		assertNotSame(oldMap, subject.from121);
-	}
+        assertEquals(42, subject.from121.get("tokens.maxRelsPerInfoQuery"));
+        assertEquals(42, subject.from121.get("ledger.transfers.maxLen"));
+        assertEquals(42, subject.from121.get("contracts.maxRefundPercentOfGasLimit"));
+        assertNotSame(oldMap, subject.from121);
+    }
 
-	@Test
-	void incorporatesLegacyGlobalDynamic() {
-		subject.screenNew(withJust("configAccountNum", "42"));
+    @Test
+    void incorporatesLegacyGlobalDynamic() {
+        subject.screenNew(withJust("configAccountNum", "42"));
 
-		assertEquals(1, subject.from121.size());
-		assertEquals(42L, subject.from121.get("ledger.maxAccountNum"));
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(DEPRECATED_PROP_TPL, "configAccountNum", "ledger.maxAccountNum")));
-	}
+        assertEquals(1, subject.from121.size());
+        assertEquals(42L, subject.from121.get("ledger.maxAccountNum"));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        String.format(
+                                DEPRECATED_PROP_TPL, "configAccountNum", "ledger.maxAccountNum")));
+    }
 
-	@Test
-	void incorporatesLegacyGlobalDynamicWithTransform() {
-		subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
+    @Test
+    void incorporatesLegacyGlobalDynamicWithTransform() {
+        subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
 
-		assertEquals(1, subject.from121.size());
-		assertEquals(98L, subject.from121.get("ledger.fundingAccount"));
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", "ledger.fundingAccount")));
-	}
+        assertEquals(1, subject.from121.size());
+        assertEquals(98L, subject.from121.get("ledger.fundingAccount"));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        String.format(
+                                DEPRECATED_PROP_TPL,
+                                "defaultFeeCollectionAccount",
+                                "ledger.fundingAccount")));
+    }
 
-	@ParameterizedTest
-	@CsvSource({
-			"ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
-			"CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
-			"CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
-			(MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1) + ", tokens.maxTokenNameUtf8Bytes, true,",
-			"1, ledger.transfers.maxLen, true,",
-			"1, ledger.tokenTransfers.maxLen, true,",
-			(MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
-			"-1, rates.intradayChangeLimitPercent, true,",
-			"-1, contracts.maxRefundPercentOfGasLimit, true,",
-			"101, contracts.maxRefundPercentOfGasLimit, true,",
-	})
-	void warnsOfUnusableOrUnparseable(
-			String unsupported,
-			final String prop,
-			final boolean isUnusable,
-			String exception
-	) {
-		unsupported = unsupported.replaceAll(";", ",");
-		final var expectedLog = isUnusable
-				? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
-				: String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
+    @ParameterizedTest
+    @CsvSource({
+        "ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
+        "CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
+        "CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
+        (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1)
+                + ", tokens.maxTokenNameUtf8Bytes, true,",
+        "1, ledger.transfers.maxLen, true,",
+        "1, ledger.tokenTransfers.maxLen, true,",
+        (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
+        "-1, rates.intradayChangeLimitPercent, true,",
+        "-1, contracts.maxRefundPercentOfGasLimit, true,",
+        "101, contracts.maxRefundPercentOfGasLimit, true,",
+    })
+    void warnsOfUnusableOrUnparseable(
+            String unsupported, final String prop, final boolean isUnusable, String exception) {
+        unsupported = unsupported.replaceAll(";", ",");
+        final var expectedLog =
+                isUnusable
+                        ? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
+                        : String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
 
-		subject.screenNew(withJust(prop, unsupported));
+        subject.screenNew(withJust(prop, unsupported));
 
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(expectedLog));
-	}
+        assertTrue(subject.from121.isEmpty());
+        assertThat(logCaptor.warnLogs(), contains(expectedLog));
+    }
 
-	@Test
-	void warnsOfUntransformableGlobalDynamic() {
-		subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
+    @Test
+    void warnsOfUntransformableGlobalDynamic() {
+        subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
 
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				"Property name 'defaultFeeCollectionAccount' is deprecated, please use 'ledger.fundingAccount' " +
-						"instead!",
-				String.format(
-						UNTRANSFORMABLE_PROP_TPL, "abc", "defaultFeeCollectionAccount", "IllegalArgumentException"),
-				"Property 'defaultFeeCollectionAccount' is not global/dynamic, please find it a proper home!"));
-	}
+        assertTrue(subject.from121.isEmpty());
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        "Property name 'defaultFeeCollectionAccount' is deprecated, please use"
+                                + " 'ledger.fundingAccount' instead!",
+                        String.format(
+                                UNTRANSFORMABLE_PROP_TPL,
+                                "abc",
+                                "defaultFeeCollectionAccount",
+                                "IllegalArgumentException"),
+                        "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
+                                + " it a proper home!"));
+    }
 
-	private static ServicesConfigurationList withJust(final String name, final String value) {
-		return ServicesConfigurationList.newBuilder()
-				.addNameValue(from(name, value))
-				.build();
-	}
+    private static ServicesConfigurationList withJust(final String name, final String value) {
+        return ServicesConfigurationList.newBuilder().addNameValue(from(name, value)).build();
+    }
 
-	private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {
-		final var builder = ServicesConfigurationList.newBuilder();
-		settings.forEach((key, value) -> builder.addNameValue(from(key, value)));
-		return builder.build();
-	}
+    private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {
+        final var builder = ServicesConfigurationList.newBuilder();
+        settings.forEach((key, value) -> builder.addNameValue(from(key, value)));
+        return builder.build();
+    }
 
-	private static Setting from(final String name, final String value) {
-		return Setting.newBuilder().setName(name).setValue(value).build();
-	}
+    private static Setting from(final String name, final String value) {
+        return Setting.newBuilder().setName(name).setValue(value).build();
+    }
 }

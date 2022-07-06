@@ -1,11 +1,6 @@
-package com.hedera.services.ledger;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,15 @@ package com.hedera.services.ledger;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.ledger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
@@ -48,109 +50,111 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
-
 @ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
-	@Mock
-	private AutoCreationLogic autoCreationLogic;
-	@Mock
-	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
-	@Mock
-	private AccountsCommitInterceptor accountsCommitInterceptor;
-	@Mock
-	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
+    @Mock private AutoCreationLogic autoCreationLogic;
+    @Mock private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
+    @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
+    @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 
-	final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
+    final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
-	@BeforeEach
-	void setup() {
-		commonSetup();
+    @BeforeEach
+    void setup() {
+        commonSetup();
 
-		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class,
-				MerkleAccount::new,
-				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>());
-		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+        accountsLedger =
+                new TransactionalLedger<>(
+                        AccountProperty.class,
+                        MerkleAccount::new,
+                        new HashMapBackingAccounts(),
+                        new ChangeSummaryManager<>());
+        accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
-		nftsLedger = new TransactionalLedger<>(
-				NftProperty.class,
-				MerkleUniqueToken::new,
-				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>());
-		nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
-		tokenRelsLedger = new TransactionalLedger<>(
-				TokenRelProperty.class,
-				MerkleTokenRelStatus::new,
-				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>());
-		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
-		tokenStore = new HederaTokenStore(
-				ids,
-				TestContextValidator.TEST_VALIDATOR,
-				liveSideEffects,
-				new MockGlobalDynamicProps(),
-				tokenRelsLedger,
-				nftsLedger,
-				new HashMapBackingTokens());
-		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, liveSideEffects, historian, accountsLedger,
-				transferLogic, autoCreationLogic);
-		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
-	}
+        nftsLedger =
+                new TransactionalLedger<>(
+                        NftProperty.class,
+                        MerkleUniqueToken::new,
+                        new HashMapBackingNfts(),
+                        new ChangeSummaryManager<>());
+        nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
+        tokenRelsLedger =
+                new TransactionalLedger<>(
+                        TokenRelProperty.class,
+                        MerkleTokenRelStatus::new,
+                        new HashMapBackingTokenRels(),
+                        new ChangeSummaryManager<>());
+        tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+        tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
+        tokenStore =
+                new HederaTokenStore(
+                        ids,
+                        TestContextValidator.TEST_VALIDATOR,
+                        liveSideEffects,
+                        new MockGlobalDynamicProps(),
+                        tokenRelsLedger,
+                        nftsLedger,
+                        new HashMapBackingTokens());
+        subject =
+                new HederaLedger(
+                        tokenStore,
+                        ids,
+                        creator,
+                        validator,
+                        liveSideEffects,
+                        historian,
+                        accountsLedger,
+                        transferLogic,
+                        autoCreationLogic);
+        subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
+    }
 
-	@Test
-	void recordsCreationOfAccountDeletedInSameTxn() {
-		subject.begin();
-		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.delete(a, genesis);
-		final var numNetTransfersAccounts = subject.netTransfersInTxn().getAccountNums().length;
-		final var numNetTransfersBalances = subject.netTransfersInTxn().getHbars().length;
-		subject.commit();
+    @Test
+    void recordsCreationOfAccountDeletedInSameTxn() {
+        subject.begin();
+        final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+        subject.delete(a, genesis);
+        final var numNetTransfersAccounts = subject.netTransfersInTxn().getAccountNums().length;
+        final var numNetTransfersBalances = subject.netTransfersInTxn().getHbars().length;
+        subject.commit();
 
-		assertEquals(0, numNetTransfersAccounts);
-		assertEquals(0, numNetTransfersBalances);
-		assertTrue(subject.exists(a));
-		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
-	}
+        assertEquals(0, numNetTransfersAccounts);
+        assertEquals(0, numNetTransfersBalances);
+        assertTrue(subject.exists(a));
+        assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
+    }
 
-	@Test
-	void addsRecordsAndEntitiesBeforeCommitting() {
-		subject.begin();
-		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.commit();
+    @Test
+    void addsRecordsAndEntitiesBeforeCommitting() {
+        subject.begin();
+        subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+        subject.commit();
 
-		verify(historian).saveExpirableTransactionRecords();
-		verify(historian).noteNewExpirationEvents();
-	}
+        verify(historian).saveExpirableTransactionRecords();
+        verify(historian).noteNewExpirationEvents();
+    }
 
-	@Test
-	void showsInconsistentStateIfSpawnFails() {
-		subject.begin();
-		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.commit();
+    @Test
+    void showsInconsistentStateIfSpawnFails() {
+        subject.begin();
+        subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+        subject.commit();
 
-		ids.reclaimLastId();
-		liveSideEffects.reset();
-		subject.begin();
-		final var customizer = new HederaAccountCustomizer().memo("a");
-		assertThrows(IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
-	}
+        ids.reclaimLastId();
+        liveSideEffects.reset();
+        subject.begin();
+        final var customizer = new HederaAccountCustomizer().memo("a");
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
+    }
 
-	@Test
-	void recognizesPendingCreates() {
-		subject.begin();
-		final var a = subject.create(genesis, 1L, new HederaAccountCustomizer().memo("a"));
+    @Test
+    void recognizesPendingCreates() {
+        subject.begin();
+        final var a = subject.create(genesis, 1L, new HederaAccountCustomizer().memo("a"));
 
-		assertTrue(subject.isPendingCreation(a));
-		assertFalse(subject.isPendingCreation(genesis));
-	}
+        assertTrue(subject.isPendingCreation(a));
+        assertFalse(subject.isPendingCreation(genesis));
+    }
 }

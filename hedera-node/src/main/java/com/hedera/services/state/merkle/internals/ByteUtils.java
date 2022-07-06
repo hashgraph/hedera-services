@@ -1,11 +1,6 @@
-package com.hedera.services.state.merkle.internals;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,28 @@ package com.hedera.services.state.merkle.internals;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.merkle.internals;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 public final class ByteUtils {
 
-	ByteUtils() {
-		throw new UnsupportedOperationException("Utility Class");
-	}
+    ByteUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
-	public static byte[] getHashBytes(long[] data) {
-		if (data == null) return new byte[0];
-		// ----------
-		byte[] bytes = new byte[data.length * Long.BYTES];
-		for (int i = 0; i < data.length; i++)
-			System.arraycopy(getHashBytes(data[i]), 0, bytes, i * Long.BYTES, Long.BYTES);
-		return CommonUtils.noThrowSha384HashOf(bytes);
-	}
+    public static byte[] getHashBytes(long[] data) {
+        if (data == null) return new byte[0];
+        // ----------
+        byte[] bytes = new byte[data.length * Long.BYTES];
+        for (int i = 0; i < data.length; i++)
+            System.arraycopy(getHashBytes(data[i]), 0, bytes, i * Long.BYTES, Long.BYTES);
+        return CommonUtils.noThrowSha384HashOf(bytes);
+    }
 
-	private static byte[] getHashBytes(long num) {
-		return Longs.toByteArray(num);
-	}
+    private static byte[] getHashBytes(long num) {
+        return Longs.toByteArray(num);
+    }
 }
