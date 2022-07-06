@@ -502,10 +502,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						withOpContext((spec, log) -> {
 							final var sender = spec.registry().getContractInfo(ERC_20_CONTRACT).getContractID();
 							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
-
+							final var idOfToken = "0.0." + (spec.registry().getTokenID(FUNGIBLE_TOKEN).getTokenNum());
 							var txnRecord =
 									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
-													.logs(inOrder(logWith().withTopicsInOrder(List.of(
+													.logs(inOrder(logWith().contract(idOfToken)
+															.withTopicsInOrder(List.of(
 																	eventSignatureOf(TRANSFER_SIGNATURE),
 																	parsedToByteString(sender.getContractNum()),
 																	parsedToByteString(receiver.getAccountNum())
@@ -3766,7 +3767,27 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.hasNoSpender()
 										)
 						)
-				).then();
+				).then(
+						getAccountInfo(OWNER).savingSnapshot(OWNER),
+						getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
+						withOpContext((spec, log) -> {
+							final var sender = spec.registry().getAccountInfo(OWNER).getAccountID();
+							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
+							final var idOfToken = "0.0." + (spec.registry().getTokenID(NON_FUNGIBLE_TOKEN).getTokenNum());
+							var txnRecord =
+									getTxnRecord(transferFromAccountTxn).hasPriority(recordWith().contractCallResult(resultWith()
+													.logs(inOrder(logWith().contract(idOfToken)
+															.withTopicsInOrder(List.of(
+																	eventSignatureOf(TRANSFER_SIGNATURE),
+																	parsedToByteString(sender.getAccountNum()),
+																	parsedToByteString(receiver.getAccountNum()),
+																	parsedToByteString(1L)
+															)))
+													)))
+											.andAllChildRecords().logged();
+							allRunFor(spec, txnRecord);
+						})
+				);
 	}
 
 	private HapiApiSpec erc721TransferFromWithApproveForAll() {

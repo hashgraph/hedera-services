@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -39,14 +39,14 @@ class UtilOpsUsageTest {
 	private UtilOpsUsage subject = new UtilOpsUsage();
 	@Test
 	void estimatesAutoRenewAsExpected() {
-		final var op = RandomGenerateTransactionBody.newBuilder()
+		final var op = PrngTransactionBody.newBuilder()
 				.setRange(10)
 				.build();
 		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setRandomGenerate(op).build();
+				.setPrng(op).build();
 
 		final ByteString canonicalSig = ByteString.copyFromUtf8(
 				"0123456789012345678901234567890123456789012345678901234567890123");
@@ -57,7 +57,7 @@ class UtilOpsUsageTest {
 				.build();
 		final SigUsage singleSigUsage = new SigUsage(
 				1, onePairSigMap.getSerializedSize(), 1);
-		final var opMeta = new RandomGenerateMeta(txn.getRandomGenerate());
+		final var opMeta = new PrngMeta(txn.getPrng());
 		final var baseMeta = new BaseTransactionMeta(0, 0);
 
 		var actual = new UsageAccumulator();
@@ -66,7 +66,7 @@ class UtilOpsUsageTest {
 		expected.resetForTransaction(baseMeta, singleSigUsage);
 		expected.addBpt(4);
 
-		subject.randomGenerateUsage(singleSigUsage, baseMeta, opMeta, actual);
+		subject.prngUsage(singleSigUsage, baseMeta, opMeta, actual);
 
 		assertEquals(expected, actual);
 	}

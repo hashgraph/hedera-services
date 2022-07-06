@@ -69,6 +69,7 @@ public class HTSTestsUtil {
 	public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
 	public static final Id accountId = Id.fromGrpcAccount(account);
 	public static final Address recipientAddr = Address.ALTBN128_ADD;
+	public static final Address tokenAddress = Address.ECREC;
 	public static final Address contractAddr = Address.ALTBN128_MUL;
 	public static final Address senderAddress = Address.ALTBN128_PAIRING;
 	public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
