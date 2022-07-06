@@ -109,7 +109,7 @@ public class DirectCallsTxProcessor {
 
 		PrecompileMessage message = PrecompileMessage.builder()
 				.setLedgers(ledgers)
-				.setSenderAddress(sender.canonicalAddress())
+				.setSenderAddress(sender.getId().asEvmAddress())
 				.setValue(Wei.of(value))
 				.setConsensusTime(consensusTime)
 				.setGasRemaining(gasLimit - intrinsicGas)

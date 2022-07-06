@@ -61,31 +61,50 @@ public final class KeyActivationUtils {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param provider       provides the current frame or precompile message
-	 * @param target         the element to test for key activation, in standard form
-	 * @param activationTest the function which should be invoked for key validation
-	 * @param ledgers        the current Hedera world state
-	 * @param aliases        the current Hedera contract aliases
+	 * @param precompileInfoProvider provides the current frame or precompile message
+	 * @param target                 the element to test for key activation, in standard form
+	 * @param activationTest         the function which should be invoked for key validation
+	 * @param ledgers                the current Hedera world state
+	 * @param contractAliases        the current Hedera contract aliases
 	 * @return whether the implied key is active
 	 */
 	public static boolean validateKey(
-			final PrecompileInfoProvider provider,
+			final PrecompileInfoProvider precompileInfoProvider,
 			final Address target,
 			final KeyActivationTest activationTest,
 			final WorldLedgers ledgers,
-			final Optional<ContractAliases> aliases
+			final Optional<ContractAliases> contractAliases
 	) {
-		//logic for direct token account calls
-		if (provider instanceof DirectCallsPrecompileInfoProvider directProvider) {
-			final var message = directProvider.precompileMessage();
-			return activationTest.apply(false, target, message.getSenderAddress(), ledgers);
+		if (precompileInfoProvider.isDirectTokenCall()) {
+			return validateKeyForDirectCall((DirectCallsPrecompileInfoProvider) precompileInfoProvider,
+					target, activationTest, ledgers);
+
+		} else if (contractAliases.isPresent()) {
+			final MessageFrame frame = ((EVMPrecompileInfoProvider) precompileInfoProvider).messageFrame();
+			return validateKeyForCallWithMessageFrame(frame, target, activationTest, ledgers, contractAliases.get());
 		}
-		if (aliases.isEmpty()) {
-			return false;
-		}
-		final var frame = ((EVMPrecompileInfoProvider) provider).messageFrame();
-		final var recipient = aliases.get().resolveForEvm(frame.getRecipientAddress());
-		final var sender = aliases.get().resolveForEvm(frame.getSenderAddress());
+		return false;
+	}
+
+	private static boolean validateKeyForDirectCall(
+			final DirectCallsPrecompileInfoProvider directProvider,
+			final Address target,
+			final KeyActivationTest activationTest,
+			final WorldLedgers ledgers
+	) {
+		final var sender = directProvider.precompileMessage().getSenderAddress();
+		return activationTest.apply(false, target, sender, ledgers);
+	}
+
+	private static boolean validateKeyForCallWithMessageFrame(
+			final MessageFrame frame,
+			final Address target,
+			final KeyActivationTest activationTest,
+			final WorldLedgers ledgers,
+			final ContractAliases aliases
+	) {
+		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
+		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
 			return activationTest.apply(true, target, recipient, ledgers);
