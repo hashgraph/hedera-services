@@ -12,6 +12,7 @@ hedera-node/data/lib/
 hedera-node/data/recordstreams/
 hedera-node/data/accountBalances/
 hedera-node/data/saved/
+hedera-node/databases/
 hedera-node/target/
 hedera-node/output/
 test-clients/target/
