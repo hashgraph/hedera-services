@@ -78,7 +78,7 @@ repositories {
 
 spotless {
     // optional: limit format enforcement to just the files changed by this feature branch
-    //ratchetFrom("origin/master")
+    ratchetFrom("origin/master")
 
     format("misc", {
         // define the files to apply `misc` to
@@ -90,14 +90,16 @@ spotless {
         endWithNewline()
     })
     java({
+        // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
+        addStep(RepairDashedCommentsFormatterStep.create())
+        // Remove the old license headers as the spotless licenseHeader formatter
+        // cannot find them if they are located between the package and import statements.
+        addStep(StripOldLicenseFormatterStep.create())
         // enable toggle comment support
         toggleOffOn()
         // don't need to set target, it is inferred from java
         // apply a specific flavor of google-java-format
         googleJavaFormat().aosp().reflowLongStrings()
-        // Remove the old license headers as the spotless licenseHeader formatter
-        // cannot find them if they are located between the package and import statements.
-        addStep(StripOldLicenseFormatterStep.create())
         // make sure every file has the following copyright header.
         // optionally, Spotless can set copyright years by digging
         // through git history (see "license" section below).
