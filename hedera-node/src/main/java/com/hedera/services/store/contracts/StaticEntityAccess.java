@@ -308,7 +308,20 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	/**
-	 * Returns the EVM address of the owner of the given NFT.
+	 * Returns the mirror EVM address of the approved spender for the given NFT.
+	 *
+	 * @param nftId
+	 * 		the NFT of interest
+	 * @return the token's supply
+	 */
+	public Address approvedSpenderOf(final NftId nftId) {
+		final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
+		validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+		return nft.getSpender().toEvmAddress();
+	}
+
+	/**
+	 * Returns the mirror EVM address of the owner of the given NFT.
 	 *
 	 * @param nftId
 	 * 		the NFT of interest

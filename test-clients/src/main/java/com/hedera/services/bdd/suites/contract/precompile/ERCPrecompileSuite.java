@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.AddressResult;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -84,6 +85,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -103,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -133,56 +136,56 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				ERC_20()
-//				ERC_721()
+//				ERC_20()
+				ERC_721()
 		);
 	}
 
 	List<HapiApiSpec> ERC_20() {
 		return List.of(new HapiApiSpec[] {
-//				getErc20TokenName(),
-//				getErc20TokenSymbol(),
-//				getErc20TokenDecimals(),
-//				getErc20TotalSupply(),
-//				getErc20BalanceOfAccount(),
-//				transferErc20Token(),
-//				erc20Allowance(),
-//				erc20Approve(),
+				getErc20TokenName(),
+				getErc20TokenSymbol(),
+				getErc20TokenDecimals(),
+				getErc20TotalSupply(),
+				getErc20BalanceOfAccount(),
+				transferErc20Token(),
+				erc20Allowance(),
+				erc20Approve(),
 				someERC20ApproveAllowanceScenariosPass(),
-//				someERC20NegativeTransferFromScenariosPass(),
-//				someERC20ApproveAllowanceScenarioInOneCall(),
-//				getErc20TokenDecimalsFromErc721TokenFails(),
-//				transferErc20TokenFromErc721TokenFails(),
-//				transferErc20TokenReceiverContract(),
-//				transferErc20TokenSenderAccount(),
-//				transferErc20TokenAliasedSender(),
-//				directCallsWorkForERC20(),
-//				erc20TransferFrom(),
-//				erc20TransferFromSelf(),
+				someERC20NegativeTransferFromScenariosPass(),
+				someERC20ApproveAllowanceScenarioInOneCall(),
+				getErc20TokenDecimalsFromErc721TokenFails(),
+				transferErc20TokenFromErc721TokenFails(),
+				transferErc20TokenReceiverContract(),
+				transferErc20TokenSenderAccount(),
+				transferErc20TokenAliasedSender(),
+				directCallsWorkForERC20(),
+				erc20TransferFrom(),
+				erc20TransferFromSelf(),
 		});
 	}
 
 	List<HapiApiSpec> ERC_721() {
 		return List.of(new HapiApiSpec[] {
-				getErc721TokenName(),
-				getErc721Symbol(),
-				getErc721TokenURI(),
-				getErc721OwnerOf(),
-				getErc721BalanceOf(),
-				getErc721TotalSupply(),
-				getErc721TokenURIFromErc20TokenFails(),
-				getErc721OwnerOfFromErc20TokenFails(),
-				directCallsWorkForERC721(),
-				someERC721ApproveAndRemoveScenariosPass(),
-				someERC721NegativeTransferFromScenariosPass(),
-				erc721TransferFromWithApproval(),
-				erc721TransferFromWithApproveForAll(),
+//				getErc721TokenName(),
+//				getErc721Symbol(),
+//				getErc721TokenURI(),
+//				getErc721OwnerOf(),
+//				getErc721BalanceOf(),
+//				getErc721TotalSupply(),
+//				getErc721TokenURIFromErc20TokenFails(),
+//				getErc721OwnerOfFromErc20TokenFails(),
+//				directCallsWorkForERC721(),
+//				someERC721ApproveAndRemoveScenariosPass(),
+//				someERC721NegativeTransferFromScenariosPass(),
+//				erc721TransferFromWithApproval(),
+//				erc721TransferFromWithApproveForAll(),
 				someERC721GetApprovedScenariosPass(),
-				someERC721BalanceOfScenariosPass(),
-				someERC721OwnerOfScenariosPass(),
-				someERC721IsApprovedForAllScenariosPass(),
-				getErc721IsApprovedForAll(),
-				someERC721SetApprovedForAllScenariosPass()
+//				someERC721BalanceOfScenariosPass(),
+//				someERC721OwnerOfScenariosPass(),
+//				someERC721IsApprovedForAllScenariosPass(),
+//				getErc721IsApprovedForAll(),
+//				someERC721SetApprovedForAllScenariosPass()
 		});
 	}
 
@@ -2722,12 +2725,20 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "getApproved",
 								tokenMirrorAddr.get(), 1L
 						)
-								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
-				).then(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
+								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						getTxnRecord("WITH_SPENDER").andAllChildRecords().logged(),
+						sourcing(() -> contractCallLocal(
+								someERC721Scenarios, "getApproved",
+								tokenMirrorAddr.get(), 1L
+						)
+								.logged()
+								.gas(4_000_000).has(resultWith()
+										.contractCallResult(hexedAddress(aCivilianMirrorAddr.get()))))
+						).then(
+								withOpContext(
+										(spec, opLog) ->
+												allRunFor(
+														spec,
 												childRecordsCheck("MISSING_SPENDER", SUCCESS,
 														recordWith()
 																.status(SUCCESS)
@@ -3026,7 +3037,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "isApprovedForAll",
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
 						)
-								.via("OPERATOR_IS_APPROVED_FOR_ALL").gas(4_000_000).hasKnownStatus(SUCCESS))
+								.via("OPERATOR_IS_APPROVED_FOR_ALL").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCallLocal(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
+						)
+								.gas(4_000_000))
 
 				).then(
 						withOpContext(

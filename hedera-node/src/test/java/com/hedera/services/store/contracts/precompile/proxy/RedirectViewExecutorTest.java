@@ -28,6 +28,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.services.store.models.Id;
@@ -51,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
@@ -136,6 +138,21 @@ class RedirectViewExecutorTest {
 				.willReturn(allowanceWrapper);
 		given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
 		given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
+
+		assertEquals(Pair.of(gas, answer), subject.computeCosted());
+	}
+
+	@Test
+	void computeApprovedSpenderOf() {
+		final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
+
+		final var getApprovedWrapper = new GetApprovedWrapper(123L);
+		given(decodingFacade.decodeGetApproved(eq(nestedInput)))
+				.willReturn(getApprovedWrapper);
+		given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
+				.willReturn(Address.ALTBN128_ADD);
+		given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
+		given(encodingFacade.encodeGetApproved(Address.ALTBN128_ADD)).willReturn(answer);
 
 		assertEquals(Pair.of(gas, answer), subject.computeCosted());
 	}

@@ -298,6 +298,19 @@ class StaticEntityAccessTest {
 	}
 
 	@Test
+	void failsIfNftIdNotPresent() {
+		assertFailsRevertingWith(() -> subject.approvedSpenderOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+	}
+
+	@Test
+	void returnsApprovedAddressIfPresent() {
+		given(nfts.get(nftKey)).willReturn(withApprovedSpender);
+		final var expected = withApprovedSpender.getSpender().toEvmAddress();
+		final var actual = subject.approvedSpenderOf(nft);
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	void ownerOfThrowsForMissingNft() {
 		assertFailsWith(() -> subject.ownerOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 	}
@@ -326,7 +339,6 @@ class StaticEntityAccessTest {
 
 	@Test
 	void allowanceOfReturnsZeroForNoAllowance() {
-//		final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, spenderId);
 		final var owner = new MerkleAccount();
 		given(accounts.get(accountNum)).willReturn(owner);
 		assertEquals(0L, subject.allowanceOf(accountId, spenderId, tokenId));
@@ -345,6 +357,7 @@ class StaticEntityAccessTest {
 
 	private static final NftId nft = new NftId(0, 0, 123, 456);
 	private static final EntityNumPair nftKey = EntityNumPair.fromNftId(nft);
+
 	private static final MerkleUniqueToken treasuryOwned = new MerkleUniqueToken(
 			MISSING_ENTITY_ID, "There, the eyes are".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(1, 2));
@@ -362,6 +375,13 @@ class StaticEntityAccessTest {
 	private static final MerkleUniqueToken accountOwned = new MerkleUniqueToken(
 			accountNum.toEntityId(), "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(2, 3));
+
+	private static final MerkleUniqueToken withApprovedSpender = new MerkleUniqueToken(
+			accountNum.toEntityId(), "And voices are".getBytes(StandardCharsets.UTF_8),
+			new RichInstant(1, 2));
+	static {
+		withApprovedSpender.setSpender(spenderNum.toEntityId());
+	}
 	private static final Address treasuryAddress = treasuryNum.toEvmAddress();
 	private static final TokenID tokenId = tokenNum.toGrpcTokenId();
 	private static final AccountID accountId = accountNum.toGrpcAccountId();

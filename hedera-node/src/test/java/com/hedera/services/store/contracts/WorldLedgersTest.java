@@ -109,7 +109,6 @@ class WorldLedgersTest {
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
 	private static final NftId nftId = new NftId(0, 0, 123, 456);
-
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
@@ -205,6 +204,16 @@ class WorldLedgersTest {
 		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 		given(staticEntityAccess.allowanceOf(ownerId, spenderId, fungibleToken)).willReturn(123L);
 		assertEquals(123L, subject.staticAllowanceOf(ownerId, spenderId, fungibleToken));
+	}
+
+	@Test
+	void staticApprovedDelegatesAsExpected() {
+		assertThrows(IllegalStateException.class, () ->
+				subject.staticApprovedSpenderOf(nftId));
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.approvedSpenderOf(nftId)).willReturn(Address.ALTBN128_ADD);
+		assertEquals(Address.ALTBN128_ADD, subject.staticApprovedSpenderOf(nftId));
 	}
 
 	@Test

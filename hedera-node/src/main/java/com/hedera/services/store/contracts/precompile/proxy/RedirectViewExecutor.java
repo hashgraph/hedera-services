@@ -109,7 +109,10 @@ public class RedirectViewExecutor {
 			final var allowance = ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
 			return encoder.encodeAllowance(allowance);
 		} else if (selector == ABI_ID_ERC_GET_APPROVED) {
-			throw new AssertionError("Not implemented");
+			final var wrapper = decoder.decodeGetApproved(input.slice(24));
+			final var spender = ledgers.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
+			final var priorityAddress = ledgers.canonicalAddress(spender);
+			return encoder.encodeGetApproved(priorityAddress);
 		} else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
 			throw new AssertionError("Not implemented");
 		} else if (selector == ABI_ID_ERC_DECIMALS) {

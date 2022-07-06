@@ -165,6 +165,14 @@ public class WorldLedgers {
 		}
 	}
 
+	public Address staticApprovedSpenderOf(final NftId nftId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.approvedSpenderOf(nftId);
+		}
+	}
+
 	@Nullable
 	public EntityId ownerIfPresent(final NftId nftId) {
 		if (!areMutable()) {
