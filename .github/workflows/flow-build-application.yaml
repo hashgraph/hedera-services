@@ -17,6 +17,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-integration-tests:
+        description: "Integration Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-e2e-tests:
+        description: "E2E Testing Enabled"
+        type: boolean
+        required: false
+        default: false
       java-version:
         description: "Java JDK Version:"
         type: string
@@ -40,6 +50,8 @@ jobs:
       enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
+      enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
+      enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
