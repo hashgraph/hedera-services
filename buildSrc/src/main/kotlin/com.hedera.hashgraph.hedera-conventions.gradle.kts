@@ -78,7 +78,7 @@ repositories {
 
 spotless {
     // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/master")
+    //ratchetFrom("origin/master")
 
     format("misc", {
         // define the files to apply `misc` to
@@ -90,8 +90,9 @@ spotless {
         endWithNewline()
     })
     java({
+        // enable toggle comment support
+        toggleOffOn()
         // don't need to set target, it is inferred from java
-
         // apply a specific flavor of google-java-format
         googleJavaFormat().aosp().reflowLongStrings()
         // Remove the old license headers as the spotless licenseHeader formatter
