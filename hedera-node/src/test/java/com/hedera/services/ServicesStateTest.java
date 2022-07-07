@@ -545,6 +545,9 @@ class ServicesStateTest {
 				subject.getMinimumChildCount(StateVersions.RELEASE_0260_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_POST_0260_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0270_VERSION));
+		assertEquals(
+				StateChildIndices.NUM_POST_0260_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.CURRENT_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
