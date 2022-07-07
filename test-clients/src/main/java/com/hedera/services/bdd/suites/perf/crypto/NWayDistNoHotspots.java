@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.suites.perf.crypto;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.suites.perf.crypto;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -29,142 +52,116 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class NWayDistNoHotspots extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(NWayDistNoHotspots.class);
+	private static final Logger log = LogManager.getLogger(NWayDistNoHotspots.class);
 
-    private static final int XFER_DURATION = 600;
-    private static final int NUM_BENEFICIARIES = 3;
-    private static final int DISTRIBUTIONS_PER_SEC = 500;
-    private static final int CREATIONS_PER_SEC = 50;
-    private static final double ACCOUNT_BUFFER_PERCENTAGE = 10.0;
+	private static final int XFER_DURATION = 600;
+	private static final int NUM_BENEFICIARIES = 3;
+	private static final int DISTRIBUTIONS_PER_SEC = 500;
+	private static final int CREATIONS_PER_SEC = 50;
+	private static final double ACCOUNT_BUFFER_PERCENTAGE = 10.0;
 
-    private static final int NUM_ACCOUNTS =
-            (int)
-                    Math.ceil(
-                            DISTRIBUTIONS_PER_SEC
-                                    * (1 + NUM_BENEFICIARIES)
-                                    * (1.0 + ACCOUNT_BUFFER_PERCENTAGE / 100.0));
+	private static final int NUM_ACCOUNTS = (int) Math.ceil(
+			DISTRIBUTIONS_PER_SEC * (1 + NUM_BENEFICIARIES) * (1.0 + ACCOUNT_BUFFER_PERCENTAGE / 100.0));
 
-    private final IntFunction<String> nameFn = i -> "account" + i;
-    private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private final AtomicInteger maxOpsPerSec = new AtomicInteger(DISTRIBUTIONS_PER_SEC);
-    private final AtomicInteger maxCreatesPerSec = new AtomicInteger(CREATIONS_PER_SEC);
-    private final AtomicLong createDuration = new AtomicLong(NUM_ACCOUNTS / CREATIONS_PER_SEC);
-    private final AtomicLong duration = new AtomicLong(XFER_DURATION);
+	private final IntFunction<String> nameFn = i -> "account" + i;
+	private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+	private final AtomicInteger maxOpsPerSec = new AtomicInteger(DISTRIBUTIONS_PER_SEC);
+	private final AtomicInteger maxCreatesPerSec = new AtomicInteger(CREATIONS_PER_SEC);
+	private final AtomicLong createDuration = new AtomicLong(NUM_ACCOUNTS / CREATIONS_PER_SEC);
+	private final AtomicLong duration = new AtomicLong(XFER_DURATION);
 
-    public static void main(String... args) {
-        new NWayDistNoHotspots().runSuiteSync();
-    }
+	public static void main(String... args) {
+		new NWayDistNoHotspots().runSuiteSync();
+	}
 
-    @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    runDistributions(),
-                });
-    }
+	@Override
+	public List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(
+				new HapiApiSpec[] {
+						runDistributions(),
+				}
+		);
+	}
 
-    private HapiApiSpec runDistributions() {
-        return customHapiSpec("runCreations")
-                .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
-                .given(
-                        logIt(
-                                "Creating at least "
-                                        + NUM_ACCOUNTS
-                                        + " accounts to avoid hotspots while doing "
-                                        + DISTRIBUTIONS_PER_SEC
-                                        + (" " + NUM_BENEFICIARIES + "-way distributions/sec")))
-                .when()
-                .then(
-                        runWithProvider(creationsFactory())
-                                .lasting(createDuration::get, unit::get)
-                                .maxOpsPerSec(maxCreatesPerSec::get),
-                        runWithProvider(distributionsFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
-    }
+	private HapiApiSpec runDistributions() {
+		return customHapiSpec("runCreations").withProperties(Map.of(
+						"default.keyAlgorithm", "ED25519"
+				))
+				.given(
+						logIt("Creating at least "
+								+ NUM_ACCOUNTS
+								+ " accounts to avoid hotspots while doing "
+								+ DISTRIBUTIONS_PER_SEC
+								+ (" " + NUM_BENEFICIARIES + "-way distributions/sec"))
+				).when().then(
+						runWithProvider(creationsFactory())
+								.lasting(createDuration::get, unit::get)
+								.maxOpsPerSec(maxCreatesPerSec::get),
+						runWithProvider(distributionsFactory())
+								.lasting(duration::get, unit::get)
+								.maxOpsPerSec(maxOpsPerSec::get)
+				);
+	}
 
-    private Function<HapiApiSpec, OpProvider> creationsFactory() {
-        final var nextAccount = new AtomicInteger();
-        final var payer = "metaPayer";
+	private Function<HapiApiSpec, OpProvider> creationsFactory() {
+		final var nextAccount = new AtomicInteger();
+		final var payer = "metaPayer";
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(uniqueQuietCreation(payer));
-                    }
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(uniqueQuietCreation(payer));
+			}
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final var nextI = nextAccount.getAndIncrement();
-                        return Optional.of(
-                                cryptoCreate(nameFn.apply(nextI))
-                                        .balance(ONE_HUNDRED_HBARS)
-                                        .payingWith(payer)
-                                        .noLogging()
-                                        .deferStatusResolution());
-                    }
-                };
-    }
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				final var nextI = nextAccount.getAndIncrement();
+				return Optional.of(
+						cryptoCreate(nameFn.apply(nextI))
+								.balance(ONE_HUNDRED_HBARS)
+								.payingWith(payer)
+								.noLogging()
+								.deferStatusResolution());
+			}
+		};
+	}
 
-    private Function<HapiApiSpec, OpProvider> distributionsFactory() {
-        final var nextSender = new AtomicInteger();
-        final var n = NUM_ACCOUNTS / 100 * 99;
+	private Function<HapiApiSpec, OpProvider> distributionsFactory() {
+		final var nextSender = new AtomicInteger();
+		final var n = NUM_ACCOUNTS / 100 * 99;
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of();
-                    }
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of();
+			}
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final int sender = nextSender.getAndUpdate(i -> (i + 1) % n);
-                        final var from = nameFn.apply(sender);
-                        final String[] tos = new String[NUM_BENEFICIARIES];
-                        for (int i = (sender + 1) % n, j = 0;
-                                j < NUM_BENEFICIARIES;
-                                i = (i + 1) % n, j++) {
-                            tos[j] = nameFn.apply(i);
-                        }
-                        final var op =
-                                cryptoTransfer(
-                                                movingHbar(NUM_BENEFICIARIES)
-                                                        .distributing(from, tos))
-                                        .payingWith(from)
-                                        .hasKnownStatusFrom(ACCEPTED_STATUSES)
-                                        .noLogging()
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
-                };
-    }
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				final int sender = nextSender.getAndUpdate(i -> (i + 1) % n);
+				final var from = nameFn.apply(sender);
+				final String[] tos = new String[NUM_BENEFICIARIES];
+				for (int i = (sender + 1) % n, j = 0; j < NUM_BENEFICIARIES; i = (i + 1) % n, j++) {
+					tos[j] = nameFn.apply(i);
+				}
+				final var op = cryptoTransfer(movingHbar(NUM_BENEFICIARIES)
+						.distributing(from, tos))
+						.payingWith(from)
+						.hasKnownStatusFrom(ACCEPTED_STATUSES)
+						.noLogging()
+						.deferStatusResolution();
+				return Optional.of(op);
+			}
+		};
+	}
 
-    private static final ResponseCodeEnum[] ACCEPTED_STATUSES = {
-        SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED
-    };
+	private static final ResponseCodeEnum[] ACCEPTED_STATUSES = {
+			SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED
+	};
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 }

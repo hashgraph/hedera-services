@@ -1,19 +1,32 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.suites.crypto;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.suites.crypto;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -34,137 +47,135 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import java.util.Arrays;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class MiscCryptoSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
+	private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
 
-    public static void main(String... args) {
-        new MiscCryptoSuite().runSuiteSync();
-    }
+	public static void main(String... args) {
+		new MiscCryptoSuite().runSuiteSync();
+	}
 
-    @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                positiveTests()
-                //				negativeTests()
-                );
-    }
+	@Override
+	public List<HapiApiSpec> getSpecsInSuite() {
+		return allOf(
+				positiveTests()
+//				negativeTests()
+		);
+	}
 
-    private List<HapiApiSpec> positiveTests() {
-        return Arrays.asList(
-                //				transferChangesBalance()
-                //				getsGenesisBalance()
-                //				reduceTransferFee(),
-                sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
-    }
+	private List<HapiApiSpec> positiveTests() {
+		return Arrays.asList(
+//				transferChangesBalance()
+//				getsGenesisBalance()
+//				reduceTransferFee(),
+				sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign()
+		);
+	}
+	private List<HapiApiSpec> negativeTests() {
+		return List.of(
+				updateWithOutOfDateKeyFails()
+		);
+	}
 
-    private List<HapiApiSpec> negativeTests() {
-        return List.of(updateWithOutOfDateKeyFails());
-    }
+	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(){
+		String sysAccount = "0.0.977";
+		String randomAccountA = "randomAccountA";
+		String randomAccountB = "randomAccountB";
+		String firstKey = "firstKey";
+		String secondKey = "secondKey";
 
-    private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-        String sysAccount = "0.0.977";
-        String randomAccountA = "randomAccountA";
-        String randomAccountB = "randomAccountB";
-        String firstKey = "firstKey";
-        String secondKey = "secondKey";
+		return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
+				.given(
+						withOpContext((spec, opLog) -> {
+							spec.registry().saveKey(sysAccount, spec.registry().getKey(GENESIS));
+						}),
+						newKeyNamed(firstKey).shape(SIMPLE),
+						newKeyNamed(secondKey).shape(SIMPLE)
+				)
+				.when(
+						cryptoCreate(randomAccountA)
+								.key(firstKey),
+						cryptoCreate(randomAccountB)
+								.key(firstKey)
+								.balance(ONE_HUNDRED_HBARS)
+				)
+				.then(
+						cryptoUpdate(sysAccount)
+								.key(secondKey)
+								.payingWith(GENESIS)
+								.hasKnownStatus(SUCCESS)
+								.logged(),
+						cryptoUpdate(randomAccountA)
+								.key(secondKey)
+								.signedBy(firstKey)
+								.payingWith(randomAccountB)
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
 
-        return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    spec.registry()
-                                            .saveKey(sysAccount, spec.registry().getKey(GENESIS));
-                                }),
-                        newKeyNamed(firstKey).shape(SIMPLE),
-                        newKeyNamed(secondKey).shape(SIMPLE))
-                .when(
-                        cryptoCreate(randomAccountA).key(firstKey),
-                        cryptoCreate(randomAccountB).key(firstKey).balance(ONE_HUNDRED_HBARS))
-                .then(
-                        cryptoUpdate(sysAccount)
-                                .key(secondKey)
-                                .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS)
-                                .logged(),
-                        cryptoUpdate(randomAccountA)
-                                .key(secondKey)
-                                .signedBy(firstKey)
-                                .payingWith(randomAccountB)
-                                .hasKnownStatus(INVALID_SIGNATURE));
-    }
+	private HapiApiSpec reduceTransferFee() {
+		final long REDUCED_NODE_FEE = 2L;
+		final long REDUCED_NETWORK_FEE = 3L;
+		final long REDUCED_SERVICE_FEE = 3L;
+		final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
+		return defaultHapiSpec("ReduceTransferFee")
+				.given(
+						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(0L),
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(REDUCED_TOTAL_FEE)
+								.hasPrecheck(INSUFFICIENT_TX_FEE)
+				)
+				.when(
+						reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE)
+				)
+				.then(
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(ONE_HBAR)
+								.hasPrecheck(OK),
+						getAccountBalance("sender").hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
+				);
+	}
 
-    private HapiApiSpec reduceTransferFee() {
-        final long REDUCED_NODE_FEE = 2L;
-        final long REDUCED_NETWORK_FEE = 3L;
-        final long REDUCED_SERVICE_FEE = 3L;
-        final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
-        return defaultHapiSpec("ReduceTransferFee")
-                .given(
-                        cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("receiver").balance(0L),
-                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
-                                .payingWith("sender")
-                                .fee(REDUCED_TOTAL_FEE)
-                                .hasPrecheck(INSUFFICIENT_TX_FEE))
-                .when(
-                        reduceFeeFor(
-                                CryptoTransfer,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE))
-                .then(
-                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
-                                .payingWith("sender")
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(OK),
-                        getAccountBalance("sender")
-                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE)
-                                .logged());
-    }
+	public static HapiApiSpec getsGenesisBalance() {
+		return defaultHapiSpec("GetsGenesisBalance")
+				.given().when().then(
+					getAccountBalance(GENESIS).logged()
+				);
+	}
 
-    public static HapiApiSpec getsGenesisBalance() {
-        return defaultHapiSpec("GetsGenesisBalance")
-                .given()
-                .when()
-                .then(getAccountBalance(GENESIS).logged());
-    }
+	public static HapiApiSpec transferChangesBalance() {
+		return defaultHapiSpec("TransferChangesBalance")
+				.given(
+						cryptoCreate("newPayee").balance(0L)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)
+						)
+				).then(
+						getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged()
+				);
+	}
 
-    public static HapiApiSpec transferChangesBalance() {
-        return defaultHapiSpec("TransferChangesBalance")
-                .given(cryptoCreate("newPayee").balance(0L))
-                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
-                .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged());
-    }
+	private HapiApiSpec updateWithOutOfDateKeyFails() {
+		return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
+				.given(
+						newKeyNamed("originalKey"), newKeyNamed("updateKey"),
+						cryptoCreate("targetAccount").key("originalKey")
+				).when(
+						cryptoUpdate("targetAccount").key("updateKey").deferStatusResolution(),
+						cryptoUpdate("targetAccount").receiverSigRequired(true)
+								.signedBy(GENESIS, "originalKey")
+								.via("invalidKeyUpdateTxn").deferStatusResolution().hasAnyKnownStatus(),
+						sleepFor(1_000L)
+				).then(
+						getTxnRecord("invalidKeyUpdateTxn").hasPriority(recordWith().status(INVALID_SIGNATURE))
+				);
+	}
 
-    private HapiApiSpec updateWithOutOfDateKeyFails() {
-        return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
-                .given(
-                        newKeyNamed("originalKey"),
-                        newKeyNamed("updateKey"),
-                        cryptoCreate("targetAccount").key("originalKey"))
-                .when(
-                        cryptoUpdate("targetAccount").key("updateKey").deferStatusResolution(),
-                        cryptoUpdate("targetAccount")
-                                .receiverSigRequired(true)
-                                .signedBy(GENESIS, "originalKey")
-                                .via("invalidKeyUpdateTxn")
-                                .deferStatusResolution()
-                                .hasAnyKnownStatus(),
-                        sleepFor(1_000L))
-                .then(
-                        getTxnRecord("invalidKeyUpdateTxn")
-                                .hasPriority(recordWith().status(INVALID_SIGNATURE)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 }

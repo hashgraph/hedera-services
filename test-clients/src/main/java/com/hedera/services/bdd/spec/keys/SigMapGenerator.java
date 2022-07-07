@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.spec.keys;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,22 +17,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.spec.keys;
-
-import static java.util.Map.Entry;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+
 import java.util.List;
 
-public interface SigMapGenerator {
-    enum Nature {
-        UNIQUE_PREFIXES,
-        AMBIGUOUS_PREFIXES,
-        CONFUSED_PREFIXES,
-        UNIQUE_WITH_SOME_FULL_PREFIXES,
-    }
+import static java.util.Map.Entry;
 
-    SignatureMap forPrimitiveSigs(HapiApiSpec spec, List<Entry<byte[], byte[]>> keySigs);
+public interface SigMapGenerator {
+	enum Nature {
+		UNIQUE_PREFIXES,
+		AMBIGUOUS_PREFIXES,
+		CONFUSED_PREFIXES,
+		UNIQUE_WITH_SOME_FULL_PREFIXES,
+	}
+
+	SignatureMap forPrimitiveSigs(HapiApiSpec spec, List<Entry<byte[], byte[]>> keySigs);
 }

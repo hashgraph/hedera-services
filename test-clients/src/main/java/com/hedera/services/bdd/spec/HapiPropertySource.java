@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.spec;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,10 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.spec;
-
-import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -35,322 +38,303 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static java.lang.System.arraycopy;
+
 public interface HapiPropertySource {
-    String get(String property);
+	String get(String property);
 
-    boolean has(String property);
+	boolean has(String property);
 
-    static HapiPropertySource inPriorityOrder(HapiPropertySource... sources) {
-        if (sources.length == 1) {
-            return sources[0];
-        } else {
-            HapiPropertySource overrides = sources[0];
-            HapiPropertySource defaults =
-                    inPriorityOrder(Arrays.copyOfRange(sources, 1, sources.length));
+	static HapiPropertySource inPriorityOrder(HapiPropertySource... sources) {
+		if (sources.length == 1) {
+			return sources[0];
+		} else {
+			HapiPropertySource overrides = sources[0];
+			HapiPropertySource defaults = inPriorityOrder(Arrays.copyOfRange(sources, 1, sources.length));
 
-            return new HapiPropertySource() {
-                @Override
-                public String get(String property) {
-                    return overrides.has(property)
-                            ? overrides.get(property)
-                            : defaults.get(property);
-                }
+			return new HapiPropertySource() {
+				@Override
+				public String get(String property) {
+					return overrides.has(property) ? overrides.get(property) : defaults.get(property);
+				}
 
-                @Override
-                public boolean has(String property) {
-                    return overrides.has(property) || defaults.has(property);
-                }
-            };
-        }
-    }
+				@Override
+				public boolean has(String property) {
+					return overrides.has(property) || defaults.has(property);
+				}
+			};
+		}
+	}
 
-    default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
-    }
+	default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
+		return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
+	}
 
-    default HapiApiSpec.UTF8Mode getUTF8Mode(String property) {
-        return HapiApiSpec.UTF8Mode.valueOf(get(property));
-    }
+	default HapiApiSpec.UTF8Mode getUTF8Mode(String property) {
+		return HapiApiSpec.UTF8Mode.valueOf(get(property));
+	}
 
-    default FileID getFile(String property) {
-        try {
-            return asFile(get(property));
-        } catch (Exception ignore) {
-        }
-        return FileID.getDefaultInstance();
-    }
+	default FileID getFile(String property) {
+		try {
+			return asFile(get(property));
+		} catch (Exception ignore) {
+		}
+		return FileID.getDefaultInstance();
+	}
 
-    default AccountID getAccount(String property) {
-        try {
-            return asAccount(get(property));
-        } catch (Exception ignore) {
-        }
-        return AccountID.getDefaultInstance();
-    }
+	default AccountID getAccount(String property) {
+		try {
+			return asAccount(get(property));
+		} catch (Exception ignore) {
+		}
+		return AccountID.getDefaultInstance();
+	}
 
-    default ContractID getContract(String property) {
-        try {
-            return asContract(get(property));
-        } catch (Exception ignore) {
-        }
-        return ContractID.getDefaultInstance();
-    }
+	default ContractID getContract(String property) {
+		try {
+			return asContract(get(property));
+		} catch (Exception ignore) {
+		}
+		return ContractID.getDefaultInstance();
+	}
 
-    default RealmID getRealm(String property) {
-        return RealmID.newBuilder().setRealmNum(Long.parseLong(get(property))).build();
-    }
+	default RealmID getRealm(String property) {
+		return RealmID.newBuilder().setRealmNum(Long.parseLong(get(property))).build();
+	}
 
-    default ShardID getShard(String property) {
-        return ShardID.newBuilder().setShardNum(Long.parseLong(get(property))).build();
-    }
+	default ShardID getShard(String property) {
+		return ShardID.newBuilder().setShardNum(Long.parseLong(get(property))).build();
+	}
 
-    default TimeUnit getTimeUnit(String property) {
-        return TimeUnit.valueOf(get(property));
-    }
+	default TimeUnit getTimeUnit(String property) {
+		return TimeUnit.valueOf(get(property));
+	}
 
-    default double getDouble(String property) {
-        return Double.parseDouble(get(property));
-    }
+	default double getDouble(String property) {
+		return Double.parseDouble(get(property));
+	}
 
-    default long getLong(String property) {
-        return Long.parseLong(get(property));
-    }
+	default long getLong(String property) {
+		return Long.parseLong(get(property));
+	}
 
-    default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
-        return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
-    }
+	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
+		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
+	}
 
-    default HapiSpecSetup.TxnProtoStructure getTxnConfig(String property) {
-        return HapiSpecSetup.TxnProtoStructure.valueOf(get(property).toUpperCase());
-    }
+	default HapiSpecSetup.TxnProtoStructure getTxnConfig(String property) {
+		return HapiSpecSetup.TxnProtoStructure.valueOf(get(property).toUpperCase());
+	}
 
-    default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
-        return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
-    }
+	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
+		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
+	}
 
-    default int getInteger(String property) {
-        return Integer.parseInt(get(property));
-    }
+	default int getInteger(String property) {
+		return Integer.parseInt(get(property));
+	}
 
-    default Duration getDurationFromSecs(String property) {
-        return Duration.newBuilder().setSeconds(getInteger(property)).build();
-    }
+	default Duration getDurationFromSecs(String property) {
+		return Duration.newBuilder().setSeconds(getInteger(property)).build();
+	}
 
-    default boolean getBoolean(String property) {
-        return Boolean.parseBoolean(get(property));
-    }
+	default boolean getBoolean(String property) {
+		return Boolean.parseBoolean(get(property));
+	}
 
-    default byte[] getBytes(String property) {
-        return get(property).getBytes();
-    }
+	default byte[] getBytes(String property) {
+		return get(property).getBytes();
+	}
 
-    default KeyFactory.KeyType getKeyType(String property) {
-        return KeyFactory.KeyType.valueOf(get(property));
-    }
+	default KeyFactory.KeyType getKeyType(String property) {
+		return KeyFactory.KeyType.valueOf(get(property));
+	}
 
-    default SigControl.KeyAlgo getKeyAlgorithm(String property) {
-        return SigControl.KeyAlgo.valueOf(get(property));
-    }
+	default SigControl.KeyAlgo getKeyAlgorithm(String property) {
+		return SigControl.KeyAlgo.valueOf(get(property));
+	}
 
-    default HapiApiSpec.SpecStatus getSpecStatus(String property) {
-        return HapiApiSpec.SpecStatus.valueOf(get(property));
-    }
+	default HapiApiSpec.SpecStatus getSpecStatus(String property) {
+		return HapiApiSpec.SpecStatus.valueOf(get(property));
+	}
 
-    static HapiPropertySource[] asSources(Object... sources) {
-        return Stream.of(sources)
-                .map(
-                        s ->
-                                (s instanceof HapiPropertySource)
-                                        ? s
-                                        : ((s instanceof Map)
-                                                ? new MapPropertySource((Map) s)
-                                                : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
-    }
+	static HapiPropertySource[] asSources(Object... sources) {
+		return Stream.of(sources)
+				.map(s -> (s instanceof HapiPropertySource) ? s
+						: ((s instanceof Map) ? new MapPropertySource((Map) s)
+						: new JutilPropertySource((String) s)))
+				.toArray(n -> new HapiPropertySource[n]);
+	}
 
-    static TokenID asToken(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TokenID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTokenNum(nativeParts[2])
-                .build();
-    }
+	static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
+	}
 
-    static String asTokenString(TokenID token) {
-        return String.format(
-                "%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
-    }
+	static String asTokenString(TokenID token) {
+		return String.format("%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+	}
 
-    static AccountID asAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return AccountID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setAccountNum(nativeParts[2])
-                .build();
-    }
+	static AccountID asAccount(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return AccountID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setAccountNum(nativeParts[2])
+				.build();
+	}
 
-    static AccountID asAccount(ByteString v) {
-        return AccountID.newBuilder().setAlias(v).build();
-    }
+	static AccountID asAccount(ByteString v) {
+		return AccountID.newBuilder()
+				.setAlias(v)
+				.build();
+	}
 
-    static String asAccountString(AccountID account) {
-        return String.format(
-                "%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
-    }
+	static String asAccountString(AccountID account) {
+		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+	}
 
-    static String asAliasableAccountString(final AccountID account) {
-        if (account.getAlias().isEmpty()) {
-            return asAccountString(account);
-        } else {
-            final var literalAlias = account.getAlias().toString();
-            return String.format(
-                    "%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
-        }
-    }
+	static String asAliasableAccountString(final AccountID account) {
+		if (account.getAlias().isEmpty()) {
+			return asAccountString(account);
+		} else {
+			final var literalAlias = account.getAlias().toString();
+			return String.format("%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
+		}
+	}
 
-    static TopicID asTopic(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TopicID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTopicNum(nativeParts[2])
-                .build();
-    }
+	static TopicID asTopic(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TopicID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTopicNum(nativeParts[2])
+				.build();
+	}
 
-    static String asTopicString(TopicID topic) {
-        return String.format(
-                "%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
-    }
+	static String asTopicString(TopicID topic) {
+		return String.format("%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
+	}
 
-    static ContractID asContract(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return ContractID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setContractNum(nativeParts[2])
-                .build();
-    }
+	static ContractID asContract(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ContractID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setContractNum(nativeParts[2])
+				.build();
+	}
 
-    static String asContractString(ContractID contract) {
-        return String.format(
-                "%d.%d.%d",
-                contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
-    }
+	static String asContractString(ContractID contract) {
+		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+	}
 
-    static ScheduleID asSchedule(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return ScheduleID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setScheduleNum(nativeParts[2])
-                .build();
-    }
+	static ScheduleID asSchedule(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ScheduleID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setScheduleNum(nativeParts[2])
+				.build();
+	}
 
-    static String asScheduleString(ScheduleID schedule) {
-        return String.format(
-                "%d.%d.%d",
-                schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
-    }
+	static String asScheduleString(ScheduleID schedule) {
+		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
+	}
 
-    static SemanticVersion asSemVer(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return SemanticVersion.newBuilder()
-                .setMajor((int) nativeParts[0])
-                .setMinor((int) nativeParts[1])
-                .setPatch((int) nativeParts[2])
-                .build();
-    }
+	static SemanticVersion asSemVer(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return SemanticVersion.newBuilder()
+				.setMajor((int) nativeParts[0])
+				.setMinor((int) nativeParts[1])
+				.setPatch((int) nativeParts[2])
+				.build();
+	}
 
-    static FileID asFile(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return FileID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setFileNum(nativeParts[2])
-                .build();
-    }
+	static FileID asFile(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return FileID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setFileNum(nativeParts[2])
+				.build();
+	}
 
-    static String asFileString(FileID file) {
-        return String.format("%d.%d.%d", file.getShardNum(), file.getRealmNum(), file.getFileNum());
-    }
+	static String asFileString(FileID file) {
+		return String.format("%d.%d.%d", file.getShardNum(), file.getRealmNum(), file.getFileNum());
+	}
 
-    static long[] asDotDelimitedLongArray(String s) {
-        String[] parts = s.split("[.]");
-        return Stream.of(parts).mapToLong(Long::valueOf).toArray();
-    }
+	static long[] asDotDelimitedLongArray(String s) {
+		String[] parts = s.split("[.]");
+		return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+	}
 
-    static byte[] asSolidityAddress(final AccountID accountId) {
-        return asSolidityAddress(
-                (int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
-    }
+	static byte[] asSolidityAddress(final AccountID accountId) {
+		return asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+	}
 
-    static String asHexedSolidityAddress(final AccountID accountId) {
-        return CommonUtils.hex(asSolidityAddress(accountId));
-    }
+	static String asHexedSolidityAddress(final AccountID accountId) {
+		return CommonUtils.hex(asSolidityAddress(accountId));
+	}
 
-    static String asHexedSolidityAddress(final ContractID contractId) {
-        return CommonUtils.hex(asSolidityAddress(contractId));
-    }
+	static String asHexedSolidityAddress(final ContractID contractId) {
+		return CommonUtils.hex(asSolidityAddress(contractId));
+	}
 
-    static String asHexedSolidityAddress(final TokenID tokenId) {
-        return CommonUtils.hex(asSolidityAddress(tokenId));
-    }
+	static String asHexedSolidityAddress(final TokenID tokenId) {
+		return CommonUtils.hex(asSolidityAddress(tokenId));
+	}
 
-    static byte[] asSolidityAddress(final ContractID contractId) {
-        return asSolidityAddress(
-                (int) contractId.getShardNum(),
-                contractId.getRealmNum(),
-                contractId.getContractNum());
-    }
+	static byte[] asSolidityAddress(final ContractID contractId) {
+		return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
+	}
 
-    static byte[] asSolidityAddress(final TokenID tokenId) {
-        return asSolidityAddress(
-                (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
-    }
+	static byte[] asSolidityAddress(final TokenID tokenId) {
+		return asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+	}
 
-    static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-        final byte[] solidityAddress = new byte[20];
+	static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+		final byte[] solidityAddress = new byte[20];
 
-        arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-        arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-        arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
-        return solidityAddress;
-    }
+		return solidityAddress;
+	}
 
-    static String asHexedSolidityAddress(final int shard, final long realm, final long num) {
-        return CommonUtils.hex(asSolidityAddress(shard, realm, num));
-    }
+	static String asHexedSolidityAddress(final int shard, final long realm, final long num) {
+		return CommonUtils.hex(asSolidityAddress(shard, realm, num));
+	}
 
-    static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
-        return ContractID.newBuilder()
-                .setContractNum(
-                        Longs.fromByteArray(
-                                Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
-                .build();
-    }
+	static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
+		return ContractID.newBuilder()
+				.setContractNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build();
+	}
 
-    static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
-        return AccountID.newBuilder()
-                .setAccountNum(
-                        Longs.fromByteArray(
-                                Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
-                .build();
-    }
+	static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
+		return AccountID.newBuilder()
+				.setAccountNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build();
+	}
 
-    static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
-        return HapiPropertySource.asContractString(
-                ContractID.newBuilder()
-                        .setContractNum(
-                                Longs.fromByteArray(
-                                        Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
-                        .build());
-    }
+	static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
+		return HapiPropertySource.asContractString(ContractID.newBuilder()
+				.setContractNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build());
+	}
 }

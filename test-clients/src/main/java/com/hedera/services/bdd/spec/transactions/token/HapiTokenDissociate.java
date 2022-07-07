@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.spec.transactions.token;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,11 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.spec.transactions.token;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -31,88 +33,84 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static java.util.stream.Collectors.toList;
 
 public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
-    static final Logger log = LogManager.getLogger(HapiTokenDissociate.class);
+	static final Logger log = LogManager.getLogger(HapiTokenDissociate.class);
 
-    private String account;
-    private List<String> tokens = new ArrayList<>();
+	private String account;
+	private List<String> tokens = new ArrayList<>();
 
-    @Override
-    public HederaFunctionality type() {
-        return HederaFunctionality.TokenDissociateFromAccount;
-    }
+	@Override
+	public HederaFunctionality type() {
+		return HederaFunctionality.TokenDissociateFromAccount;
+	}
 
-    public HapiTokenDissociate(String account, String... tokens) {
-        this.account = account;
-        this.tokens.addAll(List.of(tokens));
-    }
+	public HapiTokenDissociate(String account, String... tokens) {
+		this.account = account;
+		this.tokens.addAll(List.of(tokens));
+	}
 
-    @Override
-    protected HapiTokenDissociate self() {
-        return this;
-    }
+	@Override
+	protected HapiTokenDissociate self() {
+		return this;
+	}
 
-    @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenDissociateFromAccount,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
-    }
+	@Override
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+		return spec.fees().forActivityBasedOp(
+				HederaFunctionality.TokenDissociateFromAccount, this::usageEstimate, txn, numPayerKeys);
+	}
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        return TokenDissociateUsage.newEstimate(txn, suFrom(svo)).get();
-    }
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return TokenDissociateUsage.newEstimate(txn, suFrom(svo)).get();
+	}
 
-    @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var aId = TxnUtils.asId(account, spec);
-        TokenDissociateTransactionBody opBody =
-                spec.txns()
-                        .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>
-                                body(
-                                        TokenDissociateTransactionBody.class,
-                                        b -> {
-                                            b.setAccount(aId);
-                                            b.addAllTokens(
-                                                    tokens.stream()
-                                                            .map(
-                                                                    lit ->
-                                                                            TxnUtils.asTokenId(
-                                                                                    lit, spec))
-                                                            .collect(toList()));
-                                        });
-        return b -> b.setTokenDissociate(opBody);
-    }
+	@Override
+	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+		var aId = TxnUtils.asId(account, spec);
+		TokenDissociateTransactionBody opBody = spec
+				.txns()
+				.<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(
+						TokenDissociateTransactionBody.class, b -> {
+							b.setAccount(aId);
+							b.addAllTokens(tokens.stream()
+									.map(lit -> TxnUtils.asTokenId(lit, spec))
+									.collect(toList()));
+						});
+		return b -> b.setTokenDissociate(opBody);
+	}
 
-    @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(account));
-    }
+	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		return List.of(
+				spec -> spec.registry().getKey(effectivePayer(spec)),
+				spec -> spec.registry().getKey(account));
+	}
 
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::dissociateTokens;
-    }
+	@Override
+	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::dissociateTokens;
+	}
 
-    @Override
-    protected void updateStateOf(HapiApiSpec spec) {}
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) {
+	}
 
-    @Override
-    protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("account", account).add("tokens", tokens);
-        return helper;
-    }
+	@Override
+	protected MoreObjects.ToStringHelper toStringHelper() {
+		MoreObjects.ToStringHelper helper = super.toStringHelper()
+				.add("account", account)
+				.add("tokens", tokens);
+		return helper;
+	}
 }
