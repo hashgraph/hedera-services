@@ -893,6 +893,7 @@ class ERC721PrecompilesTest {
 
 		given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
 		given(decoder.decodeGetApproved(nestedPretendArguments)).willReturn(GET_APPROVED_WRAPPER);
+		given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
 		// when:
 		subject.prepareFields(frame);

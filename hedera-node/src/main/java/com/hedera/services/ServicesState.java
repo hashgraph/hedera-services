@@ -95,6 +95,7 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0270_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
@@ -196,9 +197,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
+		if (version >= MINIMUM_SUPPORTED_VERSION && version < RELEASE_0270_VERSION) {
 			return NUM_POST_0210_CHILDREN;
-		} else if (version == CURRENT_VERSION) {
+		} else if (version >= RELEASE_0270_VERSION && version <= CURRENT_VERSION) {
 			return NUM_POST_0260_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");

@@ -96,6 +96,7 @@ class WorldLedgersTest {
 	private static final EntityId notTreasury = new EntityId(0, 0, 777);
 	private static final AccountID accountID = treasury.toGrpcAccountId();
 	private static final AccountID ownerId = notTreasury.toGrpcAccountId();
+	private static final AccountID spenderId = treasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final ByteString pkAlias = ByteString.copyFrom(
 			Bytes.fromHexString("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d").toArrayUnsafe());
@@ -108,7 +109,6 @@ class WorldLedgersTest {
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
 	private static final NftId nftId = new NftId(0, 0, 123, 456);
-
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
@@ -194,6 +194,35 @@ class WorldLedgersTest {
 		given(nftsLedger.contains(nftId)).willReturn(true);
 		given(nftsLedger.get(nftId, OWNER)).willReturn(notTreasury);
 		assertEquals(notTreasury, subject.ownerIfPresent(nftId));
+	}
+
+	@Test
+	void staticAllowanceDelegatesAsExpected() {
+		assertThrows(IllegalStateException.class, () ->
+				subject.staticAllowanceOf(ownerId, spenderId, fungibleToken));
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.allowanceOf(ownerId, spenderId, fungibleToken)).willReturn(123L);
+		assertEquals(123L, subject.staticAllowanceOf(ownerId, spenderId, fungibleToken));
+	}
+
+	@Test
+	void staticApprovedDelegatesAsExpected() {
+		assertThrows(IllegalStateException.class, () ->
+				subject.staticApprovedSpenderOf(nftId));
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.approvedSpenderOf(nftId)).willReturn(Address.ALTBN128_ADD);
+		assertEquals(Address.ALTBN128_ADD, subject.staticApprovedSpenderOf(nftId));
+	}
+
+	@Test
+	void staticOperatorDelegatesAsExpected() {
+		assertThrows(IllegalStateException.class, () -> subject.staticIsOperator(ownerId, spenderId, nft));
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.isOperator(ownerId, spenderId, nft)).willReturn(true);
+		assertTrue(subject.staticIsOperator(ownerId, spenderId, nft));
 	}
 
 	@Test

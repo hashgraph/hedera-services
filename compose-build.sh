@@ -1,5 +1,5 @@
 #! /bin/sh
-DEFAULT_TAG=$(git describe --tags --always --dirty)
+DEFAULT_TAG=$(./gradlew properties | grep "version:" | cut -d ' ' -f 2)
 GIT_TAG=${1:-"$DEFAULT_TAG"}
 echo $GIT_TAG
 echo "TAG=$GIT_TAG" > .env

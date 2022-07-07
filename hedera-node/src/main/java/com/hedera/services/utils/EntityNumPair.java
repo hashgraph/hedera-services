@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -52,6 +53,14 @@ public record EntityNumPair(long value) {
 		}
 		final var value = packedNums(hi, lo);
 		return new EntityNumPair(value);
+	}
+
+	public static EntityNumPair fromGrpcNftId(NftID grpcId) {
+		final var tokenId = grpcId.getTokenID();
+		if (!areValidNums(tokenId.getShardNum(), tokenId.getRealmNum())) {
+			return MISSING_NUM_PAIR;
+		}
+		return fromLongs(tokenId.getTokenNum(), grpcId.getSerialNumber());
 	}
 
 	public static EntityNumPair fromNftId(NftId id) {
