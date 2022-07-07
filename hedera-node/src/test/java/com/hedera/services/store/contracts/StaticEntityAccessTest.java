@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -308,6 +309,38 @@ class StaticEntityAccessTest {
 		final var expected = withApprovedSpender.getSpender().toEvmAddress();
 		final var actual = subject.approvedSpenderOf(nft);
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void returnsFalseIfOwnerDoesntExist() {
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsFalseIfOperatorDoesntExist() {
+		final var owner = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsFalseIfOperatorNotApproved() {
+		final var owner = new MerkleAccount();
+		final var operator = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		given(accounts.get(spenderNum)).willReturn(operator);
+		owner.setApproveForAllNfts(Set.of(new FcTokenAllowanceId(tokenNum, treasuryNum)));
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsTrueIfOperatorApproved() {
+		final var owner = new MerkleAccount();
+		final var operator = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		given(accounts.get(spenderNum)).willReturn(operator);
+		owner.setApproveForAllNfts(Set.of(new FcTokenAllowanceId(tokenNum, spenderNum)));
+		assertTrue(subject.isOperator(accountId, spenderId, tokenId));
 	}
 
 	@Test

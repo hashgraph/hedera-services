@@ -173,6 +173,14 @@ public class WorldLedgers {
 		}
 	}
 
+	public boolean staticIsOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.isOperator(ownerId, operatorId, tokenId);
+		}
+	}
+
 	@Nullable
 	public EntityId ownerIfPresent(final NftId nftId) {
 		if (!areMutable()) {

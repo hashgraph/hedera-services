@@ -217,6 +217,15 @@ class WorldLedgersTest {
 	}
 
 	@Test
+	void staticOperatorDelegatesAsExpected() {
+		assertThrows(IllegalStateException.class, () -> subject.staticIsOperator(ownerId, spenderId, nft));
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.isOperator(ownerId, spenderId, nft)).willReturn(true);
+		assertTrue(subject.staticIsOperator(ownerId, spenderId, nft));
+	}
+
+	@Test
 	void approvedForAllLookupOnlyAvailableForMutable() {
 		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 		assertThrows(IllegalStateException.class, () -> subject.hasApprovedForAll(ownerId, accountID, nft));

@@ -321,6 +321,31 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	/**
+	 * Indicates if the operator is approved-for-all by the given owner for the given (non-fungible) token type.
+	 *
+	 * @param ownerId
+	 * 		the owner account
+	 * @param operatorId
+	 * 		the putative operator account
+	 * @param tokenId
+	 * 		the token of interest
+	 * @return the token's supply
+	 */
+	public boolean isOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+		final var owner = accounts.get(EntityNum.fromAccountId(ownerId));
+		if (owner == null) {
+			return false;
+		}
+		final var operatorNum = EntityNum.fromAccountId(operatorId);
+		final var operator = accounts.get(operatorNum);
+		if (operator == null) {
+			return false;
+		}
+		final var approvedForAll = owner.getApproveForAllNfts();
+		return approvedForAll.contains(new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), operatorNum));
+	}
+
+	/**
 	 * Returns the mirror EVM address of the owner of the given NFT.
 	 *
 	 * @param nftId

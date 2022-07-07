@@ -89,8 +89,8 @@ public class RedirectViewExecutor {
 			final var answer = answerGiven(selector, tokenId, isFungibleToken);
 			return Pair.of(costInGas, answer);
 		} catch (final InvalidTransactionException e) {
-			frame.setRevertReason(e.getRevertReason());
 			if (e.isReverting()) {
+				frame.setRevertReason(e.getRevertReason());
 				frame.setState(MessageFrame.State.REVERT);
 			}
 			return Pair.of(costInGas, null);
@@ -114,7 +114,9 @@ public class RedirectViewExecutor {
 			final var priorityAddress = ledgers.canonicalAddress(spender);
 			return encoder.encodeGetApproved(priorityAddress);
 		} else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
-			throw new AssertionError("Not implemented");
+			final var wrapper = decoder.decodeIsApprovedForAll(input.slice(24), updater::unaliased);
+			final var isOperator = ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
+			return encoder.encodeIsApprovedForAll(isOperator);
 		} else if (selector == ABI_ID_ERC_DECIMALS) {
 			validateTrue(isFungibleToken, INVALID_TOKEN_ID);
 			final var decimals = ledgers.decimalsOf(tokenId);
