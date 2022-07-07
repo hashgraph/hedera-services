@@ -1,9 +1,5 @@
 # IntelliJ quickstart
 
-**IMPORTANT** The current implementation of Platform has a non-negotiable dependency
-on PostgreSQL. Use the included [Docker-based PostgreSQL setup guide](./postgresql-setup-guide.md)
-to ensure you have an appropriately configured PostgreSQL instance before continuing.
-
 ## JVM
 OpenJDK12 is strongly recommended. You can [download it from IntelliJ](https://www.jetbrains.com/help/idea/sdk.html)
 if you don't have it already. 
