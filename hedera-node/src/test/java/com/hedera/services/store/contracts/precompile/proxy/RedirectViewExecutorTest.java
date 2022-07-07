@@ -43,7 +43,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -149,8 +148,7 @@ class RedirectViewExecutorTest {
 		final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
 		final var getApprovedWrapper = new GetApprovedWrapper(123L);
-		given(decodingFacade.decodeGetApproved(eq(nestedInput)))
-				.willReturn(getApprovedWrapper);
+		given(decodingFacade.decodeGetApproved(nestedInput)).willReturn(getApprovedWrapper);
 		given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
 				.willReturn(Address.ALTBN128_ADD);
 		given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
