@@ -26,6 +26,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.models.NftId;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -33,14 +34,17 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
-import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.getRedirectTarget;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -81,41 +85,65 @@ public class RedirectViewExecutor {
 
 		final var selector = target.descriptor();
 		final var isFungibleToken = FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-		final Bytes answer;
+		try {
+			final var answer = answerGiven(selector, tokenId, isFungibleToken);
+			return Pair.of(costInGas, answer);
+		} catch (final InvalidTransactionException e) {
+			if (e.isReverting()) {
+				frame.setRevertReason(e.getRevertReason());
+				frame.setState(MessageFrame.State.REVERT);
+			}
+			return Pair.of(costInGas, null);
+		}
+	}
+
+	private Bytes answerGiven(final int selector, final TokenID tokenId, final boolean isFungibleToken) {
 		if (selector == ABI_ID_ERC_NAME) {
 			final var name = ledgers.nameOf(tokenId);
-			answer = encoder.encodeName(name);
+			return encoder.encodeName(name);
 		} else if (selector == ABI_ID_ERC_SYMBOL) {
 			final var symbol = ledgers.symbolOf(tokenId);
-			answer = encoder.encodeSymbol(symbol);
+			return encoder.encodeSymbol(symbol);
+		} else if (selector == ABI_ID_ERC_ALLOWANCE) {
+			final var wrapper = decoder.decodeTokenAllowance(input.slice(24), updater::unaliased);
+			final var allowance = ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
+			return encoder.encodeAllowance(allowance);
+		} else if (selector == ABI_ID_ERC_GET_APPROVED) {
+			final var wrapper = decoder.decodeGetApproved(input.slice(24));
+			final var spender = ledgers.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
+			final var priorityAddress = ledgers.canonicalAddress(spender);
+			return encoder.encodeGetApproved(priorityAddress);
+		} else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
+			final var wrapper = decoder.decodeIsApprovedForAll(input.slice(24), updater::unaliased);
+			final var isOperator = ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
+			return encoder.encodeIsApprovedForAll(isOperator);
 		} else if (selector == ABI_ID_ERC_DECIMALS) {
 			validateTrue(isFungibleToken, INVALID_TOKEN_ID);
 			final var decimals = ledgers.decimalsOf(tokenId);
-			answer = encoder.encodeDecimals(decimals);
+			return encoder.encodeDecimals(decimals);
 		} else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN) {
 			final var totalSupply = ledgers.totalSupplyOf(tokenId);
-			answer = encoder.encodeTotalSupply(totalSupply);
+			return encoder.encodeTotalSupply(totalSupply);
 		} else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
 			final var wrapper = decoder.decodeBalanceOf(input.slice(24), updater::unaliased);
 			final var balance = ledgers.balanceOf(wrapper.accountId(), tokenId);
-			answer = encoder.encodeBalance(balance);
+			return encoder.encodeBalance(balance);
 		} else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
 			validateFalse(isFungibleToken, INVALID_TOKEN_ID);
 			final var wrapper = decoder.decodeOwnerOf(input.slice(24));
 			final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
 			final var owner = ledgers.ownerOf(nftId);
 			final var priorityAddress = ledgers.canonicalAddress(owner);
-			answer = encoder.encodeOwner(priorityAddress);
+			return encoder.encodeOwner(priorityAddress);
 		} else if (selector == ABI_ID_ERC_TOKEN_URI_NFT) {
 			validateFalse(isFungibleToken, INVALID_TOKEN_ID);
 			final var wrapper = decoder.decodeTokenUriNFT(input.slice(24));
 			final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
 			final var metadata = ledgers.metadataOf(nftId);
-			answer = encoder.encodeTokenUri(metadata);
+			return encoder.encodeTokenUri(metadata);
 		} else {
 			// Only view functions can be used inside a ContractCallLocal
 			throw new InvalidTransactionException(NOT_SUPPORTED);
 		}
-		return Pair.of(costInGas, answer);
 	}
 }
