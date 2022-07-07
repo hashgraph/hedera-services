@@ -239,7 +239,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
 			entry("prng.isEnabled", true),
-			entry("contracts.sidecars", Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE))
+			entry("contracts.sidecars", Set.of())
 	);
 
 	@Test
@@ -306,6 +306,8 @@ class BootstrapPropertiesTest {
 
 		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
+		assertEquals(Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
+				subject.getProperty("contracts.sidecars"));
 	}
 
 	@Test
