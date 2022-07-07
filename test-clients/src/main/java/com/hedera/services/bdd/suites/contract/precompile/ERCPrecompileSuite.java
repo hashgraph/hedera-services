@@ -50,11 +50,13 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -69,6 +71,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
@@ -159,6 +162,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				directCallsWorkForERC20(),
 				erc20TransferFrom(),
 				erc20TransferFromSelf(),
+				erc20DirectTokenCallsWithEOA()
 		});
 	}
 
@@ -182,7 +186,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				someERC721OwnerOfScenariosPass(),
 				someERC721IsApprovedForAllScenariosPass(),
 				getErc721IsApprovedForAll(),
-				someERC721SetApprovedForAllScenariosPass()
+				someERC721SetApprovedForAllScenariosPass(),
+				erc721DirectTokenCallsWithEOA()
 		});
 	}
 
@@ -3712,6 +3717,110 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec erc20DirectTokenCallsWithEOA() {
+		final var creation = "autoCreation";
+		final var spender = "spender";
+		final var eoaSender = "eoaSender";
+		final var ecdsaKey = "ecdsaKey";
+		final var SYMBOL = "ħT";
+		final var approveTxn = "approveTxn";
+		final var nameTxn = "nameTxn";
+		final var symbolTxn = "symbolTxn";
+		final var decimalsTxn = "decimalsTxn";
+		final var totalSupplyTxn = "totalSupplyTxn";
+		final var balanceOfTxn = "balanceOfTxn";
+		final var transferTxn = "transferTxn";
+		final AtomicReference<String> spenderMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("erc20DirectTokenCallsWithEOA")
+				.given(
+						cryptoCreate(spender).exposingCreatedIdTo(id ->
+								spenderMirrorAddr.set(asHexedSolidityAddress(id))),
+						newKeyNamed(ecdsaKey).shape(SECP256K1_ON),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, ecdsaKey, ONE_HUNDRED_HBARS)
+						).via(creation),
+						getReceipt(creation).savingAutoCreation(eoaSender, ecdsaKey),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						tokenCreate(FUNGIBLE_TOKEN)
+								.treasury(eoaSender)
+								.initialSupply(1000)
+								.decimals(13)
+								.symbol(SYMBOL)
+								.asCallableContract(),
+						tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN)
+				).when(withOpContext(
+						(spec, ignore) -> allRunFor(spec,
+								contractCallWithFunctionAbi(FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "name", "ERC20ABI"))
+										.payingWith(eoaSender)
+										.via(nameTxn),
+								contractCallWithFunctionAbi(FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "symbol", "ERC20ABI"))
+										.payingWith(eoaSender)
+										.via(symbolTxn),
+								contractCallWithFunctionAbi(FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "decimals", "ERC20ABI"))
+										.payingWith(eoaSender)
+										.via(decimalsTxn),
+								contractCallWithFunctionAbi(FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+										.payingWith(eoaSender)
+										.via(totalSupplyTxn),
+								contractCallWithFunctionAbi(FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "balanceOf", "ERC20ABI"),
+										spenderMirrorAddr.get())
+										.payingWith(eoaSender)
+										.via(balanceOfTxn),
+								contractCallWithFunctionAbi(
+										FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "approve", "ERC20ABI"),
+										spenderMirrorAddr.get(), 100)
+										.gas(1_000_000)
+										.payingWith(eoaSender)
+										.via(approveTxn),
+								contractCallWithFunctionAbi(
+										FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+										asHexedSolidityAddress(spec.registry().getAccountID(RECIPIENT)), 3)
+										.gas(1_000_000)
+										.payingWith(eoaSender)
+										.via(transferTxn)
+						))
+				).then(withOpContext(
+						(spec, ignore) ->
+								allRunFor(spec,
+										getTxnRecord(nameTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(symbolTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(decimalsTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(totalSupplyTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(balanceOfTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(approveTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(transferTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS))
+								)));
+	}
+
 	private HapiApiSpec erc721TransferFromWithApproval() {
 		final var theSpender = "spender";
 		final var transferFromAccountTxn = "transferFromAccountTxn";
@@ -3847,6 +3956,75 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then();
+	}
+
+	private HapiApiSpec erc721DirectTokenCallsWithEOA() {
+		final var creation = "autoCreation";
+		final var spender = "spender";
+		final var eoaSender = "eoaSender";
+		final var ecdsaKey = "ecdsaKey";
+		final var nameTxn = "nameTxn";
+		final var symbolTxn = "symbolTxn";
+		final var totalSupplyTxn = "totalSupplyTxn";
+		final var balanceOfTxn = "balanceOfTxn";
+
+		final AtomicReference<String> spenderMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("erc721DirectTokenCallsWithEOA")
+				.given(
+						cryptoCreate(spender).exposingCreatedIdTo(id ->
+								spenderMirrorAddr.set(asHexedSolidityAddress(id))),
+						newKeyNamed(ecdsaKey).shape(SECP256K1_ON),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, ecdsaKey, ONE_HUNDRED_HBARS)
+						).via(creation),
+						getReceipt(creation).savingAutoCreation(eoaSender, ecdsaKey),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.treasury(eoaSender)
+								.initialSupply(0)
+								.asCallableContract(),
+						tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN)
+				).when(withOpContext(
+						(spec, ignore) -> allRunFor(spec,
+								contractCallWithFunctionAbi(NON_FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "name", "ERC721ABI"))
+										.payingWith(eoaSender)
+										.via(nameTxn),
+								contractCallWithFunctionAbi(NON_FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "symbol", "ERC721ABI"))
+										.payingWith(eoaSender)
+										.via(symbolTxn),
+								contractCallWithFunctionAbi(NON_FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "totalSupply", "ERC721ABI"))
+										.payingWith(eoaSender)
+										.via(totalSupplyTxn),
+								contractCallWithFunctionAbi(NON_FUNGIBLE_TOKEN,
+										getABIFor(FunctionType.FUNCTION, "balanceOf", "ERC721ABI"),
+										spenderMirrorAddr.get())
+										.payingWith(eoaSender)
+										.via(balanceOfTxn)
+						))
+				).then(withOpContext(
+						(spec, ignore) ->
+								allRunFor(spec,
+										getTxnRecord(nameTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(symbolTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(totalSupplyTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS)),
+										getTxnRecord(balanceOfTxn)
+												.andAllChildRecords()
+												.logged()
+												.hasChildRecords(recordWith().status(SUCCESS))
+								)));
 	}
 
 	@Override
