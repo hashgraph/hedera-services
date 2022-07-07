@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.28.0-SNAPSHOT</version>
+	<version>0.28.0-alpha.1-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -265,7 +265,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-06-16T16:14:34Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-07-07T17:26:21Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>
