@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TxnUtils {
 	public static TransferList withAdjustments(AccountID a, long A, AccountID b, long B, AccountID c, long C) {
@@ -284,6 +285,12 @@ public class TxnUtils {
 	public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
+	}
+
+	public static void assertFailsRevertingWith(final Runnable something, final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
+		assertTrue(ex.isReverting());
 	}
 
 	public static <T extends SelfSerializable> void assertSerdeWorks(

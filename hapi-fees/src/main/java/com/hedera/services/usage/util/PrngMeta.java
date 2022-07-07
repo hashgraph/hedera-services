@@ -21,20 +21,20 @@ package com.hedera.services.usage.util;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 
-public class RandomGenerateMeta {
+public class PrngMeta {
 	private final long msgBytesUsed;
 
-	public RandomGenerateMeta(RandomGenerateTransactionBody txn) {
+	public PrngMeta(PrngTransactionBody txn) {
 		msgBytesUsed = txn.getRange() > 0 ? INT_SIZE : 0;
 	}
 
-	public RandomGenerateMeta(RandomGenerateMeta.Builder builder) {
+	public PrngMeta(PrngMeta.Builder builder) {
 		msgBytesUsed = builder.msgBytes;
 	}
 
@@ -45,7 +45,7 @@ public class RandomGenerateMeta {
 	public static class Builder {
 		private long msgBytes;
 
-		public RandomGenerateMeta.Builder msgBytesUsed(long msgBytes) {
+		public PrngMeta.Builder msgBytesUsed(long msgBytes) {
 			this.msgBytes = msgBytes;
 			return this;
 		}
@@ -54,13 +54,13 @@ public class RandomGenerateMeta {
 			// empty here on purpose.
 		}
 
-		public RandomGenerateMeta build() {
-			return new RandomGenerateMeta(this);
+		public PrngMeta build() {
+			return new PrngMeta(this);
 		}
 	}
 
-	public static RandomGenerateMeta.Builder newBuilder() {
-		return new RandomGenerateMeta.Builder();
+	public static PrngMeta.Builder newBuilder() {
+		return new PrngMeta.Builder();
 	}
 
 	@Override

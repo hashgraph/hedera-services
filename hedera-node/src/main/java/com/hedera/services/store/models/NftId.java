@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,6 +45,10 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
 
 	public static NftId withDefaultShardRealm(final long num, final long serialNo) {
 		return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
+	}
+
+	public static NftId fromGrpc(final NftID nftId) {
+		return fromGrpc(nftId.getTokenID(), nftId.getSerialNumber());
 	}
 
 	public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {

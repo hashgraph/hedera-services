@@ -154,7 +154,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -282,7 +282,7 @@ public final class MiscUtils {
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
-	static final String RANDOM_GENERATE_METRIC = "randomGenerate";
+	static final String PRNG_METRIC = "prng";
 
 	private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -359,7 +359,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
 		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
-		BASE_STAT_NAMES.put(RandomGenerate, RANDOM_GENERATE_METRIC);
+		BASE_STAT_NAMES.put(PRNG, PRNG_METRIC);
 		/* Queries */
 		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
 		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -717,8 +717,8 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
-		if (txn.hasRandomGenerate()) {
-			return RandomGenerate;
+		if (txn.hasPrng()) {
+			return PRNG;
 		}
 		throw new UnknownHederaFunctionality();
 	}
@@ -822,8 +822,8 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
-		} else if (scheduledTxn.hasRandomGenerate()) {
-			ordinary.setRandomGenerate(scheduledTxn.getRandomGenerate());
+		} else if (scheduledTxn.hasPrng()) {
+			ordinary.setPrng(scheduledTxn.getPrng());
 		}
 		return ordinary.build();
 	}
