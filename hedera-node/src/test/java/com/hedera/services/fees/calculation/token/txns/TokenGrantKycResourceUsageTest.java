@@ -1,11 +1,6 @@
-package com.hedera.services.fees.calculation.token.txns;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,8 @@ package com.hedera.services.fees.calculation.token.txns;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenGrantKycUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.SigValueObj;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.BiFunction;
+package com.hedera.services.fees.calculation.token.txns;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,56 +21,65 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenGrantKycUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
+import java.util.function.BiFunction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenGrantKycResourceUsageTest {
-	private TokenGrantKycResourceUsage subject;
+    private TokenGrantKycResourceUsage subject;
 
-	private TransactionBody nonTokenGrantKycTxn;
-	private TransactionBody tokenGrantKycTxn;
+    private TransactionBody nonTokenGrantKycTxn;
+    private TransactionBody tokenGrantKycTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+    StateView view;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
-	TokenGrantKycUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage> factory;
+    TokenGrantKycUsage usage;
+    BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage> factory;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
+    @BeforeEach
+    private void setup() throws Throwable {
+        expected = mock(FeeData.class);
+        view = mock(StateView.class);
 
-		tokenGrantKycTxn = mock(TransactionBody.class);
-		given(tokenGrantKycTxn.hasTokenGrantKyc()).willReturn(true);
+        tokenGrantKycTxn = mock(TransactionBody.class);
+        given(tokenGrantKycTxn.hasTokenGrantKyc()).willReturn(true);
 
-		nonTokenGrantKycTxn = mock(TransactionBody.class);
-		given(nonTokenGrantKycTxn.hasTokenGrantKyc()).willReturn(false);
+        nonTokenGrantKycTxn = mock(TransactionBody.class);
+        given(nonTokenGrantKycTxn.hasTokenGrantKyc()).willReturn(false);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage>)mock(BiFunction.class);
-		given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
+        factory =
+                (BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage>) mock(BiFunction.class);
+        given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
 
-		usage = mock(TokenGrantKycUsage.class);
-		given(usage.get()).willReturn(expected);
+        usage = mock(TokenGrantKycUsage.class);
+        given(usage.get()).willReturn(expected);
 
-		TokenGrantKycResourceUsage.factory = factory;
-		given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
+        TokenGrantKycResourceUsage.factory = factory;
+        given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
 
-		subject = new TokenGrantKycResourceUsage();
-	}
+        subject = new TokenGrantKycResourceUsage();
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenGrantKycTxn));
-		assertFalse(subject.applicableTo(nonTokenGrantKycTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(tokenGrantKycTxn));
+        assertFalse(subject.applicableTo(nonTokenGrantKycTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenGrantKycTxn, obj, view));
-	}
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // expect:
+        assertEquals(expected, subject.usageGiven(tokenGrantKycTxn, obj, view));
+    }
 }
